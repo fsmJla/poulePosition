@@ -6,6 +6,7 @@
 > l'ADR-0004.
 >
 > Version 1, US-001 (walking skeleton) : connexion, bienvenue, maintien de connexion, erreurs.
+> US-002 : route d'installation du premier administrateur (§6).
 > Les rôles, la synchronisation du journal et les saisies (ADR-0005) viendront avec leurs US.
 
 ## 1. Adresses
@@ -29,6 +30,7 @@
 |---|---|
 | `GET /` | `Serveur poulePosition` (texte) |
 | `GET /sante` | `{"ok":true,"service":"poule-position-serveur"}` : vérifie que le serveur est en ligne |
+| `POST /installation/administrateur` | Création du premier administrateur (§6) |
 | WebSocket `/competitions/<competitionId>/connexion` | Connexion à une compétition (§3) |
 | Tout autre chemin | `404` |
 
@@ -96,3 +98,36 @@ Toutes les 30 s, le client envoie **exactement** `{"v":1,"type":"ping"}`. Le ser
 | `connecte` | Serveur connecté | `bienvenue` reçu |
 | `injoignable` | Serveur injoignable | Socket fermée (hors ligne, serveur arrêté) ; les reconnexions continuent |
 | `non-configure` | Serveur non configuré | Build sans `VITE_URL_SERVEUR` |
+
+## 6. Installation du premier administrateur (US-002)
+
+`POST /installation/administrateur`, appelée uniquement par la commande `npm run creer-admin` (pas de CORS).
+
+**En-têtes** : `Authorization: Bearer <secret d'installation>` (secret Wrangler `SECRET_INSTALLATION`),
+`Content-Type: application/json`.
+
+**Corps** : exactement ces quatre champs (`paquets/protocole`, `DemandeInstallation`) :
+
+| Champ | Contenu |
+|---|---|
+| `email` | E-mail normalisé (minuscules, sans espaces autour) |
+| `nom` | Nom affiché, 1 à 100 caractères |
+| `sel` | 16 octets aléatoires, en base64url |
+| `cle` | PBKDF2-SHA256(mot de passe en NFC, sel, 600 000 itérations), 32 octets, en base64url |
+
+Le mot de passe n'est jamais envoyé. Le serveur stocke `HMAC-SHA256(cle, POIVRE)` (secret Wrangler `POIVRE`),
+jamais la clé elle-même (ADR-0006).
+
+**Réponses** : JSON `{ "ok": true, "email": … }` ou `{ "ok": false, "erreur": <code> }`.
+
+| Statut | Code | Cas |
+|---|---|---|
+| `201` | — | Administrateur créé |
+| `400` | `DEMANDE_INVALIDE` | Corps absent, mal formé, champ manquant ou en trop |
+| `403` | `SECRET_INVALIDE` | Secret absent ou faux ; compte comme essai erroné pour l'adresse IP |
+| `405` | — | Autre méthode que `POST` |
+| `409` | `ADMINISTRATEUR_EXISTANT` | Un administrateur existe déjà |
+| `429` | `TROP_D_ESSAIS` | 5 secrets faux depuis la même adresse en 1 minute : bloquée 1 minute |
+| `503` | `INSTALLATION_NON_CONFIGUREE` | `SECRET_INSTALLATION` ou `POIVRE` absent sur le serveur |
+
+Les messages lisibles de ces codes sont dans `ERREURS_INSTALLATION` (`paquets/protocole`).

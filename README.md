@@ -47,6 +47,7 @@ projets locaux. L'application se connecte au serveur local sans réglage.
 | `npm run test:couverture` | Idem, avec les seuils de couverture bloquants (domaine 90 %, protocole et serveur 80 %, global 70 %) |
 | `npm run test:e2e` | Playwright (PC + smartphone) contre un build local (ports 4280 et 8791). Au premier lancement, faire `npx playwright install chromium` |
 | `npm run audit` | Audit des dépendances (niveau élevé bloquant) |
+| `npm run creer-admin` | Création du premier administrateur (voir « Installation » plus bas) |
 | `npm run test:charge` | Test de charge k6 contre la **preview**. À lancer **à la main uniquement**, jamais en CI |
 
 Les **tests de charge** (k6) ne sont jamais lancés automatiquement. La procédure est dans
@@ -75,6 +76,23 @@ GitHub Actions :
 | GitHub → Settings → Secrets → Actions | `CLOUDFLARE_API_TOKEN` | Jeton Cloudflare, modèle « Edit Cloudflare Workers » |
 | GitHub → Settings → Secrets → Actions | `CLOUDFLARE_ACCOUNT_ID` | Identifiant du compte Cloudflare |
 | GitHub → Settings → Secrets → Actions | `VERCEL_AUTOMATION_BYPASS_SECRET` | Vercel → projet → Deployment Protection → *Protection Bypass for Automation* |
+
+### Installation : créer le premier administrateur (une fois par environnement)
+
+1. Créer les deux secrets du serveur, depuis `serveur/` (pour la production : les mêmes commandes sans `--env preview`) :
+   ```
+   npx wrangler secret put POIVRE --env preview
+   npx wrangler secret put SECRET_INSTALLATION --env preview
+   ```
+   Choisir des valeurs longues et aléatoires, et les conserver dans un gestionnaire de mots de passe.
+   **`POIVRE` se crée une fois et ne se change jamais** : le changer rendrait tous les mots de passe invalides.
+2. Depuis la racine, dans un terminal (la commande pose des questions) :
+   `npm run creer-admin -- --env preview` (ou `--env production`, ou `--url http://localhost:8790` en local).
+   Saisir l'e-mail, le nom, le mot de passe de l'administrateur, puis le secret d'installation.
+3. Une seconde exécution est refusée : les comptes suivants se créent dans l'application.
+
+En local (`npm run dev`), mettre les deux secrets dans `serveur/.dev.vars` (non versionné) :
+`POIVRE=…` et `SECRET_INSTALLATION=…`, une ligne chacun.
 
 Déploiement manuel du serveur, si besoin, depuis `serveur/` : `npx wrangler login` une fois, puis
 `npm run deploy:preview` ou `npm run deploy`.

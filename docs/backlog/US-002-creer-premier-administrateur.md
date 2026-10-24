@@ -66,8 +66,8 @@ Sans réseau, la commande échoue avec « Serveur injoignable : vérifiez la con
   SHA-256, 600 000 itérations, sel aléatoire de 16 octets).
 - Le secret d'installation est créé par l'utilisateur (`wrangler secret put SECRET_INSTALLATION`) pour chaque
   environnement, et saisi par lui dans la commande (pas de fichier versionné).
-- Le DO `Club` est unique au lancement (`club:<clubId>`, un seul club, ADR-0014), avec un `clubId` fixé à
-  l'installation.
+- Le DO `Club` est unique au lancement (`club:<clubId>`, un seul club, ADR-0014). **Validé :** `CLUB_ID =
+  "club-principal"`, variable de `serveur/wrangler.toml` pour chaque environnement.
 
 ## Questions bloquantes
 
