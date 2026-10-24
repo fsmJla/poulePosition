@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-001
 - **Branche / PR :** `us/US-002-creer-premier-administrateur` · [PR #11](https://github.com/fsmJla/poulePosition/pull/11)
 
@@ -110,3 +110,5 @@ Sans réseau, la commande échoue avec « Serveur injoignable : vérifiez la con
 | 2026-10-25 | En cours (plan validé : tsx, CLUB_ID = club-principal) |
 | 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 87 tests, couverture 90 %, build, audit, 7 E2E) |
 | 2026-10-25 | Recette : écart corrigé sur la commande. Les questions étaient effacées par readline, et la saisie « masquée » ne l'était pas sous Node 24. La commande refuse désormais de démarrer hors d'un vrai terminal (Git Bash affiche ce qui est tapé). |
+| 2026-10-25 | Recette OK sur le Worker de preview (déployé depuis la branche) : 503 sans secrets, puis administrateur créé par l'utilisateur dans PowerShell (CA-1), second lancement refusé (CA-3). |
+| 2026-10-25 | **Terminée**, mergée dans `dev` (PR #11). |

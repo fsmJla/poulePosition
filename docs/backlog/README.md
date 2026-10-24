@@ -31,7 +31,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | Réf. | Titre | Epic | Statut | Dépend de |
 |---|---|---|---|---|
 | [US-001](US-001-walking-skeleton.md) | Walking skeleton : chaîne complète avec une page minimale | E0 | Terminée | — |
-| [US-002](US-002-creer-premier-administrateur.md) | Créer le premier administrateur par une commande d'installation | E1 | En revue | US-001 |
+| [US-002](US-002-creer-premier-administrateur.md) | Créer le premier administrateur par une commande d'installation | E1 | Terminée | US-001 |
 | [US-003](US-003-se-connecter-en-ligne.md) | Se connecter et se déconnecter (en ligne) | E1 | Prête | US-002 |
 | [US-004](US-004-limiter-essais-connexion.md) | Limiter les essais de connexion | E1 | Prête | US-003 |
 | [US-005](US-005-se-reconnecter-hors-ligne.md) | Se reconnecter hors ligne sur un appareil déjà utilisé | E1 | Prête | US-003 |
