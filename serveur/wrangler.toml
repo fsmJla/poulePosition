@@ -1,0 +1,31 @@
+# Serveur poulePosition (ADR-0004) : Worker + Durable Objects, plan Workers Free. Voir serveur/README.md.
+# Production : poule-position-serveur (branche main). Preview : [env.preview] (branche dev).
+name = "poule-position-serveur"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+# Une instance par compétition (idFromName(competitionId)).
+[[durable_objects.bindings]]
+name = "COMPETITIONS"
+class_name = "Competition"
+
+# Plan gratuit : Durable Objects à stockage SQLite uniquement.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Competition"]
+
+[vars]
+# Origines autorisées, séparées par des virgules ; `*` = lettres, chiffres ou tirets (jamais un point).
+# Production : domaine attribué par Vercel (poule-position.vercel.app était pris). localhost : dev local et tests.
+ORIGINES = "https://poule-position-livid.vercel.app,http://localhost:*,http://127.0.0.1:*"
+
+[env.preview]
+name = "poule-position-serveur-preview"
+
+[[env.preview.durable_objects.bindings]]
+name = "COMPETITIONS"
+class_name = "Competition"
+
+[env.preview.vars]
+# Prévisualisations Vercel du projet poule-position (portée fsmjlas-projects), et localhost.
+ORIGINES = "https://poule-position-*-fsmjlas-projects.vercel.app,http://localhost:*,http://127.0.0.1:*"

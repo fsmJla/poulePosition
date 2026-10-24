@@ -1,0 +1,11 @@
+# Docs rédigées à la main (tableaux non alignés volontairement)
+*.md
+docs/reference/
+
+# Générés
+package-lock.json
+**/dist/
+**/.wrangler/
+coverage/
+playwright-report/
+test-results/
