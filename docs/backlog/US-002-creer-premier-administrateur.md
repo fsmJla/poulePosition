@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-001
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-002-creer-premier-administrateur`
 
 ## Récit
 
@@ -85,3 +85,4 @@ Sans réseau, la commande échoue avec « Serveur injoignable : vérifiez la con
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
+| 2026-10-25 | En cours (plan validé : tsx, CLUB_ID = club-principal) |
