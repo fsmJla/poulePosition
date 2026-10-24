@@ -4,7 +4,7 @@
 - **Fonctionnalité :** exigences §11, étape 3
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** —
 - **Branche / PR :** `us/US-001-walking-skeleton` · [PR #1](https://github.com/fsmJla/poulePosition/pull/1)
 
@@ -136,3 +136,5 @@ ADR-0012 (monorepo, CI). Créer `docs/protocole.md` (première version : connexi
 | 2026-10-24 | Mergée dans `dev` (PR #1). Restent : CA-9 (première session k6 avec l'utilisateur) et CA-7 (premier merge `dev` → `main`). L'US passera `Terminée` ensuite. |
 | 2026-10-24 | CA-9 ✅ : première session k6 lancée par l'utilisateur contre la preview (150 clients, seuils tenus, voir docs/recette.md §2). Reste CA-7. |
 | 2026-10-24 | Domaine de production : `poule-position-livid.vercel.app` (`poule-position.vercel.app` déjà pris). Origine du Worker de production corrigée. Un sous-domaine de pessac-escrime.fr fera l'objet d'une US dédiée. |
+| 2026-10-24 | CA-7 ✅ : mise en production 2026.10.24 (PR #5, mergée par l'utilisateur). Worker `poule-position-serveur` déployé par la CI (`/sante` OK, origine pirate 403, production 101). Production publique `https://poule-position-livid.vercel.app` : « Serveur connecté » sans session Vercel, chargement 608 ms, 16 Ko. |
+| 2026-10-24 | **Terminée** : tous les critères sont vérifiés. Porte d'entrée ouverte pour les US fonctionnelles. |
