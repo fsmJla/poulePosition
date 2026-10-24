@@ -134,3 +134,4 @@ ADR-0012 (monorepo, CI). Créer `docs/protocole.md` (première version : connexi
 | 2026-10-24 | En revue : contrôles locaux verts (lint, typage, 45 tests unitaires, couverture 98 %, build, audit, 7 E2E) |
 | 2026-10-24 | Recette OK sur https://poule-position-e0twve5si-fsmjlas-projects.vercel.app : CA-1 à CA-6, CA-8, hors ligne, CA-10 (README validé par l'utilisateur). CA-6 vérifié par un test cassé puis annulé. |
 | 2026-10-24 | Mergée dans `dev` (PR #1). Restent : CA-9 (première session k6 avec l'utilisateur) et CA-7 (premier merge `dev` → `main`). L'US passera `Terminée` ensuite. |
+| 2026-10-24 | CA-9 ✅ : première session k6 lancée par l'utilisateur contre la preview (150 clients, seuils tenus, voir docs/recette.md §2). Reste CA-7. |
