@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-001
 - **Branche / PR :** `us/US-002-creer-premier-administrateur`
 
@@ -69,6 +69,28 @@ Sans réseau, la commande échoue avec « Serveur injoignable : vérifiez la con
 - Le DO `Club` est unique au lancement (`club:<clubId>`, un seul club, ADR-0014). **Validé :** `CLUB_ID =
   "club-principal"`, variable de `serveur/wrangler.toml` pour chaque environnement.
 
+### Prises pendant l'implémentation (à valider)
+
+- **Limiteur** : les seuils du relais sont repris tels quels (5 secrets faux en 1 minute bloquent l'adresse IP pendant
+  1 minute). US-004 fixera ceux de la connexion.
+- **Réponses de la route** : `400` pour une demande invalide (tout champ en trop, y compris un mot de passe en clair,
+  la rend invalide) et `405` pour une autre méthode que `POST`, en plus des codes du CA-3 et du CA-4.
+- **Commande** : exécutée avec `tsx` ; elle accepte aussi `--url` (serveur local). Elle demande le secret
+  d'installation en dernier, masqué, comme les mots de passe.
+- **Local** : les secrets se mettent dans `serveur/.dev.vars` (non versionné), documenté dans le README.
+
+## Correspondance entre critères et tests
+
+| CA | Test(s) |
+|---|---|
+| CA-1 | `serveur/src/installation.test.ts` › « US-002 CA-1 : crée le premier administrateur (201)… » ; `outils/creer-admin.test.ts` › « US-002 CA-1 : crée l'administrateur et affiche « Administrateur créé »… » (parcours complet contre le Worker) |
+| CA-2 | `paquets/protocole/src/authentification.test.ts` › « US-002 CA-2 : la dérivation PBKDF2-SHA256… est identique sous Node et dans WebCrypto » et « US-002 CA-2 : ne contient ni le mot de passe… » ; `serveur/src/logique.test.ts` › « US-002 CA-2 : le vérificateur stocké est un HMAC poivré… » |
+| CA-3 | `installation.test.ts` › « … CA-3 : une seconde création est refusée (409) » et « US-002 CA-3 : un seul administrateur est créé » (créations simultanées) ; `creer-admin.test.ts` › « … CA-3 : refuse une seconde fois » |
+| CA-4 | `installation.test.ts` › « US-002 CA-4 : sans secret ou avec un secret faux → 403 » et « … 5 secrets faux… → blocage (429) » ; `logique.test.ts` › « US-002 CA-4 : compare deux secrets » et « … bloque après 5 échecs » ; `creer-admin.test.ts` › « US-002 CA-4 : un secret faux est refusé… » |
+| CA-5 | `paquets/domaine/src/comptes.test.ts` › « US-002 CA-5 : saisies validées » ; `creer-admin.test.ts` › « US-002 CA-5 : redemande chaque saisie invalide… » et « … arguments invalides → aide… » |
+| Hors ligne | `creer-admin.test.ts` › « US-002 hors ligne : serveur injoignable → message clair » |
+| Cas limite « secret absent du serveur » | `installation.test.ts` › « US-002 : sans secret d'installation ni poivre sur le serveur → 503 » |
+
 ## Questions bloquantes
 
 - Aucune.
@@ -86,3 +108,4 @@ Sans réseau, la commande échoue avec « Serveur injoignable : vérifiez la con
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
 | 2026-10-25 | En cours (plan validé : tsx, CLUB_ID = club-principal) |
+| 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 87 tests, couverture 90 %, build, audit, 7 E2E) |
