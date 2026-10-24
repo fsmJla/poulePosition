@@ -46,3 +46,10 @@ l'ajoute ici avant de l'utiliser.
 | Écran | Affichage géant (distant ou fenêtre locale). | `ecran` |
 | Spectateur | Accès public en lecture seule. | `spectateur` |
 | Club | Organisation propriétaire des données (`clubId`). | `club` |
+| Compte | Accès nominatif à l'application (e-mail, nom, rôle, état), pour les administrateurs et les organisateurs. Les arbitres et les tireurs n'en ont pas (accès par QR code). | `compte` |
+| Rôle | Profil d'un compte : administrateur (tout, y compris la gestion des comptes) ou organisateur (compétitions). | `role` : `administrateur`, `organisateur` |
+| Session | Preuve de connexion d'un compte sur un appareil, valable 30 jours et prolongée à chaque usage en ligne. | `session` |
+| Appareil connu | Appareil sur lequel un compte s'est déjà connecté en ligne : il peut s'y reconnecter hors ligne. | `appareilConnu` |
+| Vérificateur local | Empreinte du mot de passe gardée sur un appareil connu pour la connexion hors ligne (ADR-0006). | `verificateurLocal` |
+| Mot de passe temporaire | Mot de passe généré par un administrateur à la création ou à la réinitialisation d'un compte, à changer à la première connexion. | `motDePasseTemporaire` |
+| Secret d'installation | Secret du déploiement qui autorise la création du premier administrateur. | `SECRET_INSTALLATION` |
