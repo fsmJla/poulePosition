@@ -1,4 +1,29 @@
-.idea/
+# Dépendances et builds
 node_modules/
+dist/
+
+# Cloudflare
 .wrangler/
+.dev.vars
+
+# Variables locales (jamais versionnées)
 .env*
+
+# Tests
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Vercel
+.vercel/
+
+# Claude Code : réglages personnels
+.claude/settings.local.json
+
+# Système / éditeurs
+.DS_Store
+Thumbs.db
+.idea/
+*.log
