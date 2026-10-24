@@ -6,7 +6,7 @@
 - **Type :** technique
 - **Statut :** En revue
 - **Dépend de :** US-001
-- **Branche / PR :** `us/US-002-creer-premier-administrateur`
+- **Branche / PR :** `us/US-002-creer-premier-administrateur` · [PR #11](https://github.com/fsmJla/poulePosition/pull/11)
 
 ## Récit
 
