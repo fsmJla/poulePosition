@@ -9,8 +9,8 @@
 | [glossaire.md](glossaire.md) | Vocabulaire métier commun au code et aux docs | Claude et l'utilisateur |
 | [reference/](reference/) | Code et docs de référence venus d'autres projets (lecture seule) | — |
 
-À venir avec US-001 (walking skeleton) :
+Protocole et recette :
 
-- `protocole.md` : les messages échangés entre l'app et le serveur, sur le modèle de
+- [protocole.md](protocole.md) : les messages échangés entre l'app et le serveur, sur le modèle de
   `reference/relais-wireless-fencing/TELECOMMANDE.md` ;
-- `recette.md` : les scénarios de vérification manuelle et la procédure de test de charge.
+- [recette.md](recette.md) : les scénarios de vérification manuelle et la procédure de test de charge.

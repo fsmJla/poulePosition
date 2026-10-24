@@ -9,4 +9,5 @@ selon l'ADR-0004 :
 **Aucune logique métier d'escrime** : le serveur authentifie, route, stocke et diffuse.
 Workers : `poule-position-serveur-preview` (branche `dev`) et `poule-position-serveur` (branche `main`).
 
-*Contenu créé par US-001 (walking skeleton).*
+Commandes (depuis la racine) : `npm run dev -w serveur` (port 8790), `npm run deploy:preview -w serveur`,
+`npm run deploy -w serveur`. Tests : `npx vitest run --project serveur` (intégration dans workerd).
