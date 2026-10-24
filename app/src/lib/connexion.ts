@@ -5,7 +5,7 @@ import { analyserMessageServeur, FERMETURES, MESSAGE_PING } from '@poule-positio
 export type EtatConnexion = 'non-configure' | 'connexion' | 'connecte' | 'injoignable';
 
 /** Adresse du serveur local (`wrangler dev`), utilisée par défaut en développement. */
-export const URL_SERVEUR_LOCAL = 'ws://localhost:8787';
+export const URL_SERVEUR_LOCAL = 'ws://localhost:8790';
 
 /** Intervalle du ping de maintien (réseaux mobiles, proxys), comme le relais. */
 const DELAI_PING = 30_000;

@@ -4,9 +4,9 @@
   "type": "module",
   "description": "Application PWA : pilote, saisie, écran, spectateur (ADR-0002)",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 5280 --strictPort",
     "build": "vite build",
-    "preview": "vite preview --port 4173 --strictPort",
+    "preview": "vite preview --port 4280 --strictPort",
     "typage": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings"
   },
   "dependencies": {

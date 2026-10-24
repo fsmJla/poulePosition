@@ -17,7 +17,7 @@
     "build": "npm run build -w app",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
-    "typage": "npm run typage --workspaces --if-present",
+    "typage": "tsc -p tsconfig.json && npm run typage --workspaces --if-present",
     "test": "vitest run",
     "test:couverture": "vitest run --coverage",
     "test:e2e": "playwright test",
