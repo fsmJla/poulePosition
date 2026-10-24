@@ -22,4 +22,6 @@ Tu termines le **mode spécification** ouvert par `/debut-spec-US`.
 4. **Demande confirmation**, puis commite (`Spécifie US-0XX à US-0YY : <sujet>`), pousse la branche `spec/…` et ouvre
    une PR vers `dev`. Utilise `gh` s'il est disponible ; sinon, donne le lien
    `https://github.com/fsmJla/poulePosition/compare/dev...<branche>?expand=1` avec un titre et une description prêts à coller.
-5. Annonce la sortie du mode spécification.
+5. Si la CI de la branche est verte (une fois la CI en place), **merge dans `dev`** :
+   `git switch dev && git pull && git merge --no-ff spec/… && git push`. Jamais de merge sur `main`.
+6. Annonce la sortie du mode spécification.

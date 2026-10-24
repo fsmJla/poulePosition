@@ -36,5 +36,5 @@ manquer aucun critère.
 - Ouvre une PR vers **`dev`**, jamais vers `main`, avec `gh` s'il est disponible ; sinon, donne le lien
   `https://github.com/fsmJla/poulePosition/compare/dev...<branche>?expand=1`. Le titre est `$ARGUMENTS — <titre>`. La
   description contient le résumé, la correspondance entre critères et tests, et les points d'attention pour la revue.
-- Rappelle la suite : attendre que la CI et la preview soient vertes, puis `/recette $ARGUMENTS`. L'US passe
-  `Terminée` après la recette et le merge dans `dev`. **Tu ne merges pas, sauf demande explicite, et jamais sur `main`.**
+- Rappelle la suite : attendre que la CI et la preview soient vertes, puis `/recette $ARGUMENTS`. C'est la
+  recette qui, si elle est OK, merge la branche dans `dev` et passe l'US à `Terminée`. **Jamais de merge sur `main`.**

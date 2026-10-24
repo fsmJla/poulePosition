@@ -19,5 +19,10 @@ Recette de l'US **$ARGUMENTS** sur sa preview.
    Ne mets jamais le secret de bypass dans une URL partagée.
 4. **Rapporte** le résultat de chaque critère (✅ / ❌), avec les captures et, pour chaque écart, ce qui a été observé
    et ce qui était attendu. Pour chaque écart, propose `/bug` ou une correction sur la branche de l'US.
-5. Si tout est ✅ : ajoute une ligne de suivi « recette OK sur <URL> » dans l'US et coche « déployée en preview et
-   vérifiée ». Rappelle que l'US passe `Terminée` au merge dans `dev`, fait par l'utilisateur ou sur sa demande explicite.
+5. Si tout est ✅ :
+   - ajoute une ligne de suivi « recette OK sur <URL> » dans l'US et coche « déployée en preview et vérifiée » ;
+   - passe l'US à `Terminée` dans son fichier et dans `docs/backlog/README.md`, puis commite et pousse sur la branche de l'US ;
+   - vérifie une dernière fois que la CI de la branche est **verte**. Si elle est rouge, ne merge pas : arrête-toi et signale-le ;
+   - merge dans `dev` : `git switch dev && git pull && git merge --no-ff us/… && git push`. La PR GitHub se ferme
+     alors automatiquement comme mergée ;
+   - **jamais de merge sur `main`.**

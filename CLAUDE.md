@@ -42,7 +42,9 @@ Application d'organisation et de suivi de compétitions d'escrime (poules, table
 - Branches : `main` (production) ← `dev` (intégration) ← `us/US-XXX-slug` (une par US, créée depuis `dev` à jour).
   Les spécifications vont dans une branche `spec/<sujet>`, et les corrections dans `us/US-XXX-slug` (une US de type bug).
 - PR de la branche vers `dev`, ce qui produit une preview Vercel. Quand des US sont validées, PR `dev` → `main` (`/release`), ce qui met en production.
-- **Claude ne merge JAMAIS sur `main`.** Claude ne merge vers `dev` que sur demande explicite.
+- **Claude ne merge JAMAIS sur `main`.**
+- **Claude merge lui-même les branches `us/*` et `spec/*` dans `dev`**, avec `git merge --no-ff`, puis pousse `dev`.
+  Conditions : la CI de la branche est verte, une fois la CI en place avec US-001. Pour une US, il faut aussi que la recette sur la preview soit OK (`/recette`).
 - **Ne jamais merger une PR dont la CI est rouge.** Le dépôt est privé et sans protection de branche (ADR-0012) : cette règle remplace le verrou technique.
 - Pas de `push --force` sur `main` ou `dev`, et pas de `--no-verify`.
 - Commits petits et en français, à l'impératif (« Ajoute le calcul de l'indice »), avec la référence de l'US en préfixe : `US-012 : …`.
