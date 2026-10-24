@@ -191,6 +191,44 @@ describe('questionneurTerminal', () => {
     expect(affiche()).not.toContain('mot-de-passe-secret');
     questionneur.fermer();
   });
+
+  it('US-002 recette : session complète, frappe touche par touche, sans aucune fuite des saisies masquées', async () => {
+    const { entree, sortie, affiche } = terminal();
+    const questionneur = questionneurTerminal(entree, sortie);
+    const taper = async (texte: string) => {
+      for (const touche of texte) entree.write(touche);
+      entree.write('\r');
+    };
+    const reponses: string[] = [];
+    for (const [question, masquer, saisie] of [
+      ['E-mail : ', false, 'admin@club.fr'],
+      ['Mot de passe : ', true, 'mot-de-passe-secret'],
+      ['Confirmation : ', true, 'mot-de-passe-secret'],
+      ["Secret d'installation : ", true, 'secret-installation'],
+      ['Nom : ', false, 'Julien'],
+    ] as const) {
+      const reponse = questionneur.demander(question, masquer);
+      await taper(saisie);
+      reponses.push(await reponse);
+    }
+    questionneur.fermer();
+    expect(reponses).toEqual([
+      'admin@club.fr',
+      'mot-de-passe-secret',
+      'mot-de-passe-secret',
+      'secret-installation',
+      'Julien',
+    ]);
+    expect(affiche()).not.toContain('mot-de-passe-secret');
+    expect(affiche()).not.toContain('secret-installation');
+    expect(lignesVisibles(affiche())).toEqual([
+      'E-mail : admin@club.fr',
+      'Mot de passe : ',
+      'Confirmation : ',
+      "Secret d'installation : ",
+      'Nom : Julien',
+    ]);
+  });
 });
 
 describe('verifierTerminal', () => {

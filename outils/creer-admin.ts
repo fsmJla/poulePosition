@@ -115,42 +115,43 @@ export async function executer(
 }
 
 /**
- * Questionneur du terminal. Une interface readline par question :
+ * Questionneur du terminal. Une seule interface readline pour toute la session : la console reste en mode brut du
+ * début à la fin (pas d'intervalle où elle afficherait elle-même une touche frappée). readline écrit dans un écran
+ * qui transmet tout, sauf pendant une saisie masquée (mot de passe, secret) où seul le retour à la ligne passe :
  * - question visible : readline affiche lui-même la question (sinon il l'efface en redessinant la ligne) ;
- * - question masquée (mot de passe, secret) : la question est écrite directement, et readline écrit dans une sortie
- *   muette, qui ne laisse passer que le retour à la ligne : rien de ce qui est tapé ne s'affiche.
+ * - question masquée : la question est écrite directement, puis rien de ce qui est tapé ne s'affiche.
  * Aucune méthode interne de readline n'est utilisée (elles changent d'une version de Node à l'autre).
  */
 export function questionneurTerminal(
   entree: NodeJS.ReadableStream = process.stdin,
   sortie: NodeJS.WritableStream = process.stdout,
 ): Questionneur & { fermer(): void } {
-  async function poser(question: string, ecran: NodeJS.WritableStream): Promise<string> {
-    const terminal = createInterface({ input: entree, output: ecran, terminal: true });
-    try {
-      return await terminal.question(question);
-    } finally {
-      terminal.close();
-    }
-  }
+  let masque = false;
+  const ecran = new Writable({
+    write(morceau, _encodage, suite) {
+      const texte = String(morceau);
+      if (!masque) sortie.write(texte);
+      else if (texte.includes('\n')) sortie.write('\n');
+      suite();
+    },
+  });
+  const terminal = createInterface({ input: entree, output: ecran, terminal: true });
 
   return {
     async demander(question, masquer = false) {
-      if (!masquer) return poser(question, sortie);
+      if (!masquer) return terminal.question(question);
       sortie.write(question);
-      const muet = new Writable({
-        write(morceau, _encodage, suite) {
-          if (String(morceau).includes('\n')) sortie.write('\n');
-          suite();
-        },
-      });
-      return poser('', muet);
+      masque = true;
+      try {
+        return await terminal.question('');
+      } finally {
+        masque = false;
+      }
     },
     afficher: (message) => {
       sortie.write(`${message}\n`);
     },
-    // Chaque interface est fermée après sa question : il ne reste rien à fermer.
-    fermer: () => {},
+    fermer: () => terminal.close(),
   };
 }
 
