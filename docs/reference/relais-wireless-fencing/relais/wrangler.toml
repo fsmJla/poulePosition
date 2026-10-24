@@ -1,0 +1,25 @@
+# Relais de la télécommande (US-033) : Worker + Durable Objects. Voir README.md.
+name = "wireless-fencing-relais"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# Une salle par code (idFromName(code)).
+[[durable_objects.bindings]]
+name = "SALLES"
+class_name = "Salle"
+
+# Un compteur d'essais par adresse IP.
+[[durable_objects.bindings]]
+name = "LIMITEUR"
+class_name = "Limiteur"
+
+# Plan gratuit : Durable Objects à stockage SQLite uniquement.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Salle", "Limiteur"]
+
+[vars]
+# Origines autorisées, séparées par des virgules ; `*` = lettres, chiffres ou tirets.
+# Projet Vercel « wireless-fencing », équipe « fsmjlas-projects », et son domaine personnalisé
+# app.pessac-escrime.fr (voir README.md, « Origines autorisées »).
+ORIGINES = "https://app.pessac-escrime.fr,https://wireless-fencing.vercel.app,https://wireless-fencing-*-fsmjlas-projects.vercel.app,http://localhost:*,https://localhost:*,http://127.0.0.1:*,https://127.0.0.1:*"
