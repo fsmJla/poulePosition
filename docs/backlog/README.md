@@ -30,7 +30,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 
 | Réf. | Titre | Epic | Statut | Dépend de |
 |---|---|---|---|---|
-| [US-001](US-001-walking-skeleton.md) | Walking skeleton : chaîne complète avec une page minimale | E0 | En cours | — |
+| [US-001](US-001-walking-skeleton.md) | Walking skeleton : chaîne complète avec une page minimale | E0 | En revue | — |
 
 Le découpage des fonctionnalités en US fines est l'**étape 4** (exigences §11). Il commencera après la
 fin d'US-001.
