@@ -57,7 +57,7 @@ Les **tests de charge** (k6) ne sont jamais lancés automatiquement. La procédu
 | Quoi | Déclencheur | Où |
 |---|---|---|
 | Preview de l'application | Toute branche poussée ou PR | Vercel (`poule-position-…-fsmjlas-projects.vercel.app`), protégée |
-| Production de l'application | Merge sur `main` (fait par le propriétaire) | Vercel (`poule-position.vercel.app`) |
+| Production de l'application | Merge sur `main` (fait par le propriétaire) | Vercel (`poule-position-livid.vercel.app` ; `poule-position.vercel.app` était déjà pris) |
 | Serveur de preview | Push sur `dev`, ou lancement manuel du workflow | Cloudflare : `poule-position-serveur-preview` |
 | Serveur de production | Push sur `main` | Cloudflare : `poule-position-serveur` |
 

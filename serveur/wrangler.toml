@@ -16,8 +16,8 @@ new_sqlite_classes = ["Competition"]
 
 [vars]
 # Origines autorisées, séparées par des virgules ; `*` = lettres, chiffres ou tirets (jamais un point).
-# localhost : développement local et tests.
-ORIGINES = "https://poule-position.vercel.app,http://localhost:*,http://127.0.0.1:*"
+# Production : domaine attribué par Vercel (poule-position.vercel.app était pris). localhost : dev local et tests.
+ORIGINES = "https://poule-position-livid.vercel.app,http://localhost:*,http://127.0.0.1:*"
 
 [env.preview]
 name = "poule-position-serveur-preview"
