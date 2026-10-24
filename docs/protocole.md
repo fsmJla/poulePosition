@@ -15,7 +15,7 @@
 | Local (`npm run dev`) | `ws://localhost:8790` | `http://localhost:*`, `http://127.0.0.1:*` |
 | Tests E2E locaux | `ws://localhost:8791` | idem |
 | Preview (branche `dev`) | `wss://poule-position-serveur-preview.spuc-escrime.workers.dev` | `https://poule-position-*-fsmjlas-projects.vercel.app` |
-| Production (branche `main`) | `wss://poule-position-serveur.spuc-escrime.workers.dev` | `https://poule-position.vercel.app` |
+| Production (branche `main`) | `wss://poule-position-serveur.spuc-escrime.workers.dev` | `https://poule-position-livid.vercel.app` |
 
 - L'application reçoit l'adresse **au build** par `VITE_URL_SERVEUR`, réglée dans Vercel par environnement. En
   développement, sans cette variable, elle utilise `ws://localhost:8790`. Dans un build sans cette variable,

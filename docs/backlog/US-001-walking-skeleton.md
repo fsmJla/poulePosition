@@ -95,7 +95,7 @@ et indique « serveur injoignable ». Un test E2E le vérifie avec `context.setO
 - **Tests du Worker** : ils démarrent le Worker dans workerd avec `unstable_startWorker` de Wrangler. `@cloudflare/vitest-pool-workers` n'est pas utilisé, car il exige Vitest 4.
 - **Faille `undici`** : version forcée en ^7.30.1 (`overrides` dans `package.json`). La version embarquée par miniflare a une faille de gravité élevée qui ferait échouer l'audit. À retirer quand Wrangler embarquera une version corrigée.
 - **Ports locaux dédiés** : 5280 et 8790 en développement, 4280 et 8791 pour les E2E. Wireless Fencing occupe 8787 et 5173 et suivants.
-- **Protection Vercel** : passée de « tout sauf les domaines personnalisés » à **« previews uniquement »**, comme le prévoit l'ADR-0008. Sinon, `poule-position.vercel.app` aurait été protégée et donc inaccessible aux spectateurs.
+- **Protection Vercel** : passée de « tout sauf les domaines personnalisés » à **« previews uniquement »**, comme le prévoit l'ADR-0008. Sinon, le domaine de production (`poule-position-livid.vercel.app`) aurait été protégé et donc inaccessible aux spectateurs.
 - **Catalogue de textes** : un simple module `app/src/lib/textes.ts` en attendant une bibliothèque de traduction (Paraglide, ADR-0002), à choisir quand un deuxième écran l'imposera.
 - **Icône PWA** : une seule icône SVG (`sizes: any`). Des PNG 192 / 512 seront à ajouter si l'installation l'exige sur certains appareils.
 - **CA-1** : testé en E2E local uniquement (sans objet contre une preview) ; le test lance réellement `npm run dev`.
@@ -135,3 +135,4 @@ ADR-0012 (monorepo, CI). Créer `docs/protocole.md` (première version : connexi
 | 2026-10-24 | Recette OK sur https://poule-position-e0twve5si-fsmjlas-projects.vercel.app : CA-1 à CA-6, CA-8, hors ligne, CA-10 (README validé par l'utilisateur). CA-6 vérifié par un test cassé puis annulé. |
 | 2026-10-24 | Mergée dans `dev` (PR #1). Restent : CA-9 (première session k6 avec l'utilisateur) et CA-7 (premier merge `dev` → `main`). L'US passera `Terminée` ensuite. |
 | 2026-10-24 | CA-9 ✅ : première session k6 lancée par l'utilisateur contre la preview (150 clients, seuils tenus, voir docs/recette.md §2). Reste CA-7. |
+| 2026-10-24 | Domaine de production : `poule-position-livid.vercel.app` (`poule-position.vercel.app` déjà pris). Origine du Worker de production corrigée. Un sous-domaine de pessac-escrime.fr fera l'objet d'une US dédiée. |
