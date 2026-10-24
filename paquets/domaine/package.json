@@ -1,0 +1,12 @@
+{
+  "name": "@poule-position/domaine",
+  "private": true,
+  "type": "module",
+  "description": "Règles métier pures de l'escrime (ADR-0001)",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typage": "tsc -p tsconfig.json"
+  }
+}
