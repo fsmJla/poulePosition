@@ -8,14 +8,15 @@ export default defineConfig({
       'paquets/protocole',
       'serveur',
       'app',
+      'outils',
       { test: { name: 'garde-fous', include: ['tests/garde-fous/**/*.test.ts'], environment: 'node' } },
     ],
     coverage: {
       provider: 'v8',
       // Code exécuté sous Node. Le Worker et ses Durable Objects (index.ts, competition.ts) tournent dans
       // workerd : ils sont couverts par les tests d'intégration du serveur, non mesurés ici.
-      include: ['paquets/*/src/**/*.ts', 'serveur/src/logique.ts', 'app/src/lib/**/*.ts'],
-      exclude: ['**/*.test.ts'],
+      include: ['paquets/*/src/**/*.ts', 'serveur/src/logique.ts', 'app/src/lib/**/*.ts', 'outils/**/*.ts'],
+      exclude: ['**/*.test.ts', '**/vitest.config.ts'],
       reporter: ['text', 'html'],
       thresholds: {
         lines: 70,

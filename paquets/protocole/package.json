@@ -8,5 +8,8 @@
   },
   "scripts": {
     "typage": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@poule-position/domaine": "*"
   }
 }

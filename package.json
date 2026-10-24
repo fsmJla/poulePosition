@@ -22,7 +22,8 @@
     "test:couverture": "vitest run --coverage",
     "test:e2e": "playwright test",
     "audit": "npm audit --audit-level=high",
-    "test:charge": "node tests/charge/lancer.mjs"
+    "test:charge": "node tests/charge/lancer.mjs",
+    "creer-admin": "tsx outils/creer-admin.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -35,6 +36,7 @@
     "globals": "^17.13.0",
     "prettier": "^3.9.10",
     "prettier-plugin-svelte": "^4.1.1",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.0",
     "vitest": "^5.0.5"

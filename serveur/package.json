@@ -11,7 +11,8 @@
     "typage": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@poule-position/protocole": "*"
+    "@poule-position/protocole": "*",
+    "@poule-position/domaine": "*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261024.1",
