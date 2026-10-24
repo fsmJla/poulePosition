@@ -9,6 +9,13 @@ updates:
     groups:
       mineures:
         update-types: [minor, patch]
+    ignore:
+      # TypeScript 7 : pas encore supporté par typescript-eslint ni svelte-check (US-001).
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      # Le projet tourne sous Node 24 (.nvmrc) : les types suivent la version de Node.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
     target-branch: dev
