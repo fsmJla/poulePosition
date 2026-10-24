@@ -2,6 +2,7 @@
 //   npm run creer-admin -- --env preview      (ou --env production, ou --url http://localhost:8790)
 // Le mot de passe ne quitte jamais ce PC : seule la clé dérivée par PBKDF2 est envoyée (ADR-0006).
 import { createInterface } from 'node:readline/promises';
+import { Writable } from 'node:stream';
 import { pathToFileURL } from 'node:url';
 import {
   validerConfirmation,
@@ -113,31 +114,66 @@ export async function executer(
   return 1;
 }
 
-/** Questionneur du terminal : les saisies masquées (mots de passe, secret) ne s'affichent pas. */
-function questionneurTerminal(): Questionneur & { fermer(): void } {
-  const terminal = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-  let masque = false;
-  const sortie = terminal as unknown as { _writeToOutput(texte: string): void };
-  sortie._writeToOutput = (texte) => {
-    if (!masque) process.stdout.write(texte);
-    else if (texte.includes('\n')) process.stdout.write('\n');
-  };
+/**
+ * Questionneur du terminal. Une interface readline par question :
+ * - question visible : readline affiche lui-même la question (sinon il l'efface en redessinant la ligne) ;
+ * - question masquée (mot de passe, secret) : la question est écrite directement, et readline écrit dans une sortie
+ *   muette, qui ne laisse passer que le retour à la ligne : rien de ce qui est tapé ne s'affiche.
+ * Aucune méthode interne de readline n'est utilisée (elles changent d'une version de Node à l'autre).
+ */
+export function questionneurTerminal(
+  entree: NodeJS.ReadableStream = process.stdin,
+  sortie: NodeJS.WritableStream = process.stdout,
+): Questionneur & { fermer(): void } {
+  async function poser(question: string, ecran: NodeJS.WritableStream): Promise<string> {
+    const terminal = createInterface({ input: entree, output: ecran, terminal: true });
+    try {
+      return await terminal.question(question);
+    } finally {
+      terminal.close();
+    }
+  }
+
   return {
     async demander(question, masquer = false) {
-      process.stdout.write(question);
-      masque = masquer;
-      try {
-        return await terminal.question('');
-      } finally {
-        masque = false;
-      }
+      if (!masquer) return poser(question, sortie);
+      sortie.write(question);
+      const muet = new Writable({
+        write(morceau, _encodage, suite) {
+          if (String(morceau).includes('\n')) sortie.write('\n');
+          suite();
+        },
+      });
+      return poser('', muet);
     },
-    afficher: (message) => console.log(message),
-    fermer: () => terminal.close(),
+    afficher: (message) => {
+      sortie.write(`${message}\n`);
+    },
+    // Chaque interface est fermée après sa question : il ne reste rien à fermer.
+    fermer: () => {},
   };
 }
 
+/**
+ * Les mots de passe ne peuvent être masqués que dans un vrai terminal. Ailleurs (Git Bash / mintty, entrée redirigée),
+ * c'est le terminal qui affiche ce qui est tapé : la commande refuse alors de démarrer.
+ */
+export function verifierTerminal(estUnTerminal: boolean | undefined): string | null {
+  if (estUnTerminal) return null;
+  return [
+    "Cette commande doit être lancée dans un vrai terminal, pour que le mot de passe ne s'affiche pas.",
+    'Sous Windows : ouvrez PowerShell (ou le Terminal Windows) dans le dossier du projet, puis relancez :',
+    '  npm run creer-admin -- --env preview      (ou --env production)',
+    "Git Bash ne convient pas : il afficherait le mot de passe à l'écran.",
+  ].join('\n');
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const refus = verifierTerminal(process.stdin.isTTY && process.stdout.isTTY);
+  if (refus) {
+    console.error(refus);
+    process.exit(1);
+  }
   const questionneur = questionneurTerminal();
   executer(process.argv.slice(2), questionneur)
     .then((code) => {

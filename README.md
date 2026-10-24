@@ -79,6 +79,9 @@ GitHub Actions :
 
 ### Installation : créer le premier administrateur (une fois par environnement)
 
+À faire dans **PowerShell** (ou le Terminal Windows), pas dans Git Bash : sous Git Bash, les mots de passe et
+secrets saisis s'afficheraient à l'écran, et `npm run creer-admin` refuse d'y démarrer.
+
 1. Créer les deux secrets du serveur, depuis `serveur/` (pour la production : les mêmes commandes sans `--env preview`) :
    ```
    npx wrangler secret put POIVRE --env preview

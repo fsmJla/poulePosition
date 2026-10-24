@@ -109,3 +109,4 @@ Sans réseau, la commande échoue avec « Serveur injoignable : vérifiez la con
 | 2026-10-25 | Créée (spécification E1) |
 | 2026-10-25 | En cours (plan validé : tsx, CLUB_ID = club-principal) |
 | 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 87 tests, couverture 90 %, build, audit, 7 E2E) |
+| 2026-10-25 | Recette : écart corrigé sur la commande. Les questions étaient effacées par readline, et la saisie « masquée » ne l'était pas sous Node 24. La commande refuse désormais de démarrer hors d'un vrai terminal (Git Bash affiche ce qui est tapé). |

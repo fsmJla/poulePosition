@@ -1,8 +1,17 @@
 // Commande d'installation (US-002) : saisies, envoi au serveur, et parcours complet contre le Worker dans workerd.
+import { PassThrough, Writable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { unstable_startWorker } from 'wrangler';
-import { analyserArguments, executer, saisirAdministrateur, type Questionneur, URLS_SERVEUR } from './creer-admin';
+import {
+  analyserArguments,
+  executer,
+  questionneurTerminal,
+  saisirAdministrateur,
+  verifierTerminal,
+  type Questionneur,
+  URLS_SERVEUR,
+} from './creer-admin';
 
 /** Questionneur simulé : répond dans l'ordre et garde ce qui a été affiché. */
 function simuler(reponses: string[]): Questionneur & { affiches: string[]; questions: string[] } {
@@ -120,5 +129,75 @@ describe('parcours complet contre le serveur', () => {
     const seconde = simuler(['autre@club.fr', 'Autre', 'mot-de-passe-solide', 'mot-de-passe-solide', 'secret-de-test']);
     expect(await executer(['--url', url], seconde)).toBe(1);
     expect(seconde.affiches.at(-1)).toBe('Un administrateur existe déjà : utilisez la gestion des comptes');
+  });
+});
+
+/**
+ * Reconstitue les lignes réellement visibles à l'écran à partir de ce qu'écrit readline : `ESC[1G` ramène le
+ * curseur en début de ligne, `ESC[0J` efface la suite (c'est ainsi que la question disparaissait).
+ */
+function lignesVisibles(texte: string): string[] {
+  const lignes: string[] = [];
+  let ligne = '';
+  let colonne = 0;
+  // Les codes de terminal commencent par le caractère de contrôle ESC : c'est précisément ce qu'on analyse.
+  // eslint-disable-next-line no-control-regex
+  for (const morceau of texte.split(/(\u001b\[[0-9;]*[A-Za-z]|\r?\n)/)) {
+    if (morceau === '\u001b[1G') colonne = 0;
+    else if (morceau === '\u001b[0J' || morceau === '\u001b[0K') ligne = ligne.slice(0, colonne);
+    else if (/^\r?\n$/.test(morceau)) {
+      lignes.push(ligne);
+      ligne = '';
+      colonne = 0;
+    } else if (!morceau.startsWith('\u001b')) {
+      ligne = ligne.slice(0, colonne) + morceau + ligne.slice(colonne + morceau.length);
+      colonne += morceau.length;
+    }
+  }
+  return ligne ? [...lignes, ligne] : lignes;
+}
+
+describe('questionneurTerminal', () => {
+  /** Terminal simulé : on tape dans `entree`, on lit ce qui s'affiche dans `affiche()`. */
+  function terminal() {
+    const entree = new PassThrough();
+    let texte = '';
+    const sortie = new Writable({
+      write(morceau, _encodage, suite) {
+        texte += String(morceau);
+        suite();
+      },
+    });
+    return { entree, sortie, affiche: () => texte };
+  }
+
+  it('US-002 recette : la question reste affichée, et la réponse est lue', async () => {
+    const { entree, sortie, affiche } = terminal();
+    const questionneur = questionneurTerminal(entree, sortie);
+    const reponse = questionneur.demander('E-mail : ');
+    entree.write('admin@club.fr\n');
+    expect(await reponse).toBe('admin@club.fr');
+    expect(lignesVisibles(affiche())).toContain('E-mail : admin@club.fr');
+    questionneur.fermer();
+  });
+
+  it('US-002 recette : une saisie masquée affiche la question mais jamais ce qui est tapé', async () => {
+    const { entree, sortie, affiche } = terminal();
+    const questionneur = questionneurTerminal(entree, sortie);
+    const reponse = questionneur.demander('Mot de passe : ', true);
+    entree.write('mot-de-passe-secret\n');
+    expect(await reponse).toBe('mot-de-passe-secret');
+    expect(lignesVisibles(affiche())).toContain('Mot de passe : ');
+    expect(affiche()).not.toContain('mot-de-passe-secret');
+    questionneur.fermer();
+  });
+});
+
+describe('verifierTerminal', () => {
+  it('US-002 recette : refuse de démarrer hors d’un vrai terminal (saisies impossibles à masquer), avec la marche à suivre', () => {
+    expect(verifierTerminal(true)).toBeNull();
+    const message = verifierTerminal(false);
+    expect(message).toMatch(/vrai terminal/);
+    expect(message).toMatch(/PowerShell/);
   });
 });
