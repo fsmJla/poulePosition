@@ -26,6 +26,7 @@ Application d'organisation et de suivi de compétitions d'escrime (poules, table
 
 `npm run dev` (app : 5280, serveur : 8790) · `npm run lint` · `npm run typage` · `npm test` ·
 `npm run test:couverture` · `npm run test:e2e` (ports 4280 / 8791) · `npm run audit`.
+`npm run test:charge` (k6, preview) : **lancé uniquement par l'utilisateur**, jamais par Claude ni par la CI.
 Les ports sont dédiés à poulePosition : d'autres projets locaux (Wireless Fencing : 8787, 5173…) tournent en
 parallèle. **Ne jamais arrêter un processus sans avoir vérifié qu'il appartient à poulePosition.**
 

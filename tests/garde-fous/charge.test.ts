@@ -16,7 +16,7 @@ describe('tests de charge', () => {
     expect(workflows.length).toBeGreaterThan(0);
     for (const workflow of workflows) {
       const contenu = readFileSync(`${dossier}/${workflow}`, 'utf8');
-      expect(contenu, workflow).not.toMatch(/\bk6\b|tests\/charge/);
+      expect(contenu, workflow).not.toMatch(/\bk6\b|tests\/charge|test:charge/);
     }
   });
 });

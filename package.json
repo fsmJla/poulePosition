@@ -21,7 +21,8 @@
     "test": "vitest run",
     "test:couverture": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "audit": "npm audit --audit-level=high"
+    "audit": "npm audit --audit-level=high",
+    "test:charge": "node tests/charge/lancer.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

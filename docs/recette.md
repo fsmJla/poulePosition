@@ -29,13 +29,9 @@ réussies, et une connexion établie en moins de 2 s au p95.
 ### Procédure
 
 1. Installer k6 : `winget install k6 --source winget`.
-2. Lancer, depuis la racine du dépôt :
-   ```
-   k6 run -e URL_SERVEUR=wss://poule-position-serveur-preview.spuc-escrime.workers.dev \
-          -e ORIGINE=https://poule-position-git-dev-fsmjlas-projects.vercel.app \
-          -e CLIENTS=150 -e DUREE=2m tests/charge/connexions.js
-   ```
-   Le script refuse de viser le Worker de production.
+2. Lancer, depuis la racine du dépôt : `npm run test:charge`. Le Worker de preview et l'origine de la preview
+   Vercel de `dev` sont les valeurs par défaut. Options :
+   `npm run test:charge -- -e CLIENTS=50 -e DUREE=1m`. Le script refuse de viser le Worker de production.
 3. Lire `checks`, `ws_connecting` (p95) et `ws_sessions`, puis comparer avec `docs/architecture.md` §5.
 4. Le lendemain, vérifier la consommation (`/quotas`).
 
