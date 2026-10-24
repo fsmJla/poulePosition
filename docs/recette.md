@@ -39,4 +39,4 @@ réussies, et une connexion établie en moins de 2 s au p95.
 
 | Date | Scénario | Résultat | Conclusions |
 |---|---|---|---|
-| — | — | — | Première session à faire avec l'utilisateur (US-001, CA-9) |
+| 2026-10-24 | `pic` : 150 clients sur une même compétition, palier de 2 min, ping toutes les 30 s, reconnexion toutes les 60 s (preview) | ✅ checks 100 % (796 / 796) ; `ws_connecting` p95 = 1,09 s (médiane 107 ms, max 3,6 s) ; 448 sessions, 896 messages reçus, 632 envoyés | Le serveur tient 150 connexions simultanées. Coût ≈ 480 requêtes (≈ 0,5 % du quota journalier), conforme à l'estimation. Les connexions lentes (> 1 s) viennent de la montée en charge (5 connexions TLS par seconde depuis un seul PC). À refaire quand la saisie et la diffusion existeront (délai saisie → écran < 2 s). |
