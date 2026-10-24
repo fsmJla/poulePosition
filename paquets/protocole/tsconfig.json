@@ -1,6 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
-  // TextEncoder : disponible dans le navigateur et dans workerd.
-  "compilerOptions": { "lib": ["ES2023", "DOM"] },
+  // TextEncoder, crypto, btoa : disponibles dans le navigateur, dans workerd et sous Node. Types Node : tests seulement.
+  "compilerOptions": { "lib": ["ES2023", "DOM"], "types": ["node"] },
   "include": ["src"]
 }
