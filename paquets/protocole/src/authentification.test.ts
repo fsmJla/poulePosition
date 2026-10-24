@@ -5,6 +5,7 @@ import {
   decoderBase64Url,
   deriverCle,
   encoderBase64Url,
+  messageErreurInstallation,
   nouveauSel,
   preparerDemandeInstallation,
   ITERATIONS_PBKDF2,
@@ -77,5 +78,15 @@ describe('demande d’installation', () => {
     ],
   ])('analyserDemandeInstallation refuse : %s', (_cas, brut) => {
     expect(analyserDemandeInstallation(brut)).toEqual({ ok: false });
+  });
+});
+
+describe('erreurs d’installation', () => {
+  it('donne le message lisible d’un code, ou un message générique', () => {
+    expect(messageErreurInstallation('ADMINISTRATEUR_EXISTANT')).toBe(
+      'Un administrateur existe déjà : utilisez la gestion des comptes',
+    );
+    expect(messageErreurInstallation('INCONNU')).toBe('Erreur inattendue du serveur');
+    expect(messageErreurInstallation(undefined)).toBe('Erreur inattendue du serveur');
   });
 });

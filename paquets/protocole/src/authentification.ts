@@ -91,3 +91,24 @@ export function analyserDemandeInstallation(brut: unknown): { ok: true; demande:
     demande: { email: normaliserEmail(email), nom: nom.trim(), sel: sel as string, cle: cle as string },
   };
 }
+
+/** Erreurs de `POST /installation/administrateur` : code renvoyé par le serveur et message lisible. */
+export const ERREURS_INSTALLATION = Object.freeze({
+  INSTALLATION_NON_CONFIGUREE: 'Installation non configurée : secrets du serveur manquants (voir le README)',
+  TROP_D_ESSAIS: "Trop d'essais : réessayez dans une minute",
+  SECRET_INVALIDE: "Secret d'installation invalide",
+  DEMANDE_INVALIDE: 'Demande invalide',
+  ADMINISTRATEUR_EXISTANT: 'Un administrateur existe déjà : utilisez la gestion des comptes',
+});
+
+export type CodeErreurInstallation = keyof typeof ERREURS_INSTALLATION;
+
+/** Réponse de `POST /installation/administrateur`. */
+export type ReponseInstallation = { ok: true; email: string } | { ok: false; erreur: CodeErreurInstallation };
+
+/** Message lisible d'une erreur d'installation ; un code inconnu donne un message générique. */
+export function messageErreurInstallation(code: unknown): string {
+  return typeof code === 'string' && Object.hasOwn(ERREURS_INSTALLATION, code)
+    ? ERREURS_INSTALLATION[code as CodeErreurInstallation]
+    : 'Erreur inattendue du serveur';
+}
