@@ -4,9 +4,9 @@
 - **Fonctionnalité :** exigences §11, étape 3
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** —
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-001-walking-skeleton` · [PR #1](https://github.com/fsmJla/poulePosition/pull/1)
 
 ## Récit
 
@@ -89,6 +89,33 @@ et indique « serveur injoignable ». Un test E2E le vérifie avec `context.setO
 - Le compte Cloudflare (gratuit) et le projet Vercel (Hobby) sont créés par l'utilisateur, guidé pas à pas
   par Claude. Les jetons et secrets sont saisis par l'utilisateur.
 
+### Prises pendant l'implémentation (à valider)
+
+- **Versions** : TypeScript **6.0**, et non la 7, car `typescript-eslint` et `svelte-check` ne la supportent pas encore. Vitest 5, Vite 8, Svelte 5.57, Wrangler 4.152.
+- **Tests du Worker** : ils démarrent le Worker dans workerd avec `unstable_startWorker` de Wrangler. `@cloudflare/vitest-pool-workers` n'est pas utilisé, car il exige Vitest 4.
+- **Faille `undici`** : version forcée en ^7.30.1 (`overrides` dans `package.json`). La version embarquée par miniflare a une faille de gravité élevée qui ferait échouer l'audit. À retirer quand Wrangler embarquera une version corrigée.
+- **Ports locaux dédiés** : 5280 et 8790 en développement, 4280 et 8791 pour les E2E. Wireless Fencing occupe 8787 et 5173 et suivants.
+- **Protection Vercel** : passée de « tout sauf les domaines personnalisés » à **« previews uniquement »**, comme le prévoit l'ADR-0008. Sinon, `poule-position.vercel.app` aurait été protégée et donc inaccessible aux spectateurs.
+- **Catalogue de textes** : un simple module `app/src/lib/textes.ts` en attendant une bibliothèque de traduction (Paraglide, ADR-0002), à choisir quand un deuxième écran l'imposera.
+- **Icône PWA** : une seule icône SVG (`sizes: any`). Des PNG 192 / 512 seront à ajouter si l'installation l'exige sur certains appareils.
+- **CA-1** : testé en E2E local uniquement (sans objet contre une preview) ; le test lance réellement `npm run dev`.
+
+## Correspondance entre critères et tests
+
+| CA | Test(s) |
+|---|---|
+| CA-1 | `tests/e2e/lancement.spec.ts` › « US-001 CA-1 : npm run dev démarre l'app et le serveur local » |
+| CA-2 | `paquets/domaine/src/indice.test.ts` › « US-001 CA-2 : renvoie touches données moins touches reçues » ; `tests/e2e/page.spec.ts` › « US-001 CA-2 : la page minimale affiche « poulePosition » » |
+| CA-3 | `.github/workflows/ci.yml` : vérifié sur la PR |
+| CA-4 | Projet Vercel `poule-position` relié au dépôt, previews protégées : vérifié sur la PR |
+| CA-5 | `.github/workflows/e2e-preview.yml` : vérifié sur la PR |
+| CA-6 | Test cassé volontairement sur la PR, avec l'utilisateur, à la recette |
+| CA-7 | `.github/workflows/deploiement-serveur.yml` (main → production) et production Vercel : vérifié au premier merge `dev` → `main` |
+| CA-8 | `serveur/src/logique.test.ts` (2 tests « US-001 CA-8 ») ; `serveur/src/serveur.test.ts` › « US-001 CA-8 : une origine non autorisée est refusée (403) » et « … la connexion reçoit bienvenue » ; `app/src/lib/connexion.test.ts` › « US-001 CA-8 : passe de « connexion » à « connecté » » ; `tests/e2e/page.spec.ts` › « US-001 CA-8 : la page affiche « Serveur connecté » » |
+| CA-9 | `tests/garde-fous/charge.test.ts` (2 tests « US-001 CA-9 ») ; première exécution manuelle à faire avec l'utilisateur |
+| CA-10 | `README.md` : relecture à la recette |
+| Hors ligne | `tests/e2e/hors-ligne.spec.ts` ; `app/src/lib/connexion.test.ts` › « US-001 hors ligne : … reconnexion avec délai croissant » et « US-001 : sans adresse, l'état est « non configuré » » |
+
 ## Questions bloquantes
 
 - Aucune.
@@ -103,3 +130,7 @@ ADR-0012 (monorepo, CI). Créer `docs/protocole.md` (première version : connexi
 | Date | Événement |
 |---|---|
 | 2026-10-24 | Créée (étape 2) |
+| 2026-10-24 | En cours (plan validé) |
+| 2026-10-24 | En revue : contrôles locaux verts (lint, typage, 45 tests unitaires, couverture 98 %, build, audit, 7 E2E) |
+| 2026-10-24 | Recette OK sur https://poule-position-e0twve5si-fsmjlas-projects.vercel.app : CA-1 à CA-6, CA-8, hors ligne, CA-10 (README validé par l'utilisateur). CA-6 vérifié par un test cassé puis annulé. |
+| 2026-10-24 | Mergée dans `dev` (PR #1). Restent : CA-9 (première session k6 avec l'utilisateur) et CA-7 (premier merge `dev` → `main`). L'US passera `Terminée` ensuite. |

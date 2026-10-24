@@ -7,5 +7,3 @@ Svelte 5 + Vite + TypeScript (ADR-0002). Un seul build pour quatre usages, selon
 - **spectateur** : suivi public en lecture seule.
 
 Persistance locale : IndexedDB (Dexie, ADR-0003). Aucune règle métier ici : elles sont dans `paquets/domaine`.
-
-*Contenu créé par US-001 (walking skeleton).*

@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.base.json",
+  // TextEncoder : disponible dans le navigateur et dans workerd.
+  "compilerOptions": { "lib": ["ES2023", "DOM"] },
+  "include": ["src"]
+}

@@ -1,0 +1,39 @@
+# Contrôles bloquants d'une pull request (ADR-0012, US-001 CA-3). Une CI rouge = ne pas merger (CLAUDE.md).
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verifications:
+    name: Lint, typage, tests, build, audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typage
+        run: npm run typage
+      - name: Tests unitaires et couverture
+        run: npm run test:couverture
+      - name: Build
+        run: npm run build
+      - name: Audit des dépendances
+        run: npm run audit

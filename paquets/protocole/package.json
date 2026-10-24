@@ -1,0 +1,12 @@
+{
+  "name": "@poule-position/protocole",
+  "private": true,
+  "type": "module",
+  "description": "Messages échangés entre l'application et le serveur (docs/protocole.md)",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typage": "tsc -p tsconfig.json"
+  }
+}

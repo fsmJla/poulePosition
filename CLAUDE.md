@@ -22,6 +22,13 @@ Application d'organisation et de suivi de compétitions d'escrime (poules, table
 - `paquets/protocole/` : types et validation des messages, partagés par l'app et le serveur.
 - L'état d'une compétition est un **journal d'événements**. Seul le PC pilote l'écrit. Les smartphones *proposent* des saisies, que le pilote accepte ou refuse.
 
+## Commandes du projet (Node 24)
+
+`npm run dev` (app : 5280, serveur : 8790) · `npm run lint` · `npm run typage` · `npm test` ·
+`npm run test:couverture` · `npm run test:e2e` (ports 4280 / 8791) · `npm run audit`.
+Les ports sont dédiés à poulePosition : d'autres projets locaux (Wireless Fencing : 8787, 5173…) tournent en
+parallèle. **Ne jamais arrêter un processus sans avoir vérifié qu'il appartient à poulePosition.**
+
 ## Règles non négociables
 
 1. **Gratuit uniquement.** Tout nouveau service ou toute nouvelle dépendance payante passe d'abord par une ADR

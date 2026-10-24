@@ -1,0 +1,23 @@
+{
+  "name": "@poule-position/app",
+  "private": true,
+  "type": "module",
+  "description": "Application PWA : pilote, saisie, écran, spectateur (ADR-0002)",
+  "scripts": {
+    "dev": "vite --port 5280 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 4280 --strictPort",
+    "typage": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings"
+  },
+  "dependencies": {
+    "@poule-position/protocole": "*"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "svelte": "^5.57.2",
+    "svelte-check": "^4.7.7",
+    "vite": "^8.3.5",
+    "vite-plugin-pwa": "^2.0.0",
+    "workbox-window": "^7.4.1"
+  }
+}
