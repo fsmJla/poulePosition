@@ -3,7 +3,7 @@ import { calculerIndice } from './indice';
 
 describe('calculerIndice', () => {
   it('US-001 CA-2 : renvoie touches données moins touches reçues', () => {
-    expect(calculerIndice({ touchesDonnees: 18, touchesRecues: 11 })).toBe(8);
+    expect(calculerIndice({ touchesDonnees: 18, touchesRecues: 11 })).toBe(7);
   });
 
   it('est négatif quand le tireur a reçu plus de touches qu’il n’en a données', () => {
