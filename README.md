@@ -1,4 +1,4 @@
-# poulePosition
+/# poulePosition
 
 Application gratuite d'organisation et de suivi de compétitions d'escrime : inscriptions, émargement,
 poules, tableau, impressions, saisie des scores par smartphone (QR code), écran géant et suivi par les
@@ -47,6 +47,7 @@ projets locaux. L'application se connecte au serveur local sans réglage.
 | `npm run test:couverture` | Idem, avec les seuils de couverture bloquants (domaine 90 %, protocole et serveur 80 %, global 70 %) |
 | `npm run test:e2e` | Playwright (PC + smartphone) contre un build local (ports 4280 et 8791). Au premier lancement, faire `npx playwright install chromium` |
 | `npm run audit` | Audit des dépendances (niveau élevé bloquant) |
+| `npm run test:charge` | Test de charge k6 contre la **preview**. À lancer **à la main uniquement**, jamais en CI |
 
 Les **tests de charge** (k6) ne sont jamais lancés automatiquement. La procédure est dans
 [docs/recette.md](docs/recette.md) §2.
