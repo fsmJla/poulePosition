@@ -4,9 +4,9 @@
 - **Fonctionnalité :** exigences §11, étape 3
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** —
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-001-walking-skeleton`
 
 ## Récit
 
@@ -103,3 +103,4 @@ ADR-0012 (monorepo, CI). Créer `docs/protocole.md` (première version : connexi
 | Date | Événement |
 |---|---|
 | 2026-10-24 | Créée (étape 2) |
+| 2026-10-24 | En cours (plan validé) |
