@@ -6,7 +6,7 @@
 - **Type :** technique
 - **Statut :** En revue
 - **Dépend de :** —
-- **Branche / PR :** `us/US-001-walking-skeleton`
+- **Branche / PR :** `us/US-001-walking-skeleton` · [PR #1](https://github.com/fsmJla/poulePosition/pull/1)
 
 ## Récit
 
