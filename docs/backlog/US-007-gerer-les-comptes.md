@@ -76,6 +76,39 @@ connexion internet ».
 ADR-0006 (comptes dans le DO `Club`), ADR-0014 (`clubId`). Routes HTTP `/comptes` réservées au rôle
 administrateur, documentées dans `docs/protocole.md`.
 
+## Réalisation
+
+- **Protocole** (`docs/protocole.md` §9) : `GET /comptes`, `POST /comptes`, `PATCH /comptes/<id>` ; codes
+  `ACCES_REFUSE` (403), `COMPTE_INCONNU` (404), `EMAIL_DEJA_UTILISE` et `DERNIER_ADMINISTRATEUR` (409).
+- **Domaine** : `genererMotDePasseTemporaire` (12 caractères, alphabet sans `0 O o 1 l I`, tirage par rejet sur des
+  octets fournis), `validerNouveauCompte`, `verifierChangementRole` (dernier administrateur actif), appelée par le
+  serveur.
+- **Serveur** : DO `Club` (`listerComptes`, `creerCompte`, `modifierCompte`, `noterConnexion`), colonne
+  `derniere_connexion` ajoutée par migration ; rôle relu en base à chaque appel (`autorisationAdministrateur`).
+- **Application** : page `/comptes` (création avec message sous chaque champ, panneau du mot de passe temporaire avec
+  « Copier », modification en ligne du nom et du rôle) ; tuile « Comptes » sur l'accueil de l'organisateur, pour les
+  administrateurs seulement, grisée hors ligne ; appels ajoutés au client de session (`listerComptes`, `creerCompte`,
+  `modifierCompte`) ; aide E2E commune `tests/e2e/simulation.ts`.
+- **Tests** :
+
+  | CA | Tests |
+  |---|---|
+  | CA-1 | `serveur/src/comptes.test.ts` (liste, dernière connexion), `app/src/lib/session.test.ts`, E2E `comptes.spec.ts` |
+  | CA-2 | `paquets/domaine/src/comptes.test.ts` (mot de passe temporaire), `paquets/protocole/src/comptes.test.ts`, intégration (compte actif, temporaire, connexion avec ce mot de passe), app (seule la clé est envoyée), E2E (affiché une fois, « Copier ») |
+  | CA-3 | Intégration (casse ignorée, 409), app, E2E |
+  | CA-4 | Intégration (nom et rôle visibles à la revalidation de la personne), app, E2E |
+  | CA-5 | Domaine, intégration (y compris pour soi-même), app, E2E |
+  | CA-6 | `serveur/src/logique.test.ts`, intégration (403 sur GET, POST et PATCH), `app/src/lib/routes.test.ts`, E2E (pas d'entrée, redirection) |
+  | Hors ligne | App (rien n'est envoyé), E2E (entrée grisée avec « Nécessite une connexion internet ») |
+  | Cas limite | E2E (bouton inactif et message sous le champ pour un e-mail mal formé) |
+
+### Hypothèses prises pendant l'implémentation
+
+- Validées par l'utilisateur le 2026-10-25 : tuile « Comptes » sur l'accueil de l'organisateur ; « dernière
+  connexion » = dernière connexion **par mot de passe** (pas les revalidations automatiques) ; une session à mot de
+  passe temporaire reçoit `403` sur `/comptes` ; E2E à réponses simulées (pas de comptes créés sur la preview).
+- La liste est triée par nom ; l'e-mail du compte ne se modifie pas.
+
 ## Suivi
 
 | Date | Événement |
