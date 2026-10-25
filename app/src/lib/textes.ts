@@ -1,7 +1,12 @@
 // Catalogue des textes de l'interface (français seul pour l'instant, ADR-0002). Aucun texte en dur dans les composants.
-import { LONGUEUR_MIN_MOT_DE_PASSE, type ErreurNouveauMotDePasse, type Role } from '@poule-position/domaine';
+import {
+  LONGUEUR_MIN_MOT_DE_PASSE,
+  type ErreurNouveauMotDePasse,
+  type ErreurSaisieCompte,
+  type Role,
+} from '@poule-position/domaine';
 import type { EtatConnexion } from './connexion';
-import type { ErreurChangementMotDePasse, ErreurConnexion } from './session';
+import type { ErreurChangementMotDePasse, ErreurComptes, ErreurConnexion } from './session';
 
 export const textes = {
   /** Nom affiché de l'application (US-014) ; le nom technique reste poulePosition. */
@@ -40,6 +45,7 @@ export const textes = {
     bonjour: (nom: string) => `Bonjour, ${nom}`,
     seDeconnecter: 'Se déconnecter',
     changerMotDePasse: 'Changer mon mot de passe',
+    actions: 'Actions',
   },
   motDePasse: {
     titre: 'Changer mon mot de passe',
@@ -68,6 +74,58 @@ export const textes = {
       SERVEUR_NON_CONFIGURE: 'Serveur non configuré : changement impossible',
       ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
     } satisfies Record<ErreurChangementMotDePasse, string>,
+  },
+  comptes: {
+    titre: 'Comptes',
+    entree: 'Comptes',
+    horsLigne: 'Nécessite une connexion internet',
+    chargement: 'Chargement des comptes…',
+    colonnes: {
+      nom: 'Nom',
+      email: 'E-mail',
+      role: 'Rôle',
+      etat: 'État',
+      derniereConnexion: 'Dernière connexion',
+      actions: 'Actions',
+    },
+    actif: 'Actif',
+    desactive: 'Désactivé',
+    temporaire: 'mot de passe temporaire',
+    jamais: 'Jamais',
+    creation: {
+      titre: 'Nouveau compte',
+      email: 'E-mail',
+      nom: 'Nom',
+      role: 'Rôle',
+      valider: 'Créer le compte',
+      enCours: 'Création…',
+    },
+    motDePasseTemporaire: {
+      titre: 'Compte créé',
+      explication: (nom: string) =>
+        `Transmettez ce mot de passe temporaire à ${nom} : il ne sera plus affiché. Il devra le changer à sa première connexion.`,
+      copier: 'Copier',
+      copie: 'Copié',
+      fermer: 'J’ai transmis le mot de passe',
+    },
+    modifier: (nom: string) => `Modifier ${nom}`,
+    enregistrer: 'Enregistrer',
+    annuler: 'Annuler',
+    champs: {
+      EMAIL_INVALIDE: 'E-mail invalide',
+      NOM_VIDE: 'Le nom est obligatoire',
+      NOM_TROP_LONG: 'Le nom fait au plus 100 caractères',
+    } satisfies Partial<Record<ErreurSaisieCompte, string>>,
+    erreurs: {
+      ACCES_REFUSE: 'Réservé aux administrateurs',
+      EMAIL_DEJA_UTILISE: 'Un compte utilise déjà cet e-mail',
+      DERNIER_ADMINISTRATEUR: 'Il doit rester au moins un administrateur actif',
+      COMPTE_INCONNU: 'Ce compte n’existe plus : rechargez la page',
+      SESSION_INVALIDE: 'Session expirée : reconnectez-vous',
+      HORS_LIGNE: 'Nécessite une connexion internet',
+      SERVEUR_NON_CONFIGURE: 'Serveur non configuré',
+      ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
+    } satisfies Record<ErreurComptes, string>,
   },
   roles: {
     administrateur: 'Administrateur',
