@@ -4,9 +4,9 @@
 - **Fonctionnalité :** PWA, qualité d'usage (exigences §6)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-001
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-011-identite-visuelle` · [PR #15](https://github.com/fsmJla/poulePosition/pull/15)
 
 ## Récit
 
@@ -93,8 +93,39 @@ première visite, l'application s'affiche hors ligne avec exactement le même st
 - **Impact sur des US terminées** : US-001 (icône `icone.svg` et page minimale), US-003 (styles de la connexion,
   refaite par US-012), US-010 (styles du changement de mot de passe). Leurs tests E2E doivent rester verts.
 
+## Réalisation
+
+- **Charte** dans `app/src/app.css` : palette 78 (`--palette-*`) et rôles, en clair et en sombre. Le sarcelle de la
+  palette ne donne que 4,1:1 avec du texte blanc : boutons et liens utilisent une nuance plus foncée (`#066F6C`) en
+  clair, et le bleu Tiffany avec un texte foncé en sombre. Fond clair : sable clair `#F7F4EF` du pack.
+- **Polices** : `@fontsource/bricolage-grotesque` (700) et `@fontsource/figtree` (400, 600), environ 45 Ko au total.
+- **Icônes** : fichiers utiles du pack copiés dans `app/public/` (les PNG non référencés ne sont pas repris) ;
+  manifeste généré par `vite-plugin-pwa` ; ancienne icône `icone.svg` supprimée. Précache : 30 fichiers, 282 Ko.
+- **Tests** :
+
+  | CA | Tests |
+  |---|---|
+  | CA-1 | `tests/garde-fous/charte.test.ts` (aucune couleur en dur), `app/src/lib/couleurs.test.ts` (palette 78) |
+  | CA-2 | E2E `charte.spec.ts` (`emulateMedia` clair / sombre), `couleurs.test.ts` |
+  | CA-3 | `app/src/lib/couleurs.test.ts` (14 couples, en clair et en sombre) |
+  | CA-4 | E2E `charte.spec.ts` (polices chargées, aucun domaine étranger) |
+  | CA-5 | E2E `charte.spec.ts` (balises du `<head>`, manifeste, fichiers servis) |
+  | CA-6 | E2E `charte.spec.ts` (nouvelle icône) ; E2E existants d'US-001, US-003 et US-010 inchangés et verts |
+  | Hors ligne | E2E `charte.spec.ts` (polices, favicon et icône disponibles après coupure) |
+
+### Hypothèses prises pendant l'implémentation
+
+- Le test de contraste lit `app.css` (import `?raw`), source unique : pas de seconde définition des couleurs.
+- Le composant React `PoulePositionLoader.tsx` et `site.webmanifest` du pack ne sont pas repris (remplacés par
+  l'icône animée en SVG, pour US-012, et par le manifeste généré).
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification identité visuelle) |
+| 2026-10-25 | En cours : plan validé (charte dans `app.css`, polices `@fontsource`, icônes utiles du pack, test de contraste) |
+| 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 227 tests unitaires, couverture 96 %, build, audit, 45 E2E) |
+| 2026-10-25 | Revue : le test des domaines (CA-4) voyait `vercel.live`, barre d'outils injectée par Vercel sur les previews seulement ; il la tolère désormais contre une preview. Un run E2E bloqué à l'installation de Chromium (aléa GitHub) a été relancé. |
+| 2026-10-25 | Recette OK sur https://poule-position-dkm25suqy-fsmjlas-projects.vercel.app (déployée en preview et vérifiée) : palette 78 dans les variables (CA-1), mode sombre de l'appareil suivi (CA-2 ; le mode clair est vérifié par les E2E), Figtree 400 / 600 et Bricolage Grotesque 700 chargées depuis l'application, aucun domaine tiers hors barre Vercel de preview (CA-4), favicons, `apple-touch-icon`, manifeste (thème `#2F4B4A`, fond `#F7F4EF`, icônes maskable) servis (CA-5), nouvelle icône sur l'accueil et connexion restylée (CA-6). Contrastes (CA-3) et hors-ligne : tests unitaires et E2E de la CI sur cette preview. |
+| 2026-10-25 | **Terminée**, mergée dans `dev` (PR #15). |

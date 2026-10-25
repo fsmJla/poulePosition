@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="poulePosition">
+  <title>poulePosition</title>
+  <rect width="120" height="120" rx="27" fill="#2F4B4A"/>
+  <g>
+  <rect x="19" y="19" width="14" height="14" rx="3" fill="#0ABAB5"/>
+  <rect x="36" y="19" width="14" height="14" rx="3" fill="#3F6362"/>
+  <rect x="53" y="19" width="14" height="14" rx="3" fill="#D9B99B"/>
+  <rect x="70" y="19" width="14" height="14" rx="3" fill="#3F6362"/>
+  <rect x="87" y="19" width="14" height="14" rx="3" fill="#D9B99B"/>
+  <rect x="19" y="36" width="14" height="14" rx="3" fill="#3F6362"/>
+  <rect x="36" y="36" width="14" height="14" rx="3" fill="#0ABAB5"/>
+  <rect x="53" y="36" width="14" height="14" rx="3" fill="#3F6362"/>
+  <rect x="70" y="36" width="14" height="14" rx="3" fill="#D9B99B"/>
+  <rect x="87" y="36" width="14" height="14" rx="3" fill="#3F6362"/>
+  <rect x="19" y="53" width="14" height="14" rx="3" fill="#D9B99B"/>
+  <rect x="36" y="53" width="14" height="14" rx="3" fill="#3F6362"/>
+  <rect x="53" y="53" width="14" height="14" rx="3" fill="#0ABAB5"/>
+  <rect x="70" y="53" width="14" height="14" rx="3" fill="#3F6362"/>
+  <rect x="87" y="53" width="14" height="14" rx="3" fill="#D9B99B"/>
+  <rect x="19" y="70" width="14" height="14" rx="3" fill="#3F6362"/>
+  <rect x="36" y="70" width="14" height="14" rx="3" fill="#D9B99B"/>
+  <rect x="53" y="70" width="14" height="14" rx="3" fill="#3F6362"/>
+  <rect x="70" y="70" width="14" height="14" rx="3" fill="#0ABAB5"/>
+  <rect x="87" y="70" width="14" height="14" rx="3" fill="#3F6362"/>
+  <rect x="19" y="87" width="14" height="14" rx="3" fill="#3F6362"/>
+  <rect x="36" y="87" width="14" height="14" rx="3" fill="#3F6362"/>
+  <rect x="53" y="87" width="14" height="14" rx="3" fill="#D9B99B"/>
+  <rect x="70" y="87" width="14" height="14" rx="3" fill="#3F6362"/>
+  <rect x="87" y="87" width="14" height="14" rx="3" fill="#0ABAB5"/>
+  </g>
+</svg>

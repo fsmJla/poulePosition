@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="poulePosition">
+  <title>poulePosition</title>
+  <style>
+    .pp-icon{transform-origin:60px 60px;animation:pp-breathe 4.2s ease-in-out infinite}
+    .pp-cell{transform-box:fill-box;transform-origin:center;animation:pp-pop 4.2s cubic-bezier(.34,1.56,.64,1) infinite both}
+    @keyframes pp-pop{0%{transform:scale(0);opacity:0}9%{transform:scale(1.18);opacity:1}13%{transform:scale(1);opacity:1}84%{transform:scale(1);opacity:1}94%,100%{transform:scale(.4);opacity:0}}
+    @keyframes pp-breathe{0%,40%{transform:scale(1)}48%{transform:scale(1.04)}56%,100%{transform:scale(1)}}
+    @media (prefers-reduced-motion:reduce){.pp-icon,.pp-cell{animation:none}}
+  </style>
+  <g class="pp-icon">
+    <rect width="120" height="120" rx="27" fill="#2F4B4A"/>
+    <rect x="19" y="19" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="36" y="19" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="53" y="19" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="70" y="19" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="87" y="19" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="19" y="36" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="36" y="36" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="53" y="36" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="70" y="36" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="87" y="36" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="19" y="53" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="36" y="53" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="53" y="53" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="70" y="53" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="87" y="53" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="19" y="70" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="36" y="70" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="53" y="70" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="70" y="70" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="87" y="70" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="19" y="87" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="36" y="87" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="53" y="87" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="70" y="87" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect x="87" y="87" width="14" height="14" rx="3" fill="#3F6362"/>
+    <rect class="pp-cell" style="animation-delay:0.00s" x="19" y="19" width="14" height="14" rx="3" fill="#0ABAB5"/>
+    <rect class="pp-cell" style="animation-delay:0.10s" x="36" y="36" width="14" height="14" rx="3" fill="#0ABAB5"/>
+    <rect class="pp-cell" style="animation-delay:0.20s" x="53" y="53" width="14" height="14" rx="3" fill="#0ABAB5"/>
+    <rect class="pp-cell" style="animation-delay:0.30s" x="70" y="70" width="14" height="14" rx="3" fill="#0ABAB5"/>
+    <rect class="pp-cell" style="animation-delay:0.40s" x="87" y="87" width="14" height="14" rx="3" fill="#0ABAB5"/>
+    <rect class="pp-cell" style="animation-delay:0.75s" x="53" y="19" width="14" height="14" rx="3" fill="#D9B99B"/>
+    <rect class="pp-cell" style="animation-delay:0.85s" x="87" y="19" width="14" height="14" rx="3" fill="#D9B99B"/>
+    <rect class="pp-cell" style="animation-delay:0.95s" x="70" y="36" width="14" height="14" rx="3" fill="#D9B99B"/>
+    <rect class="pp-cell" style="animation-delay:1.05s" x="19" y="53" width="14" height="14" rx="3" fill="#D9B99B"/>
+    <rect class="pp-cell" style="animation-delay:1.15s" x="87" y="53" width="14" height="14" rx="3" fill="#D9B99B"/>
+    <rect class="pp-cell" style="animation-delay:1.25s" x="36" y="70" width="14" height="14" rx="3" fill="#D9B99B"/>
+    <rect class="pp-cell" style="animation-delay:1.35s" x="53" y="87" width="14" height="14" rx="3" fill="#D9B99B"/>
+  </g>
+</svg>
