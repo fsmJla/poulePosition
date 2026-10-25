@@ -66,6 +66,39 @@ Le changement exige le réseau : hors ligne, l'écran indique « Nécessite une 
 
 ADR-0006.
 
+## Réalisation
+
+- **Protocole** : `POST /compte/mot-de-passe` (`docs/protocole.md` §8). Le jeton de session porte la **version du
+  mot de passe** (`v`) ; une session d'une version dépassée reçoit `401 COMPTE_MODIFIE`. Colonne `version_mdp`
+  ajoutée à la table `comptes` du DO `Club` (migration au démarrage de l'objet, 0 pour les comptes existants).
+- **Tests** :
+
+  | CA | Tests |
+  |---|---|
+  | CA-1 | `serveur/src/mot-de-passe.test.ts` (ancien refusé, nouveau accepté), `app/src/lib/session.test.ts` (vérificateur local mis à jour), E2E `mot-de-passe.spec.ts` |
+  | CA-2 | `paquets/domaine/src/comptes.test.ts`, `textes.test.ts`, E2E `mot-de-passe.spec.ts` (message sous chaque champ, rien n'est envoyé) |
+  | CA-3 | `serveur/src/mot-de-passe.test.ts` (403, session conservée), `app/src/lib/session.test.ts`, E2E `mot-de-passe.spec.ts` |
+  | CA-4 | `app/src/lib/routes.test.ts` (passage obligatoire), `app/src/lib/session.test.ts` (clé de connexion réutilisée), E2E `mot-de-passe.spec.ts` (réponses simulées) |
+  | CA-5 | `serveur/src/logique.test.ts`, `serveur/src/mot-de-passe.test.ts` (`COMPTE_MODIFIE`), `app/src/lib/session.test.ts` et `stockage.test.ts` (session et vérificateur local effacés) |
+  | Hors ligne | `app/src/lib/session.test.ts` (rien n'est envoyé, réseau perdu sans effet local), E2E `mot-de-passe.spec.ts` |
+
+- **E2E à réponses simulées** (décision du 2026-10-25) : un vrai changement modifierait le compte de test partagé de
+  la preview. Un E2E de bout en bout réel viendra avec US-007 (compte jetable).
+- **Reporté** : le comptage de l'échec de CA-3 par la limitation des essais (noté dans US-004) ; la vérification
+  réelle de CA-4 avec un compte temporaire (recette d'US-009) ; l'indicateur de robustesse (facultatif).
+
+### Hypothèses prises pendant l'implémentation
+
+- Le mot de passe actuel est vérifié côté serveur avec le **sel relu au serveur**, qui a pu changer depuis un autre
+  appareil ; le nouveau mot de passe reçoit toujours un nouveau sel.
+- Pour CA-4, la clé du mot de passe saisi à la connexion est gardée **en mémoire seulement** (jamais stockée) ; si la
+  page a été rechargée, le mot de passe actuel est redemandé.
+- La règle « différent de l'actuel » n'est vérifiée que par l'application (le serveur ne voit jamais les mots de
+  passe en clair, et le nouveau sel rend les clés incomparables).
+- Seul `COMPTE_MODIFIE` efface le vérificateur local ; une session expirée ou invalide garde l'appareil connu
+  (reconnexion hors ligne, US-005).
+- Un compte au mot de passe temporaire est renvoyé vers le changement depuis toute page de l'application.
+
 ## Suivi
 
 | Date | Événement |
