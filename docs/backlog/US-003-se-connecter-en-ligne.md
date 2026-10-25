@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-002
-- **Branche / PR :** `us/US-003-se-connecter-en-ligne`
+- **Branche / PR :** `us/US-003-se-connecter-en-ligne` · [PR #12](https://github.com/fsmJla/poulePosition/pull/12)
 
 ## Récit
 
