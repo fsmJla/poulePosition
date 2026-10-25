@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-003
 - **Branche / PR :** `us/US-010-changer-son-mot-de-passe` · [PR #13](https://github.com/fsmJla/poulePosition/pull/13)
 
@@ -106,3 +106,5 @@ ADR-0006.
 | 2026-10-25 | Créée (spécification E1) |
 | 2026-10-25 | En cours : plan validé (version du mot de passe dans la session, `COMPTE_MODIFIE`, E2E à réponses simulées, comptage des échecs de CA-3 par US-004, pas d'indicateur de robustesse) |
 | 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 218 tests unitaires, couverture 96 %, build, audit, 35 E2E). Rétablit aussi le §7 de `docs/protocole.md`, jamais écrit pendant US-003. |
+| 2026-10-25 | Recette OK sur https://poule-position-df70thzhg-fsmjlas-projects.vercel.app (déployée en preview et vérifiée) : lien depuis l'accueil de l'organisateur ; CA-2 (trop court, identique, confirmation : message sous le champ, aucun envoi) ; CA-3 (vrai refus 403, on reste connecté) ; CA-1 (vrai changement par l'utilisateur : « Mot de passe modifié », vérificateur local remplacé, session de cet appareil toujours valide) ; CA-5 (ancienne session rejouée : 401, session et vérificateur local effacés, retour à la connexion) ; migration de la colonne `version_mdp` validée sur le DO `Club` existant de la preview. Hors ligne : E2E de la CI sur cette preview. CA-4 : à vérifier en recette d'US-009 (aucun compte temporaire avant). Mot de passe du compte de test remis en ordre par l'utilisateur. |
+| 2026-10-25 | **Terminée**, mergée dans `dev` (PR #13). |
