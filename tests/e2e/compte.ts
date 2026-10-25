@@ -6,6 +6,9 @@ import { expect, type Page } from '@playwright/test';
 export const SECRET_INSTALLATION_LOCAL = 'installation-e2e';
 export const URL_SERVEUR_LOCAL = 'http://localhost:8791';
 
+/** Cookies du navigateur contre la preview (cookie de contournement de la protection Vercel), non versionnés. */
+export const ETAT_PREVIEW = 'playwright/.auth/preview.json';
+
 const COMPTE_LOCAL = { email: 'e2e@poule-position.test', nom: 'Compte E2E', motDePasse: 'mot-de-passe-e2e-local' };
 
 export interface CompteTest {
