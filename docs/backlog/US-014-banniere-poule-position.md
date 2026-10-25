@@ -4,7 +4,7 @@
 - **Fonctionnalité :** PWA, qualité d'usage (exigences §6)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-011
 - **Branche / PR :** `us/US-014-banniere-poule-position`
 
@@ -104,3 +104,4 @@ et l'entête s'affichent à l'identique hors ligne. Elles sont vectorisées : au
 |---|---|
 | 2026-10-25 | Créée (pack d'icônes v2 : bannière, filet, entête) |
 | 2026-10-25 | En cours : plan validé (composants Banniere et Entete, `--sur-marque`, nom « Poule Position », SVG `brand/` seulement) |
+| 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 231 tests unitaires, couverture 96 %, build, audit, 54 E2E ; test de démarrage non relancé, ports occupés par le `npm run dev` de l'utilisateur) |
