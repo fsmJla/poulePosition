@@ -25,11 +25,14 @@ function stockageMemoire(session: Session | null = null) {
       etat.appareils.set(appareil.email, appareil);
     },
     lireAppareilConnu: async (email) => etat.appareils.get(email) ?? null,
+    oublierAppareilConnu: async (email) => {
+      etat.appareils.delete(email);
+    },
   };
   return { stockage, etat };
 }
 
-type Route = 'POST /session/sel' | 'POST /session' | 'GET /session';
+type Route = 'POST /session/sel' | 'POST /session' | 'GET /session' | 'POST /compte/mot-de-passe';
 type Reponse = { statut: number; corps: unknown } | 'reseau' | 'jamais';
 
 /** Faux serveur : une réponse par route, et la liste des requêtes reçues. */
@@ -228,5 +231,130 @@ describe('seDeconnecter', () => {
     await client({ stockage }).seDeconnecter();
     expect(etat.session).toBeNull();
     expect(etat.appareils.get(compte.email)).toEqual(appareil);
+  });
+});
+
+describe('US-010 CA-5 : mot de passe changé sur un autre appareil', () => {
+  it('COMPTE_MODIFIE au retour en ligne efface la session et le vérificateur local', async () => {
+    const { stockage, etat } = stockageMemoire(sessionStockee);
+    await stockage.enregistrerAppareilConnu({ ...compte, sel: SEL, verificateurLocal: 'v', connuDepuis: 1 });
+    const serveur = fauxServeur({ 'GET /session': { statut: 401, corps: { ok: false, erreur: 'COMPTE_MODIFIE' } } });
+    expect(await client({ stockage, envoyer: serveur.envoyer }).restaurer()).toBeNull();
+    expect(etat.session).toBeNull();
+    expect(etat.appareils.has(compte.email)).toBe(false);
+  });
+
+  it('une session simplement invalide (expirée côté serveur) garde l’appareil connu', async () => {
+    const { stockage, etat } = stockageMemoire(sessionStockee);
+    await stockage.enregistrerAppareilConnu({ ...compte, sel: SEL, verificateurLocal: 'v', connuDepuis: 1 });
+    const serveur = fauxServeur({ 'GET /session': { statut: 401, corps: { ok: false, erreur: 'SESSION_INVALIDE' } } });
+    expect(await client({ stockage, envoyer: serveur.envoyer }).restaurer()).toBeNull();
+    expect(etat.appareils.has(compte.email)).toBe(true);
+  });
+});
+
+describe('changerMotDePasse (US-010)', () => {
+  const NOUVEAU = 'nouveau-mot-de-passe';
+  const sessionApres = { ...sessionServeur, jeton: 'apres.changement.signe' };
+
+  /** Client connecté (session gardée, appareil connu) et faux serveur. */
+  async function connecte(reponses: Parameters<typeof fauxServeur>[0], options: Partial<OptionsClientSession> = {}) {
+    const { stockage, etat } = stockageMemoire(sessionStockee);
+    await stockage.enregistrerAppareilConnu({ ...compte, sel: SEL, verificateurLocal: 'ancien', connuDepuis: 1 });
+    const serveur = fauxServeur({ 'POST /session/sel': { statut: 200, corps: { ok: true, sel: SEL } }, ...reponses });
+    return { etat, serveur, client: client({ stockage, envoyer: serveur.envoyer, ...options }) };
+  }
+
+  it('US-010 CA-1 : envoie les clés (jamais les mots de passe), puis met à jour session et vérificateur local', async () => {
+    const {
+      etat,
+      serveur,
+      client: c,
+    } = await connecte({
+      'POST /compte/mot-de-passe': { statut: 200, corps: sessionApres },
+    });
+    expect(await c.changerMotDePasse('mot-de-passe-actuel', NOUVEAU)).toEqual({
+      ok: true,
+      session: { jeton: sessionApres.jeton, expireLe: sessionApres.expireLe, compte },
+    });
+    const envoi = serveur.requetes.find(({ route }) => route === 'POST /compte/mot-de-passe');
+    const corps = envoi?.corps as { cleActuelle: string; sel: string; cle: string };
+    expect(corps.cleActuelle).toBe(await deriverCle('mot-de-passe-actuel', SEL));
+    expect(corps.cle).toBe(await deriverCle(NOUVEAU, corps.sel));
+    expect(envoi?.entetes.get('Authorization')).toBe(`Bearer ${sessionStockee.jeton}`);
+    expect(JSON.stringify(serveur.requetes)).not.toMatch(/mot-de-passe-actuel|nouveau-mot-de-passe/);
+    expect(etat.session?.jeton).toBe(sessionApres.jeton);
+    expect(etat.appareils.get(compte.email)).toMatchObject({
+      sel: corps.sel,
+      verificateurLocal: await verificateurLocal(corps.cle),
+    });
+  });
+
+  it('US-010 CA-3 : un mot de passe actuel faux est signalé, sans rien changer sur l’appareil', async () => {
+    const { etat, client: c } = await connecte({
+      'POST /compte/mot-de-passe': { statut: 403, corps: { ok: false, erreur: 'MOT_DE_PASSE_INCORRECT' } },
+    });
+    expect(await c.changerMotDePasse('faux', NOUVEAU)).toEqual({ ok: false, erreur: 'MOT_DE_PASSE_INCORRECT' });
+    expect(etat.session).toEqual(sessionStockee);
+    expect(etat.appareils.get(compte.email)?.verificateurLocal).toBe('ancien');
+  });
+
+  it('US-010 : un réseau perdu pendant l’envoi ne touche pas au vérificateur local', async () => {
+    const { etat, client: c } = await connecte({ 'POST /compte/mot-de-passe': 'reseau' });
+    expect(await c.changerMotDePasse('mot-de-passe-actuel', NOUVEAU)).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect(etat.session).toEqual(sessionStockee);
+    expect(etat.appareils.get(compte.email)?.verificateurLocal).toBe('ancien');
+  });
+
+  it('US-010 hors ligne : le changement exige le réseau, rien n’est envoyé', async () => {
+    const { serveur, client: c } = await connecte({}, { enLigne: () => false });
+    expect(await c.changerMotDePasse('mot-de-passe-actuel', NOUVEAU)).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect(serveur.requetes).toHaveLength(0);
+  });
+
+  it('US-010 CA-5 : une session refusée (COMPTE_MODIFIE) efface la session et l’appareil connu', async () => {
+    const { etat, client: c } = await connecte({
+      'POST /compte/mot-de-passe': { statut: 401, corps: { ok: false, erreur: 'COMPTE_MODIFIE' } },
+    });
+    expect(await c.changerMotDePasse('mot-de-passe-actuel', NOUVEAU)).toEqual({
+      ok: false,
+      erreur: 'SESSION_INVALIDE',
+    });
+    expect(etat.session).toBeNull();
+    expect(etat.appareils.has(compte.email)).toBe(false);
+  });
+
+  it('US-010 CA-4 : après la connexion, la clé saisie sert de mot de passe actuel, sans le redemander', async () => {
+    const { stockage } = stockageMemoire();
+    const serveur = fauxServeur({
+      'POST /session/sel': { statut: 200, corps: { ok: true, sel: SEL } },
+      'POST /session': { statut: 200, corps: { ...sessionServeur, compte: { ...compte, temporaire: true } } },
+      'POST /compte/mot-de-passe': { statut: 200, corps: sessionApres },
+    });
+    const c = client({ stockage, envoyer: serveur.envoyer });
+    expect(c.connaitMotDePasseActuel()).toBe(false);
+    await c.seConnecter(compte.email, 'temporaire-1234');
+    expect(c.connaitMotDePasseActuel()).toBe(true);
+    expect((await c.changerMotDePasse(null, NOUVEAU)).ok).toBe(true);
+    const envoi = serveur.requetes.find(({ route }) => route === 'POST /compte/mot-de-passe');
+    expect((envoi?.corps as { cleActuelle: string }).cleActuelle).toBe(await deriverCle('temporaire-1234', SEL));
+  });
+
+  it('US-010 CA-4 : sans clé en mémoire (page rechargée), le mot de passe actuel est demandé', async () => {
+    const { serveur, client: c } = await connecte({});
+    expect(await c.changerMotDePasse(null, NOUVEAU)).toEqual({ ok: false, erreur: 'MOT_DE_PASSE_ACTUEL_REQUIS' });
+    expect(serveur.requetes).toHaveLength(0);
+  });
+
+  it('la déconnexion oublie la clé gardée en mémoire', async () => {
+    const { stockage } = stockageMemoire();
+    const serveur = fauxServeur({
+      'POST /session/sel': { statut: 200, corps: { ok: true, sel: SEL } },
+      'POST /session': { statut: 200, corps: sessionServeur },
+    });
+    const c = client({ stockage, envoyer: serveur.envoyer });
+    await c.seConnecter(compte.email, 'mot-de-passe-solide');
+    await c.seDeconnecter();
+    expect(c.connaitMotDePasseActuel()).toBe(false);
   });
 });

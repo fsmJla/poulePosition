@@ -22,3 +22,17 @@ describe('resoudreRoute', () => {
     expect(resoudreRoute('/connexion/', false)).toEqual({ page: 'connexion' });
   });
 });
+
+describe('changement de mot de passe (US-010)', () => {
+  it('la page est réservée aux comptes connectés', () => {
+    expect(resoudreRoute(CHEMINS.motDePasse, false)).toEqual({ redirection: CHEMINS.connexion });
+    expect(resoudreRoute(CHEMINS.motDePasse, true)).toEqual({ page: 'motDePasse' });
+  });
+
+  it('US-010 CA-4 : avec un mot de passe temporaire, toute page renvoie au changement de mot de passe', () => {
+    for (const chemin of [CHEMINS.accueil, CHEMINS.connexion, CHEMINS.organisateur]) {
+      expect(resoudreRoute(chemin, true, true), chemin).toEqual({ redirection: CHEMINS.motDePasse });
+    }
+    expect(resoudreRoute(CHEMINS.motDePasse, true, true)).toEqual({ page: 'motDePasse' });
+  });
+});

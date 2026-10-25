@@ -21,6 +21,8 @@ export interface Stockage {
   effacerSession(): Promise<void>;
   enregistrerAppareilConnu(appareil: AppareilConnu): Promise<void>;
   lireAppareilConnu(email: string): Promise<AppareilConnu | null>;
+  /** Efface le vérificateur local d'un compte (mot de passe changé ailleurs, US-010 CA-5). */
+  oublierAppareilConnu(email: string): Promise<void>;
 }
 
 /** Clé unique de la table `session` : l'appareil n'a qu'une session ouverte à la fois. */
@@ -58,6 +60,9 @@ export function ouvrirStockage(nom = 'poulePosition'): Stockage {
     },
     async lireAppareilConnu(email) {
       return (await base.appareilConnu.get(email)) ?? null;
+    },
+    async oublierAppareilConnu(email) {
+      await base.appareilConnu.delete(email);
     },
   };
 }
