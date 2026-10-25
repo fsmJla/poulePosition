@@ -4,7 +4,7 @@
 - **Fonctionnalité :** qualité, CI/CD (exigences §7), sécurité (règle 8 du `CLAUDE.md`)
 - **Priorité :** P1
 - **Type :** correction
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-001 (origine : rapport et traces Playwright), US-003 (vrais identifiants dans les E2E de la preview)
 - **Branche / PR :** `us/US-015-correction-secret-dans-rapport-e2e`
 
@@ -67,9 +67,19 @@ Sans objet : la correction ne touche que la CI et la configuration des tests, pa
   Playwright, chargée avec `BASE_URL`, n'a ni trace ni rapport HTML. Rouges avant la correction.
 - Règle 8 du `CLAUDE.md` (secrets jamais dans le dépôt) étendue aux artefacts.
 
+## Réalisation
+
+- `.github/workflows/e2e-preview.yml` : étape d'envoi de l'artefact `rapport-playwright` supprimée (CA-1).
+- `playwright.config.ts` : contre une preview (`BASE_URL`), `trace: 'off'` et rapporteurs `github` + `list` ; en local
+  et en CI locale, inchangé (traces à la première relance, rapport HTML en CI) (CA-2).
+- **Tests** : `tests/garde-fous/ci.test.ts` : le workflow n'envoie ni `playwright-report` ni `test-results` (CA-1) ; la
+  configuration chargée avec `BASE_URL` n'a ni trace ni rapport HTML, et garde ses traces en local (CA-2). Rouges
+  avant la correction, verts après.
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-26 | Créée (`/bug`, mot de passe E2E dans l'artefact du run 40242548355) |
 | 2026-10-26 | En cours : correction validée (plus de rapport joint ni de trace contre la preview) |
+| 2026-10-26 | En revue : garde-fous rouges puis verts ; contrôles locaux verts (lint, typage, 282 tests, build, audit, 89 E2E) |
