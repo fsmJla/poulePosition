@@ -4,7 +4,7 @@
 - **Fonctionnalité :** qualité, CI/CD (exigences §7)
 - **Priorité :** P1
 - **Type :** correction
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-001 (origine : workflow `e2e-preview.yml`)
 - **Branche / PR :** `us/US-013-correction-e2e-preview-bloques` · [PR #16](https://github.com/fsmJla/poulePosition/pull/16)
 
@@ -91,3 +91,5 @@ Sans objet : la correction ne touche que la CI, pas l'application.
 | 2026-10-25 | Créée (`/bug`, runs E2E #27 et #40 bloqués) |
 | 2026-10-25 | En cours : correction validée (sans `apt-get`, cache de Chromium, délai de 3 min, arrêt des commits dépassés) |
 | 2026-10-25 | En revue : garde-fou rouge puis vert ; contrôles locaux verts (lint, typage, 231 tests unitaires, build, audit, 44 E2E) |
+| 2026-10-25 | Recette OK sur la CI de la PR #16 (vrais runs) : run du commit dépassé `868ebd9` arrêté en 0 s avec la notice « Commit dépassé » (CA-3) ; run du dernier commit `988c228` : Chromium installé sans `apt-get` en 17 s, cache vide puis enregistré (CA-1, CA-2), 44 E2E verts sur la preview. |
+| 2026-10-25 | **Terminée**, mergée dans `dev` (PR #16). |
