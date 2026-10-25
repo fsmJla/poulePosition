@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-002
 - **Branche / PR :** `us/US-003-se-connecter-en-ligne`
 
@@ -110,9 +110,23 @@ ouverte reste utilisable hors ligne (CA-4), sans prolongation tant que l'apparei
 - **Appareil connu** : le sel et le vérificateur local sont enregistrés à chaque connexion en ligne (table
   `appareilConnu`), pour US-005.
 
+### Hypothèses prises pendant l'implémentation
+
+- Un e-mail inconnu reçoit un **faux sel stable** (dérivé du poivre), pour que `POST /session/sel` ne révèle pas
+  l'existence d'un compte (prolongement de CA-2).
+- `GET /session` sert de modèle aux routes réservées : signature, expiration, club de la session, puis compte
+  existant et actif, relu dans le DO `Club` à chaque appel (CA-7).
+- Le délai de 10 s couvre l'ensemble d'une connexion (sel puis session), pas chaque requête.
+- Au démarrage hors ligne, une session expirée est effacée ; une session valide est utilisée sans prolongation.
+- Compte des E2E : en local, créé automatiquement sur le serveur de test (secrets de test) ; contre la preview,
+  l'administrateur de recette d'US-002 (secrets GitHub `E2E_EMAIL` / `E2E_MOT_DE_PASSE`), à remplacer par un
+  compte organisateur dédié quand US-007 le permettra.
+- Les E2E `CA-2` font des essais erronés sur ce compte : à revoir avec la limite des essais par compte (US-004).
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
 | 2026-10-25 | En cours : plan validé (secret `SECRET_SESSION`, vraies adresses avec réécriture Vercel, mot de passe temporaire reporté à US-009/US-010, vérificateur local enregistré dès cette US, compte E2E de la preview dans les secrets GitHub) |
+| 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 182 tests unitaires, couverture 96 %, build, audit, 22 E2E) |
