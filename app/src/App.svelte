@@ -8,17 +8,18 @@
   import { ouvrirStockage } from './lib/stockage';
   import Accueil from './pages/Accueil.svelte';
   import Connexion from './pages/Connexion.svelte';
+  import MotDePasse from './pages/MotDePasse.svelte';
   import Organisateur from './pages/Organisateur.svelte';
 
   const urlServeur = import.meta.env.VITE_URL_SERVEUR ?? (import.meta.env.DEV ? URL_SERVEUR_LOCAL : undefined);
   const client = creerClientSession({ urlServeur: urlHttp(urlServeur), stockage: ouvrirStockage() });
 
-  let session: Session | null = $state(null);
+  let session = $state<Session | null>(null);
   /** Faux tant que la session gardée n'est pas relue : évite d'afficher une page puis d'en changer. */
   let pret = $state(false);
   let chemin = $state(location.pathname);
 
-  const route = $derived(resoudreRoute(chemin, session !== null));
+  const route = $derived(resoudreRoute(chemin, session !== null, session?.compte.temporaire ?? false));
 
   function naviguer(vers: string, remplacer = false) {
     if (remplacer) history.replaceState(null, '', vers);
@@ -50,6 +51,12 @@
     session = null;
     naviguer(CHEMINS.connexion);
   }
+
+  /** Session refusée par le serveur pendant un usage (déjà effacée de l'appareil) : retour à la connexion. */
+  function surSessionPerdue() {
+    session = null;
+    naviguer(CHEMINS.connexion);
+  }
 </script>
 
 {#if pret && 'page' in route}
@@ -58,6 +65,8 @@
   {:else if route.page === 'connexion'}
     <Connexion {client} {surConnexion} {naviguer} />
   {:else if route.page === 'organisateur' && session}
-    <Organisateur {session} {surDeconnexion} />
+    <Organisateur {session} {surDeconnexion} {naviguer} />
+  {:else if route.page === 'motDePasse' && session}
+    <MotDePasse {client} {session} surChangement={(nouvelle) => (session = nouvelle)} {surSessionPerdue} {naviguer} />
   {/if}
 {/if}
