@@ -24,6 +24,9 @@ export const textes = {
     valider: 'Se connecter',
     enCours: 'Connexion…',
     retour: "Retour à l'accueil",
+    afficherMotDePasse: 'Afficher le mot de passe',
+    masquerMotDePasse: 'Masquer le mot de passe',
+    presentation: 'Présentation de Poule Position',
     horsLigne: 'Hors ligne : connexion possible uniquement sur un appareil déjà utilisé',
     erreurs: {
       IDENTIFIANTS_INVALIDES: 'E-mail ou mot de passe incorrect',

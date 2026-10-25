@@ -28,6 +28,8 @@
   --sur-marque: #f7f4ef;
   --decor: var(--palette-sable);
   --decor-2: var(--palette-lavande);
+  /* Case vide de la grille de poule (icônes du pack, icône animée). */
+  --case-vide: #3f6362;
   --etat-ok: #1f7a4d;
   --etat-attente: #a86b12;
   --etat-erreur: #b3362f;
