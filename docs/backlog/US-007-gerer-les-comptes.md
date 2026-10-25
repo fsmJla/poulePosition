@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-003
-- **Branche / PR :** `us/US-007-gerer-les-comptes`
+- **Branche / PR :** `us/US-007-gerer-les-comptes` · [PR #20](https://github.com/fsmJla/poulePosition/pull/20)
 
 ## Récit
 
