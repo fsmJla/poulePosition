@@ -4,7 +4,7 @@
 - **Fonctionnalité :** PWA, qualité d'usage (exigences §6)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-001
 - **Branche / PR :** `us/US-011-identite-visuelle` · [PR #15](https://github.com/fsmJla/poulePosition/pull/15)
 
@@ -126,3 +126,6 @@ première visite, l'application s'affiche hors ligne avec exactement le même st
 | 2026-10-25 | Créée (spécification identité visuelle) |
 | 2026-10-25 | En cours : plan validé (charte dans `app.css`, polices `@fontsource`, icônes utiles du pack, test de contraste) |
 | 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 227 tests unitaires, couverture 96 %, build, audit, 45 E2E) |
+| 2026-10-25 | Revue : le test des domaines (CA-4) voyait `vercel.live`, barre d'outils injectée par Vercel sur les previews seulement ; il la tolère désormais contre une preview. Un run E2E bloqué à l'installation de Chromium (aléa GitHub) a été relancé. |
+| 2026-10-25 | Recette OK sur https://poule-position-dkm25suqy-fsmjlas-projects.vercel.app (déployée en preview et vérifiée) : palette 78 dans les variables (CA-1), mode sombre de l'appareil suivi (CA-2 ; le mode clair est vérifié par les E2E), Figtree 400 / 600 et Bricolage Grotesque 700 chargées depuis l'application, aucun domaine tiers hors barre Vercel de preview (CA-4), favicons, `apple-touch-icon`, manifeste (thème `#2F4B4A`, fond `#F7F4EF`, icônes maskable) servis (CA-5), nouvelle icône sur l'accueil et connexion restylée (CA-6). Contrastes (CA-3) et hors-ligne : tests unitaires et E2E de la CI sur cette preview. |
+| 2026-10-25 | **Terminée**, mergée dans `dev` (PR #15). |
