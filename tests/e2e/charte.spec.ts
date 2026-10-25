@@ -53,7 +53,7 @@ test('US-011 CA-5 : favicon, apple-touch-icon et manifeste de l’application in
   const adresseManifeste = liens.find((lien) => lien?.endsWith('.webmanifest'));
   expect(adresseManifeste).toBeTruthy();
   const manifeste = await (await request.get(adresseManifeste as string)).json();
-  expect(manifeste).toMatchObject({ name: 'poulePosition', theme_color: '#2F4B4A', background_color: '#F7F4EF' });
+  expect(manifeste).toMatchObject({ name: 'Poule Position', theme_color: '#2F4B4A', background_color: '#F7F4EF' });
   const icones = manifeste.icons as { src: string; purpose: string }[];
   expect(icones.some((icone) => icone.purpose === 'maskable')).toBe(true);
 
@@ -65,10 +65,10 @@ test('US-011 CA-5 : favicon, apple-touch-icon et manifeste de l’application in
   }
 });
 
-test('US-011 CA-6 : l’accueil affiche la nouvelle icône', async ({ page }) => {
+test('US-011 CA-6 : l’accueil affiche la nouvelle icône (dans la bannière « login », US-014)', async ({ page }) => {
   await page.goto('/');
   const icone = page.locator('main img').first();
-  await expect(icone).toHaveAttribute('src', '/icons/icon.svg');
+  await expect(icone).toHaveAttribute('src', '/brand/login-light.svg');
   await expect.poll(() => icone.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
 });
 
@@ -82,7 +82,6 @@ test('US-011 hors ligne : polices et icônes disponibles sans réseau', async ({
 
   await context.setOffline(true);
   await page.reload();
-  expect(await policesChargees(page)).toEqual(expect.arrayContaining(['Figtree', 'Bricolage Grotesque']));
   const favicon = await page.evaluate(async () => (await fetch('/favicon.svg')).status);
   expect(favicon).toBe(200);
   await expect
@@ -93,5 +92,8 @@ test('US-011 hors ligne : polices et icônes disponibles sans réseau', async ({
         .evaluate((image: HTMLImageElement) => image.naturalWidth),
     )
     .toBeGreaterThan(0);
+  // Les deux polices, sur une page qui les emploie toutes deux (titre en texte ; celui de l'accueil est la bannière).
+  await page.goto('/connexion');
+  expect(await policesChargees(page)).toEqual(expect.arrayContaining(['Figtree', 'Bricolage Grotesque']));
   await context.setOffline(false);
 });
