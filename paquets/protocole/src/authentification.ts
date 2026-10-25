@@ -2,6 +2,7 @@
 // seule la clé dérivée par PBKDF2 est envoyée au serveur, qui n'en garde qu'un vérificateur poivré.
 // WebCrypto uniquement : le même code tourne dans le navigateur, sous Node (commande d'installation) et dans workerd.
 import { normaliserEmail, validerEmail, validerNom } from '@poule-position/domaine';
+import { aLaTaille, aExactementLesChamps } from './validation';
 
 export const ITERATIONS_PBKDF2 = 600_000;
 /** Taille du sel, en octets. */
@@ -67,21 +68,10 @@ export async function preparerDemandeInstallation(saisie: {
   };
 }
 
-function aLaTaille(texte: unknown, taille: number): boolean {
-  if (typeof texte !== 'string') return false;
-  try {
-    return decoderBase64Url(texte).length === taille;
-  } catch {
-    return false;
-  }
-}
-
 /** Vérifie une demande d'installation reçue (côté serveur). Tout champ inattendu la rend invalide. */
 export function analyserDemandeInstallation(brut: unknown): { ok: true; demande: DemandeInstallation } | { ok: false } {
-  if (brut === null || typeof brut !== 'object' || Array.isArray(brut)) return { ok: false };
-  const objet = brut as Record<string, unknown>;
-  const champs = Object.keys(objet).sort().join(',');
-  if (champs !== 'cle,email,nom,sel') return { ok: false };
+  const objet = aExactementLesChamps(brut, ['cle', 'email', 'nom', 'sel']);
+  if (!objet) return { ok: false };
   const { email, nom, sel, cle } = objet;
   if (typeof email !== 'string' || validerEmail(email) !== null) return { ok: false };
   if (typeof nom !== 'string' || validerNom(nom) !== null) return { ok: false };

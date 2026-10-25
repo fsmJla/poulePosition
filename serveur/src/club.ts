@@ -13,6 +13,30 @@ export interface NouveauCompte {
   verificateur: string;
 }
 
+/** Compte tel qu'il est stocké, pour la connexion (US-003). */
+export interface CompteStocke {
+  id: string;
+  email: string;
+  nom: string;
+  role: Role;
+  sel: string;
+  verificateur: string;
+  actif: boolean;
+  temporaire: boolean;
+}
+
+interface LigneCompte {
+  id: string;
+  email: string;
+  nom: string;
+  role: Role;
+  sel: string;
+  verificateur: string;
+  actif: number;
+  temporaire: number;
+  [colonne: string]: SqlStorageValue;
+}
+
 export type ResultatCreation = { ok: true; email: string } | { ok: false; erreur: 'ADMINISTRATEUR_EXISTANT' };
 
 export class Club extends DurableObject<Env> {
@@ -52,5 +76,26 @@ export class Club extends DurableObject<Env> {
       Date.now(),
     );
     return { ok: true, email: compte.email };
+  }
+
+  /** Compte d'un e-mail normalisé, ou null s'il n'existe pas (US-003). */
+  async compteParEmail(email: string): Promise<CompteStocke | null> {
+    return this.lireCompte('email', email);
+  }
+
+  /** Compte d'un identifiant de session, ou null s'il a été supprimé depuis (US-003 CA-7). */
+  async compteParId(id: string): Promise<CompteStocke | null> {
+    return this.lireCompte('id', id);
+  }
+
+  private lireCompte(colonne: 'email' | 'id', valeur: string): CompteStocke | null {
+    const [ligne] = this.ctx.storage.sql
+      .exec<LigneCompte>(
+        `SELECT id, email, nom, role, sel, verificateur, actif, temporaire FROM comptes WHERE ${colonne} = ?`,
+        valeur,
+      )
+      .toArray();
+    if (!ligne) return null;
+    return { ...ligne, actif: ligne.actif === 1, temporaire: ligne.temporaire === 1 };
   }
 }

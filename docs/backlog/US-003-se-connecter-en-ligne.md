@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-002
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-003-se-connecter-en-ligne` · [PR #12](https://github.com/fsmJla/poulePosition/pull/12)
 
 ## Récit
 
@@ -87,8 +87,49 @@ ouverte reste utilisable hors ligne (CA-4), sans prolongation tant que l'apparei
 - **Impact sur US-001** : la page minimale devient l'accueil public. L'indicateur de connexion au serveur et les
   tests E2E de la page (`page.spec.ts`, `hors-ligne.spec.ts`) sont conservés et adaptés.
 
+## Réalisation
+
+- **Protocole** : `POST /session/sel`, `POST /session`, `GET /session` et CORS (`docs/protocole.md` §7). Nouveau
+  secret Wrangler `SECRET_SESSION` (signature des sessions, JWT HS256).
+- **Tests** :
+
+  | CA | Tests |
+  |---|---|
+  | CA-1 | `serveur/src/session.test.ts`, `app/src/lib/session.test.ts`, E2E `connexion.spec.ts` |
+  | CA-2 | `serveur/src/logique.test.ts`, `serveur/src/session.test.ts` (sel et refus identiques), E2E `connexion.spec.ts` |
+  | CA-3 | Unitaires (`logique.test.ts`, `app/src/lib/session.test.ts`, `textes.test.ts`). **E2E à ajouter avec US-008**, seule US qui permet de désactiver un compte. |
+  | CA-4 | `paquets/domaine/src/sessions.test.ts`, `session.test.ts` (serveur et app), `stockage.test.ts`, E2E `connexion.spec.ts` |
+  | CA-5 | `app/src/lib/session.test.ts`, `stockage.test.ts`, E2E `connexion.spec.ts` |
+  | CA-6 | `app/src/lib/routes.test.ts`, E2E `connexion.spec.ts` |
+  | CA-7 | `logique.test.ts`, `serveur/src/session.test.ts`, `app/src/lib/session.test.ts` (un 401 efface la session) |
+  | Hors ligne | `app/src/lib/session.test.ts` (délai de 10 s, serveur injoignable), E2E `hors-ligne.spec.ts` |
+
+- **Reporté** (décision du 2026-10-25) : la redirection d'un mot de passe temporaire vers le changement de mot de
+  passe va avec US-009 / US-010. Le serveur renvoie déjà `temporaire` dans la session. Le lien vers la reconnexion
+  hors ligne sera ajouté par US-005 ; l'écran affiche déjà le message prévu.
+- **Appareil connu** : le sel et le vérificateur local sont enregistrés à chaque connexion en ligne (table
+  `appareilConnu`), pour US-005.
+
+### Hypothèses prises pendant l'implémentation
+
+- Un e-mail inconnu reçoit un **faux sel stable** (dérivé du poivre), pour que `POST /session/sel` ne révèle pas
+  l'existence d'un compte (prolongement de CA-2).
+- `GET /session` sert de modèle aux routes réservées : signature, expiration, club de la session, puis compte
+  existant et actif, relu dans le DO `Club` à chaque appel (CA-7).
+- Le délai de 10 s couvre l'ensemble d'une connexion (sel puis session), pas chaque requête.
+- Au démarrage hors ligne, une session expirée est effacée ; une session valide est utilisée sans prolongation.
+- Compte des E2E : en local, créé automatiquement sur le serveur de test (secrets de test) ; contre la preview,
+  l'administrateur de recette d'US-002 (secrets GitHub `E2E_EMAIL` / `E2E_MOT_DE_PASSE`), à remplacer par un
+  compte organisateur dédié quand US-007 le permettra.
+- Les E2E `CA-2` font des essais erronés sur ce compte : à revoir avec la limite des essais par compte (US-004).
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
+| 2026-10-25 | En cours : plan validé (secret `SECRET_SESSION`, vraies adresses avec réécriture Vercel, mot de passe temporaire reporté à US-009/US-010, vérificateur local enregistré dès cette US, compte E2E de la preview dans les secrets GitHub) |
+| 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 182 tests unitaires, couverture 96 %, build, audit, 22 E2E) |
+| 2026-10-25 | Revue : les E2E de la preview échouaient. Le secret de contournement Vercel, ajouté à toutes les requêtes, partait aussi vers le serveur Cloudflare, dont la vérification CORS bloquait la connexion. Corrigé : le secret ne sert qu'à obtenir le cookie de contournement, dans la préparation des tests. |
+| 2026-10-25 | Recette OK sur https://poule-position-2fg9m1d4b-fsmjlas-projects.vercel.app (déployée en preview et vérifiée) : accueil public et redirection de `/organisateur` (CA-6), e-mail inconnu refusé (CA-2), connexion de l'administrateur avec nom, rôle et session de 30 jours (CA-1), rechargement avec `GET /session` prolongé (CA-4), déconnexion qui garde l'appareil connu (CA-5), session falsifiée refusée en 401 puis retour à la connexion (CA-7). Hors ligne : vérifié par les E2E de la CI sur cette preview, réseau coupé. CA-3 : non vérifiable avant US-008, couvert par les tests unitaires. |
+| 2026-10-25 | **Terminée**, mergée dans `dev` (PR #12). |

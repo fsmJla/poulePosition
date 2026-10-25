@@ -27,6 +27,9 @@ jobs:
         env:
           BASE_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          # Compte existant sur le serveur preview, pour les tests de connexion (US-003).
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_MOT_DE_PASSE: ${{ secrets.E2E_MOT_DE_PASSE }}
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

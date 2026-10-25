@@ -1,6 +1,9 @@
 // Tests E2E (ADR-0012). En local : serveur (wrangler, port 8791) et build de l'app (vite preview, port 4280).
-// En CI : contre la preview Vercel (BASE_URL), protégée, avec le secret de contournement (ADR-0008).
+// En CI : contre la preview Vercel (BASE_URL), protégée, avec le cookie de contournement (ADR-0008) obtenu par
+// preparation.ts. Le secret n'est pas envoyé à chaque requête : il partirait aussi vers le serveur Cloudflare, dont
+// la vérification CORS refuserait cet en-tête (US-003).
 import { defineConfig, devices } from '@playwright/test';
+import { ETAT_PREVIEW } from './tests/e2e/compte';
 
 const enCi = Boolean(process.env.CI);
 const urlPreview = process.env.BASE_URL;
@@ -12,6 +15,8 @@ if (urlPreview && !secretContournement) {
 
 export default defineConfig({
   testDir: 'tests/e2e',
+  // En local : crée le compte de test (US-003). Contre la preview : obtient le cookie de contournement.
+  globalSetup: './tests/e2e/preparation.ts',
   fullyParallel: true,
   forbidOnly: enCi,
   retries: enCi ? 1 : 0,
@@ -19,9 +24,7 @@ export default defineConfig({
   use: {
     baseURL: urlPreview ?? 'http://localhost:4280',
     trace: 'on-first-retry',
-    extraHTTPHeaders: secretContournement
-      ? { 'x-vercel-protection-bypass': secretContournement, 'x-vercel-set-bypass-cookie': 'true' }
-      : {},
+    storageState: urlPreview ? ETAT_PREVIEW : undefined,
   },
   projects: [
     { name: 'pc', use: { ...devices['Desktop Chrome'] } },
