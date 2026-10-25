@@ -72,7 +72,7 @@ export function analyserDemandeChangementMotDePasse(
   const objet = aExactementLesChamps(brut, ['cle', 'cleActuelle', 'sel']);
   if (!objet || !aLaTaille(objet.cleActuelle, TAILLE_CLE) || !aLaTaille(objet.cle, TAILLE_CLE)) return { ok: false };
   if (!aLaTaille(objet.sel, TAILLE_SEL)) return { ok: false };
-  const { cleActuelle, sel, cle } = objet as Record<string, string>;
+  const { cleActuelle, sel, cle } = objet as unknown as DemandeChangementMotDePasse;
   return { ok: true, demande: { cleActuelle, sel, cle } };
 }
 
