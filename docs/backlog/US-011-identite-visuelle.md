@@ -93,6 +93,32 @@ première visite, l'application s'affiche hors ligne avec exactement le même st
 - **Impact sur des US terminées** : US-001 (icône `icone.svg` et page minimale), US-003 (styles de la connexion,
   refaite par US-012), US-010 (styles du changement de mot de passe). Leurs tests E2E doivent rester verts.
 
+## Réalisation
+
+- **Charte** dans `app/src/app.css` : palette 78 (`--palette-*`) et rôles, en clair et en sombre. Le sarcelle de la
+  palette ne donne que 4,1:1 avec du texte blanc : boutons et liens utilisent une nuance plus foncée (`#066F6C`) en
+  clair, et le bleu Tiffany avec un texte foncé en sombre. Fond clair : sable clair `#F7F4EF` du pack.
+- **Polices** : `@fontsource/bricolage-grotesque` (700) et `@fontsource/figtree` (400, 600), environ 45 Ko au total.
+- **Icônes** : fichiers utiles du pack copiés dans `app/public/` (les PNG non référencés ne sont pas repris) ;
+  manifeste généré par `vite-plugin-pwa` ; ancienne icône `icone.svg` supprimée. Précache : 30 fichiers, 282 Ko.
+- **Tests** :
+
+  | CA | Tests |
+  |---|---|
+  | CA-1 | `tests/garde-fous/charte.test.ts` (aucune couleur en dur), `app/src/lib/couleurs.test.ts` (palette 78) |
+  | CA-2 | E2E `charte.spec.ts` (`emulateMedia` clair / sombre), `couleurs.test.ts` |
+  | CA-3 | `app/src/lib/couleurs.test.ts` (14 couples, en clair et en sombre) |
+  | CA-4 | E2E `charte.spec.ts` (polices chargées, aucun domaine étranger) |
+  | CA-5 | E2E `charte.spec.ts` (balises du `<head>`, manifeste, fichiers servis) |
+  | CA-6 | E2E `charte.spec.ts` (nouvelle icône) ; E2E existants d'US-001, US-003 et US-010 inchangés et verts |
+  | Hors ligne | E2E `charte.spec.ts` (polices, favicon et icône disponibles après coupure) |
+
+### Hypothèses prises pendant l'implémentation
+
+- Le test de contraste lit `app.css` (import `?raw`), source unique : pas de seconde définition des couleurs.
+- Le composant React `PoulePositionLoader.tsx` et `site.webmanifest` du pack ne sont pas repris (remplacés par
+  l'icône animée en SVG, pour US-012, et par le manifeste généré).
+
 ## Suivi
 
 | Date | Événement |
