@@ -31,9 +31,13 @@ test('US-011 CA-4 : polices servies par l’application, aucune requête vers un
 
   const chargees = await policesChargees(page);
   expect(chargees).toEqual(expect.arrayContaining(['Figtree', 'Bricolage Grotesque']));
-  const autorises = [new URL(baseURL ?? '').host, /\.workers\.dev$|^localhost:\d+$/];
+  // Domaines permis : l'application, son serveur (Cloudflare ou local) et, sur une preview seulement, la barre
+  // d'outils que Vercel y injecte lui-même (vercel.live, absente en production : ce n'est pas l'application).
+  const application = new URL(baseURL ?? '').host;
+  const serveur = /\.workers\.dev$|^localhost:\d+$/;
+  const outilsPreview = process.env.BASE_URL ? /^vercel\.live$/ : null;
   const etrangers = [...domaines].filter(
-    (domaine) => domaine !== autorises[0] && !(autorises[1] as RegExp).test(domaine),
+    (domaine) => domaine !== application && !serveur.test(domaine) && !outilsPreview?.test(domaine),
   );
   expect(etrangers).toEqual([]);
 });
