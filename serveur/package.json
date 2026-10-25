@@ -5,7 +5,7 @@
   "description": "Worker Cloudflare et Durable Objects (ADR-0004), issu du relais Wireless Fencing",
   "scripts": {
     "dev": "wrangler dev --port 8790",
-    "dev:e2e": "wrangler dev --port 8791",
+    "dev:e2e": "wrangler dev --port 8791 --persist-to .wrangler/e2e --var POIVRE:poivre-e2e --var SECRET_INSTALLATION:installation-e2e --var SECRET_SESSION:session-e2e",
     "deploy": "wrangler deploy",
     "deploy:preview": "wrangler deploy --env preview",
     "typage": "tsc -p tsconfig.json"

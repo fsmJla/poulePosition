@@ -12,6 +12,8 @@ if (urlPreview && !secretContournement) {
 
 export default defineConfig({
   testDir: 'tests/e2e',
+  // En local : crée le compte de test sur le serveur de test (US-003).
+  globalSetup: './tests/e2e/preparation.ts',
   fullyParallel: true,
   forbidOnly: enCi,
   retries: enCi ? 1 : 0,
