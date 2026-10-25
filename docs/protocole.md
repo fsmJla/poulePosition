@@ -8,6 +8,7 @@
 > Version 1, US-001 (walking skeleton) : connexion, bienvenue, maintien de connexion, erreurs.
 > US-002 : route d'installation du premier administrateur (§6).
 > US-003 : connexion, session et CORS (§7).
+> US-010 : changement de mot de passe et version du mot de passe dans la session (§8).
 > Les rôles, la synchronisation du journal et les saisies (ADR-0005) viendront avec leurs US.
 
 ## 1. Adresses
@@ -35,7 +36,8 @@
 | `POST /session/sel` | Sel d'un compte, avant la connexion (§7) |
 | `POST /session` | Connexion : ouvre une session (§7) |
 | `GET /session` | Vérifie et prolonge une session (§7) |
-| `OPTIONS /session`, `OPTIONS /session/sel` | Requête CORS préalable (§7) |
+| `POST /compte/mot-de-passe` | Changement de mot de passe (§8) |
+| `OPTIONS` sur `/session`, `/session/sel` et `/compte/mot-de-passe` | Requête CORS préalable (§7) |
 | WebSocket `/competitions/<competitionId>/connexion` | Connexion à une compétition (§3) |
 | Tout autre chemin | `404` |
 
@@ -136,3 +138,85 @@ jamais la clé elle-même (ADR-0006).
 | `503` | `INSTALLATION_NON_CONFIGUREE` | `SECRET_INSTALLATION` ou `POIVRE` absent sur le serveur |
 
 Les messages lisibles de ces codes sont dans `ERREURS_INSTALLATION` (`paquets/protocole`).
+
+## 7. Connexion et session (US-003)
+
+Appelées par l'application, sur un autre domaine que le serveur : en-têtes **CORS** pour les seules origines de
+`ORIGINES` (`Access-Control-Allow-Origin` = l'origine reçue, `Vary: Origin`). La requête préalable `OPTIONS`
+répond `204` (méthodes `GET, POST`, en-têtes `Authorization, Content-Type`, cache 1 jour), ou `403` si
+l'origine n'est pas autorisée. Une requête sans en-tête `Origin` (commande, tests) est traitée sans en-têtes CORS.
+
+**Déroulé de la connexion** (ADR-0006) :
+
+1. `POST /session/sel` avec `{"email": …}` → `{"ok":true,"sel": …}`.
+2. L'application calcule `cle = PBKDF2-SHA256(mot de passe en NFC, sel, 600 000 itérations)` (comme au §6).
+3. `POST /session` avec `{"email": …, "cle": …}`. Le serveur compare `HMAC-SHA256(cle, POIVRE)` au vérificateur.
+
+Pour un e-mail inconnu, le sel renvoyé est un **faux sel stable** (`HMAC-SHA256(POIVRE, "sel-fictif:" + email)`,
+16 premiers octets) : la réponse ne permet pas de savoir si le compte existe (CA-2).
+
+**Corps des demandes** : exactement les champs indiqués ; e-mail normalisé, `cle` de 32 octets en base64url.
+
+**Session ouverte ou prolongée** (`200`) :
+
+```json
+{
+  "ok": true,
+  "jeton": "…",
+  "expireLe": 1795000000000,
+  "compte": { "email": "…", "nom": "…", "role": "organisateur", "temporaire": false }
+}
+```
+
+- `jeton` : JWT HS256 signé avec le secret Wrangler `SECRET_SESSION`. Charge : `sub` (identifiant du compte),
+  `club` (`clubId`), `role`, `v` (version du mot de passe, §8), `iat` et `exp` (en secondes). Valable 30 jours.
+- `expireLe` : date d'expiration, en millisecondes.
+- `temporaire` : mot de passe temporaire, à changer avant tout autre usage (US-009 / US-010).
+
+**`GET /session`** avec `Authorization: Bearer <jeton>` : vérifie la signature, l'expiration, que le compte existe,
+est **toujours actif** et que son mot de passe n'a pas changé, puis renvoie une session prolongée de 30 jours (même
+forme). C'est le modèle de toute route réservée : sans session valide, la réponse est `401`.
+
+**Erreurs** : `{ "ok": false, "erreur": <code> }`.
+
+| Statut | Code | Cas |
+|---|---|---|
+| `400` | `DEMANDE_INVALIDE` | Corps absent, mal formé, champ manquant ou en trop |
+| `401` | `IDENTIFIANTS_INVALIDES` | E-mail inconnu ou mot de passe faux : même réponse dans les deux cas |
+| `401` | `SESSION_INVALIDE` | Session absente, expirée, falsifiée, ou compte désactivé ou supprimé depuis |
+| `401` | `COMPTE_MODIFIE` | Session valide, mais le mot de passe a changé depuis (§8) |
+| `403` | `COMPTE_DESACTIVE` | Bons identifiants, mais compte désactivé (US-008) |
+| `405` | — | Méthode non prévue |
+| `503` | `SERVEUR_NON_CONFIGURE` | `POIVRE` ou `SECRET_SESSION` absent sur le serveur |
+
+L'application conserve la session dans IndexedDB (table `session`) et l'envoie dans l'en-tête `Authorization`
+(pas de cookie). La déconnexion efface la session de l'appareil, sans appel au serveur.
+
+## 8. Changement de mot de passe (US-010)
+
+`POST /compte/mot-de-passe` avec `Authorization: Bearer <jeton>` et le corps (exactement ces champs) :
+
+| Champ | Contenu |
+|---|---|
+| `cleActuelle` | Clé dérivée du mot de passe actuel, avec le sel actuel du compte (32 octets, base64url) |
+| `sel` | **Nouveau** sel aléatoire (16 octets, base64url) |
+| `cle` | Clé dérivée du nouveau mot de passe avec ce nouveau sel (32 octets, base64url) |
+
+Le serveur vérifie la session (comme `GET /session`), puis `cleActuelle`, enregistre le nouveau sel et le nouveau
+vérificateur, augmente la **version du mot de passe** du compte et remet `temporaire` à faux. Il répond par une
+**nouvelle session** (`200`, même forme qu'au §7), portant la nouvelle version.
+
+**Version du mot de passe** : un entier par compte (0 à la création), recopié dans le jeton (`v`, 0 si absent).
+Une session dont la version est dépassée reçoit `401 COMPTE_MODIFIE` : l'application efface alors la session **et**
+le vérificateur local de ce compte (appareil connu), puis revient à l'écran de connexion.
+
+| Statut | Code | Cas |
+|---|---|---|
+| `200` | — | Mot de passe changé, nouvelle session |
+| `400` | `DEMANDE_INVALIDE` | Corps mal formé |
+| `401` | `SESSION_INVALIDE` / `COMPTE_MODIFIE` | Comme `GET /session` |
+| `403` | `MOT_DE_PASSE_INCORRECT` | `cleActuelle` fausse ; la session reste valable (pas de `401`, qui déconnecterait) |
+| `503` | `SERVEUR_NON_CONFIGURE` | Secrets absents |
+
+Les règles du nouveau mot de passe (10 caractères au moins, différent de l'actuel, confirmation) sont vérifiées
+par l'application, qui seule connaît les mots de passe en clair.
