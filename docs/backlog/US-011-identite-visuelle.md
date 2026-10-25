@@ -4,9 +4,9 @@
 - **Fonctionnalité :** PWA, qualité d'usage (exigences §6)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-001
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-011-identite-visuelle`
 
 ## Récit
 
@@ -98,3 +98,4 @@ première visite, l'application s'affiche hors ligne avec exactement le même st
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification identité visuelle) |
+| 2026-10-25 | En cours : plan validé (charte dans `app.css`, polices `@fontsource`, icônes utiles du pack, test de contraste) |
