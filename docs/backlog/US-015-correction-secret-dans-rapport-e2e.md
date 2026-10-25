@@ -6,7 +6,7 @@
 - **Type :** correction
 - **Statut :** En revue
 - **Dépend de :** US-001 (origine : rapport et traces Playwright), US-003 (vrais identifiants dans les E2E de la preview)
-- **Branche / PR :** `us/US-015-correction-secret-dans-rapport-e2e`
+- **Branche / PR :** `us/US-015-correction-secret-dans-rapport-e2e` · [PR #21](https://github.com/fsmJla/poulePosition/pull/21)
 
 ## Récit
 
