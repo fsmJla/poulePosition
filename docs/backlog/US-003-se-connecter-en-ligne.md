@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-002
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-003-se-connecter-en-ligne`
 
 ## Récit
 
@@ -92,3 +92,4 @@ ouverte reste utilisable hors ligne (CA-4), sans prolongation tant que l'apparei
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
+| 2026-10-25 | En cours : plan validé (secret `SECRET_SESSION`, vraies adresses avec réécriture Vercel, mot de passe temporaire reporté à US-009/US-010, vérificateur local enregistré dès cette US, compte E2E de la preview dans les secrets GitHub) |
