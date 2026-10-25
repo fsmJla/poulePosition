@@ -20,6 +20,8 @@ export type Route =
   | { route: 'session' }
   | { route: 'sel' }
   | { route: 'mot-de-passe' }
+  | { route: 'comptes' }
+  | { route: 'compte'; id: string }
   | { route: 'connexion'; competitionId: string };
 
 /** Analyse le chemin d'une requête entrante ; null si la route n'existe pas. */
@@ -30,6 +32,9 @@ export function analyserChemin(chemin: string): Route | null {
   if (chemin === '/session') return { route: 'session' };
   if (chemin === '/session/sel') return { route: 'sel' };
   if (chemin === '/compte/mot-de-passe') return { route: 'mot-de-passe' };
+  if (chemin === '/comptes') return { route: 'comptes' };
+  const compte = /^\/comptes\/([A-Za-z0-9-]{1,64})$/.exec(chemin);
+  if (compte?.[1]) return { route: 'compte', id: compte[1] };
   const morceaux = /^\/competitions\/([^/]+)\/connexion$/.exec(chemin);
   if (!morceaux?.[1] || !MOTIF_COMPETITION.test(morceaux[1])) return null;
   return { route: 'connexion', competitionId: morceaux[1] };
@@ -160,6 +165,14 @@ export function decisionSession(
 ): 'OK' | 'SESSION_INVALIDE' | 'COMPTE_MODIFIE' {
   if (compte?.actif !== true) return 'SESSION_INVALIDE';
   return charge.v === compte.versionMdp ? 'OK' : 'COMPTE_MODIFIE';
+}
+
+/**
+ * US-007 CA-6 : gestion des comptes réservée aux administrateurs, rôle relu en base ; un mot de passe temporaire ne
+ * sert qu'à choisir un nouveau mot de passe (US-009).
+ */
+export function autorisationAdministrateur(compte: { role: Role; temporaire: boolean }): boolean {
+  return compte.role === 'administrateur' && !compte.temporaire;
 }
 
 /** Charge d'un jeton de session (docs/protocole.md §7). `iat` et `exp` sont en secondes ; `v` : version du mot de passe. */

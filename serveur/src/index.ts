@@ -1,19 +1,25 @@
 // Point d'entrée du Worker : routes, origines autorisées, transmission de la connexion WebSocket au Durable Object
-// de la compétition, installation du premier administrateur, connexion et session. Protocole : docs/protocole.md.
+// de la compétition, installation du premier administrateur, connexion, session et gestion des comptes.
+// Protocole : docs/protocole.md.
 import {
   analyserDemandeChangementMotDePasse,
   analyserDemandeConnexion,
+  analyserDemandeCreationCompte,
+  analyserDemandeModificationCompte,
   analyserDemandeInstallation,
   analyserDemandeSel,
   type CodeErreurInstallation,
   type CodeErreurSession,
+  type CompteResume,
   type ReponseInstallation,
   type ReponseSession,
 } from '@poule-position/protocole';
 import type { Club, CompteStocke } from './club';
 import type { Limiteur } from './limiteur';
+import type { Route } from './logique';
 import {
   analyserChemin,
+  autorisationAdministrateur,
   decisionSession,
   deciderConnexion,
   enTetesCors,
@@ -50,9 +56,7 @@ export default {
     if (route.route === 'accueil') return new Response('Serveur poulePosition');
     if (route.route === 'sante') return Response.json({ ok: true, service: 'poule-position-serveur' });
     if (route.route === 'installation') return installer(requete, env);
-    if (route.route === 'session' || route.route === 'sel' || route.route === 'mot-de-passe') {
-      return routeSession(route.route, requete, env);
-    }
+    if (route.route !== 'connexion') return routeSession(route, requete, env);
 
     if (requete.headers.get('Upgrade') !== 'websocket') return new Response('WebSocket attendu', { status: 426 });
     if (!origineAutorisee(requete.headers.get('Origin'), env.ORIGINES)) {
@@ -111,13 +115,19 @@ async function installer(requete: Request, env: Env): Promise<Response> {
   return resultat.ok ? repondre(201, resultat) : refuser(409, resultat.erreur);
 }
 
-type RouteSession = 'sel' | 'session' | 'mot-de-passe';
+type RouteSession = Extract<Route, { route: 'sel' | 'session' | 'mot-de-passe' | 'comptes' | 'compte' }>;
 
-const METHODES_SESSION = { sel: ['POST'], session: ['GET', 'POST'], 'mot-de-passe': ['POST'] } as const;
+const METHODES_SESSION = {
+  sel: ['POST'],
+  session: ['GET', 'POST'],
+  'mot-de-passe': ['POST'],
+  comptes: ['GET', 'POST'],
+  compte: ['PATCH'],
+} as const;
 
 /**
- * Routes de connexion, de session (US-003) et de changement de mot de passe (US-010), appelées par l'application
- * depuis un autre domaine (CORS).
+ * Routes de connexion, de session (US-003), de changement de mot de passe (US-010) et de gestion des comptes
+ * (US-007), appelées par l'application depuis un autre domaine (CORS).
  */
 async function routeSession(route: RouteSession, requete: Request, env: Env): Promise<Response> {
   const cors = enTetesCors(requete.headers.get('Origin'), env.ORIGINES);
@@ -127,7 +137,7 @@ async function routeSession(route: RouteSession, requete: Request, env: Env): Pr
       status: 204,
       headers: {
         ...cors,
-        'Access-Control-Allow-Methods': 'GET, POST',
+        'Access-Control-Allow-Methods': 'GET, POST, PATCH',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type',
         'Access-Control-Max-Age': '86400',
       },
@@ -151,7 +161,7 @@ async function lireJson(requete: Request): Promise<unknown> {
 }
 
 async function traiterSession(route: RouteSession, requete: Request, env: Env): Promise<Response> {
-  const methodes: readonly string[] = METHODES_SESSION[route];
+  const methodes: readonly string[] = METHODES_SESSION[route.route];
   if (!methodes.includes(requete.method)) {
     return new Response('Méthode non autorisée', { status: 405, headers: { Allow: methodes.join(', ') } });
   }
@@ -159,26 +169,31 @@ async function traiterSession(route: RouteSession, requete: Request, env: Env): 
   if (!poivre || !secret) return refuserSession(503, 'SERVEUR_NON_CONFIGURE');
   const club = env.CLUB.get(env.CLUB.idFromName(`club:${env.CLUB_ID}`));
 
-  if (route === 'sel') {
+  if (route.route === 'sel') {
     const demande = analyserDemandeSel(await lireJson(requete));
     if (!demande.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
     const compte = await club.compteParEmail(demande.email);
     return Response.json({ ok: true, sel: compte?.sel ?? (await fauxSel(demande.email, poivre)) });
   }
 
-  if (route === 'session' && requete.method === 'POST') {
+  if (route.route === 'session' && requete.method === 'POST') {
     const analyse = analyserDemandeConnexion(await lireJson(requete));
     if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
     const compte = await club.compteParEmail(analyse.demande.email);
     const decision = await deciderConnexion(compte, await verificateurServeur(analyse.demande.cle, poivre));
     if (!decision.ok) return refuserSession(decision.erreur === 'COMPTE_DESACTIVE' ? 403 : 401, decision.erreur);
+    await club.noterConnexion((compte as CompteStocke).id, Date.now());
     return ouvrirSession(compte as CompteStocke, env.CLUB_ID, secret);
   }
 
   const authentifie = await compteDeLaSession(requete, secret, env.CLUB_ID, club);
   if (!authentifie.ok) return authentifie.refus;
 
-  if (route === 'mot-de-passe') {
+  if (route.route === 'comptes' || route.route === 'compte') {
+    return gererComptes(route, requete, club, poivre, authentifie.compte);
+  }
+
+  if (route.route === 'mot-de-passe') {
     // US-010 : la clé actuelle est vérifiée comme à la connexion ; un échec ne ferme pas la session (403, pas 401).
     const analyse = analyserDemandeChangementMotDePasse(await lireJson(requete));
     if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
@@ -212,6 +227,49 @@ async function compteDeLaSession(
   if (decision !== 'OK' || !compte)
     return { ok: false, refus: refuserSession(401, decision === 'OK' ? 'SESSION_INVALIDE' : decision) };
   return { ok: true, compte };
+}
+
+/** US-007 : gestion des comptes, réservée aux administrateurs au mot de passe définitif (docs/protocole.md §9). */
+async function gererComptes(
+  route: Extract<RouteSession, { route: 'comptes' | 'compte' }>,
+  requete: Request,
+  club: DurableObjectStub<Club>,
+  poivre: string,
+  demandeur: CompteStocke,
+): Promise<Response> {
+  if (!autorisationAdministrateur(demandeur)) return refuserSession(403, 'ACCES_REFUSE');
+
+  if (route.route === 'comptes' && requete.method === 'GET') {
+    const comptes = await club.listerComptes();
+    return Response.json({ ok: true, comptes: comptes.map(resume) });
+  }
+
+  if (route.route === 'comptes') {
+    const analyse = analyserDemandeCreationCompte(await lireJson(requete));
+    if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
+    const { email, nom, role, sel, cle } = analyse.demande;
+    const resultat = await club.creerCompte({
+      email,
+      nom,
+      role,
+      sel,
+      verificateur: await verificateurServeur(cle, poivre),
+    });
+    if (!resultat.ok) return refuserSession(409, resultat.erreur);
+    return Response.json({ ok: true, compte: resume(resultat.compte) }, { status: 201 });
+  }
+
+  const analyse = analyserDemandeModificationCompte(await lireJson(requete));
+  if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
+  const resultat = await club.modifierCompte(route.id, analyse.demande);
+  if (!resultat.ok) return refuserSession(resultat.erreur === 'COMPTE_INCONNU' ? 404 : 409, resultat.erreur);
+  return Response.json({ ok: true, compte: resume(resultat.compte) });
+}
+
+/** Compte tel que la liste le décrit : jamais le sel ni le vérificateur. */
+function resume(compte: CompteStocke): CompteResume {
+  const { id, email, nom, role, actif, temporaire, derniereConnexion } = compte;
+  return { id, email, nom, role, actif, temporaire, derniereConnexion };
 }
 
 async function ouvrirSession(compte: CompteStocke, clubId: string, secret: string): Promise<Response> {
