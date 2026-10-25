@@ -46,7 +46,7 @@
   button {
     padding: 0.6rem 1.2rem;
     border: 1px solid var(--accent);
-    border-radius: 0.4rem;
+    border-radius: var(--rayon);
     background: transparent;
     color: var(--accent);
     font: inherit;

@@ -31,7 +31,7 @@
 </script>
 
 <main>
-  <img src="/icone.svg" alt="" width="72" height="72" />
+  <img src="/icons/icon.svg" alt="" width="88" height="88" />
   <h1>poulePosition</h1>
   <p class="accroche">{textes.accroche}</p>
   <p class="etat" data-etat={etat} role="status">

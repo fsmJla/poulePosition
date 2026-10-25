@@ -1,8 +1,7 @@
-import { readFileSync } from 'node:fs';
+import css from '../app.css?raw';
 import { describe, expect, it } from 'vitest';
 import { contraste, lireVariables, COUPLES_CHARTE, PALETTE_CALME_RETRO } from './couleurs';
 
-const css = readFileSync(new URL('../app.css', import.meta.url), 'utf8');
 const { clair, sombre } = lireVariables(css);
 
 describe('lireVariables', () => {

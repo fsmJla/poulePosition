@@ -105,8 +105,8 @@
 
   input {
     padding: 0.6rem 0.75rem;
-    border: 1px solid var(--texte-discret);
-    border-radius: 0.4rem;
+    border: 1px solid var(--bordure-champ);
+    border-radius: var(--rayon);
     background: var(--fond);
     color: var(--texte);
     font: inherit;
@@ -115,9 +115,9 @@
   button {
     padding: 0.7rem;
     border: none;
-    border-radius: 0.4rem;
+    border-radius: var(--rayon);
     background: var(--accent-fond);
-    color: #ffffff;
+    color: var(--sur-accent);
     font: inherit;
     font-weight: 600;
     cursor: pointer;
