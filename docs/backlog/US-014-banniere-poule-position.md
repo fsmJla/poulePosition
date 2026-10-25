@@ -4,7 +4,7 @@
 - **Fonctionnalité :** PWA, qualité d'usage (exigences §6)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-011
 - **Branche / PR :** `us/US-014-banniere-poule-position` · [PR #18](https://github.com/fsmJla/poulePosition/pull/18)
 
@@ -105,3 +105,5 @@ et l'entête s'affichent à l'identique hors ligne. Elles sont vectorisées : au
 | 2026-10-25 | Créée (pack d'icônes v2 : bannière, filet, entête) |
 | 2026-10-25 | En cours : plan validé (composants Banniere et Entete, `--sur-marque`, nom « Poule Position », SVG `brand/` seulement) |
 | 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 231 tests unitaires, couverture 96 %, build, audit, 54 E2E ; test de démarrage non relancé, ports occupés par le `npm run dev` de l'utilisateur) |
+| 2026-10-25 | Recette OK sur https://poule-position-2x7cexy02-fsmjlas-projects.vercel.app (déployée en preview et vérifiée) : bannière « login » chargée, variante sombre affichée en mode sombre, texte alternatif « Poule Position », sous-titre, plus de texte « poulePosition » (CA-1, CA-2) ; onglet, titre iOS et manifeste « Poule Position » (CA-4). Entête des pages réservées (CA-3) et hors-ligne : E2E de la CI sur cette preview, avec connexion réelle, PC et smartphone. |
+| 2026-10-25 | **Terminée**, mergée dans `dev` (PR #18). |
