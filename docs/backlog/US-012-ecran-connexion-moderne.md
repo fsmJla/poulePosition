@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-011, US-014, US-003
-- **Branche / PR :** `us/US-012-ecran-connexion-moderne`
+- **Branche / PR :** `us/US-012-ecran-connexion-moderne` · [PR #19](https://github.com/fsmJla/poulePosition/pull/19)
 
 ## Récit
 
