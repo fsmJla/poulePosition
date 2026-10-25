@@ -4,7 +4,7 @@
 - **Fonctionnalité :** qualité, CI/CD (exigences §7)
 - **Priorité :** P1
 - **Type :** correction
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-001 (origine : workflow `e2e-preview.yml`)
 - **Branche / PR :** `us/US-013-correction-e2e-preview-bloques`
 
@@ -74,9 +74,20 @@ Sans objet : la correction ne touche que la CI, pas l'application.
 - Vérification par un garde-fou Vitest qui lit `.github/workflows/e2e-preview.yml` (test rouge avant correction).
 - ADR-0012 (CI). Aucun impact sur l'application, le protocole ni le journal.
 
+## Réalisation
+
+- `.github/workflows/e2e-preview.yml` :
+  - première étape `commit` : `branches-where-head` ; si le commit n'est la tête d'aucune branche, notice « Commit
+    dépassé » et `depasse=true`, et toutes les étapes suivantes sont sautées (CA-3) ;
+  - `actions/cache@v6` sur `~/.cache/ms-playwright`, clé liée au `package-lock.json` (CA-1) ;
+  - `npx playwright install chromium`, sans `--with-deps`, avec `timeout-minutes: 3` (CA-1, CA-2).
+- **Test** : garde-fou `tests/garde-fous/ci.test.ts` (4 tests, rouges avant la correction, verts après), qui lit le
+  workflow et ignore ses commentaires.
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (`/bug`, runs E2E #27 et #40 bloqués) |
 | 2026-10-25 | En cours : correction validée (sans `apt-get`, cache de Chromium, délai de 3 min, arrêt des commits dépassés) |
+| 2026-10-25 | En revue : garde-fou rouge puis vert ; contrôles locaux verts (lint, typage, 231 tests unitaires, build, audit, 44 E2E) |
