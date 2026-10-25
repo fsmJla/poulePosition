@@ -23,6 +23,8 @@ export interface CompteStocke {
   verificateur: string;
   actif: boolean;
   temporaire: boolean;
+  /** Version du mot de passe (US-010) : augmente à chaque changement, ce qui invalide les autres sessions. */
+  versionMdp: number;
 }
 
 interface LigneCompte {
@@ -34,6 +36,7 @@ interface LigneCompte {
   verificateur: string;
   actif: number;
   temporaire: number;
+  versionMdp: number;
   [colonne: string]: SqlStorageValue;
 }
 
@@ -53,8 +56,14 @@ export class Club extends DurableObject<Env> {
         verificateur TEXT NOT NULL,
         actif INTEGER NOT NULL DEFAULT 1,
         temporaire INTEGER NOT NULL DEFAULT 0,
-        cree_le INTEGER NOT NULL
+        cree_le INTEGER NOT NULL,
+        version_mdp INTEGER NOT NULL DEFAULT 0
       )`);
+    // Migration US-010 : colonne ajoutée aux tables créées avant elle (comptes existants : version 0).
+    const colonnes = ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(comptes)').toArray();
+    if (!colonnes.some(({ name }) => name === 'version_mdp')) {
+      ctx.storage.sql.exec('ALTER TABLE comptes ADD COLUMN version_mdp INTEGER NOT NULL DEFAULT 0');
+    }
   }
 
   /** Crée le premier administrateur ; refusé dès qu'un administrateur existe (US-002). */
@@ -88,10 +97,25 @@ export class Club extends DurableObject<Env> {
     return this.lireCompte('id', id);
   }
 
+  /**
+   * Remplace le mot de passe (US-010) : nouveau sel et nouveau vérificateur, version suivante, fin du mot de passe
+   * temporaire. Renvoie le compte à jour, ou null s'il n'existe plus.
+   */
+  async changerMotDePasse(id: string, sel: string, verificateur: string): Promise<CompteStocke | null> {
+    this.ctx.storage.sql.exec(
+      'UPDATE comptes SET sel = ?, verificateur = ?, version_mdp = version_mdp + 1, temporaire = 0 WHERE id = ?',
+      sel,
+      verificateur,
+      id,
+    );
+    return this.lireCompte('id', id);
+  }
+
   private lireCompte(colonne: 'email' | 'id', valeur: string): CompteStocke | null {
     const [ligne] = this.ctx.storage.sql
       .exec<LigneCompte>(
-        `SELECT id, email, nom, role, sel, verificateur, actif, temporaire FROM comptes WHERE ${colonne} = ?`,
+        `SELECT id, email, nom, role, sel, verificateur, actif, temporaire, version_mdp AS versionMdp
+         FROM comptes WHERE ${colonne} = ?`,
         valeur,
       )
       .toArray();

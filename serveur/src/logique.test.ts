@@ -7,7 +7,7 @@ import {
   deciderConnexion,
   enTetesCors,
   fauxSel,
-  sessionProlongeable,
+  decisionSession,
   signerSession,
   verifierSession,
   enregistrerEchec,
@@ -141,13 +141,14 @@ describe('routes de session (US-003)', () => {
     expect(analyserChemin('/session')).toEqual({ route: 'session' });
     expect(analyserChemin('/session/sel')).toEqual({ route: 'sel' });
     expect(analyserChemin('/session/autre')).toBeNull();
+    expect(analyserChemin('/compte/mot-de-passe')).toEqual({ route: 'mot-de-passe' });
   });
 });
 
 describe('jeton de session (US-003, JWT HS256)', () => {
   const SECRET = 'secret-de-session-de-test';
   const MAINTENANT = Date.UTC(2026, 9, 25, 12);
-  const compte = { sub: 'compte-1', club: 'club-principal', role: 'organisateur' as const };
+  const compte = { sub: 'compte-1', club: 'club-principal', role: 'organisateur' as const, v: 2 };
 
   it('US-003 CA-1 : signe une session de 30 jours, relue à l’identique', async () => {
     const { jeton, expireLe } = await signerSession(compte, SECRET, MAINTENANT);
@@ -246,9 +247,16 @@ describe('décision de connexion (US-003)', () => {
   });
 
   it('US-003 CA-7 : une session n’est prolongée que pour un compte existant et toujours actif', () => {
-    expect(sessionProlongeable({ actif: true })).toBe(true);
-    expect(sessionProlongeable({ actif: false })).toBe(false);
-    expect(sessionProlongeable(null)).toBe(false);
+    expect(decisionSession({ v: 0 }, { actif: true, versionMdp: 0 })).toBe('OK');
+    expect(decisionSession({ v: 0 }, { actif: false, versionMdp: 0 })).toBe('SESSION_INVALIDE');
+    expect(decisionSession({ v: 0 }, null)).toBe('SESSION_INVALIDE');
+  });
+
+  it('US-010 CA-5 : une session d’une version de mot de passe dépassée reçoit COMPTE_MODIFIE', () => {
+    expect(decisionSession({ v: 1 }, { actif: true, versionMdp: 2 })).toBe('COMPTE_MODIFIE');
+    expect(decisionSession({ v: 2 }, { actif: true, versionMdp: 2 })).toBe('OK');
+    // Un compte désactivé reste SESSION_INVALIDE, même si son mot de passe a changé.
+    expect(decisionSession({ v: 1 }, { actif: false, versionMdp: 2 })).toBe('SESSION_INVALIDE');
   });
 });
 
@@ -265,5 +273,25 @@ describe('enTetesCors (US-003)', () => {
   it('ne donne aucun en-tête à une origine absente ou non autorisée', () => {
     expect(enTetesCors(null, MOTIFS)).toBeNull();
     expect(enTetesCors('https://pirate.example', MOTIFS)).toBeNull();
+  });
+});
+
+describe('version du mot de passe dans la session (US-010)', () => {
+  it('US-010 CA-5 : un jeton émis avant US-010, sans version, est lu comme version 0', async () => {
+    const SECRET = 'secret';
+    const morceaux = [
+      { alg: 'HS256', typ: 'JWT' },
+      { sub: 'compte-1', club: 'club-principal', role: 'organisateur', iat: 1, exp: 4_000_000_000 },
+    ].map((partie) => encoderBase64Url(new TextEncoder().encode(JSON.stringify(partie))));
+    const cle = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(SECRET),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    );
+    const signature = await crypto.subtle.sign('HMAC', cle, new TextEncoder().encode(morceaux.join('.')));
+    const jeton = `${morceaux.join('.')}.${encoderBase64Url(new Uint8Array(signature))}`;
+    expect((await verifierSession(jeton, SECRET, Date.UTC(2026, 9, 25)))?.v).toBe(0);
   });
 });

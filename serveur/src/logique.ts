@@ -19,6 +19,7 @@ export type Route =
   | { route: 'installation' }
   | { route: 'session' }
   | { route: 'sel' }
+  | { route: 'mot-de-passe' }
   | { route: 'connexion'; competitionId: string };
 
 /** Analyse le chemin d'une requête entrante ; null si la route n'existe pas. */
@@ -28,6 +29,7 @@ export function analyserChemin(chemin: string): Route | null {
   if (chemin === '/installation/administrateur') return { route: 'installation' };
   if (chemin === '/session') return { route: 'session' };
   if (chemin === '/session/sel') return { route: 'sel' };
+  if (chemin === '/compte/mot-de-passe') return { route: 'mot-de-passe' };
   const morceaux = /^\/competitions\/([^/]+)\/connexion$/.exec(chemin);
   if (!morceaux?.[1] || !MOTIF_COMPETITION.test(morceaux[1])) return null;
   return { route: 'connexion', competitionId: morceaux[1] };
@@ -148,16 +150,24 @@ export async function deciderConnexion(
   return compte.actif ? { ok: true } : { ok: false, erreur: 'COMPTE_DESACTIVE' };
 }
 
-/** CA-7 : une session n'est prolongée que si son compte existe encore et est toujours actif. */
-export function sessionProlongeable(compte: { actif: boolean } | null): boolean {
-  return compte?.actif === true;
+/**
+ * Validité d'une session bien signée, d'après son compte : il doit exister et être actif (US-003 CA-7), et son mot de
+ * passe ne doit pas avoir changé depuis l'émission de la session (US-010 CA-5).
+ */
+export function decisionSession(
+  charge: Pick<ChargeSession, 'v'>,
+  compte: { actif: boolean; versionMdp: number } | null,
+): 'OK' | 'SESSION_INVALIDE' | 'COMPTE_MODIFIE' {
+  if (compte?.actif !== true) return 'SESSION_INVALIDE';
+  return charge.v === compte.versionMdp ? 'OK' : 'COMPTE_MODIFIE';
 }
 
-/** Charge d'un jeton de session (docs/protocole.md §7). `iat` et `exp` sont en secondes. */
+/** Charge d'un jeton de session (docs/protocole.md §7). `iat` et `exp` sont en secondes ; `v` : version du mot de passe. */
 export interface ChargeSession {
   sub: string;
   club: string;
   role: Role;
+  v: number;
   iat: number;
   exp: number;
 }
@@ -170,7 +180,7 @@ function encoderJson(valeur: unknown): string {
 
 /** Signe une session valable 30 jours à partir de `maintenant` (ms) ; `expireLe` est en millisecondes. */
 export async function signerSession(
-  compte: Pick<ChargeSession, 'sub' | 'club' | 'role'>,
+  compte: Pick<ChargeSession, 'sub' | 'club' | 'role' | 'v'>,
   secret: string,
   maintenant: number,
 ): Promise<{ jeton: string; expireLe: number }> {
@@ -191,10 +201,11 @@ function lireCharge(texte: string): ChargeSession | null {
     return null;
   }
   if (charge === null || typeof charge !== 'object' || Array.isArray(charge)) return null;
-  const { sub, club, role, iat, exp } = charge as Record<string, unknown>;
+  const { sub, club, role, v = 0, iat, exp } = charge as Record<string, unknown>;
   if (typeof sub !== 'string' || typeof club !== 'string' || !(ROLES as readonly unknown[]).includes(role)) return null;
-  if (typeof iat !== 'number' || typeof exp !== 'number') return null;
-  return { sub, club, role: role as Role, iat, exp };
+  // Un jeton émis avant US-010 n'a pas de version : c'est la version 0, celle de tout compte non modifié.
+  if (typeof v !== 'number' || typeof iat !== 'number' || typeof exp !== 'number') return null;
+  return { sub, club, role: role as Role, v, iat, exp };
 }
 
 /** Charge d'un jeton correctement signé et non expiré, sinon null (CA-7). */

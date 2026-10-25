@@ -36,3 +36,22 @@ export function validerMotDePasse(motDePasse: string): ErreurSaisieCompte | null
 export function validerConfirmation(motDePasse: string, confirmation: string): ErreurSaisieCompte | null {
   return motDePasse === confirmation ? null : 'CONFIRMATION_DIFFERENTE';
 }
+
+export type ErreurNouveauMotDePasse = 'MOT_DE_PASSE_TROP_COURT' | 'IDENTIQUE_A_L_ACTUEL';
+
+/**
+ * Règles d'un changement de mot de passe (US-010 CA-2), une erreur par champ. `actuel` vaut null quand il n'est pas
+ * saisi (mot de passe temporaire, déjà vérifié à la connexion) : il n'y a alors rien à comparer.
+ */
+export function validerNouveauMotDePasse(
+  actuel: string | null,
+  nouveau: string,
+  confirmation: string,
+): { nouveau: ErreurNouveauMotDePasse | null; confirmation: 'CONFIRMATION_DIFFERENTE' | null } {
+  const erreurNouveau =
+    validerMotDePasse(nouveau) ?? (actuel !== null && nouveau === actuel ? 'IDENTIQUE_A_L_ACTUEL' : null);
+  return {
+    nouveau: erreurNouveau as ErreurNouveauMotDePasse | null,
+    confirmation: validerConfirmation(nouveau, confirmation) as 'CONFIRMATION_DIFFERENTE' | null,
+  };
+}

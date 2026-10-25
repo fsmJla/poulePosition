@@ -137,17 +137,25 @@ describe('session', () => {
 
   it('US-003 CA-7 : 401 sans session, avec une session expirée, falsifiée, ou d’un compte supprimé', async () => {
     const expiree = await signerSession(
-      { sub: 'quelconque', club: CLUB_ID, role: 'administrateur' },
+      { sub: 'quelconque', club: CLUB_ID, role: 'administrateur', v: 0 },
       SECRET_SESSION,
       Date.now() - DUREE_SESSION - 1000,
     );
-    const autreSecret = await signerSession({ sub: 'x', club: CLUB_ID, role: 'administrateur' }, 'pirate', Date.now());
+    const autreSecret = await signerSession(
+      { sub: 'x', club: CLUB_ID, role: 'administrateur', v: 0 },
+      'pirate',
+      Date.now(),
+    );
     const compteSupprime = await signerSession(
-      { sub: 'compte-inexistant', club: CLUB_ID, role: 'administrateur' },
+      { sub: 'compte-inexistant', club: CLUB_ID, role: 'administrateur', v: 0 },
       SECRET_SESSION,
       Date.now(),
     );
-    const autreClub = await signerSession({ sub: 'x', club: 'autre-club', role: 'administrateur' }, SECRET_SESSION, 0);
+    const autreClub = await signerSession(
+      { sub: 'x', club: 'autre-club', role: 'administrateur', v: 0 },
+      SECRET_SESSION,
+      0,
+    );
     for (const jeton of [
       null,
       'nimporte-quoi',

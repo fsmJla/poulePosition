@@ -1,19 +1,24 @@
 <script lang="ts">
-  // Accueil de l'organisateur (US-003 CA-1), page réservée : nom et rôle du compte connecté, déconnexion (CA-5).
+  // Accueil de l'organisateur (US-003 CA-1), page réservée : nom et rôle du compte connecté, déconnexion (CA-5),
+  // changement de mot de passe (US-010).
   import type { Session } from '@poule-position/protocole';
+  import Lien from '../composants/Lien.svelte';
+  import { CHEMINS } from '../lib/routes';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
     session: Session;
     surDeconnexion: () => void;
+    naviguer: (chemin: string) => void;
   }
 
-  let { session, surDeconnexion }: Proprietes = $props();
+  let { session, surDeconnexion, naviguer }: Proprietes = $props();
 </script>
 
 <main>
   <h1>{textes.organisateur.bonjour(session.compte.nom)}</h1>
   <p class="role">{textes.roles[session.compte.role]}</p>
+  <Lien chemin={CHEMINS.motDePasse} {naviguer}>{textes.organisateur.changerMotDePasse}</Lien>
   <button type="button" onclick={surDeconnexion}>{textes.organisateur.seDeconnecter}</button>
 </main>
 

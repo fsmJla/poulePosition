@@ -5,6 +5,7 @@ import {
   validerEmail,
   validerMotDePasse,
   validerNom,
+  validerNouveauMotDePasse,
   LONGUEUR_MIN_MOT_DE_PASSE,
   ROLES,
 } from './comptes';
@@ -45,5 +46,35 @@ describe('comptes', () => {
       expect(validerConfirmation('motdepasse1', 'motdepasse1')).toBeNull();
       expect(validerConfirmation('motdepasse1', 'motdepasse2')).toBe('CONFIRMATION_DIFFERENTE');
     });
+  });
+});
+
+describe('US-010 CA-2 : règles du nouveau mot de passe', () => {
+  const ACTUEL = 'ancien-mot-de-passe';
+
+  it('accepte un nouveau mot de passe valide, différent de l’actuel et bien confirmé', () => {
+    expect(validerNouveauMotDePasse(ACTUEL, 'nouveau-mot-de-passe', 'nouveau-mot-de-passe')).toEqual({
+      nouveau: null,
+      confirmation: null,
+    });
+  });
+
+  it('refuse un nouveau mot de passe trop court', () => {
+    expect(validerNouveauMotDePasse(ACTUEL, 'court', 'court').nouveau).toBe('MOT_DE_PASSE_TROP_COURT');
+  });
+
+  it('refuse un nouveau mot de passe identique à l’actuel', () => {
+    expect(validerNouveauMotDePasse(ACTUEL, ACTUEL, ACTUEL).nouveau).toBe('IDENTIQUE_A_L_ACTUEL');
+  });
+
+  it('refuse une confirmation différente, sous le champ de confirmation', () => {
+    expect(validerNouveauMotDePasse(ACTUEL, 'nouveau-mot-de-passe', 'autre-mot-de-passe')).toEqual({
+      nouveau: null,
+      confirmation: 'CONFIRMATION_DIFFERENTE',
+    });
+  });
+
+  it('sans mot de passe actuel connu (mot de passe temporaire déjà vérifié), ne compare pas', () => {
+    expect(validerNouveauMotDePasse(null, 'nouveau-mot-de-passe', 'nouveau-mot-de-passe').nouveau).toBeNull();
   });
 });

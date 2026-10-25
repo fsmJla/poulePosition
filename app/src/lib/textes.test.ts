@@ -20,3 +20,16 @@ describe('textes de la connexion', () => {
     expect(textes.roles).toEqual({ administrateur: 'Administrateur', organisateur: 'Organisateur' });
   });
 });
+
+describe('textes du changement de mot de passe (US-010)', () => {
+  it('US-010 CA-1 et hors ligne : messages de l’US', () => {
+    expect(textes.motDePasse.modifie).toBe('Mot de passe modifié');
+    expect(textes.motDePasse.horsLigne).toBe('Nécessite une connexion internet');
+  });
+
+  it('US-010 CA-2 : un message précis par règle', () => {
+    expect(textes.motDePasse.champs.MOT_DE_PASSE_TROP_COURT).toContain('10 caractères');
+    expect(textes.motDePasse.champs.IDENTIQUE_A_L_ACTUEL).toContain('différent');
+    expect(textes.motDePasse.champs.CONFIRMATION_DIFFERENTE).toContain('différents');
+  });
+});

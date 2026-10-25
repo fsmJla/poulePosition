@@ -1,6 +1,7 @@
 // Point d'entrée du Worker : routes, origines autorisées, transmission de la connexion WebSocket au Durable Object
 // de la compétition, installation du premier administrateur, connexion et session. Protocole : docs/protocole.md.
 import {
+  analyserDemandeChangementMotDePasse,
   analyserDemandeConnexion,
   analyserDemandeInstallation,
   analyserDemandeSel,
@@ -13,13 +14,13 @@ import type { Club, CompteStocke } from './club';
 import type { Limiteur } from './limiteur';
 import {
   analyserChemin,
+  decisionSession,
   deciderConnexion,
   enTetesCors,
   extraireJetonBearer,
   fauxSel,
   origineAutorisee,
   secretsEgaux,
-  sessionProlongeable,
   signerSession,
   verificateurServeur,
   verifierSession,
@@ -49,7 +50,9 @@ export default {
     if (route.route === 'accueil') return new Response('Serveur poulePosition');
     if (route.route === 'sante') return Response.json({ ok: true, service: 'poule-position-serveur' });
     if (route.route === 'installation') return installer(requete, env);
-    if (route.route === 'session' || route.route === 'sel') return routeSession(route.route, requete, env);
+    if (route.route === 'session' || route.route === 'sel' || route.route === 'mot-de-passe') {
+      return routeSession(route.route, requete, env);
+    }
 
     if (requete.headers.get('Upgrade') !== 'websocket') return new Response('WebSocket attendu', { status: 426 });
     if (!origineAutorisee(requete.headers.get('Origin'), env.ORIGINES)) {
@@ -108,10 +111,15 @@ async function installer(requete: Request, env: Env): Promise<Response> {
   return resultat.ok ? repondre(201, resultat) : refuser(409, resultat.erreur);
 }
 
-const METHODES_SESSION = { sel: ['POST'], session: ['GET', 'POST'] } as const;
+type RouteSession = 'sel' | 'session' | 'mot-de-passe';
 
-/** Routes de connexion et de session (US-003), appelées par l'application depuis un autre domaine (CORS). */
-async function routeSession(route: 'sel' | 'session', requete: Request, env: Env): Promise<Response> {
+const METHODES_SESSION = { sel: ['POST'], session: ['GET', 'POST'], 'mot-de-passe': ['POST'] } as const;
+
+/**
+ * Routes de connexion, de session (US-003) et de changement de mot de passe (US-010), appelées par l'application
+ * depuis un autre domaine (CORS).
+ */
+async function routeSession(route: RouteSession, requete: Request, env: Env): Promise<Response> {
   const cors = enTetesCors(requete.headers.get('Origin'), env.ORIGINES);
   if (requete.method === 'OPTIONS') {
     if (!cors) return new Response('Origine refusée', { status: 403 });
@@ -142,7 +150,7 @@ async function lireJson(requete: Request): Promise<unknown> {
   }
 }
 
-async function traiterSession(route: 'sel' | 'session', requete: Request, env: Env): Promise<Response> {
+async function traiterSession(route: RouteSession, requete: Request, env: Env): Promise<Response> {
   const methodes: readonly string[] = METHODES_SESSION[route];
   if (!methodes.includes(requete.method)) {
     return new Response('Méthode non autorisée', { status: 405, headers: { Allow: methodes.join(', ') } });
@@ -158,7 +166,7 @@ async function traiterSession(route: 'sel' | 'session', requete: Request, env: E
     return Response.json({ ok: true, sel: compte?.sel ?? (await fauxSel(demande.email, poivre)) });
   }
 
-  if (requete.method === 'POST') {
+  if (route === 'session' && requete.method === 'POST') {
     const analyse = analyserDemandeConnexion(await lireJson(requete));
     if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
     const compte = await club.compteParEmail(analyse.demande.email);
@@ -167,17 +175,48 @@ async function traiterSession(route: 'sel' | 'session', requete: Request, env: E
     return ouvrirSession(compte as CompteStocke, env.CLUB_ID, secret);
   }
 
-  // GET : vérifie la session et la prolonge (CA-4), si le compte existe encore et est toujours actif (CA-7).
+  const authentifie = await compteDeLaSession(requete, secret, env.CLUB_ID, club);
+  if (!authentifie.ok) return authentifie.refus;
+
+  if (route === 'mot-de-passe') {
+    // US-010 : la clé actuelle est vérifiée comme à la connexion ; un échec ne ferme pas la session (403, pas 401).
+    const analyse = analyserDemandeChangementMotDePasse(await lireJson(requete));
+    if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
+    const { cleActuelle, sel, cle } = analyse.demande;
+    if (!(await secretsEgaux(await verificateurServeur(cleActuelle, poivre), authentifie.compte.verificateur))) {
+      return refuserSession(403, 'MOT_DE_PASSE_INCORRECT');
+    }
+    const modifie = await club.changerMotDePasse(authentifie.compte.id, sel, await verificateurServeur(cle, poivre));
+    if (!modifie) return refuserSession(401, 'SESSION_INVALIDE');
+    return ouvrirSession(modifie, env.CLUB_ID, secret);
+  }
+
+  // GET /session : la session est valide, on la prolonge (US-003 CA-4).
+  return ouvrirSession(authentifie.compte, env.CLUB_ID, secret);
+}
+
+/**
+ * Compte d'une session valide (modèle des routes réservées, docs/protocole.md §7) : signature, expiration, club,
+ * compte existant et actif (US-003 CA-7), mot de passe inchangé depuis la session (US-010 CA-5). Sinon, le refus 401.
+ */
+async function compteDeLaSession(
+  requete: Request,
+  secret: string,
+  clubId: string,
+  club: DurableObjectStub<Club>,
+): Promise<{ ok: true; compte: CompteStocke } | { ok: false; refus: Response }> {
   const jeton = extraireJetonBearer(requete.headers.get('Authorization'));
   const charge = jeton ? await verifierSession(jeton, secret, Date.now()) : null;
-  const compte = charge?.club === env.CLUB_ID ? await club.compteParId(charge.sub) : null;
-  if (!compte || !sessionProlongeable(compte)) return refuserSession(401, 'SESSION_INVALIDE');
-  return ouvrirSession(compte, env.CLUB_ID, secret);
+  const compte = charge?.club === clubId ? await club.compteParId(charge.sub) : null;
+  const decision = charge ? decisionSession(charge, compte) : 'SESSION_INVALIDE';
+  if (decision !== 'OK' || !compte)
+    return { ok: false, refus: refuserSession(401, decision === 'OK' ? 'SESSION_INVALIDE' : decision) };
+  return { ok: true, compte };
 }
 
 async function ouvrirSession(compte: CompteStocke, clubId: string, secret: string): Promise<Response> {
   const { jeton, expireLe } = await signerSession(
-    { sub: compte.id, club: clubId, role: compte.role },
+    { sub: compte.id, club: clubId, role: compte.role, v: compte.versionMdp },
     secret,
     Date.now(),
   );

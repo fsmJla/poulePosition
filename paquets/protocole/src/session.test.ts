@@ -2,8 +2,10 @@ import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { decoderBase64Url, deriverCle, encoderBase64Url, nouveauSel } from './authentification';
 import {
+  analyserDemandeChangementMotDePasse,
   analyserDemandeConnexion,
   analyserDemandeSel,
+  preparerChangementMotDePasse,
   analyserReponseSel,
   analyserReponseSession,
   verificateurLocal,
@@ -105,5 +107,32 @@ describe('vérificateur local (ADR-0006)', () => {
     const local = await verificateurLocal(cle);
     expect(local).toBe(encoderBase64Url(new Uint8Array(attendu)));
     expect(local).not.toBe(cle);
+  });
+});
+
+describe('changement de mot de passe (US-010)', () => {
+  it('US-010 CA-1 : prépare un nouveau sel et la clé du nouveau mot de passe, sans le mot de passe en clair', async () => {
+    const demande = await preparerChangementMotDePasse(CLE, 'nouveau-mot-de-passe');
+    expect(Object.keys(demande).sort()).toEqual(['cle', 'cleActuelle', 'sel']);
+    expect(demande.cleActuelle).toBe(CLE);
+    expect(demande.sel).not.toBe(SEL);
+    expect(demande.cle).toBe(await deriverCle('nouveau-mot-de-passe', demande.sel));
+    expect(JSON.stringify(demande)).not.toContain('nouveau-mot-de-passe');
+    expect(analyserDemandeChangementMotDePasse(demande)).toEqual({ ok: true, demande });
+  });
+
+  it.each([
+    ['null', null],
+    ['clé actuelle absente', { sel: SEL, cle: CLE }],
+    ['sel de mauvaise taille', { cleActuelle: CLE, sel: 'AAAA', cle: CLE }],
+    ['clé de mauvaise taille', { cleActuelle: CLE, sel: SEL, cle: 'AAAA' }],
+    ['mot de passe en clair', { cleActuelle: CLE, sel: SEL, cle: CLE, motDePasse: 'x' }],
+  ])('refuse une demande invalide : %s', (_cas, brut) => {
+    expect(analyserDemandeChangementMotDePasse(brut)).toEqual({ ok: false });
+  });
+
+  it('US-010 CA-3 et CA-5 : connaît les codes MOT_DE_PASSE_INCORRECT et COMPTE_MODIFIE', () => {
+    expect(CODES_ERREUR_SESSION).toContain('MOT_DE_PASSE_INCORRECT');
+    expect(CODES_ERREUR_SESSION).toContain('COMPTE_MODIFIE');
   });
 });

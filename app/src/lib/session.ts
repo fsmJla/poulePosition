@@ -1,10 +1,12 @@
-// Connexion, session et déconnexion (US-003, docs/protocole.md §7). Le mot de passe ne quitte jamais l'appareil :
-// seule la clé dérivée est envoyée. La session est gardée dans IndexedDB et reste utilisable hors ligne (ADR-0001).
+// Connexion, session et déconnexion (US-003, docs/protocole.md §7), changement de mot de passe (US-010, §8). Le mot
+// de passe ne quitte jamais l'appareil : seule la clé dérivée est envoyée. La session est gardée dans IndexedDB et
+// reste utilisable hors ligne (ADR-0001).
 import { normaliserEmail, sessionExpiree } from '@poule-position/domaine';
 import {
   analyserReponseSel,
   analyserReponseSession,
   deriverCle,
+  preparerChangementMotDePasse,
   verificateurLocal,
   type ErreurReponse,
   type Session,
@@ -18,6 +20,19 @@ export type ErreurConnexion =
   'IDENTIFIANTS_INVALIDES' | 'COMPTE_DESACTIVE' | 'HORS_LIGNE' | 'SERVEUR_NON_CONFIGURE' | 'ERREUR_INATTENDUE';
 
 export type ResultatConnexion = { ok: true; session: Session } | { ok: false; erreur: ErreurConnexion };
+
+export type ErreurChangementMotDePasse =
+  | 'MOT_DE_PASSE_INCORRECT'
+  /** Pas de mot de passe actuel saisi, ni de clé gardée depuis la connexion (page rechargée). */
+  | 'MOT_DE_PASSE_ACTUEL_REQUIS'
+  /** Session refusée par le serveur : elle est effacée, retour à la connexion. */
+  | 'SESSION_INVALIDE'
+  | 'HORS_LIGNE'
+  | 'SERVEUR_NON_CONFIGURE'
+  | 'ERREUR_INATTENDUE';
+
+export type ResultatChangementMotDePasse =
+  { ok: true; session: Session } | { ok: false; erreur: ErreurChangementMotDePasse };
 
 export interface OptionsClientSession {
   /** Adresse HTTP du serveur (voir urlHttp) ; null s'il n'est pas configuré. */
@@ -87,6 +102,20 @@ export function creerClientSession({
     return operation(controleur.signal).finally(() => clearTimeout(minuterie));
   }
 
+  /**
+   * Clé dérivée du mot de passe saisi à la connexion, gardée en mémoire seulement (jamais stockée) : elle évite de
+   * redemander un mot de passe temporaire qu'on vient de saisir (US-010 CA-4).
+   */
+  let cleEnMemoire: { email: string; cle: string } | null = null;
+
+  /** Session refusée (401) : effacée ; si le mot de passe a changé ailleurs, le vérificateur local aussi (US-010 CA-5). */
+  async function oublierSession(session: Session, corps: unknown): Promise<void> {
+    await stockage.effacerSession();
+    cleEnMemoire = null;
+    const refus = analyserReponseSession(corps);
+    if (!refus.ok && refus.erreur === 'COMPTE_MODIFIE') await stockage.oublierAppareilConnu(session.compte.email);
+  }
+
   return {
     /** CA-1 à CA-3 : connexion en ligne ; garde la session et l'appareil connu (ADR-0006). */
     async seConnecter(emailSaisi: string, motDePasse: string): Promise<ResultatConnexion> {
@@ -115,6 +144,7 @@ export function creerClientSession({
             verificateurLocal: await verificateurLocal(cle),
             connuDepuis: connu?.connuDepuis ?? maintenant(),
           });
+          cleEnMemoire = { email, cle };
           return { ok: true, session };
         });
       } catch (erreur) {
@@ -142,7 +172,7 @@ export function creerClientSession({
         return session;
       }
       if (reponse.statut === 401) {
-        await stockage.effacerSession();
+        await oublierSession(session, reponse.corps);
         return null;
       }
       const prolongee = analyserReponseSession(reponse.corps);
@@ -153,7 +183,70 @@ export function creerClientSession({
 
     /** CA-5 : efface la session de l'appareil ; l'appareil reste connu pour la reconnexion hors ligne (US-005). */
     async seDeconnecter(): Promise<void> {
+      cleEnMemoire = null;
       await stockage.effacerSession();
+    },
+
+    /** US-010 CA-4 : vrai si le mot de passe actuel n'a pas à être ressaisi (saisi à la connexion, page non rechargée). */
+    connaitMotDePasseActuel(): boolean {
+      return cleEnMemoire !== null;
+    },
+
+    /**
+     * US-010 : change le mot de passe. `actuel` vaut null pour reprendre la clé saisie à la connexion (CA-4). Le
+     * vérificateur local n'est mis à jour qu'après la confirmation du serveur ; une coupure ne touche à rien.
+     */
+    async changerMotDePasse(actuel: string | null, nouveau: string): Promise<ResultatChangementMotDePasse> {
+      if (!urlServeur) return { ok: false, erreur: 'SERVEUR_NON_CONFIGURE' };
+      const session = await stockage.lireSession();
+      if (!session) return { ok: false, erreur: 'SESSION_INVALIDE' };
+      const { email } = session.compte;
+      const memorisee = cleEnMemoire?.email === email ? cleEnMemoire.cle : null;
+      if (actuel === null && !memorisee) return { ok: false, erreur: 'MOT_DE_PASSE_ACTUEL_REQUIS' };
+      if (!enLigne()) return { ok: false, erreur: 'HORS_LIGNE' };
+      try {
+        return await avecDelai(async (signal): Promise<ResultatChangementMotDePasse> => {
+          let cleActuelle = memorisee;
+          if (actuel !== null) {
+            // Sel actuel du compte, relu au serveur : il a pu changer depuis un autre appareil.
+            const reponseSel = analyserReponseSel(
+              (await requete('/session/sel', signal, { methode: 'POST', corps: { email } })).corps,
+            );
+            if (!reponseSel.ok) return { ok: false, erreur: 'ERREUR_INATTENDUE' };
+            cleActuelle = await deriverCle(actuel, reponseSel.sel);
+          }
+          const demande = await preparerChangementMotDePasse(cleActuelle as string, nouveau);
+          const { statut, corps } = await requete('/compte/mot-de-passe', signal, {
+            methode: 'POST',
+            corps: demande,
+            jeton: session.jeton,
+          });
+          if (statut === 401) {
+            await oublierSession(session, corps);
+            return { ok: false, erreur: 'SESSION_INVALIDE' };
+          }
+          const reponse = analyserReponseSession(corps);
+          if (!reponse.ok) {
+            const erreur = reponse.erreur === 'MOT_DE_PASSE_INCORRECT' ? reponse.erreur : 'ERREUR_INATTENDUE';
+            return { ok: false, erreur };
+          }
+          await stockage.ecrireSession(reponse.session);
+          const connu = await stockage.lireAppareilConnu(email);
+          await stockage.enregistrerAppareilConnu({
+            email,
+            nom: reponse.session.compte.nom,
+            role: reponse.session.compte.role,
+            sel: demande.sel,
+            verificateurLocal: await verificateurLocal(demande.cle),
+            connuDepuis: connu?.connuDepuis ?? maintenant(),
+          });
+          cleEnMemoire = { email, cle: demande.cle };
+          return { ok: true, session: reponse.session };
+        });
+      } catch (erreur) {
+        if (erreur instanceof Injoignable) return { ok: false, erreur: 'HORS_LIGNE' };
+        throw erreur;
+      }
     },
   };
 }

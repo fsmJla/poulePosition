@@ -45,3 +45,14 @@ describe('stockage IndexedDB (ADR-0003)', () => {
     expect(await stockage.lireAppareilConnu('autre@club.fr')).toBeNull();
   });
 });
+
+describe('oublier un appareil connu (US-010 CA-5)', () => {
+  it('efface le vérificateur local d’un compte, et seulement de celui-là', async () => {
+    const stockage = nouveau();
+    await stockage.enregistrerAppareilConnu(appareil);
+    await stockage.enregistrerAppareilConnu({ ...appareil, email: 'autre@club.fr' });
+    await stockage.oublierAppareilConnu('orga@club.fr');
+    expect(await stockage.lireAppareilConnu('orga@club.fr')).toBeNull();
+    expect(await stockage.lireAppareilConnu('autre@club.fr')).not.toBeNull();
+  });
+});
