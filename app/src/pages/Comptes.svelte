@@ -211,15 +211,19 @@
                   {#if compte.temporaire}<small>{t.temporaire}</small>{/if}
                 </td>
                 <td>{compte.derniereConnexion === null ? t.jamais : formatDate.format(compte.derniereConnexion)}</td>
-                <td class="actions">
-                  {#if enEdition === compte.id}
-                    <button type="button" class="principal" onclick={() => enregistrer(compte)}>{t.enregistrer}</button>
-                    <button type="button" class="lien" onclick={() => (enEdition = null)}>{t.annuler}</button>
-                  {:else}
-                    <button type="button" class="secondaire" onclick={() => editer(compte)}>
-                      <span aria-hidden="true">✎</span><span class="masque">{t.modifier(compte.nom)}</span>
-                    </button>
-                  {/if}
+                <td>
+                  <div class="actions">
+                    {#if enEdition === compte.id}
+                      <button type="button" class="principal" onclick={() => enregistrer(compte)}
+                        >{t.enregistrer}</button
+                      >
+                      <button type="button" class="lien" onclick={() => (enEdition = null)}>{t.annuler}</button>
+                    {:else}
+                      <button type="button" class="secondaire" onclick={() => editer(compte)}>
+                        <span aria-hidden="true">✎</span><span class="masque">{t.modifier(compte.nom)}</span>
+                      </button>
+                    {/if}
+                  </div>
                 </td>
               </tr>
             {/each}
