@@ -6,7 +6,7 @@
 - **Type :** correction
 - **Statut :** En revue
 - **Dépend de :** US-001 (origine : workflow `e2e-preview.yml`)
-- **Branche / PR :** `us/US-013-correction-e2e-preview-bloques`
+- **Branche / PR :** `us/US-013-correction-e2e-preview-bloques` · [PR #16](https://github.com/fsmJla/poulePosition/pull/16)
 
 ## Récit
 
