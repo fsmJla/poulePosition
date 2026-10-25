@@ -7,6 +7,7 @@
 >
 > Version 1, US-001 (walking skeleton) : connexion, bienvenue, maintien de connexion, erreurs.
 > US-002 : route d'installation du premier administrateur (§6).
+> US-003 : connexion, session et CORS (§7).
 > Les rôles, la synchronisation du journal et les saisies (ADR-0005) viendront avec leurs US.
 
 ## 1. Adresses
@@ -31,6 +32,10 @@
 | `GET /` | `Serveur poulePosition` (texte) |
 | `GET /sante` | `{"ok":true,"service":"poule-position-serveur"}` : vérifie que le serveur est en ligne |
 | `POST /installation/administrateur` | Création du premier administrateur (§6) |
+| `POST /session/sel` | Sel d'un compte, avant la connexion (§7) |
+| `POST /session` | Connexion : ouvre une session (§7) |
+| `GET /session` | Vérifie et prolonge une session (§7) |
+| `OPTIONS /session`, `OPTIONS /session/sel` | Requête CORS préalable (§7) |
 | WebSocket `/competitions/<competitionId>/connexion` | Connexion à une compétition (§3) |
 | Tout autre chemin | `404` |
 
