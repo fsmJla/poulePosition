@@ -31,7 +31,7 @@ test('US-001 CA-1 : npm run dev démarre l’app et le serveur local', async ({ 
       .toBe(200);
 
     await page.goto('http://localhost:5280');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('poulePosition');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName('Poule Position');
     await expect(page.getByRole('status')).toHaveText('Serveur connecté');
   } finally {
     arreter(dev);

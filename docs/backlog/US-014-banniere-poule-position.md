@@ -4,9 +4,9 @@
 - **Fonctionnalité :** PWA, qualité d'usage (exigences §6)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-011
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-014-banniere-poule-position` · [PR #18](https://github.com/fsmJla/poulePosition/pull/18)
 
 ## Récit
 
@@ -73,8 +73,37 @@ et l'entête s'affichent à l'identique hors ligne. Elles sont vectorisées : au
   titre : il vérifiera désormais le nom accessible « Poule Position »), US-003 et US-010 (bouton « Se déconnecter »
   déplacé dans l'entête, même libellé), US-011 (nom du manifeste et titre de l'onglet).
 
+## Réalisation
+
+- `app/public/brand/` : les 6 SVG du pack (login, header, wordmark ; clair et sombre), précachés avec les autres SVG.
+- `composants/Banniere.svelte` : `<picture>` (source sombre sur `prefers-color-scheme: dark`), option `surFondSombre`
+  pour l'entête ; texte alternatif « Poule Position » (catalogue `textes.nomApplication`).
+- `composants/Entete.svelte` : barre `--marque`, bannière « header » sombre liée à l'accueil de l'organisateur,
+  « Se déconnecter » (44 px de haut). Affiché par `App.svelte` sur toute page réservée.
+- Accueil : bannière « login » dans le `<h1>` et sous-titre du catalogue (`textes.sousTitre`) ; l'accroche est retirée.
+- Charte : rôle `--sur-marque` (`#F7F4EF`), ajouté aux couples de contraste.
+- Nom « Poule Position » : `<title>`, `apple-mobile-web-app-title`, `name` et `short_name` du manifeste.
+- **Tests** :
+
+  | CA | Tests |
+  |---|---|
+  | CA-1 | E2E `marque.spec.ts` (titre accessible, bannière chargée, sous-titre, plus de texte « poulePosition ») |
+  | CA-2 | E2E `marque.spec.ts` (variante `login-light` / `login-dark`), `couleurs.test.ts` (`--sur-marque` sur `--marque`) |
+  | CA-3 | E2E `marque.spec.ts` (bannière liée à l'accueil de l'organisateur, « Se déconnecter », pas de défilement horizontal, PC et smartphone) |
+  | CA-4 | E2E `marque.spec.ts` (titre de l'onglet, titre iOS, manifeste) |
+  | Hors ligne | E2E `marque.spec.ts` (bannière affichée après coupure) |
+
+- **Tests existants adaptés** (impact annoncé) : US-001 CA-2, US-001 hors ligne, US-001 CA-1 et US-003 CA-6 vérifient
+  le nom accessible « Poule Position » au lieu du texte « poulePosition » ; US-011 CA-6 attend l'icône dans la
+  bannière « login » ; US-011 hors ligne vérifie les polices sur la page de connexion (le titre de l'accueil est
+  désormais une image, qui n'emploie plus la police des titres) ; nom du manifeste dans US-011 CA-5.
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (pack d'icônes v2 : bannière, filet, entête) |
+| 2026-10-25 | En cours : plan validé (composants Banniere et Entete, `--sur-marque`, nom « Poule Position », SVG `brand/` seulement) |
+| 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 231 tests unitaires, couverture 96 %, build, audit, 54 E2E ; test de démarrage non relancé, ports occupés par le `npm run dev` de l'utilisateur) |
+| 2026-10-25 | Recette OK sur https://poule-position-2x7cexy02-fsmjlas-projects.vercel.app (déployée en preview et vérifiée) : bannière « login » chargée, variante sombre affichée en mode sombre, texte alternatif « Poule Position », sous-titre, plus de texte « poulePosition » (CA-1, CA-2) ; onglet, titre iOS et manifeste « Poule Position » (CA-4). Entête des pages réservées (CA-3) et hors-ligne : E2E de la CI sur cette preview, avec connexion réelle, PC et smartphone. |
+| 2026-10-25 | **Terminée**, mergée dans `dev` (PR #18). |

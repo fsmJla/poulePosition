@@ -63,7 +63,7 @@ test('US-003 CA-6 : un visiteur voit l’accueil public, et une page réservée 
   page,
 }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('poulePosition');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName('Poule Position');
   await page.getByRole('link', { name: 'Se connecter' }).click();
   await expect(page).toHaveURL(/\/connexion$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Se connecter');

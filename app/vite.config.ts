@@ -12,8 +12,9 @@ export default defineConfig({
       injectRegister: 'auto',
       includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 'icons/*.svg'],
       manifest: {
-        name: 'poulePosition',
-        short_name: 'poulePosition',
+        // Nom affiché (US-014) ; le nom technique reste poulePosition.
+        name: 'Poule Position',
+        short_name: 'Poule Position',
         description: "Organisation et suivi de compétitions d'escrime",
         lang: 'fr',
         display: 'standalone',

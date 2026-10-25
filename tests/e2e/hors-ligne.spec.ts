@@ -19,7 +19,7 @@ test('US-001 hors ligne : la page s’affiche après une première visite et ind
 
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('poulePosition');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName('Poule Position');
   await expect(page.getByRole('status')).toHaveText('Serveur injoignable');
   await context.setOffline(false);
 });
