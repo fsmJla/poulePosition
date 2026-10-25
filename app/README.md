@@ -20,3 +20,6 @@ Persistance locale : IndexedDB (Dexie, ADR-0003). Aucune règle métier ici : el
 - **Icônes** : `public/` (pack « feuille de poule ») : `favicon.ico`, `favicon.svg`, `apple-touch-icon.png`,
   `icons/` (SVG principal, petit, maskable et animé ; PNG 192 et 512, maskables 192 et 512). Le manifeste est généré
   par `vite-plugin-pwa` (`vite.config.ts`) : thème `#2F4B4A`, fond `#F7F4EF`.
+- **Bannière « Poule Position »** (US-014) : `public/brand/` (SVG vectorisés : `login`, `header`, `wordmark`, en
+  `light` et `dark`), affichée par `composants/Banniere.svelte` ; entête des pages réservées :
+  `composants/Entete.svelte`. Nom affiché : « Poule Position » (`textes.nomApplication`).
