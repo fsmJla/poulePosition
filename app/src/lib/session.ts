@@ -1,13 +1,18 @@
 // Connexion, session et déconnexion (US-003, docs/protocole.md §7), changement de mot de passe (US-010, §8). Le mot
 // de passe ne quitte jamais l'appareil : seule la clé dérivée est envoyée. La session est gardée dans IndexedDB et
-// reste utilisable hors ligne (ADR-0001).
-import { normaliserEmail, sessionExpiree } from '@poule-position/domaine';
+// reste utilisable hors ligne (ADR-0001). Gestion des comptes par les administrateurs (US-007, §9).
+import { normaliserEmail, sessionExpiree, type Role } from '@poule-position/domaine';
 import {
+  analyserReponseCompte,
+  analyserReponseComptes,
   analyserReponseSel,
   analyserReponseSession,
   deriverCle,
   preparerChangementMotDePasse,
+  preparerCreationCompte,
   verificateurLocal,
+  type CompteResume,
+  type DemandeModificationCompte,
   type ErreurReponse,
   type Session,
 } from '@poule-position/protocole';
@@ -64,6 +69,29 @@ function erreurConnexion(erreur: ErreurReponse): ErreurConnexion {
   return ERREURS_TRANSMISES.includes(erreur) ? (erreur as ErreurConnexion) : 'ERREUR_INATTENDUE';
 }
 
+/** Erreurs de la gestion des comptes (US-007), affichées par l'écran « Comptes ». */
+export type ErreurComptes =
+  | 'ACCES_REFUSE'
+  | 'EMAIL_DEJA_UTILISE'
+  | 'DERNIER_ADMINISTRATEUR'
+  | 'COMPTE_INCONNU'
+  | 'SESSION_INVALIDE'
+  | 'HORS_LIGNE'
+  | 'SERVEUR_NON_CONFIGURE'
+  | 'ERREUR_INATTENDUE';
+
+const ERREURS_COMPTES: readonly ErreurReponse[] = [
+  'ACCES_REFUSE',
+  'EMAIL_DEJA_UTILISE',
+  'DERNIER_ADMINISTRATEUR',
+  'COMPTE_INCONNU',
+  'SERVEUR_NON_CONFIGURE',
+];
+
+function erreurComptes(erreur: ErreurReponse): ErreurComptes {
+  return ERREURS_COMPTES.includes(erreur) ? (erreur as ErreurComptes) : 'ERREUR_INATTENDUE';
+}
+
 export function creerClientSession({
   urlServeur,
   stockage,
@@ -76,7 +104,7 @@ export function creerClientSession({
   async function requete(
     chemin: string,
     signal: AbortSignal,
-    init: { methode: 'GET' | 'POST'; corps?: unknown; jeton?: string },
+    init: { methode: 'GET' | 'POST' | 'PATCH'; corps?: unknown; jeton?: string },
   ): Promise<{ statut: number; corps: unknown }> {
     let reponse: Response;
     try {
@@ -114,6 +142,32 @@ export function creerClientSession({
     cleEnMemoire = null;
     const refus = analyserReponseSession(corps);
     if (!refus.ok && refus.erreur === 'COMPTE_MODIFIE') await stockage.oublierAppareilConnu(session.compte.email);
+  }
+
+  /**
+   * Appel d'une route réservée (US-007) avec la session gardée : réseau exigé, 401 → session oubliée. Renvoie le
+   * corps de la réponse, ou l'erreur à afficher.
+   */
+  async function appelReserve(
+    chemin: string,
+    methode: 'GET' | 'POST' | 'PATCH',
+    corps?: unknown,
+  ): Promise<{ ok: true; corps: unknown } | { ok: false; erreur: ErreurComptes }> {
+    if (!urlServeur) return { ok: false, erreur: 'SERVEUR_NON_CONFIGURE' };
+    const session = await stockage.lireSession();
+    if (!session) return { ok: false, erreur: 'SESSION_INVALIDE' };
+    if (!enLigne()) return { ok: false, erreur: 'HORS_LIGNE' };
+    try {
+      const reponse = await avecDelai((signal) => requete(chemin, signal, { methode, corps, jeton: session.jeton }));
+      if (reponse.statut === 401) {
+        await oublierSession(session, reponse.corps);
+        return { ok: false, erreur: 'SESSION_INVALIDE' };
+      }
+      return { ok: true, corps: reponse.corps };
+    } catch (erreur) {
+      if (erreur instanceof Injoignable) return { ok: false, erreur: 'HORS_LIGNE' };
+      throw erreur;
+    }
   }
 
   return {
@@ -185,6 +239,42 @@ export function creerClientSession({
     async seDeconnecter(): Promise<void> {
       cleEnMemoire = null;
       await stockage.effacerSession();
+    },
+
+    /** US-007 CA-1 : comptes du club (administrateurs seulement). */
+    async listerComptes(): Promise<{ ok: true; comptes: CompteResume[] } | { ok: false; erreur: ErreurComptes }> {
+      const appel = await appelReserve('/comptes', 'GET');
+      if (!appel.ok) return appel;
+      const reponse = analyserReponseComptes(appel.corps);
+      return reponse.ok ? reponse : { ok: false, erreur: erreurComptes(reponse.erreur) };
+    },
+
+    /** US-007 CA-2 : crée un compte ; le mot de passe temporaire, tiré ici, n'est rendu qu'à l'appelant. */
+    async creerCompte(saisie: {
+      email: string;
+      nom: string;
+      role: Role;
+    }): Promise<
+      { ok: true; compte: CompteResume; motDePasseTemporaire: string } | { ok: false; erreur: ErreurComptes }
+    > {
+      const { demande, motDePasseTemporaire } = await preparerCreationCompte(saisie);
+      const appel = await appelReserve('/comptes', 'POST', demande);
+      if (!appel.ok) return appel;
+      const reponse = analyserReponseCompte(appel.corps);
+      return reponse.ok
+        ? { ok: true, compte: reponse.compte, motDePasseTemporaire }
+        : { ok: false, erreur: erreurComptes(reponse.erreur) };
+    },
+
+    /** US-007 CA-4 : modifie le nom ou le rôle d'un compte. */
+    async modifierCompte(
+      id: string,
+      modification: DemandeModificationCompte,
+    ): Promise<{ ok: true; compte: CompteResume } | { ok: false; erreur: ErreurComptes }> {
+      const appel = await appelReserve(`/comptes/${encodeURIComponent(id)}`, 'PATCH', modification);
+      if (!appel.ok) return appel;
+      const reponse = analyserReponseCompte(appel.corps);
+      return reponse.ok ? reponse : { ok: false, erreur: erreurComptes(reponse.erreur) };
     },
 
     /** US-010 CA-4 : vrai si le mot de passe actuel n'a pas à être ressaisi (saisi à la connexion, page non rechargée). */

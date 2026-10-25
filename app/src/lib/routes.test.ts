@@ -36,3 +36,15 @@ describe('changement de mot de passe (US-010)', () => {
     expect(resoudreRoute(CHEMINS.motDePasse, true, true)).toEqual({ page: 'motDePasse' });
   });
 });
+
+describe('gestion des comptes (US-007)', () => {
+  it('US-007 CA-6 : la page « Comptes » est réservée aux administrateurs', () => {
+    expect(resoudreRoute(CHEMINS.comptes, false)).toEqual({ redirection: CHEMINS.connexion });
+    expect(resoudreRoute(CHEMINS.comptes, true, false, false)).toEqual({ redirection: CHEMINS.organisateur });
+    expect(resoudreRoute(CHEMINS.comptes, true, false, true)).toEqual({ page: 'comptes' });
+  });
+
+  it('le mot de passe temporaire passe avant tout, même pour un administrateur', () => {
+    expect(resoudreRoute(CHEMINS.comptes, true, true, true)).toEqual({ redirection: CHEMINS.motDePasse });
+  });
+});
