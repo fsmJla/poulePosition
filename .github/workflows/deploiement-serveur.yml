@@ -8,6 +8,7 @@ on:
     branches: [dev, main]
     paths:
       - 'serveur/**'
+      - 'paquets/domaine/**'
       - 'paquets/protocole/**'
       - 'package-lock.json'
       - '.github/workflows/deploiement-serveur.yml'
@@ -32,7 +33,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Tests du serveur et du protocole
-        run: npx vitest run --project serveur --project protocole
+        run: npx vitest run --project serveur --project protocole --project domaine
       - name: Déployer
         working-directory: serveur
         run: npx wrangler deploy ${{ github.ref_name != 'main' && '--env preview' || '' }}
