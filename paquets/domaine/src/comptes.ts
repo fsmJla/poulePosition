@@ -55,3 +55,55 @@ export function validerNouveauMotDePasse(
     confirmation: validerConfirmation(nouveau, confirmation) as 'CONFIRMATION_DIFFERENTE' | null,
   };
 }
+
+/** Longueur d'un mot de passe temporaire, donné par un administrateur (US-007, US-009). */
+export const LONGUEUR_MOT_DE_PASSE_TEMPORAIRE = 12;
+
+/** Alphabet des mots de passe temporaires : sans caractères faciles à confondre (0, O, o, 1, l, I). */
+export const ALPHABET_MOT_DE_PASSE_TEMPORAIRE = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+
+/**
+ * Mot de passe temporaire tiré d'octets aléatoires fournis par l'appelant (aléatoire cryptographique du navigateur).
+ * Les octets qui biaiseraient le tirage sont écartés (tirage par rejet).
+ * @throws {Error} si les octets ne suffisent pas à former le mot de passe
+ */
+export function genererMotDePasseTemporaire(octets: Iterable<number>): string {
+  const taille = ALPHABET_MOT_DE_PASSE_TEMPORAIRE.length;
+  const limite = 256 - (256 % taille);
+  let resultat = '';
+  for (const octet of octets) {
+    if (octet >= limite) continue;
+    resultat += ALPHABET_MOT_DE_PASSE_TEMPORAIRE[octet % taille];
+    if (resultat.length === LONGUEUR_MOT_DE_PASSE_TEMPORAIRE) return resultat;
+  }
+  throw new Error('Octets aléatoires insuffisants pour le mot de passe temporaire');
+}
+
+export type ErreursNouveauCompte = Partial<{
+  email: ErreurSaisieCompte;
+  nom: ErreurSaisieCompte;
+  role: 'ROLE_INVALIDE';
+}>;
+
+/** US-007 : saisie d'un nouveau compte, une erreur par champ ({} si tout est valide). */
+export function validerNouveauCompte(saisie: { email: string; nom: string; role: string }): ErreursNouveauCompte {
+  const email = validerEmail(saisie.email);
+  const nom = validerNom(saisie.nom);
+  return {
+    ...(email && { email }),
+    ...(nom && { nom }),
+    ...(!(ROLES as readonly string[]).includes(saisie.role) && { role: 'ROLE_INVALIDE' as const }),
+  };
+}
+
+/** US-007 CA-5 : un changement de rôle qui laisserait le club sans administrateur actif est refusé. */
+export function verifierChangementRole(
+  comptes: readonly { id: string; role: Role; actif: boolean }[],
+  id: string,
+  nouveauRole: Role,
+): 'DERNIER_ADMINISTRATEUR' | null {
+  const administrateursRestants = comptes.filter(
+    (compte) => compte.actif && (compte.id === id ? nouveauRole : compte.role) === 'administrateur',
+  );
+  return administrateursRestants.length === 0 ? 'DERNIER_ADMINISTRATEUR' : null;
+}
