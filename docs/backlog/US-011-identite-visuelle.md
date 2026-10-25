@@ -6,7 +6,7 @@
 - **Type :** technique
 - **Statut :** En revue
 - **Dépend de :** US-001
-- **Branche / PR :** `us/US-011-identite-visuelle`
+- **Branche / PR :** `us/US-011-identite-visuelle` · [PR #15](https://github.com/fsmJla/poulePosition/pull/15)
 
 ## Récit
 
