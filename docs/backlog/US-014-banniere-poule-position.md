@@ -6,7 +6,7 @@
 - **Type :** technique
 - **Statut :** En revue
 - **Dépend de :** US-011
-- **Branche / PR :** `us/US-014-banniere-poule-position`
+- **Branche / PR :** `us/US-014-banniere-poule-position` · [PR #18](https://github.com/fsmJla/poulePosition/pull/18)
 
 ## Récit
 
