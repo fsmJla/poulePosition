@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-003
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-010-changer-son-mot-de-passe`
 
 ## Récit
 
@@ -71,3 +71,4 @@ ADR-0006.
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
+| 2026-10-25 | En cours : plan validé (version du mot de passe dans la session, `COMPTE_MODIFIE`, E2E à réponses simulées, comptage des échecs de CA-3 par US-004, pas d'indicateur de robustesse) |
