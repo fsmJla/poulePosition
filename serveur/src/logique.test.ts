@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { DUREE_SESSION } from '@poule-position/domaine';
+import { decoderBase64Url, encoderBase64Url, TAILLE_SEL } from '@poule-position/protocole';
 import {
   analyserChemin,
   creerCompteur,
+  deciderConnexion,
+  enTetesCors,
+  fauxSel,
+  sessionProlongeable,
+  signerSession,
+  verifierSession,
   enregistrerEchec,
   erreurMessageClient,
   estBloque,
@@ -125,5 +133,137 @@ describe('limite des essais (reprise du relais)', () => {
     for (let i = 0; i < ESSAIS_MAX - 1; i++) compteur = enregistrerEchec(compteur, T0);
     compteur = enregistrerEchec(compteur, T0 + FENETRE_ESSAIS);
     expect(estBloque(compteur, T0 + FENETRE_ESSAIS + 1)).toBe(false);
+  });
+});
+
+describe('routes de session (US-003)', () => {
+  it('reconnaît /session et /session/sel', () => {
+    expect(analyserChemin('/session')).toEqual({ route: 'session' });
+    expect(analyserChemin('/session/sel')).toEqual({ route: 'sel' });
+    expect(analyserChemin('/session/autre')).toBeNull();
+  });
+});
+
+describe('jeton de session (US-003, JWT HS256)', () => {
+  const SECRET = 'secret-de-session-de-test';
+  const MAINTENANT = Date.UTC(2026, 9, 25, 12);
+  const compte = { sub: 'compte-1', club: 'club-principal', role: 'organisateur' as const };
+
+  it('US-003 CA-1 : signe une session de 30 jours, relue à l’identique', async () => {
+    const { jeton, expireLe } = await signerSession(compte, SECRET, MAINTENANT);
+    expect(expireLe).toBe(Math.floor((MAINTENANT + DUREE_SESSION) / 1000) * 1000);
+    expect(jeton.split('.')).toHaveLength(3);
+    expect(await verifierSession(jeton, SECRET, MAINTENANT + 1000)).toEqual({
+      ...compte,
+      iat: Math.floor(MAINTENANT / 1000),
+      exp: expireLe / 1000,
+    });
+  });
+
+  it('US-003 CA-7 : refuse une session expirée', async () => {
+    const { jeton, expireLe } = await signerSession(compte, SECRET, MAINTENANT);
+    expect(await verifierSession(jeton, SECRET, expireLe - 1)).not.toBeNull();
+    expect(await verifierSession(jeton, SECRET, expireLe)).toBeNull();
+  });
+
+  it('US-003 CA-7 : refuse une session falsifiée ou signée avec un autre secret', async () => {
+    const { jeton } = await signerSession(compte, SECRET, MAINTENANT);
+    const [entete, , signature] = jeton.split('.');
+    const chargeAdmin = encoderBase64Url(
+      new TextEncoder().encode(JSON.stringify({ ...compte, role: 'administrateur', iat: 0, exp: 4_000_000_000 })),
+    );
+    expect(await verifierSession(`${entete}.${chargeAdmin}.${signature}`, SECRET, MAINTENANT)).toBeNull();
+    expect(await verifierSession(jeton, 'autre-secret', MAINTENANT)).toBeNull();
+    expect(await verifierSession(`${jeton}x`, SECRET, MAINTENANT)).toBeNull();
+  });
+
+  it.each([
+    ['vide', ''],
+    ['deux morceaux', 'a.b'],
+    ['quatre morceaux', 'a.b.c.d'],
+    ['non base64url', '!!.??.**'],
+  ])('US-003 CA-7 : refuse un jeton mal formé (%s)', async (_cas, jeton) => {
+    expect(await verifierSession(jeton, SECRET, MAINTENANT)).toBeNull();
+  });
+
+  it('US-003 CA-7 : refuse une charge bien signée mais incomplète, ou un autre algorithme', async () => {
+    const signer = async (entete: object, charge: object) => {
+      const morceaux = [entete, charge].map((partie) =>
+        encoderBase64Url(new TextEncoder().encode(JSON.stringify(partie))),
+      );
+      const cle = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(SECRET),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign'],
+      );
+      const signature = await crypto.subtle.sign('HMAC', cle, new TextEncoder().encode(morceaux.join('.')));
+      return `${morceaux.join('.')}.${encoderBase64Url(new Uint8Array(signature))}`;
+    };
+    const entete = { alg: 'HS256', typ: 'JWT' };
+    const charge = { ...compte, iat: 1, exp: 4_000_000_000 };
+    expect(await verifierSession(await signer(entete, charge), SECRET, MAINTENANT)).not.toBeNull();
+    expect(await verifierSession(await signer({ alg: 'none' }, charge), SECRET, MAINTENANT)).toBeNull();
+    expect(await verifierSession(await signer(entete, { ...charge, role: 'arbitre' }), SECRET, MAINTENANT)).toBeNull();
+    expect(await verifierSession(await signer(entete, { ...charge, sub: 3 }), SECRET, MAINTENANT)).toBeNull();
+    expect(await verifierSession(await signer(entete, { ...charge, exp: 'jamais' }), SECRET, MAINTENANT)).toBeNull();
+    expect(await verifierSession(await signer(entete, ['tableau']), SECRET, MAINTENANT)).toBeNull();
+  });
+});
+
+describe('faux sel (US-003 CA-2)', () => {
+  it('est stable pour un e-mail, différent d’un e-mail à l’autre, et a la taille d’un vrai sel', async () => {
+    const sel = await fauxSel('inconnu@club.fr', 'poivre');
+    expect(await fauxSel('inconnu@club.fr', 'poivre')).toBe(sel);
+    expect(await fauxSel('autre@club.fr', 'poivre')).not.toBe(sel);
+    expect(decoderBase64Url(sel)).toHaveLength(TAILLE_SEL);
+  });
+});
+
+describe('décision de connexion (US-003)', () => {
+  const compteActif = { verificateur: 'verificateur-attendu', actif: true };
+
+  it('US-003 CA-1 : accepte le bon vérificateur d’un compte actif', async () => {
+    expect(await deciderConnexion(compteActif, 'verificateur-attendu')).toEqual({ ok: true });
+  });
+
+  it('US-003 CA-2 : même refus pour un e-mail inconnu et un mot de passe faux', async () => {
+    expect(await deciderConnexion(null, 'verificateur-quelconque')).toEqual({
+      ok: false,
+      erreur: 'IDENTIFIANTS_INVALIDES',
+    });
+    expect(await deciderConnexion(compteActif, 'mauvais')).toEqual({ ok: false, erreur: 'IDENTIFIANTS_INVALIDES' });
+  });
+
+  it('US-003 CA-3 : un compte désactivé est refusé avec COMPTE_DESACTIVE, seulement avec les bons identifiants', async () => {
+    const desactive = { ...compteActif, actif: false };
+    expect(await deciderConnexion(desactive, 'verificateur-attendu')).toEqual({
+      ok: false,
+      erreur: 'COMPTE_DESACTIVE',
+    });
+    expect(await deciderConnexion(desactive, 'mauvais')).toEqual({ ok: false, erreur: 'IDENTIFIANTS_INVALIDES' });
+  });
+
+  it('US-003 CA-7 : une session n’est prolongée que pour un compte existant et toujours actif', () => {
+    expect(sessionProlongeable({ actif: true })).toBe(true);
+    expect(sessionProlongeable({ actif: false })).toBe(false);
+    expect(sessionProlongeable(null)).toBe(false);
+  });
+});
+
+describe('enTetesCors (US-003)', () => {
+  const MOTIFS = 'https://poule-position-*-fsmjlas-projects.vercel.app,http://localhost:*';
+
+  it('autorise une origine de la liste, en la renvoyant telle quelle', () => {
+    expect(enTetesCors('http://localhost:5280', MOTIFS)).toEqual({
+      'Access-Control-Allow-Origin': 'http://localhost:5280',
+      Vary: 'Origin',
+    });
+  });
+
+  it('ne donne aucun en-tête à une origine absente ou non autorisée', () => {
+    expect(enTetesCors(null, MOTIFS)).toBeNull();
+    expect(enTetesCors('https://pirate.example', MOTIFS)).toBeNull();
   });
 });
