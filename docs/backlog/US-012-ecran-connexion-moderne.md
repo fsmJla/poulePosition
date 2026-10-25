@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-011, US-014, US-003
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-012-ecran-connexion-moderne`
 
 ## Récit
 
@@ -90,3 +90,4 @@ connexion possible uniquement sur un appareil déjà utilisé » s'affiche dans 
 |---|---|
 | 2026-10-25 | Créée (spécification identité visuelle) |
 | 2026-10-25 | Mise à jour : bannière « login », filet et sous-titre du pack v2 ; dépend d'US-014 ; pas de lien « Mot de passe oublié ? » |
+| 2026-10-25 | En cours : plan validé (panneau + carte, bouton œil à texte masqué, icône animée en SVG intégré, `--case-vide`) |

@@ -41,7 +41,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-009](US-009-reinitialiser-mot-de-passe.md) | Réinitialiser le mot de passe d'un compte (mot de passe oublié) | E1 | Prête | US-007 |
 | [US-010](US-010-changer-son-mot-de-passe.md) | Changer son mot de passe | E1 | Terminée | US-003 |
 | [US-011](US-011-identite-visuelle.md) | Appliquer l'identité visuelle (palette, polices, icônes) | E0 | Terminée | US-001 |
-| [US-012](US-012-ecran-connexion-moderne.md) | Moderniser l'écran de connexion | E1 | Prête | US-011, US-014, US-003 |
+| [US-012](US-012-ecran-connexion-moderne.md) | Moderniser l'écran de connexion | E1 | En cours | US-011, US-014, US-003 |
 | [US-013](US-013-correction-e2e-preview-bloques.md) | Corriger les E2E de la preview bloqués à l'installation du navigateur | E0 | Terminée | US-001 |
 | [US-014](US-014-banniere-poule-position.md) | Intégrer la bannière « Poule Position » et l'entête de site | E0 | Terminée | US-011 |
 
