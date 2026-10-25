@@ -76,26 +76,30 @@ GitHub Actions :
 | GitHub → Settings → Secrets → Actions | `CLOUDFLARE_API_TOKEN` | Jeton Cloudflare, modèle « Edit Cloudflare Workers » |
 | GitHub → Settings → Secrets → Actions | `CLOUDFLARE_ACCOUNT_ID` | Identifiant du compte Cloudflare |
 | GitHub → Settings → Secrets → Actions | `VERCEL_AUTOMATION_BYPASS_SECRET` | Vercel → projet → Deployment Protection → *Protection Bypass for Automation* |
+| GitHub → Settings → Secrets → Actions | `E2E_EMAIL`, `E2E_MOT_DE_PASSE` | Identifiants d'un compte existant sur le serveur **preview**, utilisé par les E2E de connexion (US-003) |
 
 ### Installation : créer le premier administrateur (une fois par environnement)
 
 À faire dans **PowerShell** (ou le Terminal Windows), pas dans Git Bash : sous Git Bash, les mots de passe et
 secrets saisis s'afficheraient à l'écran, et `npm run creer-admin` refuse d'y démarrer.
 
-1. Créer les deux secrets du serveur, depuis `serveur/` (pour la production : les mêmes commandes sans `--env preview`) :
+1. Créer les trois secrets du serveur, depuis `serveur/` (pour la production : les mêmes commandes sans `--env preview`) :
    ```
    npx wrangler secret put POIVRE --env preview
    npx wrangler secret put SECRET_INSTALLATION --env preview
+   npx wrangler secret put SECRET_SESSION --env preview
    ```
    Choisir des valeurs longues et aléatoires, et les conserver dans un gestionnaire de mots de passe.
    **`POIVRE` se crée une fois et ne se change jamais** : le changer rendrait tous les mots de passe invalides.
+   `SECRET_SESSION` signe les sessions (US-003) : le changer déconnecte tout le monde, sans toucher aux mots de passe.
 2. Depuis la racine, dans un terminal (la commande pose des questions) :
    `npm run creer-admin -- --env preview` (ou `--env production`, ou `--url http://localhost:8790` en local).
    Saisir l'e-mail, le nom, le mot de passe de l'administrateur, puis le secret d'installation.
 3. Une seconde exécution est refusée : les comptes suivants se créent dans l'application.
 
-En local (`npm run dev`), mettre les deux secrets dans `serveur/.dev.vars` (non versionné) :
-`POIVRE=…` et `SECRET_INSTALLATION=…`, une ligne chacun.
+En local (`npm run dev`), mettre les trois secrets dans `serveur/.dev.vars` (non versionné) :
+`POIVRE=…`, `SECRET_INSTALLATION=…` et `SECRET_SESSION=…`, une ligne chacun. Les E2E locaux n'en ont pas besoin :
+leur serveur de test (port 8791) reçoit des valeurs de test, et leur compte est créé automatiquement.
 
 Déploiement manuel du serveur, si besoin, depuis `serveur/` : `npx wrangler login` une fois, puis
 `npm run deploy:preview` ou `npm run deploy`.

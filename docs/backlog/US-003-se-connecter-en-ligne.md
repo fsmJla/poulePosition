@@ -87,6 +87,27 @@ ouverte reste utilisable hors ligne (CA-4), sans prolongation tant que l'apparei
 - **Impact sur US-001** : la page minimale devient l'accueil public. L'indicateur de connexion au serveur et les
   tests E2E de la page (`page.spec.ts`, `hors-ligne.spec.ts`) sont conservés et adaptés.
 
+## Réalisation
+
+- **Protocole** : , ,  et CORS ( §7). Nouveau
+  secret Wrangler  (signature des sessions, JWT HS256).
+- **Tests** :
+  | CA | Tests |
+  |---|---|
+  | CA-1 | , , E2E  |
+  | CA-2 | ,  (sel et refus identiques), E2E  |
+  | CA-3 | Unitaires (, , ). **E2E à ajouter avec US-008**, seule US qui permet de désactiver un compte. |
+  | CA-4 | ,  (serveur et app), , E2E  |
+  | CA-5 | , , E2E  |
+  | CA-6 | , E2E  |
+  | CA-7 | , ,  (un 401 efface la session) |
+  | Hors ligne |  (délai de 10 s, serveur injoignable), E2E  |
+- **Reporté** (décision du 2026-10-25) : la redirection d'un mot de passe temporaire vers le changement de mot de
+  passe va avec US-009 / US-010. Le serveur renvoie déjà  dans la session. Le lien vers la reconnexion
+  hors ligne sera ajouté par US-005 ; l'écran affiche déjà le message prévu.
+- **Appareil connu** : le sel et le vérificateur local sont enregistrés à chaque connexion en ligne (table
+  ), pour US-005.
+
 ## Suivi
 
 | Date | Événement |
