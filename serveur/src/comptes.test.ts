@@ -7,6 +7,7 @@ import {
   deriverCle,
   preparerChangementMotDePasse,
   preparerCreationCompte,
+  preparerReinitialisation,
   preparerDemandeInstallation,
   type CompteResume,
   type Session,
@@ -211,5 +212,72 @@ describe('gestion des comptes', () => {
     });
     expect(reponse.status).toBe(204);
     expect(reponse.headers.get('Access-Control-Allow-Methods')).toContain('PATCH');
+  });
+});
+
+describe('réinitialisation d’un mot de passe (US-009)', () => {
+  async function reinitialiser(id: string, jeton = jetonAdmin) {
+    const { demande, motDePasseTemporaire } = await preparerReinitialisation();
+    const reponse = await appeler('POST', `/comptes/${id}/mot-de-passe`, jeton, demande);
+    return { reponse, motDePasseTemporaire };
+  }
+
+  it('US-009 CA-1 : l’ancien mot de passe est refusé, le temporaire accepté, les anciennes sessions reçoivent COMPTE_MODIFIE', async () => {
+    const { motDePasseTemporaire: premier } = await creer('oubli@club.fr', 'Oubli', 'organisateur');
+    const avant = await activer('oubli@club.fr', premier, 'mot-de-passe-oublie');
+    const id = (await lister()).find((c) => c.email === 'oubli@club.fr')!.id;
+
+    const { reponse, motDePasseTemporaire } = await reinitialiser(id);
+    expect(reponse.status).toBe(200);
+    expect(((await reponse.json()) as { compte: CompteResume }).compte).toMatchObject({
+      email: 'oubli@club.fr',
+      temporaire: true,
+    });
+
+    const { sel } = (await (await appeler('POST', '/session/sel', null, { email: 'oubli@club.fr' })).json()) as {
+      sel: string;
+    };
+    const ancien = await appeler('POST', '/session', null, {
+      email: 'oubli@club.fr',
+      cle: await deriverCle('mot-de-passe-oublie', sel),
+    });
+    expect(ancien.status).toBe(401);
+    expect((await seConnecter('oubli@club.fr', motDePasseTemporaire)).compte.temporaire).toBe(true);
+    const ancienneSession = await appeler('GET', '/session', avant.jeton);
+    expect(ancienneSession.status).toBe(401);
+    expect(await ancienneSession.json()).toEqual({ ok: false, erreur: 'COMPTE_MODIFIE' });
+  });
+
+  it('US-009 CA-2 : la session temporaire ne peut que changer de mot de passe', async () => {
+    const { motDePasseTemporaire: premier } = await creer('reprise@club.fr', 'Reprise', 'administrateur');
+    await activer('reprise@club.fr', premier, 'mot-de-passe-reprise');
+    const id = (await lister()).find((c) => c.email === 'reprise@club.fr')!.id;
+    const { motDePasseTemporaire } = await reinitialiser(id);
+
+    const temporaire = await seConnecter('reprise@club.fr', motDePasseTemporaire);
+    expect((await appeler('GET', '/comptes', temporaire.jeton)).status).toBe(403);
+    const definitive = await activer('reprise@club.fr', motDePasseTemporaire, 'mot-de-passe-reprise-2');
+    expect(definitive.compte.temporaire).toBe(false);
+    expect((await appeler('GET', '/comptes', definitive.jeton)).status).toBe(200);
+  });
+
+  it('US-009 : un administrateur qui se réinitialise perd sa session', async () => {
+    const { motDePasseTemporaire: premier } = await creer('moi@club.fr', 'Moi', 'administrateur');
+    const moi = await activer('moi@club.fr', premier, 'mot-de-passe-moi');
+    const id = (await lister()).find((c) => c.email === 'moi@club.fr')!.id;
+    const { reponse } = await reinitialiser(id, moi.jeton);
+    expect(reponse.status).toBe(200);
+    const suite = await appeler('GET', '/session', moi.jeton);
+    expect(await suite.json()).toEqual({ ok: false, erreur: 'COMPTE_MODIFIE' });
+  });
+
+  it('refuse un compte inconnu (404), une demande invalide (400) et un organisateur (403)', async () => {
+    const inconnu = await reinitialiser('inconnu');
+    expect(inconnu.reponse.status).toBe(404);
+    expect(await inconnu.reponse.json()).toEqual({ ok: false, erreur: 'COMPTE_INCONNU' });
+    const id = (await lister())[0]!.id;
+    expect((await appeler('POST', `/comptes/${id}/mot-de-passe`, jetonAdmin, { sel: 'x' })).status).toBe(400);
+    const organisateur = await seConnecter('simple@club.fr', 'mot-de-passe-simple');
+    expect((await reinitialiser(id, organisateur.jeton)).reponse.status).toBe(403);
   });
 });
