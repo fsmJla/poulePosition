@@ -86,12 +86,13 @@
     <Lien chemin={CHEMINS.organisateur} {naviguer}>{t.continuer}</Lien>
   {:else}
     <form onsubmit={valider} novalidate>
+      <!-- Étiquette et message séparés : le message décrit le champ (aria-describedby) sans entrer dans son nom. -->
       {#if demanderActuel}
-        <label>
-          {t.actuel}
+        <div class="champ">
+          <label for="actuel">{t.actuel}</label>
           <input
+            id="actuel"
             type="password"
-            name="actuel"
             autocomplete="current-password"
             bind:value={actuel}
             disabled={enCours}
@@ -99,13 +100,13 @@
             aria-describedby={erreursChamps.actuel ? 'erreur-actuel' : undefined}
           />
           {#if erreursChamps.actuel}<span class="erreur" id="erreur-actuel">{t.champs[erreursChamps.actuel]}</span>{/if}
-        </label>
+        </div>
       {/if}
-      <label>
-        {t.nouveau}
+      <div class="champ">
+        <label for="nouveau">{t.nouveau}</label>
         <input
+          id="nouveau"
           type="password"
-          name="nouveau"
           autocomplete="new-password"
           bind:value={nouveau}
           disabled={enCours}
@@ -117,12 +118,12 @@
         {:else}
           <span class="aide" id="aide-nouveau">{t.aide}</span>
         {/if}
-      </label>
-      <label>
-        {t.confirmation}
+      </div>
+      <div class="champ">
+        <label for="confirmation">{t.confirmation}</label>
         <input
+          id="confirmation"
           type="password"
-          name="confirmation"
           autocomplete="new-password"
           bind:value={confirmation}
           disabled={enCours}
@@ -132,7 +133,7 @@
         {#if erreursChamps.confirmation}
           <span class="erreur" id="erreur-confirmation">{t.champs[erreursChamps.confirmation]}</span>
         {/if}
-      </label>
+      </div>
       {#if horsLigne || erreur}
         <p class="message" role="alert">{horsLigne ? t.horsLigne : t.erreurs[erreur as ErreurChangementMotDePasse]}</p>
       {/if}
@@ -163,9 +164,12 @@
     width: min(100%, 22rem);
   }
 
-  label {
+  .champ {
     display: grid;
     gap: 0.3rem;
+  }
+
+  label {
     font-weight: 600;
   }
 
