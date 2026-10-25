@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-003
-- **Branche / PR :** `us/US-010-changer-son-mot-de-passe`
+- **Branche / PR :** `us/US-010-changer-son-mot-de-passe` · [PR #13](https://github.com/fsmJla/poulePosition/pull/13)
 
 ## Récit
 
