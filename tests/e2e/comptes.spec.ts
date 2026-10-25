@@ -1,8 +1,9 @@
 // US-007 : lister, créer et modifier les comptes. Les réponses de /comptes sont simulées (page.route) : de vrais
 // appels créeraient des comptes, impossibles à supprimer avant US-008, sur le serveur partagé de la preview. La chaîne
 // réelle (serveur, droits, unicité, dernier administrateur) est couverte par serveur/src/comptes.test.ts.
+// La connexion est simulée elle aussi, avec le rôle voulu : le compte E2E réel de la preview est un organisateur.
 import { expect, test, type Page } from '@playwright/test';
-import { seConnecter } from './compte';
+import type { Role } from '@poule-position/domaine';
 import { sessionSimulee, simuler } from './simulation';
 
 const ADMIN = {
@@ -24,10 +25,22 @@ const ORGA = {
   derniereConnexion: null,
 };
 
-/** Administrateur connecté (compte de test), sur la page « Comptes », avec une liste simulée. */
+/** Connexion simulée avec le rôle voulu (revalidation au rechargement comprise). */
+async function connecterSimule(page: Page, role: Role) {
+  await simuler(page, '/session/sel', 200, { ok: true, sel: 'AAAAAAAAAAAAAAAAAAAAAA' });
+  await simuler(page, '/session', 200, sessionSimulee(false, role));
+  await simuler(page, '/session', 200, sessionSimulee(false, role), 'GET');
+  await page.goto('/connexion');
+  await page.getByLabel('E-mail').fill('simule@poule-position.test');
+  await page.getByLabel('Mot de passe', { exact: true }).fill('mot-de-passe-simule');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(page).toHaveURL(/\/organisateur$/, { timeout: 20_000 });
+}
+
+/** Administrateur connecté, sur la page « Comptes », avec une liste simulée. */
 async function ouvrirComptes(page: Page) {
   await simuler(page, '/comptes', 200, { ok: true, comptes: [ADMIN, ORGA] }, 'GET');
-  await seConnecter(page);
+  await connecterSimule(page, 'administrateur');
   await page.getByRole('link', { name: 'Comptes' }).click();
   await expect(page).toHaveURL(/\/comptes$/);
 }
@@ -132,14 +145,7 @@ test('US-007 CA-5 : le dernier administrateur ne peut pas devenir organisateur',
 test('US-007 CA-6 : pas d’entrée « Comptes » pour un organisateur, et /comptes le renvoie à son accueil', async ({
   page,
 }) => {
-  await simuler(page, '/session/sel', 200, { ok: true, sel: 'AAAAAAAAAAAAAAAAAAAAAA' });
-  await simuler(page, '/session', 200, sessionSimulee(false, 'organisateur'));
-  await simuler(page, '/session', 200, sessionSimulee(false, 'organisateur'), 'GET');
-  await page.goto('/connexion');
-  await page.getByLabel('E-mail').fill('simule@poule-position.test');
-  await page.getByLabel('Mot de passe', { exact: true }).fill('mot-de-passe-simule');
-  await page.getByRole('button', { name: 'Se connecter' }).click();
-  await expect(page).toHaveURL(/\/organisateur$/, { timeout: 20_000 });
+  await connecterSimule(page, 'organisateur');
   await expect(page.getByRole('link', { name: 'Comptes' })).toHaveCount(0);
   await page.goto('/comptes');
   await expect(page).toHaveURL(/\/organisateur$/);
@@ -149,7 +155,7 @@ test('US-007 hors ligne : l’entrée « Comptes » est grisée avec « Nécessi
   page,
   context,
 }) => {
-  await seConnecter(page);
+  await connecterSimule(page, 'administrateur');
   await expect(page.getByRole('link', { name: 'Comptes' })).toBeVisible();
   await context.setOffline(true);
   await expect(page.getByRole('link', { name: 'Comptes' })).toHaveCount(0);
