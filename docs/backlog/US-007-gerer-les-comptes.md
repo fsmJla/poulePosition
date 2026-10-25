@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-003
 - **Branche / PR :** `us/US-007-gerer-les-comptes`
 
@@ -115,3 +115,4 @@ administrateur, documentées dans `docs/protocole.md`.
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
 | 2026-10-25 | En cours : plan validé (tuile « Comptes » sur l'accueil de l'organisateur, dernière connexion par mot de passe, 403 pour une session à mot de passe temporaire, E2E à réponses simulées) |
+| 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 279 tests unitaires et d'intégration, couverture 94 %, build, audit, 89 E2E) |
