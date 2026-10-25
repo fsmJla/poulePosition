@@ -4,7 +4,7 @@
 - **Fonctionnalité :** qualité, CI/CD (exigences §7), sécurité (règle 8 du `CLAUDE.md`)
 - **Priorité :** P1
 - **Type :** correction
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-001 (origine : rapport et traces Playwright), US-003 (vrais identifiants dans les E2E de la preview)
 - **Branche / PR :** `us/US-015-correction-secret-dans-rapport-e2e` · [PR #21](https://github.com/fsmJla/poulePosition/pull/21)
 
@@ -83,3 +83,5 @@ Sans objet : la correction ne touche que la CI et la configuration des tests, pa
 | 2026-10-26 | Créée (`/bug`, mot de passe E2E dans l'artefact du run 40242548355) |
 | 2026-10-26 | En cours : correction validée (plus de rapport joint ni de trace contre la preview) |
 | 2026-10-26 | En revue : garde-fous rouges puis verts ; contrôles locaux verts (lint, typage, 282 tests, build, audit, 89 E2E) |
+| 2026-10-26 | Recette OK sur la CI de la PR #21 (vrais runs) : plus d'étape d'artefact, aucun artefact joint au run, 88 E2E verts sur la preview. Vérification des artefacts existants (valeurs non affichées) : celui du run 40242548355 a été supprimé par l'utilisateur ; celui du run 40225179693 (25/10, échecs d'US-003) contient en clair le mot de passe de l'administrateur de preview alors utilisé par les E2E — à supprimer et mot de passe à changer par l'utilisateur ; ceux des runs 40231780578 et 40231818922 n'en contiennent pas. |
+| 2026-10-26 | **Terminée**, mergée dans `dev` (PR #21). |
