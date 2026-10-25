@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-003
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-007-gerer-les-comptes`
 
 ## Récit
 
@@ -81,3 +81,4 @@ administrateur, documentées dans `docs/protocole.md`.
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
+| 2026-10-25 | En cours : plan validé (tuile « Comptes » sur l'accueil de l'organisateur, dernière connexion par mot de passe, 403 pour une session à mot de passe temporaire, E2E à réponses simulées) |
