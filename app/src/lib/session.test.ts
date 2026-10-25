@@ -32,7 +32,14 @@ function stockageMemoire(session: Session | null = null) {
   return { stockage, etat };
 }
 
-type Route = 'POST /session/sel' | 'POST /session' | 'GET /session' | 'POST /compte/mot-de-passe';
+type Route =
+  | 'POST /session/sel'
+  | 'POST /session'
+  | 'GET /session'
+  | 'POST /compte/mot-de-passe'
+  | 'GET /comptes'
+  | 'POST /comptes'
+  | 'PATCH /comptes/c2';
 type Reponse = { statut: number; corps: unknown } | 'reseau' | 'jamais';
 
 /** Faux serveur : une réponse par route, et la liste des requêtes reçues. */
@@ -356,5 +363,91 @@ describe('changerMotDePasse (US-010)', () => {
     await c.seConnecter(compte.email, 'mot-de-passe-solide');
     await c.seDeconnecter();
     expect(c.connaitMotDePasseActuel()).toBe(false);
+  });
+});
+
+describe('gestion des comptes (US-007)', () => {
+  const resume = {
+    id: 'c2',
+    email: 'orga@club.fr',
+    nom: 'Orga',
+    role: 'organisateur',
+    actif: true,
+    temporaire: true,
+    derniereConnexion: null,
+  };
+
+  async function administrateur(
+    reponses: Parameters<typeof fauxServeur>[0],
+    options: Partial<OptionsClientSession> = {},
+  ) {
+    const { stockage, etat } = stockageMemoire(sessionStockee);
+    await stockage.enregistrerAppareilConnu({ ...compte, sel: SEL, verificateurLocal: 'v', connuDepuis: 1 });
+    const serveur = fauxServeur(reponses);
+    return { etat, serveur, client: client({ stockage, envoyer: serveur.envoyer, ...options }) };
+  }
+
+  it('US-007 CA-1 : liste les comptes avec la session de l’administrateur', async () => {
+    const { serveur, client: c } = await administrateur({
+      'GET /comptes': { statut: 200, corps: { ok: true, comptes: [resume] } },
+    });
+    expect(await c.listerComptes()).toEqual({ ok: true, comptes: [resume] });
+    expect(serveur.requetes[0]?.entetes.get('Authorization')).toBe(`Bearer ${sessionStockee.jeton}`);
+  });
+
+  it('US-007 CA-2 : seule la clé dérivée est envoyée ; le mot de passe temporaire est rendu une fois', async () => {
+    const { serveur, client: c } = await administrateur({
+      'POST /comptes': { statut: 201, corps: { ok: true, compte: resume } },
+    });
+    const resultat = await c.creerCompte({ email: 'Orga@Club.fr', nom: 'Orga', role: 'organisateur' });
+    if (!resultat.ok) throw new Error(resultat.erreur);
+    expect(resultat.compte).toEqual(resume);
+    expect(resultat.motDePasseTemporaire).toMatch(/^[A-Za-z2-9]{12}$/);
+    const corps = serveur.requetes[0]?.corps as { email: string; sel: string; cle: string };
+    expect(corps.email).toBe('orga@club.fr');
+    expect(corps.cle).toBe(await deriverCle(resultat.motDePasseTemporaire, corps.sel));
+    expect(JSON.stringify(serveur.requetes)).not.toContain(resultat.motDePasseTemporaire);
+  });
+
+  it.each([
+    ['US-007 CA-3', 'POST', 409, 'EMAIL_DEJA_UTILISE'],
+    ['US-007 CA-5', 'PATCH', 409, 'DERNIER_ADMINISTRATEUR'],
+    ['US-007 CA-6', 'POST', 403, 'ACCES_REFUSE'],
+    ['US-007 CA-4', 'PATCH', 404, 'COMPTE_INCONNU'],
+  ])('%s : transmet le refus %s %i %s', async (_cas, methode, statut, erreur) => {
+    const { client: c } = await administrateur({
+      'POST /comptes': { statut, corps: { ok: false, erreur } },
+      'PATCH /comptes/c2': { statut, corps: { ok: false, erreur } },
+    });
+    const resultat =
+      methode === 'POST'
+        ? await c.creerCompte({ email: 'orga@club.fr', nom: 'Orga', role: 'organisateur' })
+        : await c.modifierCompte('c2', { role: 'organisateur' });
+    expect(resultat).toEqual({ ok: false, erreur });
+  });
+
+  it('US-007 CA-4 : modifie le nom ou le rôle', async () => {
+    const { serveur, client: c } = await administrateur({
+      'PATCH /comptes/c2': { statut: 200, corps: { ok: true, compte: { ...resume, nom: 'Nouveau' } } },
+    });
+    expect(await c.modifierCompte('c2', { nom: 'Nouveau' })).toEqual({
+      ok: true,
+      compte: { ...resume, nom: 'Nouveau' },
+    });
+    expect(serveur.requetes[0]?.corps).toEqual({ nom: 'Nouveau' });
+  });
+
+  it('US-007 hors ligne : la gestion des comptes exige le réseau, rien n’est envoyé', async () => {
+    const { serveur, client: c } = await administrateur({}, { enLigne: () => false });
+    expect(await c.listerComptes()).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect(serveur.requetes).toHaveLength(0);
+  });
+
+  it('une session refusée (401) est effacée : retour à la connexion', async () => {
+    const { etat, client: c } = await administrateur({
+      'GET /comptes': { statut: 401, corps: { ok: false, erreur: 'SESSION_INVALIDE' } },
+    });
+    expect(await c.listerComptes()).toEqual({ ok: false, erreur: 'SESSION_INVALIDE' });
+    expect(etat.session).toBeNull();
   });
 });

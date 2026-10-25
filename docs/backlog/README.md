@@ -36,7 +36,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-004](US-004-limiter-essais-connexion.md) | Limiter les essais de connexion | E1 | Prête | US-003 |
 | [US-005](US-005-se-reconnecter-hors-ligne.md) | Se reconnecter hors ligne sur un appareil déjà utilisé | E1 | Prête | US-003 |
 | [US-006](US-006-oublier-cet-appareil.md) | Oublier cet appareil (P2) | E1 | Prête | US-005 |
-| [US-007](US-007-gerer-les-comptes.md) | Lister, créer et modifier les comptes | E1 | Prête | US-003 |
+| [US-007](US-007-gerer-les-comptes.md) | Lister, créer et modifier les comptes | E1 | Terminée | US-003 |
 | [US-008](US-008-desactiver-supprimer-compte.md) | Désactiver, réactiver ou supprimer un compte | E1 | Prête | US-007 |
 | [US-009](US-009-reinitialiser-mot-de-passe.md) | Réinitialiser le mot de passe d'un compte (mot de passe oublié) | E1 | Prête | US-007 |
 | [US-010](US-010-changer-son-mot-de-passe.md) | Changer son mot de passe | E1 | Terminée | US-003 |

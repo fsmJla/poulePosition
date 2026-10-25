@@ -3,6 +3,7 @@ import { DUREE_SESSION } from '@poule-position/domaine';
 import { decoderBase64Url, encoderBase64Url, TAILLE_SEL } from '@poule-position/protocole';
 import {
   analyserChemin,
+  autorisationAdministrateur,
   creerCompteur,
   deciderConnexion,
   enTetesCors,
@@ -293,5 +294,20 @@ describe('version du mot de passe dans la session (US-010)', () => {
     const signature = await crypto.subtle.sign('HMAC', cle, new TextEncoder().encode(morceaux.join('.')));
     const jeton = `${morceaux.join('.')}.${encoderBase64Url(new Uint8Array(signature))}`;
     expect((await verifierSession(jeton, SECRET, Date.UTC(2026, 9, 25)))?.v).toBe(0);
+  });
+});
+
+describe('gestion des comptes (US-007)', () => {
+  it('reconnaît /comptes et /comptes/<id>', () => {
+    expect(analyserChemin('/comptes')).toEqual({ route: 'comptes' });
+    expect(analyserChemin('/comptes/0b7c-41aa')).toEqual({ route: 'compte', id: '0b7c-41aa' });
+    expect(analyserChemin('/comptes/a/b')).toBeNull();
+    expect(analyserChemin('/comptes/')).toBeNull();
+  });
+
+  it('US-007 CA-6 : seuls les administrateurs au mot de passe définitif gèrent les comptes', () => {
+    expect(autorisationAdministrateur({ role: 'administrateur', temporaire: false })).toBe(true);
+    expect(autorisationAdministrateur({ role: 'organisateur', temporaire: false })).toBe(false);
+    expect(autorisationAdministrateur({ role: 'administrateur', temporaire: true })).toBe(false);
   });
 });

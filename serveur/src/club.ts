@@ -1,8 +1,8 @@
 // Durable Object « Club » : un objet par club (idFromName(`club:<clubId>`), ADR-0014). Comptes des administrateurs
 // et des organisateurs (ADR-0006), en SQLite. Les écritures d'un même objet sont sérialisées : deux créations
-// simultanées du premier administrateur ne peuvent pas aboutir toutes les deux.
+// simultanées du premier administrateur, ou d'un même e-mail, ne peuvent pas aboutir toutes les deux.
 import { DurableObject } from 'cloudflare:workers';
-import type { Role } from '@poule-position/domaine';
+import { verifierChangementRole, type Role } from '@poule-position/domaine';
 import type { Env } from './index';
 
 export interface NouveauCompte {
@@ -13,7 +13,7 @@ export interface NouveauCompte {
   verificateur: string;
 }
 
-/** Compte tel qu'il est stocké, pour la connexion (US-003). */
+/** Compte tel qu'il est stocké, pour la connexion (US-003) et la gestion des comptes (US-007). */
 export interface CompteStocke {
   id: string;
   email: string;
@@ -25,6 +25,8 @@ export interface CompteStocke {
   temporaire: boolean;
   /** Version du mot de passe (US-010) : augmente à chaque changement, ce qui invalide les autres sessions. */
   versionMdp: number;
+  /** Dernière connexion par mot de passe, en millisecondes, ou null (US-007). */
+  derniereConnexion: number | null;
 }
 
 interface LigneCompte {
@@ -37,10 +39,18 @@ interface LigneCompte {
   actif: number;
   temporaire: number;
   versionMdp: number;
+  derniereConnexion: number | null;
   [colonne: string]: SqlStorageValue;
 }
 
 export type ResultatCreation = { ok: true; email: string } | { ok: false; erreur: 'ADMINISTRATEUR_EXISTANT' };
+
+export type ResultatCompte =
+  | { ok: true; compte: CompteStocke }
+  | { ok: false; erreur: 'EMAIL_DEJA_UTILISE' | 'COMPTE_INCONNU' | 'DERNIER_ADMINISTRATEUR' };
+
+const COLONNES = `id, email, nom, role, sel, verificateur, actif, temporaire, version_mdp AS versionMdp,
+  derniere_connexion AS derniereConnexion`;
 
 export class Club extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
@@ -57,13 +67,18 @@ export class Club extends DurableObject<Env> {
         actif INTEGER NOT NULL DEFAULT 1,
         temporaire INTEGER NOT NULL DEFAULT 0,
         cree_le INTEGER NOT NULL,
-        version_mdp INTEGER NOT NULL DEFAULT 0
+        version_mdp INTEGER NOT NULL DEFAULT 0,
+        derniere_connexion INTEGER
       )`);
-    // Migration US-010 : colonne ajoutée aux tables créées avant elle (comptes existants : version 0).
+    // Migrations : colonnes ajoutées aux tables créées avant elles (US-010, US-007).
     const colonnes = ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(comptes)').toArray();
-    if (!colonnes.some(({ name }) => name === 'version_mdp')) {
-      ctx.storage.sql.exec('ALTER TABLE comptes ADD COLUMN version_mdp INTEGER NOT NULL DEFAULT 0');
-    }
+    const ajouter = (nom: string, definition: string) => {
+      if (!colonnes.some(({ name }) => name === nom)) {
+        ctx.storage.sql.exec(`ALTER TABLE comptes ADD COLUMN ${nom} ${definition}`);
+      }
+    };
+    ajouter('version_mdp', 'INTEGER NOT NULL DEFAULT 0');
+    ajouter('derniere_connexion', 'INTEGER');
   }
 
   /** Crée le premier administrateur ; refusé dès qu'un administrateur existe (US-002). */
@@ -73,18 +88,44 @@ export class Club extends DurableObject<Env> {
       .exec<{ nombre: number }>('SELECT COUNT(*) AS nombre FROM comptes WHERE role = ?', role)
       .toArray() as [{ nombre: number }];
     if (nombre > 0) return { ok: false, erreur: 'ADMINISTRATEUR_EXISTANT' };
-    this.ctx.storage.sql.exec(
-      `INSERT INTO comptes (id, club_id, email, nom, role, sel, verificateur, cree_le) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      crypto.randomUUID(),
-      this.env.CLUB_ID,
-      compte.email,
-      compte.nom,
-      role,
-      compte.sel,
-      compte.verificateur,
-      Date.now(),
-    );
+    this.inserer(compte, role, false);
     return { ok: true, email: compte.email };
+  }
+
+  /** US-007 CA-2 / CA-3 : crée un compte actif au mot de passe temporaire ; l'e-mail (normalisé) est unique. */
+  async creerCompte(compte: NouveauCompte & { role: Role }): Promise<ResultatCompte> {
+    if (this.lireCompte('email', compte.email)) return { ok: false, erreur: 'EMAIL_DEJA_UTILISE' };
+    const id = this.inserer(compte, compte.role, true);
+    return { ok: true, compte: this.lireCompte('id', id) as CompteStocke };
+  }
+
+  /** US-007 CA-1 : tous les comptes du club, triés par nom. */
+  async listerComptes(): Promise<CompteStocke[]> {
+    return this.ctx.storage.sql
+      .exec<LigneCompte>(`SELECT ${COLONNES} FROM comptes ORDER BY nom COLLATE NOCASE, email`)
+      .toArray()
+      .map(versCompte);
+  }
+
+  /** US-007 CA-4 / CA-5 : modifie le nom ou le rôle ; il doit rester au moins un administrateur actif. */
+  async modifierCompte(id: string, modification: { nom?: string; role?: Role }): Promise<ResultatCompte> {
+    const compte = this.lireCompte('id', id);
+    if (!compte) return { ok: false, erreur: 'COMPTE_INCONNU' };
+    if (modification.role && verifierChangementRole(await this.listerComptes(), id, modification.role)) {
+      return { ok: false, erreur: 'DERNIER_ADMINISTRATEUR' };
+    }
+    this.ctx.storage.sql.exec(
+      'UPDATE comptes SET nom = ?, role = ? WHERE id = ?',
+      modification.nom ?? compte.nom,
+      modification.role ?? compte.role,
+      id,
+    );
+    return { ok: true, compte: this.lireCompte('id', id) as CompteStocke };
+  }
+
+  /** US-007 CA-1 : date de la dernière connexion par mot de passe. */
+  async noterConnexion(id: string, date: number): Promise<void> {
+    this.ctx.storage.sql.exec('UPDATE comptes SET derniere_connexion = ? WHERE id = ?', date, id);
   }
 
   /** Compte d'un e-mail normalisé, ou null s'il n'existe pas (US-003). */
@@ -111,15 +152,32 @@ export class Club extends DurableObject<Env> {
     return this.lireCompte('id', id);
   }
 
+  private inserer(compte: NouveauCompte, role: Role, temporaire: boolean): string {
+    const id = crypto.randomUUID();
+    this.ctx.storage.sql.exec(
+      `INSERT INTO comptes (id, club_id, email, nom, role, sel, verificateur, temporaire, cree_le)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      id,
+      this.env.CLUB_ID,
+      compte.email,
+      compte.nom,
+      role,
+      compte.sel,
+      compte.verificateur,
+      temporaire ? 1 : 0,
+      Date.now(),
+    );
+    return id;
+  }
+
   private lireCompte(colonne: 'email' | 'id', valeur: string): CompteStocke | null {
     const [ligne] = this.ctx.storage.sql
-      .exec<LigneCompte>(
-        `SELECT id, email, nom, role, sel, verificateur, actif, temporaire, version_mdp AS versionMdp
-         FROM comptes WHERE ${colonne} = ?`,
-        valeur,
-      )
+      .exec<LigneCompte>(`SELECT ${COLONNES} FROM comptes WHERE ${colonne} = ?`, valeur)
       .toArray();
-    if (!ligne) return null;
-    return { ...ligne, actif: ligne.actif === 1, temporaire: ligne.temporaire === 1 };
+    return ligne ? versCompte(ligne) : null;
   }
+}
+
+function versCompte(ligne: LigneCompte): CompteStocke {
+  return { ...ligne, actif: ligne.actif === 1, temporaire: ligne.temporaire === 1 };
 }

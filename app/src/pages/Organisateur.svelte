@@ -1,6 +1,8 @@
 <script lang="ts">
-  // Accueil de l'organisateur (US-003 CA-1), page réservée : nom et rôle du compte connecté, changement de mot de
-  // passe (US-010). La déconnexion (US-003 CA-5) est dans l'entête commun (US-014).
+  // Accueil de l'organisateur (US-003 CA-1), page réservée : nom et rôle du compte connecté, et les actions possibles :
+  // changement de mot de passe (US-010), gestion des comptes pour un administrateur (US-007, grisée hors ligne). La
+  // déconnexion (US-003 CA-5) est dans l'entête commun (US-014).
+  import { onMount } from 'svelte';
   import type { Session } from '@poule-position/protocole';
   import Lien from '../composants/Lien.svelte';
   import { CHEMINS } from '../lib/routes';
@@ -12,12 +14,36 @@
   }
 
   let { session, naviguer }: Proprietes = $props();
+
+  let horsLigne = $state(!navigator.onLine);
+
+  onMount(() => {
+    const surReseau = () => (horsLigne = !navigator.onLine);
+    window.addEventListener('online', surReseau);
+    window.addEventListener('offline', surReseau);
+    return () => {
+      window.removeEventListener('online', surReseau);
+      window.removeEventListener('offline', surReseau);
+    };
+  });
 </script>
 
 <main>
   <h1>{textes.organisateur.bonjour(session.compte.nom)}</h1>
   <p class="role">{textes.roles[session.compte.role]}</p>
-  <Lien chemin={CHEMINS.motDePasse} {naviguer}>{textes.organisateur.changerMotDePasse}</Lien>
+  <nav class="actions" aria-label={textes.organisateur.actions}>
+    <Lien chemin={CHEMINS.motDePasse} {naviguer}>{textes.organisateur.changerMotDePasse}</Lien>
+    {#if session.compte.role === 'administrateur'}
+      {#if horsLigne}
+        <span class="inactive" aria-disabled="true">
+          {textes.comptes.entree}
+          <small>{textes.comptes.horsLigne}</small>
+        </span>
+      {:else}
+        <Lien chemin={CHEMINS.comptes} {naviguer}>{textes.comptes.entree}</Lien>
+      {/if}
+    {/if}
+  </nav>
 </main>
 
 <style>
@@ -39,5 +65,22 @@
     border-radius: 999px;
     background: var(--surface);
     color: var(--texte-discret);
+  }
+
+  .actions {
+    display: grid;
+    gap: 0.75rem;
+    justify-items: center;
+  }
+
+  /* Entrée grisée hors ligne (US-007) : visible, mais sans lien. */
+  .inactive {
+    display: grid;
+    color: var(--texte-discret);
+    font-weight: 600;
+  }
+
+  .inactive small {
+    font-weight: 400;
   }
 </style>

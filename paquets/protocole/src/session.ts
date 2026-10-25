@@ -5,7 +5,7 @@ import { normaliserEmail, validerEmail, ROLES, type Role } from '@poule-position
 import { decoderBase64Url, deriverCle, encoderBase64Url, nouveauSel, TAILLE_CLE, TAILLE_SEL } from './authentification';
 import { aExactementLesChamps, aLaTaille } from './validation';
 
-/** Codes d'erreur des routes `/session` et `/compte` (docs/protocole.md §7 et §8). */
+/** Codes d'erreur des routes HTTP de l'application (docs/protocole.md §7 à §9). */
 export const CODES_ERREUR_SESSION = [
   'DEMANDE_INVALIDE',
   'IDENTIFIANTS_INVALIDES',
@@ -13,6 +13,10 @@ export const CODES_ERREUR_SESSION = [
   'SESSION_INVALIDE',
   'COMPTE_MODIFIE',
   'MOT_DE_PASSE_INCORRECT',
+  'ACCES_REFUSE',
+  'COMPTE_INCONNU',
+  'EMAIL_DEJA_UTILISE',
+  'DERNIER_ADMINISTRATEUR',
   'SERVEUR_NON_CONFIGURE',
 ] as const;
 

@@ -76,7 +76,7 @@ GitHub Actions :
 | GitHub → Settings → Secrets → Actions | `CLOUDFLARE_API_TOKEN` | Jeton Cloudflare, modèle « Edit Cloudflare Workers » |
 | GitHub → Settings → Secrets → Actions | `CLOUDFLARE_ACCOUNT_ID` | Identifiant du compte Cloudflare |
 | GitHub → Settings → Secrets → Actions | `VERCEL_AUTOMATION_BYPASS_SECRET` | Vercel → projet → Deployment Protection → *Protection Bypass for Automation* |
-| GitHub → Settings → Secrets → Actions | `E2E_EMAIL`, `E2E_MOT_DE_PASSE` | Identifiants d'un compte existant sur le serveur **preview**, utilisé par les E2E de connexion (US-003) |
+| GitHub → Settings → Secrets → Actions | `E2E_EMAIL`, `E2E_MOT_DE_PASSE` | Identifiants du compte **organisateur** réservé aux E2E sur le serveur **preview** (créé depuis l'écran « Comptes », US-007) |
 
 ### Installation : créer le premier administrateur (une fois par environnement)
 

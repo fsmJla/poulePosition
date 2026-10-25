@@ -6,6 +6,11 @@ import {
   validerMotDePasse,
   validerNom,
   validerNouveauMotDePasse,
+  genererMotDePasseTemporaire,
+  validerNouveauCompte,
+  verifierChangementRole,
+  ALPHABET_MOT_DE_PASSE_TEMPORAIRE,
+  LONGUEUR_MOT_DE_PASSE_TEMPORAIRE,
   LONGUEUR_MIN_MOT_DE_PASSE,
   ROLES,
 } from './comptes';
@@ -76,5 +81,54 @@ describe('US-010 CA-2 : règles du nouveau mot de passe', () => {
 
   it('sans mot de passe actuel connu (mot de passe temporaire déjà vérifié), ne compare pas', () => {
     expect(validerNouveauMotDePasse(null, 'nouveau-mot-de-passe', 'nouveau-mot-de-passe').nouveau).toBeNull();
+  });
+});
+
+describe('US-007 : création et modification des comptes', () => {
+  it('US-007 CA-2 : mot de passe temporaire de 12 caractères, alphabet sans ambiguïté', () => {
+    const octets = Array.from({ length: 64 }, (_, i) => (i * 37) % 256);
+    const motDePasse = genererMotDePasseTemporaire(octets);
+    expect(motDePasse).toHaveLength(LONGUEUR_MOT_DE_PASSE_TEMPORAIRE);
+    expect(LONGUEUR_MOT_DE_PASSE_TEMPORAIRE).toBe(12);
+    expect(motDePasse).toMatch(/^[A-Za-z2-9]{12}$/);
+    expect(ALPHABET_MOT_DE_PASSE_TEMPORAIRE).not.toMatch(/[0O1lIo]/);
+    expect(genererMotDePasseTemporaire(octets)).toBe(motDePasse);
+    expect(validerMotDePasse(motDePasse)).toBeNull();
+  });
+
+  it('US-007 CA-2 : écarte les octets qui biaiseraient le tirage, et exige assez d’octets', () => {
+    const limite = 256 - (256 % ALPHABET_MOT_DE_PASSE_TEMPORAIRE.length);
+    const avecRejets = [255, limite, ...Array.from({ length: 12 }, (_, i) => i)];
+    expect(genererMotDePasseTemporaire(avecRejets)).toBe(ALPHABET_MOT_DE_PASSE_TEMPORAIRE.slice(0, 12));
+    expect(() => genererMotDePasseTemporaire([1, 2, 3])).toThrow();
+  });
+
+  it('US-007 CA-2 : valide e-mail, nom et rôle d’un nouveau compte, une erreur par champ', () => {
+    expect(validerNouveauCompte({ email: 'orga@club.fr', nom: 'Orga', role: 'organisateur' })).toEqual({});
+    expect(validerNouveauCompte({ email: 'pas-un-email', nom: ' ', role: 'arbitre' })).toEqual({
+      email: 'EMAIL_INVALIDE',
+      nom: 'NOM_VIDE',
+      role: 'ROLE_INVALIDE',
+    });
+  });
+
+  describe('US-007 CA-5 : il doit rester au moins un administrateur actif', () => {
+    const comptes = [
+      { id: 'a1', role: 'administrateur' as const, actif: true },
+      { id: 'a2', role: 'administrateur' as const, actif: false },
+      { id: 'o1', role: 'organisateur' as const, actif: true },
+    ];
+
+    it('refuse de rétrograder le dernier administrateur actif', () => {
+      expect(verifierChangementRole(comptes, 'a1', 'organisateur')).toBe('DERNIER_ADMINISTRATEUR');
+    });
+
+    it('accepte les autres changements', () => {
+      expect(verifierChangementRole(comptes, 'a1', 'administrateur')).toBeNull();
+      expect(verifierChangementRole(comptes, 'o1', 'administrateur')).toBeNull();
+      expect(verifierChangementRole(comptes, 'a2', 'organisateur')).toBeNull();
+      const deuxAdmins = [...comptes, { id: 'a3', role: 'administrateur' as const, actif: true }];
+      expect(verifierChangementRole(deuxAdmins, 'a1', 'organisateur')).toBeNull();
+    });
   });
 });

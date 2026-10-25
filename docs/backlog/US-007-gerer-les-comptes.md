@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-003
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-007-gerer-les-comptes` · [PR #20](https://github.com/fsmJla/poulePosition/pull/20)
 
 ## Récit
 
@@ -76,8 +76,45 @@ connexion internet ».
 ADR-0006 (comptes dans le DO `Club`), ADR-0014 (`clubId`). Routes HTTP `/comptes` réservées au rôle
 administrateur, documentées dans `docs/protocole.md`.
 
+## Réalisation
+
+- **Protocole** (`docs/protocole.md` §9) : `GET /comptes`, `POST /comptes`, `PATCH /comptes/<id>` ; codes
+  `ACCES_REFUSE` (403), `COMPTE_INCONNU` (404), `EMAIL_DEJA_UTILISE` et `DERNIER_ADMINISTRATEUR` (409).
+- **Domaine** : `genererMotDePasseTemporaire` (12 caractères, alphabet sans `0 O o 1 l I`, tirage par rejet sur des
+  octets fournis), `validerNouveauCompte`, `verifierChangementRole` (dernier administrateur actif), appelée par le
+  serveur.
+- **Serveur** : DO `Club` (`listerComptes`, `creerCompte`, `modifierCompte`, `noterConnexion`), colonne
+  `derniere_connexion` ajoutée par migration ; rôle relu en base à chaque appel (`autorisationAdministrateur`).
+- **Application** : page `/comptes` (création avec message sous chaque champ, panneau du mot de passe temporaire avec
+  « Copier », modification en ligne du nom et du rôle) ; tuile « Comptes » sur l'accueil de l'organisateur, pour les
+  administrateurs seulement, grisée hors ligne ; appels ajoutés au client de session (`listerComptes`, `creerCompte`,
+  `modifierCompte`) ; aide E2E commune `tests/e2e/simulation.ts`.
+- **Tests** :
+
+  | CA | Tests |
+  |---|---|
+  | CA-1 | `serveur/src/comptes.test.ts` (liste, dernière connexion), `app/src/lib/session.test.ts`, E2E `comptes.spec.ts` |
+  | CA-2 | `paquets/domaine/src/comptes.test.ts` (mot de passe temporaire), `paquets/protocole/src/comptes.test.ts`, intégration (compte actif, temporaire, connexion avec ce mot de passe), app (seule la clé est envoyée), E2E (affiché une fois, « Copier ») |
+  | CA-3 | Intégration (casse ignorée, 409), app, E2E |
+  | CA-4 | Intégration (nom et rôle visibles à la revalidation de la personne), app, E2E |
+  | CA-5 | Domaine, intégration (y compris pour soi-même), app, E2E |
+  | CA-6 | `serveur/src/logique.test.ts`, intégration (403 sur GET, POST et PATCH), `app/src/lib/routes.test.ts`, E2E (pas d'entrée, redirection) |
+  | Hors ligne | App (rien n'est envoyé), E2E (entrée grisée avec « Nécessite une connexion internet ») |
+  | Cas limite | E2E (bouton inactif et message sous le champ pour un e-mail mal formé) |
+
+### Hypothèses prises pendant l'implémentation
+
+- Validées par l'utilisateur le 2026-10-25 : tuile « Comptes » sur l'accueil de l'organisateur ; « dernière
+  connexion » = dernière connexion **par mot de passe** (pas les revalidations automatiques) ; une session à mot de
+  passe temporaire reçoit `403` sur `/comptes` ; E2E à réponses simulées (pas de comptes créés sur la preview).
+- La liste est triée par nom ; l'e-mail du compte ne se modifie pas.
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
+| 2026-10-25 | En cours : plan validé (tuile « Comptes » sur l'accueil de l'organisateur, dernière connexion par mot de passe, 403 pour une session à mot de passe temporaire, E2E à réponses simulées) |
+| 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 279 tests unitaires et d'intégration, couverture 94 %, build, audit, 89 E2E) |
+| 2026-10-26 | Recette OK sur https://poule-position-51cknxr8c-fsmjlas-projects.vercel.app (déployée en preview et vérifiée) : l'utilisateur a créé le compte organisateur réservé aux E2E ; liste avec nom, e-mail, rôle, état et dernière connexion (CA-1, migration `derniere_connexion` validée sur la base existante) ; compte actif, temporaire, mot de passe de 12 caractères affiché une fois avec « Copier » (CA-2) ; première connexion menant au changement de mot de passe (US-010 CA-4, vérifiée pour de vrai). CA-3 à CA-6 et hors-ligne : tests d'intégration et E2E de la CI. Secrets `E2E_EMAIL` / `E2E_MOT_DE_PASSE` remplacés par ce compte organisateur ; E2E des comptes passés en connexion simulée ; 88 E2E verts sur la preview. |
+| 2026-10-26 | **Terminée**, mergée dans `dev` (PR #20). |

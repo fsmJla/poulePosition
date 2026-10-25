@@ -8,6 +8,7 @@
   import { ouvrirStockage } from './lib/stockage';
   import Entete from './composants/Entete.svelte';
   import Accueil from './pages/Accueil.svelte';
+  import Comptes from './pages/Comptes.svelte';
   import Connexion from './pages/Connexion.svelte';
   import MotDePasse from './pages/MotDePasse.svelte';
   import Organisateur from './pages/Organisateur.svelte';
@@ -20,7 +21,14 @@
   let pret = $state(false);
   let chemin = $state(location.pathname);
 
-  const route = $derived(resoudreRoute(chemin, session !== null, session?.compte.temporaire ?? false));
+  const route = $derived(
+    resoudreRoute(
+      chemin,
+      session !== null,
+      session?.compte.temporaire ?? false,
+      session?.compte.role === 'administrateur',
+    ),
+  );
 
   function naviguer(vers: string, remplacer = false) {
     if (remplacer) history.replaceState(null, '', vers);
@@ -72,6 +80,8 @@
       <Organisateur {session} {naviguer} />
     {:else if route.page === 'motDePasse'}
       <MotDePasse {client} {session} surChangement={(nouvelle) => (session = nouvelle)} {surSessionPerdue} {naviguer} />
+    {:else if route.page === 'comptes'}
+      <Comptes {client} {surSessionPerdue} />
     {/if}
   {/if}
 {/if}

@@ -9,6 +9,7 @@
 > US-002 : route d'installation du premier administrateur (§6).
 > US-003 : connexion, session et CORS (§7).
 > US-010 : changement de mot de passe et version du mot de passe dans la session (§8).
+> US-007 : gestion des comptes par les administrateurs (§9).
 > Les rôles, la synchronisation du journal et les saisies (ADR-0005) viendront avec leurs US.
 
 ## 1. Adresses
@@ -37,7 +38,9 @@
 | `POST /session` | Connexion : ouvre une session (§7) |
 | `GET /session` | Vérifie et prolonge une session (§7) |
 | `POST /compte/mot-de-passe` | Changement de mot de passe (§8) |
-| `OPTIONS` sur `/session`, `/session/sel` et `/compte/mot-de-passe` | Requête CORS préalable (§7) |
+| `GET /comptes`, `POST /comptes` | Lister et créer les comptes du club (§9) |
+| `PATCH /comptes/<id>` | Modifier le nom ou le rôle d'un compte (§9) |
+| `OPTIONS` sur ces routes | Requête CORS préalable (§7) ; méthodes `GET, POST, PATCH` |
 | WebSocket `/competitions/<competitionId>/connexion` | Connexion à une compétition (§3) |
 | Tout autre chemin | `404` |
 
@@ -220,3 +223,43 @@ le vérificateur local de ce compte (appareil connu), puis revient à l'écran d
 
 Les règles du nouveau mot de passe (10 caractères au moins, différent de l'actuel, confirmation) sont vérifiées
 par l'application, qui seule connaît les mots de passe en clair.
+
+## 9. Gestion des comptes (US-007)
+
+Routes réservées aux **administrateurs** : session valide (comme `GET /session`, §7), compte de rôle
+`administrateur` **relu en base** à chaque appel (un administrateur rétrogradé perd l'accès aussitôt), et mot de
+passe non temporaire. Sinon : `401` (session) ou `403 ACCES_REFUSE`. Même CORS qu'au §7, méthodes `GET, POST, PATCH`.
+
+**Compte décrit** (`CompteResume`) :
+
+```json
+{ "id": "…", "email": "…", "nom": "…", "role": "organisateur", "actif": true, "temporaire": false,
+  "derniereConnexion": 1795000000000 }
+```
+
+`derniereConnexion` : date (ms) de la dernière connexion **par mot de passe** (`POST /session` réussi), ou `null`.
+
+| Route | Corps | Réponse |
+|---|---|---|
+| `GET /comptes` | — | `200 { "ok": true, "comptes": [CompteResume…] }`, triés par nom |
+| `POST /comptes` | exactement `{ email, nom, role, sel, cle }` | `201 { "ok": true, "compte": CompteResume }` |
+| `PATCH /comptes/<id>` | `{ nom?, role? }`, au moins un des deux, rien d'autre | `200 { "ok": true, "compte": CompteResume }` |
+
+**Création** : le navigateur de l'administrateur tire un **mot de passe temporaire** de 12 caractères (aléatoire
+cryptographique, alphabet sans caractères ambigus), puis envoie `sel` (nouveau, 16 octets) et
+`cle = PBKDF2-SHA256(mot de passe, sel, 600 000 itérations)`, comme au §6 : le serveur ne voit jamais le mot de
+passe. Le compte est créé **actif** et **temporaire** : à sa première connexion, la personne doit changer son mot
+de passe (§8). L'e-mail est normalisé ; il ne se modifie pas.
+
+**Modification** : le nom et le rôle prennent effet sur les appareils de la personne à leur prochaine revalidation
+(`GET /session` renvoie le compte à jour et un jeton portant le nouveau rôle).
+
+| Statut | Code | Cas |
+|---|---|---|
+| `400` | `DEMANDE_INVALIDE` | Corps mal formé, champ en trop ou invalide |
+| `401` | `SESSION_INVALIDE` / `COMPTE_MODIFIE` | Comme au §7 |
+| `403` | `ACCES_REFUSE` | Organisateur, ou session à mot de passe temporaire |
+| `404` | `COMPTE_INCONNU` | `PATCH` sur un identifiant inconnu |
+| `409` | `EMAIL_DEJA_UTILISE` | Un compte utilise déjà cet e-mail (casse ignorée) |
+| `409` | `DERNIER_ADMINISTRATEUR` | Le changement laisserait le club sans administrateur actif |
+| `503` | `SERVEUR_NON_CONFIGURE` | Secrets absents |

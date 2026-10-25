@@ -1,34 +1,11 @@
 // US-010 : changer son mot de passe. Les réponses du serveur au changement sont simulées (page.route) : un vrai
 // changement modifierait le mot de passe du compte de test, partagé par les autres tests et par la CI. La chaîne
 // réelle (serveur, cryptographie, version du mot de passe) est couverte par serveur/src/mot-de-passe.test.ts.
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { compteTest, seConnecter } from './compte';
+import { sessionSimulee, simuler } from './simulation';
 
 const MESSAGE_TEMPORAIRE = /mot de passe est temporaire/;
-
-/** Réponse simulée d'une route du serveur (cross-origin : en-têtes CORS fournis, requête préalable comprise). */
-async function simuler(page: Page, chemin: string, statut: number, corps: unknown, methode = 'POST') {
-  await page.route(`**${chemin}`, async (route: Route) => {
-    const origine = (await route.request().headerValue('origin')) ?? '*';
-    const cors = {
-      'Access-Control-Allow-Origin': origine,
-      'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-      'Access-Control-Allow-Methods': 'GET, POST',
-    };
-    if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
-    if (route.request().method() !== methode) return route.fallback();
-    return route.fulfill({ status: statut, headers: cors, json: corps });
-  });
-}
-
-function sessionSimulee(temporaire = false) {
-  return {
-    ok: true,
-    jeton: 'jeton.simule.e2e',
-    expireLe: Date.now() + 30 * 24 * 3600 * 1000,
-    compte: { email: 'simule@poule-position.test', nom: 'Compte simulé', role: 'organisateur', temporaire },
-  };
-}
 
 async function ouvrirChangement(page: Page) {
   await seConnecter(page);
