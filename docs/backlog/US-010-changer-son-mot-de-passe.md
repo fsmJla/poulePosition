@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-003
 - **Branche / PR :** `us/US-010-changer-son-mot-de-passe`
 
@@ -105,3 +105,4 @@ ADR-0006.
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
 | 2026-10-25 | En cours : plan validé (version du mot de passe dans la session, `COMPTE_MODIFIE`, E2E à réponses simulées, comptage des échecs de CA-3 par US-004, pas d'indicateur de robustesse) |
+| 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 218 tests unitaires, couverture 96 %, build, audit, 35 E2E). Rétablit aussi le §7 de `docs/protocole.md`, jamais écrit pendant US-003. |
