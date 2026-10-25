@@ -5,27 +5,28 @@
 - **Priorité :** P1
 - **Type :** fonctionnelle
 - **Statut :** Prête
-- **Dépend de :** US-011, US-003
+- **Dépend de :** US-011, US-014, US-003
 - **Branche / PR :** —
 
 ## Récit
 
 **En tant qu'**administrateur ou organisateur, **je veux** un écran de connexion moderne et soigné, à l'image de
-poulePosition, **afin de** me connecter agréablement, sur PC comme sur smartphone.
+Poule Position, **afin de** me connecter agréablement, sur PC comme sur smartphone.
 
 ## Critères d'acceptation
 
 **CA-1 — Mise en page sur PC**
 - **Étant donné** un écran large (900 px et plus)
 - **Quand** j'ouvre l'écran de connexion
-- **Alors** il est partagé en deux : à gauche, un panneau décoratif (dégradé du vert ardoise au sarcelle, icône de
-  la poule, nom de l'application et une accroche) ; à droite, le formulaire dans une carte.
+- **Alors** il est partagé en deux : à gauche, un panneau décoratif (dégradé du vert ardoise au sarcelle) portant la
+  bannière « login » sombre du pack (icône, nom calligraphié « Poule Position » et filet) et le sous-titre « Gestion
+  de compétitions d'escrime » ; à droite, le formulaire dans une carte.
 
 **CA-2 — Mise en page sur smartphone**
 - **Étant donné** un écran étroit (moins de 900 px)
 - **Quand** j'ouvre l'écran de connexion
-- **Alors** seule la carte du formulaire s'affiche, surmontée de l'icône et du nom de l'application, sans
-  défilement horizontal, avec des champs et un bouton faciles à toucher (44 px de haut au moins).
+- **Alors** seule la carte s'affiche, comme dans la maquette : bannière « login » (variante claire ou sombre selon
+  le mode, US-014), sous-titre, puis le formulaire, sans défilement horizontal, avec des champs et un bouton faciles à toucher (44 px de haut au moins).
 
 **CA-3 — Afficher le mot de passe**
 - **Étant donné** le champ « Mot de passe »
@@ -66,7 +67,9 @@ connexion possible uniquement sur un appareil déjà utilisé » s'affiche dans 
 ## Hypothèses
 
 - Validée par l'utilisateur le 2026-10-25 : mise en page « panneau + carte ».
-- L'accroche du panneau est un texte du catalogue, par exemple « Vos poules et vos tableaux, en direct ».
+- Mise à jour du 2026-10-25 (pack d'icônes v2, maquette de l'utilisateur) : bannière « login » et filet du pack,
+  sous-titre « Gestion de compétitions d'escrime » ; **pas** de lien « Mot de passe oublié ? » pour l'instant
+  (seul un administrateur réinitialise un mot de passe, US-009).
 - Rien ne change dans le fonctionnement de la connexion (US-003) : libellés des champs, messages, enchaînements.
 
 ## Questions bloquantes
@@ -78,6 +81,7 @@ connexion possible uniquement sur un appareil déjà utilisé » s'affiche dans 
 - Icône animée : `icon-animated.svg` du pack (US-011), ou un petit composant Svelte repris de `pp-loader.css`.
 - Les tests E2E d'US-003 (libellés « E-mail », « Mot de passe », bouton « Se connecter ») doivent rester verts sans
   modification.
+- Bannières, filet et sous-titre : mêmes éléments que l'accueil (US-014), à réutiliser.
 - **Impact sur des US terminées** : US-003 (écran de connexion).
 
 ## Suivi
@@ -85,3 +89,4 @@ connexion possible uniquement sur un appareil déjà utilisé » s'affiche dans 
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification identité visuelle) |
+| 2026-10-25 | Mise à jour : bannière « login », filet et sous-titre du pack v2 ; dépend d'US-014 ; pas de lien « Mot de passe oublié ? » |
