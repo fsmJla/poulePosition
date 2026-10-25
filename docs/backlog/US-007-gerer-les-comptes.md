@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-003
 - **Branche / PR :** `us/US-007-gerer-les-comptes` · [PR #20](https://github.com/fsmJla/poulePosition/pull/20)
 
@@ -116,3 +116,5 @@ administrateur, documentées dans `docs/protocole.md`.
 | 2026-10-25 | Créée (spécification E1) |
 | 2026-10-25 | En cours : plan validé (tuile « Comptes » sur l'accueil de l'organisateur, dernière connexion par mot de passe, 403 pour une session à mot de passe temporaire, E2E à réponses simulées) |
 | 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 279 tests unitaires et d'intégration, couverture 94 %, build, audit, 89 E2E) |
+| 2026-10-26 | Recette OK sur https://poule-position-51cknxr8c-fsmjlas-projects.vercel.app (déployée en preview et vérifiée) : l'utilisateur a créé le compte organisateur réservé aux E2E ; liste avec nom, e-mail, rôle, état et dernière connexion (CA-1, migration `derniere_connexion` validée sur la base existante) ; compte actif, temporaire, mot de passe de 12 caractères affiché une fois avec « Copier » (CA-2) ; première connexion menant au changement de mot de passe (US-010 CA-4, vérifiée pour de vrai). CA-3 à CA-6 et hors-ligne : tests d'intégration et E2E de la CI. Secrets `E2E_EMAIL` / `E2E_MOT_DE_PASSE` remplacés par ce compte organisateur ; E2E des comptes passés en connexion simulée ; 88 E2E verts sur la preview. |
+| 2026-10-26 | **Terminée**, mergée dans `dev` (PR #20). |
