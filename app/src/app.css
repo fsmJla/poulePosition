@@ -24,6 +24,8 @@
   --sur-accent: #ffffff;
   --focus: var(--palette-sarcelle);
   --marque: var(--palette-ardoise);
+  /* Texte et boutons posés sur la marque (entête de site, US-014). */
+  --sur-marque: #f7f4ef;
   --decor: var(--palette-sable);
   --decor-2: var(--palette-lavande);
   --etat-ok: #1f7a4d;

@@ -4,7 +4,9 @@ import type { EtatConnexion } from './connexion';
 import type { ErreurChangementMotDePasse, ErreurConnexion } from './session';
 
 export const textes = {
-  accroche: "Organisation et suivi de compétitions d'escrime",
+  /** Nom affiché de l'application (US-014) ; le nom technique reste poulePosition. */
+  nomApplication: 'Poule Position',
+  sousTitre: 'Gestion de compétitions d’escrime',
   etats: {
     'non-configure': 'Serveur non configuré',
     connexion: 'Connexion au serveur…',

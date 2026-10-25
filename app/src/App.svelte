@@ -6,6 +6,7 @@
   import { resoudreRoute, CHEMINS } from './lib/routes';
   import { creerClientSession, urlHttp } from './lib/session';
   import { ouvrirStockage } from './lib/stockage';
+  import Entete from './composants/Entete.svelte';
   import Accueil from './pages/Accueil.svelte';
   import Connexion from './pages/Connexion.svelte';
   import MotDePasse from './pages/MotDePasse.svelte';
@@ -64,9 +65,13 @@
     <Accueil {urlServeur} connecte={session !== null} {naviguer} />
   {:else if route.page === 'connexion'}
     <Connexion {client} {surConnexion} {naviguer} />
-  {:else if route.page === 'organisateur' && session}
-    <Organisateur {session} {surDeconnexion} {naviguer} />
-  {:else if route.page === 'motDePasse' && session}
-    <MotDePasse {client} {session} surChangement={(nouvelle) => (session = nouvelle)} {surSessionPerdue} {naviguer} />
+  {:else if session}
+    <!-- Pages réservées : entête commun (US-014). -->
+    <Entete {surDeconnexion} {naviguer} />
+    {#if route.page === 'organisateur'}
+      <Organisateur {session} {naviguer} />
+    {:else if route.page === 'motDePasse'}
+      <MotDePasse {client} {session} surChangement={(nouvelle) => (session = nouvelle)} {surSessionPerdue} {naviguer} />
+    {/if}
   {/if}
 {/if}

@@ -20,6 +20,8 @@ export const COUPLES_CHARTE: readonly { texte: string; fond: string; minimum: nu
   { texte: '--bordure-champ', fond: '--fond', minimum: 3 },
   { texte: '--bordure-champ', fond: '--surface', minimum: 3 },
   { texte: '--focus', fond: '--fond', minimum: 3 },
+  // Entête de site (US-014) : texte et boutons sur le fond ardoise de la marque.
+  { texte: '--sur-marque', fond: '--marque', minimum: 4.5 },
 ];
 
 type Variables = Record<string, string>;

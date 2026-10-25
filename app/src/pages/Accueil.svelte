@@ -1,7 +1,8 @@
 <script lang="ts">
-  // Accueil public (US-003 CA-6), issu de la page minimale du walking skeleton (US-001) : nom de l'application,
-  // état de la connexion au serveur et lien vers la connexion.
+  // Accueil public (US-003 CA-6), issu de la page minimale du walking skeleton (US-001) : bannière « Poule Position »
+  // et sous-titre (US-014), état de la connexion au serveur et lien vers la connexion.
   import { onMount } from 'svelte';
+  import Banniere from '../composants/Banniere.svelte';
   import Lien from '../composants/Lien.svelte';
   import { demarrerConnexion, urlConnexion, type EtatConnexion } from '../lib/connexion';
   import { CHEMINS } from '../lib/routes';
@@ -31,9 +32,8 @@
 </script>
 
 <main>
-  <img src="/icons/icon.svg" alt="" width="88" height="88" />
-  <h1>poulePosition</h1>
-  <p class="accroche">{textes.accroche}</p>
+  <h1><Banniere variante="login" hauteur={190} /></h1>
+  <p class="sous-titre">{textes.sousTitre}</p>
   <p class="etat" data-etat={etat} role="status">
     <span class="pastille" aria-hidden="true"></span>{textes.etats[etat]}
   </p>
@@ -54,14 +54,19 @@
   }
 
   h1 {
+    display: flex;
+    justify-content: center;
     margin: 0;
-    font-size: clamp(2rem, 6vw, 3rem);
-    letter-spacing: -0.02em;
   }
 
-  .accroche {
+  /* Sous-titre de la maquette : petites majuscules espacées, sous le filet de la bannière. */
+  .sous-titre {
     margin: 0;
     color: var(--texte-discret);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
   }
 
   .etat {
