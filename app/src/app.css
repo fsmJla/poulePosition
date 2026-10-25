@@ -5,6 +5,8 @@
   --texte-discret: #5d5672;
   --surface: #f1edf9;
   --accent: #4b2a8c;
+  /* Fond des boutons principaux (texte blanc) : identique dans les deux modes. */
+  --accent-fond: #4b2a8c;
   --etat-ok: #1f9d55;
   --etat-attente: #d69e2e;
   --etat-erreur: #c53030;
@@ -24,6 +26,7 @@
     --texte: #f1edf9;
     --texte-discret: #aca5c0;
     --surface: #262036;
+    --accent: #b9a3f0;
   }
 }
 
