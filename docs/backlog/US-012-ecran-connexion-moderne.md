@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-011, US-014, US-003
 - **Branche / PR :** `us/US-012-ecran-connexion-moderne` · [PR #19](https://github.com/fsmJla/poulePosition/pull/19)
 
@@ -117,3 +117,5 @@ connexion possible uniquement sur un appareil déjà utilisé » s'affiche dans 
 | 2026-10-25 | Mise à jour : bannière « login », filet et sous-titre du pack v2 ; dépend d'US-014 ; pas de lien « Mot de passe oublié ? » |
 | 2026-10-25 | En cours : plan validé (panneau + carte, bouton œil à texte masqué, icône animée en SVG intégré, `--case-vide`) |
 | 2026-10-25 | En revue : contrôles locaux verts (lint, typage, 231 tests unitaires, couverture 96 %, build, audit, 73 E2E) |
+| 2026-10-25 | Recette OK sur https://poule-position-bebuhqnwv-fsmjlas-projects.vercel.app (déployée en preview et vérifiée), écran de 1920 px en mode sombre : panneau à gauche avec la bannière `login-dark` et le sous-titre, formulaire à droite (CA-1) ; bouton œil : « Afficher » → texte en clair, `aria-pressed` vrai, « Masquer » → masqué (CA-3) ; champs et bouton de 48 px. Smartphone (CA-2), connexion en cours (CA-4), bandeau (CA-5), clavier (CA-6) et hors-ligne : E2E de la CI sur cette preview, PC et smartphone. |
+| 2026-10-25 | **Terminée**, mergée dans `dev` (PR #19). |
