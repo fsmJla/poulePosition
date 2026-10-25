@@ -84,6 +84,31 @@ connexion possible uniquement sur un appareil déjà utilisé » s'affiche dans 
 - Bannières, filet et sous-titre : mêmes éléments que l'accueil (US-014), à réutiliser.
 - **Impact sur des US terminées** : US-003 (écran de connexion).
 
+## Réalisation
+
+- `pages/Connexion.svelte` : logique inchangée (US-003) ; présentation en deux zones. `<aside>` « Présentation de
+  Poule Position » (dégradé `--marque` → sarcelle, bannière « login » sombre, sous-titre), affiché à partir de 900 px ;
+  carte avec, sous 900 px seulement, la bannière « login » (claire ou sombre selon le mode) et le sous-titre. Bascule
+  en CSS : pas de rechargement, saisies conservées.
+- Bouton œil : `aria-pressed`, nom accessible en texte masqué visuellement (pas `aria-label`), pour que le libellé
+  « Mot de passe » ne désigne que le champ (tests d'US-003 inchangés).
+- `composants/IconeAnimee.svelte` : icône animée intégrée en SVG, couleurs de la charte (nouveau rôle `--case-vide`),
+  animation coupée par `prefers-reduced-motion`.
+- Champs et boutons de 48 px de haut ; bandeau d'alerte (bordure erreur, icône, `role="alert"`).
+- **Tests** (`tests/e2e/connexion-moderne.spec.ts`, PC et smartphone) :
+
+  | CA | Tests |
+  |---|---|
+  | CA-1 | `US-012 CA-1` (fenêtre 1280 px : panneau à gauche, bannière `login-dark`, sous-titre, formulaire à droite) |
+  | CA-2 | `US-012 CA-2` (fenêtre 390 px : panneau caché, bannière dans la carte, pas de défilement horizontal, 44 px au moins) ; bascule au redimensionnement sans perte de saisie |
+  | CA-3 | `US-012 CA-3` (type du champ, `aria-pressed`, nom « Afficher / Masquer le mot de passe ») |
+  | CA-4 | `US-012 CA-4` (serveur ralenti : icône animée, « Connexion… », champs inactifs ; animation à `none` si mouvement réduit) |
+  | CA-5 | `US-012 CA-5` (refus simulé : message dans le bandeau d'alerte) |
+  | CA-6 | `US-012 CA-6` (ordre de tabulation, contour de focus) |
+  | Hors ligne | `US-012 hors ligne` (bannière chargée, message dans le bandeau) |
+
+  Tests d'US-003 (`connexion.spec.ts`, `hors-ligne.spec.ts`) inchangés et verts.
+
 ## Suivi
 
 | Date | Événement |
