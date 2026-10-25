@@ -2,6 +2,8 @@
 // En CI : contre la preview Vercel (BASE_URL), protégée, avec le cookie de contournement (ADR-0008) obtenu par
 // preparation.ts. Le secret n'est pas envoyé à chaque requête : il partirait aussi vers le serveur Cloudflare, dont
 // la vérification CORS refuserait cet en-tête (US-003).
+// Contre la preview, les tests saisissent de vrais identifiants : ni trace ni rapport HTML, qui les conserveraient en
+// clair (US-015). Les échecs se lisent dans les journaux de la CI, où GitHub masque les secrets.
 import { defineConfig, devices } from '@playwright/test';
 import { ETAT_PREVIEW } from './tests/e2e/compte';
 
@@ -20,10 +22,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: enCi,
   retries: enCi ? 1 : 0,
-  reporter: enCi ? [['github'], ['html', { open: 'never' }]] : 'list',
+  reporter: urlPreview ? [['github'], ['list']] : enCi ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: urlPreview ?? 'http://localhost:4280',
-    trace: 'on-first-retry',
+    trace: urlPreview ? 'off' : 'on-first-retry',
     storageState: urlPreview ? ETAT_PREVIEW : undefined,
   },
   projects: [

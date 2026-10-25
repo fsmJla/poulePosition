@@ -1,7 +1,7 @@
 // Garde-fou de la CI (US-013) : les E2E de la preview ne doivent plus rester bloqués à l'installation du navigateur.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const workflow = readFileSync(
   fileURLToPath(new URL('../../.github/workflows/e2e-preview.yml', import.meta.url).href),
@@ -53,5 +53,44 @@ describe('E2E sur la preview (US-013)', () => {
     for (const suivante of etapes.slice(position(/branches-where-head/) + 1)) {
       expect(suivante, suivante.split('\n')[0]).toContain(`steps.${id}.outputs.depasse != 'true'`);
     }
+  });
+});
+
+describe('aucun secret dans les artefacts de la CI (US-015)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  async function configuration(environnement: Record<string, string>) {
+    for (const [nom, valeur] of Object.entries(environnement)) vi.stubEnv(nom, valeur);
+    vi.resetModules();
+    return (await import('../../playwright.config')).default;
+  }
+
+  const rapporteurs = (reporter: unknown) =>
+    (Array.isArray(reporter) ? reporter : [reporter]).map((entree) => (Array.isArray(entree) ? entree[0] : entree));
+
+  it('US-015 CA-1 : le workflow de la preview ne joint pas le rapport Playwright', () => {
+    const instructions = workflow
+      .split('\n')
+      .filter((ligne) => !ligne.trim().startsWith('#'))
+      .join('\n');
+    expect(instructions).not.toMatch(/playwright-report|test-results/);
+  });
+
+  it('US-015 CA-2 : contre une preview, ni trace ni rapport HTML', async () => {
+    const config = await configuration({
+      CI: 'true',
+      BASE_URL: 'https://poule-position-essai-fsmjlas-projects.vercel.app',
+      VERCEL_AUTOMATION_BYPASS_SECRET: 'secret-de-test',
+    });
+    expect(config.use?.trace ?? 'off').toBe('off');
+    expect(rapporteurs(config.reporter)).not.toContain('html');
+  });
+
+  it('US-015 CA-2 : en local, les traces restent disponibles pour enquêter', async () => {
+    const config = await configuration({ CI: '', BASE_URL: '' });
+    expect(config.use?.trace).toBe('on-first-retry');
   });
 });
