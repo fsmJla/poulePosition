@@ -1,6 +1,6 @@
 // Réponses simulées du serveur pour les E2E (US-010, US-007) : utiles quand un vrai appel modifierait des données
 // partagées par la CI (compte de test de la preview). La chaîne réelle est couverte par les tests d'intégration.
-import type { Page, Route } from '@playwright/test';
+import { expect, type Page, type Route } from '@playwright/test';
 import type { Role } from '@poule-position/domaine';
 
 /** Réponse simulée d'une route du serveur (cross-origin : en-têtes CORS fournis, requête préalable comprise). */
@@ -34,4 +34,16 @@ export function sessionSimulee(temporaire = false, role: Role = 'organisateur') 
     expireLe: Date.now() + 30 * 24 * 3600 * 1000,
     compte: { email: 'simule@poule-position.test', nom: 'Compte simulé', role, temporaire },
   };
+}
+
+/** Connexion simulée avec le rôle voulu (revalidation au rechargement comprise). */
+export async function connecterSimule(page: Page, role: Role) {
+  await simuler(page, '/session/sel', 200, { ok: true, sel: 'AAAAAAAAAAAAAAAAAAAAAA' });
+  await simuler(page, '/session', 200, sessionSimulee(false, role));
+  await simuler(page, '/session', 200, sessionSimulee(false, role), 'GET');
+  await page.goto('/connexion');
+  await page.getByLabel('E-mail').fill('simule@poule-position.test');
+  await page.getByLabel('Mot de passe', { exact: true }).fill('mot-de-passe-simule');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(page).toHaveURL(/\/organisateur$/, { timeout: 20_000 });
 }

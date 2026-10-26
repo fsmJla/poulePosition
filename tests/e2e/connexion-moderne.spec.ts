@@ -145,7 +145,7 @@ test('US-012 CA-6 : tout au clavier, dans l’ordre, avec un focus visible', asy
   await remplir(page);
   await page.getByLabel('E-mail').focus();
   const ordre: string[] = [];
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 6; i++) {
     ordre.push(
       await page.evaluate(() => {
         const actif = document.activeElement as HTMLElement;
@@ -160,11 +160,13 @@ test('US-012 CA-6 : tout au clavier, dans l’ordre, avec un focus visible', asy
     }
     await page.keyboard.press('Tab');
   }
-  const [email, motDePasse, oeil, connecter, retour] = ordre;
+  // « Mot de passe oublié ? » (US-009 CA-4) s'insère avant le retour à l'accueil.
+  const [email, motDePasse, oeil, connecter, oubli, retour] = ordre;
   expect(email).toBe('');
   expect(motDePasse).toBe('');
   expect(oeil).toContain('Afficher le mot de passe');
   expect(connecter).toBe('Se connecter');
+  expect(oubli).toBe('Mot de passe oublié ?');
   expect(retour).toBe("Retour à l'accueil");
 });
 

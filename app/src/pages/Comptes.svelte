@@ -1,6 +1,7 @@
 <script lang="ts">
   // Gestion des comptes (US-007), page réservée aux administrateurs : liste, création avec mot de passe temporaire
-  // affiché une seule fois, modification du nom et du rôle. Exige le réseau (docs/protocole.md §9).
+  // affiché une seule fois, modification du nom et du rôle, réinitialisation du mot de passe (US-009). Exige le réseau
+  // (docs/protocole.md §9).
   import { onMount } from 'svelte';
   import { validerNouveauCompte, validerNom, ROLES, type Role } from '@poule-position/domaine';
   import type { CompteResume } from '@poule-position/protocole';
@@ -26,7 +27,8 @@
   let role: Role = $state('organisateur');
   let enCreation = $state(false);
   let erreurCreation: ErreurComptes | null = $state(null);
-  let cree: { nom: string; motDePasse: string } | null = $state(null);
+  /** Mot de passe temporaire à transmettre (création ou réinitialisation), affiché une seule fois. */
+  let temporaire: { nom: string; motDePasse: string; reinitialise: boolean } | null = $state(null);
   let copie = $state(false);
   const erreursSaisie = $derived(validerNouveauCompte({ email, nom, role }));
   const saisieValide = $derived(Object.keys(erreursSaisie).length === 0);
@@ -37,6 +39,10 @@
   let roleEdite: Role = $state('organisateur');
   let erreurEdition: ErreurComptes | null = $state(null);
 
+  // Réinitialisation (US-009) : confirmée dans la ligne, sans boîte de dialogue du navigateur.
+  let aConfirmer: string | null = $state(null);
+  let horsLigne = $state(!navigator.onLine);
+
   /** Erreur du serveur : une session perdue ramène à la connexion, le reste s'affiche. */
   function traiter(erreur: ErreurComptes): ErreurComptes | null {
     if (erreur === 'SESSION_INVALIDE') {
@@ -46,10 +52,18 @@
     return erreur;
   }
 
-  onMount(async () => {
-    const resultat = await client.listerComptes();
-    if (resultat.ok) comptes = resultat.comptes;
-    else erreurListe = traiter(resultat.erreur);
+  onMount(() => {
+    const surReseau = () => (horsLigne = !navigator.onLine);
+    window.addEventListener('online', surReseau);
+    window.addEventListener('offline', surReseau);
+    client.listerComptes().then((resultat) => {
+      if (resultat.ok) comptes = resultat.comptes;
+      else erreurListe = traiter(resultat.erreur);
+    });
+    return () => {
+      window.removeEventListener('online', surReseau);
+      window.removeEventListener('offline', surReseau);
+    };
   });
 
   async function creer(evenement: SubmitEvent) {
@@ -64,7 +78,7 @@
         return;
       }
       comptes = [...(comptes ?? []), resultat.compte].sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
-      cree = { nom: resultat.compte.nom, motDePasse: resultat.motDePasseTemporaire };
+      temporaire = { nom: resultat.compte.nom, motDePasse: resultat.motDePasseTemporaire, reinitialise: false };
       copie = false;
       email = nom = '';
       role = 'organisateur';
@@ -74,8 +88,8 @@
   }
 
   async function copier() {
-    if (!cree) return;
-    await navigator.clipboard.writeText(cree.motDePasse);
+    if (!temporaire) return;
+    await navigator.clipboard.writeText(temporaire.motDePasse);
     copie = true;
   }
 
@@ -103,6 +117,20 @@
     }
     comptes = (comptes ?? []).map((existant) => (existant.id === compte.id ? resultat.compte : existant));
     enEdition = null;
+  }
+
+  /** US-009 CA-1 : nouveau mot de passe temporaire, affiché une seule fois. */
+  async function reinitialiser(compte: CompteResume) {
+    aConfirmer = null;
+    erreurEdition = null;
+    const resultat = await client.reinitialiserMotDePasse(compte.id);
+    if (!resultat.ok) {
+      erreurEdition = traiter(resultat.erreur);
+      return;
+    }
+    comptes = (comptes ?? []).map((existant) => (existant.id === compte.id ? resultat.compte : existant));
+    temporaire = { nom: resultat.compte.nom, motDePasse: resultat.motDePasseTemporaire, reinitialise: true };
+    copie = false;
   }
 </script>
 
@@ -155,17 +183,19 @@
     {#if erreurCreation}<p class="bandeau" role="alert">{t.erreurs[erreurCreation]}</p>{/if}
   </section>
 
-  {#if cree}
+  {#if temporaire}
     <section class="carte mot-de-passe" aria-labelledby="titre-mot-de-passe">
-      <h2 id="titre-mot-de-passe">{t.motDePasseTemporaire.titre}</h2>
-      <p>{t.motDePasseTemporaire.explication(cree.nom)}</p>
+      <h2 id="titre-mot-de-passe">
+        {temporaire.reinitialise ? t.motDePasseTemporaire.titreReinitialisation : t.motDePasseTemporaire.titre}
+      </h2>
+      <p>{t.motDePasseTemporaire.explication(temporaire.nom)}</p>
       <div class="secret">
-        <code data-testid="mot-de-passe-temporaire">{cree.motDePasse}</code>
+        <code data-testid="mot-de-passe-temporaire">{temporaire.motDePasse}</code>
         <button type="button" class="secondaire" onclick={copier}>
           {copie ? t.motDePasseTemporaire.copie : t.motDePasseTemporaire.copier}
         </button>
       </div>
-      <button type="button" class="lien" onclick={() => (cree = null)}>{t.motDePasseTemporaire.fermer}</button>
+      <button type="button" class="lien" onclick={() => (temporaire = null)}>{t.motDePasseTemporaire.fermer}</button>
     </section>
   {/if}
 
@@ -218,9 +248,28 @@
                         >{t.enregistrer}</button
                       >
                       <button type="button" class="lien" onclick={() => (enEdition = null)}>{t.annuler}</button>
+                    {:else if aConfirmer === compte.id}
+                      <button
+                        type="button"
+                        class="principal"
+                        onclick={() => reinitialiser(compte)}
+                        disabled={horsLigne}
+                      >
+                        {t.confirmerReinitialisation}
+                      </button>
+                      <button type="button" class="lien" onclick={() => (aConfirmer = null)}>{t.annuler}</button>
                     {:else}
                       <button type="button" class="secondaire" onclick={() => editer(compte)}>
                         <span aria-hidden="true">✎</span><span class="masque">{t.modifier(compte.nom)}</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="secondaire"
+                        onclick={() => (aConfirmer = compte.id)}
+                        disabled={horsLigne}
+                        title={horsLigne ? t.horsLigne : undefined}
+                      >
+                        <span aria-hidden="true">⟲</span><span class="masque">{t.reinitialiser(compte.nom)}</span>
                       </button>
                     {/if}
                   </div>

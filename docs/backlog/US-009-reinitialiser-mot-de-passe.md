@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1, « système de mot de passe oublié » (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-007
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-009-reinitialiser-mot-de-passe` · [PR #22](https://github.com/fsmJla/poulePosition/pull/22)
 
 ## Récit
 
@@ -60,8 +60,42 @@ passe fonctionne encore localement jusqu'au retour en ligne (US-005, CA-6).
 
 ADR-0006 (« P1 : réinitialisation par un administrateur »).
 
+## Réalisation
+
+- **Protocole** (`docs/protocole.md` §9) : `POST /comptes/<id>/mot-de-passe`, corps `{ sel, cle }`, réservé aux
+  administrateurs ; le serveur repasse le compte en temporaire et augmente la version du mot de passe (toutes les
+  sessions de la personne tombent, `COMPTE_MODIFIE`).
+- **Protocole (code)** : `preparerReinitialisation`, `analyserDemandeReinitialisation` ; tirage du mot de passe
+  temporaire mis en commun avec la création (US-007).
+- **Serveur** : `Club.reinitialiserMotDePasse`, route `reinitialisation`.
+- **Application** : bouton « Réinitialiser » sur chaque ligne de « Comptes », confirmation dans la ligne (pas de boîte
+  de dialogue), panneau du mot de passe temporaire réutilisé (titre « Mot de passe réinitialisé »), bouton grisé hors
+  ligne ; lien « Mot de passe oublié ? » sous le formulaire de connexion, qui déplie l'explication.
+- **Tests** :
+
+  | CA | Tests |
+  |---|---|
+  | CA-1 | `serveur/src/comptes.test.ts` (ancien mot de passe refusé, temporaire accepté, `COMPTE_MODIFIE`), `paquets/protocole/src/comptes.test.ts`, `app/src/lib/session.test.ts` (seule la clé est envoyée), E2E `reinitialisation.spec.ts` (confirmation, affichage unique, « Copier », annulation) |
+  | CA-2 | `serveur/src/comptes.test.ts` (session temporaire : `/comptes` refusé, changement accepté), E2E `mot-de-passe.spec.ts` (US-010 CA-4 : passage obligatoire) |
+  | CA-3 | **Reporté à US-004** (noté dans l'US) : aucun blocage n'existe encore |
+  | CA-4 | E2E `reinitialisation.spec.ts`, `textes.test.ts` |
+  | Hors ligne | `app/src/lib/session.test.ts` (rien n'est envoyé), E2E (bouton grisé) |
+  | Cas limite | `serveur/src/comptes.test.ts` (un administrateur qui se réinitialise perd sa session) |
+
+- **Test d'US-012 adapté** : l'ordre de tabulation (CA-6) inclut « Mot de passe oublié ? » avant « Retour à
+  l'accueil ».
+
+### Hypothèses prises pendant l'implémentation
+
+- Validées par l'utilisateur le 2026-10-26 : lien « Mot de passe oublié ? » ajouté (revient sur la note d'US-012) ;
+  CA-3 reporté à US-004 ; un administrateur qui se réinitialise est déconnecté aussitôt (même parcours que CA-2).
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
+| 2026-10-26 | En cours : plan validé (lien « Mot de passe oublié ? » ajouté, CA-3 reporté à US-004, un administrateur qui se réinitialise est déconnecté) |
+| 2026-10-26 | En revue : contrôles locaux verts (lint, typage, 295 tests, couverture 94 %, build, audit, 97 E2E) |
+| 2026-10-26 | Recette OK sur https://poule-position-8xhjl046x-fsmjlas-projects.vercel.app (déployée en preview et vérifiée) : lien « Mot de passe oublié ? » et son explication (CA-4) ; vraie réinitialisation du compte E2E par l'administrateur (confirmation, mot de passe temporaire affiché une fois, CA-1), reconnexion avec le temporaire menant directement au changement de mot de passe (CA-2), « Mot de passe modifié ». Refus de l'ancien mot de passe, perte des sessions et hors-ligne : tests d'intégration et E2E de la CI. CA-3 : reporté à US-004. |
+| 2026-10-26 | **Terminée**, mergée dans `dev` (PR #22). |

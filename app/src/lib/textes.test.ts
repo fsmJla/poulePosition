@@ -33,3 +33,12 @@ describe('textes du changement de mot de passe (US-010)', () => {
     expect(textes.motDePasse.champs.CONFIRMATION_DIFFERENTE).toContain('différents');
   });
 });
+
+describe('mot de passe oublié (US-009)', () => {
+  it('US-009 CA-4 : « Mot de passe oublié ? » explique qui contacter', () => {
+    expect(textes.connexion.oubli).toBe('Mot de passe oublié ?');
+    expect(textes.connexion.explicationOubli).toBe(
+      'Demandez à un administrateur du club de réinitialiser votre mot de passe',
+    );
+  });
+});

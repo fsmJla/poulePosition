@@ -152,6 +152,20 @@ export class Club extends DurableObject<Env> {
     return this.lireCompte('id', id);
   }
 
+  /**
+   * US-009 CA-1 : nouveau mot de passe temporaire. La version suivante invalide toutes les sessions de la personne.
+   * Renvoie le compte à jour, ou null s'il n'existe pas.
+   */
+  async reinitialiserMotDePasse(id: string, sel: string, verificateur: string): Promise<CompteStocke | null> {
+    this.ctx.storage.sql.exec(
+      'UPDATE comptes SET sel = ?, verificateur = ?, version_mdp = version_mdp + 1, temporaire = 1 WHERE id = ?',
+      sel,
+      verificateur,
+      id,
+    );
+    return this.lireCompte('id', id);
+  }
+
   private inserer(compte: NouveauCompte, role: Role, temporaire: boolean): string {
     const id = crypto.randomUUID();
     this.ctx.storage.sql.exec(

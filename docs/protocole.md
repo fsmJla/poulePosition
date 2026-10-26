@@ -9,7 +9,7 @@
 > US-002 : route d'installation du premier administrateur (§6).
 > US-003 : connexion, session et CORS (§7).
 > US-010 : changement de mot de passe et version du mot de passe dans la session (§8).
-> US-007 : gestion des comptes par les administrateurs (§9).
+> US-007 : gestion des comptes par les administrateurs (§9) ; US-009 : réinitialisation d'un mot de passe (§9).
 > Les rôles, la synchronisation du journal et les saisies (ADR-0005) viendront avec leurs US.
 
 ## 1. Adresses
@@ -40,6 +40,7 @@
 | `POST /compte/mot-de-passe` | Changement de mot de passe (§8) |
 | `GET /comptes`, `POST /comptes` | Lister et créer les comptes du club (§9) |
 | `PATCH /comptes/<id>` | Modifier le nom ou le rôle d'un compte (§9) |
+| `POST /comptes/<id>/mot-de-passe` | Réinitialiser le mot de passe d'un compte (§9, US-009) |
 | `OPTIONS` sur ces routes | Requête CORS préalable (§7) ; méthodes `GET, POST, PATCH` |
 | WebSocket `/competitions/<competitionId>/connexion` | Connexion à une compétition (§3) |
 | Tout autre chemin | `404` |
@@ -244,6 +245,7 @@ passe non temporaire. Sinon : `401` (session) ou `403 ACCES_REFUSE`. Même CORS 
 | `GET /comptes` | — | `200 { "ok": true, "comptes": [CompteResume…] }`, triés par nom |
 | `POST /comptes` | exactement `{ email, nom, role, sel, cle }` | `201 { "ok": true, "compte": CompteResume }` |
 | `PATCH /comptes/<id>` | `{ nom?, role? }`, au moins un des deux, rien d'autre | `200 { "ok": true, "compte": CompteResume }` |
+| `POST /comptes/<id>/mot-de-passe` | exactement `{ sel, cle }` | `200 { "ok": true, "compte": CompteResume }` |
 
 **Création** : le navigateur de l'administrateur tire un **mot de passe temporaire** de 12 caractères (aléatoire
 cryptographique, alphabet sans caractères ambigus), puis envoie `sel` (nouveau, 16 octets) et
@@ -254,12 +256,18 @@ de passe (§8). L'e-mail est normalisé ; il ne se modifie pas.
 **Modification** : le nom et le rôle prennent effet sur les appareils de la personne à leur prochaine revalidation
 (`GET /session` renvoie le compte à jour et un jeton portant le nouveau rôle).
 
+**Réinitialisation** (US-009) : comme à la création, le navigateur de l'administrateur tire un nouveau mot de passe
+temporaire et n'envoie que `sel` et `cle`. Le serveur remplace le sel et le vérificateur, repasse le compte en
+**temporaire** et augmente la **version du mot de passe** (§8) : l'ancien mot de passe est refusé, et toutes les
+sessions de la personne reçoivent `401 COMPTE_MODIFIE`, y compris celle de l'administrateur s'il se réinitialise
+lui-même.
+
 | Statut | Code | Cas |
 |---|---|---|
 | `400` | `DEMANDE_INVALIDE` | Corps mal formé, champ en trop ou invalide |
 | `401` | `SESSION_INVALIDE` / `COMPTE_MODIFIE` | Comme au §7 |
 | `403` | `ACCES_REFUSE` | Organisateur, ou session à mot de passe temporaire |
-| `404` | `COMPTE_INCONNU` | `PATCH` sur un identifiant inconnu |
+| `404` | `COMPTE_INCONNU` | `PATCH` ou réinitialisation sur un identifiant inconnu |
 | `409` | `EMAIL_DEJA_UTILISE` | Un compte utilise déjà cet e-mail (casse ignorée) |
 | `409` | `DERNIER_ADMINISTRATEUR` | Le changement laisserait le club sans administrateur actif |
 | `503` | `SERVEUR_NON_CONFIGURE` | Secrets absents |

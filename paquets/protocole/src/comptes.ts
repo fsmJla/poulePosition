@@ -1,4 +1,4 @@
-// Gestion des comptes par les administrateurs (US-007, docs/protocole.md §9) : demandes, réponses et préparation
+// Gestion des comptes par les administrateurs (US-007, US-009, docs/protocole.md §9) : demandes, réponses et préparation
 // d'un compte avec mot de passe temporaire (tiré et dérivé dans le navigateur : le serveur n'en voit que la clé).
 import {
   genererMotDePasseTemporaire,
@@ -39,24 +39,47 @@ export type DemandeModificationCompte = { nom?: string; role?: Role };
 /** Octets aléatoires pour le mot de passe temporaire (assez pour le tirage par rejet). */
 const OCTETS_ALEATOIRES = 64;
 
+/** Corps de `POST /comptes/<id>/mot-de-passe` (US-009) : sel et clé du nouveau mot de passe temporaire. */
+export interface DemandeReinitialisation {
+  sel: string;
+  cle: string;
+}
+
+/** Mot de passe temporaire tiré au hasard, avec un nouveau sel et sa clé dérivée (seule envoyée au serveur). */
+async function nouveauMotDePasseTemporaire(): Promise<{ motDePasseTemporaire: string } & DemandeReinitialisation> {
+  const motDePasseTemporaire = genererMotDePasseTemporaire(crypto.getRandomValues(new Uint8Array(OCTETS_ALEATOIRES)));
+  const sel = nouveauSel();
+  return { motDePasseTemporaire, sel, cle: await deriverCle(motDePasseTemporaire, sel) };
+}
+
 /** US-007 CA-2 : mot de passe temporaire tiré au hasard, et demande de création qui n'en porte que la clé. */
 export async function preparerCreationCompte(saisie: {
   email: string;
   nom: string;
   role: Role;
 }): Promise<{ demande: DemandeCreationCompte; motDePasseTemporaire: string }> {
-  const motDePasseTemporaire = genererMotDePasseTemporaire(crypto.getRandomValues(new Uint8Array(OCTETS_ALEATOIRES)));
-  const sel = nouveauSel();
+  const { motDePasseTemporaire, sel, cle } = await nouveauMotDePasseTemporaire();
   return {
     motDePasseTemporaire,
-    demande: {
-      email: normaliserEmail(saisie.email),
-      nom: saisie.nom.trim(),
-      role: saisie.role,
-      sel,
-      cle: await deriverCle(motDePasseTemporaire, sel),
-    },
+    demande: { email: normaliserEmail(saisie.email), nom: saisie.nom.trim(), role: saisie.role, sel, cle },
   };
+}
+
+/** US-009 CA-1 : nouveau mot de passe temporaire pour un compte existant. */
+export async function preparerReinitialisation(): Promise<{
+  demande: DemandeReinitialisation;
+  motDePasseTemporaire: string;
+}> {
+  const { motDePasseTemporaire, sel, cle } = await nouveauMotDePasseTemporaire();
+  return { motDePasseTemporaire, demande: { sel, cle } };
+}
+
+export function analyserDemandeReinitialisation(
+  brut: unknown,
+): { ok: true; demande: DemandeReinitialisation } | { ok: false } {
+  const objet = aExactementLesChamps(brut, ['cle', 'sel']);
+  if (!objet || !aLaTaille(objet.sel, TAILLE_SEL) || !aLaTaille(objet.cle, TAILLE_CLE)) return { ok: false };
+  return { ok: true, demande: { sel: objet.sel as string, cle: objet.cle as string } };
 }
 
 export function analyserDemandeCreationCompte(

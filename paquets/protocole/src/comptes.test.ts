@@ -3,9 +3,11 @@ import { deriverCle } from './authentification';
 import {
   analyserDemandeCreationCompte,
   analyserDemandeModificationCompte,
+  analyserDemandeReinitialisation,
   analyserReponseCompte,
   analyserReponseComptes,
   preparerCreationCompte,
+  preparerReinitialisation,
 } from './comptes';
 import { CODES_ERREUR_SESSION } from './session';
 
@@ -106,5 +108,25 @@ describe('réponses (côté application)', () => {
       expect(CODES_ERREUR_SESSION).toContain(code);
       expect(analyserReponseCompte({ ok: false, erreur: code })).toEqual({ ok: false, erreur: code });
     }
+  });
+});
+
+describe('réinitialisation d’un mot de passe (US-009)', () => {
+  it('US-009 CA-1 : nouveau mot de passe temporaire, seule sa clé dérivée est envoyée', async () => {
+    const { demande, motDePasseTemporaire } = await preparerReinitialisation();
+    expect(motDePasseTemporaire).toMatch(/^[A-Za-z2-9]{12}$/);
+    expect(Object.keys(demande).sort()).toEqual(['cle', 'sel']);
+    expect(demande.cle).toBe(await deriverCle(motDePasseTemporaire, demande.sel));
+    expect(JSON.stringify(demande)).not.toContain(motDePasseTemporaire);
+    expect(analyserDemandeReinitialisation(demande)).toEqual({ ok: true, demande });
+  });
+
+  it.each([
+    ['null', null],
+    ['sel absent', { cle: CLE }],
+    ['clé de mauvaise taille', { sel: SEL, cle: 'AAAA' }],
+    ['mot de passe en clair', { sel: SEL, cle: CLE, motDePasse: 'x' }],
+  ])('refuse une demande invalide : %s', (_cas, brut) => {
+    expect(analyserDemandeReinitialisation(brut)).toEqual({ ok: false });
   });
 });

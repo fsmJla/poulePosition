@@ -39,7 +39,8 @@ type Route =
   | 'POST /compte/mot-de-passe'
   | 'GET /comptes'
   | 'POST /comptes'
-  | 'PATCH /comptes/c2';
+  | 'PATCH /comptes/c2'
+  | 'POST /comptes/c2/mot-de-passe';
 type Reponse = { statut: number; corps: unknown } | 'reseau' | 'jamais';
 
 /** Faux serveur : une réponse par route, et la liste des requêtes reçues. */
@@ -449,5 +450,41 @@ describe('gestion des comptes (US-007)', () => {
     });
     expect(await c.listerComptes()).toEqual({ ok: false, erreur: 'SESSION_INVALIDE' });
     expect(etat.session).toBeNull();
+  });
+});
+
+describe('réinitialisation d’un mot de passe (US-009)', () => {
+  const resume = {
+    id: 'c2',
+    email: 'orga@club.fr',
+    nom: 'Orga',
+    role: 'organisateur',
+    actif: true,
+    temporaire: true,
+    derniereConnexion: 1,
+  };
+
+  it('US-009 CA-1 : n’envoie que la clé du nouveau mot de passe temporaire, rendu une fois à l’appelant', async () => {
+    const { stockage } = stockageMemoire(sessionStockee);
+    const serveur = fauxServeur({
+      'POST /comptes/c2/mot-de-passe': { statut: 200, corps: { ok: true, compte: resume } },
+    });
+    const resultat = await client({ stockage, envoyer: serveur.envoyer }).reinitialiserMotDePasse('c2');
+    if (!resultat.ok) throw new Error(resultat.erreur);
+    expect(resultat.compte).toEqual(resume);
+    const corps = serveur.requetes[0]?.corps as { sel: string; cle: string };
+    expect(Object.keys(corps).sort()).toEqual(['cle', 'sel']);
+    expect(corps.cle).toBe(await deriverCle(resultat.motDePasseTemporaire, corps.sel));
+  });
+
+  it('US-009 hors ligne : rien n’est envoyé', async () => {
+    const serveur = fauxServeur({});
+    const resultat = await client({
+      stockage: stockageMemoire(sessionStockee).stockage,
+      envoyer: serveur.envoyer,
+      enLigne: () => false,
+    }).reinitialiserMotDePasse('c2');
+    expect(resultat).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect(serveur.requetes).toHaveLength(0);
   });
 });

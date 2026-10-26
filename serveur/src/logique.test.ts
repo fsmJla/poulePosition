@@ -311,3 +311,10 @@ describe('gestion des comptes (US-007)', () => {
     expect(autorisationAdministrateur({ role: 'administrateur', temporaire: true })).toBe(false);
   });
 });
+
+describe('réinitialisation (US-009)', () => {
+  it('reconnaît /comptes/<id>/mot-de-passe', () => {
+    expect(analyserChemin('/comptes/c1/mot-de-passe')).toEqual({ route: 'reinitialisation', id: 'c1' });
+    expect(analyserChemin('/comptes/c1/autre')).toBeNull();
+  });
+});

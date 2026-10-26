@@ -6,6 +6,7 @@ import {
   analyserDemandeConnexion,
   analyserDemandeCreationCompte,
   analyserDemandeModificationCompte,
+  analyserDemandeReinitialisation,
   analyserDemandeInstallation,
   analyserDemandeSel,
   type CodeErreurInstallation,
@@ -115,7 +116,10 @@ async function installer(requete: Request, env: Env): Promise<Response> {
   return resultat.ok ? repondre(201, resultat) : refuser(409, resultat.erreur);
 }
 
-type RouteSession = Extract<Route, { route: 'sel' | 'session' | 'mot-de-passe' | 'comptes' | 'compte' }>;
+type RouteSession = Extract<
+  Route,
+  { route: 'sel' | 'session' | 'mot-de-passe' | 'comptes' | 'compte' | 'reinitialisation' }
+>;
 
 const METHODES_SESSION = {
   sel: ['POST'],
@@ -123,6 +127,7 @@ const METHODES_SESSION = {
   'mot-de-passe': ['POST'],
   comptes: ['GET', 'POST'],
   compte: ['PATCH'],
+  reinitialisation: ['POST'],
 } as const;
 
 /**
@@ -189,7 +194,7 @@ async function traiterSession(route: RouteSession, requete: Request, env: Env): 
   const authentifie = await compteDeLaSession(requete, secret, env.CLUB_ID, club);
   if (!authentifie.ok) return authentifie.refus;
 
-  if (route.route === 'comptes' || route.route === 'compte') {
+  if (route.route === 'comptes' || route.route === 'compte' || route.route === 'reinitialisation') {
     return gererComptes(route, requete, club, poivre, authentifie.compte);
   }
 
@@ -229,9 +234,9 @@ async function compteDeLaSession(
   return { ok: true, compte };
 }
 
-/** US-007 : gestion des comptes, réservée aux administrateurs au mot de passe définitif (docs/protocole.md §9). */
+/** US-007, US-009 : gestion des comptes, réservée aux administrateurs au mot de passe définitif (protocole §9). */
 async function gererComptes(
-  route: Extract<RouteSession, { route: 'comptes' | 'compte' }>,
+  route: Extract<RouteSession, { route: 'comptes' | 'compte' | 'reinitialisation' }>,
   requete: Request,
   club: DurableObjectStub<Club>,
   poivre: string,
@@ -257,6 +262,16 @@ async function gererComptes(
     });
     if (!resultat.ok) return refuserSession(409, resultat.erreur);
     return Response.json({ ok: true, compte: resume(resultat.compte) }, { status: 201 });
+  }
+
+  if (route.route === 'reinitialisation') {
+    // US-009 : nouveau mot de passe temporaire ; la version suivante fait tomber toutes les sessions de la personne.
+    const analyse = analyserDemandeReinitialisation(await lireJson(requete));
+    if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
+    const { sel, cle } = analyse.demande;
+    const compte = await club.reinitialiserMotDePasse(route.id, sel, await verificateurServeur(cle, poivre));
+    if (!compte) return refuserSession(404, 'COMPTE_INCONNU');
+    return Response.json({ ok: true, compte: resume(compte) });
   }
 
   const analyse = analyserDemandeModificationCompte(await lireJson(requete));
