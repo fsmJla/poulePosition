@@ -64,6 +64,8 @@ SQLite écrites (négligeable pour 10 comptes).
 - **À intégrer (US-010 CA-3)** : un mot de passe actuel faux lors d'un changement de mot de passe
   (`POST /compte/mot-de-passe`, réponse `403 MOT_DE_PASSE_INCORRECT`) compte comme un échec de connexion pour ce
   compte et pour l'adresse IP. US-010 le refuse sans le compter, en attendant cette US.
+- **À intégrer (US-009 CA-3)** : la réinitialisation du mot de passe d'un compte par un administrateur
+  (`POST /comptes/<id>/mot-de-passe`) lève le blocage de ce compte, avec son test.
 - **Tests E2E** : les E2E de connexion (US-003 CA-2) font des essais erronés sur le compte de test de la preview ;
   ils ne doivent pas le bloquer pour les autres tests.
 
