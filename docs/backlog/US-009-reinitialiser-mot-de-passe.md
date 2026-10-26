@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-007
-- **Branche / PR :** `us/US-009-reinitialiser-mot-de-passe`
+- **Branche / PR :** `us/US-009-reinitialiser-mot-de-passe` · [PR #22](https://github.com/fsmJla/poulePosition/pull/22)
 
 ## Récit
 
