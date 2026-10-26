@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1, « système de mot de passe oublié » (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-007
 - **Branche / PR :** `us/US-009-reinitialiser-mot-de-passe`
 
@@ -96,3 +96,4 @@ ADR-0006 (« P1 : réinitialisation par un administrateur »).
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
 | 2026-10-26 | En cours : plan validé (lien « Mot de passe oublié ? » ajouté, CA-3 reporté à US-004, un administrateur qui se réinitialise est déconnecté) |
+| 2026-10-26 | En revue : contrôles locaux verts (lint, typage, 295 tests, couverture 94 %, build, audit, 97 E2E) |
