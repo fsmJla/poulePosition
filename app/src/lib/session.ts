@@ -10,6 +10,7 @@ import {
   deriverCle,
   preparerChangementMotDePasse,
   preparerCreationCompte,
+  preparerReinitialisation,
   verificateurLocal,
   type CompteResume,
   type DemandeModificationCompte,
@@ -275,6 +276,21 @@ export function creerClientSession({
       if (!appel.ok) return appel;
       const reponse = analyserReponseCompte(appel.corps);
       return reponse.ok ? reponse : { ok: false, erreur: erreurComptes(reponse.erreur) };
+    },
+
+    /** US-009 CA-1 : nouveau mot de passe temporaire d'un compte, tiré ici et rendu une seule fois à l'appelant. */
+    async reinitialiserMotDePasse(
+      id: string,
+    ): Promise<
+      { ok: true; compte: CompteResume; motDePasseTemporaire: string } | { ok: false; erreur: ErreurComptes }
+    > {
+      const { demande, motDePasseTemporaire } = await preparerReinitialisation();
+      const appel = await appelReserve(`/comptes/${encodeURIComponent(id)}/mot-de-passe`, 'POST', demande);
+      if (!appel.ok) return appel;
+      const reponse = analyserReponseCompte(appel.corps);
+      return reponse.ok
+        ? { ok: true, compte: reponse.compte, motDePasseTemporaire }
+        : { ok: false, erreur: erreurComptes(reponse.erreur) };
     },
 
     /** US-010 CA-4 : vrai si le mot de passe actuel n'a pas à être ressaisi (saisi à la connexion, page non rechargée). */

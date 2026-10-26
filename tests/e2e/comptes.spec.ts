@@ -3,8 +3,7 @@
 // réelle (serveur, droits, unicité, dernier administrateur) est couverte par serveur/src/comptes.test.ts.
 // La connexion est simulée elle aussi, avec le rôle voulu : le compte E2E réel de la preview est un organisateur.
 import { expect, test, type Page } from '@playwright/test';
-import type { Role } from '@poule-position/domaine';
-import { sessionSimulee, simuler } from './simulation';
+import { connecterSimule, simuler } from './simulation';
 
 const ADMIN = {
   id: 'c1',
@@ -24,18 +23,6 @@ const ORGA = {
   temporaire: true,
   derniereConnexion: null,
 };
-
-/** Connexion simulée avec le rôle voulu (revalidation au rechargement comprise). */
-async function connecterSimule(page: Page, role: Role) {
-  await simuler(page, '/session/sel', 200, { ok: true, sel: 'AAAAAAAAAAAAAAAAAAAAAA' });
-  await simuler(page, '/session', 200, sessionSimulee(false, role));
-  await simuler(page, '/session', 200, sessionSimulee(false, role), 'GET');
-  await page.goto('/connexion');
-  await page.getByLabel('E-mail').fill('simule@poule-position.test');
-  await page.getByLabel('Mot de passe', { exact: true }).fill('mot-de-passe-simule');
-  await page.getByRole('button', { name: 'Se connecter' }).click();
-  await expect(page).toHaveURL(/\/organisateur$/, { timeout: 20_000 });
-}
 
 /** Administrateur connecté, sur la page « Comptes », avec une liste simulée. */
 async function ouvrirComptes(page: Page) {

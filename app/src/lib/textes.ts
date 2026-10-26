@@ -32,6 +32,8 @@ export const textes = {
     afficherMotDePasse: 'Afficher le mot de passe',
     masquerMotDePasse: 'Masquer le mot de passe',
     presentation: 'Présentation de Poule Position',
+    oubli: 'Mot de passe oublié ?',
+    explicationOubli: 'Demandez à un administrateur du club de réinitialiser votre mot de passe',
     horsLigne: 'Hors ligne : connexion possible uniquement sur un appareil déjà utilisé',
     erreurs: {
       IDENTIFIANTS_INVALIDES: 'E-mail ou mot de passe incorrect',
@@ -102,6 +104,7 @@ export const textes = {
     },
     motDePasseTemporaire: {
       titre: 'Compte créé',
+      titreReinitialisation: 'Mot de passe réinitialisé',
       explication: (nom: string) =>
         `Transmettez ce mot de passe temporaire à ${nom} : il ne sera plus affiché. Il devra le changer à sa première connexion.`,
       copier: 'Copier',
@@ -109,6 +112,8 @@ export const textes = {
       fermer: 'J’ai transmis le mot de passe',
     },
     modifier: (nom: string) => `Modifier ${nom}`,
+    reinitialiser: (nom: string) => `Réinitialiser le mot de passe de ${nom}`,
+    confirmerReinitialisation: 'Confirmer la réinitialisation',
     enregistrer: 'Enregistrer',
     annuler: 'Annuler',
     champs: {
