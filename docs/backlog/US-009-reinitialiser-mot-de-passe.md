@@ -99,3 +99,4 @@ ADR-0006 (« P1 : réinitialisation par un administrateur »).
 | 2026-10-26 | En revue : contrôles locaux verts (lint, typage, 295 tests, couverture 94 %, build, audit, 97 E2E) |
 | 2026-10-26 | Recette OK sur https://poule-position-8xhjl046x-fsmjlas-projects.vercel.app (déployée en preview et vérifiée) : lien « Mot de passe oublié ? » et son explication (CA-4) ; vraie réinitialisation du compte E2E par l'administrateur (confirmation, mot de passe temporaire affiché une fois, CA-1), reconnexion avec le temporaire menant directement au changement de mot de passe (CA-2), « Mot de passe modifié ». Refus de l'ancien mot de passe, perte des sessions et hors-ligne : tests d'intégration et E2E de la CI. CA-3 : reporté à US-004. |
 | 2026-10-26 | **Terminée**, mergée dans `dev` (PR #22). |
+| 2026-10-27 | CA-3 réalisé par US-004 : la réinitialisation lève le blocage du compte, test « US-009 CA-3 » dans `serveur/src/connexion.test.ts`. |
