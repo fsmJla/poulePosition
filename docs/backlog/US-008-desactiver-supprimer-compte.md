@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-007
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-008-desactiver-supprimer-compte`
 
 ## Récit
 
@@ -71,3 +71,4 @@ ADR-0006, ADR-0014.
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
+| 2026-10-27 | En cours : plan validé (code `401 COMPTE_RETIRE` pour un compte désactivé ou supprimé, `PATCH { actif }` et `DELETE /comptes/<id>`, confirmation de la suppression par l’e-mail dans l’interface, test du nom de l’auteur dans le journal reporté au premier événement qui en porte un) |
