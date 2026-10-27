@@ -40,6 +40,8 @@
 | `GET /session` | Vérifie et prolonge une session (§7) |
 | `POST /compte/mot-de-passe` | Changement de mot de passe (§8) |
 | `PATCH /compte` | Modifier son propre nom ou la couleur de son avatar (§8 bis, US-016) |
+| `POST /mot-de-passe-oublie` | Demander un lien de réinitialisation par e-mail (§8 ter, US-019) |
+| `POST /mot-de-passe-oublie/nouveau` | Choisir un nouveau mot de passe par ce lien (§8 ter, US-019) |
 | `GET /comptes`, `POST /comptes` | Lister et créer les comptes du club (§9) |
 | `PATCH /comptes/<id>` | Modifier le nom, le rôle ou l'état (actif ou désactivé) d'un compte (§9) |
 | `DELETE /comptes/<id>` | Supprimer définitivement un compte (§9, US-008) |
@@ -295,6 +297,38 @@ prochaine revalidation.
 | `400` | `DEMANDE_INVALIDE` | Corps vide, champ en trop, nom invalide ou couleur inconnue |
 | `401` | `SESSION_INVALIDE` / `COMPTE_MODIFIE` / `COMPTE_RETIRE` | Comme `GET /session` |
 | `403` | `ACCES_REFUSE` | Session à mot de passe temporaire (elle ne sert qu'à changer de mot de passe, §8) |
+| `503` | `SERVEUR_NON_CONFIGURE` | Secrets absents |
+
+## 8 ter. Mot de passe oublié : lien par e-mail (US-019)
+
+Routes publiques (sans session), avec le même CORS qu'au §7.
+
+**`POST /mot-de-passe-oublie`**, corps exactement `{ "email": … }` : répond **toujours** `200 { "ok": true }`, tout
+de suite, que le compte existe ou non (rien ne permet de le deviner, pas même le temps de réponse). Si le compte
+existe et est actif, et qu'il a fait moins de 3 demandes dans l'heure, le serveur :
+
+- tire un **jeton** de 32 octets aléatoires (base64url) et n'en garde que l'**empreinte** SHA-256, avec une
+  expiration à **1 heure** ; une nouvelle demande remplace la précédente (l'ancien lien ne marche plus) ;
+- envoie, **après la réponse** (`waitUntil`), l'e-mail du lien depuis `no-reply@pessac-escrime.fr` (ADR-0015), aux
+  couleurs de l'application, avec le lien `<application>/reinitialisation#<jeton>`. L'application est celle d'où
+  vient la demande (en-tête `Origin`, si elle fait partie de `ORIGINES`), sinon `URL_APPLICATION`. Le jeton est dans le
+  fragment (`#`), qui n'est jamais envoyé à un serveur.
+
+Chaque demande compte pour la limite par adresse IP (§7, US-004). Un e-mail qui ne peut pas partir est seulement
+journalisé : la réponse ne change pas.
+
+**`POST /mot-de-passe-oublie/nouveau`**, corps exactement `{ "jeton": …, "sel": …, "cle": … }` (nouveau sel de
+16 octets, clé dérivée du nouveau mot de passe comme au §6) : si le lien est valable et le compte toujours actif, le
+serveur remplace le sel et le vérificateur, augmente la **version du mot de passe** (§8 : toutes les autres sessions
+reçoivent `COMPTE_MODIFIE`), remet `temporaire` à faux, lève le blocage du compte (§7) et rend le lien inutilisable.
+Il répond par une **session** (`200`, même forme qu'au §7).
+
+| Statut | Code | Cas |
+|---|---|---|
+| `200` | — | Demande prise en compte (`{ "ok": true }`), ou nouveau mot de passe enregistré (session) |
+| `400` | `DEMANDE_INVALIDE` | Corps mal formé, e-mail invalide, jeton, sel ou clé de mauvaise taille |
+| `400` | `LIEN_INVALIDE` | Lien inconnu, expiré, déjà utilisé ou remplacé, ou compte désactivé depuis ; compte comme échec pour l'adresse IP |
+| `429` | `TROP_D_ESSAIS` | Adresse IP bloquée (§7) |
 | `503` | `SERVEUR_NON_CONFIGURE` | Secrets absents |
 
 ## 9. Gestion des comptes (US-007, US-008, US-009)
