@@ -11,9 +11,13 @@ const ANCIENNE_ADRESSE = 'https://poule-position-livid.vercel.app';
 const CONFIG = fileURLToPath(new URL('../wrangler.toml', import.meta.url).href);
 
 /** Variables de l'environnement, telles que wrangler les déploie (`undefined` : production). */
-function variables(env?: 'preview'): Record<string, string> {
+function variables(env?: 'preview'): { ORIGINES: string; URL_APPLICATION: string } {
   const { vars } = unstable_readConfig({ config: CONFIG, env }, { hideWarnings: true });
-  return vars as Record<string, string>;
+  const { ORIGINES, URL_APPLICATION } = vars;
+  if (typeof ORIGINES !== 'string' || typeof URL_APPLICATION !== 'string') {
+    throw new Error(`ORIGINES et URL_APPLICATION manquent dans wrangler.toml (${env ?? 'production'})`);
+  }
+  return { ORIGINES, URL_APPLICATION };
 }
 
 describe('configuration du serveur (US-020)', () => {
