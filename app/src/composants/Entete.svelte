@@ -1,20 +1,24 @@
 <script lang="ts">
-  // Entête des pages réservées (US-014) : bannière « header » qui ramène à l'accueil de l'organisateur, et
-  // déconnexion. Les liens de navigation (Compétitions, Résultats) viendront avec leurs US. Bandeau « connexion
-  // locale » tant que la session ouverte hors ligne n'est pas revalidée (US-005 CA-1). « Se déconnecter et oublier
-  // cet appareil » (US-006), confirmé dans un panneau sous l'entête, sans boîte de dialogue du navigateur.
+  // Entête des pages réservées (US-014) : bannière « header » qui ramène à l'accueil de l'organisateur, et menu de
+  // compte en haut à droite (US-017 : profil, déconnexions). Les liens de navigation (Compétitions, Résultats)
+  // viendront avec leurs US. Bandeau « connexion locale » tant que la session ouverte hors ligne n'est pas revalidée
+  // (US-005 CA-1). « Se déconnecter et oublier cet appareil » (US-006) se confirme dans un panneau sous l'entête, sans
+  // boîte de dialogue du navigateur.
+  import type { CompteConnecte } from '@poule-position/protocole';
   import { CHEMINS } from '../lib/routes';
   import { textes } from '../lib/textes';
   import Banniere from './Banniere.svelte';
+  import MenuCompte from './MenuCompte.svelte';
 
   interface Proprietes {
+    compte: CompteConnecte;
     surDeconnexion: () => void;
     surOubli: () => void;
     naviguer: (chemin: string) => void;
     locale?: boolean;
   }
 
-  let { surDeconnexion, surOubli, naviguer, locale = false }: Proprietes = $props();
+  let { compte, surDeconnexion, surOubli, naviguer, locale = false }: Proprietes = $props();
 
   const t = textes.organisateur.oublier;
   /** US-006 : confirmation de l'oubli affichée. */
@@ -31,15 +35,7 @@
   <a href={CHEMINS.organisateur} onclick={versAccueil} class="marque">
     <Banniere variante="header" surFondSombre hauteur={32} />
   </a>
-  <div class="boutons">
-    <button
-      type="button"
-      onclick={() => (aConfirmer = true)}
-      aria-expanded={aConfirmer}
-      aria-controls="confirmation-oubli">{t.bouton}</button
-    >
-    <button type="button" onclick={surDeconnexion}>{textes.organisateur.seDeconnecter}</button>
-  </div>
+  <MenuCompte {compte} {naviguer} {surDeconnexion} surOubli={() => (aConfirmer = true)} />
 </header>
 {#if aConfirmer}
   <div class="confirmation" id="confirmation-oubli" role="group" aria-labelledby="avertissement-oubli">
@@ -66,12 +62,12 @@
     text-align: center;
   }
 
+  /* Bannière à gauche, avatar à droite : une seule ligne, smartphone compris (US-017). */
   header {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.6rem 1rem;
+    gap: 1rem;
     padding: 0.6rem max(1rem, env(safe-area-inset-left));
     background: var(--marque);
     color: var(--sur-marque);
@@ -84,33 +80,6 @@
   }
 
   .marque:focus-visible {
-    outline-color: var(--sur-marque);
-  }
-
-  /* Sur smartphone, les deux boutons passent à la ligne sous la bannière ; jamais plus larges que l'écran. */
-  .boutons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    justify-content: flex-end;
-    min-width: 0;
-  }
-
-  header button {
-    flex: 0 1 auto;
-    min-width: 0;
-    min-height: 44px;
-    padding: 0 1rem;
-    border: 1px solid var(--sur-marque);
-    border-radius: var(--rayon);
-    background: transparent;
-    color: var(--sur-marque);
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  header button:focus-visible {
     outline-color: var(--sur-marque);
   }
 

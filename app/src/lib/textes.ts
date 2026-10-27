@@ -68,7 +68,11 @@ export const textes = {
     },
     connexionLocale: 'Hors ligne : connexion locale',
     changerMotDePasse: 'Changer mon mot de passe',
-    monProfil: 'Mon profil',
+    /** US-017 : menu de compte, ouvert depuis l'avatar de l'entête. */
+    menu: {
+      ouvrir: (nom: string) => `Menu du compte de ${nom}`,
+      editerProfil: 'Éditer le profil',
+    },
     actions: 'Actions',
   },
   motDePasse: {
