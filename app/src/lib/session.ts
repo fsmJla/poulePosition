@@ -1,12 +1,13 @@
 // Connexion, session et déconnexion (US-003, docs/protocole.md §7), changement de mot de passe (US-010, §8). Le mot
 // de passe ne quitte jamais l'appareil : seule la clé dérivée est envoyée. La session est gardée dans IndexedDB et
-// reste utilisable hors ligne (ADR-0001). Gestion des comptes par les administrateurs (US-007, §9).
+// reste utilisable hors ligne (ADR-0001). Gestion des comptes par les administrateurs (US-007 à US-009, §9).
 import { normaliserEmail, sessionExpiree, type Role } from '@poule-position/domaine';
 import {
   analyserReponseCompte,
   analyserReponseComptes,
   analyserReponseSel,
   analyserReponseSession,
+  analyserReponseSuppression,
   deriverCle,
   preparerChangementMotDePasse,
   preparerCreationCompte,
@@ -105,7 +106,7 @@ export function creerClientSession({
   async function requete(
     chemin: string,
     signal: AbortSignal,
-    init: { methode: 'GET' | 'POST' | 'PATCH'; corps?: unknown; jeton?: string },
+    init: { methode: 'GET' | 'POST' | 'PATCH' | 'DELETE'; corps?: unknown; jeton?: string },
   ): Promise<{ statut: number; corps: unknown }> {
     let reponse: Response;
     try {
@@ -137,12 +138,30 @@ export function creerClientSession({
    */
   let cleEnMemoire: { email: string; cle: string } | null = null;
 
-  /** Session refusée (401) : effacée ; si le mot de passe a changé ailleurs, le vérificateur local aussi (US-010 CA-5). */
+  /**
+   * Session refusée (401) : effacée ; si le mot de passe a changé ailleurs (US-010 CA-5), ou si le compte a été
+   * désactivé ou supprimé (US-008 CA-5), le vérificateur local aussi.
+   */
   async function oublierSession(session: Session, corps: unknown): Promise<void> {
     await stockage.effacerSession();
     cleEnMemoire = null;
     const refus = analyserReponseSession(corps);
-    if (!refus.ok && refus.erreur === 'COMPTE_MODIFIE') await stockage.oublierAppareilConnu(session.compte.email);
+    if (!refus.ok && (refus.erreur === 'COMPTE_MODIFIE' || refus.erreur === 'COMPTE_RETIRE')) {
+      await stockage.oublierAppareilConnu(session.compte.email);
+    }
+  }
+
+  /**
+   * US-008 : après la désactivation ou la suppression de son propre compte, la session et le vérificateur local sont
+   * effacés aussitôt (le serveur les refuserait au prochain appel). Vrai si c'était le compte de la session.
+   */
+  async function retirerSiSoiMeme(email: string): Promise<boolean> {
+    const session = await stockage.lireSession();
+    if (session?.compte.email !== email) return false;
+    await stockage.effacerSession();
+    cleEnMemoire = null;
+    await stockage.oublierAppareilConnu(email);
+    return true;
   }
 
   /**
@@ -151,7 +170,7 @@ export function creerClientSession({
    */
   async function appelReserve(
     chemin: string,
-    methode: 'GET' | 'POST' | 'PATCH',
+    methode: 'GET' | 'POST' | 'PATCH' | 'DELETE',
     corps?: unknown,
   ): Promise<{ ok: true; corps: unknown } | { ok: false; erreur: ErreurComptes }> {
     if (!urlServeur) return { ok: false, erreur: 'SERVEUR_NON_CONFIGURE' };
@@ -276,6 +295,33 @@ export function creerClientSession({
       if (!appel.ok) return appel;
       const reponse = analyserReponseCompte(appel.corps);
       return reponse.ok ? reponse : { ok: false, erreur: erreurComptes(reponse.erreur) };
+    },
+
+    /**
+     * US-008 CA-1 / CA-2 : désactive ou réactive un compte. `deconnecte` : c'était le compte de la session, qui est
+     * fermée aussitôt.
+     */
+    async changerEtatCompte(
+      id: string,
+      actif: boolean,
+    ): Promise<{ ok: true; compte: CompteResume; deconnecte: boolean } | { ok: false; erreur: ErreurComptes }> {
+      const appel = await appelReserve(`/comptes/${encodeURIComponent(id)}`, 'PATCH', { actif });
+      if (!appel.ok) return appel;
+      const reponse = analyserReponseCompte(appel.corps);
+      if (!reponse.ok) return { ok: false, erreur: erreurComptes(reponse.erreur) };
+      const deconnecte = !actif && (await retirerSiSoiMeme(reponse.compte.email));
+      return { ok: true, compte: reponse.compte, deconnecte };
+    },
+
+    /** US-008 CA-3 : supprime définitivement un compte ; s'il s'agit du sien, la session est fermée aussitôt. */
+    async supprimerCompte(
+      compte: Pick<CompteResume, 'id' | 'email'>,
+    ): Promise<{ ok: true; deconnecte: boolean } | { ok: false; erreur: ErreurComptes }> {
+      const appel = await appelReserve(`/comptes/${encodeURIComponent(compte.id)}`, 'DELETE');
+      if (!appel.ok) return appel;
+      const reponse = analyserReponseSuppression(appel.corps);
+      if (!reponse.ok) return { ok: false, erreur: erreurComptes(reponse.erreur) };
+      return { ok: true, deconnecte: await retirerSiSoiMeme(compte.email) };
     },
 
     /** US-009 CA-1 : nouveau mot de passe temporaire d'un compte, tiré ici et rendu une seule fois à l'appelant. */

@@ -40,7 +40,8 @@ type Route =
   | 'GET /comptes'
   | 'POST /comptes'
   | 'PATCH /comptes/c2'
-  | 'POST /comptes/c2/mot-de-passe';
+  | 'POST /comptes/c2/mot-de-passe'
+  | 'DELETE /comptes/c2';
 type Reponse = { statut: number; corps: unknown } | 'reseau' | 'jamais';
 
 /** Faux serveur : une réponse par route, et la liste des requêtes reçues. */
@@ -485,6 +486,99 @@ describe('réinitialisation d’un mot de passe (US-009)', () => {
       enLigne: () => false,
     }).reinitialiserMotDePasse('c2');
     expect(resultat).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect(serveur.requetes).toHaveLength(0);
+  });
+});
+
+describe('désactivation, réactivation et suppression (US-008)', () => {
+  const autre = {
+    id: 'c2',
+    email: 'autre@club.fr',
+    nom: 'Autre',
+    role: 'organisateur',
+    actif: true,
+    temporaire: false,
+    derniereConnexion: 1,
+  };
+
+  async function avecAppareilConnu(reponses: Parameters<typeof fauxServeur>[0], enLigne = true) {
+    const { stockage, etat } = stockageMemoire(sessionStockee);
+    await stockage.enregistrerAppareilConnu({ ...compte, sel: SEL, verificateurLocal: 'v', connuDepuis: 1 });
+    const serveur = fauxServeur(reponses);
+    return { etat, serveur, client: client({ stockage, envoyer: serveur.envoyer, enLigne: () => enLigne }) };
+  }
+
+  it('US-008 CA-1 et CA-2 : désactive puis réactive un compte par PATCH { actif }', async () => {
+    const {
+      serveur,
+      etat,
+      client: c,
+    } = await avecAppareilConnu({
+      'PATCH /comptes/c2': { statut: 200, corps: { ok: true, compte: { ...autre, actif: false } } },
+    });
+    expect(await c.changerEtatCompte('c2', false)).toEqual({
+      ok: true,
+      compte: { ...autre, actif: false },
+      deconnecte: false,
+    });
+    expect(serveur.requetes[0]?.corps).toEqual({ actif: false });
+    expect(etat.session).toEqual(sessionStockee);
+    await c.changerEtatCompte('c2', true);
+    expect(serveur.requetes[1]?.corps).toEqual({ actif: true });
+  });
+
+  it('US-008 CA-3 : supprime un compte par DELETE', async () => {
+    const { serveur, client: c } = await avecAppareilConnu({
+      'DELETE /comptes/c2': { statut: 200, corps: { ok: true } },
+    });
+    expect(await c.supprimerCompte(autre)).toEqual({ ok: true, deconnecte: false });
+    expect(serveur.requetes[0]?.route).toBe('DELETE /comptes/c2');
+  });
+
+  it('US-008 CA-4 : transmet le refus DERNIER_ADMINISTRATEUR', async () => {
+    const refus = { statut: 409, corps: { ok: false, erreur: 'DERNIER_ADMINISTRATEUR' } };
+    const { etat, client: c } = await avecAppareilConnu({ 'PATCH /comptes/c2': refus, 'DELETE /comptes/c2': refus });
+    expect(await c.changerEtatCompte('c2', false)).toEqual({ ok: false, erreur: 'DERNIER_ADMINISTRATEUR' });
+    expect(await c.supprimerCompte({ ...autre, email: compte.email })).toEqual({
+      ok: false,
+      erreur: 'DERNIER_ADMINISTRATEUR',
+    });
+    expect(etat.session).toEqual(sessionStockee);
+  });
+
+  it('US-008 CA-5 : COMPTE_RETIRE au retour en ligne efface la session et le vérificateur local', async () => {
+    const { etat, client: c } = await avecAppareilConnu({
+      'GET /session': { statut: 401, corps: { ok: false, erreur: 'COMPTE_RETIRE' } },
+    });
+    expect(await c.restaurer()).toBeNull();
+    expect(etat.session).toBeNull();
+    expect(etat.appareils.has(compte.email)).toBe(false);
+  });
+
+  it('US-008 CA-5 : COMPTE_RETIRE sur une route réservée efface aussi le vérificateur local', async () => {
+    const { etat, client: c } = await avecAppareilConnu({
+      'GET /comptes': { statut: 401, corps: { ok: false, erreur: 'COMPTE_RETIRE' } },
+    });
+    expect(await c.listerComptes()).toEqual({ ok: false, erreur: 'SESSION_INVALIDE' });
+    expect(etat.appareils.has(compte.email)).toBe(false);
+  });
+
+  it.each([
+    ['désactive', 'PATCH /comptes/c2', { ok: true, compte: { ...autre, email: compte.email, actif: false } }],
+    ['supprime', 'DELETE /comptes/c2', { ok: true }],
+  ] as const)('US-008 : un administrateur qui se %s est déconnecté aussitôt', async (cas, route, corps) => {
+    const { etat, client: c } = await avecAppareilConnu({ [route]: { statut: 200, corps } });
+    const soiMeme = { ...autre, email: compte.email };
+    const resultat = cas === 'désactive' ? await c.changerEtatCompte('c2', false) : await c.supprimerCompte(soiMeme);
+    expect(resultat).toMatchObject({ ok: true, deconnecte: true });
+    expect(etat.session).toBeNull();
+    expect(etat.appareils.has(compte.email)).toBe(false);
+  });
+
+  it('US-008 hors ligne : rien n’est envoyé', async () => {
+    const { serveur, client: c } = await avecAppareilConnu({}, false);
+    expect(await c.changerEtatCompte('c2', false)).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect(await c.supprimerCompte(autre)).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
     expect(serveur.requetes).toHaveLength(0);
   });
 });
