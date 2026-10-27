@@ -156,18 +156,15 @@ describe('session', () => {
       SECRET_SESSION,
       0,
     );
-    for (const jeton of [
-      null,
-      'nimporte-quoi',
-      expiree.jeton,
-      autreSecret.jeton,
-      compteSupprime.jeton,
-      autreClub.jeton,
-    ]) {
+    for (const jeton of [null, 'nimporte-quoi', expiree.jeton, autreSecret.jeton, autreClub.jeton]) {
       const reponse = await verifier(jeton);
       expect(reponse.status, String(jeton)).toBe(401);
       expect(await reponse.json()).toEqual({ ok: false, erreur: 'SESSION_INVALIDE' });
     }
+    // US-008 CA-5 : un compte supprimé est signalé à part, pour que l'appareil oublie aussi son vérificateur local.
+    const supprime = await verifier(compteSupprime.jeton);
+    expect(supprime.status).toBe(401);
+    expect(await supprime.json()).toEqual({ ok: false, erreur: 'COMPTE_RETIRE' });
   });
 });
 

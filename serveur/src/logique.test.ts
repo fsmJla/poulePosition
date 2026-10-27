@@ -247,17 +247,17 @@ describe('décision de connexion (US-003)', () => {
     expect(await deciderConnexion(desactive, 'mauvais')).toEqual({ ok: false, erreur: 'IDENTIFIANTS_INVALIDES' });
   });
 
-  it('US-003 CA-7 : une session n’est prolongée que pour un compte existant et toujours actif', () => {
+  it('US-003 CA-7 et US-008 CA-5 : une session n’est prolongée que pour un compte existant et toujours actif', () => {
     expect(decisionSession({ v: 0 }, { actif: true, versionMdp: 0 })).toBe('OK');
-    expect(decisionSession({ v: 0 }, { actif: false, versionMdp: 0 })).toBe('SESSION_INVALIDE');
-    expect(decisionSession({ v: 0 }, null)).toBe('SESSION_INVALIDE');
+    expect(decisionSession({ v: 0 }, { actif: false, versionMdp: 0 })).toBe('COMPTE_RETIRE');
+    expect(decisionSession({ v: 0 }, null)).toBe('COMPTE_RETIRE');
   });
 
   it('US-010 CA-5 : une session d’une version de mot de passe dépassée reçoit COMPTE_MODIFIE', () => {
     expect(decisionSession({ v: 1 }, { actif: true, versionMdp: 2 })).toBe('COMPTE_MODIFIE');
     expect(decisionSession({ v: 2 }, { actif: true, versionMdp: 2 })).toBe('OK');
-    // Un compte désactivé reste SESSION_INVALIDE, même si son mot de passe a changé.
-    expect(decisionSession({ v: 1 }, { actif: false, versionMdp: 2 })).toBe('SESSION_INVALIDE');
+    // Un compte désactivé reste COMPTE_RETIRE, même si son mot de passe a changé.
+    expect(decisionSession({ v: 1 }, { actif: false, versionMdp: 2 })).toBe('COMPTE_RETIRE');
   });
 });
 
