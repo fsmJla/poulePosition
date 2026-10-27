@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-016, US-006
 - **Branche / PR :** `us/US-017-menu-de-compte` · [PR #30](https://github.com/fsmJla/poulePosition/pull/30)
 
@@ -126,3 +126,5 @@ Impacte l'entête d'US-014 et d'US-006 (boutons déplacés dans le menu) et les 
 | 2026-10-27 | Créée (spécification : cartouche de profil) |
 | 2026-10-27 | En cours : plan validé (bouton avatar qui déplie une liste plutôt qu’un `role="menu"`, navigation au clavier par une fonction pure testée, confirmation d’US-006 gardée sous l’entête, tuile « Mon profil » retirée) |
 | 2026-10-27 | En revue : contrôles locaux verts (lint, typage, 414 tests unitaires et d’intégration, couverture 95 %, build, audit, 153 E2E) |
+| 2026-10-27 | Recette OK sur https://poule-position-git-us-us-017-menu-de-compte-fsmjlas-projects.vercel.app (déployée en preview et vérifiée ; aucun Worker à déployer) : compte jetable « Recette Dix-Sept » dans un contexte de navigateur isolé. Avatar « RD » en haut à droite, « Menu du compte de Recette Dix-Sept », plus aucun bouton de déconnexion dans l’entête (CA-1) ; menu avec avatar, nom, e-mail, puis « Éditer le profil », « Se déconnecter », « Se déconnecter et oublier cet appareil », chaque entrée essayée (profil, panneau d’US-006, déconnexion) (CA-2) ; fermeture par l’avatar, un clic en dehors, Échap avec focus rendu à l’avatar (CA-3) ; au clavier, flèches en boucle, Début, Fin, Entrée (CA-4) ; plus de tuile sur l’accueil (CA-5) ; hors ligne, menu ouvert et déconnexion sans réseau ; mot de passe temporaire : « Éditer le profil » mène au changement obligatoire ; smartphone : entête sur une ligne (63 px), menu dans l’écran, aucun débordement. Compte de recette supprimé à la fin. |
+| 2026-10-27 | **Terminée**, mergée dans `dev` (PR #30). |
