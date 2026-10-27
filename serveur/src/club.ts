@@ -1,7 +1,7 @@
 // Durable Object « Club » : un objet par club (idFromName(`club:<clubId>`), ADR-0014). Comptes des administrateurs
-// et des organisateurs (ADR-0006), et essais de connexion erronés par e-mail (US-004), en SQLite. Les écritures d'un
-// même objet sont sérialisées : deux créations simultanées du premier administrateur, ou d'un même e-mail, ne
-// peuvent pas aboutir toutes les deux.
+// et des organisateurs (ADR-0006), essais de connexion erronés par e-mail (US-004) et demandes de réinitialisation
+// par e-mail (US-019), en SQLite. Les écritures d'un même objet sont sérialisées : deux créations simultanées du
+// premier administrateur, ou d'un même e-mail, ne peuvent pas aboutir toutes les deux.
 import { DurableObject } from 'cloudflare:workers';
 import {
   essaisVides,
@@ -10,6 +10,10 @@ import {
   verifierChangementRole,
   verifierRetrait,
   REGLE_COMPTE,
+  demandeAutorisee,
+  expirationLien,
+  lienExpire,
+  noterDemande,
   estCouleurAvatar,
   type CouleurAvatar,
   type Essais,
@@ -104,6 +108,15 @@ export class Club extends DurableObject<Env> {
         bloque_jusqua INTEGER NOT NULL,
         expire_le INTEGER NOT NULL
       )`);
+    // US-019 : une demande de lien par compte ; seule l'empreinte du jeton est gardée (NULL une fois le lien utilisé),
+    // avec les dates des demandes de l'heure (limite de 3) ; purgée à l'expiration.
+    ctx.storage.sql.exec(`
+      CREATE TABLE IF NOT EXISTS demandes_reinitialisation (
+        compte_id TEXT PRIMARY KEY,
+        empreinte TEXT,
+        expire_le INTEGER NOT NULL,
+        demandes TEXT NOT NULL
+      )`);
   }
 
   /** US-004 CA-1 / CA-4 : vrai si les connexions à cet e-mail sont refusées. */
@@ -125,9 +138,69 @@ export class Club extends DurableObject<Env> {
       essais.bloqueJusqua,
       expireLe,
     );
-    const alarme = await this.ctx.storage.getAlarm();
-    if (alarme === null || alarme > expireLe) await this.ctx.storage.setAlarm(expireLe);
+    await this.programmerPurge(expireLe);
     return saisieBloquee(essais, maintenant);
+  }
+
+  /** L'alarme de purge passe au plus tard à `date` (compteurs d'essais et demandes de réinitialisation). */
+  private async programmerPurge(date: number): Promise<void> {
+    const alarme = await this.ctx.storage.getAlarm();
+    if (alarme === null || alarme > date) await this.ctx.storage.setAlarm(date);
+  }
+
+  /**
+   * US-019 CA-1 / CA-2 / CA-5 : enregistre une demande de lien pour cet e-mail, avec l'empreinte du nouveau jeton (le
+   * lien précédent est annulé). Renvoie le destinataire à qui envoyer l'e-mail, ou null s'il ne faut rien envoyer :
+   * e-mail inconnu, compte désactivé, ou plus de 3 demandes dans l'heure.
+   */
+  async preparerReinitialisation(email: string, empreinte: string): Promise<{ email: string; nom: string } | null> {
+    const compte = this.lireCompte('email', email);
+    if (!compte?.actif) return null;
+    const maintenant = Date.now();
+    const [ligne] = this.ctx.storage.sql
+      .exec<{ demandes: string }>('SELECT demandes FROM demandes_reinitialisation WHERE compte_id = ?', compte.id)
+      .toArray();
+    const demandes = ligne ? (JSON.parse(ligne.demandes) as number[]) : [];
+    if (!demandeAutorisee(demandes, maintenant)) return null;
+    const expireLe = expirationLien(maintenant);
+    this.ctx.storage.sql.exec(
+      `INSERT INTO demandes_reinitialisation (compte_id, empreinte, expire_le, demandes) VALUES (?, ?, ?, ?)
+       ON CONFLICT(compte_id) DO UPDATE SET empreinte = excluded.empreinte, expire_le = excluded.expire_le,
+       demandes = excluded.demandes`,
+      compte.id,
+      empreinte,
+      expireLe,
+      JSON.stringify(noterDemande(demandes, maintenant)),
+    );
+    await this.programmerPurge(expireLe);
+    return { email: compte.email, nom: compte.nom };
+  }
+
+  /**
+   * US-019 CA-3 / CA-4 : nouveau mot de passe par un lien encore valable, d'un compte toujours actif. La version du
+   * mot de passe augmente (les autres sessions tombent), le mot de passe n'est plus temporaire, le lien ne sert plus,
+   * et le blocage pour trop d'essais est levé (US-004). Renvoie le compte à jour, ou null si le lien n'est pas valable.
+   */
+  async reinitialiserParLien(empreinte: string, sel: string, verificateur: string): Promise<CompteStocke | null> {
+    const [demande] = this.ctx.storage.sql
+      .exec<{ compteId: string; expireLe: number }>(
+        'SELECT compte_id AS compteId, expire_le AS expireLe FROM demandes_reinitialisation WHERE empreinte = ?',
+        empreinte,
+      )
+      .toArray();
+    if (!demande || lienExpire(demande.expireLe, Date.now())) return null;
+    const compte = this.lireCompte('id', demande.compteId);
+    if (!compte?.actif) return null;
+    this.ctx.storage.sql.exec(
+      'UPDATE comptes SET sel = ?, verificateur = ?, version_mdp = version_mdp + 1, temporaire = 0 WHERE id = ?',
+      sel,
+      verificateur,
+      compte.id,
+    );
+    // Le lien ne sert qu'une fois ; la ligne reste jusqu'à son expiration pour compter les demandes (CA-5).
+    this.ctx.storage.sql.exec('UPDATE demandes_reinitialisation SET empreinte = NULL WHERE compte_id = ?', compte.id);
+    await this.effacerEssaisCompte(compte.email);
+    return this.lireCompte('id', compte.id);
   }
 
   /** US-004 CA-3 et US-009 CA-3 : connexion réussie ou mot de passe réinitialisé, le compteur repart de zéro. */
@@ -135,12 +208,19 @@ export class Club extends DurableObject<Env> {
     this.ctx.storage.sql.exec('DELETE FROM essais_comptes WHERE email = ?', email);
   }
 
-  /** Purge les compteurs qui ne servent plus, et reprogramme l'alarme pour le suivant. */
+  /**
+   * Purge les compteurs d'essais et les demandes de réinitialisation qui ne servent plus (ADR-0014 : données
+   * minimales), et reprogramme l'alarme pour la suivante.
+   */
   override async alarm(): Promise<void> {
     const maintenant = Date.now();
     this.ctx.storage.sql.exec('DELETE FROM essais_comptes WHERE expire_le <= ?', maintenant);
+    this.ctx.storage.sql.exec('DELETE FROM demandes_reinitialisation WHERE expire_le <= ?', maintenant);
     const [suivant] = this.ctx.storage.sql
-      .exec<{ prochain: number | null }>('SELECT MIN(expire_le) AS prochain FROM essais_comptes')
+      .exec<{ prochain: number | null }>(
+        `SELECT MIN(expire_le) AS prochain FROM (
+           SELECT expire_le FROM essais_comptes UNION ALL SELECT expire_le FROM demandes_reinitialisation)`,
+      )
       .toArray();
     if (suivant?.prochain) await this.ctx.storage.setAlarm(suivant.prochain);
   }
@@ -217,6 +297,7 @@ export class Club extends DurableObject<Env> {
     if (verifierRetrait(await this.listerComptes(), id)) return { ok: false, erreur: 'DERNIER_ADMINISTRATEUR' };
     this.ctx.storage.sql.exec('DELETE FROM comptes WHERE id = ?', id);
     await this.effacerEssaisCompte(compte.email);
+    this.ctx.storage.sql.exec('DELETE FROM demandes_reinitialisation WHERE compte_id = ?', id);
     return { ok: true };
   }
 

@@ -28,6 +28,8 @@ export type Route =
   | { route: 'session' }
   | { route: 'sel' }
   | { route: 'mot-de-passe' }
+  | { route: 'mot-de-passe-oublie' }
+  | { route: 'nouveau-mot-de-passe' }
   | { route: 'profil' }
   | { route: 'comptes' }
   | { route: 'compte'; id: string }
@@ -43,6 +45,8 @@ export function analyserChemin(chemin: string): Route | null {
   if (chemin === '/session') return { route: 'session' };
   if (chemin === '/session/sel') return { route: 'sel' };
   if (chemin === '/compte/mot-de-passe') return { route: 'mot-de-passe' };
+  if (chemin === '/mot-de-passe-oublie') return { route: 'mot-de-passe-oublie' };
+  if (chemin === '/mot-de-passe-oublie/nouveau') return { route: 'nouveau-mot-de-passe' };
   if (chemin === '/compte') return { route: 'profil' };
   if (chemin === '/comptes') return { route: 'comptes' };
   const reinitialisation = /^\/comptes\/([A-Za-z0-9-]{1,64})\/mot-de-passe$/.exec(chemin);
@@ -293,4 +297,27 @@ export function courrielEssai(destinataire: string): Courriel {
     texte: `Bonjour,\n\nCeci est un essai d’envoi d’e-mail de Poule Position.\n${phrase}\n\nPoule Position`,
     html: `<p>Bonjour,</p><p>Ceci est un essai d’envoi d’e-mail de <strong>Poule Position</strong>.</p><p>${phrase}</p>`,
   };
+}
+
+/**
+ * US-019 CA-3 : empreinte SHA-256 du jeton d'un lien de réinitialisation, en base64url. Le serveur ne garde que
+ * l'empreinte : lire sa base ne suffit pas à se servir d'un lien en cours.
+ */
+export async function empreinteJeton(jeton: string): Promise<string> {
+  return encoderBase64Url(await empreinte(jeton));
+}
+
+/**
+ * Lien de réinitialisation (US-019) : il ouvre l'application d'où vient la demande si cette origine est autorisée
+ * (preview ou production), sinon l'application de production. Le jeton est dans le fragment (#) : il n'est jamais
+ * envoyé à un serveur (ni journaux d'hébergement ni en-tête Referer).
+ */
+export function lienReinitialisation(
+  origine: string | null,
+  motifs: string,
+  urlApplication: string,
+  jeton: string,
+): string {
+  const base = origine && origineAutorisee(origine, motifs) ? origine : urlApplication.replace(/\/+$/, '');
+  return `${base}/reinitialisation#${jeton}`;
 }
