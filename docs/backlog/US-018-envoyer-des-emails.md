@@ -6,7 +6,7 @@
 - **Type :** technique
 - **Statut :** En revue
 - **Dépend de :** US-001
-- **Branche / PR :** `us/US-018-envoyer-des-emails`
+- **Branche / PR :** `us/US-018-envoyer-des-emails` · [PR #32](https://github.com/fsmJla/poulePosition/pull/32)
 
 ## Récit
 
