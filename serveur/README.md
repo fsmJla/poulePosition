@@ -12,5 +12,6 @@ Workers : `poule-position-serveur-preview` (branche `dev`) et `poule-position-se
 Commandes (depuis la racine) : `npm run dev -w serveur` (port 8790), `npm run deploy:preview -w serveur`,
 `npm run deploy -w serveur`. Tests : `npx vitest run --project serveur` (intégration dans workerd).
 
-Secrets Wrangler (par environnement, voir le README racine) : `POIVRE`, `SECRET_INSTALLATION` et `SECRET_SESSION`.
+Secrets Wrangler (par environnement, voir le README racine) : `POIVRE`, `SECRET_INSTALLATION`, `SECRET_SESSION`, et
+`SMTP_UTILISATEUR` / `SMTP_MOT_DE_PASSE` pour l'envoi d'e-mails (ADR-0015 ; module `courriel.ts`, transport `smtp.ts`).
 Routes : `docs/protocole.md` (connexion et session : §7).

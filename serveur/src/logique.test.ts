@@ -16,6 +16,10 @@ import {
   secretsEgaux,
   verificateurServeur,
   REGLE_INSTALLATION,
+  configurationSmtp,
+  courrielEssai,
+  courrielValide,
+  NOM_EXPEDITEUR,
 } from './logique';
 
 describe('analyserChemin', () => {
@@ -76,6 +80,7 @@ describe('route d’installation', () => {
   it('reconnaît /installation/administrateur', () => {
     expect(analyserChemin('/installation/administrateur')).toEqual({ route: 'installation' });
     expect(analyserChemin('/installation')).toBeNull();
+    expect(analyserChemin('/installation/essai-email')).toEqual({ route: 'essai-email' });
   });
 });
 
@@ -306,5 +311,62 @@ describe('réinitialisation (US-009)', () => {
   it('reconnaît /comptes/<id>/mot-de-passe', () => {
     expect(analyserChemin('/comptes/c1/mot-de-passe')).toEqual({ route: 'reinitialisation', id: 'c1' });
     expect(analyserChemin('/comptes/c1/autre')).toBeNull();
+  });
+});
+
+describe('envoi d’e-mails (US-018, ADR-0015)', () => {
+  const env = {
+    SMTP_HOTE: 'ssl0.ovh.net',
+    SMTP_PORT: '465',
+    SMTP_UTILISATEUR: 'no-reply@pessac-escrime.fr',
+    SMTP_MOT_DE_PASSE: 'secret',
+  };
+
+  it('US-018 CA-3 : lit la configuration SMTP des variables et secrets du Worker', () => {
+    expect(configurationSmtp(env)).toEqual({
+      hote: 'ssl0.ovh.net',
+      port: 465,
+      utilisateur: 'no-reply@pessac-escrime.fr',
+      motDePasse: 'secret',
+    });
+  });
+
+  it.each([
+    ['sans mot de passe', { ...env, SMTP_MOT_DE_PASSE: undefined }],
+    ['sans utilisateur', { ...env, SMTP_UTILISATEUR: '' }],
+    ['sans hôte', { ...env, SMTP_HOTE: undefined }],
+    ['port invalide', { ...env, SMTP_PORT: 'abc' }],
+    ['port hors limites', { ...env, SMTP_PORT: '70000' }],
+  ])('US-018 CA-5 : configuration incomplète (%s) → envoi non configuré', (_cas, incomplet) => {
+    expect(configurationSmtp(incomplet)).toBeNull();
+  });
+
+  it('US-018 CA-3 : l’expéditeur affiché est « Poule Position »', () => {
+    expect(NOM_EXPEDITEUR).toBe('Poule Position');
+  });
+
+  it('US-018 CA-3 : accepte un e-mail complet', () => {
+    expect(
+      courrielValide({ destinataire: 'julien@club.fr', sujet: 'Essai', texte: 'Bonjour', html: '<p>Bonjour</p>' }),
+    ).toBe(true);
+  });
+
+  it.each([
+    ['destinataire invalide', { destinataire: 'pas-un-email' }],
+    ['sujet vide', { sujet: ' ' }],
+    ['sujet sur deux lignes (injection d’en-tête)', { sujet: 'Essai\r\nBcc: pirate@exemple.fr' }],
+    ['texte vide', { texte: '' }],
+  ])('US-018 CA-4 : refuse un e-mail invalide (%s)', (_cas, modification) => {
+    const courriel = { destinataire: 'julien@club.fr', sujet: 'Essai', texte: 'Bonjour', html: '<p>Bonjour</p>' };
+    expect(courrielValide({ ...courriel, ...modification })).toBe(false);
+  });
+
+  it('US-018 CA-2 : l’e-mail d’essai est en français, avec des accents', () => {
+    const essai = courrielEssai('julien@club.fr');
+    expect(essai.destinataire).toBe('julien@club.fr');
+    expect(essai.sujet).toBe('Poule Position : essai d’envoi d’e-mail');
+    expect(essai.texte).toMatch(/é.*è.*à.*ç/);
+    expect(essai.html).toContain('<p>');
+    expect(courrielValide(essai)).toBe(true);
   });
 });

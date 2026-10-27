@@ -22,5 +22,6 @@ Vue d'ensemble : [`../architecture.md`](../architecture.md).
 | [0010](0010-ecran-geant.md) | Écran géant : en ligne via le serveur, hors ligne via une fenêtre locale | Acceptée |
 | [0011](0011-fichiers-joints.md) | Fichiers joints (feuille de route, affiche) dans les Durable Objects | Acceptée |
 | [0012](0012-monorepo-qualite-ci.md) | Monorepo, qualité et CI/CD (GitHub Actions, Vitest, Playwright, k6) | Acceptée |
-| [0013](0013-integrations-email-carte.md) | Intégrations externes : e-mail et carte | Acceptée |
+| [0013](0013-integrations-email-carte.md) | Intégrations externes : e-mail et carte | Acceptée ; partie e-mail remplacée par ADR-0015 |
 | [0014](0014-donnees-personnelles-multi-clubs.md) | Données personnelles, conservation, préparation multi-clubs | Acceptée |
+| [0015](0015-envoi-emails-smtp-ovh.md) | Envoi d'e-mails par le SMTP OVH du club (remplace la partie e-mail de l'ADR-0013) | Acceptée |

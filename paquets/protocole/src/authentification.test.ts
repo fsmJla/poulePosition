@@ -1,6 +1,7 @@
 import { pbkdf2Sync } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
+  analyserDemandeEssaiEmail,
   analyserDemandeInstallation,
   decoderBase64Url,
   deriverCle,
@@ -88,5 +89,28 @@ describe('erreurs d’installation', () => {
     );
     expect(messageErreurInstallation('INCONNU')).toBe('Erreur inattendue du serveur');
     expect(messageErreurInstallation(undefined)).toBe('Erreur inattendue du serveur');
+  });
+});
+
+describe('essai d’envoi d’e-mail (US-018)', () => {
+  it('US-018 CA-2 : accepte exactement un destinataire valide, normalisé', () => {
+    expect(analyserDemandeEssaiEmail({ destinataire: ' Julien@Club.FR ' })).toEqual({
+      ok: true,
+      destinataire: 'julien@club.fr',
+    });
+  });
+
+  it.each([
+    ['vide', {}],
+    ['destinataire invalide', { destinataire: 'pas-un-email' }],
+    ['champ en trop', { destinataire: 'julien@club.fr', copie: 'autre@club.fr' }],
+    ['null', null],
+  ])('US-018 : refuse une demande invalide (%s)', (_cas, brut) => {
+    expect(analyserDemandeEssaiEmail(brut)).toEqual({ ok: false });
+  });
+
+  it('US-018 CA-4 et CA-5 : les erreurs d’envoi ont un message lisible, sans détail SMTP', () => {
+    expect(messageErreurInstallation('ENVOI_NON_CONFIGURE')).toMatch(/non configuré/);
+    expect(messageErreurInstallation('ENVOI_IMPOSSIBLE')).toMatch(/^Envoi impossible/);
   });
 });

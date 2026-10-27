@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3, « système de mot de passe oublié ») ; exigences §5 (e-mails)
 - **Priorité :** P2
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-001
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-018-envoyer-des-emails` · [PR #32](https://github.com/fsmJla/poulePosition/pull/32)
 
 ## Récit
 
@@ -80,8 +80,55 @@ pour Workers (bibliothèque gratuite, à choisir dans l'ADR) ou écrit à la mai
 DATA). Logique pure de mise en forme du message (en-têtes, encodage UTF-8 et quoted-printable ou base64) testable sans
 réseau ; envoi réel couvert par l'essai (CA-2), lancé à la main, pas par la CI.
 
+## Réalisation
+
+- **ADR-0015** (acceptée) : envoi par le SMTP du MX Plan OVH du club, `worker-mailer@1.2.1` figée, Resend en repli ;
+  l'ADR-0013 est remplacée pour sa partie e-mail.
+- **Serveur** :
+  - `logique.ts` (pur, testé sous Node) : `configurationSmtp` (variables `SMTP_HOTE`, `SMTP_PORT`, secrets
+    `SMTP_UTILISATEUR`, `SMTP_MOT_DE_PASSE`), `courrielValide` (destinataire, sujet sans retour à la ligne contre
+    l'injection d'en-têtes, contenu), `courrielEssai`, `NOM_EXPEDITEUR` ;
+  - `courriel.ts` : interface `Expediteur` et `creerExpediteur`, avec un transport injecté ; erreurs
+    `ENVOI_NON_CONFIGURE`, `MESSAGE_INVALIDE`, `ENVOI_IMPOSSIBLE` ; le journal ne garde que le motif ;
+  - `smtp.ts` : transport réel par `worker-mailer` (465 : TLS dès la connexion ; autre port : STARTTLS), journaux de
+    la bibliothèque coupés, délai de 10 s ; pas besoin de `nodejs_compat` ;
+  - `index.ts` : route `POST /installation/essai-email`, qui partage avec l'installation (US-002) la vérification du
+    secret et la limite par adresse IP (`controlerInstallation`) ;
+  - `wrangler.toml` : `SMTP_HOTE = "ssl0.ovh.net"` et `SMTP_PORT = "465"`, en production et en preview.
+- **Protocole** : `analyserDemandeEssaiEmail`, codes `ENVOI_NON_CONFIGURE` et `ENVOI_IMPOSSIBLE` avec leurs messages ;
+  `docs/protocole.md` §6.
+- **Outil** : `npm run essai-email -- --env preview <destinataire>` (secret d'installation demandé masqué, refus hors
+  d'un vrai terminal).
+- **Docs** : README racine (« Envoi d'e-mails », secrets et essai), `serveur/README.md`.
+- **Tests** :
+
+  | CA | Tests |
+  |---|---|
+  | CA-1 | ADR-0015, relue et acceptée par l'utilisateur |
+  | CA-2 | Essai réel avec l'utilisateur (suivi ci-dessous) ; `logique.test.ts` « US-018 CA-2 » (e-mail d'essai en français, accents) ; `outils/essai-email.test.ts` (arguments, secret masqué, appel et messages) |
+  | CA-3 | `serveur/src/logique.test.ts` (configuration, expéditeur, e-mail complet), `serveur/src/courriel.test.ts` (ce que reçoit le transport) |
+  | CA-4 | `courriel.test.ts` (échec du transport : erreur maîtrisée, journal sans contenu ni mot de passe ; e-mail invalide non envoyé), `logique.test.ts` (sujet sur deux lignes refusé), intégration `serveur/src/essai-email.test.ts` (serveur SMTP injoignable : `502 ENVOI_IMPOSSIBLE`, sans détail ni mot de passe) |
+  | CA-5 | `logique.test.ts` (configuration incomplète), `courriel.test.ts`, intégration (`503 ENVOI_NON_CONFIGURE`) |
+  | Route d'essai | Intégration : `403` sans secret ou avec un faux, `429` après 5 faux, `400`, `405`, `503` sans installation |
+  | Hors ligne | Sans objet : l'envoi se fait sur le serveur ; l'application n'est pas touchée |
+
+### Hypothèses prises pendant l'implémentation
+
+- Validées par l'utilisateur le 2026-10-27 : `worker-mailer@1.2.1` plutôt qu'un client maison ; boîte
+  `no-reply@pessac-escrime.fr` créée chez OVH ; secrets saisis par l'utilisateur.
+- L'adresse de l'expéditeur est celle de la boîte (`SMTP_UTILISATEUR`) ; le nom affiché est « Poule Position ».
+- La route d'essai reste en place après la recette : elle sert à vérifier l'envoi après un changement du mot de
+  passe de la boîte, et ne peut être appelée qu'avec le secret d'installation.
+- Les secrets SMTP ne sont posés que sur le Worker de **preview** ; ceux de production seront à poser avant la mise
+  en production d'US-019.
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-27 | Créée (spécification : réinitialisation par e-mail) |
+| 2026-10-27 | En cours : plan validé (bibliothèque `worker-mailer@1.2.1` enrobée derrière une interface `Expediteur`, route d’essai `POST /installation/essai-email` protégée par le secret d’installation, commande `npm run essai-email` ; boîte `no-reply@pessac-escrime.fr` créée par l’utilisateur) |
+| 2026-10-27 | CA-2 validé avec l’utilisateur : essai réel depuis le Worker de preview (déployé depuis la branche, secrets `SMTP_UTILISATEUR` et `SMTP_MOT_DE_PASSE` saisis par l’utilisateur), e-mail reçu en boîte de réception Gmail, expéditeur « Poule Position <no-reply@pessac-escrime.fr> », objet et accents corrects. Points « à vérifier » de l’ADR-0015 levés : port 465 accepté depuis Cloudflare, sockets TCP disponibles sur le plan gratuit, session SMTP tenue dans le budget du Worker. |
+| 2026-10-27 | En revue : contrôles locaux verts (lint, typage, 454 tests unitaires et d’intégration, couverture 94 %, build, audit, 153 E2E) |
+| 2026-10-27 | Recette OK sur le Worker de preview `poule-position-serveur-preview` (déployé depuis la branche, `64a1efc` ; déployée en preview et vérifiée) : essai d’envoi réel relancé par l’utilisateur sur le code final (`npm run essai-email -- --env preview`), e-mail reçu en boîte de réception avec l’expéditeur « Poule Position » et les accents corrects (CA-2) ; route d’essai : `405` pour un GET, `403 SECRET_INVALIDE` sans secret (aucun envoi), `404` pour une route inconnue. CA-3, CA-4 (`502`), CA-5 (`503`) et `429` : tests d’intégration de la CI. Aucune interface concernée. |
+| 2026-10-27 | **Terminée**, mergée dans `dev` (PR #32). |

@@ -89,6 +89,11 @@ export const ERREURS_INSTALLATION = Object.freeze({
   SECRET_INVALIDE: "Secret d'installation invalide",
   DEMANDE_INVALIDE: 'Demande invalide',
   ADMINISTRATEUR_EXISTANT: 'Un administrateur existe déjà : utilisez la gestion des comptes',
+  // US-018 : essai d'envoi d'e-mail (`POST /installation/essai-email`).
+  ENVOI_NON_CONFIGURE:
+    "Envoi d'e-mails non configuré : secrets SMTP manquants sur le serveur (voir le README du serveur)",
+  ENVOI_IMPOSSIBLE:
+    "Envoi impossible : le serveur SMTP a refusé l'e-mail ou n'a pas répondu (le motif est dans les journaux du Worker)",
 });
 
 export type CodeErreurInstallation = keyof typeof ERREURS_INSTALLATION;
@@ -101,4 +106,16 @@ export function messageErreurInstallation(code: unknown): string {
   return typeof code === 'string' && Object.hasOwn(ERREURS_INSTALLATION, code)
     ? ERREURS_INSTALLATION[code as CodeErreurInstallation]
     : 'Erreur inattendue du serveur';
+}
+
+/**
+ * US-018 CA-2 : corps de `POST /installation/essai-email`, exactement `{ destinataire }`. Renvoie l'adresse
+ * normalisée, ou un refus.
+ */
+export function analyserDemandeEssaiEmail(brut: unknown): { ok: true; destinataire: string } | { ok: false } {
+  const objet = aExactementLesChamps(brut, ['destinataire']);
+  if (!objet || typeof objet.destinataire !== 'string' || validerEmail(objet.destinataire) !== null) {
+    return { ok: false };
+  }
+  return { ok: true, destinataire: normaliserEmail(objet.destinataire) };
 }

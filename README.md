@@ -48,6 +48,7 @@ projets locaux. L'application se connecte au serveur local sans réglage.
 | `npm run test:e2e` | Playwright (PC + smartphone) contre un build local (ports 4280 et 8791). Au premier lancement, faire `npx playwright install chromium` |
 | `npm run audit` | Audit des dépendances (niveau élevé bloquant) |
 | `npm run creer-admin` | Création du premier administrateur (voir « Installation » plus bas) |
+| `npm run essai-email` | Essai d'envoi d'un e-mail par le serveur (voir « Envoi d'e-mails » plus bas) |
 | `npm run test:charge` | Test de charge k6 contre la **preview**. À lancer **à la main uniquement**, jamais en CI |
 
 Les **tests de charge** (k6) ne sont jamais lancés automatiquement. La procédure est dans
@@ -96,6 +97,20 @@ secrets saisis s'afficheraient à l'écran, et `npm run creer-admin` refuse d'y 
    `npm run creer-admin -- --env preview` (ou `--env production`, ou `--url http://localhost:8790` en local).
    Saisir l'e-mail, le nom, le mot de passe de l'administrateur, puis le secret d'installation.
 3. Une seconde exécution est refusée : les comptes suivants se créent dans l'application.
+
+### Envoi d'e-mails (une fois par environnement, US-018, ADR-0015)
+
+Les e-mails (mot de passe oublié) partent de la boîte `no-reply@pessac-escrime.fr` du MX Plan OVH du club, par
+`ssl0.ovh.net` (port 465). Dans **PowerShell**, depuis `serveur/` (pour la production : sans `--env preview`) :
+
+```
+npx wrangler secret put SMTP_UTILISATEUR --env preview      (saisir : no-reply@pessac-escrime.fr)
+npx wrangler secret put SMTP_MOT_DE_PASSE --env preview     (saisir : le mot de passe de la boîte chez OVH)
+```
+
+Puis, depuis la racine, vérifier l'envoi : `npm run essai-email -- --env preview vous@exemple.fr` (le secret
+d'installation est demandé). L'e-mail d'essai doit arriver en boîte de réception. Si le mot de passe de la boîte
+change chez OVH, refaire la seconde commande. Sans ces secrets, aucun e-mail ne part.
 
 En local (`npm run dev`), mettre les trois secrets dans `serveur/.dev.vars` (non versionné) :
 `POIVRE=…`, `SECRET_INSTALLATION=…` et `SECRET_SESSION=…`, une ligne chacun. Les E2E locaux n'en ont pas besoin :

@@ -8,6 +8,7 @@ import {
   analyserDemandeModificationCompte,
   analyserDemandeProfil,
   analyserDemandeReinitialisation,
+  analyserDemandeEssaiEmail,
   analyserDemandeInstallation,
   analyserDemandeSel,
   type CodeErreurInstallation,
@@ -34,11 +35,15 @@ import {
   verificateurServeur,
   verifierSession,
   REGLE_INSTALLATION,
+  configurationSmtp,
+  courrielEssai,
 } from './logique';
 
 export { Club } from './club';
 export { Competition } from './competition';
 export { Limiteur } from './limiteur';
+import { creerExpediteur } from './courriel';
+import { transportSmtp } from './smtp';
 
 export interface Env {
   COMPETITIONS: DurableObjectNamespace;
@@ -51,6 +56,11 @@ export interface Env {
   SECRET_INSTALLATION?: string;
   /** Clé de signature des sessions (US-003) : la changer déconnecte tout le monde, sans toucher aux mots de passe. */
   SECRET_SESSION?: string;
+  /** Envoi d'e-mails (US-018, ADR-0015) : hôte et port en variables, identifiants en secrets Wrangler. */
+  SMTP_HOTE?: string;
+  SMTP_PORT?: string;
+  SMTP_UTILISATEUR?: string;
+  SMTP_MOT_DE_PASSE?: string;
 }
 
 export default {
@@ -60,6 +70,7 @@ export default {
     if (route.route === 'accueil') return new Response('Serveur poulePosition');
     if (route.route === 'sante') return Response.json({ ok: true, service: 'poule-position-serveur' });
     if (route.route === 'installation') return installer(requete, env);
+    if (route.route === 'essai-email') return essayerEnvoi(requete, env);
     if (route.route !== 'connexion') return routeSession(route, requete, env);
 
     if (requete.headers.get('Upgrade') !== 'websocket') return new Response('WebSocket attendu', { status: 426 });
@@ -82,10 +93,10 @@ function refuser(statut: number, erreur: CodeErreurInstallation): Response {
 }
 
 /**
- * POST /installation/administrateur (US-002) : crée le premier administrateur. Réservée au détenteur du secret
- * d'installation ; un secret faux compte comme essai erroné pour le limiteur par adresse IP.
+ * Routes d'installation (US-002, US-018) : POST seulement, réservées au détenteur du secret d'installation. Un secret
+ * faux compte comme essai erroné pour le limiteur par adresse IP. Renvoie le refus, ou null si la requête passe.
  */
-async function installer(requete: Request, env: Env): Promise<Response> {
+async function controlerInstallation(requete: Request, env: Env): Promise<Response | null> {
   if (requete.method !== 'POST') {
     return new Response('Méthode non autorisée', { status: 405, headers: { Allow: 'POST' } });
   }
@@ -98,6 +109,37 @@ async function installer(requete: Request, env: Env): Promise<Response> {
     await limiteur.enregistrerEchec(REGLE_INSTALLATION);
     return refuser(403, 'SECRET_INVALIDE');
   }
+  return null;
+}
+
+/**
+ * POST /installation/essai-email (US-018 CA-2) : envoie l'e-mail d'essai au destinataire donné, pour valider l'envoi
+ * par le SMTP du club depuis le Worker (ADR-0015). Aucun détail SMTP dans la réponse : le motif d'un échec n'est que
+ * dans les journaux du Worker.
+ */
+async function essayerEnvoi(requete: Request, env: Env): Promise<Response> {
+  const refus = await controlerInstallation(requete, env);
+  if (refus) return refus;
+  let corps: unknown;
+  try {
+    corps = await requete.json();
+  } catch {
+    return refuser(400, 'DEMANDE_INVALIDE');
+  }
+  const analyse = analyserDemandeEssaiEmail(corps);
+  if (!analyse.ok) return refuser(400, 'DEMANDE_INVALIDE');
+  const resultat = await creerExpediteur(configurationSmtp(env), transportSmtp).envoyer(
+    courrielEssai(analyse.destinataire),
+  );
+  if (resultat.ok) return Response.json({ ok: true });
+  if (resultat.erreur === 'ENVOI_NON_CONFIGURE') return refuser(503, 'ENVOI_NON_CONFIGURE');
+  return refuser(502, 'ENVOI_IMPOSSIBLE');
+}
+
+/** POST /installation/administrateur (US-002) : crée le premier administrateur. */
+async function installer(requete: Request, env: Env): Promise<Response> {
+  const refus = await controlerInstallation(requete, env);
+  if (refus) return refus;
 
   let corps: unknown;
   try {
@@ -114,7 +156,8 @@ async function installer(requete: Request, env: Env): Promise<Response> {
     email,
     nom,
     sel,
-    verificateur: await verificateurServeur(cle, env.POIVRE),
+    // POIVRE est présent : controlerInstallation a refusé la requête sinon.
+    verificateur: await verificateurServeur(cle, env.POIVRE as string),
   });
   return resultat.ok ? repondre(201, resultat) : refuser(409, resultat.erreur);
 }
