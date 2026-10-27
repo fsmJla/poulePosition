@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1, « système d'authentification robuste » (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-003
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-004-limiter-essais-connexion`
 
 ## Récit
 
@@ -74,3 +74,4 @@ SQLite écrites (négligeable pour 10 comptes).
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
+| 2026-10-27 | En cours : plan validé (règle de comptage unique dans le domaine, compteur par e-mail normalisé dans le DO `Club` purgé après 30 minutes, compteur par adresse dans le DO `Limiteur`, E2E US-003 CA-2 adapté pour ne jamais bloquer le compte de test) |
