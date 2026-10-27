@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { essaisLocauxVides, DUREE_SESSION } from '@poule-position/domaine';
+import { essaisVides, DUREE_SESSION } from '@poule-position/domaine';
 import { deriverCle, verificateurLocal, type Session } from '@poule-position/protocole';
 import { creerClientSession, urlHttp, DELAI_REPONSE, type MemoireOnglet, type OptionsClientSession } from './session';
 import type { AppareilConnu, SessionAppareil, Stockage } from './stockage';
@@ -23,7 +23,7 @@ const sessionStockee: Session = { jeton: 'ancien.jeton.signe', expireLe: MAINTEN
 
 /** Stockage en mémoire, à la place d'IndexedDB. */
 function stockageMemoire(session: SessionAppareil | null = null) {
-  const etat = { session, appareils: new Map<string, AppareilConnu>(), essais: essaisLocauxVides() };
+  const etat = { session, appareils: new Map<string, AppareilConnu>(), essais: essaisVides() };
   const stockage: Stockage = {
     lireEssaisLocaux: async () => etat.essais,
     ecrireEssaisLocaux: async (essais) => {
@@ -683,7 +683,7 @@ describe('reconnexion hors ligne (US-005)', () => {
     expect(etat.session).toBeNull();
     maintenant += 15 * MINUTE;
     expect(await c.seConnecter(compte.email, MOT_DE_PASSE)).toMatchObject({ ok: true });
-    expect(etat.essais).toEqual(essaisLocauxVides());
+    expect(etat.essais).toEqual(essaisVides());
   });
 
   it('US-005 CA-4 : un compte jamais venu ne compte pas comme un échec', async () => {

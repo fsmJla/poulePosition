@@ -1,5 +1,5 @@
 // Règles métier pures (ADR-0001) : aucun accès au réseau, au stockage ni au DOM.
 export * from './comptes';
-export * from './essais-locaux';
+export * from './essais';
 export * from './sessions';
 export { calculerIndice, type Touches } from './indice';

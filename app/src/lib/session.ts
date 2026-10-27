@@ -3,12 +3,13 @@
 // reste utilisable hors ligne (ADR-0001). Reconnexion hors ligne sur un appareil connu, puis revalidation au retour en
 // ligne (US-005, ADR-0006). Gestion des comptes par les administrateurs (US-007 à US-009, §9).
 import {
-  essaisLocauxVides,
+  essaisVides,
   expirationSession,
-  noterEchecLocal,
+  noterEchec,
   normaliserEmail,
   saisieBloquee,
   sessionExpiree,
+  REGLE_LOCALE,
   type Role,
 } from '@poule-position/domaine';
 import {
@@ -240,11 +241,11 @@ export function creerClientSession({
     if (!connu) return { ok: false, erreur: 'PREMIERE_CONNEXION_HORS_LIGNE' };
     const cle = await deriverCle(motDePasse, connu.sel);
     if ((await verificateurLocal(cle)) !== connu.verificateurLocal) {
-      const apres = noterEchecLocal(essais, maintenant());
+      const apres = noterEchec(essais, maintenant(), REGLE_LOCALE);
       await stockage.ecrireEssaisLocaux(apres);
       return { ok: false, erreur: saisieBloquee(apres, maintenant()) ? 'TROP_D_ESSAIS' : 'IDENTIFIANTS_INVALIDES' };
     }
-    await stockage.ecrireEssaisLocaux(essaisLocauxVides());
+    await stockage.ecrireEssaisLocaux(essaisVides());
     const { nom, role, temporaire } = connu;
     const session: SessionLocale = {
       locale: true,

@@ -2,7 +2,7 @@
 // plus), `appareilConnu` (comptes déjà connectés en ligne sur cet appareil, pour la reconnexion hors ligne) et
 // `essaisLocaux` (frein local de la reconnexion hors ligne, US-005).
 import { Dexie, type EntityTable } from 'dexie';
-import { essaisLocauxVides, type EssaisLocaux, type Role } from '@poule-position/domaine';
+import { essaisVides, type Essais, type Role } from '@poule-position/domaine';
 import type { CompteConnecte, Session } from '@poule-position/protocole';
 
 /** Compte déjà connecté en ligne sur cet appareil (ADR-0006) : il pourra s'y reconnecter hors ligne (US-005). */
@@ -41,8 +41,8 @@ export interface Stockage {
   lireAppareilConnu(email: string): Promise<AppareilConnu | null>;
   /** Efface le vérificateur local d'un compte (compte modifié ou retiré, US-010 CA-5, US-008 CA-5, US-005 CA-6). */
   oublierAppareilConnu(email: string): Promise<void>;
-  lireEssaisLocaux(): Promise<EssaisLocaux>;
-  ecrireEssaisLocaux(essais: EssaisLocaux): Promise<void>;
+  lireEssaisLocaux(): Promise<Essais>;
+  ecrireEssaisLocaux(essais: Essais): Promise<void>;
 }
 
 /** Clé unique des tables `session` et `essaisLocaux` : une seule ligne par appareil. */
@@ -55,7 +55,7 @@ type LigneSession = {
   expireLe: number;
   compte: CompteConnecte;
 };
-type LigneEssais = EssaisLocaux & { cle: typeof LIGNE_UNIQUE };
+type LigneEssais = Essais & { cle: typeof LIGNE_UNIQUE };
 
 class Base extends Dexie {
   session!: EntityTable<LigneSession, 'cle'>;
@@ -100,7 +100,7 @@ export function ouvrirStockage(nom = 'poulePosition'): Stockage {
     },
     async lireEssaisLocaux() {
       const ligne = await base.essaisLocaux.get(LIGNE_UNIQUE);
-      return ligne ? { echecs: ligne.echecs, bloqueJusqua: ligne.bloqueJusqua } : essaisLocauxVides();
+      return ligne ? { echecs: ligne.echecs, bloqueJusqua: ligne.bloqueJusqua } : essaisVides();
     },
     async ecrireEssaisLocaux({ echecs, bloqueJusqua }) {
       await base.essaisLocaux.put({ cle: LIGNE_UNIQUE, echecs, bloqueJusqua });
