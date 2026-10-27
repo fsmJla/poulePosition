@@ -1,7 +1,14 @@
 // Logique pure du serveur : routes, origines autorisées, filtrage des messages clients, secrets, vérificateurs de
 // mots de passe, sessions (jetons signés, CORS) et règle de limite des secrets d'installation.
 // Aucune dépendance à l'environnement Cloudflare (testée sous Node). Protocole : docs/protocole.md.
-import { expirationSession, sessionExpiree, ROLES, type RegleEssais, type Role } from '@poule-position/domaine';
+import {
+  expirationSession,
+  sessionExpiree,
+  validerEmail,
+  ROLES,
+  type RegleEssais,
+  type Role,
+} from '@poule-position/domaine';
 import {
   analyserEnveloppe,
   decoderBase64Url,
@@ -229,4 +236,59 @@ export async function verifierSession(
 export function enTetesCors(origine: string | null, motifs: string): Record<string, string> | null {
   if (!origine || !origineAutorisee(origine, motifs)) return null;
   return { 'Access-Control-Allow-Origin': origine, Vary: 'Origin' };
+}
+
+/** Paramètres du serveur SMTP du club (ADR-0015) : variables (hôte, port) et secrets (utilisateur, mot de passe). */
+export interface ConfigurationSmtp {
+  hote: string;
+  port: number;
+  /** Adresse de la boîte d'envoi : c'est aussi l'adresse de l'expéditeur. */
+  utilisateur: string;
+  motDePasse: string;
+}
+
+/** US-018 CA-5 : configuration SMTP du Worker, ou null si elle est incomplète (aucun e-mail ne part alors). */
+export function configurationSmtp(env: {
+  SMTP_HOTE?: string;
+  SMTP_PORT?: string;
+  SMTP_UTILISATEUR?: string;
+  SMTP_MOT_DE_PASSE?: string;
+}): ConfigurationSmtp | null {
+  const { SMTP_HOTE: hote, SMTP_UTILISATEUR: utilisateur, SMTP_MOT_DE_PASSE: motDePasse } = env;
+  const port = Number(env.SMTP_PORT);
+  if (!hote || !utilisateur || !motDePasse) return null;
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) return null;
+  return { hote, port, utilisateur, motDePasse };
+}
+
+/** Nom d'expéditeur affiché dans les e-mails (ADR-0015). */
+export const NOM_EXPEDITEUR = 'Poule Position';
+
+/** E-mail à envoyer : texte brut et HTML simple, en français. */
+export interface Courriel {
+  destinataire: string;
+  sujet: string;
+  texte: string;
+  html: string;
+}
+
+/**
+ * US-018 CA-4 : un e-mail n'est envoyé que complet. Le sujet ne doit contenir aucun retour à la ligne, qui permettrait
+ * d'ajouter des en-têtes (destinataires cachés).
+ */
+export function courrielValide(courriel: Courriel): boolean {
+  if (validerEmail(courriel.destinataire) !== null) return false;
+  if (courriel.sujet.trim() === '' || /[\r\n]/.test(courriel.sujet)) return false;
+  return courriel.texte.trim() !== '' && courriel.html.trim() !== '';
+}
+
+/** US-018 CA-2 : e-mail de l'essai d'envoi, avec des accents pour vérifier l'encodage. */
+export function courrielEssai(destinataire: string): Courriel {
+  const phrase = 'Les accents doivent s’afficher correctement : é è ê à ç ù ô.';
+  return {
+    destinataire,
+    sujet: 'Poule Position : essai d’envoi d’e-mail',
+    texte: `Bonjour,\n\nCeci est un essai d’envoi d’e-mail de Poule Position.\n${phrase}\n\nPoule Position`,
+    html: `<p>Bonjour,</p><p>Ceci est un essai d’envoi d’e-mail de <strong>Poule Position</strong>.</p><p>${phrase}</p>`,
+  };
 }
