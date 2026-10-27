@@ -25,6 +25,7 @@ import {
   verificateurLocal,
   type CompteResume,
   type DemandeModificationCompte,
+  type DemandeProfil,
   type ErreurReponse,
   type Session,
 } from '@poule-position/protocole';
@@ -123,6 +124,11 @@ const ERREURS_COMPTES: readonly ErreurReponse[] = [
   'COMPTE_INCONNU',
   'SERVEUR_NON_CONFIGURE',
 ];
+
+/** Erreurs de la modification de son profil (US-016), affichées par la page « Mon profil ». */
+export type ErreurProfil = 'SESSION_INVALIDE' | 'HORS_LIGNE' | 'SERVEUR_NON_CONFIGURE' | 'ERREUR_INATTENDUE';
+
+const ERREURS_PROFIL: readonly ErreurComptes[] = ['SESSION_INVALIDE', 'HORS_LIGNE', 'SERVEUR_NON_CONFIGURE'];
 
 function erreurComptes(erreur: ErreurReponse): ErreurComptes {
   return ERREURS_COMPTES.includes(erreur) ? (erreur as ErreurComptes) : 'ERREUR_INATTENDUE';
@@ -249,11 +255,11 @@ export function creerClientSession({
       return { ok: false, erreur: saisieBloquee(apres, maintenant()) ? 'TROP_D_ESSAIS' : 'IDENTIFIANTS_INVALIDES' };
     }
     await stockage.ecrireEssaisLocaux(essaisVides());
-    const { nom, role, temporaire } = connu;
+    const { nom, role, temporaire, avatar } = connu;
     const session: SessionLocale = {
       locale: true,
       expireLe: expirationSession(maintenant()),
-      compte: { email, nom, role, temporaire },
+      compte: { email, nom, role, temporaire, avatar },
     };
     await stockage.ecrireSession(session);
     garderCleLocale(email, cle);
@@ -290,8 +296,8 @@ export function creerClientSession({
     await stockage.ecrireSession(reponse.session);
     const connu = await stockage.lireAppareilConnu(email);
     if (connu) {
-      const { nom, role, temporaire } = reponse.session.compte;
-      await stockage.enregistrerAppareilConnu({ ...connu, nom, role, temporaire });
+      const { nom, role, temporaire, avatar } = reponse.session.compte;
+      await stockage.enregistrerAppareilConnu({ ...connu, nom, role, temporaire, avatar });
     }
     oublierCleOnglet();
     return reponse.session;
@@ -367,6 +373,7 @@ export function creerClientSession({
             sel: reponseSel.sel,
             verificateurLocal: await verificateurLocal(cle),
             temporaire: session.compte.temporaire,
+            avatar: session.compte.avatar,
             connuDepuis: connu?.connuDepuis ?? maintenant(),
           });
           cleEnMemoire = { email, cle };
@@ -498,6 +505,28 @@ export function creerClientSession({
       return { ok: true, deconnecte: await retirerSiSoiMeme(compte.email) };
     },
 
+    /**
+     * US-016 CA-3 / CA-4 : modifie son propre nom ou la couleur de son avatar. La session renvoyée remplace la
+     * session gardée, et l'appareil connu prend le nouveau nom et la nouvelle couleur (affichage hors ligne).
+     */
+    async modifierProfil(
+      demande: DemandeProfil,
+    ): Promise<{ ok: true; session: Session } | { ok: false; erreur: ErreurProfil }> {
+      const appel = await appelReserve('/compte', 'PATCH', demande);
+      if (!appel.ok)
+        return {
+          ok: false,
+          erreur: ERREURS_PROFIL.includes(appel.erreur) ? (appel.erreur as ErreurProfil) : 'ERREUR_INATTENDUE',
+        };
+      const reponse = analyserReponseSession(appel.corps);
+      if (!reponse.ok) return { ok: false, erreur: 'ERREUR_INATTENDUE' };
+      await stockage.ecrireSession(reponse.session);
+      const { email, nom, avatar } = reponse.session.compte;
+      const connu = await stockage.lireAppareilConnu(email);
+      if (connu) await stockage.enregistrerAppareilConnu({ ...connu, nom, avatar });
+      return { ok: true, session: reponse.session };
+    },
+
     /** US-009 CA-1 : nouveau mot de passe temporaire d'un compte, tiré ici et rendu une seule fois à l'appelant. */
     async reinitialiserMotDePasse(
       id: string,
@@ -566,6 +595,7 @@ export function creerClientSession({
             sel: demande.sel,
             verificateurLocal: await verificateurLocal(demande.cle),
             temporaire: false,
+            avatar: reponse.session.compte.avatar,
             connuDepuis: connu?.connuDepuis ?? maintenant(),
           });
           cleEnMemoire = { email, cle: demande.cle };

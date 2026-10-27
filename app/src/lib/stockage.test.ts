@@ -1,12 +1,13 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
+import { couleurParDefaut } from '@poule-position/domaine';
 import type { Session } from '@poule-position/protocole';
 import { ouvrirStockage, type AppareilConnu, type SessionLocale } from './stockage';
 
 const session: Session = {
   jeton: 'a.b.c',
   expireLe: 1_800_000_000_000,
-  compte: { email: 'orga@club.fr', nom: 'Orga', role: 'organisateur', temporaire: false },
+  compte: { email: 'orga@club.fr', nom: 'Orga', role: 'organisateur', temporaire: false, avatar: 'prune' },
 };
 
 const appareil: AppareilConnu = {
@@ -16,6 +17,7 @@ const appareil: AppareilConnu = {
   sel: 'AAAAAAAAAAAAAAAAAAAAAA',
   verificateurLocal: 'verificateur',
   temporaire: false,
+  avatar: 'prune',
   connuDepuis: 1_790_000_000_000,
 };
 
@@ -89,5 +91,21 @@ describe('reconnexion hors ligne (US-005)', () => {
     delete ancien.temporaire;
     await stockage.enregistrerAppareilConnu(ancien as AppareilConnu);
     expect(await stockage.lireAppareilConnu(appareil.email)).toEqual({ ...appareil, temporaire: false });
+  });
+});
+
+describe('avatar gardé sur l’appareil (US-016)', () => {
+  it('US-016 CA-3 : une entrée ou une session d’avant US-016 prend la couleur par défaut du compte', async () => {
+    const nom = `test-${crypto.randomUUID()}`;
+    const stockage = ouvrirStockage(nom);
+    const ancien: Partial<AppareilConnu> = { ...appareil };
+    delete ancien.avatar;
+    await stockage.enregistrerAppareilConnu(ancien as AppareilConnu);
+    expect((await stockage.lireAppareilConnu(appareil.email))?.avatar).toBe(couleurParDefaut(appareil.email));
+
+    const compteAncien: Partial<typeof session.compte> = { ...session.compte };
+    delete compteAncien.avatar;
+    await stockage.ecrireSession({ ...session, compte: compteAncien as typeof session.compte });
+    expect((await ouvrirStockage(nom).lireSession())?.compte.avatar).toBe(couleurParDefaut(appareil.email));
   });
 });

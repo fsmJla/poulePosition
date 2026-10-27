@@ -2,7 +2,7 @@
 // plus), `appareilConnu` (comptes déjà connectés en ligne sur cet appareil, pour la reconnexion hors ligne) et
 // `essaisLocaux` (frein local de la reconnexion hors ligne, US-005).
 import { Dexie, type EntityTable } from 'dexie';
-import { essaisVides, type Essais, type Role } from '@poule-position/domaine';
+import { couleurParDefaut, essaisVides, type CouleurAvatar, type Essais, type Role } from '@poule-position/domaine';
 import type { CompteConnecte, Session } from '@poule-position/protocole';
 
 /** Compte déjà connecté en ligne sur cet appareil (ADR-0006) : il pourra s'y reconnecter hors ligne (US-005). */
@@ -14,6 +14,8 @@ export interface AppareilConnu {
   verificateurLocal: string;
   /** Mot de passe temporaire (US-009) : une session locale ne sert alors qu'à le changer, une fois en ligne. */
   temporaire: boolean;
+  /** Couleur de l'avatar (US-016), pour l'afficher hors ligne. */
+  avatar: CouleurAvatar;
   /** Date de la première connexion en ligne, en millisecondes. */
   connuDepuis: number;
 }
@@ -75,7 +77,9 @@ export function ouvrirStockage(nom = 'poulePosition'): Stockage {
     async lireSession() {
       const ligne = await base.session.get(LIGNE_UNIQUE);
       if (!ligne) return null;
-      const { jeton, locale, expireLe, compte } = ligne;
+      const { jeton, locale, expireLe } = ligne;
+      // Une session gardée avant US-016 n'a pas de couleur d'avatar : celle par défaut du compte.
+      const compte = { ...ligne.compte, avatar: ligne.compte.avatar ?? couleurParDefaut(ligne.compte.email) };
       if (locale) return { locale, expireLe, compte };
       return jeton ? { jeton, expireLe, compte } : null;
     },
@@ -92,8 +96,11 @@ export function ouvrirStockage(nom = 'poulePosition'): Stockage {
     },
     async lireAppareilConnu(email) {
       const appareil = await base.appareilConnu.get(email);
-      // Une entrée enregistrée avant US-005 n'a pas de champ `temporaire` : son mot de passe était définitif.
-      return appareil ? { ...appareil, temporaire: appareil.temporaire ?? false } : null;
+      // Une entrée d'avant US-005 n'a pas de champ `temporaire` (mot de passe définitif) ; une entrée d'avant US-016 n'a pas
+      // de couleur d'avatar (couleur par défaut du compte).
+      if (!appareil) return null;
+      const { temporaire = false, avatar = couleurParDefaut(appareil.email) }: Partial<AppareilConnu> = appareil;
+      return { ...appareil, temporaire, avatar };
     },
     async oublierAppareilConnu(email) {
       await base.appareilConnu.delete(email);
