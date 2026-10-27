@@ -32,7 +32,7 @@ test('US-014 CA-3 : l’entête des pages réservées porte la bannière et « S
   const lienBanniere = entete.getByRole('link', { name: 'Poule Position' });
   await expect(lienBanniere).toBeVisible();
   await expect.poll(() => imageAffichee(lienBanniere.getByRole('img'))).toMatch(/\/brand\/header-dark\.svg$/);
-  await expect(entete.getByRole('button', { name: 'Se déconnecter' })).toBeVisible();
+  await expect(entete.getByRole('button', { name: 'Se déconnecter', exact: true })).toBeVisible();
   // Aucun défilement horizontal (smartphone compris).
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 

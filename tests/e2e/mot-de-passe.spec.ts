@@ -64,7 +64,7 @@ test('US-010 CA-3 : un mot de passe actuel faux est refusé, et l’on reste con
   await expect(page.getByRole('alert')).toHaveText('Mot de passe actuel incorrect', { timeout: 20_000 });
   await expect(page).toHaveURL(/\/mot-de-passe$/);
   await page.getByRole('link', { name: "Retour à l'accueil de l'organisateur" }).click();
-  await expect(page.getByRole('button', { name: 'Se déconnecter' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Se déconnecter', exact: true })).toBeVisible();
 });
 
 test('US-010 CA-4 : après un mot de passe temporaire, on le change sans le ressaisir, puis on accède à l’application', async ({

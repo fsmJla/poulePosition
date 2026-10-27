@@ -23,6 +23,13 @@ describe('textes de la connexion', () => {
     expect(textes.connexion.motifs.COMPTE_MODIFIE).toBe('Votre compte a été modifié : reconnectez-vous');
   });
 
+  it('US-006 CA-1 et CA-3 : le bouton, et l’avertissement qui précise que les compétitions sont conservées', () => {
+    expect(textes.organisateur.oublier.bouton).toBe('Se déconnecter et oublier cet appareil');
+    expect(textes.organisateur.oublier.avertissement).toContain(
+      'Les compétitions enregistrées sur cet appareil sont conservées.',
+    );
+  });
+
   it('US-004 CA-1 : trop d’essais, à la connexion comme au changement de mot de passe', () => {
     expect(textes.connexion.erreurs.TROP_D_ESSAIS).toBe('Trop d’essais : réessayez dans 15 minutes');
     expect(textes.motDePasse.erreurs.TROP_D_ESSAIS).toBe(textes.connexion.erreurs.TROP_D_ESSAIS);
