@@ -1,19 +1,19 @@
 <script lang="ts">
-  // Écran de connexion (US-003, présentation US-012) : e-mail et mot de passe, connexion en ligne uniquement.
-  // Sur PC, panneau décoratif (bannière « login ») et formulaire en carte ; sur smartphone, la carte seule. Hors ligne,
-  // l'écran l'indique ; la reconnexion sur un appareil déjà utilisé viendra avec US-005.
-  import { onMount } from 'svelte';
+  // Écran de connexion (US-003, présentation US-012) : e-mail et mot de passe. Sur PC, panneau décoratif (bannière
+  // « login ») et formulaire en carte ; sur smartphone, la carte seule. Hors ligne, l'écran l'indique, et la connexion
+  // reste possible sur un appareil déjà utilisé (US-005). Il explique aussi pourquoi une session a été fermée.
+  import { onMount, untrack } from 'svelte';
   import Banniere from '../composants/Banniere.svelte';
   import IconeAnimee from '../composants/IconeAnimee.svelte';
   import Lien from '../composants/Lien.svelte';
   import { CHEMINS } from '../lib/routes';
   import type { ClientSession, ErreurConnexion } from '../lib/session';
   import { textes } from '../lib/textes';
-  import type { Session } from '@poule-position/protocole';
+  import type { SessionAppareil } from '../lib/stockage';
 
   interface Proprietes {
     client: ClientSession;
-    surConnexion: (session: Session) => void;
+    surConnexion: (session: SessionAppareil) => void;
     naviguer: (chemin: string) => void;
   }
 
@@ -29,6 +29,8 @@
   let enCours = $state(false);
   let erreur: ErreurConnexion | null = $state(null);
   let horsLigne = $state(!navigator.onLine);
+  /** US-005 CA-6 : pourquoi l'application vient de fermer la session, affiché jusqu'au prochain essai. */
+  let motif = $state(untrack(() => client.lireMotifFin()));
 
   const complet = $derived(email.trim() !== '' && motDePasse !== '');
 
@@ -47,6 +49,7 @@
     if (!complet || enCours) return;
     enCours = true;
     erreur = null;
+    motif = null;
     try {
       const resultat = await client.seConnecter(email, motDePasse);
       if (resultat.ok) surConnexion(resultat.session);
@@ -56,7 +59,7 @@
     }
   }
 
-  const message = $derived(erreur ? t.erreurs[erreur] : horsLigne ? t.horsLigne : null);
+  const message = $derived(erreur ? t.erreurs[erreur] : motif ? t.motifs[motif] : horsLigne ? t.horsLigne : null);
 </script>
 
 <div class="ecran">

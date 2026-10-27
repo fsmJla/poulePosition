@@ -1,11 +1,11 @@
 <script lang="ts">
-  // Coquille de l'application (US-003) : session restaurée au démarrage, routage entre pages publiques et réservées.
+  // Coquille de l'application (US-003) : session restaurée au démarrage et revalidée à chaque retour en ligne
+  // (US-005 CA-5), routage entre pages publiques et réservées.
   import { onMount } from 'svelte';
-  import type { Session } from '@poule-position/protocole';
   import { URL_SERVEUR_LOCAL } from './lib/connexion';
   import { resoudreRoute, CHEMINS } from './lib/routes';
   import { creerClientSession, urlHttp } from './lib/session';
-  import { ouvrirStockage } from './lib/stockage';
+  import { estLocale, ouvrirStockage, type SessionAppareil } from './lib/stockage';
   import Entete from './composants/Entete.svelte';
   import Accueil from './pages/Accueil.svelte';
   import Comptes from './pages/Comptes.svelte';
@@ -16,7 +16,7 @@
   const urlServeur = import.meta.env.VITE_URL_SERVEUR ?? (import.meta.env.DEV ? URL_SERVEUR_LOCAL : undefined);
   const client = creerClientSession({ urlServeur: urlHttp(urlServeur), stockage: ouvrirStockage() });
 
-  let session = $state<Session | null>(null);
+  let session = $state<SessionAppareil | null>(null);
   /** Faux tant que la session gardée n'est pas relue : évite d'afficher une page puis d'en changer. */
   let pret = $state(false);
   let chemin = $state(location.pathname);
@@ -42,15 +42,23 @@
 
   onMount(() => {
     const surRetour = () => (chemin = location.pathname);
+    // US-005 CA-5 / CA-6 : de retour en ligne, la session est revalidée sans action (ou fermée, avec son motif).
+    const surEnLigne = async () => {
+      if (session) session = await client.restaurer();
+    };
     window.addEventListener('popstate', surRetour);
+    window.addEventListener('online', surEnLigne);
     client.restaurer().then((restauree) => {
       session = restauree;
       pret = true;
     });
-    return () => window.removeEventListener('popstate', surRetour);
+    return () => {
+      window.removeEventListener('popstate', surRetour);
+      window.removeEventListener('online', surEnLigne);
+    };
   });
 
-  function surConnexion(ouverte: Session) {
+  function surConnexion(ouverte: SessionAppareil) {
     session = ouverte;
     naviguer(CHEMINS.organisateur);
   }
@@ -75,7 +83,7 @@
     <Connexion {client} {surConnexion} {naviguer} />
   {:else if session}
     <!-- Pages réservées : entête commun (US-014). -->
-    <Entete {surDeconnexion} {naviguer} />
+    <Entete {surDeconnexion} {naviguer} locale={estLocale(session)} />
     {#if route.page === 'organisateur'}
       <Organisateur {session} {naviguer} />
     {:else if route.page === 'motDePasse'}

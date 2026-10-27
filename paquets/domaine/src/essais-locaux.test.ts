@@ -47,7 +47,7 @@ describe('frein local de la reconnexion hors ligne (US-005 CA-4)', () => {
 
   it('ne modifie pas l’état reçu', () => {
     const avant = echecs(2);
-    const copie = structuredClone(avant);
+    const copie = JSON.parse(JSON.stringify(avant)) as typeof avant;
     noterEchecLocal(avant, T0 + 3 * MINUTE);
     expect(avant).toEqual(copie);
   });
