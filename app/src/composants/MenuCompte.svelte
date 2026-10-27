@@ -150,7 +150,7 @@
     border-radius: 12px;
     background: var(--surface);
     color: var(--texte);
-    box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+    box-shadow: var(--ombre-flottante);
   }
 
   .identite {
