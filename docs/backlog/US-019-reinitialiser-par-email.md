@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1, « système de mot de passe oublié » (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-018, US-009, US-004
 - **Branche / PR :** `us/US-019-reinitialiser-par-email` / [PR #33](https://github.com/fsmJla/poulePosition/pull/33)
 
@@ -161,3 +161,5 @@ d'e-mail réel en CI) ; l'envoi réel est vérifié en recette.
 | 2026-10-27 | Créée (spécification : réinitialisation par e-mail) |
 | 2026-10-27 | En cours : plan validé (CA-7 ajouté : e-mail aux couleurs de l’application, en-tête en texte seul ; jeton dans le fragment `#` du lien ; envoi après la réponse ; faux serveur SMTP pour les tests d’intégration) |
 | 2026-10-27 | En revue : contrôles locaux verts (lint, typage, 504 tests unitaires et d’intégration, couverture 94 %, build, audit, 165 E2E) |
+| 2026-10-27 | Recette OK sur https://poule-position-git-us-us-019-reinitiali-8523a2-fsmjlas-projects.vercel.app (Worker de preview déployé depuis la branche, `ec61c1c` ; déployée en preview et vérifiée) : CA-1 et CA-7 (e-mail réel reçu par l'utilisateur, aux couleurs de l'application), CA-4 (nouveau mot de passe, connexion directe) et CA-3 (lien réutilisé refusé) vérifiés par l'utilisateur ; CA-2 (e-mail inconnu : `200 {"ok":true}`, même message), CA-3 (lien tronqué, lien inconnu : `400 LIEN_INVALIDE`), hors ligne et format smartphone vérifiés dans le navigateur piloté. CA-5 et CA-6 : tests d'intégration de la CI. Écart mineur noté : un nouveau lien collé dans un onglet déjà ouvert sur la page (seul le `#` change) garde l'ancien jeton ; ouvrir le lien depuis l'e-mail fonctionne. |
+| 2026-10-27 | **Terminée**, mergée dans `dev` (PR #33). |
