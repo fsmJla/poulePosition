@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3, « système de mot de passe oublié ») ; exigences §5 (e-mails)
 - **Priorité :** P2
 - **Type :** technique
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-001
 - **Branche / PR :** `us/US-018-envoyer-des-emails` · [PR #32](https://github.com/fsmJla/poulePosition/pull/32)
 
@@ -130,3 +130,5 @@ réseau ; envoi réel couvert par l'essai (CA-2), lancé à la main, pas par la 
 | 2026-10-27 | En cours : plan validé (bibliothèque `worker-mailer@1.2.1` enrobée derrière une interface `Expediteur`, route d’essai `POST /installation/essai-email` protégée par le secret d’installation, commande `npm run essai-email` ; boîte `no-reply@pessac-escrime.fr` créée par l’utilisateur) |
 | 2026-10-27 | CA-2 validé avec l’utilisateur : essai réel depuis le Worker de preview (déployé depuis la branche, secrets `SMTP_UTILISATEUR` et `SMTP_MOT_DE_PASSE` saisis par l’utilisateur), e-mail reçu en boîte de réception Gmail, expéditeur « Poule Position <no-reply@pessac-escrime.fr> », objet et accents corrects. Points « à vérifier » de l’ADR-0015 levés : port 465 accepté depuis Cloudflare, sockets TCP disponibles sur le plan gratuit, session SMTP tenue dans le budget du Worker. |
 | 2026-10-27 | En revue : contrôles locaux verts (lint, typage, 454 tests unitaires et d’intégration, couverture 94 %, build, audit, 153 E2E) |
+| 2026-10-27 | Recette OK sur le Worker de preview `poule-position-serveur-preview` (déployé depuis la branche, `64a1efc` ; déployée en preview et vérifiée) : essai d’envoi réel relancé par l’utilisateur sur le code final (`npm run essai-email -- --env preview`), e-mail reçu en boîte de réception avec l’expéditeur « Poule Position » et les accents corrects (CA-2) ; route d’essai : `405` pour un GET, `403 SECRET_INVALIDE` sans secret (aucun envoi), `404` pour une route inconnue. CA-3, CA-4 (`502`), CA-5 (`503`) et `429` : tests d’intégration de la CI. Aucune interface concernée. |
+| 2026-10-27 | **Terminée**, mergée dans `dev` (PR #32). |
