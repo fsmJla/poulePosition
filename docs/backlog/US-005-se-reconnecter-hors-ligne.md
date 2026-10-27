@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1, « s'authentifier même sans connexion internet » (exigences §3) ; F12
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-003
 - **Branche / PR :** `us/US-005-se-reconnecter-hors-ligne` · [PR #25](https://github.com/fsmJla/poulePosition/pull/25)
 
@@ -132,3 +132,5 @@ reconnexion hors ligne.
 | 2026-10-25 | Créée (spécification E1) |
 | 2026-10-27 | En cours : plan validé (clé dérivée gardée en mémoire et dans le `sessionStorage` de l’onglet pour la revalidation ; connexion locale si hors ligne ou serveur injoignable ; frein local par appareil, 5 échecs en 15 minutes ; message « Votre compte a été modifié » aussi pour une session en ligne refusée) |
 | 2026-10-27 | En revue : contrôles locaux verts (lint, typage, 345 tests unitaires et d’intégration, couverture 94 %, build, audit, 117 E2E) |
+| 2026-10-27 | Recette OK sur https://poule-position-git-us-us-005-se-reconne-9fa03a-fsmjlas-projects.vercel.app (déployée en preview et vérifiée, Worker de preview déployé depuis la branche) : deux comptes jetables connectés en ligne sur un « PC de compétition » simulé (contexte de navigateur isolé), puis réseau coupé et page rechargée par le service worker. Reconnexion hors ligne avec « Bonjour, … » et le bandeau « Hors ligne : connexion locale », sans aucun appel au serveur (CA-1) ; chaque compte avec son mot de passe, celui de l'autre refusé (CA-2) ; compte jamais venu : « Première connexion impossible hors ligne sur cet appareil » (CA-3) ; au retour du réseau, bandeau disparu, session en ligne avec jeton, clé de l'onglet effacée (CA-5) ; mot de passe réinitialisé par l'administrateur pendant la coupure : « Votre compte a été modifié : reconnectez-vous », vérificateur de ce seul compte effacé, compte redevenu inconnu hors ligne (CA-6) ; 4 mots de passe faux refusés, puis « Trop d’essais : réessayez dans 15 minutes » au 5e, même avec le bon mot de passe (CA-4). Comptes de recette supprimés à la fin. |
+| 2026-10-27 | **Terminée**, mergée dans `dev` (PR #25). |
