@@ -59,14 +59,16 @@ test('US-009 CA-1 : « Annuler » renonce à la réinitialisation', async ({ pag
   await expect(page.getByTestId('mot-de-passe-temporaire')).toHaveCount(0);
 });
 
-test('US-009 CA-4 : « Mot de passe oublié ? » explique qui contacter', async ({ page }) => {
+// US-019 : « Mot de passe oublié ? » mène désormais à la demande d'un lien par e-mail, qui garde la mention de
+// l'administrateur (US-009 CA-4).
+test('US-009 CA-4 : « Mot de passe oublié ? » rappelle qu’un administrateur peut réinitialiser le mot de passe', async ({
+  page,
+}) => {
   await page.goto('/connexion');
-  const lien = page.getByRole('button', { name: 'Mot de passe oublié ?' });
-  await expect(lien).toHaveAttribute('aria-expanded', 'false');
-  await lien.click();
-  await expect(lien).toHaveAttribute('aria-expanded', 'true');
+  await page.getByRole('link', { name: 'Mot de passe oublié ?' }).click();
+  await expect(page).toHaveURL(/\/mot-de-passe-oublie$/);
   await expect(
-    page.getByText('Demandez à un administrateur du club de réinitialiser votre mot de passe'),
+    page.getByText('Vous pouvez aussi demander à un administrateur du club de réinitialiser votre mot de passe'),
   ).toBeVisible();
 });
 

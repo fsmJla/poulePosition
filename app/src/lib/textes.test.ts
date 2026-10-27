@@ -55,12 +55,21 @@ describe('textes du changement de mot de passe (US-010)', () => {
   });
 });
 
-describe('mot de passe oublié (US-009)', () => {
-  it('US-009 CA-4 : « Mot de passe oublié ? » explique qui contacter', () => {
+describe('mot de passe oublié (US-009, US-019)', () => {
+  it('US-009 CA-4 et US-019 CA-1 : « Mot de passe oublié ? » ; la mention de l’administrateur reste', () => {
     expect(textes.connexion.oubli).toBe('Mot de passe oublié ?');
-    expect(textes.connexion.explicationOubli).toBe(
-      'Demandez à un administrateur du club de réinitialiser votre mot de passe',
+    expect(textes.oubli.administrateur).toBe(
+      'Vous pouvez aussi demander à un administrateur du club de réinitialiser votre mot de passe',
     );
+  });
+
+  it('US-019 CA-1, CA-2 et CA-3 : messages de l’US', () => {
+    expect(textes.oubli.envoye).toBe('Si un compte existe pour cet e-mail, un lien vient d’y être envoyé');
+    expect(textes.reinitialisation.erreurs.LIEN_INVALIDE).toBe(
+      'Ce lien n’est plus valable : faites une nouvelle demande',
+    );
+    expect(textes.oubli.horsLigne).toBe('Nécessite une connexion internet');
+    expect(textes.reinitialisation.horsLigne).toBe('Nécessite une connexion internet');
   });
 });
 

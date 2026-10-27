@@ -56,7 +56,7 @@ l'ajoute ici avant de l'utiliser.
 | Mon profil | Page où l'utilisateur connecté modifie son nom et son avatar, et accède au changement de son mot de passe (US-016). À ne pas confondre avec le rôle, que les exigences (F1) appellent aussi « profil ». | `/profil` |
 | Avatar | Pastille ronde aux initiales du nom, sur une couleur choisie dans une palette de la charte (US-016). | `avatar` |
 | Menu de compte | Menu ouvert depuis l'avatar en haut à droite : nom, e-mail, « Éditer le profil » et déconnexions (US-017). | `MenuCompte` |
-| Lien de réinitialisation | Lien envoyé par e-mail depuis `no-reply@pessac-escrime.fr`, à usage unique et valable 1 heure, pour choisir un nouveau mot de passe sans administrateur (US-019). | `jetonReinitialisation` |
+| Lien de réinitialisation | Lien envoyé par e-mail depuis `no-reply@pessac-escrime.fr`, à usage unique et valable 1 heure, pour choisir un nouveau mot de passe sans administrateur (US-019). | `/reinitialisation#<jeton>`, `jetonDuFragment` |
 | Blocage (trop d'essais) | Refus des connexions à un e-mail ou depuis une adresse IP après trop d'échecs, mesuré par le serveur (US-004). | `TROP_D_ESSAIS`, `RegleEssais` |
 | Charte graphique | Palette « Calme rétro », polices et styles communs à toutes les pages, définis une seule fois sous forme de variables (US-011). | `charte`, variables CSS |
 | Version du mot de passe | Numéro d'un compte qui augmente à chaque changement de mot de passe ; une session d'une version dépassée est refusée (US-010). | `versionMdp`, `v` |

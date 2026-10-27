@@ -55,6 +55,8 @@ function stockageMemoire(session: SessionAppareil | null = null) {
 
 type Route =
   | 'POST /session/sel'
+  | 'POST /mot-de-passe-oublie'
+  | 'POST /mot-de-passe-oublie/nouveau'
   | 'POST /session'
   | 'GET /session'
   | 'POST /compte/mot-de-passe'
@@ -971,5 +973,82 @@ describe('modifier son profil (US-016)', () => {
     });
     const resultat = await client({ stockage, enLigne: () => false }).seConnecter(compte.email, 'mot-de-passe-solide');
     expect(resultat).toMatchObject({ ok: true, session: { locale: true, compte: { avatar: 'ciel' } } });
+  });
+});
+
+describe('réinitialisation par e-mail (US-019)', () => {
+  const JETON = 'A'.repeat(43);
+
+  it('US-019 CA-1 : la demande envoie l’e-mail normalisé, sans session', async () => {
+    const serveur = fauxServeur({ 'POST /mot-de-passe-oublie': { statut: 200, corps: { ok: true } } });
+    const c = client({ stockage: stockageMemoire().stockage, envoyer: serveur.envoyer });
+    expect(await c.demanderReinitialisation(' Orga@Club.FR ')).toEqual({ ok: true });
+    expect(serveur.requetes[0]?.corps).toEqual({ email: 'orga@club.fr' });
+    expect(serveur.requetes[0]?.entetes.get('Authorization')).toBeNull();
+  });
+
+  it.each([
+    ['hors ligne', { enLigne: () => false }, {}, 'HORS_LIGNE'],
+    ['serveur injoignable', {}, { 'POST /mot-de-passe-oublie': 'reseau' as const }, 'HORS_LIGNE'],
+    [
+      'adresse bloquée',
+      {},
+      { 'POST /mot-de-passe-oublie': { statut: 429, corps: { ok: false, erreur: 'TROP_D_ESSAIS' } } },
+      'TROP_D_ESSAIS',
+    ],
+    ['réponse inattendue', {}, { 'POST /mot-de-passe-oublie': { statut: 500, corps: {} } }, 'ERREUR_INATTENDUE'],
+  ])('US-019 : demande refusée (%s)', async (_cas, options, reponses, erreur) => {
+    const serveur = fauxServeur(reponses);
+    const c = client({ stockage: stockageMemoire().stockage, envoyer: serveur.envoyer, ...options });
+    expect(await c.demanderReinitialisation('orga@club.fr')).toEqual({ ok: false, erreur });
+  });
+
+  it('US-019 CA-4 : n’envoie que la clé dérivée, garde la session et rend l’appareil connu (hors ligne ensuite)', async () => {
+    const { stockage, etat } = stockageMemoire();
+    const serveur = fauxServeur({ 'POST /mot-de-passe-oublie/nouveau': { statut: 200, corps: sessionServeur } });
+    const c = client({ stockage, envoyer: serveur.envoyer });
+    const resultat = await c.reinitialiserParLien(JETON, 'nouveau-mot-de-passe');
+    expect(resultat).toEqual({
+      ok: true,
+      session: { jeton: sessionServeur.jeton, expireLe: sessionServeur.expireLe, compte },
+    });
+    const corps = serveur.requetes[0]?.corps as { jeton: string; sel: string; cle: string };
+    expect(Object.keys(corps).sort()).toEqual(['cle', 'jeton', 'sel']);
+    expect(corps.jeton).toBe(JETON);
+    expect(corps.cle).toBe(await deriverCle('nouveau-mot-de-passe', corps.sel));
+    expect(JSON.stringify(serveur.requetes)).not.toContain('nouveau-mot-de-passe');
+    expect(etat.session).toMatchObject({ jeton: sessionServeur.jeton });
+    expect(etat.appareils.get(compte.email)).toMatchObject({
+      sel: corps.sel,
+      verificateurLocal: await verificateurLocal(corps.cle),
+      temporaire: false,
+    });
+    // Le compte est désormais connu : reconnexion hors ligne possible (US-005).
+    await c.seDeconnecter();
+    const horsLigne = client({ stockage, enLigne: () => false });
+    expect(await horsLigne.seConnecter(compte.email, 'nouveau-mot-de-passe')).toMatchObject({ ok: true });
+  });
+
+  it.each([
+    ['lien plus valable', { statut: 400, corps: { ok: false, erreur: 'LIEN_INVALIDE' } }, 'LIEN_INVALIDE'],
+    ['adresse bloquée', { statut: 429, corps: { ok: false, erreur: 'TROP_D_ESSAIS' } }, 'TROP_D_ESSAIS'],
+    ['serveur injoignable', 'reseau' as const, 'HORS_LIGNE'],
+    ['réponse inattendue', { statut: 500, corps: {} }, 'ERREUR_INATTENDUE'],
+  ])('US-019 CA-3 : nouveau mot de passe refusé (%s), rien n’est gardé', async (_cas, reponse, erreur) => {
+    const { stockage, etat } = stockageMemoire();
+    const serveur = fauxServeur({ 'POST /mot-de-passe-oublie/nouveau': reponse });
+    expect(await client({ stockage, envoyer: serveur.envoyer }).reinitialiserParLien(JETON, 'x'.repeat(10))).toEqual({
+      ok: false,
+      erreur,
+    });
+    expect(etat.session).toBeNull();
+    expect(etat.appareils.size).toBe(0);
+  });
+
+  it('US-019 hors ligne : le nouveau mot de passe exige le réseau, rien n’est envoyé', async () => {
+    const serveur = fauxServeur({});
+    const c = client({ stockage: stockageMemoire().stockage, envoyer: serveur.envoyer, enLigne: () => false });
+    expect(await c.reinitialiserParLien(JETON, 'nouveau-mot-de-passe')).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect(serveur.requetes).toHaveLength(0);
   });
 });

@@ -9,6 +9,9 @@ import {
   analyserDemandeProfil,
   analyserDemandeReinitialisation,
   analyserDemandeEssaiEmail,
+  analyserDemandeMotDePasseOublie,
+  analyserDemandeNouveauMotDePasse,
+  nouveauJeton,
   analyserDemandeInstallation,
   analyserDemandeSel,
   type CodeErreurInstallation,
@@ -37,12 +40,15 @@ import {
   REGLE_INSTALLATION,
   configurationSmtp,
   courrielEssai,
+  empreinteJeton,
+  lienReinitialisation,
 } from './logique';
 
 export { Club } from './club';
 export { Competition } from './competition';
 export { Limiteur } from './limiteur';
 import { creerExpediteur } from './courriel';
+import { courrielReinitialisation } from './gabarits';
 import { transportSmtp } from './smtp';
 
 export interface Env {
@@ -61,17 +67,19 @@ export interface Env {
   SMTP_PORT?: string;
   SMTP_UTILISATEUR?: string;
   SMTP_MOT_DE_PASSE?: string;
+  /** Adresse de l'application de production, pour les liens envoyés par e-mail (US-019). */
+  URL_APPLICATION: string;
 }
 
 export default {
-  async fetch(requete, env) {
+  async fetch(requete, env, contexte) {
     const route = analyserChemin(new URL(requete.url).pathname);
     if (!route) return new Response('Introuvable', { status: 404 });
     if (route.route === 'accueil') return new Response('Serveur poulePosition');
     if (route.route === 'sante') return Response.json({ ok: true, service: 'poule-position-serveur' });
     if (route.route === 'installation') return installer(requete, env);
     if (route.route === 'essai-email') return essayerEnvoi(requete, env);
-    if (route.route !== 'connexion') return routeSession(route, requete, env);
+    if (route.route !== 'connexion') return routeSession(route, requete, env, contexte);
 
     if (requete.headers.get('Upgrade') !== 'websocket') return new Response('WebSocket attendu', { status: 426 });
     if (!origineAutorisee(requete.headers.get('Origin'), env.ORIGINES)) {
@@ -164,7 +172,18 @@ async function installer(requete: Request, env: Env): Promise<Response> {
 
 type RouteSession = Extract<
   Route,
-  { route: 'sel' | 'session' | 'mot-de-passe' | 'profil' | 'comptes' | 'compte' | 'reinitialisation' }
+  {
+    route:
+      | 'sel'
+      | 'session'
+      | 'mot-de-passe'
+      | 'mot-de-passe-oublie'
+      | 'nouveau-mot-de-passe'
+      | 'profil'
+      | 'comptes'
+      | 'compte'
+      | 'reinitialisation';
+  }
 >;
 
 const METHODES_SESSION = {
@@ -172,6 +191,8 @@ const METHODES_SESSION = {
   session: ['GET', 'POST'],
   'mot-de-passe': ['POST'],
   profil: ['PATCH'],
+  'mot-de-passe-oublie': ['POST'],
+  'nouveau-mot-de-passe': ['POST'],
   comptes: ['GET', 'POST'],
   compte: ['PATCH', 'DELETE'],
   reinitialisation: ['POST'],
@@ -181,7 +202,12 @@ const METHODES_SESSION = {
  * Routes de connexion, de session (US-003), de changement de mot de passe (US-010) et de gestion des comptes
  * (US-007), appelées par l'application depuis un autre domaine (CORS).
  */
-async function routeSession(route: RouteSession, requete: Request, env: Env): Promise<Response> {
+async function routeSession(
+  route: RouteSession,
+  requete: Request,
+  env: Env,
+  contexte: ExecutionContext,
+): Promise<Response> {
   const cors = enTetesCors(requete.headers.get('Origin'), env.ORIGINES);
   if (requete.method === 'OPTIONS') {
     if (!cors) return new Response('Origine refusée', { status: 403 });
@@ -195,7 +221,7 @@ async function routeSession(route: RouteSession, requete: Request, env: Env): Pr
       },
     });
   }
-  const reponse = await traiterSession(route, requete, env);
+  const reponse = await traiterSession(route, requete, env, contexte);
   for (const [nom, valeur] of Object.entries(cors ?? {})) reponse.headers.set(nom, valeur);
   return reponse;
 }
@@ -212,7 +238,12 @@ async function lireJson(requete: Request): Promise<unknown> {
   }
 }
 
-async function traiterSession(route: RouteSession, requete: Request, env: Env): Promise<Response> {
+async function traiterSession(
+  route: RouteSession,
+  requete: Request,
+  env: Env,
+  contexte: ExecutionContext,
+): Promise<Response> {
   const methodes: readonly string[] = METHODES_SESSION[route.route];
   if (!methodes.includes(requete.method)) {
     return new Response('Méthode non autorisée', { status: 405, headers: { Allow: methodes.join(', ') } });
@@ -220,6 +251,9 @@ async function traiterSession(route: RouteSession, requete: Request, env: Env): 
   const { POIVRE: poivre, SECRET_SESSION: secret } = env;
   if (!poivre || !secret) return refuserSession(503, 'SERVEUR_NON_CONFIGURE');
   const club = env.CLUB.get(env.CLUB.idFromName(`club:${env.CLUB_ID}`));
+
+  if (route.route === 'mot-de-passe-oublie') return demanderLien(requete, env, club, contexte);
+  if (route.route === 'nouveau-mot-de-passe') return choisirParLien(requete, env, club, poivre, secret);
 
   if (route.route === 'sel') {
     const demande = analyserDemandeSel(await lireJson(requete));
@@ -286,6 +320,67 @@ async function traiterSession(route: RouteSession, requete: Request, env: Env): 
 
   // GET /session : la session est valide, on la prolonge (US-003 CA-4).
   return ouvrirSession(authentifie.compte, env.CLUB_ID, secret);
+}
+
+/**
+ * POST /mot-de-passe-oublie (US-019) : répond tout de suite la même chose, que le compte existe ou non (CA-2) ;
+ * l'e-mail part après la réponse (waitUntil), pour que le temps de réponse ne trahisse rien, et un échec d'envoi n'est
+ * que journalisé (CA-6). Chaque demande compte pour la limite par adresse IP (US-004, CA-5).
+ */
+async function demanderLien(
+  requete: Request,
+  env: Env,
+  club: DurableObjectStub<Club>,
+  contexte: ExecutionContext,
+): Promise<Response> {
+  const analyse = analyserDemandeMotDePasseOublie(await lireJson(requete));
+  if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
+  const adresse = limiteurConnexion(requete, env);
+  if (await adresse.estBloque()) return refuserSession(429, 'TROP_D_ESSAIS');
+  await adresse.enregistrerEchec(REGLE_ADRESSE);
+  const jeton = nouveauJeton();
+  const destinataire = await club.preparerReinitialisation(analyse.email, await empreinteJeton(jeton));
+  if (destinataire) {
+    const lien = lienReinitialisation(requete.headers.get('Origin'), env.ORIGINES, env.URL_APPLICATION, jeton);
+    const expediteur = creerExpediteur(configurationSmtp(env), transportSmtp);
+    contexte.waitUntil(
+      expediteur
+        .envoyer(courrielReinitialisation({ destinataire: destinataire.email, nom: destinataire.nom, lien }))
+        .then((resultat) => {
+          if (!resultat.ok) console.error('Lien de réinitialisation non envoyé :', resultat.erreur);
+        }),
+    );
+  }
+  return Response.json({ ok: true });
+}
+
+/**
+ * POST /mot-de-passe-oublie/nouveau (US-019 CA-3 / CA-4) : nouveau mot de passe par un lien valable ; ouvre une
+ * session. Un lien inconnu, expiré ou déjà utilisé reçoit LIEN_INVALIDE, et compte pour la limite par adresse IP.
+ */
+async function choisirParLien(
+  requete: Request,
+  env: Env,
+  club: DurableObjectStub<Club>,
+  poivre: string,
+  secret: string,
+): Promise<Response> {
+  const analyse = analyserDemandeNouveauMotDePasse(await lireJson(requete));
+  if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
+  const adresse = limiteurConnexion(requete, env);
+  if (await adresse.estBloque()) return refuserSession(429, 'TROP_D_ESSAIS');
+  const { jeton, sel, cle } = analyse.demande;
+  const compte = await club.reinitialiserParLien(
+    await empreinteJeton(jeton),
+    sel,
+    await verificateurServeur(cle, poivre),
+  );
+  if (!compte) {
+    await adresse.enregistrerEchec(REGLE_ADRESSE);
+    return refuserSession(400, 'LIEN_INVALIDE');
+  }
+  await club.noterConnexion(compte.id, Date.now());
+  return ouvrirSession(compte, env.CLUB_ID, secret);
 }
 
 /** Adresse IP de la requête, telle que Cloudflare la transmet. */

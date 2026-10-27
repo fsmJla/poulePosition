@@ -21,6 +21,7 @@ import {
   deriverCle,
   preparerChangementMotDePasse,
   preparerCreationCompte,
+  preparerNouveauMotDePasse,
   preparerReinitialisation,
   verificateurLocal,
   type CompteResume,
@@ -50,6 +51,13 @@ export type ResultatConnexion = { ok: true; session: SessionAppareil } | { ok: f
  * Pourquoi la session a été fermée par l'application, à expliquer sur l'écran de connexion : compte modifié ou
  * retiré ailleurs (US-005 CA-6), ou session locale qu'on ne peut plus revalider seule (US-005 CA-5).
  */
+/** US-019 : refus d'une demande de lien de réinitialisation. */
+export type ErreurDemandeLien = 'TROP_D_ESSAIS' | 'HORS_LIGNE' | 'SERVEUR_NON_CONFIGURE' | 'ERREUR_INATTENDUE';
+
+/** US-019 : refus du nouveau mot de passe choisi par le lien. */
+export type ErreurNouveauMotDePasseParLien =
+  'LIEN_INVALIDE' | 'TROP_D_ESSAIS' | 'HORS_LIGNE' | 'SERVEUR_NON_CONFIGURE' | 'ERREUR_INATTENDUE';
+
 export type MotifFinSession = 'COMPTE_MODIFIE' | 'RECONNEXION_REQUISE';
 
 /** `sessionStorage` de l'onglet : la clé d'une session locale y survit à un rechargement, pas à la fermeture. */
@@ -414,6 +422,79 @@ export function creerClientSession({
       if (!prolongee.ok) return session;
       await stockage.ecrireSession(prolongee.session);
       return prolongee.session;
+    },
+
+    /**
+     * US-019 CA-1 : demande un lien de réinitialisation par e-mail. Le serveur répond la même chose que le compte
+     * existe ou non (CA-2) ; seule une adresse bloquée (US-004) est signalée.
+     */
+    async demanderReinitialisation(
+      emailSaisi: string,
+    ): Promise<{ ok: true } | { ok: false; erreur: ErreurDemandeLien }> {
+      if (!urlServeur) return { ok: false, erreur: 'SERVEUR_NON_CONFIGURE' };
+      if (!enLigne()) return { ok: false, erreur: 'HORS_LIGNE' };
+      try {
+        const { statut, corps } = await avecDelai((signal) =>
+          requete('/mot-de-passe-oublie', signal, { methode: 'POST', corps: { email: normaliserEmail(emailSaisi) } }),
+        );
+        if (statut === 200) return { ok: true };
+        const refus = analyserReponseSession(corps);
+        return {
+          ok: false,
+          erreur: !refus.ok && refus.erreur === 'TROP_D_ESSAIS' ? 'TROP_D_ESSAIS' : 'ERREUR_INATTENDUE',
+        };
+      } catch (erreur) {
+        if (erreur instanceof Injoignable) return { ok: false, erreur: 'HORS_LIGNE' };
+        throw erreur;
+      }
+    },
+
+    /**
+     * US-019 CA-4 : nouveau mot de passe par le lien reçu. Seule la clé dérivée part ; la session ouverte est gardée et
+     * l'appareil devient connu, pour la reconnexion hors ligne (US-005). Rien n'est gardé en cas de refus.
+     */
+    async reinitialiserParLien(
+      jeton: string,
+      motDePasse: string,
+    ): Promise<{ ok: true; session: Session } | { ok: false; erreur: ErreurNouveauMotDePasseParLien }> {
+      if (!urlServeur) return { ok: false, erreur: 'SERVEUR_NON_CONFIGURE' };
+      if (!enLigne()) return { ok: false, erreur: 'HORS_LIGNE' };
+      const demande = await preparerNouveauMotDePasse(jeton, motDePasse);
+      let corps: unknown;
+      try {
+        corps = (
+          await avecDelai((signal) =>
+            requete('/mot-de-passe-oublie/nouveau', signal, { methode: 'POST', corps: demande }),
+          )
+        ).corps;
+      } catch (erreur) {
+        if (erreur instanceof Injoignable) return { ok: false, erreur: 'HORS_LIGNE' };
+        throw erreur;
+      }
+      const reponse = analyserReponseSession(corps);
+      if (!reponse.ok) {
+        const { erreur } = reponse;
+        return {
+          ok: false,
+          erreur: erreur === 'LIEN_INVALIDE' || erreur === 'TROP_D_ESSAIS' ? erreur : 'ERREUR_INATTENDUE',
+        };
+      }
+      const { session } = reponse;
+      const { email, nom, role, temporaire, avatar } = session.compte;
+      await stockage.ecrireSession(session);
+      const connu = await stockage.lireAppareilConnu(email);
+      await stockage.enregistrerAppareilConnu({
+        email,
+        nom,
+        role,
+        sel: demande.sel,
+        verificateurLocal: await verificateurLocal(demande.cle),
+        temporaire,
+        avatar,
+        connuDepuis: connu?.connuDepuis ?? maintenant(),
+      });
+      cleEnMemoire = { email, cle: demande.cle };
+      return { ok: true, session };
     },
 
     /** CA-5 : efface la session de l'appareil ; l'appareil reste connu pour la reconnexion hors ligne (US-005). */

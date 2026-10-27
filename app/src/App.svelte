@@ -10,8 +10,10 @@
   import Accueil from './pages/Accueil.svelte';
   import Comptes from './pages/Comptes.svelte';
   import Connexion from './pages/Connexion.svelte';
+  import MotDePasseOublie from './pages/MotDePasseOublie.svelte';
   import MotDePasse from './pages/MotDePasse.svelte';
   import Profil from './pages/Profil.svelte';
+  import Reinitialisation from './pages/Reinitialisation.svelte';
   import Organisateur from './pages/Organisateur.svelte';
 
   const urlServeur = import.meta.env.VITE_URL_SERVEUR ?? (import.meta.env.DEV ? URL_SERVEUR_LOCAL : undefined);
@@ -89,6 +91,10 @@
     <Accueil {urlServeur} connecte={session !== null} {naviguer} />
   {:else if route.page === 'connexion'}
     <Connexion {client} {surConnexion} {naviguer} />
+  {:else if route.page === 'motDePasseOublie'}
+    <MotDePasseOublie {client} {naviguer} />
+  {:else if route.page === 'reinitialisation'}
+    <Reinitialisation {client} {surConnexion} {naviguer} />
   {:else if session}
     <!-- Pages réservées : entête commun (US-014). -->
     <Entete compte={session.compte} {surDeconnexion} {surOubli} {naviguer} locale={estLocale(session)} />

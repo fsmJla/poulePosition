@@ -42,6 +42,9 @@ CLUB_ID = "club-principal"
 # Serveur SMTP du MX Plan OVH du club (ADR-0015) : port 465, TLS dès la connexion.
 SMTP_HOTE = "ssl0.ovh.net"
 SMTP_PORT = "465"
+# Application de production : adresse des liens envoyés par e-mail quand la demande ne vient pas d'une origine
+# autorisée (US-019).
+URL_APPLICATION = "https://poule-position-livid.vercel.app"
 
 [env.preview]
 name = "poule-position-serveur-preview"
@@ -64,3 +67,6 @@ ORIGINES = "https://poule-position-*-fsmjlas-projects.vercel.app,http://localhos
 CLUB_ID = "club-principal"
 SMTP_HOTE = "ssl0.ovh.net"
 SMTP_PORT = "465"
+# Application de production : adresse des liens envoyés par e-mail quand la demande ne vient pas d'une origine
+# autorisée (US-019).
+URL_APPLICATION = "https://poule-position-livid.vercel.app"

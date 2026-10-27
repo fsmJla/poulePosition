@@ -20,6 +20,8 @@ import {
   courrielEssai,
   courrielValide,
   NOM_EXPEDITEUR,
+  empreinteJeton,
+  lienReinitialisation,
 } from './logique';
 
 describe('analyserChemin', () => {
@@ -368,5 +370,34 @@ describe('envoi d’e-mails (US-018, ADR-0015)', () => {
     expect(essai.texte).toMatch(/é.*è.*à.*ç/);
     expect(essai.html).toContain('<p>');
     expect(courrielValide(essai)).toBe(true);
+  });
+});
+
+describe('réinitialisation par e-mail (US-019)', () => {
+  const MOTIFS = 'https://poule-position-*-fsmjlas-projects.vercel.app,http://localhost:*';
+  const PRODUCTION = 'https://poule-position-livid.vercel.app';
+  const JETON = 'A'.repeat(43);
+
+  it('reconnaît les routes de la demande et du nouveau mot de passe', () => {
+    expect(analyserChemin('/mot-de-passe-oublie')).toEqual({ route: 'mot-de-passe-oublie' });
+    expect(analyserChemin('/mot-de-passe-oublie/nouveau')).toEqual({ route: 'nouveau-mot-de-passe' });
+    expect(analyserChemin('/mot-de-passe-oublie/autre')).toBeNull();
+  });
+
+  it('US-019 CA-3 : le serveur ne garde que l’empreinte SHA-256 du jeton, stable et différente du jeton', async () => {
+    const empreinte = await empreinteJeton(JETON);
+    expect(empreinte).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(empreinte).not.toBe(JETON);
+    expect(await empreinteJeton(JETON)).toBe(empreinte);
+    expect(await empreinteJeton('B'.repeat(43))).not.toBe(empreinte);
+  });
+
+  it('US-019 : le lien ouvre l’application d’où vient la demande, si elle est autorisée ; sinon la production', () => {
+    const preview = 'https://poule-position-git-us-x-fsmjlas-projects.vercel.app';
+    expect(lienReinitialisation(preview, MOTIFS, PRODUCTION, JETON)).toBe(`${preview}/reinitialisation#${JETON}`);
+    expect(lienReinitialisation('https://pirate.exemple.fr', MOTIFS, PRODUCTION, JETON)).toBe(
+      `${PRODUCTION}/reinitialisation#${JETON}`,
+    );
+    expect(lienReinitialisation(null, MOTIFS, `${PRODUCTION}/`, JETON)).toBe(`${PRODUCTION}/reinitialisation#${JETON}`);
   });
 });
