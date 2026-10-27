@@ -9,6 +9,7 @@ import {
   genererMotDePasseTemporaire,
   validerNouveauCompte,
   verifierChangementRole,
+  verifierRetrait,
   ALPHABET_MOT_DE_PASSE_TEMPORAIRE,
   LONGUEUR_MOT_DE_PASSE_TEMPORAIRE,
   LONGUEUR_MIN_MOT_DE_PASSE,
@@ -129,6 +130,25 @@ describe('US-007 : création et modification des comptes', () => {
       expect(verifierChangementRole(comptes, 'a2', 'organisateur')).toBeNull();
       const deuxAdmins = [...comptes, { id: 'a3', role: 'administrateur' as const, actif: true }];
       expect(verifierChangementRole(deuxAdmins, 'a1', 'organisateur')).toBeNull();
+    });
+  });
+
+  describe('US-008 CA-4 : il doit rester au moins un administrateur actif après une désactivation ou une suppression', () => {
+    const comptes = [
+      { id: 'a1', role: 'administrateur' as const, actif: true },
+      { id: 'a2', role: 'administrateur' as const, actif: false },
+      { id: 'o1', role: 'organisateur' as const, actif: true },
+    ];
+
+    it('refuse de retirer le dernier administrateur actif', () => {
+      expect(verifierRetrait(comptes, 'a1')).toBe('DERNIER_ADMINISTRATEUR');
+    });
+
+    it('accepte de retirer un organisateur, un administrateur désactivé, ou un administrateur parmi d’autres', () => {
+      expect(verifierRetrait(comptes, 'o1')).toBeNull();
+      expect(verifierRetrait(comptes, 'a2')).toBeNull();
+      const deuxAdmins = [...comptes, { id: 'a3', role: 'administrateur' as const, actif: true }];
+      expect(verifierRetrait(deuxAdmins, 'a1')).toBeNull();
     });
   });
 });

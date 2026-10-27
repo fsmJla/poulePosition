@@ -1,4 +1,4 @@
-// Gestion des comptes par les administrateurs (US-007, US-009, docs/protocole.md §9) : demandes, réponses et préparation
+// Gestion des comptes par les administrateurs (US-007 à US-009, docs/protocole.md §9) : demandes, réponses et préparation
 // d'un compte avec mot de passe temporaire (tiré et dérivé dans le navigateur : le serveur n'en voit que la clé).
 import {
   genererMotDePasseTemporaire,
@@ -33,8 +33,8 @@ export interface DemandeCreationCompte {
   cle: string;
 }
 
-/** Corps de `PATCH /comptes/<id>`. */
-export type DemandeModificationCompte = { nom?: string; role?: Role };
+/** Corps de `PATCH /comptes/<id>` : nom et rôle (US-007), état actif (US-008). */
+export type DemandeModificationCompte = { nom?: string; role?: Role; actif?: boolean };
 
 /** Octets aléatoires pour le mot de passe temporaire (assez pour le tirage par rejet). */
 const OCTETS_ALEATOIRES = 64;
@@ -112,13 +112,18 @@ export function analyserDemandeModificationCompte(
 ): { ok: true; demande: DemandeModificationCompte } | { ok: false } {
   if (!estObjet(brut)) return { ok: false };
   const champs = Object.keys(brut);
-  if (champs.length === 0 || champs.some((champ) => champ !== 'nom' && champ !== 'role')) return { ok: false };
-  const { nom, role } = brut;
+  if (champs.length === 0 || champs.some((champ) => !['nom', 'role', 'actif'].includes(champ))) return { ok: false };
+  const { nom, role, actif } = brut;
   if (nom !== undefined && (typeof nom !== 'string' || validerNom(nom) !== null)) return { ok: false };
   if (role !== undefined && !(ROLES as readonly unknown[]).includes(role)) return { ok: false };
+  if (actif !== undefined && typeof actif !== 'boolean') return { ok: false };
   return {
     ok: true,
-    demande: { ...(typeof nom === 'string' && { nom: nom.trim() }), ...(role !== undefined && { role: role as Role }) },
+    demande: {
+      ...(typeof nom === 'string' && { nom: nom.trim() }),
+      ...(role !== undefined && { role: role as Role }),
+      ...(typeof actif === 'boolean' && { actif }),
+    },
   };
 }
 
@@ -147,6 +152,11 @@ export function analyserReponseComptes(
   const comptes = brut.comptes.map(analyserCompteResume);
   if (comptes.some((compte) => compte === null)) return { ok: false, erreur: 'REPONSE_INVALIDE' };
   return { ok: true, comptes: comptes as CompteResume[] };
+}
+
+/** US-008 CA-3 : réponse de `DELETE /comptes/<id>`. */
+export function analyserReponseSuppression(brut: unknown): { ok: true } | { ok: false; erreur: ErreurReponse } {
+  return estObjet(brut) && brut.ok === true ? { ok: true } : erreurDe(brut);
 }
 
 export function analyserReponseCompte(

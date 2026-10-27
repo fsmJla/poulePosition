@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-007
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-008-desactiver-supprimer-compte` · [PR #23](https://github.com/fsmJla/poulePosition/pull/23)
 
 ## Récit
 
@@ -66,8 +66,52 @@ son retour en ligne : limite acceptée par l'ADR-0006.
 
 ADR-0006, ADR-0014.
 
+## Réalisation
+
+- **Protocole** (`docs/protocole.md` §7 à §9) : `PATCH /comptes/<id>` accepte `{ actif }` ; `DELETE /comptes/<id>`
+  (`200 { ok: true }`) ; CORS étendu à `DELETE`. Nouveau code `401 COMPTE_RETIRE` : session bien signée dont le compte
+  est désactivé ou supprimé (`SESSION_INVALIDE` reste pour une session absente, expirée ou falsifiée).
+- **Domaine** : `verifierRetrait` (dernier administrateur actif), règle mise en commun avec `verifierChangementRole`.
+- **Serveur** : `decisionSession` renvoie `COMPTE_RETIRE` ; `Club.modifierCompte` gère `actif`, `Club.supprimerCompte`
+  efface la ligne du compte (e-mail, nom, sel, vérificateur), ce qui libère l'e-mail.
+- **Application** : `changerEtatCompte` et `supprimerCompte` dans le client de session ; sur `COMPTE_RETIRE`, la
+  session **et** le vérificateur local sont effacés, comme pour `COMPTE_MODIFIE` ; un administrateur qui se désactive
+  ou se supprime est déconnecté aussitôt. Écran « Comptes » : boutons « Désactiver » (confirmé dans la ligne),
+  « Réactiver », « Supprimer » (confirmé en recopiant l'e-mail, casse et espaces ignorés), grisés hors ligne.
+- **Tests** :
+
+  | CA | Tests |
+  |---|---|
+  | CA-1 | `serveur/src/comptes.test.ts` (connexion `403 COMPTE_DESACTIVE`, session `401 COMPTE_RETIRE`), `paquets/protocole/src/comptes.test.ts` (`{ actif }`), `app/src/lib/session.test.ts`, E2E `desactivation.spec.ts` (confirmation, état « Désactivé ») |
+  | CA-2 | Intégration (reconnexion avec le mot de passe), app, E2E (réactivation) |
+  | CA-3 | Intégration (compte absent de la liste, connexion et session refusées, e-mail réutilisable, 404 ensuite), protocole (réponse de suppression), app, E2E (bouton inactif tant que l'e-mail ne correspond pas, annulation) |
+  | CA-4 | `paquets/domaine/src/comptes.test.ts`, intégration (désactivation et suppression de soi-même refusées, 409), app, E2E (message affiché) |
+  | CA-5 | `serveur/src/logique.test.ts` et `session.test.ts` (`COMPTE_RETIRE`), `paquets/protocole/src/session.test.ts`, `app/src/lib/session.test.ts` (session et vérificateur local effacés au retour en ligne et sur une route réservée) |
+  | Hors ligne | App (rien n'est envoyé, `HORS_LIGNE`), E2E (boutons grisés avec « Nécessite une connexion internet ») |
+  | Cas limites | Intégration et app (un administrateur qui se désactive perd sa session), E2E (retour à la connexion), E2E (e-mail mal recopié : bouton inactif), intégration (e-mail réutilisable) |
+
+- **Test d'US-003 adapté** : CA-7 attend `COMPTE_RETIRE` (et non plus `SESSION_INVALIDE`) pour la session d'un compte
+  supprimé.
+
+### Hypothèses prises pendant l'implémentation
+
+- Validées par l'utilisateur le 2026-10-27 : code `401 COMPTE_RETIRE` distinct de `SESSION_INVALIDE`, pour que
+  l'appareil oublie aussi le vérificateur local (une session simplement expirée le garde, US-005) ; confirmation de la
+  suppression par l'e-mail faite par l'application seule ; un administrateur qui se désactive ou se supprime est
+  déconnecté aussitôt.
+- **CA-3, nom de l'auteur dans le journal** : le journal des compétitions n'existe pas encore. L'hypothèse (le nom est
+  recopié dans l'événement, pas une référence au compte) sera testée avec le premier événement qui porte un auteur.
+- La réactivation ne demande pas de confirmation. Une session restée hors ligne pendant la désactivation redevient
+  valable après la réactivation (elle n'a pas été refusée entre-temps).
+- Un appareil sans session ouverte ne revalide rien au retour en ligne : son vérificateur local reste jusqu'à la
+  prochaine connexion en ligne (relève d'US-005).
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
+| 2026-10-27 | En cours : plan validé (code `401 COMPTE_RETIRE` pour un compte désactivé ou supprimé, `PATCH { actif }` et `DELETE /comptes/<id>`, confirmation de la suppression par l’e-mail dans l’interface, test du nom de l’auteur dans le journal reporté au premier événement qui en porte un) |
+| 2026-10-27 | En revue : contrôles locaux verts (lint, typage, 316 tests unitaires et d’intégration, couverture 94 %, build, audit, 111 E2E) |
+| 2026-10-27 | Recette OK sur https://poule-position-git-us-us-008-desactiver-4fcefc-fsmjlas-projects.vercel.app (déployée en preview et vérifiée, Worker de preview déployé depuis la branche) : compte jetable `recette-us008@poule-position.test` connecté sur un second appareil ; désactivation confirmée, état « Désactivé », connexion refusée avec « Ce compte est désactivé : contactez un administrateur » (CA-1) ; au rechargement du second appareil, retour à la connexion avec session et vérificateur local effacés (CA-5) ; réactivation et reconnexion (CA-2) ; désactivation et suppression du seul administrateur actif refusées avec « Il doit rester au moins un administrateur actif » (CA-4) ; suppression inactive tant que l'e-mail est mal recopié, compte disparu après rechargement, e-mail réutilisé pour un nouveau compte (CA-3) ; boutons grisés hors ligne avec « Nécessite une connexion internet ». Comptes de recette supprimés à la fin. |
+| 2026-10-27 | **Terminée**, mergée dans `dev` (PR #23). |

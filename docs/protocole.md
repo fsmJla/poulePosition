@@ -39,9 +39,10 @@
 | `GET /session` | Vérifie et prolonge une session (§7) |
 | `POST /compte/mot-de-passe` | Changement de mot de passe (§8) |
 | `GET /comptes`, `POST /comptes` | Lister et créer les comptes du club (§9) |
-| `PATCH /comptes/<id>` | Modifier le nom ou le rôle d'un compte (§9) |
+| `PATCH /comptes/<id>` | Modifier le nom, le rôle ou l'état (actif ou désactivé) d'un compte (§9) |
+| `DELETE /comptes/<id>` | Supprimer définitivement un compte (§9, US-008) |
 | `POST /comptes/<id>/mot-de-passe` | Réinitialiser le mot de passe d'un compte (§9, US-009) |
-| `OPTIONS` sur ces routes | Requête CORS préalable (§7) ; méthodes `GET, POST, PATCH` |
+| `OPTIONS` sur ces routes | Requête CORS préalable (§7) ; méthodes `GET, POST, PATCH, DELETE` |
 | WebSocket `/competitions/<competitionId>/connexion` | Connexion à une compétition (§3) |
 | Tout autre chemin | `404` |
 
@@ -187,8 +188,9 @@ forme). C'est le modèle de toute route réservée : sans session valide, la ré
 |---|---|---|
 | `400` | `DEMANDE_INVALIDE` | Corps absent, mal formé, champ manquant ou en trop |
 | `401` | `IDENTIFIANTS_INVALIDES` | E-mail inconnu ou mot de passe faux : même réponse dans les deux cas |
-| `401` | `SESSION_INVALIDE` | Session absente, expirée, falsifiée, ou compte désactivé ou supprimé depuis |
+| `401` | `SESSION_INVALIDE` | Session absente, expirée ou falsifiée |
 | `401` | `COMPTE_MODIFIE` | Session valide, mais le mot de passe a changé depuis (§8) |
+| `401` | `COMPTE_RETIRE` | Session valide, mais le compte a été désactivé ou supprimé depuis (US-008) |
 | `403` | `COMPTE_DESACTIVE` | Bons identifiants, mais compte désactivé (US-008) |
 | `405` | — | Méthode non prévue |
 | `503` | `SERVEUR_NON_CONFIGURE` | `POIVRE` ou `SECRET_SESSION` absent sur le serveur |
@@ -212,24 +214,27 @@ vérificateur, augmente la **version du mot de passe** du compte et remet `tempo
 
 **Version du mot de passe** : un entier par compte (0 à la création), recopié dans le jeton (`v`, 0 si absent).
 Une session dont la version est dépassée reçoit `401 COMPTE_MODIFIE` : l'application efface alors la session **et**
-le vérificateur local de ce compte (appareil connu), puis revient à l'écran de connexion.
+le vérificateur local de ce compte (appareil connu), puis revient à l'écran de connexion. Elle fait de même pour
+`401 COMPTE_RETIRE` (compte désactivé ou supprimé, US-008 CA-5). Une session simplement expirée
+(`SESSION_INVALIDE`) garde le vérificateur local : la reconnexion hors ligne reste possible (US-005).
 
 | Statut | Code | Cas |
 |---|---|---|
 | `200` | — | Mot de passe changé, nouvelle session |
 | `400` | `DEMANDE_INVALIDE` | Corps mal formé |
-| `401` | `SESSION_INVALIDE` / `COMPTE_MODIFIE` | Comme `GET /session` |
+| `401` | `SESSION_INVALIDE` / `COMPTE_MODIFIE` / `COMPTE_RETIRE` | Comme `GET /session` |
 | `403` | `MOT_DE_PASSE_INCORRECT` | `cleActuelle` fausse ; la session reste valable (pas de `401`, qui déconnecterait) |
 | `503` | `SERVEUR_NON_CONFIGURE` | Secrets absents |
 
 Les règles du nouveau mot de passe (10 caractères au moins, différent de l'actuel, confirmation) sont vérifiées
 par l'application, qui seule connaît les mots de passe en clair.
 
-## 9. Gestion des comptes (US-007)
+## 9. Gestion des comptes (US-007, US-008, US-009)
 
 Routes réservées aux **administrateurs** : session valide (comme `GET /session`, §7), compte de rôle
 `administrateur` **relu en base** à chaque appel (un administrateur rétrogradé perd l'accès aussitôt), et mot de
-passe non temporaire. Sinon : `401` (session) ou `403 ACCES_REFUSE`. Même CORS qu'au §7, méthodes `GET, POST, PATCH`.
+passe non temporaire. Sinon : `401` (session) ou `403 ACCES_REFUSE`. Même CORS qu'au §7, méthodes
+`GET, POST, PATCH, DELETE`.
 
 **Compte décrit** (`CompteResume`) :
 
@@ -244,7 +249,8 @@ passe non temporaire. Sinon : `401` (session) ou `403 ACCES_REFUSE`. Même CORS 
 |---|---|---|
 | `GET /comptes` | — | `200 { "ok": true, "comptes": [CompteResume…] }`, triés par nom |
 | `POST /comptes` | exactement `{ email, nom, role, sel, cle }` | `201 { "ok": true, "compte": CompteResume }` |
-| `PATCH /comptes/<id>` | `{ nom?, role? }`, au moins un des deux, rien d'autre | `200 { "ok": true, "compte": CompteResume }` |
+| `PATCH /comptes/<id>` | `{ nom?, role?, actif? }`, au moins un, rien d'autre | `200 { "ok": true, "compte": CompteResume }` |
+| `DELETE /comptes/<id>` | — | `200 { "ok": true }` |
 | `POST /comptes/<id>/mot-de-passe` | exactement `{ sel, cle }` | `200 { "ok": true, "compte": CompteResume }` |
 
 **Création** : le navigateur de l'administrateur tire un **mot de passe temporaire** de 12 caractères (aléatoire
@@ -256,6 +262,14 @@ de passe (§8). L'e-mail est normalisé ; il ne se modifie pas.
 **Modification** : le nom et le rôle prennent effet sur les appareils de la personne à leur prochaine revalidation
 (`GET /session` renvoie le compte à jour et un jeton portant le nouveau rôle).
 
+**Désactivation et réactivation** (US-008) : `actif: false` refuse toute connexion (`403 COMPTE_DESACTIVE`, §7)
+et fait recevoir `401 COMPTE_RETIRE` à toutes les sessions de la personne. `actif: true` lui rend l'accès avec son
+mot de passe ; les sessions qui n'ont pas été refusées entre-temps redeviennent valables.
+
+**Suppression** (US-008) : le compte est effacé du serveur (e-mail, nom, sel, vérificateur) ; ses sessions reçoivent
+`401 COMPTE_RETIRE` et son e-mail peut servir à un nouveau compte. La confirmation par la saisie de l'e-mail est
+faite par l'application. Le journal des compétitions garde le nom de l'auteur recopié dans ses événements.
+
 **Réinitialisation** (US-009) : comme à la création, le navigateur de l'administrateur tire un nouveau mot de passe
 temporaire et n'envoie que `sel` et `cle`. Le serveur remplace le sel et le vérificateur, repasse le compte en
 **temporaire** et augmente la **version du mot de passe** (§8) : l'ancien mot de passe est refusé, et toutes les
@@ -265,9 +279,9 @@ lui-même.
 | Statut | Code | Cas |
 |---|---|---|
 | `400` | `DEMANDE_INVALIDE` | Corps mal formé, champ en trop ou invalide |
-| `401` | `SESSION_INVALIDE` / `COMPTE_MODIFIE` | Comme au §7 |
+| `401` | `SESSION_INVALIDE` / `COMPTE_MODIFIE` / `COMPTE_RETIRE` | Comme au §7 |
 | `403` | `ACCES_REFUSE` | Organisateur, ou session à mot de passe temporaire |
-| `404` | `COMPTE_INCONNU` | `PATCH` ou réinitialisation sur un identifiant inconnu |
+| `404` | `COMPTE_INCONNU` | `PATCH`, `DELETE` ou réinitialisation sur un identifiant inconnu |
 | `409` | `EMAIL_DEJA_UTILISE` | Un compte utilise déjà cet e-mail (casse ignorée) |
-| `409` | `DERNIER_ADMINISTRATEUR` | Le changement laisserait le club sans administrateur actif |
+| `409` | `DERNIER_ADMINISTRATEUR` | Le changement de rôle, la désactivation ou la suppression laisserait le club sans administrateur actif |
 | `503` | `SERVEUR_NON_CONFIGURE` | Secrets absents |

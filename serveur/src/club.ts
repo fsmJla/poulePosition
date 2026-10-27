@@ -2,7 +2,7 @@
 // et des organisateurs (ADR-0006), en SQLite. Les écritures d'un même objet sont sérialisées : deux créations
 // simultanées du premier administrateur, ou d'un même e-mail, ne peuvent pas aboutir toutes les deux.
 import { DurableObject } from 'cloudflare:workers';
-import { verifierChangementRole, type Role } from '@poule-position/domaine';
+import { verifierChangementRole, verifierRetrait, type Role } from '@poule-position/domaine';
 import type { Env } from './index';
 
 export interface NouveauCompte {
@@ -107,20 +107,41 @@ export class Club extends DurableObject<Env> {
       .map(versCompte);
   }
 
-  /** US-007 CA-4 / CA-5 : modifie le nom ou le rôle ; il doit rester au moins un administrateur actif. */
-  async modifierCompte(id: string, modification: { nom?: string; role?: Role }): Promise<ResultatCompte> {
+  /**
+   * US-007 CA-4 / CA-5, US-008 CA-1 / CA-2 / CA-4 : modifie le nom, le rôle ou l'état actif ; il doit rester au moins
+   * un administrateur actif.
+   */
+  async modifierCompte(
+    id: string,
+    modification: { nom?: string; role?: Role; actif?: boolean },
+  ): Promise<ResultatCompte> {
     const compte = this.lireCompte('id', id);
     if (!compte) return { ok: false, erreur: 'COMPTE_INCONNU' };
-    if (modification.role && verifierChangementRole(await this.listerComptes(), id, modification.role)) {
+    const comptes = await this.listerComptes();
+    if (
+      (modification.role && verifierChangementRole(comptes, id, modification.role)) ||
+      (modification.actif === false && verifierRetrait(comptes, id))
+    ) {
       return { ok: false, erreur: 'DERNIER_ADMINISTRATEUR' };
     }
     this.ctx.storage.sql.exec(
-      'UPDATE comptes SET nom = ?, role = ? WHERE id = ?',
+      'UPDATE comptes SET nom = ?, role = ?, actif = ? WHERE id = ?',
       modification.nom ?? compte.nom,
       modification.role ?? compte.role,
+      (modification.actif ?? compte.actif) ? 1 : 0,
       id,
     );
     return { ok: true, compte: this.lireCompte('id', id) as CompteStocke };
+  }
+
+  /** US-008 CA-3 / CA-4 : efface le compte et ses données ; il doit rester au moins un administrateur actif. */
+  async supprimerCompte(
+    id: string,
+  ): Promise<{ ok: true } | { ok: false; erreur: 'COMPTE_INCONNU' | 'DERNIER_ADMINISTRATEUR' }> {
+    if (!this.lireCompte('id', id)) return { ok: false, erreur: 'COMPTE_INCONNU' };
+    if (verifierRetrait(await this.listerComptes(), id)) return { ok: false, erreur: 'DERNIER_ADMINISTRATEUR' };
+    this.ctx.storage.sql.exec('DELETE FROM comptes WHERE id = ?', id);
+    return { ok: true };
   }
 
   /** US-007 CA-1 : date de la dernière connexion par mot de passe. */

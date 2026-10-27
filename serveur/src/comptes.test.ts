@@ -64,6 +64,36 @@ async function activer(email: string, temporaire: string, definitif: string): Pr
   return (await reponse.json()) as Session;
 }
 
+/**
+ * Club neuf, avec un seul administrateur : un autre Worker remplace le principal le temps de `test`, qui reçoit la
+ * session de cet administrateur.
+ */
+async function avecClubNeuf(test: (jeton: string) => Promise<void>): Promise<void> {
+  const seul = await unstable_startWorker({
+    config: CONFIG,
+    bindings: {
+      CLUB_ID: { type: 'plain_text', value: `test-${crypto.randomUUID()}` },
+      POIVRE: { type: 'secret_text', value: 'poivre-de-test' },
+      SECRET_INSTALLATION: { type: 'secret_text', value: SECRET_INSTALLATION },
+      SECRET_SESSION: { type: 'secret_text', value: 'secret-de-session-de-test' },
+    },
+    dev: { server: { port: 0 }, inspector: false, persist: false },
+  });
+  const principal = worker;
+  try {
+    worker = seul;
+    await seul.fetch('http://localhost/installation/administrateur', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SECRET_INSTALLATION}` },
+      body: JSON.stringify(await preparerDemandeInstallation(ADMIN)),
+    });
+    await test((await seConnecter(ADMIN.email, ADMIN.motDePasse)).jeton);
+  } finally {
+    worker = principal;
+    await seul.dispose();
+  }
+}
+
 beforeAll(async () => {
   worker = await unstable_startWorker({
     config: CONFIG,
@@ -174,35 +204,13 @@ describe('gestion des comptes', () => {
   });
 
   it('US-007 CA-5 : le dernier administrateur actif ne peut pas devenir organisateur, y compris lui-même', async () => {
-    // Club neuf, avec un seul administrateur : on repart d'un autre Worker.
-    const seul = await unstable_startWorker({
-      config: CONFIG,
-      bindings: {
-        CLUB_ID: { type: 'plain_text', value: `test-${crypto.randomUUID()}` },
-        POIVRE: { type: 'secret_text', value: 'poivre-de-test' },
-        SECRET_INSTALLATION: { type: 'secret_text', value: SECRET_INSTALLATION },
-        SECRET_SESSION: { type: 'secret_text', value: 'secret-de-session-de-test' },
-      },
-      dev: { server: { port: 0 }, inspector: false, persist: false },
-    });
-    try {
-      const principal = worker;
-      worker = seul;
-      await seul.fetch('http://localhost/installation/administrateur', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SECRET_INSTALLATION}` },
-        body: JSON.stringify(await preparerDemandeInstallation(ADMIN)),
-      });
-      const jeton = (await seConnecter(ADMIN.email, ADMIN.motDePasse)).jeton;
+    await avecClubNeuf(async (jeton) => {
       const [admin] = await lister(jeton);
       const reponse = await appeler('PATCH', `/comptes/${admin!.id}`, jeton, { role: 'organisateur' });
       expect(reponse.status).toBe(409);
       expect(await reponse.json()).toEqual({ ok: false, erreur: 'DERNIER_ADMINISTRATEUR' });
       expect((await lister(jeton))[0]!.role).toBe('administrateur');
-      worker = principal;
-    } finally {
-      await seul.dispose();
-    }
+    });
   });
 
   it('US-007 : CORS de /comptes et /comptes/<id> (méthode PATCH comprise)', async () => {
@@ -279,5 +287,91 @@ describe('réinitialisation d’un mot de passe (US-009)', () => {
     expect((await appeler('POST', `/comptes/${id}/mot-de-passe`, jetonAdmin, { sel: 'x' })).status).toBe(400);
     const organisateur = await seConnecter('simple@club.fr', 'mot-de-passe-simple');
     expect((await reinitialiser(id, organisateur.jeton)).reponse.status).toBe(403);
+  });
+});
+
+describe('désactivation, réactivation et suppression (US-008)', () => {
+  /** Crée un compte au mot de passe définitif ; renvoie son identifiant et sa session. */
+  async function compteActif(email: string, role: 'administrateur' | 'organisateur', motDePasse: string) {
+    const { motDePasseTemporaire } = await creer(email, email.split('@')[0]!, role);
+    const session = await activer(email, motDePasseTemporaire, motDePasse);
+    return { id: (await lister()).find((c) => c.email === email)!.id, session };
+  }
+
+  async function essayerConnexion(email: string, motDePasse: string) {
+    const { sel } = (await (await appeler('POST', '/session/sel', null, { email })).json()) as { sel: string };
+    return appeler('POST', '/session', null, { email, cle: await deriverCle(motDePasse, sel) });
+  }
+
+  it('US-008 CA-1 : un compte désactivé ne se connecte plus, et ses sessions reçoivent COMPTE_RETIRE', async () => {
+    const { id, session } = await compteActif('desactive@club.fr', 'organisateur', 'mot-de-passe-desactive');
+    const reponse = await appeler('PATCH', `/comptes/${id}`, jetonAdmin, { actif: false });
+    expect(reponse.status).toBe(200);
+    expect(((await reponse.json()) as { compte: CompteResume }).compte.actif).toBe(false);
+
+    const connexion = await essayerConnexion('desactive@club.fr', 'mot-de-passe-desactive');
+    expect(connexion.status).toBe(403);
+    expect(await connexion.json()).toEqual({ ok: false, erreur: 'COMPTE_DESACTIVE' });
+    const revalidation = await appeler('GET', '/session', session.jeton);
+    expect(revalidation.status).toBe(401);
+    expect(await revalidation.json()).toEqual({ ok: false, erreur: 'COMPTE_RETIRE' });
+  });
+
+  it('US-008 CA-2 : un compte réactivé se connecte de nouveau avec son mot de passe', async () => {
+    const id = (await lister()).find((c) => c.email === 'desactive@club.fr')!.id;
+    const reponse = await appeler('PATCH', `/comptes/${id}`, jetonAdmin, { actif: true });
+    expect(((await reponse.json()) as { compte: CompteResume }).compte.actif).toBe(true);
+    expect((await essayerConnexion('desactive@club.fr', 'mot-de-passe-desactive')).status).toBe(200);
+  });
+
+  it('US-008 CA-3 : un compte supprimé est effacé, ses sessions refusées, et son e-mail réutilisable', async () => {
+    const { id, session } = await compteActif('supprime@club.fr', 'organisateur', 'mot-de-passe-supprime');
+    const reponse = await appeler('DELETE', `/comptes/${id}`, jetonAdmin);
+    expect(reponse.status).toBe(200);
+    expect(await reponse.json()).toEqual({ ok: true });
+
+    expect((await lister()).some((c) => c.email === 'supprime@club.fr')).toBe(false);
+    expect((await essayerConnexion('supprime@club.fr', 'mot-de-passe-supprime')).status).toBe(401);
+    const revalidation = await appeler('GET', '/session', session.jeton);
+    expect(await revalidation.json()).toEqual({ ok: false, erreur: 'COMPTE_RETIRE' });
+    expect((await creer('supprime@club.fr', 'Nouveau', 'organisateur')).reponse.status).toBe(201);
+
+    const encore = await appeler('DELETE', `/comptes/${id}`, jetonAdmin);
+    expect(encore.status).toBe(404);
+    expect(await encore.json()).toEqual({ ok: false, erreur: 'COMPTE_INCONNU' });
+  });
+
+  it('US-008 CA-4 : le dernier administrateur actif ne peut être ni désactivé ni supprimé, y compris par lui-même', async () => {
+    await avecClubNeuf(async (jeton) => {
+      const [admin] = await lister(jeton);
+      for (const reponse of [
+        await appeler('PATCH', `/comptes/${admin!.id}`, jeton, { actif: false }),
+        await appeler('DELETE', `/comptes/${admin!.id}`, jeton),
+      ]) {
+        expect(reponse.status).toBe(409);
+        expect(await reponse.json()).toEqual({ ok: false, erreur: 'DERNIER_ADMINISTRATEUR' });
+      }
+      expect((await lister(jeton))[0]!.actif).toBe(true);
+    });
+  });
+
+  it('US-008 : un administrateur qui se désactive, alors qu’il en reste un autre, perd sa session', async () => {
+    const { id, session } = await compteActif('partant@club.fr', 'administrateur', 'mot-de-passe-partant');
+    expect((await appeler('PATCH', `/comptes/${id}`, session.jeton, { actif: false })).status).toBe(200);
+    const suite = await appeler('GET', '/session', session.jeton);
+    expect(await suite.json()).toEqual({ ok: false, erreur: 'COMPTE_RETIRE' });
+  });
+
+  it('US-008 : refuse un organisateur (403) et un état invalide (400) ; CORS de DELETE', async () => {
+    const id = (await lister())[0]!.id;
+    const organisateur = await seConnecter('simple@club.fr', 'mot-de-passe-simple');
+    expect((await appeler('DELETE', `/comptes/${id}`, organisateur.jeton)).status).toBe(403);
+    expect((await appeler('PATCH', `/comptes/${id}`, organisateur.jeton, { actif: false })).status).toBe(403);
+    expect((await appeler('PATCH', `/comptes/${id}`, jetonAdmin, { actif: 'non' })).status).toBe(400);
+    const prealable = await worker.fetch('http://localhost/comptes/abc', {
+      method: 'OPTIONS',
+      headers: { Origin: ORIGINE },
+    });
+    expect(prealable.headers.get('Access-Control-Allow-Methods')).toContain('DELETE');
   });
 });

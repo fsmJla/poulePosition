@@ -159,14 +159,15 @@ export async function deciderConnexion(
 }
 
 /**
- * Validité d'une session bien signée, d'après son compte : il doit exister et être actif (US-003 CA-7), et son mot de
- * passe ne doit pas avoir changé depuis l'émission de la session (US-010 CA-5).
+ * Validité d'une session bien signée, d'après son compte : il doit exister et être actif (US-003 CA-7, sinon
+ * COMPTE_RETIRE, US-008 CA-5), et son mot de passe ne doit pas avoir changé depuis l'émission de la session
+ * (US-010 CA-5).
  */
 export function decisionSession(
   charge: Pick<ChargeSession, 'v'>,
   compte: { actif: boolean; versionMdp: number } | null,
-): 'OK' | 'SESSION_INVALIDE' | 'COMPTE_MODIFIE' {
-  if (compte?.actif !== true) return 'SESSION_INVALIDE';
+): 'OK' | 'COMPTE_RETIRE' | 'COMPTE_MODIFIE' {
+  if (compte?.actif !== true) return 'COMPTE_RETIRE';
   return charge.v === compte.versionMdp ? 'OK' : 'COMPTE_MODIFIE';
 }
 

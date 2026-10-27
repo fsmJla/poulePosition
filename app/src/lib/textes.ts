@@ -114,6 +114,15 @@ export const textes = {
     modifier: (nom: string) => `Modifier ${nom}`,
     reinitialiser: (nom: string) => `Réinitialiser le mot de passe de ${nom}`,
     confirmerReinitialisation: 'Confirmer la réinitialisation',
+    desactiver: (nom: string) => `Désactiver ${nom}`,
+    reactiver: (nom: string) => `Réactiver ${nom}`,
+    confirmerDesactivation: 'Confirmer la désactivation',
+    supprimer: (nom: string) => `Supprimer ${nom}`,
+    suppression: {
+      consigne: (email: string) => `Pour supprimer définitivement ce compte, saisissez son e-mail : ${email}`,
+      champ: 'E-mail du compte à supprimer',
+      confirmer: 'Supprimer définitivement',
+    },
     enregistrer: 'Enregistrer',
     annuler: 'Annuler',
     champs: {

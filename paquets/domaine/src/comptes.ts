@@ -96,14 +96,32 @@ export function validerNouveauCompte(saisie: { email: string; nom: string; role:
   };
 }
 
+type CompteAdministre = { id: string; role: Role; actif: boolean };
+
+/** Refus si, une fois le compte `id` remplacé par `apres` (null : retiré), le club n'a plus d'administrateur actif. */
+function resteUnAdministrateur(
+  comptes: readonly CompteAdministre[],
+  id: string,
+  apres: Omit<CompteAdministre, 'id'> | null,
+): 'DERNIER_ADMINISTRATEUR' | null {
+  const administrateursRestants = comptes.filter((compte) => {
+    const etat = compte.id === id ? apres : compte;
+    return etat?.actif === true && etat.role === 'administrateur';
+  });
+  return administrateursRestants.length === 0 ? 'DERNIER_ADMINISTRATEUR' : null;
+}
+
 /** US-007 CA-5 : un changement de rôle qui laisserait le club sans administrateur actif est refusé. */
 export function verifierChangementRole(
-  comptes: readonly { id: string; role: Role; actif: boolean }[],
+  comptes: readonly CompteAdministre[],
   id: string,
   nouveauRole: Role,
 ): 'DERNIER_ADMINISTRATEUR' | null {
-  const administrateursRestants = comptes.filter(
-    (compte) => compte.actif && (compte.id === id ? nouveauRole : compte.role) === 'administrateur',
-  );
-  return administrateursRestants.length === 0 ? 'DERNIER_ADMINISTRATEUR' : null;
+  const compte = comptes.find((c) => c.id === id);
+  return resteUnAdministrateur(comptes, id, compte ? { ...compte, role: nouveauRole } : null);
+}
+
+/** US-008 CA-4 : une désactivation ou une suppression qui laisserait le club sans administrateur actif est refusée. */
+export function verifierRetrait(comptes: readonly CompteAdministre[], id: string): 'DERNIER_ADMINISTRATEUR' | null {
+  return resteUnAdministrateur(comptes, id, null);
 }

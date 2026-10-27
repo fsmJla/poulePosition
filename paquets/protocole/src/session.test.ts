@@ -136,3 +136,13 @@ describe('changement de mot de passe (US-010)', () => {
     expect(CODES_ERREUR_SESSION).toContain('COMPTE_MODIFIE');
   });
 });
+
+describe('compte retiré (US-008)', () => {
+  it('US-008 CA-5 : connaît le code COMPTE_RETIRE et le transmet', () => {
+    expect(CODES_ERREUR_SESSION).toContain('COMPTE_RETIRE');
+    expect(analyserReponseSession({ ok: false, erreur: 'COMPTE_RETIRE' })).toEqual({
+      ok: false,
+      erreur: 'COMPTE_RETIRE',
+    });
+  });
+});

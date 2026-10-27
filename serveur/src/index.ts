@@ -126,7 +126,7 @@ const METHODES_SESSION = {
   session: ['GET', 'POST'],
   'mot-de-passe': ['POST'],
   comptes: ['GET', 'POST'],
-  compte: ['PATCH'],
+  compte: ['PATCH', 'DELETE'],
   reinitialisation: ['POST'],
 } as const;
 
@@ -142,7 +142,7 @@ async function routeSession(route: RouteSession, requete: Request, env: Env): Pr
       status: 204,
       headers: {
         ...cors,
-        'Access-Control-Allow-Methods': 'GET, POST, PATCH',
+        'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type',
         'Access-Control-Max-Age': '86400',
       },
@@ -217,7 +217,8 @@ async function traiterSession(route: RouteSession, requete: Request, env: Env): 
 
 /**
  * Compte d'une session valide (modèle des routes réservées, docs/protocole.md §7) : signature, expiration, club,
- * compte existant et actif (US-003 CA-7), mot de passe inchangé depuis la session (US-010 CA-5). Sinon, le refus 401.
+ * compte existant et actif (US-003 CA-7, sinon COMPTE_RETIRE, US-008), mot de passe inchangé depuis la session
+ * (US-010 CA-5). Sinon, le refus 401.
  */
 async function compteDeLaSession(
   requete: Request,
@@ -234,7 +235,7 @@ async function compteDeLaSession(
   return { ok: true, compte };
 }
 
-/** US-007, US-009 : gestion des comptes, réservée aux administrateurs au mot de passe définitif (protocole §9). */
+/** US-007 à US-009 : gestion des comptes, réservée aux administrateurs au mot de passe définitif (protocole §9). */
 async function gererComptes(
   route: Extract<RouteSession, { route: 'comptes' | 'compte' | 'reinitialisation' }>,
   requete: Request,
@@ -272,6 +273,13 @@ async function gererComptes(
     const compte = await club.reinitialiserMotDePasse(route.id, sel, await verificateurServeur(cle, poivre));
     if (!compte) return refuserSession(404, 'COMPTE_INCONNU');
     return Response.json({ ok: true, compte: resume(compte) });
+  }
+
+  if (requete.method === 'DELETE') {
+    // US-008 CA-3 : le compte et ses données sont effacés ; ses sessions reçoivent ensuite COMPTE_RETIRE.
+    const resultat = await club.supprimerCompte(route.id);
+    if (!resultat.ok) return refuserSession(resultat.erreur === 'COMPTE_INCONNU' ? 404 : 409, resultat.erreur);
+    return Response.json({ ok: true });
   }
 
   const analyse = analyserDemandeModificationCompte(await lireJson(requete));
