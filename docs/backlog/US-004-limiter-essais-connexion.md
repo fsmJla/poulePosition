@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-003
-- **Branche / PR :** `us/US-004-limiter-essais-connexion`
+- **Branche / PR :** `us/US-004-limiter-essais-connexion` · [PR #26](https://github.com/fsmJla/poulePosition/pull/26)
 
 ## Récit
 
