@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { essaisLocauxVides, DUREE_SESSION } from '@poule-position/domaine';
+import { essaisVides, DUREE_SESSION } from '@poule-position/domaine';
 import { deriverCle, verificateurLocal, type Session } from '@poule-position/protocole';
 import { creerClientSession, urlHttp, DELAI_REPONSE, type MemoireOnglet, type OptionsClientSession } from './session';
 import type { AppareilConnu, SessionAppareil, Stockage } from './stockage';
@@ -23,7 +23,7 @@ const sessionStockee: Session = { jeton: 'ancien.jeton.signe', expireLe: MAINTEN
 
 /** Stockage en mémoire, à la place d'IndexedDB. */
 function stockageMemoire(session: SessionAppareil | null = null) {
-  const etat = { session, appareils: new Map<string, AppareilConnu>(), essais: essaisLocauxVides() };
+  const etat = { session, appareils: new Map<string, AppareilConnu>(), essais: essaisVides() };
   const stockage: Stockage = {
     lireEssaisLocaux: async () => etat.essais,
     ecrireEssaisLocaux: async (essais) => {
@@ -133,6 +133,7 @@ describe('seConnecter', () => {
   it.each([
     ['US-003 CA-2', 401, 'IDENTIFIANTS_INVALIDES', 'IDENTIFIANTS_INVALIDES'],
     ['US-003 CA-3', 403, 'COMPTE_DESACTIVE', 'COMPTE_DESACTIVE'],
+    ['US-004 CA-1', 429, 'TROP_D_ESSAIS', 'TROP_D_ESSAIS'],
     ['serveur non configuré', 503, 'SERVEUR_NON_CONFIGURE', 'SERVEUR_NON_CONFIGURE'],
     ['réponse inattendue', 400, 'DEMANDE_INVALIDE', 'ERREUR_INATTENDUE'],
   ])('%s : un refus (%i %s) ne garde rien et renvoie %s', async (_cas, statut, code, attendu) => {
@@ -323,6 +324,14 @@ describe('changerMotDePasse (US-010)', () => {
     expect(await c.changerMotDePasse('faux', NOUVEAU)).toEqual({ ok: false, erreur: 'MOT_DE_PASSE_INCORRECT' });
     expect(etat.session).toEqual(sessionStockee);
     expect(etat.appareils.get(compte.email)?.verificateurLocal).toBe('ancien');
+  });
+
+  it('US-004 : un compte bloqué après trop d’essais reçoit TROP_D_ESSAIS, et reste connecté', async () => {
+    const { etat, client: c } = await connecte({
+      'POST /compte/mot-de-passe': { statut: 429, corps: { ok: false, erreur: 'TROP_D_ESSAIS' } },
+    });
+    expect(await c.changerMotDePasse('faux', NOUVEAU)).toEqual({ ok: false, erreur: 'TROP_D_ESSAIS' });
+    expect(etat.session).toEqual(sessionStockee);
   });
 
   it('US-010 : un réseau perdu pendant l’envoi ne touche pas au vérificateur local', async () => {
@@ -683,7 +692,7 @@ describe('reconnexion hors ligne (US-005)', () => {
     expect(etat.session).toBeNull();
     maintenant += 15 * MINUTE;
     expect(await c.seConnecter(compte.email, MOT_DE_PASSE)).toMatchObject({ ok: true });
-    expect(etat.essais).toEqual(essaisLocauxVides());
+    expect(etat.essais).toEqual(essaisVides());
   });
 
   it('US-005 CA-4 : un compte jamais venu ne compte pas comme un échec', async () => {

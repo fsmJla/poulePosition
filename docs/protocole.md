@@ -193,7 +193,19 @@ forme). C'est le modèle de toute route réservée : sans session valide, la ré
 | `401` | `COMPTE_RETIRE` | Session valide, mais le compte a été désactivé ou supprimé depuis (US-008) |
 | `403` | `COMPTE_DESACTIVE` | Bons identifiants, mais compte désactivé (US-008) |
 | `405` | — | Méthode non prévue |
+| `429` | `TROP_D_ESSAIS` | E-mail ou adresse IP bloqués après trop d'échecs, même avec le bon mot de passe (US-004) |
 | `503` | `SERVEUR_NON_CONFIGURE` | `POIVRE` ou `SECRET_SESSION` absent sur le serveur |
+
+**Limitation des essais** (US-004, ADR-0006) : sur `POST /session`, chaque `IDENTIFIANTS_INVALIDES` compte un
+échec pour l'**e-mail** essayé (DO `Club`, que le compte existe ou non) et pour l'**adresse IP**
+(`CF-Connecting-IP`, DO `Limiteur` nommé `connexion:<ip>`). Le serveur répond `429 TROP_D_ESSAIS` :
+
+- pour un e-mail : 5 échecs en 15 minutes le bloquent 15 minutes ;
+- pour une adresse : 20 échecs en 15 minutes, tous comptes confondus, la bloquent 15 minutes.
+
+Le 5e échec, ou le 20e, reçoit déjà `429`. Une connexion réussie remet à zéro le compteur de l'e-mail.
+`COMPTE_DESACTIVE` ne compte pas : les identifiants étaient bons. Les compteurs sont effacés dès qu'ils ne servent
+plus. Les durées sont mesurées par le serveur.
 
 L'application conserve la session dans IndexedDB (table `session`) et l'envoie dans l'en-tête `Authorization`
 (pas de cookie). La déconnexion efface la session de l'appareil, sans appel au serveur.
@@ -230,7 +242,10 @@ le vérificateur local de ce compte (appareil connu), puis revient à l'écran d
 | `400` | `DEMANDE_INVALIDE` | Corps mal formé |
 | `401` | `SESSION_INVALIDE` / `COMPTE_MODIFIE` / `COMPTE_RETIRE` | Comme `GET /session` |
 | `403` | `MOT_DE_PASSE_INCORRECT` | `cleActuelle` fausse ; la session reste valable (pas de `401`, qui déconnecterait) |
+| `429` | `TROP_D_ESSAIS` | Compte ou adresse bloqués (§7) ; la session reste valable |
 | `503` | `SERVEUR_NON_CONFIGURE` | Secrets absents |
+
+Une `cleActuelle` fausse compte comme un échec de connexion pour le compte et pour l'adresse (§7, US-004).
 
 Les règles du nouveau mot de passe (10 caractères au moins, différent de l'actuel, confirmation) sont vérifiées
 par l'application, qui seule connaît les mots de passe en clair.
@@ -280,7 +295,7 @@ faite par l'application. Le journal des compétitions garde le nom de l'auteur r
 temporaire et n'envoie que `sel` et `cle`. Le serveur remplace le sel et le vérificateur, repasse le compte en
 **temporaire** et augmente la **version du mot de passe** (§8) : l'ancien mot de passe est refusé, et toutes les
 sessions de la personne reçoivent `401 COMPTE_MODIFIE`, y compris celle de l'administrateur s'il se réinitialise
-lui-même.
+lui-même. La réinitialisation lève aussi le blocage du compte après trop d'essais (§7, US-009 CA-3).
 
 | Statut | Code | Cas |
 |---|---|---|

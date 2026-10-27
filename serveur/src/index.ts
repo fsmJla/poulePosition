@@ -15,6 +15,7 @@ import {
   type ReponseInstallation,
   type ReponseSession,
 } from '@poule-position/protocole';
+import { REGLE_ADRESSE } from '@poule-position/domaine';
 import type { Club, CompteStocke } from './club';
 import type { Limiteur } from './limiteur';
 import type { Route } from './logique';
@@ -31,6 +32,7 @@ import {
   signerSession,
   verificateurServeur,
   verifierSession,
+  REGLE_INSTALLATION,
 } from './logique';
 
 export { Club } from './club';
@@ -88,11 +90,11 @@ async function installer(requete: Request, env: Env): Promise<Response> {
   }
   if (!env.SECRET_INSTALLATION || !env.POIVRE) return refuser(503, 'INSTALLATION_NON_CONFIGUREE');
 
-  const limiteur = env.LIMITEUR.get(env.LIMITEUR.idFromName(requete.headers.get('CF-Connecting-IP') ?? 'inconnue'));
+  const limiteur = env.LIMITEUR.get(env.LIMITEUR.idFromName(adresseIp(requete)));
   if (await limiteur.estBloque()) return refuser(429, 'TROP_D_ESSAIS');
   const jeton = extraireJetonBearer(requete.headers.get('Authorization'));
   if (!jeton || !(await secretsEgaux(jeton, env.SECRET_INSTALLATION))) {
-    await limiteur.enregistrerEchec();
+    await limiteur.enregistrerEchec(REGLE_INSTALLATION);
     return refuser(403, 'SECRET_INVALIDE');
   }
 
@@ -184,9 +186,18 @@ async function traiterSession(route: RouteSession, requete: Request, env: Env): 
   if (route.route === 'session' && requete.method === 'POST') {
     const analyse = analyserDemandeConnexion(await lireJson(requete));
     if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
-    const compte = await club.compteParEmail(analyse.demande.email);
-    const decision = await deciderConnexion(compte, await verificateurServeur(analyse.demande.cle, poivre));
-    if (!decision.ok) return refuserSession(decision.erreur === 'COMPTE_DESACTIVE' ? 403 : 401, decision.erreur);
+    const { email, cle } = analyse.demande;
+    // US-004 : une adresse ou un e-mail bloqué est refusé avant toute vérification, même avec le bon mot de passe.
+    const adresse = limiteurConnexion(requete, env);
+    if ((await adresse.estBloque()) || (await club.compteBloque(email))) return refuserSession(429, 'TROP_D_ESSAIS');
+    const compte = await club.compteParEmail(email);
+    const decision = await deciderConnexion(compte, await verificateurServeur(cle, poivre));
+    if (!decision.ok) {
+      if (decision.erreur === 'COMPTE_DESACTIVE') return refuserSession(403, decision.erreur);
+      if (await noterEchecConnexion(email, adresse, club)) return refuserSession(429, 'TROP_D_ESSAIS');
+      return refuserSession(401, decision.erreur);
+    }
+    await club.effacerEssaisCompte(email);
     await club.noterConnexion((compte as CompteStocke).id, Date.now());
     return ouvrirSession(compte as CompteStocke, env.CLUB_ID, secret);
   }
@@ -200,12 +211,18 @@ async function traiterSession(route: RouteSession, requete: Request, env: Env): 
 
   if (route.route === 'mot-de-passe') {
     // US-010 : la clé actuelle est vérifiée comme à la connexion ; un échec ne ferme pas la session (403, pas 401).
+    // US-004 (US-010 CA-3) : il compte comme un échec de connexion, et un compte ou une adresse bloqués reçoivent 429.
     const analyse = analyserDemandeChangementMotDePasse(await lireJson(requete));
     if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
     const { cleActuelle, sel, cle } = analyse.demande;
+    const { email } = authentifie.compte;
+    const adresse = limiteurConnexion(requete, env);
+    if ((await adresse.estBloque()) || (await club.compteBloque(email))) return refuserSession(429, 'TROP_D_ESSAIS');
     if (!(await secretsEgaux(await verificateurServeur(cleActuelle, poivre), authentifie.compte.verificateur))) {
+      if (await noterEchecConnexion(email, adresse, club)) return refuserSession(429, 'TROP_D_ESSAIS');
       return refuserSession(403, 'MOT_DE_PASSE_INCORRECT');
     }
+    await club.effacerEssaisCompte(email);
     const modifie = await club.changerMotDePasse(authentifie.compte.id, sel, await verificateurServeur(cle, poivre));
     if (!modifie) return refuserSession(401, 'SESSION_INVALIDE');
     return ouvrirSession(modifie, env.CLUB_ID, secret);
@@ -213,6 +230,29 @@ async function traiterSession(route: RouteSession, requete: Request, env: Env): 
 
   // GET /session : la session est valide, on la prolonge (US-003 CA-4).
   return ouvrirSession(authentifie.compte, env.CLUB_ID, secret);
+}
+
+/** Adresse IP de la requête, telle que Cloudflare la transmet. */
+function adresseIp(requete: Request): string {
+  return requete.headers.get('CF-Connecting-IP') ?? 'inconnue';
+}
+
+/** US-004 CA-2 : compteur des connexions erronées de l'adresse, distinct de celui de l'installation. */
+function limiteurConnexion(requete: Request, env: Env): DurableObjectStub<Limiteur> {
+  return env.LIMITEUR.get(env.LIMITEUR.idFromName(`connexion:${adresseIp(requete)}`));
+}
+
+/** US-004 CA-1 / CA-2 : un échec compte pour l'e-mail et pour l'adresse ; vrai si l'un des deux est désormais bloqué. */
+async function noterEchecConnexion(
+  email: string,
+  adresse: DurableObjectStub<Limiteur>,
+  club: DurableObjectStub<Club>,
+): Promise<boolean> {
+  const [compteBloque, adresseBloquee] = await Promise.all([
+    club.noterEchecCompte(email),
+    adresse.enregistrerEchec(REGLE_ADRESSE),
+  ]);
+  return compteBloque || adresseBloquee;
 }
 
 /**

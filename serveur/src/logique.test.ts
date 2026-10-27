@@ -1,26 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { DUREE_SESSION } from '@poule-position/domaine';
+import { essaisVides, noterEchec, saisieBloquee, DUREE_SESSION } from '@poule-position/domaine';
 import { decoderBase64Url, encoderBase64Url, TAILLE_SEL } from '@poule-position/protocole';
 import {
   analyserChemin,
   autorisationAdministrateur,
-  creerCompteur,
   deciderConnexion,
   enTetesCors,
   fauxSel,
   decisionSession,
   signerSession,
   verifierSession,
-  enregistrerEchec,
   erreurMessageClient,
-  estBloque,
   extraireJetonBearer,
   origineAutorisee,
   secretsEgaux,
   verificateurServeur,
-  DUREE_BLOCAGE,
-  ESSAIS_MAX,
-  FENETRE_ESSAIS,
+  REGLE_INSTALLATION,
 } from './logique';
 
 describe('analyserChemin', () => {
@@ -117,23 +112,17 @@ describe('verificateurServeur', () => {
   });
 });
 
-describe('limite des essais (reprise du relais)', () => {
+describe('limite des secrets d’installation (reprise du relais)', () => {
   const T0 = 1_000_000;
 
   it('US-002 CA-4 : bloque après 5 échecs en 1 minute, pendant 1 minute', () => {
-    let compteur = creerCompteur();
-    for (let i = 0; i < ESSAIS_MAX - 1; i++) compteur = enregistrerEchec(compteur, T0 + i);
-    expect(estBloque(compteur, T0 + 10)).toBe(false);
-    compteur = enregistrerEchec(compteur, T0 + 10);
-    expect(estBloque(compteur, T0 + 11)).toBe(true);
-    expect(estBloque(compteur, T0 + 10 + DUREE_BLOCAGE)).toBe(false);
-  });
-
-  it('oublie les échecs sortis de la fenêtre', () => {
-    let compteur = creerCompteur();
-    for (let i = 0; i < ESSAIS_MAX - 1; i++) compteur = enregistrerEchec(compteur, T0);
-    compteur = enregistrerEchec(compteur, T0 + FENETRE_ESSAIS);
-    expect(estBloque(compteur, T0 + FENETRE_ESSAIS + 1)).toBe(false);
+    expect(REGLE_INSTALLATION).toEqual({ max: 5, fenetre: 60_000, duree: 60_000 });
+    let essais = essaisVides();
+    for (let i = 0; i < 4; i++) essais = noterEchec(essais, T0 + i, REGLE_INSTALLATION);
+    expect(saisieBloquee(essais, T0 + 10)).toBe(false);
+    essais = noterEchec(essais, T0 + 10, REGLE_INSTALLATION);
+    expect(saisieBloquee(essais, T0 + 11)).toBe(true);
+    expect(saisieBloquee(essais, T0 + 10 + 60_000)).toBe(false);
   });
 });
 

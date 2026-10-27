@@ -146,3 +146,13 @@ describe('compte retiré (US-008)', () => {
     });
   });
 });
+
+describe('limitation des essais (US-004)', () => {
+  it('US-004 CA-1 : connaît le code TROP_D_ESSAIS et le transmet', () => {
+    expect(CODES_ERREUR_SESSION).toContain('TROP_D_ESSAIS');
+    expect(analyserReponseSession({ ok: false, erreur: 'TROP_D_ESSAIS' })).toEqual({
+      ok: false,
+      erreur: 'TROP_D_ESSAIS',
+    });
+  });
+});

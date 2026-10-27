@@ -1,7 +1,7 @@
 // Logique pure du serveur : routes, origines autorisées, filtrage des messages clients, secrets, vérificateurs de
-// mots de passe, sessions (jetons signés, CORS) et limite des essais.
+// mots de passe, sessions (jetons signés, CORS) et règle de limite des secrets d'installation.
 // Aucune dépendance à l'environnement Cloudflare (testée sous Node). Protocole : docs/protocole.md.
-import { expirationSession, sessionExpiree, ROLES, type Role } from '@poule-position/domaine';
+import { expirationSession, sessionExpiree, ROLES, type RegleEssais, type Role } from '@poule-position/domaine';
 import {
   analyserEnveloppe,
   decoderBase64Url,
@@ -109,30 +109,11 @@ export async function verificateurServeur(cle: string, poivre: string): Promise<
   return encoderBase64Url(await hmac(poivre, cle));
 }
 
-/** Limite des essais (repris du relais) : ESSAIS_MAX échecs en FENETRE_ESSAIS bloquent pendant DUREE_BLOCAGE. */
-export const ESSAIS_MAX = 5;
-export const FENETRE_ESSAIS = 60_000;
-export const DUREE_BLOCAGE = 60_000;
-
-export interface Compteur {
-  echecs: number[];
-  bloqueJusqua: number;
-}
-
-export function creerCompteur(): Compteur {
-  return { echecs: [], bloqueJusqua: 0 };
-}
-
-export function estBloque(compteur: Compteur, maintenant: number): boolean {
-  return maintenant < compteur.bloqueJusqua;
-}
-
-/** Enregistre un échec ; le ESSAIS_MAX-ième dans la fenêtre déclenche le blocage. */
-export function enregistrerEchec(compteur: Compteur, maintenant: number): Compteur {
-  const echecs = [...compteur.echecs.filter((t) => maintenant - t < FENETRE_ESSAIS), maintenant];
-  if (echecs.length >= ESSAIS_MAX) return { echecs: [], bloqueJusqua: maintenant + DUREE_BLOCAGE };
-  return { echecs, bloqueJusqua: compteur.bloqueJusqua };
-}
+/**
+ * Limite des secrets d'installation faux (US-002 CA-4, reprise du relais) : 5 en 1 minute bloquent l'adresse 1 minute.
+ * Le comptage est celui du domaine (essais.ts), comme pour les connexions (US-004).
+ */
+export const REGLE_INSTALLATION: RegleEssais = { max: 5, fenetre: 60_000, duree: 60_000 };
 
 /**
  * Sel renvoyé pour un e-mail inconnu (US-003 CA-2) : stable et de la taille d'un vrai sel, il ne permet pas de

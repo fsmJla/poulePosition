@@ -23,6 +23,11 @@ describe('textes de la connexion', () => {
     expect(textes.connexion.motifs.COMPTE_MODIFIE).toBe('Votre compte a été modifié : reconnectez-vous');
   });
 
+  it('US-004 CA-1 : trop d’essais, à la connexion comme au changement de mot de passe', () => {
+    expect(textes.connexion.erreurs.TROP_D_ESSAIS).toBe('Trop d’essais : réessayez dans 15 minutes');
+    expect(textes.motDePasse.erreurs.TROP_D_ESSAIS).toBe(textes.connexion.erreurs.TROP_D_ESSAIS);
+  });
+
   it('US-003 CA-1 : affiche le nom et le rôle', () => {
     expect(textes.organisateur.bonjour('Julien Lameyre')).toBe('Bonjour, Julien Lameyre');
     expect(textes.roles).toEqual({ administrateur: 'Administrateur', organisateur: 'Organisateur' });
