@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-005
-- **Branche / PR :** `us/US-006-oublier-cet-appareil`
+- **Branche / PR :** `us/US-006-oublier-cet-appareil` · [PR #27](https://github.com/fsmJla/poulePosition/pull/27)
 
 ## Récit
 
