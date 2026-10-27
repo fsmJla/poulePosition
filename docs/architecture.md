@@ -18,7 +18,8 @@
 > blocage technique du merge (ADR-0012). L'usage reste **non commercial**, sans paiement ni sponsor
 > (ADR-0008). L'option « Prénom N. » (ADR-0014) et le domaine `pessac-escrime.fr` pour de futurs
 > e-mails (ADR-0013) sont **conservés**. Les e-mails partent du SMTP OVH du club, depuis
-> `no-reply@pessac-escrime.fr` (ADR-0015, 2026-10-27).
+> `no-reply@pessac-escrime.fr` (ADR-0015, 2026-10-27). L'application de production est servie sur
+> `https://poule-position.pessac-escrime.fr`, domaine du club rattaché au projet Vercel (US-020, 2026-10-28).
 
 ## 1. Principe directeur
 
