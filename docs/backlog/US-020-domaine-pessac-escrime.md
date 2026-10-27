@@ -5,9 +5,9 @@
   l'objet d'une US dédiée »)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-001, US-019
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-020-domaine-pessac-escrime`
 
 ## Récit
 
@@ -94,3 +94,4 @@ Notes de version : prévenir que chacun se reconnecte une fois en ligne sur la n
 | Date | Événement |
 |---|---|
 | 2026-10-27 | Créée (spécification : domaine du club) |
+| 2026-10-28 | En cours : plan validé (configuration réelle de `wrangler.toml` vérifiée par les tests ; CA-1 et CA-4 vérifiés en production après `/release`) |
