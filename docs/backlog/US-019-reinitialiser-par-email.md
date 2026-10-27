@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-018, US-009, US-004
-- **Branche / PR :** `us/US-019-reinitialiser-par-email`
+- **Branche / PR :** `us/US-019-reinitialiser-par-email` / [PR #33](https://github.com/fsmJla/poulePosition/pull/33)
 
 ## Récit
 
