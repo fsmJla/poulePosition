@@ -1,6 +1,6 @@
 // US-014 : bannière « Poule Position », entête des pages réservées, nom affiché.
 import { expect, test, type Locator } from '@playwright/test';
-import { seConnecter } from './compte';
+import { boutonMenuCompte, choisirDansMenuCompte, seConnecter } from './compte';
 
 /** Adresse de l'image réellement affichée par une balise <picture> (variante claire ou sombre). */
 const imageAffichee = (image: Locator) => image.evaluate((element: HTMLImageElement) => element.currentSrc);
@@ -32,11 +32,14 @@ test('US-014 CA-3 : l’entête des pages réservées porte la bannière et « S
   const lienBanniere = entete.getByRole('link', { name: 'Poule Position' });
   await expect(lienBanniere).toBeVisible();
   await expect.poll(() => imageAffichee(lienBanniere.getByRole('img'))).toMatch(/\/brand\/header-dark\.svg$/);
-  await expect(entete.getByRole('button', { name: 'Se déconnecter', exact: true })).toBeVisible();
+  await expect(entete.getByRole('button', { name: /^Menu du compte de / })).toBeVisible();
+  await boutonMenuCompte(page).click();
+  await expect(page.getByRole('button', { name: 'Se déconnecter', exact: true })).toBeVisible();
+  await boutonMenuCompte(page).click();
   // Aucun défilement horizontal (smartphone compris).
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
-  await page.getByRole('link', { name: 'Mon profil' }).click();
+  await choisirDansMenuCompte(page, 'Éditer le profil');
   await expect(page).toHaveURL(/\/profil$/);
   await page.getByRole('banner').getByRole('link', { name: 'Poule Position' }).click();
   await expect(page).toHaveURL(/\/organisateur$/);

@@ -1,11 +1,12 @@
 // US-016 : modifier son profil (nom et avatar). Réponses du serveur simulées : on ne modifie pas le compte de test de
 // la preview ; la chaîne réelle est couverte par serveur/src/profil.test.ts.
 import { expect, test, type Page } from '@playwright/test';
+import { choisirDansMenuCompte } from './compte';
 import { connecterSimule, sessionSimulee, simuler } from './simulation';
 
 async function ouvrirProfil(page: Page) {
   await connecterSimule(page, 'organisateur');
-  await page.getByRole('link', { name: 'Mon profil' }).click();
+  await choisirDansMenuCompte(page, 'Éditer le profil');
   await expect(page).toHaveURL(/\/profil$/);
 }
 
@@ -52,13 +53,13 @@ test('US-016 CA-3 et CA-4 : nom et couleur enregistrés, affichés aussitôt', a
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Bonjour, Nouveau Nom');
 });
 
-test('US-016 CA-6 : la tuile « Mon profil » remplace « Changer mon mot de passe », et le mot de passe y ramène', async ({
+// La tuile « Mon profil » d'US-016 CA-6 a été remplacée par le menu de compte (US-017 CA-5).
+test('US-016 CA-6 et US-017 CA-5 : ni tuile « Changer mon mot de passe » ni « Mon profil » ; le mot de passe ramène au profil', async ({
   page,
 }) => {
   await connecterSimule(page, 'organisateur');
-  const actions = page.getByRole('navigation', { name: 'Actions' });
-  await expect(actions.getByRole('link', { name: 'Mon profil' })).toBeVisible();
-  await expect(actions.getByRole('link', { name: 'Changer mon mot de passe' })).toHaveCount(0);
+  await expect(page.getByRole('main').getByRole('link', { name: 'Changer mon mot de passe' })).toHaveCount(0);
+  await expect(page.getByRole('main').getByRole('link', { name: 'Mon profil' })).toHaveCount(0);
   await page.goto('/mot-de-passe');
   await page.getByRole('link', { name: 'Retour à mon profil' }).click();
   await expect(page).toHaveURL(/\/profil$/);

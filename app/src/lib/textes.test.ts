@@ -67,7 +67,6 @@ describe('mot de passe oublié (US-009)', () => {
 describe('textes du profil (US-016)', () => {
   it('US-016 CA-1 et CA-6 : page « Mon profil », tuile de l’accueil et retour depuis le mot de passe', () => {
     expect(textes.profil.titre).toBe('Mon profil');
-    expect(textes.organisateur.monProfil).toBe('Mon profil');
     expect(textes.motDePasse.retour).toBe('Retour à mon profil');
     expect(textes.profil.horsLigne).toBe('Nécessite une connexion internet');
     expect(textes.profil.erreurs.HORS_LIGNE).toBe('Réseau perdu : rien n’a changé, réessayez');
@@ -76,5 +75,14 @@ describe('textes du profil (US-016)', () => {
   it('US-016 CA-3 : chaque couleur d’avatar a un nom lisible', () => {
     for (const couleur of COULEURS_AVATAR) expect(textes.profil.couleurs[couleur]).toMatch(/^[a-zéèêô]+$/);
     expect(textes.profil.couleur('prune')).toBe('Couleur prune');
+  });
+});
+
+describe('textes du menu de compte (US-017)', () => {
+  it('US-017 CA-2 et CA-4 : nom accessible de l’avatar et entrées du menu', () => {
+    expect(textes.organisateur.menu.ouvrir('Julien Lameyre')).toBe('Menu du compte de Julien Lameyre');
+    expect(textes.organisateur.menu.editerProfil).toBe('Éditer le profil');
+    expect(textes.organisateur.seDeconnecter).toBe('Se déconnecter');
+    expect(textes.organisateur.oublier.bouton).toBe('Se déconnecter et oublier cet appareil');
   });
 });

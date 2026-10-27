@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { compteTest, seConnecter } from './compte';
+import { choisirDansMenuCompte, compteTest, seConnecter } from './compte';
 import { connecterSimule, simuler } from './simulation';
 
 /** Première visite : le service worker s'installe et précache l'application, puis prend le contrôle. */
@@ -49,7 +49,7 @@ test('US-005 CA-3 : hors ligne, un compte jamais venu sur l’appareil ne peut p
 async function appareilConnu(page: Page, compte = compteTest()) {
   await seConnecter(page, compte);
   await installerHorsLigne(page);
-  await page.getByRole('button', { name: 'Se déconnecter', exact: true }).click();
+  await choisirDansMenuCompte(page, 'Se déconnecter');
   await expect(page).toHaveURL(/\/connexion$/);
   return compte;
 }
@@ -95,7 +95,7 @@ test('US-005 CA-6 : compte modifié pendant la coupure : retour à la connexion 
 }) => {
   // Réponses simulées : on ne modifie pas le compte réel de la preview.
   await connecterSimule(page, 'organisateur');
-  await page.getByRole('button', { name: 'Se déconnecter', exact: true }).click();
+  await choisirDansMenuCompte(page, 'Se déconnecter');
   await expect(page).toHaveURL(/\/connexion$/);
 
   await context.setOffline(true);
@@ -126,8 +126,6 @@ test('US-003 hors ligne : une session déjà ouverte reste utilisable sans rése
   await context.setOffline(false);
 });
 
-const boutonOublier = (page: Page) => page.getByRole('button', { name: 'Se déconnecter et oublier cet appareil' });
-
 test('US-006 CA-1, CA-3 et hors ligne : oublier l’appareil, puis la reconnexion hors ligne est refusée', async ({
   page,
   context,
@@ -138,8 +136,7 @@ test('US-006 CA-1, CA-3 et hors ligne : oublier l’appareil, puis la reconnexio
   await expect(bandeauLocal(page)).toBeVisible({ timeout: 20_000 });
 
   // L'oubli fonctionne sans réseau : l'effacement est purement local.
-  await boutonOublier(page).click();
-  await expect(boutonOublier(page)).toHaveAttribute('aria-expanded', 'true');
+  await choisirDansMenuCompte(page, 'Se déconnecter et oublier cet appareil');
   await expect(page.getByText('Les compétitions enregistrées sur cet appareil sont conservées.')).toBeVisible();
   await page.getByRole('button', { name: 'Oublier cet appareil', exact: true }).click();
   await expect(page).toHaveURL(/\/connexion$/);
@@ -153,12 +150,12 @@ test('US-006 : « Annuler » n’efface rien, la reconnexion hors ligne reste po
   const compte = compteTest();
   await seConnecter(page, compte);
   await installerHorsLigne(page);
-  await boutonOublier(page).click();
+  await choisirDansMenuCompte(page, 'Se déconnecter et oublier cet appareil');
   await page.getByRole('button', { name: 'Annuler' }).click();
   await expect(page.getByRole('button', { name: 'Oublier cet appareil', exact: true })).toHaveCount(0);
   await expect(page).toHaveURL(/\/organisateur$/);
 
-  await page.getByRole('button', { name: 'Se déconnecter', exact: true }).click();
+  await choisirDansMenuCompte(page, 'Se déconnecter');
   await context.setOffline(true);
   await saisir(page, compte.email, compte.motDePasse);
   await expect(bandeauLocal(page)).toBeVisible({ timeout: 20_000 });

@@ -91,7 +91,7 @@
     <Connexion {client} {surConnexion} {naviguer} />
   {:else if session}
     <!-- Pages réservées : entête commun (US-014). -->
-    <Entete {surDeconnexion} {surOubli} {naviguer} locale={estLocale(session)} />
+    <Entete compte={session.compte} {surDeconnexion} {surOubli} {naviguer} locale={estLocale(session)} />
     {#if route.page === 'organisateur'}
       <Organisateur {session} {naviguer} />
     {:else if route.page === 'motDePasse'}

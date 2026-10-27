@@ -35,6 +35,8 @@
   --etat-erreur: #b3362f;
   /* Couleurs d'avatar (US-016) : initiales claires posées dessus, contraste AA vérifié par couleurs.test.ts. Communes aux
      modes clair et sombre. */
+  /* Ombre des cartes flottantes (menu de compte, US-017). */
+  --ombre-flottante: 0 8px 24px rgb(0 0 0 / 0.18);
   --sur-avatar: #ffffff;
   --avatar-sarcelle: #066f6c;
   --avatar-ardoise: #2f4b4a;

@@ -38,3 +38,16 @@ export async function seConnecter(page: Page, compte: CompteTest = compteTest())
   await page.getByRole('button', { name: 'Se connecter' }).click();
   await expect(page).toHaveURL(/\/organisateur$/, { timeout: 20_000 });
 }
+
+/** US-017 : bouton avatar de l'entête, qui ouvre le menu de compte. */
+export const boutonMenuCompte = (page: Page) => page.getByRole('button', { name: /^Menu du compte de / });
+
+/** US-017 : ouvre le menu de compte et choisit une entrée. */
+export async function choisirDansMenuCompte(
+  page: Page,
+  entree: 'Éditer le profil' | 'Se déconnecter' | 'Se déconnecter et oublier cet appareil',
+) {
+  await boutonMenuCompte(page).click();
+  const options = { name: entree, exact: true };
+  await (entree === 'Éditer le profil' ? page.getByRole('link', options) : page.getByRole('button', options)).click();
+}
