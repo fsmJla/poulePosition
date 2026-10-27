@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1, « système d'authentification robuste » (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-003
 - **Branche / PR :** `us/US-004-limiter-essais-connexion` · [PR #26](https://github.com/fsmJla/poulePosition/pull/26)
 
@@ -120,3 +120,5 @@ SQLite écrites (négligeable pour 10 comptes).
 | 2026-10-25 | Créée (spécification E1) |
 | 2026-10-27 | En cours : plan validé (règle de comptage unique dans le domaine, compteur par e-mail normalisé dans le DO `Club` purgé après 30 minutes, compteur par adresse dans le DO `Limiteur`, E2E US-003 CA-2 adapté pour ne jamais bloquer le compte de test) |
 | 2026-10-27 | En revue : contrôles locaux verts (lint, typage, 359 tests unitaires et d’intégration, couverture 94 %, build, audit, 121 E2E) |
+| 2026-10-27 | Recette OK sur https://poule-position-git-us-us-004-limiter-es-dba70c-fsmjlas-projects.vercel.app (déployée en preview et vérifiée, Worker de preview déployé depuis la branche) : deux comptes jetables, essais depuis un contexte de navigateur isolé. Compte A : 4 mots de passe faux refusés (« E-mail ou mot de passe incorrect »), « Trop d’essais : réessayez dans 15 minutes » au 5e, puis avec le bon mot de passe (CA-1) ; compte B : 3 échecs, connexion réussie, 3 échecs, connexion réussie, jamais bloqué (CA-3) ; e-mail inconnu essayé 5 fois : même suite de messages que le compte A (CA-4) ; A bloqué, réinitialisé par l’administrateur, aussitôt reconnecté avec le nouveau mot de passe temporaire (US-009 CA-3). CA-2 (20 échecs par adresse) non rejoué sur la preview pour ne pas bloquer l’adresse de l’administrateur : test d’intégration de la CI. Comptes de recette supprimés à la fin. |
+| 2026-10-27 | **Terminée**, mergée dans `dev` (PR #26). |
