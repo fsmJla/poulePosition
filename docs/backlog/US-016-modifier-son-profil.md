@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-007, US-010
 - **Branche / PR :** `us/US-016-modifier-son-profil` · [PR #29](https://github.com/fsmJla/poulePosition/pull/29)
 
@@ -144,3 +144,5 @@ défaut est une règle pure, dans `paquets/domaine`. Nouvelle page `/profil` (ro
 | 2026-10-27 | Créée (spécification : cartouche de profil) |
 | 2026-10-27 | En cours : plan validé (module `avatar` dans le domaine, 8 couleurs nommées dans la charte, route `PATCH /compte` qui ne touche que le compte de la session, avatar dans le compte de session, page `/profil`) |
 | 2026-10-27 | En revue : contrôles locaux verts (lint, typage, 408 tests unitaires et d’intégration, couverture 95 %, build, audit, 135 E2E) |
+| 2026-10-27 | Recette OK sur https://poule-position-git-us-us-016-modifier-s-e02de8-fsmjlas-projects.vercel.app (déployée en preview et vérifiée, Worker de preview déployé depuis la branche) : compte jetable « Recette Seize » (organisateur) dans un contexte de navigateur isolé. Accueil avec la seule tuile « Mon profil », « Retour à mon profil » depuis le mot de passe (CA-6) ; avatar « RS » sur la couleur par défaut, nom, e-mail, rôle, 8 couleurs, lien vers le mot de passe (CA-1, CA-2) ; nom « Recette Profil » et couleur prune enregistrés (« Profil enregistré », avatar « RP »), conservés après déconnexion et reconnexion (CA-3, CA-4) et visibles dans « Comptes » de l’administrateur (CA-4) ; `PATCH /comptes/<id>` refusé à l’organisateur (`403 ACCES_REFUSE`, CA-5) ; hors ligne, page affichée et « Enregistrer » grisé avec « Nécessite une connexion internet » ; smartphone sans débordement (412 px). Compte de recette supprimé à la fin. |
+| 2026-10-27 | **Terminée**, mergée dans `dev` (PR #29). |
