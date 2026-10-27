@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { COULEURS_AVATAR } from '@poule-position/domaine';
 import { textes } from './textes';
 
 describe('textes de la connexion', () => {
@@ -60,5 +61,20 @@ describe('mot de passe oublié (US-009)', () => {
     expect(textes.connexion.explicationOubli).toBe(
       'Demandez à un administrateur du club de réinitialiser votre mot de passe',
     );
+  });
+});
+
+describe('textes du profil (US-016)', () => {
+  it('US-016 CA-1 et CA-6 : page « Mon profil », tuile de l’accueil et retour depuis le mot de passe', () => {
+    expect(textes.profil.titre).toBe('Mon profil');
+    expect(textes.organisateur.monProfil).toBe('Mon profil');
+    expect(textes.motDePasse.retour).toBe('Retour à mon profil');
+    expect(textes.profil.horsLigne).toBe('Nécessite une connexion internet');
+    expect(textes.profil.erreurs.HORS_LIGNE).toBe('Réseau perdu : rien n’a changé, réessayez');
+  });
+
+  it('US-016 CA-3 : chaque couleur d’avatar a un nom lisible', () => {
+    for (const couleur of COULEURS_AVATAR) expect(textes.profil.couleurs[couleur]).toMatch(/^[a-zéèêô]+$/);
+    expect(textes.profil.couleur('prune')).toBe('Couleur prune');
   });
 });
