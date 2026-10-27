@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-005
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-006-oublier-cet-appareil`
 
 ## Récit
 
@@ -56,3 +56,4 @@ ADR-0006 (mesure de réduction du risque « appareil volé »).
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
+| 2026-10-27 | En cours : plan validé (bouton « Se déconnecter et oublier cet appareil » dans l’entête, à côté de « Se déconnecter », confirmation dans un panneau sous l’entête ; effacement de la session, de la clé de l’onglet et du vérificateur du seul compte connecté) |
