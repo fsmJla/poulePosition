@@ -820,3 +820,76 @@ describe('reconnexion hors ligne (US-005)', () => {
     expect(c.lireMotifFin()).toBeNull();
   });
 });
+
+describe('oublier cet appareil (US-006)', () => {
+  const MOT_DE_PASSE = 'mot-de-passe-solide';
+
+  async function connu(email: string, motDePasse: string): Promise<AppareilConnu> {
+    const verificateur = await verificateurLocal(await deriverCle(motDePasse, SEL));
+    return {
+      email,
+      nom: email,
+      role: 'organisateur',
+      sel: SEL,
+      verificateurLocal: verificateur,
+      temporaire: false,
+      connuDepuis: 1,
+    };
+  }
+
+  /** Appareil hors ligne qui connaît deux comptes ; le premier y est connecté (session locale). */
+  async function appareilPartage() {
+    const memoire = stockageMemoire();
+    await memoire.stockage.enregistrerAppareilConnu(await connu(compte.email, MOT_DE_PASSE));
+    await memoire.stockage.enregistrerAppareilConnu(await connu('autre@club.fr', 'mot-de-passe-autre'));
+    const onglet = memoireOnglet();
+    const serveur = fauxServeur({});
+    const c = client({
+      stockage: memoire.stockage,
+      envoyer: serveur.envoyer,
+      enLigne: () => false,
+      memoireOnglet: onglet,
+    });
+    expect(await c.seConnecter(compte.email, MOT_DE_PASSE)).toMatchObject({ ok: true });
+    return { ...memoire, client: c, onglet, serveur };
+  }
+
+  it('US-006 CA-1 : efface la session, la clé de l’onglet et le vérificateur du compte ; la reconnexion hors ligne est ensuite refusée', async () => {
+    const { client: c, etat, onglet, serveur } = await appareilPartage();
+    await c.oublierCetAppareil();
+    expect(etat.session).toBeNull();
+    expect(onglet.valeurs.size).toBe(0);
+    expect(etat.appareils.has(compte.email)).toBe(false);
+    expect(await c.seConnecter(compte.email, MOT_DE_PASSE)).toEqual({
+      ok: false,
+      erreur: 'PREMIERE_CONNEXION_HORS_LIGNE',
+    });
+    // Hors ligne d'abord : l'effacement est purement local.
+    expect(serveur.requetes).toHaveLength(0);
+  });
+
+  it('US-006 CA-2 : l’autre compte connu se reconnecte toujours hors ligne', async () => {
+    const { client: c } = await appareilPartage();
+    await c.oublierCetAppareil();
+    expect(await c.seConnecter('autre@club.fr', 'mot-de-passe-autre')).toMatchObject({
+      ok: true,
+      session: { locale: true, compte: { email: 'autre@club.fr' } },
+    });
+  });
+
+  it('US-006 CA-3 : rien d’autre n’est effacé (frein local, autres comptes connus)', async () => {
+    const { client: c, etat } = await appareilPartage();
+    const essais = { echecs: [MAINTENANT - 1000], bloqueJusqua: 0 };
+    etat.essais = essais;
+    await c.oublierCetAppareil();
+    expect(etat.essais).toEqual(essais);
+    expect([...etat.appareils.keys()]).toEqual(['autre@club.fr']);
+  });
+
+  it('sans session ouverte, ne fait rien', async () => {
+    const { stockage, etat } = stockageMemoire();
+    await stockage.enregistrerAppareilConnu(await connu(compte.email, MOT_DE_PASSE));
+    await client({ stockage }).oublierCetAppareil();
+    expect(etat.appareils.has(compte.email)).toBe(true);
+  });
+});

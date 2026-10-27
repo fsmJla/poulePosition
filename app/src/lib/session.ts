@@ -415,6 +415,19 @@ export function creerClientSession({
       await stockage.effacerSession();
     },
 
+    /**
+     * US-006 : se déconnecter et effacer le vérificateur local du compte connecté, pour que personne ne puisse s'y
+     * reconnecter hors ligne. Purement local (sans réseau) ; les autres comptes connus et les données de l'appareil
+     * sont conservés.
+     */
+    async oublierCetAppareil(): Promise<void> {
+      const session = await stockage.lireSession();
+      if (!session) return;
+      oublierCles();
+      await stockage.effacerSession();
+      await stockage.oublierAppareilConnu(session.compte.email);
+    },
+
     /** US-005 CA-6 : pourquoi l'application a fermé la session, une seule fois (null s'il n'y a rien à dire). */
     lireMotifFin(): MotifFinSession | null {
       const motif = motifFin;
