@@ -400,4 +400,9 @@ describe('réinitialisation par e-mail (US-019)', () => {
     );
     expect(lienReinitialisation(null, MOTIFS, `${PRODUCTION}/`, JETON)).toBe(`${PRODUCTION}/reinitialisation#${JETON}`);
   });
+
+  it('US-020 CA-3 : une demande venue du domaine du club reçoit un lien vers ce domaine', () => {
+    const club = 'https://poule-position.pessac-escrime.fr';
+    expect(lienReinitialisation(club, `${club},${PRODUCTION}`, club, JETON)).toBe(`${club}/reinitialisation#${JETON}`);
+  });
 });

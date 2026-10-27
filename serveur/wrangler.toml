@@ -35,16 +35,17 @@ new_sqlite_classes = ["Club", "Limiteur"]
 
 [vars]
 # Origines autorisées, séparées par des virgules ; `*` = lettres, chiffres ou tirets (jamais un point).
-# Production : domaine attribué par Vercel (poule-position.vercel.app était pris). localhost : dev local et tests.
-ORIGINES = "https://poule-position-livid.vercel.app,http://localhost:*,http://127.0.0.1:*"
+# Production : domaine du club (US-020), et l'adresse attribuée par Vercel, redirigée vers lui, le temps que les
+# appareils voient la redirection. localhost : dev local et tests.
+ORIGINES = "https://poule-position.pessac-escrime.fr,https://poule-position-livid.vercel.app,http://localhost:*,http://127.0.0.1:*"
 # Club unique au lancement (ADR-0014).
 CLUB_ID = "club-principal"
 # Serveur SMTP du MX Plan OVH du club (ADR-0015) : port 465, TLS dès la connexion.
 SMTP_HOTE = "ssl0.ovh.net"
 SMTP_PORT = "465"
-# Application de production : adresse des liens envoyés par e-mail quand la demande ne vient pas d'une origine
-# autorisée (US-019).
-URL_APPLICATION = "https://poule-position-livid.vercel.app"
+# Application de production (domaine du club, US-020) : adresse des liens envoyés par e-mail quand la demande ne
+# vient pas d'une origine autorisée (US-019).
+URL_APPLICATION = "https://poule-position.pessac-escrime.fr"
 
 [env.preview]
 name = "poule-position-serveur-preview"
@@ -67,6 +68,6 @@ ORIGINES = "https://poule-position-*-fsmjlas-projects.vercel.app,http://localhos
 CLUB_ID = "club-principal"
 SMTP_HOTE = "ssl0.ovh.net"
 SMTP_PORT = "465"
-# Application de production : adresse des liens envoyés par e-mail quand la demande ne vient pas d'une origine
-# autorisée (US-019).
-URL_APPLICATION = "https://poule-position-livid.vercel.app"
+# Application de production (domaine du club, US-020) : adresse des liens envoyés par e-mail quand la demande ne
+# vient pas d'une origine autorisée (US-019).
+URL_APPLICATION = "https://poule-position.pessac-escrime.fr"

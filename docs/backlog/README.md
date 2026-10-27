@@ -49,6 +49,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-017](US-017-menu-de-compte.md) | Menu de compte en haut à droite (P2) | E1 | Terminée | US-016, US-006 |
 | [US-018](US-018-envoyer-des-emails.md) | Envoyer des e-mails depuis le serveur (SMTP OVH du club) (P2) | E1 | Terminée | US-001 |
 | [US-019](US-019-reinitialiser-par-email.md) | Réinitialiser son mot de passe par e-mail (P2) | E1 | Terminée | US-018, US-009, US-004 |
+| [US-020](US-020-domaine-pessac-escrime.md) | Servir l'application sur poule-position.pessac-escrime.fr (P1, technique) | E0 | En revue | US-001, US-019 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
