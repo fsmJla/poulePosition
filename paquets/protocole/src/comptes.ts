@@ -1,11 +1,14 @@
-// Gestion des comptes par les administrateurs (US-007 à US-009, docs/protocole.md §9) : demandes, réponses et préparation
-// d'un compte avec mot de passe temporaire (tiré et dérivé dans le navigateur : le serveur n'en voit que la clé).
+// Gestion des comptes par les administrateurs (US-007 à US-009, docs/protocole.md §9) et de son propre profil
+// (US-016) : demandes, réponses et préparation d'un compte avec mot de passe temporaire (tiré et dérivé dans le
+// navigateur : le serveur n'en voit que la clé).
 import {
+  estCouleurAvatar,
   genererMotDePasseTemporaire,
   normaliserEmail,
   validerNom,
   validerNouveauCompte,
   ROLES,
+  type CouleurAvatar,
   type Role,
 } from '@poule-position/domaine';
 import { deriverCle, nouveauSel, TAILLE_CLE, TAILLE_SEL } from './authentification';
@@ -124,6 +127,22 @@ export function analyserDemandeModificationCompte(
       ...(role !== undefined && { role: role as Role }),
       ...(typeof actif === 'boolean' && { actif }),
     },
+  };
+}
+
+/** Corps de `PATCH /compte` (US-016) : le compte de la session modifie son nom ou la couleur de son avatar. */
+export type DemandeProfil = { nom?: string; avatar?: CouleurAvatar };
+
+export function analyserDemandeProfil(brut: unknown): { ok: true; demande: DemandeProfil } | { ok: false } {
+  if (!estObjet(brut)) return { ok: false };
+  const champs = Object.keys(brut);
+  if (champs.length === 0 || champs.some((champ) => champ !== 'nom' && champ !== 'avatar')) return { ok: false };
+  const { nom, avatar } = brut;
+  if (nom !== undefined && (typeof nom !== 'string' || validerNom(nom) !== null)) return { ok: false };
+  if (avatar !== undefined && !estCouleurAvatar(avatar)) return { ok: false };
+  return {
+    ok: true,
+    demande: { ...(typeof nom === 'string' && { nom: nom.trim() }), ...(avatar !== undefined && { avatar }) },
   };
 }
 

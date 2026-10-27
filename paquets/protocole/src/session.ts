@@ -1,7 +1,15 @@
 // Connexion, session (US-003, docs/protocole.md §7) et changement de mot de passe (US-010, §8) : corps des demandes,
 // réponses du serveur, codes d'erreur.
 // Les messages lisibles sont dans le catalogue de textes de l'application.
-import { normaliserEmail, validerEmail, ROLES, type Role } from '@poule-position/domaine';
+import {
+  couleurParDefaut,
+  estCouleurAvatar,
+  normaliserEmail,
+  validerEmail,
+  ROLES,
+  type CouleurAvatar,
+  type Role,
+} from '@poule-position/domaine';
 import { decoderBase64Url, deriverCle, encoderBase64Url, nouveauSel, TAILLE_CLE, TAILLE_SEL } from './authentification';
 import { aExactementLesChamps, aLaTaille } from './validation';
 
@@ -31,6 +39,8 @@ export interface CompteConnecte {
   role: Role;
   /** Mot de passe temporaire, à changer (US-009 / US-010). */
   temporaire: boolean;
+  /** Couleur de l'avatar (US-016). */
+  avatar: CouleurAvatar;
 }
 
 export interface Session {
@@ -110,10 +120,12 @@ export function analyserReponseSel(brut: unknown): { ok: true; sel: string } | {
 
 function analyserCompte(brut: unknown): CompteConnecte | null {
   if (!estObjet(brut)) return null;
-  const { email, nom, role, temporaire } = brut;
+  const { email, nom, role, temporaire, avatar } = brut;
   if (typeof email !== 'string' || typeof nom !== 'string' || typeof temporaire !== 'boolean') return null;
   if (!(ROLES as readonly unknown[]).includes(role)) return null;
-  return { email, nom, role: role as Role, temporaire };
+  // US-016 : un serveur d'avant US-016 n'envoie pas la couleur ; on prend alors celle par défaut du compte.
+  if (avatar !== undefined && !estCouleurAvatar(avatar)) return null;
+  return { email, nom, role: role as Role, temporaire, avatar: avatar ?? couleurParDefaut(email) };
 }
 
 export function analyserReponseSession(

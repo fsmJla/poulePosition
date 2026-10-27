@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
+import { couleurParDefaut } from '@poule-position/domaine';
 import { decoderBase64Url, deriverCle, encoderBase64Url, nouveauSel } from './authentification';
 import {
   analyserDemandeChangementMotDePasse,
@@ -19,7 +20,7 @@ const sessionValide = {
   ok: true,
   jeton: 'en-tete.charge.signature',
   expireLe: 1_795_000_000_000,
-  compte: { email: 'orga@club.fr', nom: 'Orga', role: 'organisateur', temporaire: false },
+  compte: { email: 'orga@club.fr', nom: 'Orga', role: 'organisateur', temporaire: false, avatar: 'prune' },
 };
 
 describe('demande de sel', () => {
@@ -91,6 +92,7 @@ describe('réponses du serveur (côté application)', () => {
     ['rôle inconnu', { ...sessionValide, compte: { ...sessionValide.compte, role: 'arbitre' } }],
     ['nom absent', { ...sessionValide, compte: { ...sessionValide.compte, nom: 3 } }],
     ['temporaire absent', { ...sessionValide, compte: { email: 'a@b.fr', nom: 'A', role: 'organisateur' } }],
+    ['couleur d’avatar inconnue', { ...sessionValide, compte: { ...sessionValide.compte, avatar: 'rose-fluo' } }],
   ])('refuse une session mal formée : %s', (_cas, brut) => {
     expect(analyserReponseSession(brut)).toEqual({ ok: false, erreur: 'REPONSE_INVALIDE' });
   });
@@ -154,5 +156,19 @@ describe('limitation des essais (US-004)', () => {
       ok: false,
       erreur: 'TROP_D_ESSAIS',
     });
+  });
+});
+
+describe('avatar du compte (US-016)', () => {
+  it('US-016 CA-3 : lit la couleur d’avatar du compte connecté', () => {
+    const lue = analyserReponseSession(sessionValide);
+    expect(lue.ok && lue.session.compte.avatar).toBe('prune');
+  });
+
+  it('US-016 : un serveur qui n’envoie pas encore la couleur donne la couleur par défaut du compte', () => {
+    const sansAvatar: Partial<typeof sessionValide.compte> = { ...sessionValide.compte };
+    delete sansAvatar.avatar;
+    const lue = analyserReponseSession({ ...sessionValide, compte: sansAvatar });
+    expect(lue.ok && lue.session.compte.avatar).toBe(couleurParDefaut('orga@club.fr'));
   });
 });
