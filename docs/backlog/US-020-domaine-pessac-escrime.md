@@ -7,7 +7,7 @@
 - **Type :** technique
 - **Statut :** En revue
 - **Dépend de :** US-001, US-019
-- **Branche / PR :** `us/US-020-domaine-pessac-escrime`
+- **Branche / PR :** `us/US-020-domaine-pessac-escrime` / [PR #37](https://github.com/fsmJla/poulePosition/pull/37)
 
 ## Récit
 
