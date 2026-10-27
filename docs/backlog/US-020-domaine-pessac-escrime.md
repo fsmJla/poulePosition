@@ -122,3 +122,5 @@ Notes de version : prévenir que chacun se reconnecte une fois en ligne sur la n
 | 2026-10-27 | Créée (spécification : domaine du club) |
 | 2026-10-28 | En cours : plan validé (configuration réelle de `wrangler.toml` vérifiée par les tests ; CA-1 et CA-4 vérifiés en production après `/release`) |
 | 2026-10-28 | En revue : contrôles locaux verts (lint, typage, 518 tests unitaires et d’intégration, couverture 94 %, build, audit, 165 E2E) |
+| 2026-10-28 | Recette en preview OK sur https://poule-position-git-us-us-020-domaine-pessac-escrime-fsmjlas-projects.vercel.app (Worker de preview déployé depuis la branche) : CA-2 côté preview (domaine du club et ancienne adresse refusés `403`, preview acceptée `204`) ; CA-3 (demande sans origine : e-mail reçu par l'utilisateur, lien vers `https://poule-position.pessac-escrime.fr/reinitialisation#…`). Domaine déjà configuré par l'utilisateur chez Vercel et OVH (CNAME vers Vercel, HTTPS valide). Restent, en production après `/release` : CA-1, CA-2 (production), CA-4. |
+| 2026-10-28 | Mergée dans `dev` (PR #37). L'US passera `Terminée` après la vérification en production. |
