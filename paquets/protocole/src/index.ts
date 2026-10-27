@@ -2,4 +2,5 @@
 export * from './authentification';
 export * from './comptes';
 export * from './messages';
+export * from './reinitialisation';
 export * from './session';
