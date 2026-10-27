@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-016, US-006
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-017-menu-de-compte`
 
 ## Récit
 
@@ -87,3 +87,4 @@ Impacte l'entête d'US-014 et d'US-006 (boutons déplacés dans le menu) et les 
 | Date | Événement |
 |---|---|
 | 2026-10-27 | Créée (spécification : cartouche de profil) |
+| 2026-10-27 | En cours : plan validé (bouton avatar qui déplie une liste plutôt qu’un `role="menu"`, navigation au clavier par une fonction pure testée, confirmation d’US-006 gardée sous l’entête, tuile « Mon profil » retirée) |

@@ -46,7 +46,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-014](US-014-banniere-poule-position.md) | Intégrer la bannière « Poule Position » et l'entête de site | E0 | Terminée | US-011 |
 | [US-015](US-015-correction-secret-dans-rapport-e2e.md) | Corriger l'exposition du mot de passe E2E dans le rapport de la CI | E0 | Terminée | US-001, US-003 |
 | [US-016](US-016-modifier-son-profil.md) | Modifier son profil (nom et avatar) (P2) | E1 | Terminée | US-007, US-010 |
-| [US-017](US-017-menu-de-compte.md) | Menu de compte en haut à droite (P2) | E1 | Prête | US-016, US-006 |
+| [US-017](US-017-menu-de-compte.md) | Menu de compte en haut à droite (P2) | E1 | En cours | US-016, US-006 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
