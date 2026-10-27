@@ -1,5 +1,21 @@
 # Notes de version
 
+## 2026.10.28 : l'adresse du club
+
+### Nouveautés
+
+- **Poule Position a sa propre adresse : <https://poule-position.pessac-escrime.fr>.** L'ancienne adresse
+  (`poule-position-livid.vercel.app`) mènera automatiquement à la nouvelle.
+- Les liens « Mot de passe oublié » reçus par e-mail mènent à la nouvelle adresse.
+
+### Points d'attention
+
+- **Se reconnecter une fois sur la nouvelle adresse, avec internet.** Le navigateur garde la session et la
+  reconnexion hors ligne adresse par adresse : sur la nouvelle, chacun doit se connecter une première fois en ligne
+  avant de pouvoir se reconnecter sans réseau au gymnase. Si l'application était installée sur l'écran d'accueil,
+  la réinstaller depuis la nouvelle adresse.
+- À faire avant la prochaine compétition, pas le jour même.
+
 ## 2026.10.27 : comptes et connexion
 
 Cette version ouvre l'application aux membres du club : chacun a son compte, se connecte, y compris sans internet
