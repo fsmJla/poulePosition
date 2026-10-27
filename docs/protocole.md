@@ -34,6 +34,7 @@
 | `GET /` | `Serveur poulePosition` (texte) |
 | `GET /sante` | `{"ok":true,"service":"poule-position-serveur"}` : vérifie que le serveur est en ligne |
 | `POST /installation/administrateur` | Création du premier administrateur (§6) |
+| `POST /installation/essai-email` | Essai d'envoi d'un e-mail par le serveur (§6, US-018) |
 | `POST /session/sel` | Sel d'un compte, avant la connexion (§7) |
 | `POST /session` | Connexion : ouvre une session (§7) |
 | `GET /session` | Vérifie et prolonge une session (§7) |
@@ -144,6 +145,24 @@ jamais la clé elle-même (ADR-0006).
 | `503` | `INSTALLATION_NON_CONFIGUREE` | `SECRET_INSTALLATION` ou `POIVRE` absent sur le serveur |
 
 Les messages lisibles de ces codes sont dans `ERREURS_INSTALLATION` (`paquets/protocole`).
+
+### Essai d'envoi d'e-mail (US-018, ADR-0015)
+
+`POST /installation/essai-email`, appelée uniquement par la commande `npm run essai-email` (pas de CORS). Mêmes
+en-têtes, même secret et même limite par adresse IP que la création du premier administrateur. Corps : exactement
+`{ "destinataire": <e-mail> }`. Le Worker envoie un e-mail d'essai à ce destinataire, par le SMTP du club
+(`SMTP_HOTE`, `SMTP_PORT`, secrets `SMTP_UTILISATEUR` et `SMTP_MOT_DE_PASSE`).
+
+| Statut | Code | Cas |
+|---|---|---|
+| `200` | — | E-mail d'essai remis au serveur SMTP (`{ "ok": true }`) |
+| `400` | `DEMANDE_INVALIDE` | Corps mal formé ou destinataire invalide |
+| `403` | `SECRET_INVALIDE` | Comme ci-dessus |
+| `405` | — | Autre méthode que `POST` |
+| `429` | `TROP_D_ESSAIS` | Comme ci-dessus |
+| `502` | `ENVOI_IMPOSSIBLE` | Serveur SMTP injoignable, identifiants refusés ou délai dépassé ; le motif est seulement dans les journaux du Worker |
+| `503` | `INSTALLATION_NON_CONFIGUREE` | Comme ci-dessus |
+| `503` | `ENVOI_NON_CONFIGURE` | `SMTP_UTILISATEUR` ou `SMTP_MOT_DE_PASSE` absent sur le serveur |
 
 ## 7. Connexion et session (US-003)
 
