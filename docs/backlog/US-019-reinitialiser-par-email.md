@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1, « système de mot de passe oublié » (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-018, US-009, US-004
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-019-reinitialiser-par-email`
 
 ## Récit
 
@@ -54,6 +54,13 @@ administrateur).
 - **Quand** une demande est faite pour un compte existant
 - **Alors** la réponse reste la même (CA-2) ; l'échec est journalisé côté serveur, et la personne peut toujours
   demander à un administrateur.
+
+**CA-7 — E-mail aux couleurs de l'application** (ajouté au plan d'implémentation le 2026-10-27)
+- **Étant donné** un e-mail de réinitialisation
+- **Quand** il est ouvert dans une messagerie (Gmail, Outlook, Zimbra), images bloquées ou non
+- **Alors** il montre un bandeau ardoise avec « Poule Position » en blanc, un bouton sarcelle « Choisir un nouveau
+  mot de passe », le lien en clair, la durée de validité et « Si vous n'êtes pas à l'origine de cette demande,
+  ignorez cet e-mail » ; une version texte l'accompagne.
 
 ## Comportement hors ligne
 
@@ -103,3 +110,4 @@ d'e-mail réel en CI) ; l'envoi réel est vérifié en recette.
 | Date | Événement |
 |---|---|
 | 2026-10-27 | Créée (spécification : réinitialisation par e-mail) |
+| 2026-10-27 | En cours : plan validé (CA-7 ajouté : e-mail aux couleurs de l’application, en-tête en texte seul ; jeton dans le fragment `#` du lien ; envoi après la réponse ; faux serveur SMTP pour les tests d’intégration) |
