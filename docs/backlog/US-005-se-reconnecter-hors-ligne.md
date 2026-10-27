@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1, « s'authentifier même sans connexion internet » (exigences §3) ; F12
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-003
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-005-se-reconnecter-hors-ligne`
 
 ## Récit
 
@@ -83,3 +83,4 @@ reconnexion hors ligne.
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
+| 2026-10-27 | En cours : plan validé (clé dérivée gardée en mémoire et dans le `sessionStorage` de l’onglet pour la revalidation ; connexion locale si hors ligne ou serveur injoignable ; frein local par appareil, 5 échecs en 15 minutes ; message « Votre compte a été modifié » aussi pour une session en ligne refusée) |
