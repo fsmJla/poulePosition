@@ -5,7 +5,7 @@
   l'objet d'une US dédiée »)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-001, US-019
 - **Branche / PR :** `us/US-020-domaine-pessac-escrime` / [PR #37](https://github.com/fsmJla/poulePosition/pull/37)
 
@@ -124,3 +124,5 @@ Notes de version : prévenir que chacun se reconnecte une fois en ligne sur la n
 | 2026-10-28 | En revue : contrôles locaux verts (lint, typage, 518 tests unitaires et d’intégration, couverture 94 %, build, audit, 165 E2E) |
 | 2026-10-28 | Recette en preview OK sur https://poule-position-git-us-us-020-domaine-pessac-escrime-fsmjlas-projects.vercel.app (Worker de preview déployé depuis la branche) : CA-2 côté preview (domaine du club et ancienne adresse refusés `403`, preview acceptée `204`) ; CA-3 (demande sans origine : e-mail reçu par l'utilisateur, lien vers `https://poule-position.pessac-escrime.fr/reinitialisation#…`). Domaine déjà configuré par l'utilisateur chez Vercel et OVH (CNAME vers Vercel, HTTPS valide). Restent, en production après `/release` : CA-1, CA-2 (production), CA-4. |
 | 2026-10-28 | Mergée dans `dev` (PR #37). L'US passera `Terminée` après la vérification en production. |
+| 2026-10-28 | Vérification en production après la mise en production 2026.10.28 (PR #38, mergée par l'utilisateur ; redirection posée par l'utilisateur dans Vercel) : CA-1 ✅ (`https://poule-position.pessac-escrime.fr` en HTTPS, « Serveur connecté ») ; CA-2 ✅ (serveur de production : domaine du club `204`, `https://app.pessac-escrime.fr` `403`) ; CA-4 ✅ (ancienne adresse `308` vers la même page du domaine du club, suivie dans un navigateur neuf). Limite constatée et documentée (README, « Domaine du club ») : un navigateur qui avait déjà ouvert l'ancienne adresse reste sur l'application en cache (service worker), dont la mise à jour échoue sur la redirection ; il continue de fonctionner, et « Clear site data » le fait basculer. Correction automatique non retenue par l'utilisateur (peu d'appareils concernés). |
+| 2026-10-28 | **Terminée** : tous les critères sont vérifiés. |
