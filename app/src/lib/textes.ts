@@ -11,6 +11,8 @@ import type {
   ErreurChangementMotDePasse,
   ErreurComptes,
   ErreurConnexion,
+  ErreurDemandeLien,
+  ErreurNouveauMotDePasseParLien,
   ErreurProfil,
   MotifFinSession,
 } from './session';
@@ -40,7 +42,6 @@ export const textes = {
     masquerMotDePasse: 'Masquer le mot de passe',
     presentation: 'Présentation de Poule Position',
     oubli: 'Mot de passe oublié ?',
-    explicationOubli: 'Demandez à un administrateur du club de réinitialiser votre mot de passe',
     horsLigne: 'Hors ligne : connexion possible uniquement sur un appareil déjà utilisé',
     erreurs: {
       IDENTIFIANTS_INVALIDES: 'E-mail ou mot de passe incorrect',
@@ -103,6 +104,47 @@ export const textes = {
       SERVEUR_NON_CONFIGURE: 'Serveur non configuré : changement impossible',
       ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
     } satisfies Record<ErreurChangementMotDePasse, string>,
+  },
+  /** US-019 : demande d'un lien de réinitialisation par e-mail. */
+  oubli: {
+    titre: 'Mot de passe oublié',
+    explication:
+      'Saisissez l’e-mail de votre compte : nous vous enverrons un lien pour choisir un nouveau mot de passe.',
+    email: 'E-mail',
+    valider: 'Recevoir un lien',
+    enCours: 'Envoi…',
+    envoye: 'Si un compte existe pour cet e-mail, un lien vient d’y être envoyé',
+    administrateur: 'Vous pouvez aussi demander à un administrateur du club de réinitialiser votre mot de passe',
+    retour: 'Retour à la connexion',
+    horsLigne: 'Nécessite une connexion internet',
+    erreurs: {
+      TROP_D_ESSAIS: 'Trop d’essais : réessayez dans 15 minutes',
+      HORS_LIGNE: 'Nécessite une connexion internet',
+      SERVEUR_NON_CONFIGURE: 'Serveur non configuré : demande impossible',
+      ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
+    } satisfies Record<ErreurDemandeLien, string>,
+  },
+  /** US-019 : page du lien reçu par e-mail, pour choisir un nouveau mot de passe. */
+  reinitialisation: {
+    titre: 'Choisir un nouveau mot de passe',
+    nouveau: 'Nouveau mot de passe',
+    confirmation: 'Confirmation du nouveau mot de passe',
+    aide: `${LONGUEUR_MIN_MOT_DE_PASSE} caractères au moins`,
+    valider: 'Enregistrer le mot de passe',
+    enCours: 'Enregistrement…',
+    horsLigne: 'Nécessite une connexion internet',
+    nouvelleDemande: 'Faire une nouvelle demande',
+    champs: {
+      MOT_DE_PASSE_TROP_COURT: `Le mot de passe doit faire au moins ${LONGUEUR_MIN_MOT_DE_PASSE} caractères`,
+      CONFIRMATION_DIFFERENTE: 'Les deux mots de passe sont différents',
+    },
+    erreurs: {
+      LIEN_INVALIDE: 'Ce lien n’est plus valable : faites une nouvelle demande',
+      TROP_D_ESSAIS: 'Trop d’essais : réessayez dans 15 minutes',
+      HORS_LIGNE: 'Nécessite une connexion internet',
+      SERVEUR_NON_CONFIGURE: 'Serveur non configuré : enregistrement impossible',
+      ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
+    } satisfies Record<ErreurNouveauMotDePasseParLien, string>,
   },
   /** US-016 : page « Mon profil ». */
   profil: {

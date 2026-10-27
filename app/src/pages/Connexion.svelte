@@ -24,8 +24,6 @@
   let email = $state('');
   let motDePasse = $state('');
   let motDePasseVisible = $state(false);
-  /** US-009 CA-4 : explication « Mot de passe oublié ? » dépliée. */
-  let oubliDeplie = $state(false);
   let enCours = $state(false);
   let erreur: ErreurConnexion | null = $state(null);
   let horsLigne = $state(!navigator.onLine);
@@ -132,18 +130,8 @@
           {#if enCours}<IconeAnimee taille={22} />{t.enCours}{:else}{t.valider}{/if}
         </button>
       </form>
-      <div class="oubli">
-        <button
-          type="button"
-          class="lien-oubli"
-          aria-expanded={oubliDeplie}
-          aria-controls="explication-oubli"
-          onclick={() => (oubliDeplie = !oubliDeplie)}
-        >
-          {t.oubli}
-        </button>
-        {#if oubliDeplie}<p id="explication-oubli" class="explication">{t.explicationOubli}</p>{/if}
-      </div>
+      <!-- US-019 : « Mot de passe oublié ? » mène à la demande d'un lien par e-mail. -->
+      <p class="oubli"><Lien chemin={CHEMINS.motDePasseOublie} {naviguer}>{t.oubli}</Lien></p>
       <p class="retour"><Lien chemin={CHEMINS.accueil} {naviguer}>{t.retour}</Lien></p>
     </div>
   </main>
@@ -333,27 +321,7 @@
   }
 
   .oubli {
-    display: grid;
-    justify-items: center;
-    gap: 0.5rem;
-  }
-
-  .lien-oubli {
-    padding: 0.25rem;
-    border: none;
-    background: none;
-    color: var(--accent);
-    font: inherit;
-    font-size: 0.9rem;
-    text-decoration: underline;
-    cursor: pointer;
-  }
-
-  .explication {
     margin: 0;
-    padding: 0.6rem 0.8rem;
-    border-radius: var(--rayon);
-    background: var(--surface-2);
     font-size: 0.9rem;
     text-align: center;
   }

@@ -57,3 +57,11 @@ describe('page « Mon profil » (US-016)', () => {
     expect(resoudreRoute('/profil', true, true)).toEqual({ redirection: CHEMINS.motDePasse });
   });
 });
+
+describe('mot de passe oublié (US-019)', () => {
+  it('US-019 CA-1 et CA-4 : les deux pages sont publiques, et restent ouvertes à un compte connecté', () => {
+    expect(resoudreRoute('/mot-de-passe-oublie', false)).toEqual({ page: 'motDePasseOublie' });
+    expect(resoudreRoute('/reinitialisation', false)).toEqual({ page: 'reinitialisation' });
+    expect(resoudreRoute('/reinitialisation', true)).toEqual({ page: 'reinitialisation' });
+  });
+});

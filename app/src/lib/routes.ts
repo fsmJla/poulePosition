@@ -1,11 +1,22 @@
 // Routage de l'application (US-003) : pages publiques et pages réservées aux comptes connectés.
 // Vraies adresses (History API) ; Vercel et le service worker servent index.html pour toute adresse.
 
-export type Page = 'accueil' | 'connexion' | 'organisateur' | 'motDePasse' | 'comptes' | 'profil';
+export type Page =
+  | 'accueil'
+  | 'connexion'
+  | 'motDePasseOublie'
+  | 'reinitialisation'
+  | 'organisateur'
+  | 'motDePasse'
+  | 'comptes'
+  | 'profil';
 
 export const CHEMINS = Object.freeze({
   accueil: '/',
   connexion: '/connexion',
+  /** US-019 : demande d'un lien, puis page du lien reçu par e-mail (publiques). */
+  motDePasseOublie: '/mot-de-passe-oublie',
+  reinitialisation: '/reinitialisation',
   organisateur: '/organisateur',
   motDePasse: '/mot-de-passe',
   comptes: '/comptes',
