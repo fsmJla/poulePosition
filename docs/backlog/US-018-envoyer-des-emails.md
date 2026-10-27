@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3, « système de mot de passe oublié ») ; exigences §5 (e-mails)
 - **Priorité :** P2
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-001
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-018-envoyer-des-emails`
 
 ## Récit
 
@@ -85,3 +85,4 @@ réseau ; envoi réel couvert par l'essai (CA-2), lancé à la main, pas par la 
 | Date | Événement |
 |---|---|
 | 2026-10-27 | Créée (spécification : réinitialisation par e-mail) |
+| 2026-10-27 | En cours : plan validé (bibliothèque `worker-mailer@1.2.1` enrobée derrière une interface `Expediteur`, route d’essai `POST /installation/essai-email` protégée par le secret d’installation, commande `npm run essai-email` ; boîte `no-reply@pessac-escrime.fr` créée par l’utilisateur) |
