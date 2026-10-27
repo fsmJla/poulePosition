@@ -17,7 +17,8 @@
 > Décisions prises à la validation (2026-10-24) : le dépôt GitHub **reste privé**, donc il n'y a pas de
 > blocage technique du merge (ADR-0012). L'usage reste **non commercial**, sans paiement ni sponsor
 > (ADR-0008). L'option « Prénom N. » (ADR-0014) et le domaine `pessac-escrime.fr` pour de futurs
-> e-mails (ADR-0013) sont **conservés**.
+> e-mails (ADR-0013) sont **conservés**. Les e-mails partent du SMTP OVH du club, depuis
+> `no-reply@pessac-escrime.fr` (ADR-0015, 2026-10-27).
 
 ## 1. Principe directeur
 
