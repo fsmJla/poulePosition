@@ -3,13 +3,13 @@
   // changement de mot de passe (US-010), gestion des comptes pour un administrateur (US-007, grisée hors ligne). La
   // déconnexion (US-003 CA-5) est dans l'entête commun (US-014).
   import { onMount } from 'svelte';
-  import type { Session } from '@poule-position/protocole';
+  import type { SessionAppareil } from '../lib/stockage';
   import Lien from '../composants/Lien.svelte';
   import { CHEMINS } from '../lib/routes';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
-    session: Session;
+    session: SessionAppareil;
     naviguer: (chemin: string) => void;
   }
 

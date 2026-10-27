@@ -1,7 +1,16 @@
 // Connexion, session et déconnexion (US-003, docs/protocole.md §7), changement de mot de passe (US-010, §8). Le mot
 // de passe ne quitte jamais l'appareil : seule la clé dérivée est envoyée. La session est gardée dans IndexedDB et
-// reste utilisable hors ligne (ADR-0001). Gestion des comptes par les administrateurs (US-007 à US-009, §9).
-import { normaliserEmail, sessionExpiree, type Role } from '@poule-position/domaine';
+// reste utilisable hors ligne (ADR-0001). Reconnexion hors ligne sur un appareil connu, puis revalidation au retour en
+// ligne (US-005, ADR-0006). Gestion des comptes par les administrateurs (US-007 à US-009, §9).
+import {
+  essaisLocauxVides,
+  expirationSession,
+  noterEchecLocal,
+  normaliserEmail,
+  saisieBloquee,
+  sessionExpiree,
+  type Role,
+} from '@poule-position/domaine';
 import {
   analyserReponseCompte,
   analyserReponseComptes,
@@ -18,15 +27,34 @@ import {
   type ErreurReponse,
   type Session,
 } from '@poule-position/protocole';
-import type { Stockage } from './stockage';
+import { estLocale, type SessionAppareil, type SessionLocale, type Stockage } from './stockage';
 
-/** Délai maximal d'attente du serveur avant d'afficher le message « hors ligne », en millisecondes. */
+/** Délai maximal d'attente du serveur avant de passer à la connexion locale, en millisecondes. */
 export const DELAI_REPONSE = 10_000;
 
 export type ErreurConnexion =
-  'IDENTIFIANTS_INVALIDES' | 'COMPTE_DESACTIVE' | 'HORS_LIGNE' | 'SERVEUR_NON_CONFIGURE' | 'ERREUR_INATTENDUE';
+  | 'IDENTIFIANTS_INVALIDES'
+  | 'COMPTE_DESACTIVE'
+  /** US-005 CA-3 : hors ligne, compte jamais connecté en ligne sur cet appareil. */
+  | 'PREMIERE_CONNEXION_HORS_LIGNE'
+  /** US-005 CA-4 : frein local, trop de mots de passe faux sur l'appareil. */
+  | 'TROP_D_ESSAIS'
+  | 'SERVEUR_NON_CONFIGURE'
+  | 'ERREUR_INATTENDUE';
 
-export type ResultatConnexion = { ok: true; session: Session } | { ok: false; erreur: ErreurConnexion };
+export type ResultatConnexion = { ok: true; session: SessionAppareil } | { ok: false; erreur: ErreurConnexion };
+
+/**
+ * Pourquoi la session a été fermée par l'application, à expliquer sur l'écran de connexion : compte modifié ou
+ * retiré ailleurs (US-005 CA-6), ou session locale qu'on ne peut plus revalider seule (US-005 CA-5).
+ */
+export type MotifFinSession = 'COMPTE_MODIFIE' | 'RECONNEXION_REQUISE';
+
+/** `sessionStorage` de l'onglet : la clé d'une session locale y survit à un rechargement, pas à la fermeture. */
+export type MemoireOnglet = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+
+/** Entrée de la mémoire de l'onglet qui garde la clé de la session locale (US-005 CA-5). */
+const CLE_ONGLET = 'poulePosition.cleSessionLocale';
 
 export type ErreurChangementMotDePasse =
   | 'MOT_DE_PASSE_INCORRECT'
@@ -49,6 +77,8 @@ export interface OptionsClientSession {
   enLigne?: () => boolean;
   maintenant?: () => number;
   delai?: number;
+  /** null : pas de mémoire d'onglet (la session locale ne survit pas à un rechargement). */
+  memoireOnglet?: MemoireOnglet | null;
 }
 
 /** Adresse HTTP du serveur, déduite de son adresse WebSocket (`VITE_URL_SERVEUR`), ou null. */
@@ -101,6 +131,7 @@ export function creerClientSession({
   enLigne = () => navigator.onLine,
   maintenant = () => Date.now(),
   delai = DELAI_REPONSE,
+  memoireOnglet = typeof sessionStorage === 'undefined' ? null : sessionStorage,
 }: OptionsClientSession) {
   /** Envoie une requête et lit sa réponse JSON ; lève Injoignable si le serveur ne répond pas à temps. */
   async function requete(
@@ -138,17 +169,128 @@ export function creerClientSession({
    */
   let cleEnMemoire: { email: string; cle: string } | null = null;
 
+  /** Motif de la dernière fermeture de session par l'application, lu une fois par l'écran de connexion. */
+  let motifFin: MotifFinSession | null = null;
+
   /**
-   * Session refusée (401) : effacée ; si le mot de passe a changé ailleurs (US-010 CA-5), ou si le compte a été
-   * désactivé ou supprimé (US-008 CA-5), le vérificateur local aussi.
+   * US-005 CA-5 : clé de la session locale, gardée en mémoire et dans la mémoire de l'onglet (jamais dans IndexedDB :
+   * elle vaut un mot de passe pour le serveur), pour la revalider au retour en ligne.
    */
-  async function oublierSession(session: Session, corps: unknown): Promise<void> {
-    await stockage.effacerSession();
+  function garderCleLocale(email: string, cle: string): void {
+    cleEnMemoire = { email, cle };
+    try {
+      memoireOnglet?.setItem(CLE_ONGLET, JSON.stringify({ email, cle }));
+    } catch {
+      // Mémoire d'onglet indisponible : la revalidation demandera de se reconnecter.
+    }
+  }
+
+  function cleLocale(email: string): string | null {
+    if (cleEnMemoire?.email === email) return cleEnMemoire.cle;
+    try {
+      const gardee = JSON.parse(memoireOnglet?.getItem(CLE_ONGLET) ?? 'null') as { email?: unknown; cle?: unknown };
+      return gardee?.email === email && typeof gardee.cle === 'string' ? gardee.cle : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function oublierCles(): void {
     cleEnMemoire = null;
+    oublierCleOnglet();
+  }
+
+  function oublierCleOnglet(): void {
+    try {
+      memoireOnglet?.removeItem(CLE_ONGLET);
+    } catch {
+      // Rien à effacer.
+    }
+  }
+
+  /**
+   * Compte modifié ou retiré ailleurs (US-010 CA-5, US-008 CA-5, US-005 CA-6) : session et vérificateur local
+   * effacés, et l'écran de connexion dira pourquoi.
+   */
+  async function oublierCompte(email: string): Promise<void> {
+    await stockage.effacerSession();
+    oublierCles();
+    await stockage.oublierAppareilConnu(email);
+    motifFin = 'COMPTE_MODIFIE';
+  }
+
+  /** Session refusée (401) : effacée ; si le compte a été modifié ou retiré ailleurs, le vérificateur local aussi. */
+  async function oublierSession(session: SessionAppareil, corps: unknown): Promise<void> {
     const refus = analyserReponseSession(corps);
     if (!refus.ok && (refus.erreur === 'COMPTE_MODIFIE' || refus.erreur === 'COMPTE_RETIRE')) {
-      await stockage.oublierAppareilConnu(session.compte.email);
+      return oublierCompte(session.compte.email);
     }
+    await stockage.effacerSession();
+    oublierCles();
+  }
+
+  /**
+   * US-005 CA-1 à CA-4 : connexion hors ligne avec le vérificateur local d'un compte déjà connecté en ligne sur cet
+   * appareil, sous le frein local (5 mots de passe faux en 15 minutes bloquent la saisie 15 minutes).
+   */
+  async function connexionLocale(email: string, motDePasse: string): Promise<ResultatConnexion> {
+    const essais = await stockage.lireEssaisLocaux();
+    if (saisieBloquee(essais, maintenant())) return { ok: false, erreur: 'TROP_D_ESSAIS' };
+    const connu = await stockage.lireAppareilConnu(email);
+    if (!connu) return { ok: false, erreur: 'PREMIERE_CONNEXION_HORS_LIGNE' };
+    const cle = await deriverCle(motDePasse, connu.sel);
+    if ((await verificateurLocal(cle)) !== connu.verificateurLocal) {
+      const apres = noterEchecLocal(essais, maintenant());
+      await stockage.ecrireEssaisLocaux(apres);
+      return { ok: false, erreur: saisieBloquee(apres, maintenant()) ? 'TROP_D_ESSAIS' : 'IDENTIFIANTS_INVALIDES' };
+    }
+    await stockage.ecrireEssaisLocaux(essaisLocauxVides());
+    const { nom, role, temporaire } = connu;
+    const session: SessionLocale = {
+      locale: true,
+      expireLe: expirationSession(maintenant()),
+      compte: { email, nom, role, temporaire },
+    };
+    await stockage.ecrireSession(session);
+    garderCleLocale(email, cle);
+    return { ok: true, session };
+  }
+
+  /**
+   * US-005 CA-5 / CA-6 : de retour en ligne, la session locale devient une session en ligne par une connexion
+   * normale avec la clé gardée. Identifiants refusés ou compte désactivé : le compte a changé entre-temps.
+   */
+  async function revaliderLocale(session: SessionLocale): Promise<SessionAppareil | null> {
+    const { email } = session.compte;
+    const cle = cleLocale(email);
+    if (!cle) {
+      await stockage.effacerSession();
+      motifFin = 'RECONNEXION_REQUISE';
+      return null;
+    }
+    let corps: unknown;
+    try {
+      corps = (await avecDelai((signal) => requete('/session', signal, { methode: 'POST', corps: { email, cle } })))
+        .corps;
+    } catch {
+      return session;
+    }
+    const reponse = analyserReponseSession(corps);
+    if (!reponse.ok) {
+      if (reponse.erreur === 'IDENTIFIANTS_INVALIDES' || reponse.erreur === 'COMPTE_DESACTIVE') {
+        await oublierCompte(email);
+        return null;
+      }
+      return session;
+    }
+    await stockage.ecrireSession(reponse.session);
+    const connu = await stockage.lireAppareilConnu(email);
+    if (connu) {
+      const { nom, role, temporaire } = reponse.session.compte;
+      await stockage.enregistrerAppareilConnu({ ...connu, nom, role, temporaire });
+    }
+    oublierCleOnglet();
+    return reponse.session;
   }
 
   /**
@@ -159,7 +301,7 @@ export function creerClientSession({
     const session = await stockage.lireSession();
     if (session?.compte.email !== email) return false;
     await stockage.effacerSession();
-    cleEnMemoire = null;
+    oublierCles();
     await stockage.oublierAppareilConnu(email);
     return true;
   }
@@ -176,7 +318,8 @@ export function creerClientSession({
     if (!urlServeur) return { ok: false, erreur: 'SERVEUR_NON_CONFIGURE' };
     const session = await stockage.lireSession();
     if (!session) return { ok: false, erreur: 'SESSION_INVALIDE' };
-    if (!enLigne()) return { ok: false, erreur: 'HORS_LIGNE' };
+    // Une session locale n'a pas de jeton : elle doit d'abord être revalidée (US-005 CA-5).
+    if (!enLigne() || estLocale(session)) return { ok: false, erreur: 'HORS_LIGNE' };
     try {
       const reponse = await avecDelai((signal) => requete(chemin, signal, { methode, corps, jeton: session.jeton }));
       if (reponse.statut === 401) {
@@ -191,11 +334,14 @@ export function creerClientSession({
   }
 
   return {
-    /** CA-1 à CA-3 : connexion en ligne ; garde la session et l'appareil connu (ADR-0006). */
+    /**
+     * CA-1 à CA-3 : connexion en ligne ; garde la session et l'appareil connu (ADR-0006). Hors ligne, ou si le
+     * serveur ne répond pas, connexion locale sur un appareil connu (US-005).
+     */
     async seConnecter(emailSaisi: string, motDePasse: string): Promise<ResultatConnexion> {
       if (!urlServeur) return { ok: false, erreur: 'SERVEUR_NON_CONFIGURE' };
-      if (!enLigne()) return { ok: false, erreur: 'HORS_LIGNE' };
       const email = normaliserEmail(emailSaisi);
+      if (!enLigne()) return connexionLocale(email, motDePasse);
       try {
         return await avecDelai(async (signal) => {
           const reponseSel = analyserReponseSel(
@@ -216,29 +362,33 @@ export function creerClientSession({
             role: session.compte.role,
             sel: reponseSel.sel,
             verificateurLocal: await verificateurLocal(cle),
+            temporaire: session.compte.temporaire,
             connuDepuis: connu?.connuDepuis ?? maintenant(),
           });
           cleEnMemoire = { email, cle };
           return { ok: true, session };
         });
       } catch (erreur) {
-        if (erreur instanceof Injoignable) return { ok: false, erreur: 'HORS_LIGNE' };
+        if (erreur instanceof Injoignable) return connexionLocale(email, motDePasse);
         throw erreur;
       }
     },
 
     /**
      * CA-4 : session gardée sur l'appareil, prolongée par le serveur si l'appareil est en ligne. Hors ligne, ou si le
-     * serveur ne répond pas, elle reste utilisable telle quelle. CA-7 : un refus du serveur (401) l'efface.
+     * serveur ne répond pas, elle reste utilisable telle quelle. CA-7 : un refus du serveur (401) l'efface. Une
+     * session locale est revalidée (US-005 CA-5). Appelée au démarrage et à chaque retour en ligne.
      */
-    async restaurer(): Promise<Session | null> {
+    async restaurer(): Promise<SessionAppareil | null> {
       const session = await stockage.lireSession();
       if (!session) return null;
       if (sessionExpiree(session.expireLe, maintenant())) {
         await stockage.effacerSession();
+        oublierCles();
         return null;
       }
       if (!urlServeur || !enLigne()) return session;
+      if (estLocale(session)) return revaliderLocale(session);
       let reponse: { statut: number; corps: unknown };
       try {
         reponse = await avecDelai((signal) => requete('/session', signal, { methode: 'GET', jeton: session.jeton }));
@@ -257,8 +407,15 @@ export function creerClientSession({
 
     /** CA-5 : efface la session de l'appareil ; l'appareil reste connu pour la reconnexion hors ligne (US-005). */
     async seDeconnecter(): Promise<void> {
-      cleEnMemoire = null;
+      oublierCles();
       await stockage.effacerSession();
+    },
+
+    /** US-005 CA-6 : pourquoi l'application a fermé la session, une seule fois (null s'il n'y a rien à dire). */
+    lireMotifFin(): MotifFinSession | null {
+      const motif = motifFin;
+      motifFin = null;
+      return motif;
     },
 
     /** US-007 CA-1 : comptes du club (administrateurs seulement). */
@@ -355,7 +512,7 @@ export function creerClientSession({
       const { email } = session.compte;
       const memorisee = cleEnMemoire?.email === email ? cleEnMemoire.cle : null;
       if (actuel === null && !memorisee) return { ok: false, erreur: 'MOT_DE_PASSE_ACTUEL_REQUIS' };
-      if (!enLigne()) return { ok: false, erreur: 'HORS_LIGNE' };
+      if (!enLigne() || estLocale(session)) return { ok: false, erreur: 'HORS_LIGNE' };
       try {
         return await avecDelai(async (signal): Promise<ResultatChangementMotDePasse> => {
           let cleActuelle = memorisee;
@@ -390,6 +547,7 @@ export function creerClientSession({
             role: reponse.session.compte.role,
             sel: demande.sel,
             verificateurLocal: await verificateurLocal(demande.cle),
+            temporaire: false,
             connuDepuis: connu?.connuDepuis ?? maintenant(),
           });
           cleEnMemoire = { email, cle: demande.cle };

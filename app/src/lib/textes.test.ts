@@ -10,9 +10,17 @@ describe('textes de la connexion', () => {
     expect(textes.connexion.erreurs.COMPTE_DESACTIVE).toBe('Ce compte est désactivé : contactez un administrateur');
   });
 
-  it('US-003 hors ligne : un serveur injoignable affiche le même message que hors ligne', () => {
-    expect(textes.connexion.erreurs.HORS_LIGNE).toBe(textes.connexion.horsLigne);
+  it('US-003 hors ligne : l’écran indique que seule la reconnexion sur un appareil déjà utilisé est possible', () => {
     expect(textes.connexion.horsLigne).toBe('Hors ligne : connexion possible uniquement sur un appareil déjà utilisé');
+  });
+
+  it('US-005 CA-1, CA-3, CA-4 et CA-6 : messages de l’US', () => {
+    expect(textes.organisateur.connexionLocale).toBe('Hors ligne : connexion locale');
+    expect(textes.connexion.erreurs.PREMIERE_CONNEXION_HORS_LIGNE).toBe(
+      'Première connexion impossible hors ligne sur cet appareil',
+    );
+    expect(textes.connexion.erreurs.TROP_D_ESSAIS).toBe('Trop d’essais : réessayez dans 15 minutes');
+    expect(textes.connexion.motifs.COMPTE_MODIFIE).toBe('Votre compte a été modifié : reconnectez-vous');
   });
 
   it('US-003 CA-1 : affiche le nom et le rôle', () => {

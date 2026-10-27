@@ -1,6 +1,7 @@
 <script lang="ts">
   // Entête des pages réservées (US-014) : bannière « header » qui ramène à l'accueil de l'organisateur, et
-  // déconnexion. Les liens de navigation (Compétitions, Résultats) viendront avec leurs US.
+  // déconnexion. Les liens de navigation (Compétitions, Résultats) viendront avec leurs US. Bandeau « connexion
+  // locale » tant que la session ouverte hors ligne n'est pas revalidée (US-005 CA-1).
   import { CHEMINS } from '../lib/routes';
   import { textes } from '../lib/textes';
   import Banniere from './Banniere.svelte';
@@ -8,9 +9,10 @@
   interface Proprietes {
     surDeconnexion: () => void;
     naviguer: (chemin: string) => void;
+    locale?: boolean;
   }
 
-  let { surDeconnexion, naviguer }: Proprietes = $props();
+  let { surDeconnexion, naviguer, locale = false }: Proprietes = $props();
 
   function versAccueil(evenement: MouseEvent) {
     if (evenement.button !== 0 || evenement.ctrlKey || evenement.metaKey || evenement.shiftKey) return;
@@ -25,8 +27,22 @@
   </a>
   <button type="button" onclick={surDeconnexion}>{textes.organisateur.seDeconnecter}</button>
 </header>
+{#if locale}
+  <p class="locale" role="status">{textes.organisateur.connexionLocale}</p>
+{/if}
 
 <style>
+  .locale {
+    margin: 0;
+    padding: 0.45rem max(1rem, env(safe-area-inset-left));
+    border-bottom: 1px solid var(--bordure);
+    background: var(--surface-2);
+    color: var(--texte);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+  }
+
   header {
     display: flex;
     align-items: center;

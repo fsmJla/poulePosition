@@ -6,7 +6,7 @@ import {
   type Role,
 } from '@poule-position/domaine';
 import type { EtatConnexion } from './connexion';
-import type { ErreurChangementMotDePasse, ErreurComptes, ErreurConnexion } from './session';
+import type { ErreurChangementMotDePasse, ErreurComptes, ErreurConnexion, MotifFinSession } from './session';
 
 export const textes = {
   /** Nom affiché de l'application (US-014) ; le nom technique reste poulePosition. */
@@ -38,14 +38,21 @@ export const textes = {
     erreurs: {
       IDENTIFIANTS_INVALIDES: 'E-mail ou mot de passe incorrect',
       COMPTE_DESACTIVE: 'Ce compte est désactivé : contactez un administrateur',
-      HORS_LIGNE: 'Hors ligne : connexion possible uniquement sur un appareil déjà utilisé',
+      PREMIERE_CONNEXION_HORS_LIGNE: 'Première connexion impossible hors ligne sur cet appareil',
+      TROP_D_ESSAIS: 'Trop d’essais : réessayez dans 15 minutes',
       SERVEUR_NON_CONFIGURE: 'Serveur non configuré : connexion impossible',
       ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
     } satisfies Record<ErreurConnexion, string>,
+    /** US-005 : pourquoi l'application a fermé la session. */
+    motifs: {
+      COMPTE_MODIFIE: 'Votre compte a été modifié : reconnectez-vous',
+      RECONNEXION_REQUISE: 'De retour en ligne : reconnectez-vous pour continuer',
+    } satisfies Record<MotifFinSession, string>,
   },
   organisateur: {
     bonjour: (nom: string) => `Bonjour, ${nom}`,
     seDeconnecter: 'Se déconnecter',
+    connexionLocale: 'Hors ligne : connexion locale',
     changerMotDePasse: 'Changer mon mot de passe',
     actions: 'Actions',
   },

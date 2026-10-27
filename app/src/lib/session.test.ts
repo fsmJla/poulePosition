@@ -1,8 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DUREE_SESSION } from '@poule-position/domaine';
+import { essaisLocauxVides, DUREE_SESSION } from '@poule-position/domaine';
 import { deriverCle, verificateurLocal, type Session } from '@poule-position/protocole';
-import { creerClientSession, urlHttp, DELAI_REPONSE, type OptionsClientSession } from './session';
-import type { AppareilConnu, Stockage } from './stockage';
+import { creerClientSession, urlHttp, DELAI_REPONSE, type MemoireOnglet, type OptionsClientSession } from './session';
+import type { AppareilConnu, SessionAppareil, Stockage } from './stockage';
+
+/** `sessionStorage` en mémoire : un onglet neuf par client, sauf s'il est fourni. */
+function memoireOnglet(): MemoireOnglet & { valeurs: Map<string, string> } {
+  const valeurs = new Map<string, string>();
+  return {
+    valeurs,
+    getItem: (cle) => valeurs.get(cle) ?? null,
+    setItem: (cle, valeur) => void valeurs.set(cle, valeur),
+    removeItem: (cle) => void valeurs.delete(cle),
+  };
+}
 
 const SEL = 'AAAAAAAAAAAAAAAAAAAAAA';
 const MAINTENANT = Date.UTC(2026, 9, 25, 12);
@@ -11,9 +22,13 @@ const sessionServeur = { ok: true, jeton: 'nouveau.jeton.signe', expireLe: MAINT
 const sessionStockee: Session = { jeton: 'ancien.jeton.signe', expireLe: MAINTENANT + 1000, compte };
 
 /** Stockage en mémoire, à la place d'IndexedDB. */
-function stockageMemoire(session: Session | null = null) {
-  const etat = { session, appareils: new Map<string, AppareilConnu>() };
+function stockageMemoire(session: SessionAppareil | null = null) {
+  const etat = { session, appareils: new Map<string, AppareilConnu>(), essais: essaisLocauxVides() };
   const stockage: Stockage = {
+    lireEssaisLocaux: async () => etat.essais,
+    ecrireEssaisLocaux: async (essais) => {
+      etat.essais = essais;
+    },
     lireSession: async () => etat.session,
     ecrireSession: async (nouvelle) => {
       etat.session = nouvelle;
@@ -68,6 +83,7 @@ function client(options: Partial<OptionsClientSession> & Pick<OptionsClientSessi
     urlServeur: 'http://serveur',
     enLigne: () => true,
     maintenant: () => MAINTENANT,
+    memoireOnglet: memoireOnglet(),
     ...options,
   });
 }
@@ -102,13 +118,14 @@ describe('seConnecter', () => {
       { route: 'POST /session', corps: { email: 'orga@club.fr', cle } },
     ]);
     expect(JSON.stringify(serveur.requetes)).not.toContain('mot-de-passe-solide');
-    expect(etat.session?.jeton).toBe(sessionServeur.jeton);
+    expect(etat.session).toMatchObject({ jeton: sessionServeur.jeton });
     expect(etat.appareils.get('orga@club.fr')).toEqual({
       email: 'orga@club.fr',
       nom: 'Orga',
       role: 'organisateur',
       sel: SEL,
       verificateurLocal: await verificateurLocal(cle),
+      temporaire: false,
       connuDepuis: MAINTENANT,
     });
   });
@@ -130,27 +147,27 @@ describe('seConnecter', () => {
     expect(etat.appareils.size).toBe(0);
   });
 
-  it('US-003 hors ligne : sans réseau, la connexion est refusée sans rien envoyer', async () => {
+  it('US-005 CA-3 : sans réseau, un compte jamais venu est refusé sans rien envoyer', async () => {
     const serveur = fauxServeur({});
     const resultat = await client({
       stockage: stockageMemoire().stockage,
       envoyer: serveur.envoyer,
       enLigne: () => false,
     }).seConnecter('orga@club.fr', 'mot-de-passe-solide');
-    expect(resultat).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect(resultat).toEqual({ ok: false, erreur: 'PREMIERE_CONNEXION_HORS_LIGNE' });
     expect(serveur.requetes).toHaveLength(0);
   });
 
-  it('US-003 hors ligne : un serveur injoignable donne le même message que hors ligne', async () => {
+  it('US-005 CA-3 : un serveur injoignable mène à la connexion locale (ici refusée : compte jamais venu)', async () => {
     const serveur = fauxServeur({ 'POST /session/sel': 'reseau' });
     const resultat = await client({ stockage: stockageMemoire().stockage, envoyer: serveur.envoyer }).seConnecter(
       'orga@club.fr',
       'mot-de-passe-solide',
     );
-    expect(resultat).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect(resultat).toEqual({ ok: false, erreur: 'PREMIERE_CONNEXION_HORS_LIGNE' });
   });
 
-  it('US-003 hors ligne : un serveur qui ne répond pas donne le même message, après le délai', async () => {
+  it('US-005 CA-3 : un serveur qui ne répond pas mène à la connexion locale, après le délai', async () => {
     const serveur = fauxServeur({ 'POST /session/sel': 'jamais' });
     const debut = Date.now();
     const resultat = await client({
@@ -158,7 +175,7 @@ describe('seConnecter', () => {
       envoyer: serveur.envoyer,
       delai: 50,
     }).seConnecter('orga@club.fr', 'mot-de-passe-solide');
-    expect(resultat).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect(resultat).toEqual({ ok: false, erreur: 'PREMIERE_CONNEXION_HORS_LIGNE' });
     expect(Date.now() - debut).toBeLessThan(5_000);
   });
 
@@ -189,7 +206,7 @@ describe('restaurer', () => {
     const { stockage, etat } = stockageMemoire(sessionStockee);
     const serveur = fauxServeur({ 'GET /session': { statut: 200, corps: sessionServeur } });
     const session = await client({ stockage, envoyer: serveur.envoyer }).restaurer();
-    expect(session?.jeton).toBe(sessionServeur.jeton);
+    expect(session).toMatchObject({ jeton: sessionServeur.jeton });
     expect(etat.session?.expireLe).toBe(sessionServeur.expireLe);
     expect(serveur.requetes[0]?.entetes.get('Authorization')).toBe(`Bearer ${sessionStockee.jeton}`);
   });
@@ -292,7 +309,7 @@ describe('changerMotDePasse (US-010)', () => {
     expect(corps.cle).toBe(await deriverCle(NOUVEAU, corps.sel));
     expect(envoi?.entetes.get('Authorization')).toBe(`Bearer ${sessionStockee.jeton}`);
     expect(JSON.stringify(serveur.requetes)).not.toMatch(/mot-de-passe-actuel|nouveau-mot-de-passe/);
-    expect(etat.session?.jeton).toBe(sessionApres.jeton);
+    expect(etat.session).toMatchObject({ jeton: sessionApres.jeton });
     expect(etat.appareils.get(compte.email)).toMatchObject({
       sel: corps.sel,
       verificateurLocal: await verificateurLocal(corps.cle),
@@ -580,5 +597,217 @@ describe('désactivation, réactivation et suppression (US-008)', () => {
     expect(await c.changerEtatCompte('c2', false)).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
     expect(await c.supprimerCompte(autre)).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
     expect(serveur.requetes).toHaveLength(0);
+  });
+});
+
+describe('reconnexion hors ligne (US-005)', () => {
+  const MOT_DE_PASSE = 'mot-de-passe-solide';
+  const MINUTE = 60_000;
+
+  /** Appareil connu d'un compte, avec le vrai vérificateur local de son mot de passe. */
+  async function connu(email: string, motDePasse: string, extra: Partial<AppareilConnu> = {}): Promise<AppareilConnu> {
+    const verificateur = await verificateurLocal(await deriverCle(motDePasse, SEL));
+    return {
+      email,
+      nom: email.split('@')[0]!,
+      role: 'organisateur',
+      sel: SEL,
+      verificateurLocal: verificateur,
+      temporaire: false,
+      connuDepuis: 1,
+      ...extra,
+    };
+  }
+
+  async function appareil(...comptes: AppareilConnu[]) {
+    const memoire = stockageMemoire();
+    for (const c of comptes) await memoire.stockage.enregistrerAppareilConnu(c);
+    return memoire;
+  }
+
+  const sessionLocale = { locale: true as const, expireLe: MAINTENANT + DUREE_SESSION, compte };
+
+  it('US-005 CA-1 : hors ligne, un compte connu se reconnecte (session locale), sans rien envoyer', async () => {
+    const { stockage, etat } = await appareil(await connu(compte.email, MOT_DE_PASSE, { nom: 'Orga' }));
+    const serveur = fauxServeur({});
+    const resultat = await client({ stockage, envoyer: serveur.envoyer, enLigne: () => false }).seConnecter(
+      ' Orga@Club.fr ',
+      MOT_DE_PASSE,
+    );
+    expect(resultat).toEqual({ ok: true, session: sessionLocale });
+    expect(etat.session).toEqual(sessionLocale);
+    expect(serveur.requetes).toHaveLength(0);
+  });
+
+  it('US-005 CA-1 : un serveur injoignable mène aussi à la connexion locale', async () => {
+    const { stockage } = await appareil(await connu(compte.email, MOT_DE_PASSE, { nom: 'Orga' }));
+    const serveur = fauxServeur({ 'POST /session/sel': 'reseau' });
+    expect(await client({ stockage, envoyer: serveur.envoyer }).seConnecter(compte.email, MOT_DE_PASSE)).toEqual({
+      ok: true,
+      session: sessionLocale,
+    });
+  });
+
+  it('US-005 CA-1 : un mot de passe temporaire reste temporaire en session locale', async () => {
+    const { stockage } = await appareil(await connu(compte.email, MOT_DE_PASSE, { temporaire: true }));
+    const resultat = await client({ stockage, enLigne: () => false }).seConnecter(compte.email, MOT_DE_PASSE);
+    expect(resultat).toMatchObject({ ok: true, session: { locale: true, compte: { temporaire: true } } });
+  });
+
+  it('US-005 CA-2 : deux comptes connus du PC se reconnectent chacun avec son propre mot de passe', async () => {
+    const { stockage } = await appareil(
+      await connu('alice@club.fr', 'mot-de-passe-alice'),
+      await connu('bruno@club.fr', 'mot-de-passe-bruno'),
+    );
+    const c = client({ stockage, enLigne: () => false });
+    expect(await c.seConnecter('alice@club.fr', 'mot-de-passe-alice')).toMatchObject({ ok: true });
+    expect(await c.seConnecter('bruno@club.fr', 'mot-de-passe-bruno')).toMatchObject({
+      ok: true,
+      session: { compte: { email: 'bruno@club.fr' } },
+    });
+    expect(await c.seConnecter('alice@club.fr', 'mot-de-passe-bruno')).toEqual({
+      ok: false,
+      erreur: 'IDENTIFIANTS_INVALIDES',
+    });
+  });
+
+  it('US-005 CA-4 : mot de passe faux, puis blocage de 15 minutes au 5e échec, puis remise à zéro', async () => {
+    const { stockage, etat } = await appareil(await connu(compte.email, MOT_DE_PASSE));
+    let maintenant = MAINTENANT;
+    const c = client({ stockage, enLigne: () => false, maintenant: () => maintenant });
+    for (let i = 0; i < 4; i++) {
+      expect(await c.seConnecter(compte.email, 'mauvais-mot')).toEqual({ ok: false, erreur: 'IDENTIFIANTS_INVALIDES' });
+    }
+    expect(await c.seConnecter(compte.email, 'mauvais-mot')).toEqual({ ok: false, erreur: 'TROP_D_ESSAIS' });
+    expect(await c.seConnecter(compte.email, MOT_DE_PASSE)).toEqual({ ok: false, erreur: 'TROP_D_ESSAIS' });
+    expect(etat.session).toBeNull();
+    maintenant += 15 * MINUTE;
+    expect(await c.seConnecter(compte.email, MOT_DE_PASSE)).toMatchObject({ ok: true });
+    expect(etat.essais).toEqual(essaisLocauxVides());
+  });
+
+  it('US-005 CA-4 : un compte jamais venu ne compte pas comme un échec', async () => {
+    const { stockage, etat } = await appareil();
+    await client({ stockage, enLigne: () => false }).seConnecter('inconnu@club.fr', MOT_DE_PASSE);
+    expect(etat.essais.echecs).toEqual([]);
+  });
+
+  it('US-003 : une connexion en ligne retient si le mot de passe est temporaire', async () => {
+    const { stockage, etat } = stockageMemoire();
+    const serveur = fauxServeur({
+      'POST /session/sel': { statut: 200, corps: { ok: true, sel: SEL } },
+      'POST /session': { statut: 200, corps: { ...sessionServeur, compte: { ...compte, temporaire: true } } },
+    });
+    await client({ stockage, envoyer: serveur.envoyer }).seConnecter(compte.email, MOT_DE_PASSE);
+    expect(etat.appareils.get(compte.email)?.temporaire).toBe(true);
+  });
+
+  describe('revalidation au retour en ligne', () => {
+    /** Session locale ouverte hors ligne ; le réseau revient ensuite. */
+    async function sessionOuverteHorsLigne(reponses: Parameters<typeof fauxServeur>[0], onglet = memoireOnglet()) {
+      const memoire = await appareil(await connu(compte.email, MOT_DE_PASSE, { nom: 'Orga' }));
+      const reseau = { enLigne: false };
+      const serveur = fauxServeur(reponses);
+      const options = { stockage: memoire.stockage, envoyer: serveur.envoyer, enLigne: () => reseau.enLigne };
+      const c = client({ ...options, memoireOnglet: onglet });
+      expect(await c.seConnecter(compte.email, MOT_DE_PASSE)).toMatchObject({ ok: true });
+      reseau.enLigne = true;
+      return { ...memoire, serveur, client: c, onglet, options };
+    }
+
+    it('US-005 CA-5 : la session locale devient une session en ligne, sans action', async () => {
+      const {
+        client: c,
+        etat,
+        serveur,
+        onglet,
+      } = await sessionOuverteHorsLigne({
+        'POST /session': { statut: 200, corps: sessionServeur },
+      });
+      const session = await c.restaurer();
+      expect(session).toEqual({ jeton: sessionServeur.jeton, expireLe: sessionServeur.expireLe, compte });
+      expect(etat.session).toEqual(session);
+      expect(serveur.requetes.map(({ route, corps }) => ({ route, corps }))).toEqual([
+        { route: 'POST /session', corps: { email: compte.email, cle: await deriverCle(MOT_DE_PASSE, SEL) } },
+      ]);
+      expect(onglet.valeurs.size).toBe(0);
+    });
+
+    it('US-005 CA-5 : après un rechargement de la page (même onglet), la revalidation fonctionne encore', async () => {
+      const { onglet, options } = await sessionOuverteHorsLigne({
+        'POST /session': { statut: 200, corps: sessionServeur },
+      });
+      const recharge = client({ ...options, memoireOnglet: onglet });
+      expect(await recharge.restaurer()).toMatchObject({ jeton: sessionServeur.jeton });
+    });
+
+    it('US-005 CA-5 : dans un nouvel onglet, la session locale est fermée et il faut se reconnecter', async () => {
+      const { options, etat, serveur } = await sessionOuverteHorsLigne({});
+      const nouvelOnglet = client({ ...options, memoireOnglet: memoireOnglet() });
+      expect(await nouvelOnglet.restaurer()).toBeNull();
+      expect(etat.session).toBeNull();
+      expect(etat.appareils.has(compte.email)).toBe(true);
+      expect(nouvelOnglet.lireMotifFin()).toBe('RECONNEXION_REQUISE');
+      expect(serveur.requetes).toHaveLength(0);
+    });
+
+    it.each([
+      ['injoignable', 'reseau' as const],
+      ['en erreur', { statut: 500, corps: {} }],
+    ])('US-005 CA-5 : un serveur %s laisse la session locale ouverte', async (_cas, reponse) => {
+      const { client: c, etat } = await sessionOuverteHorsLigne({ 'POST /session': reponse });
+      expect(await c.restaurer()).toEqual(sessionLocale);
+      expect(etat.session).toEqual(sessionLocale);
+    });
+
+    it.each([
+      ['mot de passe changé, réinitialisé ou compte supprimé', 401, 'IDENTIFIANTS_INVALIDES'],
+      ['compte désactivé', 403, 'COMPTE_DESACTIVE'],
+    ])('US-005 CA-6 : %s → session et vérificateur local effacés, avec le motif', async (_cas, statut, erreur) => {
+      const { client: c, etat } = await sessionOuverteHorsLigne({
+        'POST /session': { statut, corps: { ok: false, erreur } },
+      });
+      expect(await c.restaurer()).toBeNull();
+      expect(etat.session).toBeNull();
+      expect(etat.appareils.has(compte.email)).toBe(false);
+      expect(c.lireMotifFin()).toBe('COMPTE_MODIFIE');
+      expect(c.lireMotifFin()).toBeNull();
+    });
+
+    it('US-005 : une session locale n’appelle pas les routes réservées tant qu’elle n’est pas revalidée', async () => {
+      const { client: c, serveur } = await sessionOuverteHorsLigne({});
+      expect(await c.listerComptes()).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+      expect(await c.changerMotDePasse(MOT_DE_PASSE, 'nouveau-mot-de-passe')).toEqual({
+        ok: false,
+        erreur: 'HORS_LIGNE',
+      });
+      expect(serveur.requetes).toHaveLength(0);
+    });
+
+    it('US-005 : la déconnexion oublie la clé de l’onglet', async () => {
+      const { client: c, onglet } = await sessionOuverteHorsLigne({});
+      expect(onglet.valeurs.size).toBe(1);
+      await c.seDeconnecter();
+      expect(onglet.valeurs.size).toBe(0);
+    });
+  });
+
+  it.each(['COMPTE_MODIFIE', 'COMPTE_RETIRE'])(
+    'US-005 CA-6 : une session en ligne refusée (%s) donne le même motif',
+    async (erreur) => {
+      const { stockage } = stockageMemoire(sessionStockee);
+      const serveur = fauxServeur({ 'GET /session': { statut: 401, corps: { ok: false, erreur } } });
+      const c = client({ stockage, envoyer: serveur.envoyer });
+      expect(await c.restaurer()).toBeNull();
+      expect(c.lireMotifFin()).toBe('COMPTE_MODIFIE');
+    },
+  );
+
+  it('une session simplement expirée côté serveur ne donne pas de motif', async () => {
+    const { stockage } = stockageMemoire(sessionStockee);
+    const serveur = fauxServeur({ 'GET /session': { statut: 401, corps: { ok: false, erreur: 'SESSION_INVALIDE' } } });
+    const c = client({ stockage, envoyer: serveur.envoyer });
+    await c.restaurer();
+    expect(c.lireMotifFin()).toBeNull();
   });
 });

@@ -3,7 +3,7 @@
   // il n'est pas redemandé (CA-4). Le changement exige le réseau.
   import { onMount, untrack } from 'svelte';
   import { validerNouveauMotDePasse } from '@poule-position/domaine';
-  import type { Session } from '@poule-position/protocole';
+  import type { SessionAppareil } from '../lib/stockage';
   import Lien from '../composants/Lien.svelte';
   import { CHEMINS } from '../lib/routes';
   import type { ClientSession, ErreurChangementMotDePasse } from '../lib/session';
@@ -11,8 +11,8 @@
 
   interface Proprietes {
     client: ClientSession;
-    session: Session;
-    surChangement: (session: Session) => void;
+    session: SessionAppareil;
+    surChangement: (session: SessionAppareil) => void;
     surSessionPerdue: () => void;
     naviguer: (chemin: string) => void;
   }

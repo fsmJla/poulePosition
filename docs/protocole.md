@@ -198,6 +198,12 @@ forme). C'est le modèle de toute route réservée : sans session valide, la ré
 L'application conserve la session dans IndexedDB (table `session`) et l'envoie dans l'en-tête `Authorization`
 (pas de cookie). La déconnexion efface la session de l'appareil, sans appel au serveur.
 
+**Session locale** (US-005, ADR-0006) : hors ligne, ou si le serveur ne répond pas, un compte déjà connecté en ligne
+sur l'appareil s'y reconnecte avec son vérificateur local, sans aucun appel. Cette session n'a pas de jeton. Au
+retour en ligne, l'application la revalide par un `POST /session` ordinaire, avec la clé `cle` gardée le temps de
+l'onglet. `401 IDENTIFIANTS_INVALIDES` ou `403 COMPTE_DESACTIVE` signifie que le compte a changé entre-temps :
+l'application efface alors la session et le vérificateur local. Aucune route n'est ajoutée.
+
 ## 8. Changement de mot de passe (US-010)
 
 `POST /compte/mot-de-passe` avec `Authorization: Bearer <jeton>` et le corps (exactement ces champs) :
