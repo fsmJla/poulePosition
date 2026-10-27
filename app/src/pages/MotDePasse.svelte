@@ -140,7 +140,7 @@
       <button type="submit" disabled={enCours || horsLigne}>{enCours ? t.enCours : t.valider}</button>
     </form>
     {#if !temporaire}
-      <Lien chemin={CHEMINS.organisateur} {naviguer}>{t.retour}</Lien>
+      <Lien chemin={CHEMINS.profil} {naviguer}>{t.retour}</Lien>
     {/if}
   {/if}
 </main>

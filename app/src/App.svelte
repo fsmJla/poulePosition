@@ -11,6 +11,7 @@
   import Comptes from './pages/Comptes.svelte';
   import Connexion from './pages/Connexion.svelte';
   import MotDePasse from './pages/MotDePasse.svelte';
+  import Profil from './pages/Profil.svelte';
   import Organisateur from './pages/Organisateur.svelte';
 
   const urlServeur = import.meta.env.VITE_URL_SERVEUR ?? (import.meta.env.DEV ? URL_SERVEUR_LOCAL : undefined);
@@ -95,6 +96,8 @@
       <Organisateur {session} {naviguer} />
     {:else if route.page === 'motDePasse'}
       <MotDePasse {client} {session} surChangement={(nouvelle) => (session = nouvelle)} {surSessionPerdue} {naviguer} />
+    {:else if route.page === 'profil'}
+      <Profil {client} {session} surChangement={(nouvelle) => (session = nouvelle)} {surSessionPerdue} {naviguer} />
     {:else if route.page === 'comptes'}
       <Comptes {client} {surSessionPerdue} />
     {/if}

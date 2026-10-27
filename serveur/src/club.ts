@@ -10,6 +10,8 @@ import {
   verifierChangementRole,
   verifierRetrait,
   REGLE_COMPTE,
+  estCouleurAvatar,
+  type CouleurAvatar,
   type Essais,
   type Role,
 } from '@poule-position/domaine';
@@ -37,6 +39,8 @@ export interface CompteStocke {
   versionMdp: number;
   /** Dernière connexion par mot de passe, en millisecondes, ou null (US-007). */
   derniereConnexion: number | null;
+  /** Couleur d'avatar choisie (US-016), ou null : couleur par défaut, déduite de l'e-mail. */
+  avatar: CouleurAvatar | null;
 }
 
 interface LigneCompte {
@@ -50,6 +54,7 @@ interface LigneCompte {
   temporaire: number;
   versionMdp: number;
   derniereConnexion: number | null;
+  avatar: string | null;
   [colonne: string]: SqlStorageValue;
 }
 
@@ -60,7 +65,7 @@ export type ResultatCompte =
   | { ok: false; erreur: 'EMAIL_DEJA_UTILISE' | 'COMPTE_INCONNU' | 'DERNIER_ADMINISTRATEUR' };
 
 const COLONNES = `id, email, nom, role, sel, verificateur, actif, temporaire, version_mdp AS versionMdp,
-  derniere_connexion AS derniereConnexion`;
+  derniere_connexion AS derniereConnexion, avatar`;
 
 export class Club extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
@@ -80,7 +85,7 @@ export class Club extends DurableObject<Env> {
         version_mdp INTEGER NOT NULL DEFAULT 0,
         derniere_connexion INTEGER
       )`);
-    // Migrations : colonnes ajoutées aux tables créées avant elles (US-010, US-007).
+    // Migrations : colonnes ajoutées aux tables créées avant elles (US-010, US-007, US-016).
     const colonnes = ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(comptes)').toArray();
     const ajouter = (nom: string, definition: string) => {
       if (!colonnes.some(({ name }) => name === nom)) {
@@ -89,6 +94,7 @@ export class Club extends DurableObject<Env> {
     };
     ajouter('version_mdp', 'INTEGER NOT NULL DEFAULT 0');
     ajouter('derniere_connexion', 'INTEGER');
+    ajouter('avatar', 'TEXT');
     // US-004 : essais erronés par e-mail normalisé, que le compte existe ou non (CA-4). Purgés dès qu'ils ne servent
     // plus (alarme), pour ne pas garder les e-mails essayés (ADR-0014).
     ctx.storage.sql.exec(`
@@ -214,6 +220,22 @@ export class Club extends DurableObject<Env> {
     return { ok: true };
   }
 
+  /**
+   * US-016 CA-3 / CA-4 : le compte modifie son propre nom ou la couleur de son avatar. Renvoie le compte à jour, ou
+   * null s'il n'existe plus.
+   */
+  async modifierProfil(id: string, profil: { nom?: string; avatar?: CouleurAvatar }): Promise<CompteStocke | null> {
+    const compte = this.lireCompte('id', id);
+    if (!compte) return null;
+    this.ctx.storage.sql.exec(
+      'UPDATE comptes SET nom = ?, avatar = ? WHERE id = ?',
+      profil.nom ?? compte.nom,
+      profil.avatar ?? compte.avatar,
+      id,
+    );
+    return this.lireCompte('id', id);
+  }
+
   /** US-007 CA-1 : date de la dernière connexion par mot de passe. */
   async noterConnexion(id: string, date: number): Promise<void> {
     this.ctx.storage.sql.exec('UPDATE comptes SET derniere_connexion = ? WHERE id = ?', date, id);
@@ -287,5 +309,10 @@ export class Club extends DurableObject<Env> {
 }
 
 function versCompte(ligne: LigneCompte): CompteStocke {
-  return { ...ligne, actif: ligne.actif === 1, temporaire: ligne.temporaire === 1 };
+  return {
+    ...ligne,
+    actif: ligne.actif === 1,
+    temporaire: ligne.temporaire === 1,
+    avatar: estCouleurAvatar(ligne.avatar) ? ligne.avatar : null,
+  };
 }

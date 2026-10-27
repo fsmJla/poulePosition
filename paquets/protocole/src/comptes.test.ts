@@ -3,6 +3,7 @@ import { deriverCle } from './authentification';
 import {
   analyserDemandeCreationCompte,
   analyserDemandeModificationCompte,
+  analyserDemandeProfil,
   analyserDemandeReinitialisation,
   analyserReponseCompte,
   analyserReponseComptes,
@@ -147,5 +148,27 @@ describe('réinitialisation d’un mot de passe (US-009)', () => {
     ['mot de passe en clair', { sel: SEL, cle: CLE, motDePasse: 'x' }],
   ])('refuse une demande invalide : %s', (_cas, brut) => {
     expect(analyserDemandeReinitialisation(brut)).toEqual({ ok: false });
+  });
+});
+
+describe('modification de son profil (US-016)', () => {
+  it('US-016 CA-3 et CA-4 : accepte le nom, la couleur d’avatar, ou les deux', () => {
+    expect(analyserDemandeProfil({ nom: ' Nouveau nom ' })).toEqual({ ok: true, demande: { nom: 'Nouveau nom' } });
+    expect(analyserDemandeProfil({ avatar: 'prune' })).toEqual({ ok: true, demande: { avatar: 'prune' } });
+    expect(analyserDemandeProfil({ nom: 'N', avatar: 'ocre' })).toEqual({
+      ok: true,
+      demande: { nom: 'N', avatar: 'ocre' },
+    });
+  });
+
+  it.each([
+    ['vide', {}],
+    ['nom vide', { nom: ' ' }],
+    ['couleur inconnue', { avatar: 'rose-fluo' }],
+    ['rôle (réservé à l’administrateur)', { role: 'administrateur' }],
+    ['e-mail (non modifiable)', { email: 'autre@club.fr' }],
+    ['tableau', []],
+  ])('US-016 CA-5 : refuse %s', (_cas, brut) => {
+    expect(analyserDemandeProfil(brut)).toEqual({ ok: false });
   });
 });

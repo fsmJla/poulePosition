@@ -17,7 +17,13 @@ function memoireOnglet(): MemoireOnglet & { valeurs: Map<string, string> } {
 
 const SEL = 'AAAAAAAAAAAAAAAAAAAAAA';
 const MAINTENANT = Date.UTC(2026, 9, 25, 12);
-const compte = { email: 'orga@club.fr', nom: 'Orga', role: 'organisateur', temporaire: false } as const;
+const compte = {
+  email: 'orga@club.fr',
+  nom: 'Orga',
+  role: 'organisateur',
+  temporaire: false,
+  avatar: 'prune',
+} as const;
 const sessionServeur = { ok: true, jeton: 'nouveau.jeton.signe', expireLe: MAINTENANT + DUREE_SESSION, compte };
 const sessionStockee: Session = { jeton: 'ancien.jeton.signe', expireLe: MAINTENANT + 1000, compte };
 
@@ -56,6 +62,7 @@ type Route =
   | 'POST /comptes'
   | 'PATCH /comptes/c2'
   | 'POST /comptes/c2/mot-de-passe'
+  | 'PATCH /compte'
   | 'DELETE /comptes/c2';
 type Reponse = { statut: number; corps: unknown } | 'reseau' | 'jamais';
 
@@ -126,6 +133,7 @@ describe('seConnecter', () => {
       sel: SEL,
       verificateurLocal: await verificateurLocal(cle),
       temporaire: false,
+      avatar: 'prune',
       connuDepuis: MAINTENANT,
     });
   });
@@ -623,6 +631,7 @@ describe('reconnexion hors ligne (US-005)', () => {
       sel: SEL,
       verificateurLocal: verificateur,
       temporaire: false,
+      avatar: 'prune',
       connuDepuis: 1,
       ...extra,
     };
@@ -833,6 +842,7 @@ describe('oublier cet appareil (US-006)', () => {
       sel: SEL,
       verificateurLocal: verificateur,
       temporaire: false,
+      avatar: 'prune',
       connuDepuis: 1,
     };
   }
@@ -891,5 +901,75 @@ describe('oublier cet appareil (US-006)', () => {
     await stockage.enregistrerAppareilConnu(await connu(compte.email, MOT_DE_PASSE));
     await client({ stockage }).oublierCetAppareil();
     expect(etat.appareils.has(compte.email)).toBe(true);
+  });
+});
+
+describe('modifier son profil (US-016)', () => {
+  const apres = { ...sessionServeur, compte: { ...compte, nom: 'Nouveau nom', avatar: 'ocre' } };
+
+  async function connecte(reponses: Parameters<typeof fauxServeur>[0], enLigne = true) {
+    const { stockage, etat } = stockageMemoire(sessionStockee);
+    await stockage.enregistrerAppareilConnu({ ...compte, sel: SEL, verificateurLocal: 'v', connuDepuis: 1 });
+    const serveur = fauxServeur(reponses);
+    return { etat, serveur, client: client({ stockage, envoyer: serveur.envoyer, enLigne: () => enLigne }) };
+  }
+
+  it('US-016 CA-3 et CA-4 : envoie le nom et la couleur, garde la nouvelle session et met à jour l’appareil connu', async () => {
+    const { etat, serveur, client: c } = await connecte({ 'PATCH /compte': { statut: 200, corps: apres } });
+    const resultat = await c.modifierProfil({ nom: 'Nouveau nom', avatar: 'ocre' });
+    expect(resultat).toEqual({
+      ok: true,
+      session: { jeton: apres.jeton, expireLe: apres.expireLe, compte: apres.compte },
+    });
+    expect(serveur.requetes[0]?.corps).toEqual({ nom: 'Nouveau nom', avatar: 'ocre' });
+    expect(serveur.requetes[0]?.entetes.get('Authorization')).toBe(`Bearer ${sessionStockee.jeton}`);
+    expect(etat.session).toMatchObject({ jeton: apres.jeton, compte: { nom: 'Nouveau nom', avatar: 'ocre' } });
+    expect(etat.appareils.get(compte.email)).toMatchObject({
+      nom: 'Nouveau nom',
+      avatar: 'ocre',
+      verificateurLocal: 'v',
+    });
+  });
+
+  it('US-016 hors ligne : rien n’est envoyé', async () => {
+    const { serveur, client: c } = await connecte({}, false);
+    expect(await c.modifierProfil({ nom: 'X' })).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect(serveur.requetes).toHaveLength(0);
+  });
+
+  it('US-016 : une session refusée (401) est effacée : retour à la connexion', async () => {
+    const { etat, client: c } = await connecte({
+      'PATCH /compte': { statut: 401, corps: { ok: false, erreur: 'COMPTE_RETIRE' } },
+    });
+    expect(await c.modifierProfil({ nom: 'X' })).toEqual({ ok: false, erreur: 'SESSION_INVALIDE' });
+    expect(etat.session).toBeNull();
+  });
+
+  it('US-016 : un réseau perdu pendant l’envoi ne change rien sur l’appareil', async () => {
+    const { etat, client: c } = await connecte({ 'PATCH /compte': 'reseau' });
+    expect(await c.modifierProfil({ nom: 'X' })).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect(etat.session).toEqual(sessionStockee);
+    expect(etat.appareils.get(compte.email)?.nom).toBe('Orga');
+  });
+
+  it('US-016 : une réponse inattendue est une erreur inattendue', async () => {
+    const { client: c } = await connecte({
+      'PATCH /compte': { statut: 403, corps: { ok: false, erreur: 'ACCES_REFUSE' } },
+    });
+    expect(await c.modifierProfil({ nom: 'X' })).toEqual({ ok: false, erreur: 'ERREUR_INATTENDUE' });
+  });
+
+  it('US-016 CA-3 hors ligne : la session locale porte la couleur gardée sur l’appareil', async () => {
+    const { stockage } = stockageMemoire();
+    const verificateur = await verificateurLocal(await deriverCle('mot-de-passe-solide', SEL));
+    await stockage.enregistrerAppareilConnu({
+      ...compte,
+      avatar: 'ciel',
+      sel: SEL,
+      verificateurLocal: verificateur,
+      connuDepuis: 1,
+    });
+    const resultat = await client({ stockage, enLigne: () => false }).seConnecter(compte.email, 'mot-de-passe-solide');
+    expect(resultat).toMatchObject({ ok: true, session: { locale: true, compte: { avatar: 'ciel' } } });
   });
 });

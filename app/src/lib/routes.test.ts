@@ -48,3 +48,12 @@ describe('gestion des comptes (US-007)', () => {
     expect(resoudreRoute(CHEMINS.comptes, true, true, true)).toEqual({ redirection: CHEMINS.motDePasse });
   });
 });
+
+describe('page « Mon profil » (US-016)', () => {
+  it('US-016 CA-1 : réservée aux comptes connectés, ouverte aux organisateurs comme aux administrateurs', () => {
+    expect(resoudreRoute('/profil', false)).toEqual({ redirection: CHEMINS.connexion });
+    expect(resoudreRoute('/profil', true)).toEqual({ page: 'profil' });
+    expect(resoudreRoute('/profil', true, false, true)).toEqual({ page: 'profil' });
+    expect(resoudreRoute('/profil', true, true)).toEqual({ redirection: CHEMINS.motDePasse });
+  });
+});

@@ -1,7 +1,7 @@
 // Routage de l'application (US-003) : pages publiques et pages réservées aux comptes connectés.
 // Vraies adresses (History API) ; Vercel et le service worker servent index.html pour toute adresse.
 
-export type Page = 'accueil' | 'connexion' | 'organisateur' | 'motDePasse' | 'comptes';
+export type Page = 'accueil' | 'connexion' | 'organisateur' | 'motDePasse' | 'comptes' | 'profil';
 
 export const CHEMINS = Object.freeze({
   accueil: '/',
@@ -9,10 +9,11 @@ export const CHEMINS = Object.freeze({
   organisateur: '/organisateur',
   motDePasse: '/mot-de-passe',
   comptes: '/comptes',
+  profil: '/profil',
 } satisfies Record<Page, string>);
 
 /** Pages réservées : un visiteur non connecté est renvoyé à l'écran de connexion (CA-6). */
-const RESERVEES: readonly Page[] = ['organisateur', 'motDePasse', 'comptes'];
+const RESERVEES: readonly Page[] = ['organisateur', 'motDePasse', 'comptes', 'profil'];
 
 /** Pages des administrateurs : un organisateur est renvoyé à son accueil (US-007 CA-6). */
 const ADMINISTRATEURS: readonly Page[] = ['comptes'];

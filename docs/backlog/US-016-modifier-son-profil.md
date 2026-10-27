@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-007, US-010
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-016-modifier-son-profil` · [PR #29](https://github.com/fsmJla/poulePosition/pull/29)
 
 ## Récit
 
@@ -95,8 +95,54 @@ d'avatar dans le DO `Club` (migration comme `derniere_connexion`). La couleur s'
 `POST /session` et `GET /session`, et à l'appareil connu (IndexedDB). Le calcul des initiales et de la couleur par
 défaut est une règle pure, dans `paquets/domaine`. Nouvelle page `/profil` (route réservée).
 
+## Réalisation
+
+- **Domaine** (`avatar.ts`) : `initiales`, `COULEURS_AVATAR` (sarcelle, ardoise, foret, ocre, brique, prune, ciel,
+  terre), `couleurParDefaut` (empreinte FNV-1a de l'e-mail normalisé), `estCouleurAvatar`.
+- **Charte** (`app.css`) : variables `--avatar-<couleur>` et `--sur-avatar` (initiales blanches), communes aux modes
+  clair et sombre.
+- **Protocole** (`docs/protocole.md` §7 et §8 bis) :
+  - `avatar` dans le compte de session ; absent d'un serveur antérieur, il est remplacé par la couleur par défaut ;
+  - `PATCH /compte` avec `{ nom?, avatar? }` (`analyserDemandeProfil`), qui ne touche que le compte de la session.
+- **Serveur** : colonne `avatar` dans le DO `Club` (migration), `Club.modifierProfil`, route `profil` ; couleur par
+  défaut calculée à l'envoi de la session ; `403 ACCES_REFUSE` pour une session à mot de passe temporaire.
+- **Application** :
+  - client : `modifierProfil` (nouvelle session gardée, appareil connu mis à jour) ;
+  - stockage : couleur dans l'appareil connu, et couleur par défaut pour une session ou une entrée d'avant US-016 ;
+  - composant `Avatar.svelte` et page `Profil.svelte` (route `/profil`) ;
+  - accueil : tuile « Mon profil » à la place de « Changer mon mot de passe » ; page du mot de passe : « Retour à
+    mon profil ».
+- **Tests** :
+
+  | CA | Tests |
+  |---|---|
+  | CA-1 | E2E `profil.spec.ts` « US-016 CA-1 et CA-2 » (avatar, nom, e-mail, rôle, 8 couleurs, lien vers le mot de passe), `routes.test.ts` (`/profil` réservée, temporaire renvoyé au mot de passe) |
+  | CA-2 | `paquets/domaine/src/avatar.test.ts` (initiales : deux mots, un mot, accents, chiffre, vide), E2E (« CS », « NN ») |
+  | CA-3 | Domaine (palette, couleur par défaut stable et répartie), `couleurs.test.ts` (contraste AA des 8 couleurs, clair et sombre), `paquets/protocole` (couleur lue, refusée si inconnue, par défaut si absente), `serveur/src/profil.test.ts` (couleur par défaut, couleur choisie renvoyée à la reconnexion), `app/src/lib/session.test.ts` et `stockage.test.ts` (couleur gardée sur l'appareil, session locale), E2E « US-016 CA-3 et CA-4 » |
+  | CA-4 | Intégration « US-016 CA-4 » (nom visible à la revalidation d'un autre appareil), app (session et appareil connu mis à jour), E2E (« Bonjour, Nouveau Nom » sur l'accueil) |
+  | CA-5 | Intégration « US-016 CA-5 » (`PATCH /compte` ne touche que son compte ; organisateur `403` sur `PATCH /comptes/<id>` ; rôle refusé `400`) et refus divers (400, 401, mot de passe temporaire 403) |
+  | CA-6 | E2E « US-016 CA-6 » (tuile « Mon profil », plus de tuile « Changer mon mot de passe », retour vers le profil), `textes.test.ts` |
+  | Hors ligne | App (`HORS_LIGNE`, rien n'est envoyé), E2E « US-016 hors ligne » (page affichée, « Enregistrer » grisé avec « Nécessite une connexion internet ») |
+  | Cas limites | E2E (nom vide : message et bouton inactif ; aucune modification : bouton inactif), app (réseau perdu : rien ne change ; session refusée : retour à la connexion ; réponse inattendue) |
+
+- **Tests adaptés** : E2E `marque.spec.ts` et `mot-de-passe.spec.ts` (accès au changement de mot de passe par
+  « Mon profil », retour vers le profil) ; tests serveur US-003 et US-010 (compte de session avec `avatar`).
+
+### Hypothèses prises pendant l'implémentation
+
+- Validées par l'utilisateur le 2026-10-27 : les 8 noms de couleurs, affichés pour l'accessibilité (« Couleur
+  prune »).
+- Le bouton « Enregistrer » reste inactif tant que rien n'a changé, ce qui garantit qu'aucune demande vide n'est
+  envoyée.
+- L'avatar ne s'affiche pour l'instant que sur « Mon profil » ; il gagnera l'entête avec US-017.
+- La liste « Comptes » ne montre pas encore les avatars (hors périmètre).
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-27 | Créée (spécification : cartouche de profil) |
+| 2026-10-27 | En cours : plan validé (module `avatar` dans le domaine, 8 couleurs nommées dans la charte, route `PATCH /compte` qui ne touche que le compte de la session, avatar dans le compte de session, page `/profil`) |
+| 2026-10-27 | En revue : contrôles locaux verts (lint, typage, 408 tests unitaires et d’intégration, couverture 95 %, build, audit, 135 E2E) |
+| 2026-10-27 | Recette OK sur https://poule-position-git-us-us-016-modifier-s-e02de8-fsmjlas-projects.vercel.app (déployée en preview et vérifiée, Worker de preview déployé depuis la branche) : compte jetable « Recette Seize » (organisateur) dans un contexte de navigateur isolé. Accueil avec la seule tuile « Mon profil », « Retour à mon profil » depuis le mot de passe (CA-6) ; avatar « RS » sur la couleur par défaut, nom, e-mail, rôle, 8 couleurs, lien vers le mot de passe (CA-1, CA-2) ; nom « Recette Profil » et couleur prune enregistrés (« Profil enregistré », avatar « RP »), conservés après déconnexion et reconnexion (CA-3, CA-4) et visibles dans « Comptes » de l’administrateur (CA-4) ; `PATCH /comptes/<id>` refusé à l’organisateur (`403 ACCES_REFUSE`, CA-5) ; hors ligne, page affichée et « Enregistrer » grisé avec « Nécessite une connexion internet » ; smartphone sans débordement (412 px). Compte de recette supprimé à la fin. |
+| 2026-10-27 | **Terminée**, mergée dans `dev` (PR #29). |

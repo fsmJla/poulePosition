@@ -33,6 +33,17 @@
   --etat-ok: #1f7a4d;
   --etat-attente: #a86b12;
   --etat-erreur: #b3362f;
+  /* Couleurs d'avatar (US-016) : initiales claires posées dessus, contraste AA vérifié par couleurs.test.ts. Communes aux
+     modes clair et sombre. */
+  --sur-avatar: #ffffff;
+  --avatar-sarcelle: #066f6c;
+  --avatar-ardoise: #2f4b4a;
+  --avatar-foret: #1f7a4d;
+  --avatar-ocre: #8a5a10;
+  --avatar-brique: #b3362f;
+  --avatar-prune: #6a4c93;
+  --avatar-ciel: #2b6a9a;
+  --avatar-terre: #7a5236;
 
   --police-titre: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
   --police-texte: 'Figtree', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;

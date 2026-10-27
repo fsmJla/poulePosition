@@ -38,6 +38,7 @@
 | `POST /session` | Connexion : ouvre une session (§7) |
 | `GET /session` | Vérifie et prolonge une session (§7) |
 | `POST /compte/mot-de-passe` | Changement de mot de passe (§8) |
+| `PATCH /compte` | Modifier son propre nom ou la couleur de son avatar (§8 bis, US-016) |
 | `GET /comptes`, `POST /comptes` | Lister et créer les comptes du club (§9) |
 | `PATCH /comptes/<id>` | Modifier le nom, le rôle ou l'état (actif ou désactivé) d'un compte (§9) |
 | `DELETE /comptes/<id>` | Supprimer définitivement un compte (§9, US-008) |
@@ -169,7 +170,7 @@ Pour un e-mail inconnu, le sel renvoyé est un **faux sel stable** (`HMAC-SHA256
   "ok": true,
   "jeton": "…",
   "expireLe": 1795000000000,
-  "compte": { "email": "…", "nom": "…", "role": "organisateur", "temporaire": false }
+  "compte": { "email": "…", "nom": "…", "role": "organisateur", "temporaire": false, "avatar": "sarcelle" }
 }
 ```
 
@@ -177,6 +178,9 @@ Pour un e-mail inconnu, le sel renvoyé est un **faux sel stable** (`HMAC-SHA256
   `club` (`clubId`), `role`, `v` (version du mot de passe, §8), `iat` et `exp` (en secondes). Valable 30 jours.
 - `expireLe` : date d'expiration, en millisecondes.
 - `temporaire` : mot de passe temporaire, à changer avant tout autre usage (US-009 / US-010).
+- `avatar` : couleur de l'avatar (US-016), l'une de `sarcelle`, `ardoise`, `foret`, `ocre`, `brique`, `prune`, `ciel`,
+  `terre` ; celle choisie par la personne, sinon une couleur par défaut déduite de son e-mail. Un serveur antérieur à
+  US-016 ne l'envoie pas : l'application prend alors la couleur par défaut.
 
 **`GET /session`** avec `Authorization: Bearer <jeton>` : vérifie la signature, l'expiration, que le compte existe,
 est **toujours actif** et que son mot de passe n'a pas changé, puis renvoie une session prolongée de 30 jours (même
@@ -249,6 +253,30 @@ Une `cleActuelle` fausse compte comme un échec de connexion pour le compte et p
 
 Les règles du nouveau mot de passe (10 caractères au moins, différent de l'actuel, confirmation) sont vérifiées
 par l'application, qui seule connaît les mots de passe en clair.
+
+## 8 bis. Modifier son profil (US-016)
+
+`PATCH /compte` avec `Authorization: Bearer <jeton>` et un corps contenant `nom`, `avatar`, ou les deux, et rien
+d'autre :
+
+| Champ | Contenu |
+|---|---|
+| `nom` | Nouveau nom : 1 à 100 caractères une fois les espaces autour retirés |
+| `avatar` | Couleur d'avatar, l'une des 8 du §7 |
+
+La route ne modifie que le **compte de la session** : elle ne prend pas d'identifiant, et un compte ne peut donc
+modifier que son propre profil. Le rôle et l'e-mail ne s'y modifient pas. Un administrateur modifie le nom des autres
+comptes par `PATCH /comptes/<id>` (§9), mais pas leur couleur d'avatar. La réponse est une **session à jour** (`200`,
+même forme qu'au §7). Les autres appareils de la personne voient le nouveau nom et la nouvelle couleur à leur
+prochaine revalidation.
+
+| Statut | Code | Cas |
+|---|---|---|
+| `200` | — | Profil modifié, session à jour |
+| `400` | `DEMANDE_INVALIDE` | Corps vide, champ en trop, nom invalide ou couleur inconnue |
+| `401` | `SESSION_INVALIDE` / `COMPTE_MODIFIE` / `COMPTE_RETIRE` | Comme `GET /session` |
+| `403` | `ACCES_REFUSE` | Session à mot de passe temporaire (elle ne sert qu'à changer de mot de passe, §8) |
+| `503` | `SERVEUR_NON_CONFIGURE` | Secrets absents |
 
 ## 9. Gestion des comptes (US-007, US-008, US-009)
 

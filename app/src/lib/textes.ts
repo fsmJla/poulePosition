@@ -1,12 +1,19 @@
 // Catalogue des textes de l'interface (français seul pour l'instant, ADR-0002). Aucun texte en dur dans les composants.
 import {
   LONGUEUR_MIN_MOT_DE_PASSE,
+  type CouleurAvatar,
   type ErreurNouveauMotDePasse,
   type ErreurSaisieCompte,
   type Role,
 } from '@poule-position/domaine';
 import type { EtatConnexion } from './connexion';
-import type { ErreurChangementMotDePasse, ErreurComptes, ErreurConnexion, MotifFinSession } from './session';
+import type {
+  ErreurChangementMotDePasse,
+  ErreurComptes,
+  ErreurConnexion,
+  ErreurProfil,
+  MotifFinSession,
+} from './session';
 
 export const textes = {
   /** Nom affiché de l'application (US-014) ; le nom technique reste poulePosition. */
@@ -61,6 +68,7 @@ export const textes = {
     },
     connexionLocale: 'Hors ligne : connexion locale',
     changerMotDePasse: 'Changer mon mot de passe',
+    monProfil: 'Mon profil',
     actions: 'Actions',
   },
   motDePasse: {
@@ -74,7 +82,7 @@ export const textes = {
     enCours: 'Changement…',
     modifie: 'Mot de passe modifié',
     continuer: "Accueil de l'organisateur",
-    retour: "Retour à l'accueil de l'organisateur",
+    retour: 'Retour à mon profil',
     horsLigne: 'Nécessite une connexion internet',
     champs: {
       MOT_DE_PASSE_TROP_COURT: `Le mot de passe doit faire au moins ${LONGUEUR_MIN_MOT_DE_PASSE} caractères`,
@@ -91,6 +99,42 @@ export const textes = {
       SERVEUR_NON_CONFIGURE: 'Serveur non configuré : changement impossible',
       ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
     } satisfies Record<ErreurChangementMotDePasse, string>,
+  },
+  /** US-016 : page « Mon profil ». */
+  profil: {
+    titre: 'Mon profil',
+    nom: 'Nom',
+    email: 'E-mail',
+    role: 'Rôle',
+    avatar: 'Couleur de l’avatar',
+    avatarDe: (nom: string) => `Avatar de ${nom}`,
+    couleur: (couleur: CouleurAvatar) => `Couleur ${textes.profil.couleurs[couleur]}`,
+    couleurs: {
+      sarcelle: 'sarcelle',
+      ardoise: 'ardoise',
+      foret: 'forêt',
+      ocre: 'ocre',
+      brique: 'brique',
+      prune: 'prune',
+      ciel: 'ciel',
+      terre: 'terre',
+    } satisfies Record<CouleurAvatar, string>,
+    enregistrer: 'Enregistrer',
+    enCours: 'Enregistrement…',
+    enregistre: 'Profil enregistré',
+    horsLigne: 'Nécessite une connexion internet',
+    changerMotDePasse: 'Changer mon mot de passe',
+    retour: "Retour à l'accueil de l'organisateur",
+    champs: {
+      NOM_VIDE: 'Le nom est obligatoire',
+      NOM_TROP_LONG: 'Le nom fait au plus 100 caractères',
+    } satisfies Partial<Record<ErreurSaisieCompte, string>>,
+    erreurs: {
+      SESSION_INVALIDE: 'Session expirée : reconnectez-vous',
+      HORS_LIGNE: 'Réseau perdu : rien n’a changé, réessayez',
+      SERVEUR_NON_CONFIGURE: 'Serveur non configuré : enregistrement impossible',
+      ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
+    } satisfies Record<ErreurProfil, string>,
   },
   comptes: {
     titre: 'Comptes',

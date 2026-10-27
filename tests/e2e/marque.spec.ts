@@ -36,8 +36,8 @@ test('US-014 CA-3 : l’entête des pages réservées porte la bannière et « S
   // Aucun défilement horizontal (smartphone compris).
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
-  await page.getByRole('link', { name: 'Changer mon mot de passe' }).click();
-  await expect(page).toHaveURL(/\/mot-de-passe$/);
+  await page.getByRole('link', { name: 'Mon profil' }).click();
+  await expect(page).toHaveURL(/\/profil$/);
   await page.getByRole('banner').getByRole('link', { name: 'Poule Position' }).click();
   await expect(page).toHaveURL(/\/organisateur$/);
 });

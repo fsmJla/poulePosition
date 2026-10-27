@@ -6,6 +6,7 @@ import {
   analyserDemandeConnexion,
   analyserDemandeCreationCompte,
   analyserDemandeModificationCompte,
+  analyserDemandeProfil,
   analyserDemandeReinitialisation,
   analyserDemandeInstallation,
   analyserDemandeSel,
@@ -15,7 +16,7 @@ import {
   type ReponseInstallation,
   type ReponseSession,
 } from '@poule-position/protocole';
-import { REGLE_ADRESSE } from '@poule-position/domaine';
+import { couleurParDefaut, REGLE_ADRESSE } from '@poule-position/domaine';
 import type { Club, CompteStocke } from './club';
 import type { Limiteur } from './limiteur';
 import type { Route } from './logique';
@@ -120,13 +121,14 @@ async function installer(requete: Request, env: Env): Promise<Response> {
 
 type RouteSession = Extract<
   Route,
-  { route: 'sel' | 'session' | 'mot-de-passe' | 'comptes' | 'compte' | 'reinitialisation' }
+  { route: 'sel' | 'session' | 'mot-de-passe' | 'profil' | 'comptes' | 'compte' | 'reinitialisation' }
 >;
 
 const METHODES_SESSION = {
   sel: ['POST'],
   session: ['GET', 'POST'],
   'mot-de-passe': ['POST'],
+  profil: ['PATCH'],
   comptes: ['GET', 'POST'],
   compte: ['PATCH', 'DELETE'],
   reinitialisation: ['POST'],
@@ -207,6 +209,17 @@ async function traiterSession(route: RouteSession, requete: Request, env: Env): 
 
   if (route.route === 'comptes' || route.route === 'compte' || route.route === 'reinitialisation') {
     return gererComptes(route, requete, club, poivre, authentifie.compte);
+  }
+
+  if (route.route === 'profil') {
+    // US-016 : le compte de la session modifie son nom ou son avatar, et lui seul ; un mot de passe temporaire ne sert
+    // qu'à choisir un nouveau mot de passe (US-010).
+    if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
+    const analyse = analyserDemandeProfil(await lireJson(requete));
+    if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
+    const modifie = await club.modifierProfil(authentifie.compte.id, analyse.demande);
+    if (!modifie) return refuserSession(401, 'SESSION_INVALIDE');
+    return ouvrirSession(modifie, env.CLUB_ID, secret);
   }
 
   if (route.route === 'mot-de-passe') {
@@ -341,11 +354,11 @@ async function ouvrirSession(compte: CompteStocke, clubId: string, secret: strin
     secret,
     Date.now(),
   );
-  const { email, nom, role, temporaire } = compte;
+  const { email, nom, role, temporaire, avatar } = compte;
   return Response.json({
     ok: true,
     jeton,
     expireLe,
-    compte: { email, nom, role, temporaire },
+    compte: { email, nom, role, temporaire, avatar: avatar ?? couleurParDefaut(email) },
   } satisfies ReponseSession);
 }

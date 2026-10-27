@@ -1,7 +1,7 @@
 <script lang="ts">
   // Accueil de l'organisateur (US-003 CA-1), page réservée : nom et rôle du compte connecté, et les actions possibles :
-  // changement de mot de passe (US-010), gestion des comptes pour un administrateur (US-007, grisée hors ligne). La
-  // déconnexion (US-003 CA-5) est dans l'entête commun (US-014).
+  // « Mon profil » (US-016, qui mène aussi au changement de mot de passe), gestion des comptes pour un administrateur
+  // (US-007, grisée hors ligne). La déconnexion (US-003 CA-5) est dans l'entête commun (US-014).
   import { onMount } from 'svelte';
   import type { SessionAppareil } from '../lib/stockage';
   import Lien from '../composants/Lien.svelte';
@@ -32,7 +32,7 @@
   <h1>{textes.organisateur.bonjour(session.compte.nom)}</h1>
   <p class="role">{textes.roles[session.compte.role]}</p>
   <nav class="actions" aria-label={textes.organisateur.actions}>
-    <Lien chemin={CHEMINS.motDePasse} {naviguer}>{textes.organisateur.changerMotDePasse}</Lien>
+    <Lien chemin={CHEMINS.profil} {naviguer}>{textes.organisateur.monProfil}</Lien>
     {#if session.compte.role === 'administrateur'}
       {#if horsLigne}
         <span class="inactive" aria-disabled="true">

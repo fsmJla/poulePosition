@@ -1,5 +1,6 @@
 import css from '../app.css?raw';
 import { describe, expect, it } from 'vitest';
+import { COULEURS_AVATAR } from '@poule-position/domaine';
 import { contraste, lireVariables, COUPLES_CHARTE, PALETTE_CALME_RETRO } from './couleurs';
 
 const { clair, sombre } = lireVariables(css);
@@ -60,4 +61,17 @@ describe('charte (US-011)', () => {
     expect(sombre['--fond']).not.toBe(clair['--fond']);
     expect(sombre['--texte']).not.toBe(clair['--texte']);
   });
+});
+
+describe('couleurs d’avatar (US-016)', () => {
+  it.each(COULEURS_AVATAR)(
+    'US-016 CA-3 : la couleur « %s » est définie, et les initiales y sont lisibles (AA)',
+    (couleur) => {
+      for (const variables of [clair, sombre]) {
+        const fond = variables[`--avatar-${couleur}`];
+        expect(fond, couleur).toMatch(/^#[0-9a-f]{6}$/i);
+        expect(contraste(fond as string, variables['--sur-avatar'] as string)).toBeGreaterThanOrEqual(4.5);
+      }
+    },
+  );
 });

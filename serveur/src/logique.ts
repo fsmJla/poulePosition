@@ -20,6 +20,7 @@ export type Route =
   | { route: 'session' }
   | { route: 'sel' }
   | { route: 'mot-de-passe' }
+  | { route: 'profil' }
   | { route: 'comptes' }
   | { route: 'compte'; id: string }
   | { route: 'reinitialisation'; id: string }
@@ -33,6 +34,7 @@ export function analyserChemin(chemin: string): Route | null {
   if (chemin === '/session') return { route: 'session' };
   if (chemin === '/session/sel') return { route: 'sel' };
   if (chemin === '/compte/mot-de-passe') return { route: 'mot-de-passe' };
+  if (chemin === '/compte') return { route: 'profil' };
   if (chemin === '/comptes') return { route: 'comptes' };
   const reinitialisation = /^\/comptes\/([A-Za-z0-9-]{1,64})\/mot-de-passe$/.exec(chemin);
   if (reinitialisation?.[1]) return { route: 'reinitialisation', id: reinitialisation[1] };

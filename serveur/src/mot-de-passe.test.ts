@@ -3,6 +3,7 @@
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { unstable_startWorker } from 'wrangler';
+import { couleurParDefaut } from '@poule-position/domaine';
 import {
   deriverCle,
   preparerChangementMotDePasse,
@@ -94,7 +95,13 @@ describe('changement de mot de passe', () => {
     );
     expect(reponse.status).toBe(200);
     const nouvelle = (await reponse.json()) as Session;
-    expect(nouvelle.compte).toEqual({ email: EMAIL, nom: 'Orga', role: 'administrateur', temporaire: false });
+    expect(nouvelle.compte).toEqual({
+      email: EMAIL,
+      nom: 'Orga',
+      role: 'administrateur',
+      temporaire: false,
+      avatar: couleurParDefaut(EMAIL),
+    });
 
     // CA-1 : l'ancien mot de passe est refusé, le nouveau accepté.
     expect((await seConnecter(motDePasse)).status).toBe(401);
