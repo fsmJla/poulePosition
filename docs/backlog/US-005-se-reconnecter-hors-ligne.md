@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-003
-- **Branche / PR :** `us/US-005-se-reconnecter-hors-ligne`
+- **Branche / PR :** `us/US-005-se-reconnecter-hors-ligne` · [PR #25](https://github.com/fsmJla/poulePosition/pull/25)
 
 ## Récit
 
