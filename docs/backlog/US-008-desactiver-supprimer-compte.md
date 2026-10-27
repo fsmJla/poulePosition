@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-007
 - **Branche / PR :** `us/US-008-desactiver-supprimer-compte` · [PR #23](https://github.com/fsmJla/poulePosition/pull/23)
 
@@ -113,3 +113,5 @@ ADR-0006, ADR-0014.
 | 2026-10-25 | Créée (spécification E1) |
 | 2026-10-27 | En cours : plan validé (code `401 COMPTE_RETIRE` pour un compte désactivé ou supprimé, `PATCH { actif }` et `DELETE /comptes/<id>`, confirmation de la suppression par l’e-mail dans l’interface, test du nom de l’auteur dans le journal reporté au premier événement qui en porte un) |
 | 2026-10-27 | En revue : contrôles locaux verts (lint, typage, 316 tests unitaires et d’intégration, couverture 94 %, build, audit, 111 E2E) |
+| 2026-10-27 | Recette OK sur https://poule-position-git-us-us-008-desactiver-4fcefc-fsmjlas-projects.vercel.app (déployée en preview et vérifiée, Worker de preview déployé depuis la branche) : compte jetable `recette-us008@poule-position.test` connecté sur un second appareil ; désactivation confirmée, état « Désactivé », connexion refusée avec « Ce compte est désactivé : contactez un administrateur » (CA-1) ; au rechargement du second appareil, retour à la connexion avec session et vérificateur local effacés (CA-5) ; réactivation et reconnexion (CA-2) ; désactivation et suppression du seul administrateur actif refusées avec « Il doit rester au moins un administrateur actif » (CA-4) ; suppression inactive tant que l'e-mail est mal recopié, compte disparu après rechargement, e-mail réutilisé pour un nouveau compte (CA-3) ; boutons grisés hors ligne avec « Nécessite une connexion internet ». Comptes de recette supprimés à la fin. |
+| 2026-10-27 | **Terminée**, mergée dans `dev` (PR #23). |
