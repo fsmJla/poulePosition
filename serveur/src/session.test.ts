@@ -2,7 +2,7 @@
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { unstable_startWorker } from 'wrangler';
-import { DUREE_SESSION } from '@poule-position/domaine';
+import { couleurParDefaut, DUREE_SESSION } from '@poule-position/domaine';
 import { deriverCle, preparerDemandeInstallation } from '@poule-position/protocole';
 import { signerSession, verifierSession } from './logique';
 
@@ -73,7 +73,13 @@ describe('connexion', () => {
     expect(reponse.status).toBe(200);
     const corps = (await reponse.json()) as { ok: boolean; jeton: string; expireLe: number; compte: unknown };
     expect(corps.ok).toBe(true);
-    expect(corps.compte).toEqual({ email: EMAIL, nom: 'Julien Lameyre', role: 'administrateur', temporaire: false });
+    expect(corps.compte).toEqual({
+      email: EMAIL,
+      nom: 'Julien Lameyre',
+      role: 'administrateur',
+      temporaire: false,
+      avatar: couleurParDefaut(EMAIL),
+    });
     expect(corps.expireLe).toBeGreaterThanOrEqual(avant + DUREE_SESSION - 1000);
     expect(corps.expireLe).toBeLessThanOrEqual(Date.now() + DUREE_SESSION);
     expect(await verifierSession(corps.jeton, SECRET_SESSION, Date.now())).toMatchObject({

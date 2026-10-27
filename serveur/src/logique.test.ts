@@ -132,6 +132,7 @@ describe('routes de session (US-003)', () => {
     expect(analyserChemin('/session/sel')).toEqual({ route: 'sel' });
     expect(analyserChemin('/session/autre')).toBeNull();
     expect(analyserChemin('/compte/mot-de-passe')).toEqual({ route: 'mot-de-passe' });
+    expect(analyserChemin('/compte')).toEqual({ route: 'profil' });
   });
 });
 
