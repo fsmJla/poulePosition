@@ -43,7 +43,9 @@ describe('limite des demandes (US-019 CA-5)', () => {
 
   it('noterDemande oublie les demandes de plus d’une heure et ne modifie pas la liste reçue', () => {
     const anciennes = [T0, T0 + MINUTE];
-    expect(noterDemande(anciennes, T0 + 61 * MINUTE)).toEqual([T0 + MINUTE, T0 + 61 * MINUTE]);
+    // À T0 + 60 min 30 s, la demande de T0 a plus d'une heure, celle de T0 + 1 min non.
+    const maintenant = T0 + 60 * MINUTE + 30_000;
+    expect(noterDemande(anciennes, maintenant)).toEqual([T0 + MINUTE, maintenant]);
     expect(anciennes).toEqual([T0, T0 + MINUTE]);
   });
 });
