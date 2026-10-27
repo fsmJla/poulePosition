@@ -133,6 +133,7 @@ describe('seConnecter', () => {
   it.each([
     ['US-003 CA-2', 401, 'IDENTIFIANTS_INVALIDES', 'IDENTIFIANTS_INVALIDES'],
     ['US-003 CA-3', 403, 'COMPTE_DESACTIVE', 'COMPTE_DESACTIVE'],
+    ['US-004 CA-1', 429, 'TROP_D_ESSAIS', 'TROP_D_ESSAIS'],
     ['serveur non configuré', 503, 'SERVEUR_NON_CONFIGURE', 'SERVEUR_NON_CONFIGURE'],
     ['réponse inattendue', 400, 'DEMANDE_INVALIDE', 'ERREUR_INATTENDUE'],
   ])('%s : un refus (%i %s) ne garde rien et renvoie %s', async (_cas, statut, code, attendu) => {
@@ -323,6 +324,14 @@ describe('changerMotDePasse (US-010)', () => {
     expect(await c.changerMotDePasse('faux', NOUVEAU)).toEqual({ ok: false, erreur: 'MOT_DE_PASSE_INCORRECT' });
     expect(etat.session).toEqual(sessionStockee);
     expect(etat.appareils.get(compte.email)?.verificateurLocal).toBe('ancien');
+  });
+
+  it('US-004 : un compte bloqué après trop d’essais reçoit TROP_D_ESSAIS, et reste connecté', async () => {
+    const { etat, client: c } = await connecte({
+      'POST /compte/mot-de-passe': { statut: 429, corps: { ok: false, erreur: 'TROP_D_ESSAIS' } },
+    });
+    expect(await c.changerMotDePasse('faux', NOUVEAU)).toEqual({ ok: false, erreur: 'TROP_D_ESSAIS' });
+    expect(etat.session).toEqual(sessionStockee);
   });
 
   it('US-010 : un réseau perdu pendant l’envoi ne touche pas au vérificateur local', async () => {

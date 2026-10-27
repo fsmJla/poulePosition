@@ -77,6 +77,7 @@ export const textes = {
     } satisfies Record<ErreurNouveauMotDePasse | 'CONFIRMATION_DIFFERENTE' | 'ACTUEL_VIDE', string>,
     erreurs: {
       MOT_DE_PASSE_INCORRECT: 'Mot de passe actuel incorrect',
+      TROP_D_ESSAIS: 'Trop d’essais : réessayez dans 15 minutes',
       MOT_DE_PASSE_ACTUEL_REQUIS: 'Saisissez votre mot de passe actuel',
       SESSION_INVALIDE: 'Session expirée : reconnectez-vous',
       HORS_LIGNE: 'Réseau perdu : le mot de passe n’a pas changé, réessayez',

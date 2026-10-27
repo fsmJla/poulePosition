@@ -59,6 +59,8 @@ const CLE_ONGLET = 'poulePosition.cleSessionLocale';
 
 export type ErreurChangementMotDePasse =
   | 'MOT_DE_PASSE_INCORRECT'
+  /** US-004 : compte ou adresse bloqués après trop d'essais ; la session reste valable. */
+  | 'TROP_D_ESSAIS'
   /** Pas de mot de passe actuel saisi, ni de clé gardée depuis la connexion (page rechargée). */
   | 'MOT_DE_PASSE_ACTUEL_REQUIS'
   /** Session refusée par le serveur : elle est effacée, retour à la connexion. */
@@ -95,6 +97,7 @@ class Injoignable extends Error {}
 const ERREURS_TRANSMISES: readonly ErreurReponse[] = [
   'IDENTIFIANTS_INVALIDES',
   'COMPTE_DESACTIVE',
+  'TROP_D_ESSAIS',
   'SERVEUR_NON_CONFIGURE',
 ];
 
@@ -537,7 +540,8 @@ export function creerClientSession({
           }
           const reponse = analyserReponseSession(corps);
           if (!reponse.ok) {
-            const erreur = reponse.erreur === 'MOT_DE_PASSE_INCORRECT' ? reponse.erreur : 'ERREUR_INATTENDUE';
+            const { erreur: code } = reponse;
+            const erreur = code === 'MOT_DE_PASSE_INCORRECT' || code === 'TROP_D_ESSAIS' ? code : 'ERREUR_INATTENDUE';
             return { ok: false, erreur };
           }
           await stockage.ecrireSession(reponse.session);
