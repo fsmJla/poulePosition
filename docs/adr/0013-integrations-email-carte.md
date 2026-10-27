@@ -1,6 +1,6 @@
 # ADR-0013 — Intégrations externes : e-mail et carte
 
-- **Statut :** Acceptée (2026-10-24)
+- **Statut :** Acceptée (2026-10-24) ; partie « E-mail » remplacée par [ADR-0015](0015-envoi-emails-smtp-ovh.md) le 2026-10-27, partie « Carte » en vigueur
 - **Date :** 2026-10-24
 
 ## Contexte

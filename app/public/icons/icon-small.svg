@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="poulePosition">
+  <title>poulePosition</title>
+  <rect width="120" height="120" rx="27" fill="#2F4B4A"/>
+  <g>
+  <rect x="22" y="22" width="22" height="22" rx="4" fill="#0ABAB5"/>
+  <rect x="49" y="22" width="22" height="22" rx="4" fill="#3F6362"/>
+  <rect x="76" y="22" width="22" height="22" rx="4" fill="#D9B99B"/>
+  <rect x="22" y="49" width="22" height="22" rx="4" fill="#D9B99B"/>
+  <rect x="49" y="49" width="22" height="22" rx="4" fill="#0ABAB5"/>
+  <rect x="76" y="49" width="22" height="22" rx="4" fill="#3F6362"/>
+  <rect x="22" y="76" width="22" height="22" rx="4" fill="#3F6362"/>
+  <rect x="49" y="76" width="22" height="22" rx="4" fill="#D9B99B"/>
+  <rect x="76" y="76" width="22" height="22" rx="4" fill="#0ABAB5"/>
+  </g>
+</svg>

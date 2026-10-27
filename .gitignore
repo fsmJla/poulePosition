@@ -15,6 +15,9 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+playwright/.auth/
+# Captures et journaux du navigateur piloté (recettes /recette)
+.playwright-mcp/
 
 # Vercel
 .vercel/

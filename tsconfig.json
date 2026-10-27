@@ -3,5 +3,5 @@
   "extends": "./tsconfig.base.json",
   // DOM : code passé à page.evaluate(), exécuté dans le navigateur.
   "compilerOptions": { "lib": ["ES2023", "DOM"], "types": ["node"] },
-  "include": ["*.config.ts", "tests/e2e/**/*.ts", "tests/garde-fous/**/*.ts"]
+  "include": ["*.config.ts", "outils/**/*.ts", "tests/e2e/**/*.ts", "tests/garde-fous/**/*.ts"]
 }

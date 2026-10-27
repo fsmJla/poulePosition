@@ -1,29 +1,77 @@
-/* Charte de base : variables de couleur, mode clair et sombre. */
+/*
+ * Charte graphique (US-011) : seule source des couleurs et des polices de l'application.
+ * Palette : combinaison 78 « Calme rétro ». Les rôles (fond, texte, accent…) s'appuient sur elle ; leurs contrastes
+ * sont vérifiés par app/src/lib/couleurs.test.ts, en clair et en sombre. Aucun composant ne définit de couleur.
+ */
 :root {
-  --fond: #ffffff;
-  --texte: #1d1630;
-  --texte-discret: #5d5672;
-  --surface: #f1edf9;
-  --accent: #4b2a8c;
-  --etat-ok: #1f9d55;
-  --etat-attente: #d69e2e;
-  --etat-erreur: #c53030;
+  --palette-tiffany: #0abab5;
+  --palette-lavande: #b7a6d9;
+  --palette-sarcelle: #078a86;
+  --palette-sable: #d9b99b;
+  --palette-ardoise: #2f4b4a;
+
+  --fond: #f7f4ef;
+  --surface: #ffffff;
+  --surface-2: #efe9e0;
+  --texte: #1c2b2a;
+  --texte-discret: #55615f;
+  /* Bordure décorative (cartes) ; celle des champs doit rester visible (contraste 3:1). */
+  --bordure: #e2dbd0;
+  --bordure-champ: #7d8886;
+  --accent: #066f6c;
+  /* Fond des boutons principaux, et texte posé dessus. */
+  --accent-fond: #066f6c;
+  --sur-accent: #ffffff;
+  --focus: var(--palette-sarcelle);
+  --marque: var(--palette-ardoise);
+  /* Texte et boutons posés sur la marque (entête de site, US-014). */
+  --sur-marque: #f7f4ef;
+  --decor: var(--palette-sable);
+  --decor-2: var(--palette-lavande);
+  /* Case vide de la grille de poule (icônes du pack, icône animée). */
+  --case-vide: #3f6362;
+  --etat-ok: #1f7a4d;
+  --etat-attente: #a86b12;
+  --etat-erreur: #b3362f;
+  /* Couleurs d'avatar (US-016) : initiales claires posées dessus, contraste AA vérifié par couleurs.test.ts. Communes aux
+     modes clair et sombre. */
+  /* Ombre des cartes flottantes (menu de compte, US-017). */
+  --ombre-flottante: 0 8px 24px rgb(0 0 0 / 0.18);
+  --sur-avatar: #ffffff;
+  --avatar-sarcelle: #066f6c;
+  --avatar-ardoise: #2f4b4a;
+  --avatar-foret: #1f7a4d;
+  --avatar-ocre: #8a5a10;
+  --avatar-brique: #b3362f;
+  --avatar-prune: #6a4c93;
+  --avatar-ciel: #2b6a9a;
+  --avatar-terre: #7a5236;
+
+  --police-titre: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --police-texte: 'Figtree', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --rayon: 10px;
+
   color-scheme: light dark;
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font-family: var(--police-texte);
   line-height: 1.5;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --fond: #15111f;
-    --texte: #f1edf9;
-    --texte-discret: #aca5c0;
-    --surface: #262036;
+    --fond: #0f1716;
+    --surface: #172221;
+    --surface-2: #1f2d2c;
+    --texte: #e6eeec;
+    --texte-discret: #9fb0ad;
+    --bordure: #2a3a39;
+    --bordure-champ: #6b7f7c;
+    --accent: #0abab5;
+    --accent-fond: #0abab5;
+    --sur-accent: #0f1716;
+    --focus: var(--palette-tiffany);
+    --etat-ok: #4cc38a;
+    --etat-attente: #e3a948;
+    --etat-erreur: #f07168;
   }
 }
 
@@ -32,4 +80,17 @@ body {
   min-height: 100vh;
   background: var(--fond);
   color: var(--texte);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--police-titre);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }

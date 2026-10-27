@@ -1,4 +1,9 @@
 # Tests Playwright contre chaque déploiement preview de Vercel (ADR-0008, ADR-0012, US-001 CA-5).
+# Fiabilisé par US-013 : pas d'apt-get (miroirs parfois bloqués), Chromium en cache, délai court à l'installation,
+# arrêt immédiat pour un commit dépassé. Vercel ne donne que le SHA (deployment.ref), pas la branche : un groupe
+# `concurrency` par branche est impossible, d'où la vérification par l'API GitHub.
+# Aucun rapport joint au run (US-015) : les tests saisissent de vrais identifiants, qu'un rapport ou une trace
+# conserverait en clair. Les échecs se lisent dans les journaux, où GitHub masque les secrets.
 name: E2E sur la preview
 
 on: deployment_status
@@ -13,23 +18,45 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Arrêter si le commit est dépassé
+        id: commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.deployment.sha }}
+        run: |
+          branches=$(gh api "repos/${{ github.repository }}/commits/$SHA/branches-where-head" --jq 'length')
+          if [ "$branches" = "0" ]; then
+            echo "::notice::Commit dépassé ($SHA) : une version plus récente de la branche sera testée."
+            echo "depasse=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/checkout@v7
+        if: steps.commit.outputs.depasse != 'true'
         with:
           ref: ${{ github.event.deployment.sha }}
       - uses: actions/setup-node@v7
+        if: steps.commit.outputs.depasse != 'true'
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+        if: steps.commit.outputs.depasse != 'true'
+      - name: Cache de Chromium
+        if: steps.commit.outputs.depasse != 'true'
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      # Sans --with-deps : l'image ubuntu-latest contient déjà les bibliothèques de Chrome.
+      - name: Installer Chromium
+        if: steps.commit.outputs.depasse != 'true'
+        timeout-minutes: 3
+        run: npx playwright install chromium
       - name: Tests E2E
+        if: steps.commit.outputs.depasse != 'true'
         run: npm run test:e2e
         env:
           BASE_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-      - uses: actions/upload-artifact@v7
-        if: failure()
-        with:
-          name: rapport-playwright
-          path: playwright-report/
-          retention-days: 7
+          # Compte existant sur le serveur preview, pour les tests de connexion (US-003).
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_MOT_DE_PASSE: ${{ secrets.E2E_MOT_DE_PASSE }}

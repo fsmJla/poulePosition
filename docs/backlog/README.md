@@ -30,7 +30,28 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 
 | Réf. | Titre | Epic | Statut | Dépend de |
 |---|---|---|---|---|
-| [US-001](US-001-walking-skeleton.md) | Walking skeleton : chaîne complète avec une page minimale | E0 | En revue | — |
+| [US-001](US-001-walking-skeleton.md) | Walking skeleton : chaîne complète avec une page minimale | E0 | Terminée | — |
+| [US-002](US-002-creer-premier-administrateur.md) | Créer le premier administrateur par une commande d'installation | E1 | Terminée | US-001 |
+| [US-003](US-003-se-connecter-en-ligne.md) | Se connecter et se déconnecter (en ligne) | E1 | Terminée | US-002 |
+| [US-004](US-004-limiter-essais-connexion.md) | Limiter les essais de connexion | E1 | Terminée | US-003 |
+| [US-005](US-005-se-reconnecter-hors-ligne.md) | Se reconnecter hors ligne sur un appareil déjà utilisé | E1 | Terminée | US-003 |
+| [US-006](US-006-oublier-cet-appareil.md) | Oublier cet appareil (P2) | E1 | Terminée | US-005 |
+| [US-007](US-007-gerer-les-comptes.md) | Lister, créer et modifier les comptes | E1 | Terminée | US-003 |
+| [US-008](US-008-desactiver-supprimer-compte.md) | Désactiver, réactiver ou supprimer un compte | E1 | Terminée | US-007 |
+| [US-009](US-009-reinitialiser-mot-de-passe.md) | Réinitialiser le mot de passe d'un compte (mot de passe oublié) | E1 | Terminée | US-007 |
+| [US-010](US-010-changer-son-mot-de-passe.md) | Changer son mot de passe | E1 | Terminée | US-003 |
+| [US-011](US-011-identite-visuelle.md) | Appliquer l'identité visuelle (palette, polices, icônes) | E0 | Terminée | US-001 |
+| [US-012](US-012-ecran-connexion-moderne.md) | Moderniser l'écran de connexion | E1 | Terminée | US-011, US-014, US-003 |
+| [US-013](US-013-correction-e2e-preview-bloques.md) | Corriger les E2E de la preview bloqués à l'installation du navigateur | E0 | Terminée | US-001 |
+| [US-014](US-014-banniere-poule-position.md) | Intégrer la bannière « Poule Position » et l'entête de site | E0 | Terminée | US-011 |
+| [US-015](US-015-correction-secret-dans-rapport-e2e.md) | Corriger l'exposition du mot de passe E2E dans le rapport de la CI | E0 | Terminée | US-001, US-003 |
+| [US-016](US-016-modifier-son-profil.md) | Modifier son profil (nom et avatar) (P2) | E1 | Terminée | US-007, US-010 |
+| [US-017](US-017-menu-de-compte.md) | Menu de compte en haut à droite (P2) | E1 | Terminée | US-016, US-006 |
+| [US-018](US-018-envoyer-des-emails.md) | Envoyer des e-mails depuis le serveur (SMTP OVH du club) (P2) | E1 | Terminée | US-001 |
+| [US-019](US-019-reinitialiser-par-email.md) | Réinitialiser son mot de passe par e-mail (P2) | E1 | Terminée | US-018, US-009, US-004 |
 
-Le découpage des fonctionnalités en US fines est l'**étape 4** (exigences §11). Il commencera après la
-fin d'US-001.
+Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
+
+**Ordre conseillé pour E1 :** US-002 → US-003 → US-010 (le changement de mot de passe est nécessaire dès les
+mots de passe temporaires) → US-007 → US-009 → US-008 → US-005 → US-004 → US-006 → US-016 → US-017 (le menu de
+compte ouvre la page de profil) → US-018 (avec son ADR et un essai d'envoi réel) → US-019.

@@ -9,15 +9,42 @@ compatibility_date = "2026-10-01"
 name = "COMPETITIONS"
 class_name = "Competition"
 
+# Un objet par club (idFromName("club:<CLUB_ID>"), ADR-0014) : comptes (ADR-0006).
+[[durable_objects.bindings]]
+name = "CLUB"
+class_name = "Club"
+
+# Un compteur d'essais erronés par adresse IP (repris du relais).
+[[durable_objects.bindings]]
+name = "LIMITEUR"
+class_name = "Limiteur"
+
 # Plan gratuit : Durable Objects à stockage SQLite uniquement.
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Competition"]
 
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Club", "Limiteur"]
+
+# Secrets (wrangler secret put, par environnement ; jamais dans le dépôt) : POIVRE (créé une fois, ne change
+# jamais : le changer invaliderait tous les mots de passe) et SECRET_INSTALLATION (création du 1er administrateur).
+# Envoi d'e-mails (US-018, ADR-0015) : SMTP_UTILISATEUR (adresse de la boîte, no-reply@pessac-escrime.fr) et
+# SMTP_MOT_DE_PASSE (mot de passe de la boîte chez OVH). Sans eux, aucun e-mail ne part.
+
 [vars]
 # Origines autorisées, séparées par des virgules ; `*` = lettres, chiffres ou tirets (jamais un point).
 # Production : domaine attribué par Vercel (poule-position.vercel.app était pris). localhost : dev local et tests.
 ORIGINES = "https://poule-position-livid.vercel.app,http://localhost:*,http://127.0.0.1:*"
+# Club unique au lancement (ADR-0014).
+CLUB_ID = "club-principal"
+# Serveur SMTP du MX Plan OVH du club (ADR-0015) : port 465, TLS dès la connexion.
+SMTP_HOTE = "ssl0.ovh.net"
+SMTP_PORT = "465"
+# Application de production : adresse des liens envoyés par e-mail quand la demande ne vient pas d'une origine
+# autorisée (US-019).
+URL_APPLICATION = "https://poule-position-livid.vercel.app"
 
 [env.preview]
 name = "poule-position-serveur-preview"
@@ -26,6 +53,20 @@ name = "poule-position-serveur-preview"
 name = "COMPETITIONS"
 class_name = "Competition"
 
+[[env.preview.durable_objects.bindings]]
+name = "CLUB"
+class_name = "Club"
+
+[[env.preview.durable_objects.bindings]]
+name = "LIMITEUR"
+class_name = "Limiteur"
+
 [env.preview.vars]
 # Prévisualisations Vercel du projet poule-position (portée fsmjlas-projects), et localhost.
 ORIGINES = "https://poule-position-*-fsmjlas-projects.vercel.app,http://localhost:*,http://127.0.0.1:*"
+CLUB_ID = "club-principal"
+SMTP_HOTE = "ssl0.ovh.net"
+SMTP_PORT = "465"
+# Application de production : adresse des liens envoyés par e-mail quand la demande ne vient pas d'une origine
+# autorisée (US-019).
+URL_APPLICATION = "https://poule-position-livid.vercel.app"
