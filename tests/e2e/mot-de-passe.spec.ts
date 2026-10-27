@@ -2,14 +2,14 @@
 // changement modifierait le mot de passe du compte de test, partagé par les autres tests et par la CI. La chaîne
 // réelle (serveur, cryptographie, version du mot de passe) est couverte par serveur/src/mot-de-passe.test.ts.
 import { expect, test, type Page } from '@playwright/test';
-import { compteTest, seConnecter } from './compte';
+import { boutonMenuCompte, choisirDansMenuCompte, compteTest, seConnecter } from './compte';
 import { sessionSimulee, simuler } from './simulation';
 
 const MESSAGE_TEMPORAIRE = /mot de passe est temporaire/;
 
 async function ouvrirChangement(page: Page) {
   await seConnecter(page);
-  await page.getByRole('link', { name: 'Mon profil' }).click();
+  await choisirDansMenuCompte(page, 'Éditer le profil');
   await page.getByRole('link', { name: 'Changer mon mot de passe' }).click();
   await expect(page).toHaveURL(/\/mot-de-passe$/);
 }
@@ -66,7 +66,7 @@ test('US-010 CA-3 : un mot de passe actuel faux est refusé, et l’on reste con
   await expect(page).toHaveURL(/\/mot-de-passe$/);
   await page.getByRole('link', { name: 'Retour à mon profil' }).click();
   await expect(page).toHaveURL(/\/profil$/);
-  await expect(page.getByRole('button', { name: 'Se déconnecter', exact: true })).toBeVisible();
+  await expect(boutonMenuCompte(page)).toBeVisible();
 });
 
 test('US-010 CA-4 : après un mot de passe temporaire, on le change sans le ressaisir, puis on accède à l’application', async ({

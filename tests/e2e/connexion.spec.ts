@@ -2,7 +2,7 @@
 // serait bloqué 15 minutes pour les autres passages de la CI ; la vraie limitation est couverte par
 // serveur/src/connexion.test.ts.
 import { expect, test, type Page } from '@playwright/test';
-import { compteTest, seConnecter } from './compte';
+import { boutonMenuCompte, choisirDansMenuCompte, compteTest, seConnecter } from './compte';
 import { simuler } from './simulation';
 
 async function essayer(page: Page, email: string, motDePasse: string) {
@@ -59,19 +59,19 @@ test('US-003 CA-4 : on reste connecté après un rechargement ou une réouvertur
   await seConnecter(page);
   await page.reload();
   await expect(page).toHaveURL(/\/organisateur$/);
-  await expect(page.getByRole('button', { name: 'Se déconnecter', exact: true })).toBeVisible();
+  await expect(boutonMenuCompte(page)).toBeVisible();
 
   await page.close();
   const rouverte = await context.newPage();
   await rouverte.goto('/');
   await expect(rouverte.getByRole('link', { name: "Accueil de l'organisateur" })).toBeVisible();
   await rouverte.goto('/organisateur');
-  await expect(rouverte.getByRole('button', { name: 'Se déconnecter', exact: true })).toBeVisible();
+  await expect(boutonMenuCompte(rouverte)).toBeVisible();
 });
 
 test('US-003 CA-5 : « Se déconnecter » ramène à l’écran de connexion', async ({ page }) => {
   await seConnecter(page);
-  await page.getByRole('button', { name: 'Se déconnecter', exact: true }).click();
+  await choisirDansMenuCompte(page, 'Se déconnecter');
   await expect(page).toHaveURL(/\/connexion$/);
   await page.reload();
   await page.goto('/organisateur');
