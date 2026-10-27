@@ -59,19 +59,19 @@ test('US-003 CA-4 : on reste connecté après un rechargement ou une réouvertur
   await seConnecter(page);
   await page.reload();
   await expect(page).toHaveURL(/\/organisateur$/);
-  await expect(page.getByRole('button', { name: 'Se déconnecter' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Se déconnecter', exact: true })).toBeVisible();
 
   await page.close();
   const rouverte = await context.newPage();
   await rouverte.goto('/');
   await expect(rouverte.getByRole('link', { name: "Accueil de l'organisateur" })).toBeVisible();
   await rouverte.goto('/organisateur');
-  await expect(rouverte.getByRole('button', { name: 'Se déconnecter' })).toBeVisible();
+  await expect(rouverte.getByRole('button', { name: 'Se déconnecter', exact: true })).toBeVisible();
 });
 
 test('US-003 CA-5 : « Se déconnecter » ramène à l’écran de connexion', async ({ page }) => {
   await seConnecter(page);
-  await page.getByRole('button', { name: 'Se déconnecter' }).click();
+  await page.getByRole('button', { name: 'Se déconnecter', exact: true }).click();
   await expect(page).toHaveURL(/\/connexion$/);
   await page.reload();
   await page.goto('/organisateur');

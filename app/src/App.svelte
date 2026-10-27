@@ -69,6 +69,13 @@
     naviguer(CHEMINS.connexion);
   }
 
+  /** US-006 : se déconnecter et effacer le vérificateur local du compte sur cet appareil. */
+  async function surOubli() {
+    await client.oublierCetAppareil();
+    session = null;
+    naviguer(CHEMINS.connexion);
+  }
+
   /** Session refusée par le serveur pendant un usage (déjà effacée de l'appareil) : retour à la connexion. */
   function surSessionPerdue() {
     session = null;
@@ -83,7 +90,7 @@
     <Connexion {client} {surConnexion} {naviguer} />
   {:else if session}
     <!-- Pages réservées : entête commun (US-014). -->
-    <Entete {surDeconnexion} {naviguer} locale={estLocale(session)} />
+    <Entete {surDeconnexion} {surOubli} {naviguer} locale={estLocale(session)} />
     {#if route.page === 'organisateur'}
       <Organisateur {session} {naviguer} />
     {:else if route.page === 'motDePasse'}

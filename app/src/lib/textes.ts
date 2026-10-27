@@ -52,6 +52,13 @@ export const textes = {
   organisateur: {
     bonjour: (nom: string) => `Bonjour, ${nom}`,
     seDeconnecter: 'Se déconnecter',
+    oublier: {
+      bouton: 'Se déconnecter et oublier cet appareil',
+      avertissement:
+        'Votre session et votre mot de passe enregistré sur cet appareil seront effacés : vous ne pourrez plus vous y reconnecter hors ligne. Les compétitions enregistrées sur cet appareil sont conservées.',
+      confirmer: 'Oublier cet appareil',
+      annuler: 'Annuler',
+    },
     connexionLocale: 'Hors ligne : connexion locale',
     changerMotDePasse: 'Changer mon mot de passe',
     actions: 'Actions',

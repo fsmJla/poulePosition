@@ -535,8 +535,10 @@
     letter-spacing: 0.08em;
   }
 
-  /* Le tableau défile seul sur petit écran : jamais la page. */
+  /* Le tableau défile seul sur petit écran : jamais la page. Positionné, il contient aussi les libellés masqués
+     (.masque, en position absolue) de ses boutons, qui sinon élargiraient la page. */
   .tableau {
+    position: relative;
     overflow-x: auto;
   }
 
