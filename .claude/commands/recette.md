@@ -8,6 +8,15 @@ Recette de l'US **$ARGUMENTS** sur sa preview.
 1. **Retrouve la preview** : l'URL du déploiement Vercel de la PR, depuis la PR, l'outil Vercel MCP s'il est
    disponible, ou en la demandant à l'utilisateur. Vérifie que la CI de la PR est **verte**. Sinon, arrête-toi et
    montre ce qui échoue.
+
+   **Serveur de preview** : le Worker `poule-position-serveur-preview` ne se déploie tout seul que depuis `dev`.
+   Si la branche de l'US modifie `serveur/`, `paquets/domaine/` ou `paquets/protocole/` (`git diff --name-only
+   dev...<branche>`), déploie-le depuis la branche avant la recette :
+   `gh workflow run deploiement-serveur.yml --ref <branche>`, puis attends que le run soit vert
+   (`gh run list --workflow deploiement-serveur.yml --limit 1`, puis `gh run watch <id> --exit-status`). S'il échoue,
+   arrête-toi et montre l'erreur. Sans `gh`, demande à l'utilisateur de le lancer depuis l'onglet Actions de GitHub.
+   Ce Worker de preview est partagé avec `dev` : il garde le code de la branche jusqu'au prochain déploiement depuis
+   `dev`, qui suit le merge.
 2. **Prépare la liste de recette** à partir des critères `CA-n` de l'US et de sa section hors ligne : une
    étape vérifiable par critère.
 3. **Déroule la recette** dans un navigateur piloté (Playwright MCP ou Claude in Chrome) :
