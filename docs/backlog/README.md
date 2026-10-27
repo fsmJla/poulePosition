@@ -45,8 +45,11 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-013](US-013-correction-e2e-preview-bloques.md) | Corriger les E2E de la preview bloqués à l'installation du navigateur | E0 | Terminée | US-001 |
 | [US-014](US-014-banniere-poule-position.md) | Intégrer la bannière « Poule Position » et l'entête de site | E0 | Terminée | US-011 |
 | [US-015](US-015-correction-secret-dans-rapport-e2e.md) | Corriger l'exposition du mot de passe E2E dans le rapport de la CI | E0 | Terminée | US-001, US-003 |
+| [US-016](US-016-modifier-son-profil.md) | Modifier son profil (nom et avatar) (P2) | E1 | Prête | US-007, US-010 |
+| [US-017](US-017-menu-de-compte.md) | Menu de compte en haut à droite (P2) | E1 | Prête | US-016, US-006 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
 **Ordre conseillé pour E1 :** US-002 → US-003 → US-010 (le changement de mot de passe est nécessaire dès les
-mots de passe temporaires) → US-007 → US-009 → US-008 → US-005 → US-004 → US-006.
+mots de passe temporaires) → US-007 → US-009 → US-008 → US-005 → US-004 → US-006 → US-016 → US-017 (le menu de
+compte ouvre la page de profil).
