@@ -9,6 +9,7 @@ const MESSAGE_TEMPORAIRE = /mot de passe est temporaire/;
 
 async function ouvrirChangement(page: Page) {
   await seConnecter(page);
+  await page.getByRole('link', { name: 'Mon profil' }).click();
   await page.getByRole('link', { name: 'Changer mon mot de passe' }).click();
   await expect(page).toHaveURL(/\/mot-de-passe$/);
 }
@@ -63,7 +64,8 @@ test('US-010 CA-3 : un mot de passe actuel faux est refusé, et l’on reste con
   });
   await expect(page.getByRole('alert')).toHaveText('Mot de passe actuel incorrect', { timeout: 20_000 });
   await expect(page).toHaveURL(/\/mot-de-passe$/);
-  await page.getByRole('link', { name: "Retour à l'accueil de l'organisateur" }).click();
+  await page.getByRole('link', { name: 'Retour à mon profil' }).click();
+  await expect(page).toHaveURL(/\/profil$/);
   await expect(page.getByRole('button', { name: 'Se déconnecter', exact: true })).toBeVisible();
 });
 
