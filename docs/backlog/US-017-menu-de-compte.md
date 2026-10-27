@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-016, US-006
-- **Branche / PR :** `us/US-017-menu-de-compte`
+- **Branche / PR :** `us/US-017-menu-de-compte` · [PR #30](https://github.com/fsmJla/poulePosition/pull/30)
 
 ## Récit
 
