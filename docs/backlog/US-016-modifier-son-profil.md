@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-007, US-010
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-016-modifier-son-profil`
 
 ## Récit
 
@@ -100,3 +100,4 @@ défaut est une règle pure, dans `paquets/domaine`. Nouvelle page `/profil` (ro
 | Date | Événement |
 |---|---|
 | 2026-10-27 | Créée (spécification : cartouche de profil) |
+| 2026-10-27 | En cours : plan validé (module `avatar` dans le domaine, 8 couleurs nommées dans la charte, route `PATCH /compte` qui ne touche que le compte de la session, avatar dans le compte de session, page `/profil`) |
