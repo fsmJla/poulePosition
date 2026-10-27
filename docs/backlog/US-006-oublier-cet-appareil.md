@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-005
 - **Branche / PR :** `us/US-006-oublier-cet-appareil`
 
@@ -51,9 +51,43 @@ Fonctionne hors ligne : l'effacement est purement local.
 
 ADR-0006 (mesure de réduction du risque « appareil volé »).
 
+## Réalisation
+
+- **Application** :
+  - `lib/session.ts` : `oublierCetAppareil()` efface la session, la clé de la session locale gardée dans l'onglet
+    (US-005) et le vérificateur local du **seul compte connecté** ; aucun appel au serveur ;
+  - `composants/Entete.svelte` : bouton « Se déconnecter et oublier cet appareil » à côté de « Se déconnecter » ;
+    confirmation dans un panneau sous l'entête (avertissement, « Oublier cet appareil », « Annuler »), sans boîte de
+    dialogue du navigateur ; sur smartphone, les deux boutons passent sous la bannière ;
+  - `App.svelte` : retour à l'écran de connexion après l'oubli.
+- **Protocole, serveur, domaine** : aucun changement (effacement purement local).
+- **Tests** :
+
+  | CA | Tests |
+  |---|---|
+  | CA-1 | `app/src/lib/session.test.ts` « US-006 CA-1 » (session, clé de l'onglet et vérificateur effacés ; reconnexion hors ligne refusée), E2E `hors-ligne.spec.ts` « US-006 CA-1, CA-3 et hors ligne » |
+  | CA-2 | `session.test.ts` « US-006 CA-2 » (l'autre compte se reconnecte hors ligne) |
+  | CA-3 | `session.test.ts` « US-006 CA-3 » (frein local et autres comptes conservés), `textes.test.ts` et E2E (l'avertissement précise que les compétitions sont conservées) |
+  | Hors ligne | E2E « US-006 CA-1, CA-3 et hors ligne » (oubli depuis une session locale, réseau coupé), `session.test.ts` (aucune requête) |
+  | Annulation | E2E « US-006 : « Annuler » n'efface rien » (toujours connecté, puis reconnexion hors ligne possible) |
+
+- **Corrections faites en passant** :
+  - page « Comptes » sur smartphone (défaut présent depuis US-007) : les libellés masqués des boutons du tableau,
+    en position absolue, élargissaient la page (694 px au lieu de 412) ; le conteneur du tableau est désormais
+    positionné. Révélé par l'entête plus haut, qui faisait échouer 5 E2E smartphone ;
+  - sélecteurs E2E du bouton « Se déconnecter » rendus exacts (`exact: true`), le nouveau bouton contenant ce texte.
+
+### Hypothèses prises pendant l'implémentation
+
+- Validée par l'utilisateur le 2026-10-27 : le bouton est dans l'entête, à côté de « Se déconnecter ».
+- Le bouton reste actif hors ligne : l'effacement est purement local.
+- **CA-3** : aucune compétition n'est encore stockée sur l'appareil. Le test vérifie que seules la session et
+  l'entrée du compte sont effacées ; un test sur les compétitions viendra avec le journal local.
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-25 | Créée (spécification E1) |
 | 2026-10-27 | En cours : plan validé (bouton « Se déconnecter et oublier cet appareil » dans l’entête, à côté de « Se déconnecter », confirmation dans un panneau sous l’entête ; effacement de la session, de la clé de l’onglet et du vérificateur du seul compte connecté) |
+| 2026-10-27 | En revue : contrôles locaux verts (lint, typage, 364 tests unitaires et d’intégration, couverture 94 %, build, audit, 125 E2E) |
