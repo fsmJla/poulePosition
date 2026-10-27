@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-007
-- **Branche / PR :** `us/US-008-desactiver-supprimer-compte`
+- **Branche / PR :** `us/US-008-desactiver-supprimer-compte` · [PR #23](https://github.com/fsmJla/poulePosition/pull/23)
 
 ## Récit
 
