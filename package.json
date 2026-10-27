@@ -23,7 +23,8 @@
     "test:e2e": "playwright test",
     "audit": "npm audit --audit-level=high",
     "test:charge": "node tests/charge/lancer.mjs",
-    "creer-admin": "tsx outils/creer-admin.ts"
+    "creer-admin": "tsx outils/creer-admin.ts",
+    "essai-email": "tsx outils/essai-email.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
