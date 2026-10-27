@@ -1,9 +1,9 @@
 <script lang="ts">
   // Gestion des comptes (US-007), page réservée aux administrateurs : liste, création avec mot de passe temporaire
-  // affiché une seule fois, modification du nom et du rôle, réinitialisation du mot de passe (US-009). Exige le réseau
-  // (docs/protocole.md §9).
+  // affiché une seule fois, modification du nom et du rôle, réinitialisation du mot de passe (US-009), désactivation,
+  // réactivation et suppression (US-008). Exige le réseau (docs/protocole.md §9).
   import { onMount } from 'svelte';
-  import { validerNouveauCompte, validerNom, ROLES, type Role } from '@poule-position/domaine';
+  import { normaliserEmail, validerNouveauCompte, validerNom, ROLES, type Role } from '@poule-position/domaine';
   import type { CompteResume } from '@poule-position/protocole';
   import type { ClientSession, ErreurComptes } from '../lib/session';
   import { textes } from '../lib/textes';
@@ -39,8 +39,10 @@
   let roleEdite: Role = $state('organisateur');
   let erreurEdition: ErreurComptes | null = $state(null);
 
-  // Réinitialisation (US-009) : confirmée dans la ligne, sans boîte de dialogue du navigateur.
-  let aConfirmer: string | null = $state(null);
+  // Réinitialisation (US-009), désactivation et suppression (US-008) : confirmées dans la ligne, sans boîte de dialogue
+  // du navigateur. La suppression se confirme en saisissant l'e-mail du compte.
+  let aConfirmer: { id: string; action: 'reinitialisation' | 'desactivation' | 'suppression' } | null = $state(null);
+  let emailConfirmation = $state('');
   let horsLigne = $state(!navigator.onLine);
 
   /** Erreur du serveur : une session perdue ramène à la connexion, le reste s'affiche. */
@@ -131,6 +133,39 @@
     comptes = (comptes ?? []).map((existant) => (existant.id === compte.id ? resultat.compte : existant));
     temporaire = { nom: resultat.compte.nom, motDePasse: resultat.motDePasseTemporaire, reinitialise: true };
     copie = false;
+  }
+
+  function demanderConfirmation(compte: CompteResume, action: NonNullable<typeof aConfirmer>['action']) {
+    aConfirmer = { id: compte.id, action };
+    emailConfirmation = '';
+    erreurEdition = null;
+  }
+
+  /** US-008 CA-1 / CA-2 : désactive (après confirmation) ou réactive un compte. */
+  async function changerEtat(compte: CompteResume, actif: boolean) {
+    aConfirmer = null;
+    erreurEdition = null;
+    const resultat = await client.changerEtatCompte(compte.id, actif);
+    if (!resultat.ok) {
+      erreurEdition = traiter(resultat.erreur);
+      return;
+    }
+    if (resultat.deconnecte) return surSessionPerdue();
+    comptes = (comptes ?? []).map((existant) => (existant.id === compte.id ? resultat.compte : existant));
+  }
+
+  /** US-008 CA-3 : suppression définitive, une fois l'e-mail du compte recopié. */
+  async function supprimer(compte: CompteResume) {
+    if (normaliserEmail(emailConfirmation) !== compte.email) return;
+    aConfirmer = null;
+    erreurEdition = null;
+    const resultat = await client.supprimerCompte(compte);
+    if (!resultat.ok) {
+      erreurEdition = traiter(resultat.erreur);
+      return;
+    }
+    if (resultat.deconnecte) return surSessionPerdue();
+    comptes = (comptes ?? []).filter((existant) => existant.id !== compte.id);
   }
 </script>
 
@@ -248,14 +283,37 @@
                         >{t.enregistrer}</button
                       >
                       <button type="button" class="lien" onclick={() => (enEdition = null)}>{t.annuler}</button>
-                    {:else if aConfirmer === compte.id}
+                    {:else if aConfirmer?.id === compte.id && aConfirmer.action === 'suppression'}
+                      <div class="confirmation">
+                        <p id="consigne-{compte.id}">{t.suppression.consigne(compte.email)}</p>
+                        <input
+                          type="email"
+                          autocomplete="off"
+                          aria-label={t.suppression.champ}
+                          aria-describedby="consigne-{compte.id}"
+                          bind:value={emailConfirmation}
+                        />
+                        <div class="actions">
+                          <button
+                            type="button"
+                            class="danger"
+                            onclick={() => supprimer(compte)}
+                            disabled={horsLigne || normaliserEmail(emailConfirmation) !== compte.email}
+                          >
+                            {t.suppression.confirmer}
+                          </button>
+                          <button type="button" class="lien" onclick={() => (aConfirmer = null)}>{t.annuler}</button>
+                        </div>
+                      </div>
+                    {:else if aConfirmer?.id === compte.id}
+                      {@const desactivation = aConfirmer.action === 'desactivation'}
                       <button
                         type="button"
                         class="principal"
-                        onclick={() => reinitialiser(compte)}
+                        onclick={() => (desactivation ? changerEtat(compte, false) : reinitialiser(compte))}
                         disabled={horsLigne}
                       >
-                        {t.confirmerReinitialisation}
+                        {desactivation ? t.confirmerDesactivation : t.confirmerReinitialisation}
                       </button>
                       <button type="button" class="lien" onclick={() => (aConfirmer = null)}>{t.annuler}</button>
                     {:else}
@@ -265,11 +323,41 @@
                       <button
                         type="button"
                         class="secondaire"
-                        onclick={() => (aConfirmer = compte.id)}
+                        onclick={() => demanderConfirmation(compte, 'reinitialisation')}
                         disabled={horsLigne}
                         title={horsLigne ? t.horsLigne : undefined}
                       >
                         <span aria-hidden="true">⟲</span><span class="masque">{t.reinitialiser(compte.nom)}</span>
+                      </button>
+                      {#if compte.actif}
+                        <button
+                          type="button"
+                          class="secondaire"
+                          onclick={() => demanderConfirmation(compte, 'desactivation')}
+                          disabled={horsLigne}
+                          title={horsLigne ? t.horsLigne : undefined}
+                        >
+                          <span aria-hidden="true">⏸</span><span class="masque">{t.desactiver(compte.nom)}</span>
+                        </button>
+                      {:else}
+                        <button
+                          type="button"
+                          class="secondaire"
+                          onclick={() => changerEtat(compte, true)}
+                          disabled={horsLigne}
+                          title={horsLigne ? t.horsLigne : undefined}
+                        >
+                          <span aria-hidden="true">▶</span><span class="masque">{t.reactiver(compte.nom)}</span>
+                        </button>
+                      {/if}
+                      <button
+                        type="button"
+                        class="secondaire danger-contour"
+                        onclick={() => demanderConfirmation(compte, 'suppression')}
+                        disabled={horsLigne}
+                        title={horsLigne ? t.horsLigne : undefined}
+                      >
+                        <span aria-hidden="true">✕</span><span class="masque">{t.supprimer(compte.nom)}</span>
                       </button>
                     {/if}
                   </div>
@@ -374,6 +462,38 @@
     border: 1px solid var(--accent);
     background: transparent;
     color: var(--accent);
+  }
+
+  .secondaire:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .danger {
+    border: none;
+    background: var(--etat-erreur);
+    color: var(--fond);
+  }
+
+  .danger:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .danger-contour {
+    border-color: var(--etat-erreur);
+    color: var(--etat-erreur);
+  }
+
+  .confirmation {
+    display: grid;
+    gap: 0.4rem;
+    min-width: 16rem;
+  }
+
+  .confirmation p {
+    margin: 0;
+    font-size: 0.9rem;
   }
 
   .lien {

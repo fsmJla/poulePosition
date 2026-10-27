@@ -17,7 +17,7 @@ export async function simuler(
     const cors = {
       'Access-Control-Allow-Origin': origine,
       'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-      'Access-Control-Allow-Methods': 'GET, POST, PATCH',
+      'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE',
     };
     if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
     if (route.request().method() !== methode) return route.fallback();
