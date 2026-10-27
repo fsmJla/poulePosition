@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-007, US-010
-- **Branche / PR :** `us/US-016-modifier-son-profil`
+- **Branche / PR :** `us/US-016-modifier-son-profil` · [PR #29](https://github.com/fsmJla/poulePosition/pull/29)
 
 ## Récit
 
