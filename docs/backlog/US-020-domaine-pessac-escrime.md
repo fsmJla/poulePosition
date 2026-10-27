@@ -5,7 +5,7 @@
   l'objet d'une US dédiée »)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-001, US-019
 - **Branche / PR :** `us/US-020-domaine-pessac-escrime`
 
@@ -89,9 +89,36 @@ ses voisins refusés. Recette : CA-2 et CA-3 vérifiables par les tests et sur l
 CA-1, CA-4 et la partie production de CA-2 / CA-3 vérifiées en production après `/release`, avec l'utilisateur.
 Notes de version : prévenir que chacun se reconnecte une fois en ligne sur la nouvelle adresse.
 
+## Réalisation
+
+- **Configuration** (`serveur/wrangler.toml`) : `ORIGINES` de production = domaine du club, ancienne adresse et
+  localhost ; `URL_APPLICATION` = domaine du club, en production et en preview. Aucun changement de code : la
+  correspondance des origines et le choix du lien (US-019) étaient déjà en place.
+- **Documentation** : README (adresse de production ; section « Domaine du club » pas à pas : Vercel, OVH,
+  redirection, conséquence pour les appareils), `docs/protocole.md` §1, `docs/architecture.md`.
+- **Tests** :
+
+  | CA | Tests |
+  |---|---|
+  | CA-1 | Vérifié en production après `/release`, avec l'utilisateur (procédure du README, CA-5) |
+  | CA-2 | `serveur/src/configuration.test.ts` (lit le vrai `wrangler.toml` avec `unstable_readConfig`) : « US-020 CA-2 : la production accepte le domaine du club, et toujours l'ancienne adresse », six origines voisines refusées (http, autre sous-domaine, domaine seul, `www.`, suffixe, port), « la preview n'accepte pas le domaine de production » ; intégration `serveur/src/serveur.test.ts` (Worker avec la configuration de production) : WebSocket `101` et préparation CORS `204` depuis le domaine du club, `403` depuis un autre sous-domaine |
+  | CA-3 | `configuration.test.ts` « US-020 CA-3 : le lien par défaut des e-mails mène au domaine du club, en production et en preview » ; `logique.test.ts` « US-020 CA-3 : une demande venue du domaine du club reçoit un lien vers ce domaine » ; lien des previews : tests d'US-019 |
+  | CA-4 | Vérifié en production après la bascule, avec l'utilisateur (redirection configurée dans Vercel) |
+  | CA-5 | `configuration.test.ts` « US-020 CA-5 » : le README et `docs/protocole.md` donnent le domaine du club comme adresse de production |
+  | Hors ligne | Pas de code nouveau : la reconnexion hors ligne reste couverte par les tests d'US-005 ; la conséquence pour les appareils (se connecter une fois en ligne sur la nouvelle adresse) est documentée dans le README et sera dans les notes de version |
+
+### Hypothèses prises pendant l'implémentation
+
+- La configuration lue par les tests est celle que wrangler déploie (`unstable_readConfig`, API marquée instable de
+  wrangler, déjà utilisée par les tests avec `unstable_startWorker`).
+- La redirection d'une adresse `*.vercel.app` vers un domaine personnalisé depuis *Settings → Domains* est à
+  confirmer en recette ; à défaut, les deux adresses restent actives (le serveur accepte déjà les deux) et l'US le
+  note.
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-27 | Créée (spécification : domaine du club) |
 | 2026-10-28 | En cours : plan validé (configuration réelle de `wrangler.toml` vérifiée par les tests ; CA-1 et CA-4 vérifiés en production après `/release`) |
+| 2026-10-28 | En revue : contrôles locaux verts (lint, typage, 518 tests unitaires et d’intégration, couverture 94 %, build, audit, 165 E2E) |
