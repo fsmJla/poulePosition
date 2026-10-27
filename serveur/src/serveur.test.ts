@@ -66,6 +66,28 @@ describe('serveur', () => {
     expect(reponse.webSocket).toBeFalsy();
   });
 
+  // Ce Worker tourne avec la configuration de production (wrangler.toml, environnement par défaut).
+  it('US-020 CA-2 : la production accepte le domaine du club (WebSocket et routes de session)', async () => {
+    const club = 'https://poule-position.pessac-escrime.fr';
+    expect((await connecter(club)).status).toBe(101);
+    const preflight = await worker.fetch('http://localhost/session/sel', {
+      method: 'OPTIONS',
+      headers: { Origin: club, 'Access-Control-Request-Method': 'POST' },
+    });
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get('Access-Control-Allow-Origin')).toBe(club);
+  });
+
+  it('US-020 CA-2 : la production refuse un autre sous-domaine du club (403)', async () => {
+    const voisin = 'https://app.pessac-escrime.fr';
+    expect((await connecter(voisin)).status).toBe(403);
+    const preflight = await worker.fetch('http://localhost/session/sel', {
+      method: 'OPTIONS',
+      headers: { Origin: voisin, 'Access-Control-Request-Method': 'POST' },
+    });
+    expect(preflight.status).toBe(403);
+  });
+
   it('US-001 CA-8 : la connexion reçoit bienvenue avec la compétition', async () => {
     const { socket, prochain } = await ouvrir();
     expect(JSON.parse(await prochain())).toEqual({ v: 1, type: 'bienvenue', competitionId: 'demo' });

@@ -59,7 +59,7 @@ Les **tests de charge** (k6) ne sont jamais lancés automatiquement. La procédu
 | Quoi | Déclencheur | Où |
 |---|---|---|
 | Preview de l'application | Toute branche poussée ou PR | Vercel (`poule-position-…-fsmjlas-projects.vercel.app`), protégée |
-| Production de l'application | Merge sur `main` (fait par le propriétaire) | Vercel (`poule-position-livid.vercel.app` ; `poule-position.vercel.app` était déjà pris) |
+| Production de l'application | Merge sur `main` (fait par le propriétaire) | Vercel : https://poule-position.pessac-escrime.fr (domaine du club, US-020) ; l'ancienne adresse `poule-position-livid.vercel.app` y redirige |
 | Serveur de preview | Push sur `dev`, ou lancement manuel du workflow | Cloudflare : `poule-position-serveur-preview` |
 | Serveur de production | Push sur `main` | Cloudflare : `poule-position-serveur` |
 
@@ -118,3 +118,26 @@ leur serveur de test (port 8791) reçoit des valeurs de test, et leur compte est
 
 Déploiement manuel du serveur, si besoin, depuis `serveur/` : `npx wrangler login` une fois, puis
 `npm run deploy:preview` ou `npm run deploy`.
+
+### Domaine du club : poule-position.pessac-escrime.fr (une fois, US-020)
+
+La production répond sur `https://poule-position.pessac-escrime.fr`. Le serveur de production accepte déjà cette
+origine (`ORIGINES` dans `serveur/wrangler.toml`), et les liens des e-mails y mènent par défaut (`URL_APPLICATION`).
+Le domaine se configure à la main, par le propriétaire des comptes Vercel et OVH, de préférence **avant** la mise en
+production qui l'introduit :
+
+1. **Vercel** : projet `poule-position` → *Settings* → *Domains* → *Add Domain* → `poule-position.pessac-escrime.fr`,
+   rattaché à *Production*. Vercel affiche l'enregistrement DNS à créer : un **CNAME** et sa cible.
+2. **OVH** : espace client → *Web Cloud* → *Noms de domaine* → `pessac-escrime.fr` → *Zone DNS* → *Ajouter une
+   entrée* → **CNAME** : sous-domaine `poule-position`, cible celle donnée par Vercel, **avec un point final**. Si une
+   entrée A, AAAA ou TXT existe déjà pour `poule-position`, la supprimer d'abord : OVH refuse un CNAME à côté. Les
+   e-mails du domaine (MX, SPF, DKIM) ne sont pas touchés.
+3. Attendre la propagation (quelques minutes à quelques heures) : Vercel passe le domaine en *Valid Configuration* et
+   crée le certificat HTTPS. Vérifier que `https://poule-position.pessac-escrime.fr` affiche « Serveur connecté ».
+4. **Rediriger l'ancienne adresse**, une fois la bascule vérifiée : *Settings* → *Domains* → `poule-position-livid.vercel.app`
+   → *Edit* → *Redirect to* `poule-position.pessac-escrime.fr`, redirection permanente (308). Le chemin et le `#` des
+   liens (réinitialisation) sont conservés.
+
+Les données gardées sur un appareil (session, reconnexion hors ligne, application installée) dépendent de l'adresse
+du site : sur le nouveau domaine, chacun se connecte une fois **en ligne** avant de pouvoir se reconnecter hors
+ligne, et réinstalle l'application s'il l'avait installée. Éviter de basculer un jour de compétition.
