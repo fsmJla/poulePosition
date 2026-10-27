@@ -80,6 +80,7 @@ describe('route d’installation', () => {
   it('reconnaît /installation/administrateur', () => {
     expect(analyserChemin('/installation/administrateur')).toEqual({ route: 'installation' });
     expect(analyserChemin('/installation')).toBeNull();
+    expect(analyserChemin('/installation/essai-email')).toEqual({ route: 'essai-email' });
   });
 });
 

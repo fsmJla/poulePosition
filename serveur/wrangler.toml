@@ -30,6 +30,8 @@ new_sqlite_classes = ["Club", "Limiteur"]
 
 # Secrets (wrangler secret put, par environnement ; jamais dans le dépôt) : POIVRE (créé une fois, ne change
 # jamais : le changer invaliderait tous les mots de passe) et SECRET_INSTALLATION (création du 1er administrateur).
+# Envoi d'e-mails (US-018, ADR-0015) : SMTP_UTILISATEUR (adresse de la boîte, no-reply@pessac-escrime.fr) et
+# SMTP_MOT_DE_PASSE (mot de passe de la boîte chez OVH). Sans eux, aucun e-mail ne part.
 
 [vars]
 # Origines autorisées, séparées par des virgules ; `*` = lettres, chiffres ou tirets (jamais un point).
@@ -37,6 +39,9 @@ new_sqlite_classes = ["Club", "Limiteur"]
 ORIGINES = "https://poule-position-livid.vercel.app,http://localhost:*,http://127.0.0.1:*"
 # Club unique au lancement (ADR-0014).
 CLUB_ID = "club-principal"
+# Serveur SMTP du MX Plan OVH du club (ADR-0015) : port 465, TLS dès la connexion.
+SMTP_HOTE = "ssl0.ovh.net"
+SMTP_PORT = "465"
 
 [env.preview]
 name = "poule-position-serveur-preview"
@@ -57,3 +62,5 @@ class_name = "Limiteur"
 # Prévisualisations Vercel du projet poule-position (portée fsmjlas-projects), et localhost.
 ORIGINES = "https://poule-position-*-fsmjlas-projects.vercel.app,http://localhost:*,http://127.0.0.1:*"
 CLUB_ID = "club-principal"
+SMTP_HOTE = "ssl0.ovh.net"
+SMTP_PORT = "465"

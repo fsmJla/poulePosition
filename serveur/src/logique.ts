@@ -24,6 +24,7 @@ export type Route =
   | { route: 'accueil' }
   | { route: 'sante' }
   | { route: 'installation' }
+  | { route: 'essai-email' }
   | { route: 'session' }
   | { route: 'sel' }
   | { route: 'mot-de-passe' }
@@ -38,6 +39,7 @@ export function analyserChemin(chemin: string): Route | null {
   if (chemin === '/') return { route: 'accueil' };
   if (chemin === '/sante') return { route: 'sante' };
   if (chemin === '/installation/administrateur') return { route: 'installation' };
+  if (chemin === '/installation/essai-email') return { route: 'essai-email' };
   if (chemin === '/session') return { route: 'session' };
   if (chemin === '/session/sel') return { route: 'sel' };
   if (chemin === '/compte/mot-de-passe') return { route: 'mot-de-passe' };
