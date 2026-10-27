@@ -86,3 +86,4 @@ réseau ; envoi réel couvert par l'essai (CA-2), lancé à la main, pas par la 
 |---|---|
 | 2026-10-27 | Créée (spécification : réinitialisation par e-mail) |
 | 2026-10-27 | En cours : plan validé (bibliothèque `worker-mailer@1.2.1` enrobée derrière une interface `Expediteur`, route d’essai `POST /installation/essai-email` protégée par le secret d’installation, commande `npm run essai-email` ; boîte `no-reply@pessac-escrime.fr` créée par l’utilisateur) |
+| 2026-10-27 | CA-2 validé avec l’utilisateur : essai réel depuis le Worker de preview (déployé depuis la branche, secrets `SMTP_UTILISATEUR` et `SMTP_MOT_DE_PASSE` saisis par l’utilisateur), e-mail reçu en boîte de réception Gmail, expéditeur « Poule Position <no-reply@pessac-escrime.fr> », objet et accents corrects. Points « à vérifier » de l’ADR-0015 levés : port 465 accepté depuis Cloudflare, sockets TCP disponibles sur le plan gratuit, session SMTP tenue dans le budget du Worker. |
