@@ -6,6 +6,7 @@ import {
   analyserDemandeReinitialisation,
   analyserReponseCompte,
   analyserReponseComptes,
+  analyserReponseSuppression,
   preparerCreationCompte,
   preparerReinitialisation,
 } from './comptes';
@@ -75,10 +76,19 @@ describe('modification d’un compte (US-007 CA-4)', () => {
     });
   });
 
+  it('US-008 CA-1 et CA-2 : accepte l’état actif, seul ou avec le nom et le rôle', () => {
+    expect(analyserDemandeModificationCompte({ actif: false })).toEqual({ ok: true, demande: { actif: false } });
+    expect(analyserDemandeModificationCompte({ actif: true, nom: 'N' })).toEqual({
+      ok: true,
+      demande: { actif: true, nom: 'N' },
+    });
+  });
+
   it.each([
     ['vide', {}],
     ['nom vide', { nom: ' ' }],
     ['rôle inconnu', { role: 'arbitre' }],
+    ['état actif qui n’est pas un booléen', { actif: 'non' }],
     ['e-mail (non modifiable)', { email: 'autre@club.fr' }],
     ['tableau', []],
   ])('refuse : %s', (_cas, brut) => {
@@ -108,6 +118,15 @@ describe('réponses (côté application)', () => {
       expect(CODES_ERREUR_SESSION).toContain(code);
       expect(analyserReponseCompte({ ok: false, erreur: code })).toEqual({ ok: false, erreur: code });
     }
+  });
+
+  it('US-008 CA-3 : lit la réponse d’une suppression', () => {
+    expect(analyserReponseSuppression({ ok: true })).toEqual({ ok: true });
+    expect(analyserReponseSuppression({ ok: false, erreur: 'DERNIER_ADMINISTRATEUR' })).toEqual({
+      ok: false,
+      erreur: 'DERNIER_ADMINISTRATEUR',
+    });
+    expect(analyserReponseSuppression(undefined)).toEqual({ ok: false, erreur: 'REPONSE_INVALIDE' });
   });
 });
 
