@@ -1,6 +1,6 @@
 // Durable Object « Club » : un objet par club (idFromName(`club:<clubId>`), ADR-0014). Comptes des administrateurs
 // et des organisateurs (ADR-0006), essais de connexion erronés par e-mail (US-004) et demandes de réinitialisation
-// par e-mail (US-019), en SQLite. Les écritures d'un même objet sont sérialisées : deux créations simultanées du
+// par e-mail (US-019), index des compétitions du club (US-022, ADR-0016), en SQLite. Les écritures d'un même objet sont sérialisées : deux créations simultanées du
 // premier administrateur, ou d'un même e-mail, ne peuvent pas aboutir toutes les deux.
 import { DurableObject } from 'cloudflare:workers';
 import {
@@ -19,6 +19,7 @@ import {
   type Essais,
   type Role,
 } from '@poule-position/domaine';
+import type { CompetitionIndexee } from '@poule-position/protocole';
 import type { Env } from './index';
 
 export interface NouveauCompte {
@@ -116,6 +117,14 @@ export class Club extends DurableObject<Env> {
         empreinte TEXT,
         expire_le INTEGER NOT NULL,
         demandes TEXT NOT NULL
+      )`);
+    // US-022 (ADR-0016) : une ligne par compétition, le résumé fourni par le pilote complété par le Worker.
+    ctx.storage.sql.exec(`
+      CREATE TABLE IF NOT EXISTS competitions (
+        id TEXT PRIMARY KEY,
+        club_id TEXT NOT NULL,
+        contenu TEXT NOT NULL,
+        modifiee_le INTEGER NOT NULL
       )`);
   }
 
@@ -315,6 +324,26 @@ export class Club extends DurableObject<Env> {
       id,
     );
     return this.lireCompte('id', id);
+  }
+
+  /** US-022 CA-3 : enregistre ou remplace la ligne d'une compétition dans l'index du club. */
+  async indexerCompetition(ligne: CompetitionIndexee): Promise<void> {
+    this.ctx.storage.sql.exec(
+      `INSERT INTO competitions (id, club_id, contenu, modifiee_le) VALUES (?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET contenu = excluded.contenu, modifiee_le = excluded.modifiee_le`,
+      ligne.id,
+      this.env.CLUB_ID,
+      JSON.stringify(ligne),
+      ligne.modifieeLe,
+    );
+  }
+
+  /** US-022 CA-4 : index des compétitions du club, les plus récemment modifiées d'abord. */
+  async listerCompetitions(): Promise<CompetitionIndexee[]> {
+    return this.ctx.storage.sql
+      .exec<{ contenu: string }>('SELECT contenu FROM competitions ORDER BY modifiee_le DESC')
+      .toArray()
+      .map(({ contenu }) => JSON.parse(contenu) as CompetitionIndexee);
   }
 
   /** US-007 CA-1 : date de la dernière connexion par mot de passe. */

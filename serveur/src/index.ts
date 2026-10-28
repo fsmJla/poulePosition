@@ -1,5 +1,6 @@
 // Point d'entrée du Worker : routes, origines autorisées, transmission de la connexion WebSocket au Durable Object
-// de la compétition, installation du premier administrateur, connexion, session et gestion des comptes.
+// de la compétition, installation du premier administrateur, connexion, session, gestion des comptes et réplication
+// du journal des compétitions (US-022, ADR-0016).
 // Protocole : docs/protocole.md.
 import {
   analyserDemandeChangementMotDePasse,
@@ -14,6 +15,11 @@ import {
   nouveauJeton,
   analyserDemandeInstallation,
   analyserDemandeSel,
+  analyserDemandeEnvoi,
+  TAILLE_MAX_LOT,
+  type ReponseCompetitions,
+  type ReponseEnvoi,
+  type ReponseJournal,
   type CodeErreurInstallation,
   type CodeErreurSession,
   type CompteResume,
@@ -22,7 +28,9 @@ import {
 } from '@poule-position/protocole';
 import { couleurParDefaut, REGLE_ADRESSE } from '@poule-position/domaine';
 import type { Club, CompteStocke } from './club';
+import type { Competition } from './competition';
 import type { Limiteur } from './limiteur';
+import { ligneIndex } from './replication';
 import type { Route } from './logique';
 import {
   analyserChemin,
@@ -52,7 +60,7 @@ import { courrielReinitialisation } from './gabarits';
 import { transportSmtp } from './smtp';
 
 export interface Env {
-  COMPETITIONS: DurableObjectNamespace;
+  COMPETITIONS: DurableObjectNamespace<Competition>;
   CLUB: DurableObjectNamespace<Club>;
   LIMITEUR: DurableObjectNamespace<Limiteur>;
   ORIGINES: string;
@@ -85,7 +93,7 @@ export default {
     if (!origineAutorisee(requete.headers.get('Origin'), env.ORIGINES)) {
       return new Response('Origine refusée', { status: 403 });
     }
-    const competition = env.COMPETITIONS.get(env.COMPETITIONS.idFromName(route.competitionId));
+    const competition = objetCompetition(env, route.competitionId);
     const url = new URL('https://competition/connexion');
     url.searchParams.set('competitionId', route.competitionId);
     return competition.fetch(new Request(url, requete));
@@ -182,7 +190,9 @@ type RouteSession = Extract<
       | 'profil'
       | 'comptes'
       | 'compte'
-      | 'reinitialisation';
+      | 'reinitialisation'
+      | 'competitions'
+      | 'evenements';
   }
 >;
 
@@ -196,6 +206,8 @@ const METHODES_SESSION = {
   comptes: ['GET', 'POST'],
   compte: ['PATCH', 'DELETE'],
   reinitialisation: ['POST'],
+  competitions: ['GET'],
+  evenements: ['GET', 'POST'],
 } as const;
 
 /**
@@ -283,6 +295,12 @@ async function traiterSession(
 
   const authentifie = await compteDeLaSession(requete, secret, env.CLUB_ID, club);
   if (!authentifie.ok) return authentifie.refus;
+
+  if (route.route === 'competitions' || route.route === 'evenements') {
+    // US-022 : tout compte du club au mot de passe définitif (administrateur ou organisateur).
+    if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
+    return gererCompetitions(route, requete, env, club, authentifie.compte);
+  }
 
   if (route.route === 'comptes' || route.route === 'compte' || route.route === 'reinitialisation') {
     return gererComptes(route, requete, club, poivre, authentifie.compte);
@@ -478,6 +496,52 @@ async function gererComptes(
   const resultat = await club.modifierCompte(route.id, analyse.demande);
   if (!resultat.ok) return refuserSession(resultat.erreur === 'COMPTE_INCONNU' ? 404 : 409, resultat.erreur);
   return Response.json({ ok: true, compte: resume(resultat.compte) });
+}
+
+/** DO de la compétition, nommé par club (ADR-0014). */
+function objetCompetition(env: Env, competitionId: string): DurableObjectStub<Competition> {
+  return env.COMPETITIONS.get(env.COMPETITIONS.idFromName(`competition:${env.CLUB_ID}:${competitionId}`));
+}
+
+/**
+ * US-022 (ADR-0016, docs/protocole.md §11) : index des compétitions du club, téléchargement et envoi d'un lot du
+ * journal. Un lot accepté met à jour l'index avec le résumé fourni par le pilote ; le serveur ne calcule rien.
+ */
+async function gererCompetitions(
+  route: Extract<RouteSession, { route: 'competitions' | 'evenements' }>,
+  requete: Request,
+  env: Env,
+  club: DurableObjectStub<Club>,
+  compte: CompteStocke,
+): Promise<Response> {
+  if (route.route === 'competitions') {
+    return Response.json({ ok: true, competitions: await club.listerCompetitions() } satisfies ReponseCompetitions);
+  }
+  const competition = objetCompetition(env, route.competitionId);
+  if (requete.method === 'GET') {
+    const journal = await competition.lire();
+    if (!journal) return refuserSession(404, 'COMPETITION_INCONNUE');
+    return Response.json({ ok: true, ...journal } satisfies ReponseJournal);
+  }
+  const texte = await requete.text();
+  if (new TextEncoder().encode(texte).length > TAILLE_MAX_LOT) return refuserSession(400, 'DEMANDE_INVALIDE');
+  let corps: unknown;
+  try {
+    corps = JSON.parse(texte);
+  } catch {
+    corps = undefined;
+  }
+  const analyse = analyserDemandeEnvoi(corps);
+  if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
+  const lieu = { clubId: env.CLUB_ID, competitionId: route.competitionId };
+  const decision = await competition.ajouter(lieu, analyse.demande);
+  if (!decision.ok) {
+    const { statut, ...refus } = decision;
+    return Response.json({ ...refus, ok: false } satisfies ReponseEnvoi, { status: statut });
+  }
+  await club.indexerCompetition(ligneIndex(route.competitionId, analyse.demande, compte.nom));
+  const dernierSeq = analyse.demande.depuis + analyse.demande.evenements.length;
+  return Response.json({ ok: true, dernierSeq } satisfies ReponseEnvoi);
 }
 
 /** Compte tel que la liste le décrit : jamais le sel ni le vérificateur. */

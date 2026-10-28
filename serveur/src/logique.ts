@@ -34,6 +34,8 @@ export type Route =
   | { route: 'comptes' }
   | { route: 'compte'; id: string }
   | { route: 'reinitialisation'; id: string }
+  | { route: 'competitions' }
+  | { route: 'evenements'; competitionId: string }
   | { route: 'connexion'; competitionId: string };
 
 /** Analyse le chemin d'une requête entrante ; null si la route n'existe pas. */
@@ -53,9 +55,10 @@ export function analyserChemin(chemin: string): Route | null {
   if (reinitialisation?.[1]) return { route: 'reinitialisation', id: reinitialisation[1] };
   const compte = /^\/comptes\/([A-Za-z0-9-]{1,64})$/.exec(chemin);
   if (compte?.[1]) return { route: 'compte', id: compte[1] };
-  const morceaux = /^\/competitions\/([^/]+)\/connexion$/.exec(chemin);
+  if (chemin === '/competitions') return { route: 'competitions' };
+  const morceaux = /^\/competitions\/([^/]+)\/(connexion|evenements)$/.exec(chemin);
   if (!morceaux?.[1] || !MOTIF_COMPETITION.test(morceaux[1])) return null;
-  return { route: 'connexion', competitionId: morceaux[1] };
+  return { route: morceaux[2] === 'evenements' ? 'evenements' : 'connexion', competitionId: morceaux[1] };
 }
 
 /**

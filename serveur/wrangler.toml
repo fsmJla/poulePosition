@@ -4,12 +4,12 @@ name = "poule-position-serveur"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"
 
-# Une instance par compétition (idFromName(competitionId)).
+# Une instance par compétition (idFromName("competition:<CLUB_ID>:<id>"), ADR-0014) : copie du journal (ADR-0016).
 [[durable_objects.bindings]]
 name = "COMPETITIONS"
 class_name = "Competition"
 
-# Un objet par club (idFromName("club:<CLUB_ID>"), ADR-0014) : comptes (ADR-0006).
+# Un objet par club (idFromName("club:<CLUB_ID>"), ADR-0014) : comptes (ADR-0006), index des compétitions (ADR-0016).
 [[durable_objects.bindings]]
 name = "CLUB"
 class_name = "Club"

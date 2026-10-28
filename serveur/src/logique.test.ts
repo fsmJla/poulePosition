@@ -35,8 +35,19 @@ describe('analyserChemin', () => {
     });
   });
 
+  it('US-022 : reconnaît l’index des compétitions et le journal d’une compétition', () => {
+    expect(analyserChemin('/competitions')).toEqual({ route: 'competitions' });
+    expect(analyserChemin('/competitions/0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c/evenements')).toEqual({
+      route: 'evenements',
+      competitionId: '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c',
+    });
+  });
+
   it.each([
     '/inconnu',
+    '/competitions/',
+    '/competitions/Demo/evenements',
+    '/competitions/demo/evenements/plus',
     '/competitions//connexion',
     '/competitions/Demo/connexion',
     '/competitions/-demo/connexion',
