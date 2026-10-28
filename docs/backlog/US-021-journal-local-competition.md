@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3), socle des suivantes
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-001
 - **Branche / PR :** `us/US-021-journal-local-competition`
 
@@ -95,3 +95,4 @@ d'US-022.
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-10-28 | Implémentée (journal, projection, migration, verrou d’onglet) ; PR vers `dev` |
