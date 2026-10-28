@@ -86,7 +86,19 @@ seule, avec sa date (« Copie du 28/10 à 14 h 05 »).
 - **Affichage reporté** (décision du 2026-10-29) : il n'existe pas encore d'écran de compétitions. L'indicateur
   « n modifications en attente d'envoi », la mention « Pas encore envoyée » et la date de la copie (« Copie du … »)
   sont fournis par des fonctions testées et seront affichés par US-025 et US-026.
-- Documenter les nouveaux messages dans `docs/protocole.md`.
+- Protocole documenté dans `docs/protocole.md` §11 (routes `GET /competitions`, `GET` et
+  `POST /competitions/<id>/evenements`).
+- Réalisé :
+  - `paquets/protocole/src/competitions.ts` : validation des lots, découpage en 16 Ko, lecture des réponses ;
+  - `serveur/src/replication.ts` (décisions pures), DO `Competition` (journal, pilote), DO `Club` (index) et routes
+    dans `serveur/src/index.ts` ;
+  - `app/src/lib/journal.ts` (pilote, curseur, copies, identifiant d'appareil ; base locale en version 4) et
+    `app/src/lib/synchronisation.ts` (envoi, index, téléchargement), branché dans `App.svelte` (démarrage, connexion,
+    retour en ligne).
+- Le DO `Competition` est désormais nommé `competition:<clubId>:<id>` (ADR-0014), y compris pour la WebSocket de la
+  page minimale d'US-001 (`demo`).
+- Tests : intégration serveur dans workerd (`serveur/src/competitions.test.ts`), application contre un faux serveur
+  en mémoire (`app/src/lib/synchronisation.test.ts`). Pas d'E2E : aucun écran ne crée encore de compétition.
 
 ## Suivi
 
