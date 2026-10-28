@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  appliquer,
-  projectionVide,
-  projeter,
-  verifierEvenement,
-  type Evenement,
-  type Proposition,
-} from './journal';
+import { appliquer, projectionVide, projeter, verifierEvenement, type Evenement, type Proposition } from './journal';
 
 const creation = (nom = 'Challenge Orpi 2027'): Proposition => ({ type: 'CompetitionCreee', donnees: { nom } });
 
