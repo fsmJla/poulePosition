@@ -6,7 +6,7 @@
 - **Type :** technique
 - **Statut :** En revue
 - **Dépend de :** US-001
-- **Branche / PR :** `us/US-021-journal-local-competition`
+- **Branche / PR :** `us/US-021-journal-local-competition` · [PR #40](https://github.com/fsmJla/poulePosition/pull/40)
 
 ## Récit
 
