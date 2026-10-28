@@ -85,7 +85,13 @@ dernière copie gardée sur l'appareil. La compétition apparaît chez les autre
 
 ## Notes techniques
 
-- Événement `CompetitionCreee` (US-021). L'affiche et la feuille de route : US-030. Formule : US-028.
+- Événement `CompetitionCreee` (US-021), à compléter avec les champs de cette US. L'affiche et la feuille de
+  route : US-030. Formule : US-028.
+- **`clubId` côté application** : il n'est aujourd'hui que dans le jeton de session. Ajouter `clubId` au
+  `CompteConnecte` renvoyé par le serveur (évolution du protocole d'E1, `docs/protocole.md` §7), et le garder avec
+  la session et l'appareil connu pour la création hors ligne.
+- Afficher les messages des cas limites d'US-021 : écriture réservée à un seul onglet (`prendreEcriture`), échec
+  d'écriture (`ECRITURE_IMPOSSIBLE`).
 
 ## Suivi
 

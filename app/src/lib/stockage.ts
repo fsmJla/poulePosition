@@ -1,7 +1,8 @@
 // Stockage local de l'appareil (ADR-0003) : IndexedDB par Dexie. Tables `session` (la session ouverte, une au
 // plus), `appareilConnu` (comptes déjà connectés en ligne sur cet appareil, pour la reconnexion hors ligne) et
-// `essaisLocaux` (frein local de la reconnexion hors ligne, US-005).
-import { Dexie, type EntityTable } from 'dexie';
+// `essaisLocaux` (frein local de la reconnexion hors ligne, US-005) ; `evenements`, le journal des compétitions, est
+// géré par `journal.ts` (US-021).
+import { Dexie, type EntityTable, type Table } from 'dexie';
 import { couleurParDefaut, essaisVides, type CouleurAvatar, type Essais, type Role } from '@poule-position/domaine';
 import type { CompteConnecte, Session } from '@poule-position/protocole';
 
@@ -59,15 +60,24 @@ type LigneSession = {
 };
 type LigneEssais = Essais & { cle: typeof LIGNE_UNIQUE };
 
-class Base extends Dexie {
+/** Base IndexedDB de l'appareil, partagée par le stockage de session et le journal des compétitions (US-021). */
+export class Base extends Dexie {
   session!: EntityTable<LigneSession, 'cle'>;
   appareilConnu!: EntityTable<AppareilConnu, 'email'>;
   essaisLocaux!: EntityTable<LigneEssais, 'cle'>;
+  /** Journal des compétitions, tel qu'écrit (lu par `lireEvenement`, qui le migre). */
+  evenements!: Table<Record<string, unknown>, [string, number]>;
 
   constructor(nom: string) {
     super(nom);
     this.version(1).stores({ session: 'cle', appareilConnu: 'email' });
     this.version(2).stores({ session: 'cle', appareilConnu: 'email', essaisLocaux: 'cle' });
+    this.version(3).stores({
+      session: 'cle',
+      appareilConnu: 'email',
+      essaisLocaux: 'cle',
+      evenements: '[competitionId+seq]',
+    });
   }
 }
 
