@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2, F12 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-021
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-022-synchroniser-competitions`
 
 ## Récit
 
@@ -44,8 +44,10 @@ compétition depuis un autre PC.
 
 **CA-5 — Isolation par club**
 - **Étant donné** un compte d'un club A
-- **Quand** il demande le journal ou l'index d'un club B, y compris en appelant directement le serveur
-- **Alors** c'est refusé (`403`).
+- **Quand** il envoie des événements portant le `clubId` d'un club B, ou présente une session d'un club B, y compris
+  en appelant directement le serveur
+- **Alors** c'est refusé : `403 ACCES_REFUSE` pour un événement d'un autre club, `401 SESSION_INVALIDE` pour une
+  session d'un autre club (un déploiement sert aujourd'hui un seul club, ADR-0014 ; reformulé le 2026-10-29).
 
 **CA-6 — Écriture réservée au pilote**
 - **Étant donné** un appareil qui n'est pas le pilote de la compétition
@@ -79,8 +81,11 @@ seule, avec sa date (« Copie du 28/10 à 14 h 05 »).
 ## Notes techniques
 
 - ADR-0001 (bail du pilote), ADR-0004, ADR-0005 (réplication), ADR-0014 (`clubId`, nommage des DO).
-- **ADR-0016 à rédiger (`/adr`) au début de l'implémentation** : index des compétitions dans le DO `Club`,
-  identité de l'appareil pilote, et stockage des manifestations et épreuves (US-023, US-024).
+- **ADR-0016** (2026-10-29) : réplication par HTTP, pilote identifié par son appareil, index dans le DO `Club`,
+  stockage des manifestations et épreuves (US-023, US-024).
+- **Affichage reporté** (décision du 2026-10-29) : il n'existe pas encore d'écran de compétitions. L'indicateur
+  « n modifications en attente d'envoi », la mention « Pas encore envoyée » et la date de la copie (« Copie du … »)
+  sont fournis par des fonctions testées et seront affichés par US-025 et US-026.
 - Documenter les nouveaux messages dans `docs/protocole.md`.
 
 ## Suivi

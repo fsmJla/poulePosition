@@ -71,6 +71,8 @@ créations de manifestation et d'épreuve sont grisées.
 ## Notes techniques
 
 - Impacte la page `Organisateur.svelte` (US-003, US-007, US-017).
+- Reporté d'US-022 : afficher « Pas encore envoyée », le nombre de modifications en attente d'envoi et la date de
+  la copie hors ligne, à partir des fonctions de `app/src/lib/synchronisation.ts`.
 
 ## Suivi
 
