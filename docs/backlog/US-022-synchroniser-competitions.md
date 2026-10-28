@@ -1,0 +1,90 @@
+# US-022 — Répliquer le journal sur le serveur et retrouver les compétitions du club sur tout PC
+
+- **Epic :** E2 — Compétitions
+- **Fonctionnalité :** F2, F12 (exigences §3)
+- **Priorité :** P1
+- **Type :** technique
+- **Statut :** Prête
+- **Dépend de :** US-021
+- **Branche / PR :** —
+
+## Récit
+
+**En tant qu'**organisateur, **je veux** qu'une compétition créée sur un PC soit envoyée au serveur et visible des
+autres organisateurs du club sur leurs PC, **afin de** préparer le week-end à plusieurs et de pouvoir reprendre une
+compétition depuis un autre PC.
+
+## Critères d'acceptation
+
+**CA-1 — Envoi des événements**
+- **Étant donné** un PC pilote en ligne
+- **Quand** un événement est enregistré dans le journal local
+- **Alors** il est envoyé au DO `Competition` (`competition:<clubId>:<id>`), qui l'ajoute seulement s'il suit
+  exactement son dernier `seq` ; sinon le DO répond avec son dernier `seq` et le pilote renvoie la suite
+  (ADR-0005).
+
+**CA-2 — Rattrapage à la reconnexion**
+- **Étant donné** des événements enregistrés hors ligne
+- **Quand** la connexion revient
+- **Alors** le pilote envoie tout ce qui suit le dernier `seq` confirmé, sans doublon, et le curseur `envoi` est
+  mis à jour.
+
+**CA-3 — Index des compétitions du club**
+- **Étant donné** une compétition dont la création est parvenue au serveur
+- **Quand** l'index du club est mis à jour
+- **Alors** le DO `Club` garde son résumé (id, nom, arme, catégorie, date, statut, publication, rattachement, PC
+  pilote, date de dernière modification), sans aucune logique métier d'escrime : le résumé est calculé et fourni
+  par le pilote.
+
+**CA-4 — Visible depuis un autre PC**
+- **Étant donné** un organisateur connecté sur un autre PC du club
+- **Quand** il ouvre la liste des compétitions (US-026)
+- **Alors** il voit la compétition, et peut l'ouvrir en lecture seule : le journal est téléchargé depuis le serveur
+  et la projection recalculée localement.
+
+**CA-5 — Isolation par club**
+- **Étant donné** un compte d'un club A
+- **Quand** il demande le journal ou l'index d'un club B, y compris en appelant directement le serveur
+- **Alors** c'est refusé (`403`).
+
+**CA-6 — Écriture réservée au pilote**
+- **Étant donné** un appareil qui n'est pas le pilote de la compétition
+- **Quand** il envoie des événements au DO
+- **Alors** ils sont refusés (`PAS_PILOTE`) et le journal du serveur reste inchangé.
+
+## Comportement hors ligne
+
+Le PC pilote continue d'écrire localement ; un indicateur « n modifications en attente d'envoi » est visible et
+disparaît une fois le rattrapage fait. Un PC non pilote hors ligne affiche la dernière copie téléchargée, en lecture
+seule, avec sa date (« Copie du 28/10 à 14 h 05 »).
+
+## Cas limites et erreurs
+
+- Message de plus de 16 Ko : les événements sont envoyés par lots qui respectent la limite.
+- Session expirée pendant l'envoi : les événements restent en attente, rien n'est perdu, la reconnexion relance
+  l'envoi.
+- Compétition créée hors ligne puis jamais synchronisée : elle n'existe que sur ce PC, ce que la liste signale
+  (« Pas encore envoyée »).
+
+## Hypothèses
+
+- Le premier PC qui crée une compétition en est le pilote (bail détenu par l'appareil, ADR-0001). Le transfert est
+  l'objet d'US-029.
+- La copie locale d'une compétition non pilotée est rafraîchie à l'ouverture et au retour en ligne.
+
+## Questions bloquantes
+
+- Aucune.
+
+## Notes techniques
+
+- ADR-0001 (bail du pilote), ADR-0004, ADR-0005 (réplication), ADR-0014 (`clubId`, nommage des DO).
+- **ADR-0016 à rédiger (`/adr`) au début de l'implémentation** : index des compétitions dans le DO `Club`,
+  identité de l'appareil pilote, et stockage des manifestations et épreuves (US-023, US-024).
+- Documenter les nouveaux messages dans `docs/protocole.md`.
+
+## Suivi
+
+| Date | Événement |
+|---|---|
+| 2026-10-28 | Créée |

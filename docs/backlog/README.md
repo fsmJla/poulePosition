@@ -14,7 +14,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 |---|---|---|
 | E0 — Socle technique | walking skeleton, protocole, synchronisation, PWA | P1 |
 | E1 — Comptes et authentification | F1 | P1 |
-| E2 — Compétitions | F2, F16 | P1 / P2 |
+| E2 — Compétitions (manifestations, épreuves, compétitions) | F2, F16 | P1 / P2 |
 | E3 — Inscriptions et émargement | F3, F4 | P1 |
 | E4 — Poules | F5, F6, F7 | P1 |
 | E5 — Saisie smartphone | F8 | P1 |
@@ -50,9 +50,28 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-018](US-018-envoyer-des-emails.md) | Envoyer des e-mails depuis le serveur (SMTP OVH du club) (P2) | E1 | Terminée | US-001 |
 | [US-019](US-019-reinitialiser-par-email.md) | Réinitialiser son mot de passe par e-mail (P2) | E1 | Terminée | US-018, US-009, US-004 |
 | [US-020](US-020-domaine-pessac-escrime.md) | Servir l'application sur poule-position.pessac-escrime.fr (P1, technique) | E0 | Terminée | US-001, US-019 |
+| [US-021](US-021-journal-local-competition.md) | Tenir le journal local d'une compétition et sa projection (technique) | E2 | Prête | US-001 |
+| [US-022](US-022-synchroniser-competitions.md) | Répliquer le journal sur le serveur et retrouver les compétitions du club sur tout PC (technique) | E2 | Prête | US-021 |
+| [US-023](US-023-gerer-manifestations.md) | Créer et modifier une manifestation | E2 | Prête | US-003 |
+| [US-024](US-024-gerer-epreuves.md) | Créer et modifier une épreuve dans une manifestation | E2 | Prête | US-023 |
+| [US-025](US-025-creer-competition.md) | Créer une compétition | E2 | Prête | US-021, US-022, (US-024) |
+| [US-026](US-026-lister-competitions.md) | Lister les manifestations, épreuves et compétitions du club | E2 | Prête | US-022, US-023, US-025 |
+| [US-027](US-027-modifier-competition.md) | Modifier une compétition | E2 | Prête | US-025 |
+| [US-028](US-028-formule-competition.md) | Choisir et faire évoluer la formule d'une compétition | E2 | Prête | US-025 |
+| [US-029](US-029-prendre-la-main.md) | Prendre la main sur une compétition depuis un autre PC | E2 | Prête | US-022 |
+| [US-030](US-030-affiche-feuille-de-route.md) | Joindre une affiche et une feuille de route | E2 | Prête | US-022, US-023, US-024, US-025 |
+| [US-031](US-031-publier-competition.md) | Publier ou dépublier une compétition | E2 | Prête | US-022, US-026, (US-030) |
+| [US-032](US-032-parametres-competition.md) | Régler les paramètres d'une compétition (droits des QR codes, « Prénom N. ») | E2 | Prête | US-025 |
+| [US-033](US-033-archiver-competition.md) | Archiver ou désarchiver une compétition ou une manifestation | E2 | Prête | US-026 |
+| [US-034](US-034-exporter-competition-json.md) | Exporter une compétition en JSON (P2) | E2 | Prête | US-021 |
+| [US-035](US-035-importer-competition-json.md) | Importer une compétition depuis un fichier JSON (P2) | E2 | Prête | US-034, US-029 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
 **Ordre conseillé pour E1 :** US-002 → US-003 → US-010 (le changement de mot de passe est nécessaire dès les
 mots de passe temporaires) → US-007 → US-009 → US-008 → US-005 → US-004 → US-006 → US-016 → US-017 (le menu de
 compte ouvre la page de profil) → US-018 (avec son ADR et un essai d'envoi réel) → US-019.
+
+**Ordre conseillé pour E2 :** US-021 → US-022 (avec l'ADR-0016 : index des compétitions, pilote, stockage des
+manifestations et épreuves) → US-025 → US-023 → US-024 → US-026 → US-027 → US-028 → US-029 → US-032 → US-030 →
+US-031 → US-033 → US-034 → US-035.
