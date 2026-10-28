@@ -10,6 +10,7 @@
 > US-003 : connexion, session et CORS (§7).
 > US-010 : changement de mot de passe et version du mot de passe dans la session (§8).
 > US-007 : gestion des comptes par les administrateurs (§9) ; US-009 : réinitialisation d'un mot de passe (§9).
+> US-021 : format du journal d'une compétition (§10), stocké sur le PC pilote.
 > Les rôles, la synchronisation du journal et les saisies (ADR-0005) viendront avec leurs US.
 
 ## 1. Adresses
@@ -387,3 +388,47 @@ lui-même. La réinitialisation lève aussi le blocage du compte après trop d'e
 | `409` | `EMAIL_DEJA_UTILISE` | Un compte utilise déjà cet e-mail (casse ignorée) |
 | `409` | `DERNIER_ADMINISTRATEUR` | Le changement de rôle, la désactivation ou la suppression laisserait le club sans administrateur actif |
 | `503` | `SERVEUR_NON_CONFIGURE` | Secrets absents |
+
+## 10. Journal d'une compétition (US-021)
+
+Le journal est la source de vérité d'une compétition (ADR-0001). Il est écrit sur le PC pilote, dans la table
+IndexedDB `evenements` (clé `[competitionId+seq]`, ADR-0003). Le même format servira à la réplication vers le
+serveur (US-022) et à l'export JSON (US-034). Types : `Evenement` (`paquets/domaine`) ; lecture et migration :
+`lireEvenement` (`paquets/protocole`).
+
+### Enveloppe d'un événement (version 1)
+
+| Champ | Type | Contenu |
+|---|---|---|
+| `competitionId` | texte non vide | UUID de la compétition, généré par le PC (création possible hors ligne) |
+| `clubId` | texte non vide | Club propriétaire (ADR-0014) |
+| `seq` | entier ≥ 1 | Numéro de séquence : 1, 2, 3… sans trou pour une compétition |
+| `version` | entier | Version du format (`VERSION_JOURNAL`, actuellement `1`) |
+| `date` | nombre | Date d'enregistrement, en millisecondes |
+| `auteur` | texte non vide | E-mail du compte connecté |
+| `source` | `clavier` | Origine (les saisies smartphone viendront avec E5) |
+| `type` | texte | Type d'événement (ci-dessous) |
+| `donnees` | objet | Contenu propre au type |
+
+Aucun autre champ n'est accepté.
+
+### Types d'événements
+
+| Type | `donnees` | Règles |
+|---|---|---|
+| `CompetitionCreee` | `{ nom }` | Premier événement d'une compétition, une seule fois ; nom de 1 à 100 caractères, espaces autour retirés. Complété par US-025. |
+
+### Règles d'écriture et de lecture
+
+- Un événement est **écrit avant d'être affiché**. La lecture du journal, le contrôle des règles et l'écriture se
+  font dans une même transaction : deux écritures ne peuvent pas prendre le même `seq`.
+- Erreurs d'écriture : le code de la règle refusée (`NOM_VIDE`, `NOM_TROP_LONG`, `COMPETITION_DEJA_CREEE`),
+  `JOURNAL_INCOHERENT` (on n'écrit pas à la suite d'un journal incohérent) ou `ECRITURE_IMPOSSIBLE` (IndexedDB en
+  échec). Dans tous les cas, rien n'est écrit.
+- **Migration à la lecture** : un événement d'une version antérieure passe par les migrations successives
+  (`MIGRATIONS`, de la version `n` à `n + 1`), sans réécrire le journal. Une version sans migration ou venant du
+  futur est illisible.
+- La projection s'arrête au dernier événement cohérent et signale l'anomalie : `TROU` ou `DOUBLON` de `seq`,
+  événement `INVALIDE` (refusé par les règles) ou `ILLISIBLE`.
+- Un seul onglet écrit dans une compétition (verrou Web Locks `competition:<competitionId>`) ; les autres sont en
+  lecture seule.
