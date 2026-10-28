@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2, F12 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-021
 - **Branche / PR :** `us/US-022-synchroniser-competitions`
 
@@ -105,3 +105,5 @@ seule, avec sa date (« Copie du 28/10 à 14 h 05 »).
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-10-29 | ADR-0016 acceptée ; CA-5 reformulé ; affichage reporté à US-025 et US-026 |
+| 2026-10-29 | Implémentée (routes de réplication, DO `Competition` et `Club`, envoi et copies côté application) ; PR vers `dev` |
