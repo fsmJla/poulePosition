@@ -8,10 +8,16 @@ l'ajoute ici avant de l'utiliser.
 
 | Terme | Définition | Dans le code |
 |---|---|---|
-| Arme | Fleuret, épée ou sabre. | `arme` |
+| Arme | Sabre, épée, fleuret ou sabre laser. | `arme` : `sabre`, `epee`, `fleuret`, `sabreLaser` |
 | Tireur | Compétiteur. | `tireur` |
 | Équipe | 2 ou 3 tireurs (et un remplaçant éventuel) d'une épreuve par équipes. | `equipe` |
-| Compétition | Épreuve organisée : nom, catégorie, arme, formule, date, lieu. | `competition` |
+| Manifestation | Rassemblement organisé par le club sur un ou plusieurs jours (souvent un week-end), qui regroupe des épreuves et des compétitions : nom, dates de début et de fin, lieu. Ce mot est employé dans l'interface comme dans le code ; on évite « évènement », qui se confondrait avec l'événement du journal. | `manifestation` |
+| Épreuve | Ensemble de compétitions d'une manifestation présentées sous un même nom et une même affiche, éventuellement sur plusieurs jours (ex. « Championnats de Nouvelle-Aquitaine de sabre »). Appartient toujours à une manifestation. | `epreuve` |
+| Compétition | Unité qui se déroule (inscriptions, poules, tableau) : nom, arme, type, catégorie, sexe, date, horaires, lieu, formule. Une par arme × catégorie × sexe ; isolée ou rattachée à une manifestation, éventuellement dans une épreuve. | `competition` |
+| Type de compétition | Individuelle, équipes de 2 (relais à 20 touches) ou équipes de 3 (relais à 45 touches). | `typeCompetition` : `individuelle`, `equipes2`, `equipes3` |
+| Horaires | Heure d'appel (pointage des tireurs), de scratch (clôture des inscriptions sur place) et de début des poules. | `appel`, `scratch`, `debutPoules` |
+| Statut d'une compétition | En préparation → En cours → Terminée ; Archivée (réversible). | `statut` : `preparation`, `enCours`, `terminee`, `archivee` |
+| Match pour la 3e place | Match facultatif entre les perdants des demi-finales ; sans lui, deux 3es ex æquo. | `matchTroisieme` |
 | Formule | Enchaînement des tours (ex. un tour de poules puis un tableau à élimination directe). | `formule` |
 | Tour | Étape de la formule : tour de poules ou tableau. | `tour` |
 | Poule | Groupe de tireurs qui se rencontrent tous (en général 5 à 7), sur une piste. | `poule` |
@@ -43,6 +49,9 @@ l'ajoute ici avant de l'utiliser.
 | Accusé | Réponse du pilote à une saisie : acceptée, refusée ou doublon. | `accuse` |
 | Boîte | Saisies stockées par le serveur en attente d'accusé. | `boite` |
 | Jeton QR | Secret de 128 bits contenu dans le lien QR des arbitres ou des tireurs. | `jetonQr` |
+| Publication | Réglage d'une compétition : publiée, elle est visible du public sur la page d'accueil (affiche, dates…) ; non publiée, seuls les organisateurs la voient. Sans rapport avec le réseau : « en ligne / hors ligne » est réservé à l'état du réseau. | `publiee` |
+| Prendre la main | Faire de ce PC le pilote d'une compétition (en ligne) ; l'ancien pilote passe en lecture seule (US-029). | `prendreLaMain`, `PiloteChange` |
+| Archivage | Mise de côté réversible d'une compétition ou d'une manifestation : lecture seule, masqué des listes et de la page publique (US-033). | `archivee` |
 | Écran | Affichage géant (distant ou fenêtre locale). | `ecran` |
 | Spectateur | Accès public en lecture seule. | `spectateur` |
 | Club | Organisation propriétaire des données (`clubId`). | `club` |
