@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-003
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-023-gerer-manifestations`
 
 ## Récit
 
@@ -76,3 +76,4 @@ consultables depuis la copie gardée sur l'appareil, mais leur création et leur
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-11-03 | Démarrée ; décisions : page « Manifestations » simple (intégrée à l’accueil par US-026), CA-4 vérifié par l’application, CA-5 par le serveur, suppression sans numéro de version, copie locale de la liste |
