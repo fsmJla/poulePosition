@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-003
 - **Branche / PR :** `us/US-023-gerer-manifestations`
 
@@ -100,3 +100,4 @@ consultables depuis la copie gardée sur l'appareil, mais leur création et leur
 |---|---|
 | 2026-10-28 | Créée |
 | 2026-11-03 | Démarrée ; décisions : page « Manifestations » simple (intégrée à l’accueil par US-026), CA-4 vérifié par l’application, CA-5 par le serveur, suppression sans numéro de version, copie locale de la liste |
+| 2026-11-03 | Implémentée (domaine, protocole, DO `Club` et routes, page « Manifestations », copie locale, E2E) ; index du club tolérant avancé d’US-026 ; PR vers `dev` |
