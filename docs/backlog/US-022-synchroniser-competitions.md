@@ -6,7 +6,7 @@
 - **Type :** technique
 - **Statut :** En revue
 - **Dépend de :** US-021
-- **Branche / PR :** `us/US-022-synchroniser-competitions`
+- **Branche / PR :** `us/US-022-synchroniser-competitions` · [PR #42](https://github.com/fsmJla/poulePosition/pull/42)
 
 ## Récit
 
