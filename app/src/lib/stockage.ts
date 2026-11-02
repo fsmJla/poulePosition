@@ -17,6 +17,8 @@ export interface AppareilConnu {
   temporaire: boolean;
   /** Couleur de l'avatar (US-016), pour l'afficher hors ligne. */
   avatar: CouleurAvatar;
+  /** Club du compte (US-025), pour créer une compétition hors ligne ; absent d'un appareil connu avant US-025. */
+  clubId?: string;
   /** Date de la première connexion en ligne, en millisecondes. */
   connuDepuis: number;
 }

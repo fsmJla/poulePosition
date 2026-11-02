@@ -24,6 +24,7 @@ import {
   preparerNouveauMotDePasse,
   preparerReinitialisation,
   verificateurLocal,
+  type CompteConnecte,
   type CompteResume,
   type DemandeModificationCompte,
   type DemandeProfil,
@@ -31,6 +32,11 @@ import {
   type Session,
 } from '@poule-position/protocole';
 import { estLocale, type SessionAppareil, type SessionLocale, type Stockage } from './stockage';
+
+/** Ce que l'appareil connu garde du compte pour la session locale (US-005, US-016, US-025 : le club). */
+function compteGarde({ nom, role, temporaire, avatar, clubId }: Omit<CompteConnecte, 'email'>) {
+  return { nom, role, temporaire, avatar, ...(clubId !== undefined && { clubId }) };
+}
 
 /** Délai maximal d'attente du serveur avant de passer à la connexion locale, en millisecondes. */
 export const DELAI_REPONSE = 10_000;
@@ -263,11 +269,10 @@ export function creerClientSession({
       return { ok: false, erreur: saisieBloquee(apres, maintenant()) ? 'TROP_D_ESSAIS' : 'IDENTIFIANTS_INVALIDES' };
     }
     await stockage.ecrireEssaisLocaux(essaisVides());
-    const { nom, role, temporaire, avatar } = connu;
     const session: SessionLocale = {
       locale: true,
       expireLe: expirationSession(maintenant()),
-      compte: { email, nom, role, temporaire, avatar },
+      compte: { email, ...compteGarde(connu) },
     };
     await stockage.ecrireSession(session);
     garderCleLocale(email, cle);
@@ -303,10 +308,7 @@ export function creerClientSession({
     }
     await stockage.ecrireSession(reponse.session);
     const connu = await stockage.lireAppareilConnu(email);
-    if (connu) {
-      const { nom, role, temporaire, avatar } = reponse.session.compte;
-      await stockage.enregistrerAppareilConnu({ ...connu, nom, role, temporaire, avatar });
-    }
+    if (connu) await stockage.enregistrerAppareilConnu({ ...connu, ...compteGarde(reponse.session.compte) });
     oublierCleOnglet();
     return reponse.session;
   }
@@ -376,12 +378,9 @@ export function creerClientSession({
           const connu = await stockage.lireAppareilConnu(email);
           await stockage.enregistrerAppareilConnu({
             email,
-            nom: session.compte.nom,
-            role: session.compte.role,
+            ...compteGarde(session.compte),
             sel: reponseSel.sel,
             verificateurLocal: await verificateurLocal(cle),
-            temporaire: session.compte.temporaire,
-            avatar: session.compte.avatar,
             connuDepuis: connu?.connuDepuis ?? maintenant(),
           });
           cleEnMemoire = { email, cle };
@@ -480,17 +479,14 @@ export function creerClientSession({
         };
       }
       const { session } = reponse;
-      const { email, nom, role, temporaire, avatar } = session.compte;
+      const { email } = session.compte;
       await stockage.ecrireSession(session);
       const connu = await stockage.lireAppareilConnu(email);
       await stockage.enregistrerAppareilConnu({
         email,
-        nom,
-        role,
+        ...compteGarde(session.compte),
         sel: demande.sel,
         verificateurLocal: await verificateurLocal(demande.cle),
-        temporaire,
-        avatar,
         connuDepuis: connu?.connuDepuis ?? maintenant(),
       });
       cleEnMemoire = { email, cle: demande.cle };
@@ -671,12 +667,10 @@ export function creerClientSession({
           const connu = await stockage.lireAppareilConnu(email);
           await stockage.enregistrerAppareilConnu({
             email,
-            nom: reponse.session.compte.nom,
-            role: reponse.session.compte.role,
+            ...compteGarde(reponse.session.compte),
             sel: demande.sel,
             verificateurLocal: await verificateurLocal(demande.cle),
             temporaire: false,
-            avatar: reponse.session.compte.avatar,
             connuDepuis: connu?.connuDepuis ?? maintenant(),
           });
           cleEnMemoire = { email, cle: demande.cle };

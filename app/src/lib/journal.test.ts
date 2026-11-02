@@ -4,7 +4,21 @@ import { Dexie } from 'dexie';
 import type { Proposition } from '@poule-position/domaine';
 import { ouvrirJournal, prendreEcriture, type Contexte } from './journal';
 
-const creation = (nom = 'Challenge Orpi 2027'): Proposition => ({ type: 'CompetitionCreee', donnees: { nom } });
+const creation = (nom = 'Challenge Orpi 2027'): Proposition => ({
+  type: 'CompetitionCreee',
+  donnees: {
+    nom,
+    arme: 'sabre',
+    typeCompetition: 'individuelle',
+    categorie: 'M13',
+    sexe: null,
+    date: '2027-03-14',
+    horaires: { appel: null, scratch: null, debutPoules: null },
+    lieu: null,
+    commentaire: null,
+    rattachement: null,
+  },
+});
 
 let horloge = 1_800_000_000_000;
 const contexte: Contexte = { clubId: 'pessac', auteur: 'orga@club.fr', maintenant: () => ++horloge };
@@ -39,7 +53,7 @@ describe('journal local (ADR-0003)', () => {
         auteur: 'orga@club.fr',
         source: 'clavier',
         type: 'CompetitionCreee',
-        donnees: { nom: 'Challenge Orpi 2027' },
+        donnees: creation().donnees,
       },
     ]);
   });
@@ -228,5 +242,28 @@ describe('pilote et copies (US-022, ADR-0016)', () => {
     expect(identifiant).toMatch(/^[0-9a-f-]{36}$/);
     expect(await ouvrirJournal(nom, persister()).appareil()).toBe(identifiant);
     expect(await ouvrirJournal(nomBase(), persister()).appareil()).not.toBe(identifiant);
+  });
+});
+
+describe('création d’une compétition (US-025)', () => {
+  it('US-025 CA-2 : la création est écrite dans le journal local et rend ce PC pilote', async () => {
+    const journal = ouvrirJournal(nomBase(), persister());
+    const resultat = await journal.enregistrer('c1', creation(), contexte);
+    expect(resultat).toMatchObject({
+      projection: { competition: { nom: 'Challenge Orpi 2027', statut: 'preparation', publiee: false } },
+    });
+    expect(await journal.etat('c1')).toEqual({ competitionId: 'c1', pilote: true, confirme: 0, copieLe: null });
+  });
+
+  it('US-025 CA-5 : des horaires incohérents ne sont pas écrits', async () => {
+    const nom = nomBase();
+    const journal = ouvrirJournal(nom, persister());
+    const incoherente = creation();
+    if (incoherente.type === 'CompetitionCreee') {
+      incoherente.donnees.horaires = { appel: '09:00', scratch: '08:00', debutPoules: null };
+    }
+    expect(await journal.enregistrer('c1', incoherente, contexte)).toEqual({ erreur: 'SCRATCH_AVANT_APPEL' });
+    expect(await lignes(nom)).toEqual([]);
+    expect(await journal.etat('c1')).toBeNull();
   });
 });

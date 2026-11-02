@@ -1052,3 +1052,32 @@ describe('réinitialisation par e-mail (US-019)', () => {
     expect(serveur.requetes).toHaveLength(0);
   });
 });
+
+describe('club du compte (US-025)', () => {
+  it('US-025 CA-6 : le club est gardé avec l’appareil connu, puis repris par la session locale hors ligne', async () => {
+    const { stockage, etat } = stockageMemoire();
+    const serveur = fauxServeur({
+      'POST /session/sel': { statut: 200, corps: { ok: true, sel: SEL } },
+      'POST /session': { statut: 200, corps: { ...sessionServeur, compte: { ...compte, clubId: 'pessac' } } },
+    });
+    await client({ stockage, envoyer: serveur.envoyer }).seConnecter(compte.email, 'mot-de-passe-solide');
+    expect(etat.appareils.get(compte.email)?.clubId).toBe('pessac');
+
+    await stockage.effacerSession();
+    const horsLigne = await client({ stockage, enLigne: () => false }).seConnecter(compte.email, 'mot-de-passe-solide');
+    expect(horsLigne.ok && horsLigne.session.compte.clubId).toBe('pessac');
+  });
+
+  it('US-025 : un appareil connu avant US-025 donne une session locale sans club', async () => {
+    const { stockage, etat } = stockageMemoire();
+    const serveur = fauxServeur({
+      'POST /session/sel': { statut: 200, corps: { ok: true, sel: SEL } },
+      'POST /session': { statut: 200, corps: sessionServeur },
+    });
+    await client({ stockage, envoyer: serveur.envoyer }).seConnecter(compte.email, 'mot-de-passe-solide');
+    expect(etat.appareils.get(compte.email)).not.toHaveProperty('clubId');
+    await stockage.effacerSession();
+    const horsLigne = await client({ stockage, enLigne: () => false }).seConnecter(compte.email, 'mot-de-passe-solide');
+    expect(horsLigne.ok && horsLigne.session.compte).not.toHaveProperty('clubId');
+  });
+});
