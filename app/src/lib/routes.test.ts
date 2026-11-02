@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resoudreRoute, CHEMINS } from './routes';
+import { cheminCompetition, resoudreRoute, CHEMINS } from './routes';
 
 describe('resoudreRoute', () => {
   it('US-003 CA-6 : l’accueil public est ouvert à tous', () => {
@@ -63,5 +63,26 @@ describe('mot de passe oublié (US-019)', () => {
     expect(resoudreRoute('/mot-de-passe-oublie', false)).toEqual({ page: 'motDePasseOublie' });
     expect(resoudreRoute('/reinitialisation', false)).toEqual({ page: 'reinitialisation' });
     expect(resoudreRoute('/reinitialisation', true)).toEqual({ page: 'reinitialisation' });
+  });
+});
+
+describe('compétitions (US-025)', () => {
+  it('US-025 CA-1 : « Nouvelle compétition » est réservée aux comptes connectés', () => {
+    expect(resoudreRoute('/competitions/nouvelle', false)).toEqual({ redirection: CHEMINS.connexion });
+    expect(resoudreRoute('/competitions/nouvelle', true)).toEqual({ page: 'nouvelleCompetition' });
+    expect(resoudreRoute('/competitions/nouvelle', true, true)).toEqual({ redirection: CHEMINS.motDePasse });
+  });
+
+  it('US-025 CA-2 : la page d’une compétition porte son identifiant, et est réservée', () => {
+    const id = '0b6f1c1e-6d1a-4f0a-9a43-2f3c9e5d7b10';
+    expect(cheminCompetition(id)).toBe(`/competitions/${id}`);
+    expect(resoudreRoute(`/competitions/${id}`, true)).toEqual({ page: 'competition', competitionId: id });
+    expect(resoudreRoute(`/competitions/${id}/`, true)).toEqual({ page: 'competition', competitionId: id });
+    expect(resoudreRoute(`/competitions/${id}`, false)).toEqual({ redirection: CHEMINS.connexion });
+  });
+
+  it('renvoie un identifiant mal formé vers l’accueil', () => {
+    expect(resoudreRoute('/competitions/Pas Un Id', true)).toEqual({ redirection: '/' });
+    expect(resoudreRoute('/competitions', true)).toEqual({ redirection: '/' });
   });
 });

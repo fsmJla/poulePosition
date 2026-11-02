@@ -1,11 +1,17 @@
 // Catalogue des textes de l'interface (français seul pour l'instant, ADR-0002). Aucun texte en dur dans les composants.
 import {
   LONGUEUR_MIN_MOT_DE_PASSE,
+  type Arme,
   type CouleurAvatar,
+  type ErreurCompetition,
   type ErreurNouveauMotDePasse,
   type ErreurSaisieCompte,
   type Role,
+  type Sexe,
+  type Statut,
+  type TypeCompetition,
 } from '@poule-position/domaine';
+import type { ErreurCreation } from './competitions';
 import type { EtatConnexion } from './connexion';
 import type {
   ErreurChangementMotDePasse,
@@ -245,6 +251,106 @@ export const textes = {
       SERVEUR_NON_CONFIGURE: 'Serveur non configuré',
       ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
     } satisfies Record<ErreurComptes, string>,
+  },
+  /** US-025 : création et page d'une compétition. */
+  competitions: {
+    nouvelle: 'Nouvelle compétition',
+    titreNouvelle: 'Nouvelle compétition',
+    nom: 'Nom',
+    exempleNom: 'Championnats NA sabre M13',
+    arme: 'Arme',
+    choisirArme: 'Choisir une arme',
+    type: 'Type',
+    categorie: 'Catégorie',
+    aucuneCategorie: 'Aucune',
+    categorieLibre: 'Autre (saisie libre)',
+    categorieLibreChamp: 'Catégorie libre',
+    sexe: 'Sexe',
+    aucunSexe: 'Non précisé',
+    date: 'Date',
+    horaires: 'Horaires',
+    appel: 'Appel',
+    scratch: 'Scratch',
+    debutPoules: 'Début des poules',
+    lieu: 'Lieu',
+    commentaire: 'Commentaire',
+    facultatif: 'facultatif',
+    creer: 'Créer la compétition',
+    enCours: 'Création…',
+    annuler: 'Annuler',
+    armes: {
+      sabre: 'Sabre',
+      epee: 'Épée',
+      fleuret: 'Fleuret',
+      sabreLaser: 'Sabre laser',
+    } satisfies Record<Arme, string>,
+    types: {
+      individuelle: 'Individuelle',
+      equipes2: 'Équipes de 2',
+      equipes3: 'Équipes de 3',
+    } satisfies Record<TypeCompetition, string>,
+    sexes: {
+      hommes: 'Hommes',
+      dames: 'Dames',
+      mixte: 'Mixte',
+    } satisfies Record<Sexe, string>,
+    statuts: {
+      preparation: 'En préparation',
+      enCours: 'En cours',
+      terminee: 'Terminée',
+      archivee: 'Archivée',
+    } satisfies Record<Statut, string>,
+    publiee: 'Publiée',
+    nonPubliee: 'Non publiée',
+    pilote: 'Ce PC est le pilote',
+    lectureSeule: 'Lecture seule : cette compétition est pilotée par un autre PC',
+    autreOnglet: 'Cette compétition est ouverte dans un autre onglet : lecture seule ici',
+    pasEncoreEnvoyee: 'Pas encore envoyée',
+    enAttente: (nombre: number) =>
+      nombre > 1 ? `${nombre} modifications en attente d’envoi` : `${nombre} modification en attente d’envoi`,
+    /** US-022 : date de la copie d'une compétition pilotée par un autre PC (« Copie du 28/10 à 14 h 05 »). */
+    copieDu: (date: number) => {
+      const jour = new Date(date);
+      const deux = (nombre: number) => String(nombre).padStart(2, '0');
+      return `Copie du ${deux(jour.getDate())}/${deux(jour.getMonth() + 1)} à ${jour.getHours()} h ${deux(jour.getMinutes())}`;
+    },
+    dateLongue: (date: string) =>
+      new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`)),
+    dateHorsManifestation: (debut: string, fin: string) => {
+      const jour = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}`;
+      return `La date doit être comprise entre le ${jour(debut)} et le ${jour(fin)}`;
+    },
+    formuleTitre: 'Formule',
+    formule: (touchesPoules: number, touchesTableau: number) =>
+      `Poules en ${touchesPoules} touches, sans élimination · Tableau en ${touchesTableau} touches`,
+    relais: (touches: number) => `Rencontres en relais à ${touches} touches`,
+    chargement: 'Chargement de la compétition…',
+    introuvable: 'Compétition introuvable sur cet appareil',
+    retour: "Retour à l'accueil de l'organisateur",
+    champs: {
+      NOM_VIDE: 'Le nom est obligatoire',
+      NOM_TROP_LONG: 'Le nom fait au plus 100 caractères',
+      ARME_INVALIDE: 'Choisissez une arme',
+      ARME_DIFFERENTE_EPREUVE: 'L’arme doit être celle de l’épreuve',
+      TYPE_INVALIDE: 'Choisissez un type',
+      CATEGORIE_TROP_LONGUE: 'La catégorie fait au plus 30 caractères',
+      SEXE_INVALIDE: 'Choisissez un sexe',
+      DATE_INVALIDE: 'Date invalide',
+      DATE_OBLIGATOIRE: 'La date est obligatoire dans une manifestation',
+      DATE_HORS_MANIFESTATION: 'La date doit être comprise dans la manifestation',
+      HORAIRE_INVALIDE: 'Heure invalide',
+      SCRATCH_AVANT_APPEL: 'Le scratch doit être après l’appel',
+      POULES_AVANT_SCRATCH: 'Le début des poules doit être après le scratch',
+      POULES_AVANT_APPEL: 'Le début des poules doit être après l’appel',
+      LIEU_TROP_LONG: 'Le lieu fait au plus 200 caractères',
+      COMMENTAIRE_TROP_LONG: 'Le commentaire fait au plus 2 000 caractères',
+      RATTACHEMENT_INVALIDE: 'Rattachement invalide',
+    } satisfies Record<ErreurCompetition, string>,
+    erreurs: {
+      ECRITURE_IMPOSSIBLE:
+        'Enregistrement impossible sur cet appareil (espace plein ou navigation privée) : rien n’a été créé',
+      CLUB_INCONNU: 'Reconnectez-vous une fois en ligne pour créer une compétition sur cet appareil',
+    } satisfies Record<ErreurCreation, string>,
   },
   roles: {
     administrateur: 'Administrateur',

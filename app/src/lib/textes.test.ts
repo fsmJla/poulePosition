@@ -95,3 +95,24 @@ describe('textes du menu de compte (US-017)', () => {
     expect(textes.organisateur.oublier.bouton).toBe('Se déconnecter et oublier cet appareil');
   });
 });
+
+describe('textes des compétitions (US-025)', () => {
+  it('US-025 CA-4 : la date hors de la manifestation donne ses bornes', () => {
+    expect(textes.competitions.dateHorsManifestation('2027-03-14', '2027-03-15')).toBe(
+      'La date doit être comprise entre le 14/03 et le 15/03',
+    );
+  });
+
+  it('US-025 CA-5 : le message nomme les deux horaires en cause', () => {
+    expect(textes.competitions.champs.SCRATCH_AVANT_APPEL).toBe('Le scratch doit être après l’appel');
+    expect(textes.competitions.champs.POULES_AVANT_SCRATCH).toBe('Le début des poules doit être après le scratch');
+    expect(textes.competitions.champs.POULES_AVANT_APPEL).toBe('Le début des poules doit être après l’appel');
+  });
+
+  it('US-025 : la date et les modifications en attente se lisent en français', () => {
+    expect(textes.competitions.dateLongue('2027-03-13')).toBe('samedi 13 mars 2027');
+    expect(textes.competitions.enAttente(1)).toBe('1 modification en attente d’envoi');
+    expect(textes.competitions.enAttente(3)).toBe('3 modifications en attente d’envoi');
+    expect(textes.competitions.copieDu(new Date(2026, 9, 28, 14, 5).getTime())).toBe('Copie du 28/10 à 14 h 05');
+  });
+});

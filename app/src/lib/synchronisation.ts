@@ -207,3 +207,5 @@ export function creerSynchronisation({
     },
   };
 }
+
+export type Synchronisation = ReturnType<typeof creerSynchronisation>;
