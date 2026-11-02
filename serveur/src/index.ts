@@ -1,6 +1,6 @@
 // Point d'entrée du Worker : routes, origines autorisées, transmission de la connexion WebSocket au Durable Object
 // de la compétition, installation du premier administrateur, connexion, session, gestion des comptes et réplication
-// du journal des compétitions (US-022, ADR-0016).
+// du journal des compétitions (US-022, ADR-0016), manifestations du club (US-023).
 // Protocole : docs/protocole.md.
 import {
   analyserDemandeChangementMotDePasse,
@@ -16,10 +16,13 @@ import {
   analyserDemandeInstallation,
   analyserDemandeSel,
   analyserDemandeEnvoi,
+  analyserDemandeManifestation,
+  analyserDemandeModificationManifestation,
   TAILLE_MAX_LOT,
   type ReponseCompetitions,
   type ReponseEnvoi,
   type ReponseJournal,
+  type ReponseManifestation,
   type CodeErreurInstallation,
   type CodeErreurSession,
   type CompteResume,
@@ -192,7 +195,9 @@ type RouteSession = Extract<
       | 'compte'
       | 'reinitialisation'
       | 'competitions'
-      | 'evenements';
+      | 'evenements'
+      | 'manifestations'
+      | 'manifestation';
   }
 >;
 
@@ -208,6 +213,8 @@ const METHODES_SESSION = {
   reinitialisation: ['POST'],
   competitions: ['GET'],
   evenements: ['GET', 'POST'],
+  manifestations: ['GET', 'POST'],
+  manifestation: ['PATCH', 'DELETE'],
 } as const;
 
 /**
@@ -300,6 +307,12 @@ async function traiterSession(
     // US-022 : tout compte du club au mot de passe définitif (administrateur ou organisateur).
     if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
     return gererCompetitions(route, requete, env, club, authentifie.compte);
+  }
+
+  if (route.route === 'manifestations' || route.route === 'manifestation') {
+    // US-023 : tout compte du club au mot de passe définitif (administrateur ou organisateur).
+    if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
+    return gererManifestations(route, requete, club, authentifie.compte);
   }
 
   if (route.route === 'comptes' || route.route === 'compte' || route.route === 'reinitialisation') {
@@ -496,6 +509,38 @@ async function gererComptes(
   const resultat = await club.modifierCompte(route.id, analyse.demande);
   if (!resultat.ok) return refuserSession(resultat.erreur === 'COMPTE_INCONNU' ? 404 : 409, resultat.erreur);
   return Response.json({ ok: true, compte: resume(resultat.compte) });
+}
+
+/**
+ * US-023 (ADR-0016 §4, docs/protocole.md §12) : manifestations du club, stockées dans le DO `Club`. Une modification
+ * doit partir de la version courante ; une manifestation ne se supprime que vide.
+ */
+async function gererManifestations(
+  route: Extract<RouteSession, { route: 'manifestations' | 'manifestation' }>,
+  requete: Request,
+  club: DurableObjectStub<Club>,
+  compte: CompteStocke,
+): Promise<Response> {
+  if (route.route === 'manifestations' && requete.method === 'GET') {
+    return Response.json({ ok: true, manifestations: await club.listerManifestations() });
+  }
+  if (route.route === 'manifestations') {
+    const analyse = analyserDemandeManifestation(await lireJson(requete));
+    if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
+    const manifestation = await club.creerManifestation(analyse.demande, compte.nom);
+    return Response.json({ ok: true, manifestation } satisfies ReponseManifestation, { status: 201 });
+  }
+  if (requete.method === 'DELETE') {
+    const resultat = await club.supprimerManifestation(route.id);
+    if (!resultat.ok) return refuserSession(resultat.erreur === 'MANIFESTATION_INCONNUE' ? 404 : 409, resultat.erreur);
+    return Response.json({ ok: true });
+  }
+  const analyse = analyserDemandeModificationManifestation(await lireJson(requete));
+  if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
+  const resultat = await club.modifierManifestation(route.id, analyse.demande, compte.nom);
+  if (resultat.ok) return Response.json(resultat satisfies ReponseManifestation);
+  if (resultat.erreur === 'MANIFESTATION_INCONNUE') return refuserSession(404, resultat.erreur);
+  return Response.json(resultat satisfies ReponseManifestation, { status: 409 });
 }
 
 /** DO de la compétition, nommé par club (ADR-0014). */

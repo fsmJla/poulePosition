@@ -1,7 +1,8 @@
 // Durable Object « Club » : un objet par club (idFromName(`club:<clubId>`), ADR-0014). Comptes des administrateurs
 // et des organisateurs (ADR-0006), essais de connexion erronés par e-mail (US-004) et demandes de réinitialisation
-// par e-mail (US-019), index des compétitions du club (US-022, ADR-0016), en SQLite. Les écritures d'un même objet sont sérialisées : deux créations simultanées du
-// premier administrateur, ou d'un même e-mail, ne peuvent pas aboutir toutes les deux.
+// par e-mail (US-019), index des compétitions du club (US-022, ADR-0016) et manifestations (US-023), en SQLite. Les
+// écritures d'un même objet sont sérialisées : deux créations simultanées du premier administrateur, ou d'un même
+// e-mail, ne peuvent pas aboutir toutes les deux, et deux modifications d'une même manifestation non plus.
 import { DurableObject } from 'cloudflare:workers';
 import {
   essaisVides,
@@ -15,11 +16,13 @@ import {
   lienExpire,
   noterDemande,
   estCouleurAvatar,
+  estVide,
+  type DonneesManifestation,
   type CouleurAvatar,
   type Essais,
   type Role,
 } from '@poule-position/domaine';
-import type { CompetitionIndexee } from '@poule-position/protocole';
+import type { CompetitionIndexee, DemandeModificationManifestation, Manifestation } from '@poule-position/protocole';
 import type { Env } from './index';
 
 export interface NouveauCompte {
@@ -125,6 +128,15 @@ export class Club extends DurableObject<Env> {
         club_id TEXT NOT NULL,
         contenu TEXT NOT NULL,
         modifiee_le INTEGER NOT NULL
+      )`);
+    // US-023 (ADR-0016 §4) : une ligne par manifestation ; `version` refuse l'écrasement d'une modification concurrente.
+    ctx.storage.sql.exec(`
+      CREATE TABLE IF NOT EXISTS manifestations (
+        id TEXT PRIMARY KEY,
+        club_id TEXT NOT NULL,
+        contenu TEXT NOT NULL,
+        version INTEGER NOT NULL,
+        debut TEXT NOT NULL
       )`);
   }
 
@@ -340,10 +352,91 @@ export class Club extends DurableObject<Env> {
 
   /** US-022 CA-4 : index des compétitions du club, les plus récemment modifiées d'abord. */
   async listerCompetitions(): Promise<CompetitionIndexee[]> {
+    return this.lignesIndex();
+  }
+
+  /** Lecture synchrone de l'index : aucune autre requête ne s'intercale avant l'écriture qui suit. */
+  private lignesIndex(): CompetitionIndexee[] {
     return this.ctx.storage.sql
       .exec<{ contenu: string }>('SELECT contenu FROM competitions ORDER BY modifiee_le DESC')
       .toArray()
       .map(({ contenu }) => JSON.parse(contenu) as CompetitionIndexee);
+  }
+
+  /** US-023 CA-1 : manifestations du club, par date de début. */
+  async listerManifestations(): Promise<Manifestation[]> {
+    return this.ctx.storage.sql
+      .exec<{ contenu: string }>('SELECT contenu FROM manifestations ORDER BY debut, id')
+      .toArray()
+      .map(({ contenu }) => JSON.parse(contenu) as Manifestation);
+  }
+
+  /** US-023 CA-1 : enregistre une nouvelle manifestation, en version 1. */
+  async creerManifestation(donnees: DonneesManifestation, auteur: string): Promise<Manifestation> {
+    const manifestation = {
+      id: crypto.randomUUID(),
+      ...donnees,
+      version: 1,
+      modifieeLe: Date.now(),
+      modifieePar: auteur,
+    };
+    this.ctx.storage.sql.exec(
+      'INSERT INTO manifestations (id, club_id, contenu, version, debut) VALUES (?, ?, ?, ?, ?)',
+      manifestation.id,
+      this.env.CLUB_ID,
+      JSON.stringify(manifestation),
+      manifestation.version,
+      manifestation.debut,
+    );
+    return manifestation;
+  }
+
+  private lireManifestation(id: string): Manifestation | null {
+    const ligne = this.ctx.storage.sql
+      .exec<{ contenu: string }>('SELECT contenu FROM manifestations WHERE id = ?', id)
+      .toArray()[0];
+    return ligne ? (JSON.parse(ligne.contenu) as Manifestation) : null;
+  }
+
+  /**
+   * US-023 CA-2 : remplace les champs si la demande part de la version courante ; sinon, refus avec la version
+   * courante (cas limite : pas d'écrasement silencieux d'une modification concurrente).
+   */
+  async modifierManifestation(
+    id: string,
+    { version, ...donnees }: DemandeModificationManifestation,
+    auteur: string,
+  ): Promise<
+    | { ok: true; manifestation: Manifestation }
+    | { ok: false; erreur: 'MANIFESTATION_INCONNUE' }
+    | { ok: false; erreur: 'MODIFIEE_ENTRE_TEMPS'; manifestation: Manifestation }
+  > {
+    const courante = this.lireManifestation(id);
+    if (!courante) return { ok: false, erreur: 'MANIFESTATION_INCONNUE' };
+    if (courante.version !== version) return { ok: false, erreur: 'MODIFIEE_ENTRE_TEMPS', manifestation: courante };
+    const manifestation = { id, ...donnees, version: version + 1, modifieeLe: Date.now(), modifieePar: auteur };
+    this.ctx.storage.sql.exec(
+      'UPDATE manifestations SET contenu = ?, version = ?, debut = ? WHERE id = ?',
+      JSON.stringify(manifestation),
+      manifestation.version,
+      manifestation.debut,
+      id,
+    );
+    return { ok: true, manifestation };
+  }
+
+  /**
+   * US-023 CA-5 : supprime une manifestation vide. Une compétition de l'index qui s'y rattache l'en empêche (les
+   * lignes d'avant US-025, sans rattachement, ne comptent pas).
+   */
+  async supprimerManifestation(
+    id: string,
+  ): Promise<{ ok: true } | { ok: false; erreur: 'MANIFESTATION_INCONNUE' | 'MANIFESTATION_NON_VIDE' }> {
+    if (!this.lireManifestation(id)) return { ok: false, erreur: 'MANIFESTATION_INCONNUE' };
+    const competitions = this.lignesIndex().map(({ rattachement }) => ({ rattachement: rattachement ?? null }));
+    if (!estVide(id, competitions)) return { ok: false, erreur: 'MANIFESTATION_NON_VIDE' };
+    this.ctx.storage.sql.exec('DELETE FROM manifestations WHERE id = ?', id);
+    return { ok: true };
   }
 
   /** US-007 CA-1 : date de la dernière connexion par mot de passe. */
