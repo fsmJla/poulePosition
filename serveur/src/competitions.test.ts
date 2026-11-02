@@ -7,6 +7,7 @@ import {
   deriverCle,
   preparerDemandeInstallation,
   type CompetitionIndexee,
+  type ResumeCompetition,
   type DemandeEnvoi,
   type Session,
 } from '@poule-position/protocole';
@@ -60,6 +61,17 @@ async function installerEtConnecter(cible: Worker): Promise<string> {
   return ((await reponse.json()) as Session).jeton;
 }
 
+const RESUME: ResumeCompetition = {
+  nom: 'Challenge Orpi 2027',
+  arme: 'sabre',
+  categorie: 'M13',
+  sexe: null,
+  date: '2027-03-14',
+  statut: 'preparation',
+  publiee: false,
+  rattachement: null,
+};
+
 const evenement = (competitionId: string, seq: number, champs: Partial<Evenement> = {}): Evenement => ({
   competitionId,
   clubId,
@@ -69,7 +81,18 @@ const evenement = (competitionId: string, seq: number, champs: Partial<Evenement
   auteur: ADMIN.email,
   source: 'clavier',
   type: 'CompetitionCreee',
-  donnees: { nom: 'Challenge Orpi 2027' },
+  donnees: {
+    nom: 'Challenge Orpi 2027',
+    arme: 'sabre',
+    typeCompetition: 'individuelle',
+    categorie: 'M13',
+    sexe: null,
+    date: '2027-03-14',
+    horaires: { appel: null, scratch: null, debutPoules: null },
+    lieu: null,
+    commentaire: null,
+    rattachement: null,
+  },
   ...champs,
 });
 
@@ -77,7 +100,7 @@ const lot = (competitionId: string, depuis: number, evenements: Evenement[], app
   appareilId,
   depuis,
   evenements,
-  resume: { nom: 'Challenge Orpi 2027' },
+  resume: RESUME,
 });
 
 const envoyer = (competitionId: string, demande: unknown, jetonSession = jeton) =>
@@ -123,7 +146,7 @@ describe('réplication du journal (ADR-0016)', () => {
     const { competitions } = (await reponse.json()) as { competitions: CompetitionIndexee[] };
     expect(competitions.find((competition) => competition.id === id)).toEqual({
       id,
-      nom: 'Challenge Orpi 2027',
+      ...RESUME,
       piloteAppareil: 'pc-a',
       piloteNom: ADMIN.nom,
       dernierSeq: 1,

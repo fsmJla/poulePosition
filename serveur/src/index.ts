@@ -561,6 +561,6 @@ async function ouvrirSession(compte: CompteStocke, clubId: string, secret: strin
     ok: true,
     jeton,
     expireLe,
-    compte: { email, nom, role, temporaire, avatar: avatar ?? couleurParDefaut(email) },
+    compte: { email, nom, role, temporaire, avatar: avatar ?? couleurParDefaut(email), clubId },
   } satisfies ReponseSession);
 }
