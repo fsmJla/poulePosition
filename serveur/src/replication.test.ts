@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import type { Evenement } from '@poule-position/domaine';
-import type { DemandeEnvoi } from '@poule-position/protocole';
+import type { DemandeEnvoi, ResumeCompetition } from '@poule-position/protocole';
 import { deciderAjout, ligneIndex } from './replication';
+
+const RESUME: ResumeCompetition = {
+  nom: 'Orpi',
+  arme: 'sabre',
+  categorie: 'M13',
+  sexe: null,
+  date: '2027-03-14',
+  statut: 'preparation',
+  publiee: false,
+  rattachement: null,
+};
 
 const evenement = (seq: number, champs: Partial<Evenement> = {}): Evenement => ({
   competitionId: 'c1',
@@ -12,7 +23,18 @@ const evenement = (seq: number, champs: Partial<Evenement> = {}): Evenement => (
   auteur: 'orga@club.fr',
   source: 'clavier',
   type: 'CompetitionCreee',
-  donnees: { nom: 'Orpi' },
+  donnees: {
+    nom: 'Orpi',
+    arme: 'sabre',
+    typeCompetition: 'individuelle',
+    categorie: 'M13',
+    sexe: null,
+    date: '2027-03-14',
+    horaires: { appel: null, scratch: null, debutPoules: null },
+    lieu: null,
+    commentaire: null,
+    rattachement: null,
+  },
   ...champs,
 });
 
@@ -20,7 +42,7 @@ const demande = (depuis: number, evenements: Evenement[], appareilId = 'pc-a'): 
   appareilId,
   depuis,
   evenements,
-  resume: { nom: 'Orpi' },
+  resume: RESUME,
 });
 
 const vide = { dernierSeq: 0, piloteAppareil: null };
@@ -65,7 +87,7 @@ describe('index des compétitions du club', () => {
   it('US-022 CA-3 : la ligne reprend le résumé du pilote, son appareil, son compte et le dernier événement', () => {
     expect(ligneIndex('c1', demande(0, [evenement(1), evenement(2)]), 'Orga')).toEqual({
       id: 'c1',
-      nom: 'Orpi',
+      ...RESUME,
       piloteAppareil: 'pc-a',
       piloteNom: 'Orga',
       dernierSeq: 2,

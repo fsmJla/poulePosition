@@ -1,9 +1,9 @@
 // Réplication du journal et index des compétitions du club (US-022, ADR-0016, docs/protocole.md §11) : le pilote
 // envoie ses événements par lots de 16 Ko au plus ; le serveur les ajoute s'ils suivent son dernier seq.
-import { validerNom, type Evenement } from '@poule-position/domaine';
+import { ARMES, SEXES, STATUTS, validerNom, type Competition, type Evenement } from '@poule-position/domaine';
 import { lireEvenement } from './journal';
 import { CODES_ERREUR_SESSION, type CodeErreurSession, type ErreurReponse } from './session';
-import { aExactementLesChamps } from './validation';
+import { aExactementLesChamps, estRattachement, estTexteOuNull } from './validation';
 
 /** Taille maximale d'un lot, en octets de JSON (celle des messages du relais). */
 export const TAILLE_MAX_LOT = 16 * 1024;
@@ -11,9 +11,34 @@ export const TAILLE_MAX_LOT = 16 * 1024;
 /** Identifiant d'appareil ou de compétition : minuscules, chiffres et tirets (un UUID convient). */
 export const MOTIF_IDENTIFIANT = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
-/** Résumé de la compétition, calculé et fourni par le pilote (complété par les US suivantes). */
-export interface ResumeCompetition {
-  nom: string;
+/** Résumé de la compétition, calculé et fourni par le pilote (US-022 CA-3, US-025). */
+export type ResumeCompetition = Pick<
+  Competition,
+  'nom' | 'arme' | 'categorie' | 'sexe' | 'date' | 'statut' | 'publiee' | 'rattachement'
+>;
+
+const CHAMPS_RESUME = ['nom', 'arme', 'categorie', 'sexe', 'date', 'statut', 'publiee', 'rattachement'] as const;
+
+/** Résumé envoyé avec chaque lot : le serveur le range dans l'index du club sans rien calculer (ADR-0016). */
+export function resumeDe(competition: Competition): ResumeCompetition {
+  const { nom, arme, categorie, sexe, date, statut, publiee, rattachement } = competition;
+  return { nom, arme, categorie, sexe, date, statut, publiee, rattachement };
+}
+
+const comprend = (liste: readonly string[], valeur: unknown) => (liste as readonly unknown[]).includes(valeur);
+
+function estResume(objet: Record<string, unknown>): boolean {
+  const { nom, arme, categorie, sexe, date, statut, publiee, rattachement } = objet;
+  return (
+    typeof nom === 'string' &&
+    validerNom(nom) === null &&
+    comprend(ARMES, arme) &&
+    [categorie, date].every(estTexteOuNull) &&
+    (sexe === null || comprend(SEXES, sexe)) &&
+    comprend(STATUTS, statut) &&
+    typeof publiee === 'boolean' &&
+    estRattachement(rattachement)
+  );
 }
 
 /** Corps de `POST /competitions/<id>/evenements`. */
@@ -58,9 +83,8 @@ function erreurDe(brut: unknown): { ok: false; erreur: ErreurReponse } {
 const estEntierPositif = (valeur: unknown): valeur is number => Number.isInteger(valeur) && (valeur as number) >= 0;
 
 function analyserResume(brut: unknown): ResumeCompetition | null {
-  const resume = aExactementLesChamps(brut, ['nom']);
-  if (!resume || typeof resume.nom !== 'string' || validerNom(resume.nom) !== null) return null;
-  return { nom: resume.nom };
+  const resume = aExactementLesChamps(brut, CHAMPS_RESUME);
+  return resume && estResume(resume) ? (resume as unknown as ResumeCompetition) : null;
 }
 
 /** Événements lisibles et consécutifs à partir de `premier` ; null sinon. */
@@ -124,10 +148,17 @@ export function analyserReponseJournal(brut: unknown): ReponseJournal {
 }
 
 function analyserIndexee(brut: unknown): CompetitionIndexee | null {
-  const objet = aExactementLesChamps(brut, ['id', 'nom', 'piloteAppareil', 'piloteNom', 'dernierSeq', 'modifieeLe']);
-  if (!objet) return null;
-  const { id, nom, piloteAppareil, piloteNom, dernierSeq, modifieeLe } = objet;
-  const textes = [id, nom, piloteAppareil, piloteNom].every((texte) => typeof texte === 'string');
+  const objet = aExactementLesChamps(brut, [
+    ...CHAMPS_RESUME,
+    'id',
+    'piloteAppareil',
+    'piloteNom',
+    'dernierSeq',
+    'modifieeLe',
+  ]);
+  if (!objet || !estResume(objet)) return null;
+  const { id, piloteAppareil, piloteNom, dernierSeq, modifieeLe } = objet;
+  const textes = [id, piloteAppareil, piloteNom].every((texte) => typeof texte === 'string');
   if (!textes || !estEntierPositif(dernierSeq) || typeof modifieeLe !== 'number') return null;
   return objet as unknown as CompetitionIndexee;
 }

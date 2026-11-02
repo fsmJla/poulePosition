@@ -20,7 +20,14 @@ const sessionValide = {
   ok: true,
   jeton: 'en-tete.charge.signature',
   expireLe: 1_795_000_000_000,
-  compte: { email: 'orga@club.fr', nom: 'Orga', role: 'organisateur', temporaire: false, avatar: 'prune' },
+  compte: {
+    email: 'orga@club.fr',
+    nom: 'Orga',
+    role: 'organisateur',
+    temporaire: false,
+    avatar: 'prune',
+    clubId: 'pessac',
+  },
 };
 
 describe('demande de sel', () => {
@@ -170,5 +177,26 @@ describe('avatar du compte (US-016)', () => {
     delete sansAvatar.avatar;
     const lue = analyserReponseSession({ ...sessionValide, compte: sansAvatar });
     expect(lue.ok && lue.session.compte.avatar).toBe(couleurParDefaut('orga@club.fr'));
+  });
+});
+
+describe('club du compte (US-025)', () => {
+  it('US-025 CA-6 : lit le club du compte connecté, gardé pour créer une compétition hors ligne', () => {
+    const lue = analyserReponseSession(sessionValide);
+    expect(lue.ok && lue.session.compte.clubId).toBe('pessac');
+  });
+
+  it('US-025 : un serveur qui n’envoie pas encore le club donne un compte sans club', () => {
+    const sansClub: Partial<typeof sessionValide.compte> = { ...sessionValide.compte };
+    delete sansClub.clubId;
+    const lue = analyserReponseSession({ ...sessionValide, compte: sansClub });
+    expect(lue.ok && lue.session.compte).not.toHaveProperty('clubId');
+  });
+
+  it('US-025 : refuse un club vide ou mal typé', () => {
+    for (const clubId of ['', 3]) {
+      const compte = { ...sessionValide.compte, clubId };
+      expect(analyserReponseSession({ ...sessionValide, compte })).toEqual({ ok: false, erreur: 'REPONSE_INVALIDE' });
+    }
   });
 });

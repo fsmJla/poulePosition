@@ -1,5 +1,6 @@
 // Règles métier pures (ADR-0001) : aucun accès au réseau, au stockage ni au DOM.
 export * from './avatar';
+export * from './competition';
 export * from './comptes';
 export * from './essais';
 export * from './journal';

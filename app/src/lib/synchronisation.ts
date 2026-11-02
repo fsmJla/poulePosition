@@ -8,6 +8,7 @@ import {
   analyserReponseEnvoi,
   analyserReponseJournal,
   preparerLots,
+  resumeDe,
   type CompetitionIndexee,
   type ErreurReponse,
 } from '@poule-position/protocole';
@@ -86,7 +87,7 @@ export function creerSynchronisation({
       if (!jetonSession) return 'en-attente';
       const { competition } = await journal.lire(competitionId);
       if (!competition) return 'en-attente';
-      const lots = preparerLots(await journal.appareil(), evenements, { nom: competition.nom });
+      const lots = preparerLots(await journal.appareil(), evenements, resumeDe(competition));
       for (const lot of lots) {
         let reponse;
         try {
@@ -206,3 +207,5 @@ export function creerSynchronisation({
     },
   };
 }
+
+export type Synchronisation = ReturnType<typeof creerSynchronisation>;

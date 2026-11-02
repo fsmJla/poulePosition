@@ -34,7 +34,8 @@ l'ajoute ici avant de l'utiliser.
 | Feuille de poule | Grille imprimée des matchs et résultats d'une poule. | `feuillePoule` |
 | Feuille de match | Feuille d'un match de tableau. | `feuilleMatch` |
 | Émargement | Pointage de la présence des tireurs le jour J. | `emargement` |
-| Catégorie | Tranche d'âge (M15, Senior, Vétéran 1…). | `categorie` |
+| Catégorie | Tranche d'âge (M15, Senior, Vétéran 1…), ou catégorie libre pour un challenge. | `categorie` |
+| Sexe d'une compétition | Hommes, Dames ou Mixte. | `sexe` : `hommes`, `dames`, `mixte` |
 
 ## Application
 

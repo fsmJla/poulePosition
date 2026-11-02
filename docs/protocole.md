@@ -196,7 +196,14 @@ Pour un e-mail inconnu, le sel renvoyé est un **faux sel stable** (`HMAC-SHA256
   "ok": true,
   "jeton": "…",
   "expireLe": 1795000000000,
-  "compte": { "email": "…", "nom": "…", "role": "organisateur", "temporaire": false, "avatar": "sarcelle" }
+  "compte": {
+    "email": "…",
+    "nom": "…",
+    "role": "organisateur",
+    "temporaire": false,
+    "avatar": "sarcelle",
+    "clubId": "…"
+  }
 }
 ```
 
@@ -207,6 +214,10 @@ Pour un e-mail inconnu, le sel renvoyé est un **faux sel stable** (`HMAC-SHA256
 - `avatar` : couleur de l'avatar (US-016), l'une de `sarcelle`, `ardoise`, `foret`, `ocre`, `brique`, `prune`, `ciel`,
   `terre` ; celle choisie par la personne, sinon une couleur par défaut déduite de son e-mail. Un serveur antérieur à
   US-016 ne l'envoie pas : l'application prend alors la couleur par défaut.
+- `clubId` : club du compte (US-025), le même que `club` dans le jeton. L'application le garde avec la session et
+  l'appareil connu, pour créer une compétition hors ligne (les événements portent le `clubId`, §10). Une session
+  ouverte auprès d'un serveur antérieur à US-025 n'en a pas : la création d'une compétition est alors refusée
+  (`CLUB_INCONNU`) jusqu'à une reconnexion en ligne.
 
 **`GET /session`** avec `Authorization: Bearer <jeton>` : vérifie la signature, l'expiration, que le compte existe,
 est **toujours actif** et que son mot de passe n'a pas changé, puis renvoie une session prolongée de 30 jours (même
@@ -420,13 +431,33 @@ Aucun autre champ n'est accepté.
 
 | Type | `donnees` | Règles |
 |---|---|---|
-| `CompetitionCreee` | `{ nom }` | Premier événement d'une compétition, une seule fois ; nom de 1 à 100 caractères, espaces autour retirés. Complété par US-025. |
+| `CompetitionCreee` | voir ci-dessous | Premier événement d'une compétition, une seule fois. |
+
+**Données de `CompetitionCreee`** (US-025) : exactement ces champs ; un champ facultatif non saisi vaut `null`.
+Le format a été complété par US-025 sans changer de version : rien n'était encore en production.
+
+| Champ | Type | Règles (domaine, `validerCompetition`) |
+|---|---|---|
+| `nom` | texte | Obligatoire, 1 à 100 caractères, espaces autour retirés |
+| `arme` | texte | `sabre`, `epee`, `fleuret` ou `sabreLaser` |
+| `typeCompetition` | texte | `individuelle`, `equipes2` ou `equipes3` |
+| `categorie` | texte ou `null` | Catégorie FFE (`M7` … `Vétéran 4`) ou texte libre, 30 caractères au plus |
+| `sexe` | texte ou `null` | `hommes`, `dames` ou `mixte` |
+| `date` | texte ou `null` | Jour `AAAA-MM-JJ` ; obligatoire et compris dans la manifestation si la compétition y est rattachée |
+| `horaires` | objet | `{ appel, scratch, debutPoules }`, chacun `HH:MM` ou `null` ; dans cet ordre (un horaire absent est sauté) |
+| `lieu` | texte ou `null` | 200 caractères au plus |
+| `commentaire` | texte ou `null` | 2 000 caractères au plus |
+| `rattachement` | objet ou `null` | `null` (isolée) ou `{ manifestationId, epreuveId }`, `epreuveId` pouvant valoir `null` |
+
+La projection ajoute le statut (`preparation`), la publication (`false`) et la formule par défaut (US-028). Les règles
+qui dépendent de la manifestation ou de l'épreuve (dates, arme de l'épreuve) sont vérifiées à la saisie, où elles
+sont connues, et non à la relecture du journal.
 
 ### Règles d'écriture et de lecture
 
 - Un événement est **écrit avant d'être affiché**. La lecture du journal, le contrôle des règles et l'écriture se
   font dans une même transaction : deux écritures ne peuvent pas prendre le même `seq`.
-- Erreurs d'écriture : le code de la règle refusée (`NOM_VIDE`, `NOM_TROP_LONG`, `COMPETITION_DEJA_CREEE`),
+- Erreurs d'écriture : le code de la règle refusée (`NOM_VIDE`, `SCRATCH_AVANT_APPEL`… ou `COMPETITION_DEJA_CREEE`),
   `JOURNAL_INCOHERENT` (on n'écrit pas à la suite d'un journal incohérent) ou `ECRITURE_IMPOSSIBLE` (IndexedDB en
   échec). Dans tous les cas, rien n'est écrit.
 - **Migration à la lecture** : un événement d'une version antérieure passe par les migrations successives
@@ -456,7 +487,7 @@ Corps (16 Ko au plus, `TAILLE_MAX_LOT`) :
 | `appareilId` | Identifiant de l'appareil (minuscules, chiffres, tirets ; un UUID), tiré une fois et gardé dans IndexedDB |
 | `depuis` | Dernier `seq` que le pilote croit confirmé ; le lot commence à `depuis + 1` |
 | `evenements` | Au moins un événement (§10), de `seq` consécutifs |
-| `resume` | Résumé calculé par le pilote pour l'index : `{ nom }` (complété par les US suivantes) |
+| `resume` | Résumé calculé par le pilote pour l'index (`resumeDe`) : `{ nom, arme, categorie, sexe, date, statut, publiee, rattachement }` (US-025), valeurs du §10 |
 
 Le DO ajoute le lot si, dans cet ordre :
 
@@ -477,14 +508,14 @@ encore été reçu.
 ### Index du club : `GET /competitions`
 
 `200 {"ok":true,"competitions":[…]}`, les plus récemment modifiées d'abord. Chaque ligne : `id`, le résumé du pilote
-(`nom`), `piloteAppareil`, `piloteNom` (nom du compte qui a envoyé le dernier lot), `dernierSeq` et `modifieeLe`
+(`nom`, `arme`, `categorie`, `sexe`, `date`, `statut`, `publiee`, `rattachement`), `piloteAppareil`, `piloteNom` (nom du compte qui a envoyé le dernier lot), `dernierSeq` et `modifieeLe`
 (date du dernier événement).
 
 ### Côté application
 
 - Une compétition créée sur un PC en fait le pilote. Le PC garde, par compétition, le dernier `seq` confirmé et,
   pour une copie, la date du téléchargement (table `competitionsLocales`).
-- L'envoi part au démarrage, à la connexion et au retour du réseau. Sans réseau, avec une session locale ou une
-  session expirée, les événements attendent dans IndexedDB, sans perte.
+- L'envoi part au démarrage, à la connexion, après chaque écriture (US-025) et au retour du réseau. Sans réseau,
+  avec une session locale ou une session expirée, les événements attendent dans IndexedDB, sans perte.
 - Une copie n'est jamais écrite localement (`PAS_PILOTE`) et ne remplace jamais le journal d'une compétition pilotée
   ici.

@@ -1,8 +1,25 @@
 import { describe, expect, it } from 'vitest';
+import type { DonneesCompetition } from './competition';
 import { appliquer, projectionVide, projeter, verifierEvenement, type Evenement, type Proposition } from './journal';
 
-const creation = (nom = 'Challenge Orpi 2027'): Proposition => ({ type: 'CompetitionCreee', donnees: { nom } });
+const donnees = (champs: Partial<DonneesCompetition> = {}): DonneesCompetition => ({
+  nom: 'Challenge Orpi 2027',
+  arme: 'sabre',
+  typeCompetition: 'individuelle',
+  categorie: 'M13',
+  sexe: 'mixte',
+  date: '2027-03-14',
+  horaires: { appel: '08:30', scratch: '09:00', debutPoules: '09:30' },
+  lieu: 'Salle Bellegrave',
+  commentaire: null,
+  rattachement: null,
+  ...champs,
+});
 
+const creation = (champs: Partial<DonneesCompetition> = {}): Proposition => ({
+  type: 'CompetitionCreee',
+  donnees: donnees(champs),
+});
 const evenement = (seq: number, proposition: Proposition = creation()): Evenement => ({
   competitionId: 'c1',
   clubId: 'pessac',
@@ -20,13 +37,31 @@ describe('journal d’une compétition (ADR-0001)', () => {
       competition: {
         id: 'c1',
         clubId: 'pessac',
-        nom: 'Challenge Orpi 2027',
+        ...donnees(),
         creeeLe: 1_800_000_000_001,
         creeePar: 'orga@club.fr',
+        statut: 'preparation',
+        publiee: false,
+        formule: { touchesPoules: 5, touchesTableau: 15, touchesRelais: null, matchTroisieme: false },
       },
       dernierSeq: 1,
       anomalie: null,
     });
+  });
+
+  it('US-025 CA-2 : la compétition créée est en préparation, non publiée, avec la formule par défaut', () => {
+    const { competition } = projeter([evenement(1, creation({ typeCompetition: 'equipes2' }))]);
+    expect(competition).toMatchObject({ statut: 'preparation', publiee: false, formule: { touchesRelais: 20 } });
+  });
+
+  it('US-025 CA-5 : refuse des horaires incohérents dans le journal', () => {
+    const horaires = { appel: '09:00', scratch: '08:00', debutPoules: null };
+    expect(verifierEvenement(projectionVide(), creation({ horaires }))).toBe('SCRATCH_AVANT_APPEL');
+  });
+
+  it('US-025 cas limite : les textes facultatifs sont enregistrés sans les espaces autour', () => {
+    const { competition } = projeter([evenement(1, creation({ lieu: '  ', commentaire: ' Buvette ' }))]);
+    expect(competition).toMatchObject({ lieu: null, commentaire: 'Buvette' });
   });
 
   it('US-021 CA-2 : le même journal donne toujours la même projection', () => {
@@ -41,9 +76,9 @@ describe('journal d’une compétition (ADR-0001)', () => {
   });
 
   it('US-021 CA-4 : refuse un nom vide ou trop long', () => {
-    expect(verifierEvenement(projectionVide(), creation('   '))).toBe('NOM_VIDE');
-    expect(verifierEvenement(projectionVide(), creation('x'.repeat(101)))).toBe('NOM_TROP_LONG');
-    expect(verifierEvenement(projectionVide(), creation('x'.repeat(100)))).toBeNull();
+    expect(verifierEvenement(projectionVide(), creation({ nom: '   ' }))).toBe('NOM_VIDE');
+    expect(verifierEvenement(projectionVide(), creation({ nom: 'x'.repeat(101) }))).toBe('NOM_TROP_LONG');
+    expect(verifierEvenement(projectionVide(), creation({ nom: 'x'.repeat(100) }))).toBeNull();
   });
 
   it('US-021 CA-4 : refuse une deuxième création de la même compétition', () => {
@@ -51,7 +86,7 @@ describe('journal d’une compétition (ADR-0001)', () => {
   });
 
   it('US-021 CA-4 : le nom est enregistré sans les espaces autour', () => {
-    expect(appliquer(projectionVide(), evenement(1, creation('  Orpi  '))).competition?.nom).toBe('Orpi');
+    expect(appliquer(projectionVide(), evenement(1, creation({ nom: '  Orpi  ' }))).competition?.nom).toBe('Orpi');
   });
 
   it('US-021 cas limite : un trou de seq arrête la projection au dernier événement cohérent', () => {

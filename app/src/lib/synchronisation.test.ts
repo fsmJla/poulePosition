@@ -6,7 +6,21 @@ import { ouvrirJournal, type Contexte, type Journal } from './journal';
 import { creerSynchronisation } from './synchronisation';
 
 const URL_SERVEUR = 'http://serveur.test';
-const creation = (nom = 'Challenge Orpi 2027'): Proposition => ({ type: 'CompetitionCreee', donnees: { nom } });
+const creation = (nom = 'Challenge Orpi 2027'): Proposition => ({
+  type: 'CompetitionCreee',
+  donnees: {
+    nom,
+    arme: 'sabre',
+    typeCompetition: 'individuelle',
+    categorie: 'M13',
+    sexe: null,
+    date: '2027-03-14',
+    horaires: { appel: null, scratch: null, debutPoules: null },
+    lieu: null,
+    commentaire: null,
+    rattachement: null,
+  },
+});
 let horloge = 1_800_000_000_000;
 const contexte: Contexte = { clubId: 'pessac', auteur: 'orga@club.fr', maintenant: () => ++horloge };
 
@@ -252,5 +266,52 @@ describe('compétitions des autres PC (ADR-0016)', () => {
     expect(await synchronisation.envoyer('c1')).toBe('en-attente');
     expect(await synchronisation.enAttente('c1')).toBe(1);
     expect(serveur.envoyer).not.toHaveBeenCalled();
+  });
+});
+
+describe('création d’une compétition (US-025)', () => {
+  it('US-025 CA-2 : le résumé envoyé à l’index du club est calculé depuis la projection', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation(), contexte);
+    await synchro(journal, serveur).envoyer('c1');
+    const resultat = await synchro(journal, serveur).listerCompetitionsDuClub();
+    expect(resultat).toMatchObject({
+      ok: true,
+      competitions: [
+        {
+          id: 'c1',
+          nom: 'Challenge Orpi 2027',
+          arme: 'sabre',
+          categorie: 'M13',
+          sexe: null,
+          date: '2027-03-14',
+          statut: 'preparation',
+          publiee: false,
+          rattachement: null,
+        },
+      ],
+    });
+  });
+
+  it('US-025 CA-6 : créée hors ligne, elle est gardée localement puis envoyée au retour du réseau', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    let enLigne = false;
+    const synchronisation = synchro(journal, serveur, { enLigne: () => enLigne });
+    await journal.enregistrer('c1', creation(), contexte);
+    expect(await synchronisation.envoyer('c1')).toBe('en-attente');
+    expect(await synchronisation.enAttente('c1')).toBe(1);
+    expect(await synchronisation.jamaisEnvoyee('c1')).toBe(true);
+    expect(serveur.envoyer).not.toHaveBeenCalled();
+
+    const cible = new EventTarget();
+    const arreter = synchronisation.surveiller(cible);
+    enLigne = true;
+    cible.dispatchEvent(new Event('online'));
+    await vi.waitFor(async () => expect(await synchronisation.enAttente('c1')).toBe(0));
+    arreter();
+    expect(serveur.journaux.get('c1')?.evenements).toHaveLength(1);
+    expect(await synchronisation.jamaisEnvoyee('c1')).toBe(false);
   });
 });

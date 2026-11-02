@@ -101,6 +101,7 @@ describe('changement de mot de passe', () => {
       role: 'administrateur',
       temporaire: false,
       avatar: couleurParDefaut(EMAIL),
+      clubId: expect.any(String),
     });
 
     // CA-1 : l'ancien mot de passe est refusé, le nouveau accepté.

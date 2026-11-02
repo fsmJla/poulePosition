@@ -79,6 +79,7 @@ describe('connexion', () => {
       role: 'administrateur',
       temporaire: false,
       avatar: couleurParDefaut(EMAIL),
+      clubId: CLUB_ID,
     });
     expect(corps.expireLe).toBeGreaterThanOrEqual(avant + DUREE_SESSION - 1000);
     expect(corps.expireLe).toBeLessThanOrEqual(Date.now() + DUREE_SESSION);

@@ -65,9 +65,15 @@ modification grisées avec « Nécessite une connexion internet ».
 ## Notes techniques
 
 - Même stockage que les manifestations (ADR-0016).
+- **Reporté d'US-025** (décision du 2026-11-02) : dans le formulaire « Nouvelle compétition », le sélecteur de
+  rattachement (« Aucun », une manifestation, une épreuve d'une manifestation), le préremplissage du lieu et de
+  l'arme, la date proposée parmi les jours de la manifestation et le message « La date doit être comprise entre le
+  … et le … », avec leurs E2E (US-025 CA-3 et CA-4). Les règles sont déjà dans le domaine (`validerCompetition`
+  avec un `CadreRattachement`, `preremplir`, `joursDeManifestation`) et l'événement porte déjà `rattachement`.
 
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-11-02 | Reçoit d'US-025 le sélecteur de rattachement du formulaire de création d'une compétition (CA-3, CA-4) |

@@ -46,6 +46,11 @@ export interface CompteConnecte {
   temporaire: boolean;
   /** Couleur de l'avatar (US-016). */
   avatar: CouleurAvatar;
+  /**
+   * Club du compte (US-025), gardé avec la session et l'appareil connu pour créer une compétition hors ligne. Absent
+   * d'une session ouverte auprès d'un serveur antérieur à US-025, jusqu'à sa revalidation en ligne.
+   */
+  clubId?: string;
 }
 
 export interface Session {
@@ -125,12 +130,20 @@ export function analyserReponseSel(brut: unknown): { ok: true; sel: string } | {
 
 function analyserCompte(brut: unknown): CompteConnecte | null {
   if (!estObjet(brut)) return null;
-  const { email, nom, role, temporaire, avatar } = brut;
+  const { email, nom, role, temporaire, avatar, clubId } = brut;
   if (typeof email !== 'string' || typeof nom !== 'string' || typeof temporaire !== 'boolean') return null;
   if (!(ROLES as readonly unknown[]).includes(role)) return null;
   // US-016 : un serveur d'avant US-016 n'envoie pas la couleur ; on prend alors celle par défaut du compte.
   if (avatar !== undefined && !estCouleurAvatar(avatar)) return null;
-  return { email, nom, role: role as Role, temporaire, avatar: avatar ?? couleurParDefaut(email) };
+  if (clubId !== undefined && (typeof clubId !== 'string' || clubId === '')) return null;
+  return {
+    email,
+    nom,
+    role: role as Role,
+    temporaire,
+    avatar: avatar ?? couleurParDefaut(email),
+    ...(clubId !== undefined && { clubId }),
+  };
 }
 
 export function analyserReponseSession(

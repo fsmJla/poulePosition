@@ -2,7 +2,7 @@
 // le PC pilote (IndexedDB) et le serveur (réplication, US-022). Un ancien format est migré à la lecture, sans réécrire
 // le journal (ADR-0001).
 import type { Evenement } from '@poule-position/domaine';
-import { aExactementLesChamps } from './validation';
+import { aExactementLesChamps, estRattachement, estTexteOuNull } from './validation';
 
 /** Version courante du format des événements. */
 export const VERSION_JOURNAL = 1;
@@ -38,8 +38,31 @@ function estEvenement(objet: Record<string, unknown>): objet is Evenement {
   );
 }
 
+const CHAMPS_COMPETITION = [
+  'nom',
+  'arme',
+  'typeCompetition',
+  'categorie',
+  'sexe',
+  'date',
+  'horaires',
+  'lieu',
+  'commentaire',
+  'rattachement',
+];
+
+/** Forme des données (US-025) ; les valeurs (arme connue, horaires cohérents…) sont des règles du domaine. */
 function donneesValides(type: unknown, donnees: unknown): boolean {
   if (type !== 'CompetitionCreee') return false;
-  const champs = aExactementLesChamps(donnees, ['nom']);
-  return champs !== null && typeof champs.nom === 'string';
+  const champs = aExactementLesChamps(donnees, CHAMPS_COMPETITION);
+  if (!champs) return false;
+  const { nom, arme, typeCompetition, categorie, sexe, date, lieu, commentaire } = champs;
+  const horaires = aExactementLesChamps(champs.horaires, ['appel', 'scratch', 'debutPoules']);
+  return (
+    [nom, arme, typeCompetition].every((texte) => typeof texte === 'string') &&
+    [categorie, sexe, date, lieu, commentaire].every(estTexteOuNull) &&
+    horaires !== null &&
+    Object.values(horaires).every(estTexteOuNull) &&
+    estRattachement(champs.rattachement)
+  );
 }
