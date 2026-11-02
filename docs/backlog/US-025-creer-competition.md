@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-021, US-022 ; US-024 pour le rattachement à une épreuve
 - **Branche / PR :** `us/US-025-creer-competition`
 
@@ -78,6 +78,9 @@ dernière copie gardée sur l'appareil. La compétition apparaît chez les autre
 - Le sexe « Mixte » s'ajoute aux deux valeurs des exigences.
 - Pas de contrôle d'unicité du nom : deux compétitions peuvent porter le même nom.
 - La date d'une compétition isolée reste facultative (exigences F2).
+- Ajoutées à l'implémentation (2026-11-02) : lieu de 200 caractères au plus ; sans scratch, le début des poules est
+  comparé à l'appel ; une session sans `clubId` (ouverte avant US-025) refuse la création jusqu'à une reconnexion en
+  ligne.
 
 ## Questions bloquantes
 
@@ -125,3 +128,4 @@ dernière copie gardée sur l'appareil. La compétition apparaît chez les autre
 |---|---|
 | 2026-10-28 | Créée |
 | 2026-11-02 | Démarrée ; décisions : règles de CA-3 et CA-4 dans le domaine, sélecteur de rattachement et ses E2E reportés à US-024 ; format du journal complété sans changer de version (rien en production) ; formule par défaut calculée dans la projection |
+| 2026-11-02 | Implémentée (domaine, protocole, serveur, formulaire et page de la compétition, E2E) ; PR vers `dev` |
