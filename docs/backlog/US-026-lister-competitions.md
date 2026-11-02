@@ -58,6 +58,8 @@ créations de manifestation et d'épreuve sont grisées.
 
 - Compétition locale pas encore envoyée : marquée « Pas encore envoyée ».
 - Une centaine d'éléments sur un an : la liste reste lisible (manifestations repliables).
+- Ligne illisible dans l'index du club (format plus ancien, ou réponse en partie abîmée) : elle est ignorée et les
+  autres compétitions s'affichent. La liste entière n'est pas refusée.
 
 ## Hypothèses
 
@@ -73,9 +75,16 @@ créations de manifestation et d'épreuve sont grisées.
 - Impacte la page `Organisateur.svelte` (US-003, US-007, US-017).
 - Reporté d'US-022 : afficher « Pas encore envoyée », le nombre de modifications en attente d'envoi et la date de
   la copie hors ligne, à partir des fonctions de `app/src/lib/synchronisation.ts`.
+- **Index du club tolérant** (constat de la recette d'US-025, 2026-11-03) : l'index de la preview contient 2 lignes
+  au format d'US-022 (résumé `{ nom }` seul). Aujourd'hui, `analyserReponseCompetitions`
+  (`paquets/protocole/src/competitions.ts`) rejette toute la réponse (`REPONSE_INVALIDE`) dès qu'une ligne est
+  illisible. À changer : ignorer les lignes illisibles et garder les autres, avec un test. Une ligne d'une compétition
+  encore pilotée se corrige au prochain lot envoyé (ADR-0016) ; une compétition de test abandonnée reste simplement
+  absente de la liste.
 
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-11-03 | Ajout du cas limite « ligne illisible dans l’index du club » (constat de la recette d’US-025) |
