@@ -4,6 +4,7 @@ export * from './competition';
 export * from './comptes';
 export * from './essais';
 export * from './journal';
+export * from './manifestation';
 export * from './reinitialisation';
 export * from './sessions';
 export { calculerIndice, type Touches } from './indice';

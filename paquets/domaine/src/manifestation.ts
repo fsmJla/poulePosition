@@ -1,0 +1,92 @@
+// Règles d'une manifestation (US-023) : champs et dates, compétitions rattachées hors des dates, manifestation vide.
+// Une manifestation n'a ni journal ni pilote : elle est stockée par le serveur avec un numéro de version (ADR-0016).
+import { estDate, LONGUEUR_MAX_COMMENTAIRE, LONGUEUR_MAX_LIEU, type Rattachement } from './competition';
+import { validerNom } from './comptes';
+
+/** Champs saisis d'une manifestation ; dates au format `AAAA-MM-JJ`, texte facultatif non saisi : null. */
+export interface DonneesManifestation {
+  nom: string;
+  debut: string;
+  fin: string;
+  lieu: string | null;
+  commentaire: string | null;
+}
+
+export type ErreurManifestation =
+  | 'NOM_VIDE'
+  | 'NOM_TROP_LONG'
+  | 'DATE_OBLIGATOIRE'
+  | 'DATE_INVALIDE'
+  | 'FIN_AVANT_DEBUT'
+  | 'LIEU_TROP_LONG'
+  | 'COMMENTAIRE_TROP_LONG';
+
+/** Une erreur par champ, pour l'afficher sous le champ en cause. */
+export type ErreursManifestation = Partial<Record<keyof DonneesManifestation, ErreurManifestation>>;
+
+/** Ce qu'il faut savoir d'une compétition pour la confronter à une manifestation (résumé de l'index du club). */
+export interface CompetitionRattachee {
+  id: string;
+  nom: string;
+  date: string | null;
+  rattachement: Rattachement | null;
+}
+
+/** Textes sans les espaces autour ; un texte facultatif vide devient absent. */
+export function normaliserManifestation(donnees: DonneesManifestation): DonneesManifestation {
+  const facultatif = (texte: string | null) => texte?.trim() || null;
+  return {
+    ...donnees,
+    nom: donnees.nom.trim(),
+    lieu: facultatif(donnees.lieu),
+    commentaire: facultatif(donnees.commentaire),
+  };
+}
+
+function erreurDate(date: string): ErreurManifestation | null {
+  if (date === '') return 'DATE_OBLIGATOIRE';
+  return estDate(date) ? null : 'DATE_INVALIDE';
+}
+
+/** CA-1 et CA-3 : erreurs de la saisie, une par champ ({} si elle est valide). */
+export function validerManifestation(saisie: DonneesManifestation): ErreursManifestation {
+  const donnees = normaliserManifestation(saisie);
+  const erreurs: ErreursManifestation = {};
+  const nom = validerNom(donnees.nom);
+  if (nom) erreurs.nom = nom as ErreurManifestation;
+  const debut = erreurDate(donnees.debut);
+  if (debut) erreurs.debut = debut;
+  const fin = erreurDate(donnees.fin);
+  if (fin) erreurs.fin = fin;
+  // Les jours `AAAA-MM-JJ` se comparent comme des textes ; une manifestation peut durer un seul jour.
+  else if (!debut && donnees.fin < donnees.debut) erreurs.fin = 'FIN_AVANT_DEBUT';
+  if ((donnees.lieu?.length ?? 0) > LONGUEUR_MAX_LIEU) erreurs.lieu = 'LIEU_TROP_LONG';
+  if ((donnees.commentaire?.length ?? 0) > LONGUEUR_MAX_COMMENTAIRE) erreurs.commentaire = 'COMMENTAIRE_TROP_LONG';
+  return erreurs;
+}
+
+const estRattachee = (manifestationId: string, { rattachement }: Pick<CompetitionRattachee, 'rattachement'>) =>
+  rattachement?.manifestationId === manifestationId;
+
+/** CA-4 : compétitions de la manifestation dont la date ne serait plus comprise entre `debut` et `fin`. */
+export function competitionsHorsDates<T extends CompetitionRattachee>(
+  manifestationId: string,
+  debut: string,
+  fin: string,
+  competitions: readonly T[],
+): T[] {
+  return competitions.filter(
+    (competition) =>
+      estRattachee(manifestationId, competition) &&
+      competition.date !== null &&
+      (competition.date < debut || competition.date > fin),
+  );
+}
+
+/** CA-5 : vrai si aucune compétition ne se rattache à la manifestation (les épreuves s'y ajouteront, US-024). */
+export function estVide(
+  manifestationId: string,
+  competitions: readonly Pick<CompetitionRattachee, 'rattachement'>[],
+): boolean {
+  return !competitions.some((competition) => estRattachee(manifestationId, competition));
+}
