@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-021, US-022 ; US-024 pour le rattachement à une épreuve
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-025-creer-competition`
 
 ## Récit
 
@@ -100,3 +100,4 @@ dernière copie gardée sur l'appareil. La compétition apparaît chez les autre
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-11-02 | Démarrée ; décisions : règles de CA-3 et CA-4 dans le domaine, sélecteur de rattachement et ses E2E reportés à US-024 ; format du journal complété sans changer de version (rien en production) ; formule par défaut calculée dans la projection |
