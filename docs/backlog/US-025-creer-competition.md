@@ -94,6 +94,30 @@ dernière copie gardée sur l'appareil. La compétition apparaît chez les autre
   d'écriture (`ECRITURE_IMPOSSIBLE`).
 - Reporté d'US-022 : sur la page de la compétition, afficher « n modifications en attente d'envoi » (`enAttente`) et
   déclencher l'envoi après chaque écriture (`synchroniser`).
+- **Décisions du 2026-11-02** (manifestations et épreuves pas encore réalisées) :
+  - CA-3 et CA-4 : les règles sont dans le domaine et testées (`validerCompetition` avec un `CadreRattachement`,
+    `preremplir`, `joursDeManifestation`), et le champ `rattachement` est dans l'événement. Le **sélecteur** du
+    formulaire (« Aucun », manifestation, épreuve), le préremplissage à l'écran, le message « hors manifestation »
+    et leurs E2E sont **reportés à US-024**. D'ici là, la compétition est créée isolée.
+  - Format du journal : `CompetitionCreee` est complété **sans changer `VERSION_JOURNAL`** (rien en production).
+    Les compétitions de test des recettes d'US-021 et US-022 deviennent illisibles. Avant la recette, il faut vider la
+    base locale du navigateur et l'index du club de la preview.
+  - Formule : la formule par défaut est calculée dans la projection (`formuleParDefaut`), sans événement. La page
+    « Formule » relève d'US-028.
+- Réalisé :
+  - `paquets/domaine/src/competition.ts` : listes (armes, types, catégories, sexes, statuts), validation, formule par
+    défaut ; `journal.ts` : `Competition` complète (statut, publication, formule) ;
+  - `paquets/protocole` : format des données de `CompetitionCreee`, résumé de l'index (`resumeDe`), `clubId` dans
+    `CompteConnecte` (absent d'une session d'avant US-025) ;
+  - `serveur` : `clubId` renvoyé avec la session ;
+  - `app` : `lib/competitions.ts` (saisie, création), routes `/competitions/nouvelle` et `/competitions/<id>`,
+    pages `NouvelleCompetition` et `Competition` (statut, publication, pilote, « n modifications en attente
+    d'envoi · Pas encore envoyée », lecture seule dans un autre onglet ou sur un autre PC avec « Copie du … »),
+    lien « Nouvelle compétition » sur l'accueil de l'organisateur (la liste viendra avec US-026), club gardé avec
+    l'appareil connu.
+- Tests : `competition.test.ts` et `journal.test.ts` (domaine), `journal`, `competitions` et `session` (protocole),
+  `competitions`, `journal`, `synchronisation`, `session`, `routes` et `textes` (app), E2E
+  `tests/e2e/competitions.spec.ts` (CA-1, CA-2, CA-5, CA-6 hors ligne, cas limites, deuxième onglet).
 
 ## Suivi
 
