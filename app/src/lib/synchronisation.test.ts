@@ -315,3 +315,28 @@ describe('création d’une compétition (US-025)', () => {
     expect(await synchronisation.jamaisEnvoyee('c1')).toBe(false);
   });
 });
+
+describe('compétitions connues (US-023 CA-4)', () => {
+  it('US-023 CA-4 : réunit l’index du club et les compétitions de cet appareil, même pas encore envoyées', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation('Envoyée'), contexte);
+    await synchro(journal, serveur).envoyer('c1');
+    const autrePc = nouveauJournal();
+    await autrePc.enregistrer('c2', creation('Autre PC'), contexte);
+    await synchro(autrePc, serveur, { enLigne: () => false }).envoyer('c2');
+    await journal.enregistrer('c3', creation('Locale'), contexte);
+
+    const competitions = await synchro(journal, serveur).competitionsConnues();
+    expect(competitions.map(({ id, nom }) => `${id}:${nom}`).sort()).toEqual(['c1:Envoyée', 'c3:Locale']);
+    expect(competitions[0]).toMatchObject({ date: '2027-03-14', rattachement: null });
+  });
+
+  it('US-023 hors ligne : sans index, seules les compétitions de cet appareil sont connues', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation('Locale'), contexte);
+    const competitions = await synchro(journal, serveur, { enLigne: () => false }).competitionsConnues();
+    expect(competitions.map(({ id }) => id)).toEqual(['c1']);
+  });
+});

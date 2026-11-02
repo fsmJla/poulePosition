@@ -2,7 +2,7 @@
 // lots, les événements qui suivent le dernier seq confirmé ; les autres PC du club listent les compétitions et en
 // téléchargent une copie en lecture seule. Sans réseau, rien n'est perdu : les événements attendent dans IndexedDB et
 // partent au retour de la connexion.
-import type { Projection } from '@poule-position/domaine';
+import type { CompetitionRattachee, Projection } from '@poule-position/domaine';
 import {
   analyserReponseCompetitions,
   analyserReponseEnvoi,
@@ -168,6 +168,28 @@ export function creerSynchronisation({
       } catch {
         return { ok: false, erreur: 'HORS_LIGNE' };
       }
+    },
+
+    /**
+     * US-023 CA-4 : compétitions du club connues de cet appareil, pour les confronter aux dates d'une manifestation :
+     * l'index du club (s'il est joignable) et les compétitions gardées ici, y compris celles pas encore envoyées, dont
+     * la version locale l'emporte.
+     */
+    async competitionsConnues(): Promise<CompetitionRattachee[]> {
+      const connues = new Map<string, CompetitionRattachee>();
+      const index = await this.listerCompetitionsDuClub();
+      if (index.ok) {
+        for (const { id, nom, date, rattachement } of index.competitions)
+          connues.set(id, { id, nom, date, rattachement });
+      }
+      for (const { competitionId } of await journal.competitionsLocales()) {
+        const { competition } = await journal.lire(competitionId);
+        if (competition) {
+          const { id, nom, date, rattachement } = competition;
+          connues.set(id, { id, nom, date, rattachement });
+        }
+      }
+      return [...connues.values()];
     },
 
     /**
