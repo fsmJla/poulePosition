@@ -78,7 +78,9 @@ créations de manifestation et d'épreuve sont grisées.
 - **Index du club tolérant** (constat de la recette d'US-025, 2026-11-03) : l'index de la preview contient 2 lignes
   au format d'US-022 (résumé `{ nom }` seul). Aujourd'hui, `analyserReponseCompetitions`
   (`paquets/protocole/src/competitions.ts`) rejette toute la réponse (`REPONSE_INVALIDE`) dès qu'une ligne est
-  illisible. À changer : ignorer les lignes illisibles et garder les autres, avec un test. Une ligne d'une compétition
+  illisible. **Fait par US-023** (2026-11-03), qui en avait besoin pour vérifier les dates d'une manifestation (CA-4) :
+  les lignes illisibles sont ignorées, les autres gardées (test `competitions.test.ts`). Reste à couvrir ce cas
+  limite par un test de la liste affichée. Une ligne d'une compétition
   encore pilotée se corrige au prochain lot envoyé (ADR-0016) ; une compétition de test abandonnée reste simplement
   absente de la liste.
 

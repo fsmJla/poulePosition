@@ -163,10 +163,13 @@ function analyserIndexee(brut: unknown): CompetitionIndexee | null {
   return objet as unknown as CompetitionIndexee;
 }
 
+/**
+ * Index des compétitions du club. Une ligne illisible (format plus ancien, ligne abîmée) est ignorée : les autres
+ * compétitions restent listées (US-026, avancé par US-023 pour vérifier les dates d'une manifestation).
+ */
 export function analyserReponseCompetitions(brut: unknown): ReponseCompetitions {
   if (!estObjet(brut) || brut.ok !== true) return erreurDe(brut);
   if (!Array.isArray(brut.competitions)) return { ok: false, erreur: 'REPONSE_INVALIDE' };
   const competitions = brut.competitions.map(analyserIndexee);
-  if (competitions.some((competition) => competition === null)) return { ok: false, erreur: 'REPONSE_INVALIDE' };
-  return { ok: true, competitions: competitions as CompetitionIndexee[] };
+  return { ok: true, competitions: competitions.filter((competition) => competition !== null) };
 }

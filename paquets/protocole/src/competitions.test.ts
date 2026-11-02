@@ -162,8 +162,8 @@ describe('réponses du serveur', () => {
       competitions: [indexee],
     });
     expect(analyserReponseCompetitions({ ok: true, competitions: [{ ...indexee, dernierSeq: '1' }] })).toEqual({
-      ok: false,
-      erreur: 'REPONSE_INVALIDE',
+      ok: true,
+      competitions: [],
     });
     expect(analyserReponseCompetitions({ ok: true, competitions: 'non' })).toEqual({
       ok: false,
@@ -196,8 +196,25 @@ describe('résumé d’une compétition pour l’index du club (US-025)', () => 
       competitions: [sansDetails],
     });
     expect(analyserReponseCompetitions({ ok: true, competitions: [{ ...indexee, arme: 'pistolet' }] })).toEqual({
-      ok: false,
-      erreur: 'REPONSE_INVALIDE',
+      ok: true,
+      competitions: [],
+    });
+  });
+});
+
+describe('lignes illisibles de l’index du club (US-026, avancé par US-023)', () => {
+  it('cas limite : une ligne illisible (format d’US-022) est ignorée, les autres sont gardées', () => {
+    const ancienne = {
+      id: 'c0',
+      nom: 'Ancienne',
+      piloteAppareil: 'pc-a',
+      piloteNom: 'Orga',
+      dernierSeq: 1,
+      modifieeLe: 1,
+    };
+    expect(analyserReponseCompetitions({ ok: true, competitions: [ancienne, indexee, null] })).toEqual({
+      ok: true,
+      competitions: [indexee],
     });
   });
 });
