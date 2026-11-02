@@ -51,6 +51,8 @@
 | `GET /competitions` | Index des compétitions du club (§11, US-022) |
 | `GET /competitions/<competitionId>/evenements` | Télécharger le journal d'une compétition (§11) |
 | `POST /competitions/<competitionId>/evenements` | Envoyer un lot d'événements du PC pilote (§11) |
+| `GET /manifestations`, `POST /manifestations` | Lister et créer les manifestations du club (§12, US-023) |
+| `PATCH /manifestations/<id>`, `DELETE /manifestations/<id>` | Modifier ou supprimer une manifestation (§12) |
 | `OPTIONS` sur ces routes | Requête CORS préalable (§7) ; méthodes `GET, POST, PATCH, DELETE` |
 | WebSocket `/competitions/<competitionId>/connexion` | Connexion à une compétition (§3) |
 | Tout autre chemin | `404` |
@@ -508,8 +510,11 @@ encore été reçu.
 ### Index du club : `GET /competitions`
 
 `200 {"ok":true,"competitions":[…]}`, les plus récemment modifiées d'abord. Chaque ligne : `id`, le résumé du pilote
-(`nom`, `arme`, `categorie`, `sexe`, `date`, `statut`, `publiee`, `rattachement`), `piloteAppareil`, `piloteNom` (nom du compte qui a envoyé le dernier lot), `dernierSeq` et `modifieeLe`
-(date du dernier événement).
+(`nom`, `arme`, `categorie`, `sexe`, `date`, `statut`, `publiee`, `rattachement`), `piloteAppareil`, `piloteNom`
+(nom du compte qui a envoyé le dernier lot), `dernierSeq` et `modifieeLe` (date du dernier événement).
+
+L'application ignore une ligne illisible (format plus ancien, ligne abîmée) et garde les autres (US-023, pour
+US-026).
 
 ### Côté application
 
@@ -519,3 +524,48 @@ encore été reçu.
   avec une session locale ou une session expirée, les événements attendent dans IndexedDB, sans perte.
 - Une copie n'est jamais écrite localement (`PAS_PILOTE`) et ne remplace jamais le journal d'une compétition pilotée
   ici.
+
+## 12. Manifestations du club (US-023, ADR-0016 §4)
+
+Une manifestation regroupe des épreuves et des compétitions sur un ou plusieurs jours. Ce sont des données du club,
+stockées par le DO `Club` (table `manifestations`, avec le `clubId`) : ni journal ni pilote. Elles ne se créent et ne
+se modifient qu'**en ligne** ; un **numéro de version** refuse l'écrasement d'une modification concurrente.
+
+Les quatre routes demandent une **session valide** et un mot de passe définitif (sinon `403 ACCES_REFUSE`), pour tout
+rôle. Même CORS qu'au §7.
+
+**Champs saisis** (exactement ceux-ci ; règles du domaine, `validerManifestation`) :
+
+| Champ | Type | Règles |
+|---|---|---|
+| `nom` | texte | Obligatoire, 1 à 100 caractères, espaces autour retirés |
+| `debut`, `fin` | texte | Jours `AAAA-MM-JJ`, obligatoires ; `fin` égale ou postérieure à `debut` (un seul jour possible) |
+| `lieu` | texte ou `null` | 200 caractères au plus |
+| `commentaire` | texte ou `null` | 2 000 caractères au plus |
+
+**Manifestation renvoyée** : les champs saisis, plus `id` (UUID tiré par le serveur), `version` (1 à la création,
+puis + 1 à chaque modification), `modifieeLe` (millisecondes) et `modifieePar` (nom du compte de la dernière
+écriture).
+
+| Route | Corps | Réponse |
+|---|---|---|
+| `GET /manifestations` | — | `200 {"ok":true,"manifestations":[…]}`, triées par date de début |
+| `POST /manifestations` | Champs saisis | `201 {"ok":true,"manifestation":{…}}` |
+| `PATCH /manifestations/<id>` | Champs saisis et `version` (celle sur laquelle la modification s'appuie) | `200 {"ok":true,"manifestation":{…}}` |
+| `DELETE /manifestations/<id>` | — | `200 {"ok":true}` |
+
+**Erreurs** : `400 DEMANDE_INVALIDE` (corps mal formé ou refusé par les règles), `404 MANIFESTATION_INCONNUE`,
+`409 MODIFIEE_ENTRE_TEMPS` avec la version courante (`{"ok":false,"erreur":…,"manifestation":{…}}`, l'application
+affiche « Modifié entre-temps par <modifieePar> : rechargez ») et `409 MANIFESTATION_NON_VIDE` : une compétition de
+l'index du club s'y rattache (`rattachement.manifestationId`), la suppression est refusée. Les épreuves s'ajouteront à
+ce contrôle avec US-024 ; une manifestation non vide s'archivera (US-033).
+
+### Côté application
+
+- La dernière liste reçue est gardée dans IndexedDB (table `copieManifestations`, base locale en version 5), avec sa
+  date. Hors ligne, elle reste consultable (« Hors ligne : liste du … ») ; création, modification et suppression
+  sont grisées (« Nécessite une connexion internet »).
+- **Dates et compétitions rattachées** (US-023 CA-4) : avant d'envoyer une modification, l'application confronte les
+  nouvelles dates aux compétitions connues de l'appareil (index du club et compétitions gardées localement, y compris
+  pas encore envoyées) et refuse en citant celles qui sortiraient des dates. Le serveur ne fait pas ce contrôle : il
+  n'a aucune règle d'escrime.
