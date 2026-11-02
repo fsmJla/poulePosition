@@ -93,7 +93,7 @@
     {/if}
     {#if pilote && enAttente > 0}
       <p class="envoi" role="status">
-        {t.enAttente(enAttente)}{#if jamaisEnvoyee}<span> · {t.pasEncoreEnvoyee}</span>{/if}
+        {jamaisEnvoyee ? `${t.enAttente(enAttente)} · ${t.pasEncoreEnvoyee}` : t.enAttente(enAttente)}
       </p>
     {/if}
 
