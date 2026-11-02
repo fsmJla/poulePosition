@@ -1,12 +1,20 @@
 // Journal d'une compétition (ADR-0001, US-021) : l'état est recalculé à partir de la suite ordonnée des événements.
 // Les règles sont pures : le stockage du journal et la migration de son format sont faits ailleurs.
-import { validerNom } from './comptes';
+import {
+  formuleParDefaut,
+  normaliserCompetition,
+  validerCompetition,
+  type DonneesCompetition,
+  type ErreurCompetition,
+  type Formule,
+  type Statut,
+} from './competition';
 
 /** Origine d'un événement : le clavier du PC pilote (les saisies smartphone viendront avec E5). */
 export type Source = 'clavier';
 
 /** Ce que l'application demande d'enregistrer. */
-export type Proposition = { type: 'CompetitionCreee'; donnees: { nom: string } };
+export type Proposition = { type: 'CompetitionCreee'; donnees: DonneesCompetition };
 
 /** Événement enregistré : la proposition acceptée, avec son en-tête. */
 export type Evenement = {
@@ -23,12 +31,17 @@ export type Evenement = {
   source: Source;
 } & Proposition;
 
-export interface Competition {
+export interface Competition extends DonneesCompetition {
   id: string;
   clubId: string;
-  nom: string;
   creeeLe: number;
   creeePar: string;
+  /** US-025 CA-2 : « En préparation » à la création. */
+  statut: Statut;
+  /** US-025 CA-2 : non publiée à la création (US-031). */
+  publiee: boolean;
+  /** US-025 CA-2 : formule par défaut à la création (US-028). */
+  formule: Formule;
 }
 
 /**
@@ -46,16 +59,19 @@ export interface Projection {
   anomalie: AnomalieJournal | null;
 }
 
-export type ErreurEvenement = 'NOM_VIDE' | 'NOM_TROP_LONG' | 'COMPETITION_DEJA_CREEE';
+export type ErreurEvenement = ErreurCompetition | 'COMPETITION_DEJA_CREEE';
 
 export function projectionVide(): Projection {
   return { competition: null, dernierSeq: 0, anomalie: null };
 }
 
-/** Code de l'erreur qui interdit d'enregistrer la proposition, ou null si elle est acceptée (CA-4). */
+/**
+ * Code de l'erreur qui interdit d'enregistrer la proposition, ou null si elle est acceptée (US-021 CA-4). Les règles
+ * qui dépendent de la manifestation (US-025 CA-3 et CA-4) sont vérifiées à la saisie, où elle est connue.
+ */
 export function verifierEvenement(projection: Projection, proposition: Proposition): ErreurEvenement | null {
   if (projection.competition) return 'COMPETITION_DEJA_CREEE';
-  return validerNom(proposition.donnees.nom) as ErreurEvenement | null;
+  return Object.values(validerCompetition(proposition.donnees))[0] ?? null;
 }
 
 /** Projection après un événement déjà vérifié. */
@@ -63,7 +79,16 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
   const { competitionId, clubId, date, auteur, donnees } = evenement;
   return {
     ...projection,
-    competition: { id: competitionId, clubId, nom: donnees.nom.trim(), creeeLe: date, creeePar: auteur },
+    competition: {
+      id: competitionId,
+      clubId,
+      ...normaliserCompetition(donnees),
+      creeeLe: date,
+      creeePar: auteur,
+      statut: 'preparation',
+      publiee: false,
+      formule: formuleParDefaut(donnees.typeCompetition),
+    },
     dernierSeq: evenement.seq,
   };
 }
