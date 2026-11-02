@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-021, US-022 ; US-024 pour le rattachement à une épreuve
 - **Branche / PR :** `us/US-025-creer-competition` · [PR #43](https://github.com/fsmJla/poulePosition/pull/43)
 
@@ -129,3 +129,4 @@ dernière copie gardée sur l'appareil. La compétition apparaît chez les autre
 | 2026-10-28 | Créée |
 | 2026-11-02 | Démarrée ; décisions : règles de CA-3 et CA-4 dans le domaine, sélecteur de rattachement et ses E2E reportés à US-024 ; format du journal complété sans changer de version (rien en production) ; formule par défaut calculée dans la projection |
 | 2026-11-02 | Implémentée (domaine, protocole, serveur, formulaire et page de la compétition, E2E) ; PR vers `dev` |
+| 2026-11-03 | Recette OK sur https://poule-position-8o6c4eax8-fsmjlas-projects.vercel.app (Worker de preview déployé depuis la branche ; déployée en preview et vérifiée), avec un compte réel : CA-1 (tous les champs, individuelle par défaut, catégories FFE et « Autre ») ; CA-2 (page « En préparation », « Non publiée », « Ce PC est le pilote », formule par défaut ; journal reçu par le serveur, index avec le résumé complet) ; CA-3 et CA-4 : règles du domaine (tests unitaires), sélecteur reporté à US-024 ; CA-5 (« Le scratch doit être après l’appel » sous le champ) ; CA-6 et hors ligne (réseau coupé par simulation dans la page : « 1 modification en attente d’envoi · Pas encore envoyée », envoi au retour, journal reçu par le serveur ; coupure réelle couverte par l’E2E de la CI) ; cas limites (nom et arme obligatoires, deuxième onglet en lecture seule). L’index du club contient encore 2 lignes au format d’US-022 : à traiter avec US-026. Merge dans `dev`. |
