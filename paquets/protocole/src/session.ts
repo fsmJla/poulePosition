@@ -13,7 +13,7 @@ import {
 import { decoderBase64Url, deriverCle, encoderBase64Url, nouveauSel, TAILLE_CLE, TAILLE_SEL } from './authentification';
 import { aExactementLesChamps, aLaTaille } from './validation';
 
-/** Codes d'erreur des routes HTTP de l'application (docs/protocole.md §7 à §9 et §11). */
+/** Codes d'erreur des routes HTTP de l'application (docs/protocole.md §7 à §9, §11 et §12). */
 export const CODES_ERREUR_SESSION = [
   'DEMANDE_INVALIDE',
   'IDENTIFIANTS_INVALIDES',
@@ -33,6 +33,10 @@ export const CODES_ERREUR_SESSION = [
   'SEQ_INATTENDU',
   'PAS_PILOTE',
   'COMPETITION_INCONNUE',
+  // Manifestations (US-023, §12).
+  'MANIFESTATION_INCONNUE',
+  'MODIFIEE_ENTRE_TEMPS',
+  'MANIFESTATION_NON_VIDE',
 ] as const;
 
 export type CodeErreurSession = (typeof CODES_ERREUR_SESSION)[number];
