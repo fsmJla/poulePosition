@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-003
-- **Branche / PR :** `us/US-023-gerer-manifestations`
+- **Branche / PR :** `us/US-023-gerer-manifestations` · [PR #45](https://github.com/fsmJla/poulePosition/pull/45)
 
 ## Récit
 
