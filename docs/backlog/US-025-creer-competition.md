@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-021, US-022 ; US-024 pour le rattachement à une épreuve
-- **Branche / PR :** `us/US-025-creer-competition`
+- **Branche / PR :** `us/US-025-creer-competition` · [PR #43](https://github.com/fsmJla/poulePosition/pull/43)
 
 ## Récit
 
