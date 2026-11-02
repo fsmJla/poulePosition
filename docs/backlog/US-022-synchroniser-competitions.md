@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2, F12 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-021
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-022-synchroniser-competitions` · [PR #42](https://github.com/fsmJla/poulePosition/pull/42)
 
 ## Récit
 
@@ -44,8 +44,10 @@ compétition depuis un autre PC.
 
 **CA-5 — Isolation par club**
 - **Étant donné** un compte d'un club A
-- **Quand** il demande le journal ou l'index d'un club B, y compris en appelant directement le serveur
-- **Alors** c'est refusé (`403`).
+- **Quand** il envoie des événements portant le `clubId` d'un club B, ou présente une session d'un club B, y compris
+  en appelant directement le serveur
+- **Alors** c'est refusé : `403 ACCES_REFUSE` pour un événement d'un autre club, `401 SESSION_INVALIDE` pour une
+  session d'un autre club (un déploiement sert aujourd'hui un seul club, ADR-0014 ; reformulé le 2026-10-29).
 
 **CA-6 — Écriture réservée au pilote**
 - **Étant donné** un appareil qui n'est pas le pilote de la compétition
@@ -79,12 +81,30 @@ seule, avec sa date (« Copie du 28/10 à 14 h 05 »).
 ## Notes techniques
 
 - ADR-0001 (bail du pilote), ADR-0004, ADR-0005 (réplication), ADR-0014 (`clubId`, nommage des DO).
-- **ADR-0016 à rédiger (`/adr`) au début de l'implémentation** : index des compétitions dans le DO `Club`,
-  identité de l'appareil pilote, et stockage des manifestations et épreuves (US-023, US-024).
-- Documenter les nouveaux messages dans `docs/protocole.md`.
+- **ADR-0016** (2026-10-29) : réplication par HTTP, pilote identifié par son appareil, index dans le DO `Club`,
+  stockage des manifestations et épreuves (US-023, US-024).
+- **Affichage reporté** (décision du 2026-10-29) : il n'existe pas encore d'écran de compétitions. L'indicateur
+  « n modifications en attente d'envoi », la mention « Pas encore envoyée » et la date de la copie (« Copie du … »)
+  sont fournis par des fonctions testées et seront affichés par US-025 et US-026.
+- Protocole documenté dans `docs/protocole.md` §11 (routes `GET /competitions`, `GET` et
+  `POST /competitions/<id>/evenements`).
+- Réalisé :
+  - `paquets/protocole/src/competitions.ts` : validation des lots, découpage en 16 Ko, lecture des réponses ;
+  - `serveur/src/replication.ts` (décisions pures), DO `Competition` (journal, pilote), DO `Club` (index) et routes
+    dans `serveur/src/index.ts` ;
+  - `app/src/lib/journal.ts` (pilote, curseur, copies, identifiant d'appareil ; base locale en version 4) et
+    `app/src/lib/synchronisation.ts` (envoi, index, téléchargement), branché dans `App.svelte` (démarrage, connexion,
+    retour en ligne).
+- Le DO `Competition` est désormais nommé `competition:<clubId>:<id>` (ADR-0014), y compris pour la WebSocket de la
+  page minimale d'US-001 (`demo`).
+- Tests : intégration serveur dans workerd (`serveur/src/competitions.test.ts`), application contre un faux serveur
+  en mémoire (`app/src/lib/synchronisation.test.ts`). Pas d'E2E : aucun écran ne crée encore de compétition.
 
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-10-29 | ADR-0016 acceptée ; CA-5 reformulé ; affichage reporté à US-025 et US-026 |
+| 2026-10-29 | Implémentée (routes de réplication, DO `Competition` et `Club`, envoi et copies côté application) ; PR vers `dev` |
+| 2026-11-02 | Recette OK sur https://poule-position-git-us-us-022-synchronis-fdb672-fsmjlas-projects.vercel.app (Worker de preview déployé depuis la branche ; déployée en preview et vérifiée), avec un compte organisateur réel : base locale passée en version 4, données conservées ; CA-1 et CA-2 (compétition pilotée envoyée automatiquement au retour du réseau, curseur confirmé ; renvoi : `409 SEQ_INATTENDU`, dernier seq 1) ; CA-3 (index du club avec le résumé, l'appareil et le nom du compte) ; CA-4 (journal téléchargé ; compétition inconnue : `404`) ; CA-5 (événement d'un autre club : `403 ACCES_REFUSE` ; sans session : `401`) ; CA-6 (autre appareil : `409 PAS_PILOTE`) ; hors ligne (réseau coupé : rien ne part, envoi automatique au retour). Session d'un autre club : test d'intégration de la CI. Merge dans `dev`. |

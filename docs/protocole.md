@@ -11,6 +11,7 @@
 > US-010 : changement de mot de passe et version du mot de passe dans la session (§8).
 > US-007 : gestion des comptes par les administrateurs (§9) ; US-009 : réinitialisation d'un mot de passe (§9).
 > US-021 : format du journal d'une compétition (§10), stocké sur le PC pilote.
+> US-022 : réplication du journal et index des compétitions du club (§11, ADR-0016).
 > Les rôles, la synchronisation du journal et les saisies (ADR-0005) viendront avec leurs US.
 
 ## 1. Adresses
@@ -47,6 +48,9 @@
 | `PATCH /comptes/<id>` | Modifier le nom, le rôle ou l'état (actif ou désactivé) d'un compte (§9) |
 | `DELETE /comptes/<id>` | Supprimer définitivement un compte (§9, US-008) |
 | `POST /comptes/<id>/mot-de-passe` | Réinitialiser le mot de passe d'un compte (§9, US-009) |
+| `GET /competitions` | Index des compétitions du club (§11, US-022) |
+| `GET /competitions/<competitionId>/evenements` | Télécharger le journal d'une compétition (§11) |
+| `POST /competitions/<competitionId>/evenements` | Envoyer un lot d'événements du PC pilote (§11) |
 | `OPTIONS` sur ces routes | Requête CORS préalable (§7) ; méthodes `GET, POST, PATCH, DELETE` |
 | WebSocket `/competitions/<competitionId>/connexion` | Connexion à une compétition (§3) |
 | Tout autre chemin | `404` |
@@ -432,3 +436,55 @@ Aucun autre champ n'est accepté.
   événement `INVALIDE` (refusé par les règles) ou `ILLISIBLE`.
 - Un seul onglet écrit dans une compétition (verrou Web Locks `competition:<competitionId>`) ; les autres sont en
   lecture seule.
+
+## 11. Réplication du journal et index des compétitions (US-022, ADR-0016)
+
+Le PC pilote envoie son journal (§10) au DO `Competition` du club (`competition:<clubId>:<competitionId>`), par
+requêtes HTTP. Les autres PC du club listent les compétitions et en téléchargent une copie, qu'ils projettent
+localement en lecture seule. Le serveur ne calcule rien d'escrime.
+
+Les trois routes demandent une **session valide** (`Authorization: Bearer <jeton>`, contrôles du §7) et un mot de
+passe définitif (sinon `403 ACCES_REFUSE`), pour tout rôle. Même CORS qu'au §7. Une session d'un autre club est
+refusée en `401 SESSION_INVALIDE`.
+
+### Envoyer un lot : `POST /competitions/<competitionId>/evenements`
+
+Corps (16 Ko au plus, `TAILLE_MAX_LOT`) :
+
+| Champ | Contenu |
+|---|---|
+| `appareilId` | Identifiant de l'appareil (minuscules, chiffres, tirets ; un UUID), tiré une fois et gardé dans IndexedDB |
+| `depuis` | Dernier `seq` que le pilote croit confirmé ; le lot commence à `depuis + 1` |
+| `evenements` | Au moins un événement (§10), de `seq` consécutifs |
+| `resume` | Résumé calculé par le pilote pour l'index : `{ nom }` (complété par les US suivantes) |
+
+Le DO ajoute le lot si, dans cet ordre :
+
+1. tous ses événements portent le `clubId` du club et le `competitionId` de l'adresse (sinon `403 ACCES_REFUSE`) ;
+2. l'appareil est le pilote : le premier lot fixe le pilote, les suivants doivent venir du même appareil (sinon
+   `409 PAS_PILOTE`, jusqu'à une prise de main, US-029) ;
+3. `depuis` est son dernier `seq` (sinon `409 {"ok":false,"erreur":"SEQ_INATTENDU","dernierSeq":n}` : le pilote
+   reprend à `n`). Renvoyer un lot déjà reçu est donc sans effet.
+
+Réponse : `200 {"ok":true,"dernierSeq":n}`. Le Worker met alors à jour l'index du club. Un corps illisible, trop
+grand ou mal formé reçoit `400 DEMANDE_INVALIDE`.
+
+### Télécharger le journal : `GET /competitions/<competitionId>/evenements`
+
+`200 {"ok":true,"evenements":[…],"dernierSeq":n,"piloteAppareil":"…"}`, ou `404 COMPETITION_INCONNUE` si rien n'a
+encore été reçu.
+
+### Index du club : `GET /competitions`
+
+`200 {"ok":true,"competitions":[…]}`, les plus récemment modifiées d'abord. Chaque ligne : `id`, le résumé du pilote
+(`nom`), `piloteAppareil`, `piloteNom` (nom du compte qui a envoyé le dernier lot), `dernierSeq` et `modifieeLe`
+(date du dernier événement).
+
+### Côté application
+
+- Une compétition créée sur un PC en fait le pilote. Le PC garde, par compétition, le dernier `seq` confirmé et,
+  pour une copie, la date du téléchargement (table `competitionsLocales`).
+- L'envoi part au démarrage, à la connexion et au retour du réseau. Sans réseau, avec une session locale ou une
+  session expirée, les événements attendent dans IndexedDB, sans perte.
+- Une copie n'est jamais écrite localement (`PAS_PILOTE`) et ne remplace jamais le journal d'une compétition pilotée
+  ici.

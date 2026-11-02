@@ -177,3 +177,56 @@ describe('verrou d’écriture par onglet', () => {
     expect(await prendreEcriture('c1', null)).toBeTypeOf('function');
   });
 });
+
+describe('pilote et copies (US-022, ADR-0016)', () => {
+  it('US-022 : la création marque ce PC comme pilote, sans rien de confirmé ni de copie', async () => {
+    const journal = ouvrirJournal(nomBase(), persister());
+    expect(await journal.etat('c1')).toBeNull();
+    await journal.enregistrer('c1', creation(), contexte);
+    expect(await journal.etat('c1')).toEqual({ competitionId: 'c1', pilote: true, confirme: 0, copieLe: null });
+    expect(await journal.competitionsLocales()).toHaveLength(1);
+  });
+
+  it('US-022 CA-1 : à envoyer = ce qui suit le dernier seq confirmé', async () => {
+    const journal = ouvrirJournal(nomBase(), persister());
+    await journal.enregistrer('c1', creation(), contexte);
+    expect((await journal.aEnvoyer('c1')).map(({ seq }) => seq)).toEqual([1]);
+    await journal.confirmer('c1', 1);
+    expect(await journal.aEnvoyer('c1')).toEqual([]);
+    expect(await journal.aEnvoyer('inconnue')).toEqual([]);
+  });
+
+  it('US-022 CA-4 : une copie téléchargée remplace la précédente, est projetée et reste en lecture seule', async () => {
+    const source = ouvrirJournal(nomBase(), persister());
+    await source.enregistrer('c1', creation('Orpi'), contexte);
+    const evenements = await source.aEnvoyer('c1');
+
+    const journal = ouvrirJournal(nomBase(), persister());
+    expect(await journal.remplacerCopie('c1', evenements, 1_900_000_000_000)).toBe(true);
+    expect(await journal.lire('c1')).toMatchObject({ competition: { nom: 'Orpi' }, dernierSeq: 1 });
+    expect(await journal.etat('c1')).toEqual({
+      competitionId: 'c1',
+      pilote: false,
+      confirme: 1,
+      copieLe: 1_900_000_000_000,
+    });
+    expect(await journal.aEnvoyer('c1')).toEqual([]);
+    expect(await journal.enregistrer('c1', creation(), contexte)).toEqual({ erreur: 'PAS_PILOTE' });
+    expect(await journal.remplacerCopie('c1', evenements, 1_900_000_000_001)).toBe(true);
+  });
+
+  it('US-022 : une copie ne remplace jamais le journal d’une compétition pilotée par ce PC', async () => {
+    const journal = ouvrirJournal(nomBase(), persister());
+    await journal.enregistrer('c1', creation('Mienne'), contexte);
+    expect(await journal.remplacerCopie('c1', [], 1)).toBe(false);
+    expect(await journal.lire('c1')).toMatchObject({ competition: { nom: 'Mienne' } });
+  });
+
+  it('US-022 : l’identifiant de l’appareil est tiré une fois et gardé', async () => {
+    const nom = nomBase();
+    const identifiant = await ouvrirJournal(nom, persister()).appareil();
+    expect(identifiant).toMatch(/^[0-9a-f-]{36}$/);
+    expect(await ouvrirJournal(nom, persister()).appareil()).toBe(identifiant);
+    expect(await ouvrirJournal(nomBase(), persister()).appareil()).not.toBe(identifiant);
+  });
+});

@@ -13,7 +13,7 @@ import {
 import { decoderBase64Url, deriverCle, encoderBase64Url, nouveauSel, TAILLE_CLE, TAILLE_SEL } from './authentification';
 import { aExactementLesChamps, aLaTaille } from './validation';
 
-/** Codes d'erreur des routes HTTP de l'application (docs/protocole.md §7 à §9). */
+/** Codes d'erreur des routes HTTP de l'application (docs/protocole.md §7 à §9 et §11). */
 export const CODES_ERREUR_SESSION = [
   'DEMANDE_INVALIDE',
   'IDENTIFIANTS_INVALIDES',
@@ -29,6 +29,10 @@ export const CODES_ERREUR_SESSION = [
   'EMAIL_DEJA_UTILISE',
   'DERNIER_ADMINISTRATEUR',
   'SERVEUR_NON_CONFIGURE',
+  // Réplication du journal (US-022, §11).
+  'SEQ_INATTENDU',
+  'PAS_PILOTE',
+  'COMPETITION_INCONNUE',
 ] as const;
 
 export type CodeErreurSession = (typeof CODES_ERREUR_SESSION)[number];

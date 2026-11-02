@@ -48,8 +48,8 @@ export interface Stockage {
   ecrireEssaisLocaux(essais: Essais): Promise<void>;
 }
 
-/** Clé unique des tables `session` et `essaisLocaux` : une seule ligne par appareil. */
-const LIGNE_UNIQUE = 'courante';
+/** Clé unique des tables `session`, `essaisLocaux` et `appareil` : une seule ligne par appareil. */
+export const LIGNE_UNIQUE = 'courante';
 
 type LigneSession = {
   cle: typeof LIGNE_UNIQUE;
@@ -60,6 +60,17 @@ type LigneSession = {
 };
 type LigneEssais = Essais & { cle: typeof LIGNE_UNIQUE };
 
+/** Compétition connue de cet appareil (US-022, ADR-0016) : pilotée ici, ou copie téléchargée d'un autre PC. */
+export interface CompetitionLocale {
+  competitionId: string;
+  /** Vrai si cet appareil est le pilote : lui seul écrit dans le journal. */
+  pilote: boolean;
+  /** Dernier seq confirmé par le serveur. */
+  confirme: number;
+  /** Date du téléchargement de la copie, en millisecondes ; null pour une compétition pilotée ici. */
+  copieLe: number | null;
+}
+
 /** Base IndexedDB de l'appareil, partagée par le stockage de session et le journal des compétitions (US-021). */
 export class Base extends Dexie {
   session!: EntityTable<LigneSession, 'cle'>;
@@ -67,6 +78,9 @@ export class Base extends Dexie {
   essaisLocaux!: EntityTable<LigneEssais, 'cle'>;
   /** Journal des compétitions, tel qu'écrit (lu par `lireEvenement`, qui le migre). */
   evenements!: Table<Record<string, unknown>, [string, number]>;
+  /** Identifiant de l'appareil, tiré une fois (US-022). */
+  appareil!: EntityTable<{ cle: typeof LIGNE_UNIQUE; id: string }, 'cle'>;
+  competitionsLocales!: EntityTable<CompetitionLocale, 'competitionId'>;
 
   constructor(nom: string) {
     super(nom);
@@ -77,6 +91,14 @@ export class Base extends Dexie {
       appareilConnu: 'email',
       essaisLocaux: 'cle',
       evenements: '[competitionId+seq]',
+    });
+    this.version(4).stores({
+      session: 'cle',
+      appareilConnu: 'email',
+      essaisLocaux: 'cle',
+      evenements: '[competitionId+seq]',
+      appareil: 'cle',
+      competitionsLocales: 'competitionId',
     });
   }
 }

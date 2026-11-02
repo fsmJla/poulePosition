@@ -92,6 +92,8 @@ dernière copie gardée sur l'appareil. La compétition apparaît chez les autre
   la session et l'appareil connu pour la création hors ligne.
 - Afficher les messages des cas limites d'US-021 : écriture réservée à un seul onglet (`prendreEcriture`), échec
   d'écriture (`ECRITURE_IMPOSSIBLE`).
+- Reporté d'US-022 : sur la page de la compétition, afficher « n modifications en attente d'envoi » (`enAttente`) et
+  déclencher l'envoi après chaque écriture (`synchroniser`).
 
 ## Suivi
 

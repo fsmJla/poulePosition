@@ -1,11 +1,14 @@
 <script lang="ts">
   // Coquille de l'application (US-003) : session restaurée au démarrage et revalidée à chaque retour en ligne
-  // (US-005 CA-5), routage entre pages publiques et réservées.
+  // (US-005 CA-5), routage entre pages publiques et réservées. Envoi au serveur du journal des compétitions pilotées
+  // ici, au démarrage, à la connexion et à chaque retour en ligne (US-022 CA-2).
   import { onMount } from 'svelte';
   import { URL_SERVEUR_LOCAL } from './lib/connexion';
   import { resoudreRoute, CHEMINS } from './lib/routes';
+  import { ouvrirJournal } from './lib/journal';
   import { creerClientSession, urlHttp } from './lib/session';
   import { estLocale, ouvrirStockage, type SessionAppareil } from './lib/stockage';
+  import { creerSynchronisation } from './lib/synchronisation';
   import Entete from './composants/Entete.svelte';
   import Accueil from './pages/Accueil.svelte';
   import Comptes from './pages/Comptes.svelte';
@@ -20,6 +23,12 @@
   const client = creerClientSession({ urlServeur: urlHttp(urlServeur), stockage: ouvrirStockage() });
 
   let session = $state<SessionAppareil | null>(null);
+  const synchronisation = creerSynchronisation({
+    urlServeur: urlHttp(urlServeur),
+    journal: ouvrirJournal(),
+    // Une session locale (US-005) n'a pas de jeton : les événements attendent sa revalidation en ligne.
+    jeton: async () => (session && !estLocale(session) ? session.jeton : null),
+  });
   /** Faux tant que la session gardée n'est pas relue : évite d'afficher une page puis d'en changer. */
   let pret = $state(false);
   let chemin = $state(location.pathname);
@@ -43,6 +52,11 @@
     if (pret && 'redirection' in route) naviguer(route.redirection, true);
   });
 
+  // US-022 CA-2 : une session en ligne (connexion, revalidation) envoie ce qui attendait.
+  $effect(() => {
+    if (session && !estLocale(session)) void synchronisation.envoyerTout();
+  });
+
   onMount(() => {
     const surRetour = () => (chemin = location.pathname);
     // US-005 CA-5 / CA-6 : de retour en ligne, la session est revalidée sans action (ou fermée, avec son motif).
@@ -55,7 +69,9 @@
       session = restauree;
       pret = true;
     });
+    const arreterEnvoi = synchronisation.surveiller();
     return () => {
+      arreterEnvoi();
       window.removeEventListener('popstate', surRetour);
       window.removeEventListener('online', surEnLigne);
     };
