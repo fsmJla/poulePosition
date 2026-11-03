@@ -14,7 +14,8 @@ export type Page =
   | 'manifestations'
   | 'nouvelleCompetition'
   | 'competition'
-  | 'modifierCompetition';
+  | 'modifierCompetition'
+  | 'formuleCompetition';
 
 /** Adresses fixes ; celle d'une compétition porte son identifiant (`cheminCompetition`). */
 export const CHEMINS = Object.freeze({
@@ -31,7 +32,7 @@ export const CHEMINS = Object.freeze({
   manifestations: '/manifestations',
   /** US-025 : formulaire de création d'une compétition. */
   nouvelleCompetition: '/competitions/nouvelle',
-} satisfies Record<Exclude<Page, 'competition' | 'modifierCompetition'>, string>);
+} satisfies Record<Exclude<Page, 'competition' | 'modifierCompetition' | 'formuleCompetition'>, string>);
 
 /** US-025 : page d'une compétition. */
 export function cheminCompetition(competitionId: string): string {
@@ -59,8 +60,14 @@ export function cheminModificationCompetition(competitionId: string): string {
   return `/competitions/${competitionId}/modifier`;
 }
 
+/** US-028 : formule d'une compétition. */
+export function cheminFormuleCompetition(competitionId: string): string {
+  return `/competitions/${competitionId}/formule`;
+}
+
 const MOTIF_COMPETITION = /^\/competitions\/([^/]+)$/;
 const MOTIF_MODIFICATION = /^\/competitions\/([^/]+)\/modifier$/;
+const MOTIF_FORMULE = /^\/competitions\/([^/]+)\/formule$/;
 
 /** Pages réservées : un visiteur non connecté est renvoyé à l'écran de connexion (CA-6). */
 const RESERVEES: readonly Page[] = [
@@ -72,6 +79,7 @@ const RESERVEES: readonly Page[] = [
   'nouvelleCompetition',
   'competition',
   'modifierCompetition',
+  'formuleCompetition',
 ];
 
 /** Pages des administrateurs : un organisateur est renvoyé à son accueil (US-007 CA-6). */
@@ -81,13 +89,15 @@ export type Route = { page: Page; competitionId?: string } | { redirection: stri
 
 /** Page désignée par une adresse normalisée, avec l'identifiant de la compétition s'il y en a un ; null si inconnue. */
 function pageDe(chemin: string): { page: Page; competitionId?: string } | null {
-  const page = (Object.keys(CHEMINS) as Exclude<Page, 'competition' | 'modifierCompetition'>[]).find(
-    (candidate) => CHEMINS[candidate] === chemin,
-  );
+  const page = (
+    Object.keys(CHEMINS) as Exclude<Page, 'competition' | 'modifierCompetition' | 'formuleCompetition'>[]
+  ).find((candidate) => CHEMINS[candidate] === chemin);
   if (page) return { page };
   const modifiee = MOTIF_MODIFICATION.exec(chemin)?.[1];
   if (modifiee)
     return MOTIF_IDENTIFIANT.test(modifiee) ? { page: 'modifierCompetition', competitionId: modifiee } : null;
+  const formule = MOTIF_FORMULE.exec(chemin)?.[1];
+  if (formule) return MOTIF_IDENTIFIANT.test(formule) ? { page: 'formuleCompetition', competitionId: formule } : null;
   const competitionId = MOTIF_COMPETITION.exec(chemin)?.[1];
   return competitionId && MOTIF_IDENTIFIANT.test(competitionId) ? { page: 'competition', competitionId } : null;
 }
