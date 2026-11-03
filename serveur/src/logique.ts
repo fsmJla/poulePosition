@@ -36,6 +36,8 @@ export type Route =
   | { route: 'reinitialisation'; id: string }
   | { route: 'manifestations' }
   | { route: 'manifestation'; id: string }
+  | { route: 'epreuves' }
+  | { route: 'epreuve'; id: string }
   | { route: 'competitions' }
   | { route: 'evenements'; competitionId: string }
   | { route: 'connexion'; competitionId: string };
@@ -61,6 +63,9 @@ export function analyserChemin(chemin: string): Route | null {
   const manifestation = /^\/manifestations\/([^/]+)$/.exec(chemin)?.[1];
   if (manifestation)
     return MOTIF_COMPETITION.test(manifestation) ? { route: 'manifestation', id: manifestation } : null;
+  if (chemin === '/epreuves') return { route: 'epreuves' };
+  const epreuve = /^\/epreuves\/([^/]+)$/.exec(chemin)?.[1];
+  if (epreuve) return MOTIF_COMPETITION.test(epreuve) ? { route: 'epreuve', id: epreuve } : null;
   if (chemin === '/competitions') return { route: 'competitions' };
   const morceaux = /^\/competitions\/([^/]+)\/(connexion|evenements)$/.exec(chemin);
   if (!morceaux?.[1] || !MOTIF_COMPETITION.test(morceaux[1])) return null;

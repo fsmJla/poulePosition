@@ -17,12 +17,20 @@ import {
   noterDemande,
   estCouleurAvatar,
   estVide,
+  estVideEpreuve,
+  type DonneesEpreuve,
   type DonneesManifestation,
   type CouleurAvatar,
   type Essais,
   type Role,
 } from '@poule-position/domaine';
-import type { CompetitionIndexee, DemandeModificationManifestation, Manifestation } from '@poule-position/protocole';
+import type {
+  CompetitionIndexee,
+  DemandeModificationEpreuve,
+  DemandeModificationManifestation,
+  Epreuve,
+  Manifestation,
+} from '@poule-position/protocole';
 import type { Env } from './index';
 
 export interface NouveauCompte {
@@ -137,6 +145,15 @@ export class Club extends DurableObject<Env> {
         contenu TEXT NOT NULL,
         version INTEGER NOT NULL,
         debut TEXT NOT NULL
+      )`);
+    // US-024 (ADR-0016 §4) : une ligne par épreuve, rattachée à une manifestation, avec le même contrôle de version.
+    ctx.storage.sql.exec(`
+      CREATE TABLE IF NOT EXISTS epreuves (
+        id TEXT PRIMARY KEY,
+        club_id TEXT NOT NULL,
+        manifestation_id TEXT NOT NULL,
+        contenu TEXT NOT NULL,
+        version INTEGER NOT NULL
       )`);
   }
 
@@ -434,8 +451,85 @@ export class Club extends DurableObject<Env> {
   ): Promise<{ ok: true } | { ok: false; erreur: 'MANIFESTATION_INCONNUE' | 'MANIFESTATION_NON_VIDE' }> {
     if (!this.lireManifestation(id)) return { ok: false, erreur: 'MANIFESTATION_INCONNUE' };
     const competitions = this.lignesIndex().map(({ rattachement }) => ({ rattachement: rattachement ?? null }));
-    if (!estVide(id, competitions)) return { ok: false, erreur: 'MANIFESTATION_NON_VIDE' };
+    if (!estVide(id, competitions, await this.listerEpreuves())) return { ok: false, erreur: 'MANIFESTATION_NON_VIDE' };
     this.ctx.storage.sql.exec('DELETE FROM manifestations WHERE id = ?', id);
+    return { ok: true };
+  }
+
+  /** US-024 CA-1 : épreuves du club, regroupées par manifestation. */
+  async listerEpreuves(): Promise<Epreuve[]> {
+    return this.ctx.storage.sql
+      .exec<{ contenu: string }>('SELECT contenu FROM epreuves ORDER BY manifestation_id, id')
+      .toArray()
+      .map(({ contenu }) => JSON.parse(contenu) as Epreuve);
+  }
+
+  /** US-024 CA-1 et CA-2 : enregistre une nouvelle épreuve, en version 1, dans une manifestation existante. */
+  async creerEpreuve(
+    donnees: DonneesEpreuve,
+    auteur: string,
+  ): Promise<{ ok: true; epreuve: Epreuve } | { ok: false; erreur: 'MANIFESTATION_INCONNUE' }> {
+    if (!this.lireManifestation(donnees.manifestationId)) return { ok: false, erreur: 'MANIFESTATION_INCONNUE' };
+    const epreuve = { id: crypto.randomUUID(), ...donnees, version: 1, modifieeLe: Date.now(), modifieePar: auteur };
+    this.ctx.storage.sql.exec(
+      'INSERT INTO epreuves (id, club_id, manifestation_id, contenu, version) VALUES (?, ?, ?, ?, ?)',
+      epreuve.id,
+      this.env.CLUB_ID,
+      epreuve.manifestationId,
+      JSON.stringify(epreuve),
+      epreuve.version,
+    );
+    return { ok: true, epreuve };
+  }
+
+  private lireEpreuve(id: string): Epreuve | null {
+    const ligne = this.ctx.storage.sql
+      .exec<{ contenu: string }>('SELECT contenu FROM epreuves WHERE id = ?', id)
+      .toArray()[0];
+    return ligne ? (JSON.parse(ligne.contenu) as Epreuve) : null;
+  }
+
+  /**
+   * US-024 CA-3 : remplace nom, arme et commentaire si la demande part de la version courante ; sinon, refus avec la
+   * version courante. La manifestation ne change pas, et les compétitions rattachées non plus.
+   */
+  async modifierEpreuve(
+    id: string,
+    { version, ...donnees }: DemandeModificationEpreuve,
+    auteur: string,
+  ): Promise<
+    | { ok: true; epreuve: Epreuve }
+    | { ok: false; erreur: 'EPREUVE_INCONNUE' }
+    | { ok: false; erreur: 'MODIFIEE_ENTRE_TEMPS'; epreuve: Epreuve }
+  > {
+    const courante = this.lireEpreuve(id);
+    if (!courante) return { ok: false, erreur: 'EPREUVE_INCONNUE' };
+    if (courante.version !== version) return { ok: false, erreur: 'MODIFIEE_ENTRE_TEMPS', epreuve: courante };
+    const epreuve = {
+      id,
+      manifestationId: courante.manifestationId,
+      ...donnees,
+      version: version + 1,
+      modifieeLe: Date.now(),
+      modifieePar: auteur,
+    };
+    this.ctx.storage.sql.exec(
+      'UPDATE epreuves SET contenu = ?, version = ? WHERE id = ?',
+      JSON.stringify(epreuve),
+      epreuve.version,
+      id,
+    );
+    return { ok: true, epreuve };
+  }
+
+  /** US-024 CA-5 : supprime une épreuve vide. Une compétition de l'index qui s'y rattache l'en empêche. */
+  async supprimerEpreuve(
+    id: string,
+  ): Promise<{ ok: true } | { ok: false; erreur: 'EPREUVE_INCONNUE' | 'EPREUVE_NON_VIDE' }> {
+    if (!this.lireEpreuve(id)) return { ok: false, erreur: 'EPREUVE_INCONNUE' };
+    const competitions = this.lignesIndex().map(({ rattachement }) => ({ rattachement: rattachement ?? null }));
+    if (!estVideEpreuve(id, competitions)) return { ok: false, erreur: 'EPREUVE_NON_VIDE' };
+    this.ctx.storage.sql.exec('DELETE FROM epreuves WHERE id = ?', id);
     return { ok: true };
   }
 

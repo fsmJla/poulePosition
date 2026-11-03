@@ -16,12 +16,15 @@ import {
   analyserDemandeInstallation,
   analyserDemandeSel,
   analyserDemandeEnvoi,
+  analyserDemandeEpreuve,
   analyserDemandeManifestation,
+  analyserDemandeModificationEpreuve,
   analyserDemandeModificationManifestation,
   TAILLE_MAX_LOT,
   type ReponseCompetitions,
   type ReponseEnvoi,
   type ReponseJournal,
+  type ReponseEpreuve,
   type ReponseManifestation,
   type CodeErreurInstallation,
   type CodeErreurSession,
@@ -197,7 +200,9 @@ type RouteSession = Extract<
       | 'competitions'
       | 'evenements'
       | 'manifestations'
-      | 'manifestation';
+      | 'manifestation'
+      | 'epreuves'
+      | 'epreuve';
   }
 >;
 
@@ -215,6 +220,8 @@ const METHODES_SESSION = {
   evenements: ['GET', 'POST'],
   manifestations: ['GET', 'POST'],
   manifestation: ['PATCH', 'DELETE'],
+  epreuves: ['GET', 'POST'],
+  epreuve: ['PATCH', 'DELETE'],
 } as const;
 
 /**
@@ -313,6 +320,12 @@ async function traiterSession(
     // US-023 : tout compte du club au mot de passe définitif (administrateur ou organisateur).
     if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
     return gererManifestations(route, requete, club, authentifie.compte);
+  }
+
+  if (route.route === 'epreuves' || route.route === 'epreuve') {
+    // US-024 : mêmes droits que les manifestations.
+    if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
+    return gererEpreuves(route, requete, club, authentifie.compte);
   }
 
   if (route.route === 'comptes' || route.route === 'compte' || route.route === 'reinitialisation') {
@@ -541,6 +554,39 @@ async function gererManifestations(
   if (resultat.ok) return Response.json(resultat satisfies ReponseManifestation);
   if (resultat.erreur === 'MANIFESTATION_INCONNUE') return refuserSession(404, resultat.erreur);
   return Response.json(resultat satisfies ReponseManifestation, { status: 409 });
+}
+
+/**
+ * US-024 (ADR-0016 §4, docs/protocole.md §13) : épreuves du club, stockées dans le DO `Club` avec le même contrôle de
+ * version que les manifestations. Une épreuve reste dans sa manifestation et ne se supprime que vide.
+ */
+async function gererEpreuves(
+  route: Extract<RouteSession, { route: 'epreuves' | 'epreuve' }>,
+  requete: Request,
+  club: DurableObjectStub<Club>,
+  compte: CompteStocke,
+): Promise<Response> {
+  if (route.route === 'epreuves' && requete.method === 'GET') {
+    return Response.json({ ok: true, epreuves: await club.listerEpreuves() });
+  }
+  if (route.route === 'epreuves') {
+    const analyse = analyserDemandeEpreuve(await lireJson(requete));
+    if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
+    const resultat = await club.creerEpreuve(analyse.demande, compte.nom);
+    if (!resultat.ok) return refuserSession(404, resultat.erreur);
+    return Response.json(resultat satisfies ReponseEpreuve, { status: 201 });
+  }
+  if (requete.method === 'DELETE') {
+    const resultat = await club.supprimerEpreuve(route.id);
+    if (!resultat.ok) return refuserSession(resultat.erreur === 'EPREUVE_INCONNUE' ? 404 : 409, resultat.erreur);
+    return Response.json({ ok: true });
+  }
+  const analyse = analyserDemandeModificationEpreuve(await lireJson(requete));
+  if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
+  const resultat = await club.modifierEpreuve(route.id, analyse.demande, compte.nom);
+  if (resultat.ok) return Response.json(resultat satisfies ReponseEpreuve);
+  if (resultat.erreur === 'EPREUVE_INCONNUE') return refuserSession(404, resultat.erreur);
+  return Response.json(resultat satisfies ReponseEpreuve, { status: 409 });
 }
 
 /** DO de la compétition, nommé par club (ADR-0014). */
