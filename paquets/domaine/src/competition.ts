@@ -202,3 +202,42 @@ export function formuleParDefaut(typeCompetition: TypeCompetition): Formule {
   const relais = { individuelle: null, equipes2: 20, equipes3: 45 } as const;
   return { touchesPoules: 5, touchesTableau: 15, touchesRelais: relais[typeCompetition], matchTroisieme: false };
 }
+
+/** Champs que l'événement `CompetitionModifiee` peut porter : les mêmes que ceux de `CompetitionCreee`. */
+export const CHAMPS_COMPETITION = [
+  'nom',
+  'arme',
+  'typeCompetition',
+  'categorie',
+  'sexe',
+  'date',
+  'horaires',
+  'lieu',
+  'commentaire',
+  'rattachement',
+] as const satisfies readonly (keyof DonneesCompetition)[];
+export type ChampDonnees = (typeof CHAMPS_COMPETITION)[number];
+
+/** US-027 : les seuls champs changés, un horaire changé portant les trois heures. */
+export type ModificationCompetition = Partial<DonneesCompetition>;
+
+/** US-027 CA-2 et cas limites : champs modifiables selon le statut (arme et type figés en cours, commentaire seul ensuite). */
+export function champsModifiables(statut: Statut): readonly ChampDonnees[] {
+  if (statut === 'preparation') return CHAMPS_COMPETITION;
+  if (statut === 'enCours')
+    return CHAMPS_COMPETITION.filter((champ) => champ !== 'arme' && champ !== 'typeCompetition');
+  return statut === 'terminee' ? ['commentaire'] : [];
+}
+
+const memeValeur = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+/** US-027 CA-1 et CA-5 : ce qui diffère entre les données courantes et la saisie (après normalisation) ; {} si rien. */
+export function modification(courant: DonneesCompetition, saisie: DonneesCompetition): ModificationCompetition {
+  const avant = normaliserCompetition(courant);
+  const apres = normaliserCompetition(saisie);
+  const changes: ModificationCompetition = {};
+  for (const champ of CHAMPS_COMPETITION) {
+    if (!memeValeur(avant[champ], apres[champ])) Object.assign(changes, { [champ]: apres[champ] });
+  }
+  return changes;
+}

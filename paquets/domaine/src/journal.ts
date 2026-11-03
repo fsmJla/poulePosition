@@ -1,12 +1,15 @@
 // Journal d'une compétition (ADR-0001, US-021) : l'état est recalculé à partir de la suite ordonnée des événements.
 // Les règles sont pures : le stockage du journal et la migration de son format sont faits ailleurs.
 import {
+  champsModifiables,
   formuleParDefaut,
+  modification,
   normaliserCompetition,
   validerCompetition,
   type DonneesCompetition,
   type ErreurCompetition,
   type Formule,
+  type ModificationCompetition,
   type Statut,
 } from './competition';
 
@@ -14,7 +17,9 @@ import {
 export type Source = 'clavier';
 
 /** Ce que l'application demande d'enregistrer. */
-export type Proposition = { type: 'CompetitionCreee'; donnees: DonneesCompetition };
+export type Proposition =
+  | { type: 'CompetitionCreee'; donnees: DonneesCompetition }
+  | { type: 'CompetitionModifiee'; donnees: ModificationCompetition };
 
 /** Événement enregistré : la proposition acceptée, avec son en-tête. */
 export type Evenement = {
@@ -59,7 +64,13 @@ export interface Projection {
   anomalie: AnomalieJournal | null;
 }
 
-export type ErreurEvenement = ErreurCompetition | 'COMPETITION_DEJA_CREEE';
+export type ErreurEvenement =
+  | ErreurCompetition
+  | 'COMPETITION_DEJA_CREEE'
+  | 'COMPETITION_INCONNUE'
+  | 'COMPETITION_ARCHIVEE'
+  | 'CHAMP_FIGE'
+  | 'AUCUNE_MODIFICATION';
 
 export function projectionVide(): Projection {
   return { competition: null, dernierSeq: 0, anomalie: null };
@@ -70,13 +81,41 @@ export function projectionVide(): Projection {
  * qui dépendent de la manifestation (US-025 CA-3 et CA-4) sont vérifiées à la saisie, où elle est connue.
  */
 export function verifierEvenement(projection: Projection, proposition: Proposition): ErreurEvenement | null {
-  if (projection.competition) return 'COMPETITION_DEJA_CREEE';
-  return Object.values(validerCompetition(proposition.donnees))[0] ?? null;
+  const { competition } = projection;
+  if (proposition.type === 'CompetitionCreee') {
+    if (competition) return 'COMPETITION_DEJA_CREEE';
+    return Object.values(validerCompetition(proposition.donnees))[0] ?? null;
+  }
+  // US-027 : la modification est validée sur le résultat de la fusion, comme une création.
+  if (!competition) return 'COMPETITION_INCONNUE';
+  if (competition.statut === 'archivee') return 'COMPETITION_ARCHIVEE';
+  const modifiables = champsModifiables(competition.statut);
+  const champs = Object.keys(proposition.donnees);
+  if (champs.some((champ) => !(modifiables as readonly string[]).includes(champ))) return 'CHAMP_FIGE';
+  const fusion = fusionner(competition, proposition.donnees);
+  if (Object.keys(modification(competition, fusion)).length === 0) return 'AUCUNE_MODIFICATION';
+  return Object.values(validerCompetition(fusion))[0] ?? null;
+}
+
+function fusionner(competition: Competition, changes: ModificationCompetition): DonneesCompetition {
+  const { nom, arme, typeCompetition, categorie, sexe, date, horaires, lieu, commentaire, rattachement } = competition;
+  return { nom, arme, typeCompetition, categorie, sexe, date, horaires, lieu, commentaire, rattachement, ...changes };
 }
 
 /** Projection après un événement déjà vérifié. */
 export function appliquer(projection: Projection, evenement: Evenement): Projection {
-  const { competitionId, clubId, date, auteur, donnees } = evenement;
+  const { competitionId, clubId, date, auteur } = evenement;
+  if (evenement.type === 'CompetitionModifiee') {
+    const { competition } = projection;
+    if (!competition) return projection;
+    const donnees = normaliserCompetition(fusionner(competition, evenement.donnees));
+    const formule =
+      donnees.typeCompetition === competition.typeCompetition
+        ? competition.formule
+        : { ...competition.formule, touchesRelais: formuleParDefaut(donnees.typeCompetition).touchesRelais };
+    return { ...projection, competition: { ...competition, ...donnees, formule }, dernierSeq: evenement.seq };
+  }
+  const { donnees } = evenement;
   return {
     ...projection,
     competition: {
