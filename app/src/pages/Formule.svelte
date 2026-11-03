@@ -54,10 +54,11 @@
   const figee = $derived(competition?.statut === 'terminee' || competition?.statut === 'archivee');
   const lectureSeule = $derived(!pilote || !ecriture || figee);
 
-  async function recharger() {
+  /** Relit le journal ; la saisie n'est remplacée que sur demande, pour ne pas écraser ce que le pilote tape. */
+  async function recharger(remettreSaisie = false) {
     const { competition: lue } = await journal.lire(competitionId);
     competition = lue;
-    if (lue) Object.assign(saisie, { ...lue.formule });
+    if (lue && remettreSaisie) Object.assign(saisie, { ...lue.formule });
     historique = historiqueFormule(await journal.evenements(competitionId));
     enAttente = pilote ? await synchronisation.enAttente(competitionId) : 0;
   }
@@ -65,9 +66,11 @@
   onMount(() => {
     let liberer: (() => void) | null = null;
     let demonte = false;
-    const surEnLigne = () => void synchronisation.envoyer(competitionId).then(recharger);
+    const surEnLigne = () => void synchronisation.envoyer(competitionId).then(() => recharger());
 
     void (async () => {
+      // Sur un autre PC, la copie du pilote est téléchargée (hors ligne : la dernière copie gardée).
+      await synchronisation.telechargerCopie(competitionId);
       pilote = (await journal.etat(competitionId))?.pilote ?? false;
       if (pilote) {
         liberer = await prendreEcriture(competitionId);
@@ -75,9 +78,9 @@
         ecriture = liberer !== null;
         window.addEventListener('online', surEnLigne);
       }
-      await recharger();
+      await recharger(true);
       chargee = true;
-      if (pilote) void synchronisation.envoyer(competitionId).then(recharger);
+      if (pilote) void synchronisation.envoyer(competitionId).then(() => recharger());
     })();
 
     return () => {
@@ -107,8 +110,8 @@
       );
       if (!resultat.ok) erreur = resultat.erreur;
       aConfirmer = null;
-      await recharger();
-      if (resultat.ok) void synchronisation.envoyer(competitionId).then(recharger);
+      await recharger(true);
+      if (resultat.ok) void synchronisation.envoyer(competitionId).then(() => recharger());
     } finally {
       enCours = false;
     }
