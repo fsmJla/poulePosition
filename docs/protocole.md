@@ -525,6 +525,27 @@ US-026).
 - Une copie n'est jamais écrite localement (`PAS_PILOTE`) et ne remplace jamais le journal d'une compétition pilotée
   ici.
 
+### Liste du club sur l'accueil (US-026)
+
+Aucune route nouvelle : l'accueil de l'organisateur réunit `GET /competitions` (§11), `GET /manifestations` (§12) et
+`GET /epreuves` (§13), et les compétitions gardées sur l'appareil.
+
+- **Dernière copie de l'index** : la réponse de `GET /competitions` est gardée dans IndexedDB (table `copieIndex`,
+  base locale en version 7), avec sa date. Hors ligne, la liste s'affiche depuis cette copie, les copies des
+  manifestations et des épreuves et les compétitions locales (« Hors ligne : liste du … »). Sans aucune copie, seules les
+  compétitions de l'appareil sont listées.
+- **Fusion** : pour une même compétition, la version locale de celle que ce PC pilote l'emporte sur la ligne de l'index.
+  La copie locale d'une compétition pilotée ailleurs ne remplace pas la ligne de l'index, mais la remplace si l'index
+  n'a pas la ligne. Une compétition pilotée ici dont rien n'est parvenu au serveur (`confirme = 0`) est « Pas encore
+  envoyée ».
+- **Lignes illisibles** : l'index ignore déjà une ligne qu'il ne sait pas lire (§11) ; les autres s'affichent.
+- **Arborescence** : construite par le domaine (`construireListe`). Une compétition dont la manifestation est inconnue
+  de l'appareil est listée parmi les isolées ; une épreuve inconnue la place directement sous sa manifestation. Les
+  compétitions archivées (`statut` `archivee`) sont masquées sauf avec « Afficher les archives ».
+- **Actions de création** : « Nouvelle manifestation » et « Nouvelle épreuve » ouvrent la page « Manifestations » avec le
+  formulaire ouvert (`/manifestations?nouvelle`, `/manifestations?epreuve=<manifestationId>`) ; la partie « ?… » de
+  l'adresse ne change pas la page affichée. Elles sont grisées hors ligne (« Nécessite une connexion internet »).
+
 ## 12. Manifestations du club (US-023, ADR-0016 §4)
 
 Une manifestation regroupe des épreuves et des compétitions sur un ou plusieurs jours. Ce sont des données du club,

@@ -84,6 +84,24 @@ créations de manifestation et d'épreuve sont grisées.
   encore pilotée se corrige au prochain lot envoyé (ADR-0016) ; une compétition de test abandonnée reste simplement
   absente de la liste.
 
+- Réalisé :
+  - `paquets/domaine/src/liste.ts` : `construireListe` (arborescence, tri chronologique croissant et sans date en
+    dernier, archives masquées et comptées, liste vide), `manifestationOuverte` ;
+  - `app` : `lib/accueil.ts` (fusion de l'index du club, des manifestations, des épreuves et des compétitions locales ;
+    copie de l'index dans la table `copieIndex`, base locale en version 7), `lib/routes.ts` (`?nouvelle`, `?epreuve=<id>`),
+    page `Organisateur` (liste, filtre des archives, manifestations repliables), `Manifestations` et composant `Epreuves`
+    ouverts par l'adresse ;
+  - aucun changement de protocole serveur ni de journal (docs/protocole.md, § « Liste du club »).
+- Décisions du 2026-11-03 :
+  - **Tri** : ordre chronologique croissant (manifestations par début, compétitions par date), sans date en dernier.
+  - **« Prendre la main » (CA-4)** : le bouton arrive avec US-029 ; d'ici là, une compétition d'un autre PC s'ouvre en
+    lecture seule, avec la date de sa copie.
+  - **Manifestations repliées** par défaut, sauf celle en cours aujourd'hui ; « Manifestations » reste sur l'accueil
+    comme accès à la gestion complète.
+  - Seules les compétitions sont archivables pour l'instant (l'archivage d'une manifestation vient avec US-033).
+- Tests : `liste.test.ts` (domaine), `accueil.test.ts`, `routes.test.ts` et `textes.test.ts` (app), E2E
+  `tests/e2e/accueil.spec.ts`.
+
 ## Suivi
 
 | Date | Événement |
