@@ -184,7 +184,9 @@ describe('résumé d’une compétition pour l’index du club (US-025)', () => 
 
   it('US-025 CA-3 : le résumé garde le rattachement de la compétition', () => {
     const rattachement = { manifestationId: 'm1', epreuveId: 'e1' };
-    const { competition } = projeter([{ ...evenement(1), type: 'CompetitionCreee' as const, donnees: { ...donnees(), rattachement } }]);
+    const { competition } = projeter([
+      { ...evenement(1), type: 'CompetitionCreee' as const, donnees: { ...donnees(), rattachement } },
+    ]);
     expect(resumeDe(competition!)).toEqual(resume({ rattachement }));
     expect(analyserDemandeEnvoi(demande({ resume: resume({ rattachement }) }))).toMatchObject({ ok: true });
   });
