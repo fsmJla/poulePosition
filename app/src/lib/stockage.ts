@@ -5,7 +5,7 @@
 // `manifestations.ts` (US-023).
 import { Dexie, type EntityTable, type Table } from 'dexie';
 import { couleurParDefaut, essaisVides, type CouleurAvatar, type Essais, type Role } from '@poule-position/domaine';
-import type { CompteConnecte, Epreuve, Manifestation, Session } from '@poule-position/protocole';
+import type { CompetitionIndexee, CompteConnecte, Epreuve, Manifestation, Session } from '@poule-position/protocole';
 
 /** Compte déjà connecté en ligne sur cet appareil (ADR-0006) : il pourra s'y reconnecter hors ligne (US-005). */
 export interface AppareilConnu {
@@ -88,6 +88,13 @@ export interface CopieEpreuves {
   copieLe: number;
 }
 
+/** Index des compétitions du club tel que reçu du serveur, et date de cette copie (US-026). */
+export interface CopieIndex {
+  competitions: CompetitionIndexee[];
+  /** Date de la copie, en millisecondes. */
+  copieLe: number;
+}
+
 /** Base IndexedDB de l'appareil, partagée par le stockage de session et le journal des compétitions (US-021). */
 export class Base extends Dexie {
   session!: EntityTable<LigneSession, 'cle'>;
@@ -102,6 +109,8 @@ export class Base extends Dexie {
   copieManifestations!: EntityTable<CopieManifestations & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
   /** Dernière liste des épreuves du club reçue du serveur, consultable hors ligne (US-024). */
   copieEpreuves!: EntityTable<CopieEpreuves & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
+  /** Dernier index des compétitions du club reçu du serveur, consultable hors ligne (US-026). */
+  copieIndex!: EntityTable<CopieIndex & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
 
   constructor(nom: string) {
     super(nom);
@@ -139,6 +148,17 @@ export class Base extends Dexie {
       competitionsLocales: 'competitionId',
       copieManifestations: 'cle',
       copieEpreuves: 'cle',
+    });
+    this.version(7).stores({
+      session: 'cle',
+      appareilConnu: 'email',
+      essaisLocaux: 'cle',
+      evenements: '[competitionId+seq]',
+      appareil: 'cle',
+      competitionsLocales: 'competitionId',
+      copieManifestations: 'cle',
+      copieEpreuves: 'cle',
+      copieIndex: 'cle',
     });
   }
 }

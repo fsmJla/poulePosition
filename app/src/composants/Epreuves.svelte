@@ -2,6 +2,7 @@
   // Épreuves d'une manifestation (US-024), sous la manifestation dans la page « Manifestations » : liste, création,
   // modification et suppression d'une épreuve vide. Ce sont des données du club stockées par le serveur : hors ligne,
   // la liste reste consultable depuis la dernière copie, et les actions sont grisées.
+  import { onMount } from 'svelte';
   import { ARMES, type ErreursEpreuve } from '@poule-position/domaine';
   import type { Epreuve, Manifestation } from '@poule-position/protocole';
   import { saisieDe, saisieVide, type ClientEpreuves, type ErreurEpreuves, type SaisieEpreuve } from '../lib/epreuves';
@@ -15,9 +16,11 @@
     horsLigne: boolean;
     /** Appelé quand une épreuve a changé : la page recharge la liste. */
     modifie: () => Promise<void>;
+    /** US-026 CA-5 : ouvre le formulaire de création dès l'affichage (adresse « ?epreuve=<id> » depuis l'accueil). */
+    ouvrirAuDepart?: boolean;
   }
 
-  let { manifestation, client, epreuves, horsLigne, modifie }: Proprietes = $props();
+  let { manifestation, client, epreuves, horsLigne, modifie, ouvrirAuDepart = false }: Proprietes = $props();
 
   const t = textes.epreuves;
   const armes = textes.competitions.armes;
@@ -46,6 +49,10 @@
     concurrente = false;
     aSupprimer = null;
   }
+
+  onMount(() => {
+    if (ouvrirAuDepart) ouvrir('nouvelle');
+  });
 
   function fermer() {
     edition = null;

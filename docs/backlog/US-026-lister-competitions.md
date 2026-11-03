@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-022, US-023, US-025
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-026-lister-competitions` · [PR #47](https://github.com/fsmJla/poulePosition/pull/47)
 
 ## Récit
 
@@ -84,9 +84,30 @@ créations de manifestation et d'épreuve sont grisées.
   encore pilotée se corrige au prochain lot envoyé (ADR-0016) ; une compétition de test abandonnée reste simplement
   absente de la liste.
 
+- Réalisé :
+  - `paquets/domaine/src/liste.ts` : `construireListe` (arborescence, tri chronologique croissant et sans date en
+    dernier, archives masquées et comptées, liste vide), `manifestationOuverte` ;
+  - `app` : `lib/accueil.ts` (fusion de l'index du club, des manifestations, des épreuves et des compétitions locales ;
+    copie de l'index dans la table `copieIndex`, base locale en version 7), `lib/routes.ts` (`?nouvelle`, `?epreuve=<id>`),
+    page `Organisateur` (liste, filtre des archives, manifestations repliables), `Manifestations` et composant `Epreuves`
+    ouverts par l'adresse ;
+  - aucun changement de protocole serveur ni de journal (docs/protocole.md, § « Liste du club »).
+- Décisions du 2026-11-03 :
+  - **Tri** : ordre chronologique croissant (manifestations par début, compétitions par date), sans date en dernier.
+  - **« Prendre la main » (CA-4)** : le bouton arrive avec US-029 ; d'ici là, une compétition d'un autre PC s'ouvre en
+    lecture seule, avec la date de sa copie.
+  - **Manifestations repliées** par défaut, sauf celle en cours aujourd'hui ; « Manifestations » reste sur l'accueil
+    comme accès à la gestion complète.
+  - Seules les compétitions sont archivables pour l'instant (l'archivage d'une manifestation vient avec US-033).
+- Tests : `liste.test.ts` (domaine), `accueil.test.ts`, `routes.test.ts` et `textes.test.ts` (app), E2E
+  `tests/e2e/accueil.spec.ts`.
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
 | 2026-11-03 | Ajout du cas limite « ligne illisible dans l’index du club » (constat de la recette d’US-025) |
+| 2026-11-03 | Démarrée (plan validé ; tri chronologique croissant, sans date en dernier ; « Prendre la main » reste à US-029) |
+| 2026-11-03 | En revue : lint, typage, 762 tests (couverture 94,5 % lignes), build, audit (aucune vulnérabilité haute) et 221 E2E locaux verts |
+| 2026-11-03 | Recette OK sur https://poule-position-git-us-us-026-lister-com-c08562-fsmjlas-projects.vercel.app (Worker de preview déployé depuis la branche ; déployée en preview et vérifiée), avec un compte réel : CA-1 (manifestation repliée puis dépliée, épreuve, compétitions triées par date, compétition rattachée à la manifestation seule, isolée à part) ; CA-2 (arme, catégorie, sexe, date, statut, publication, « Ce PC est le pilote » / « Lecture seule ») ; CA-3 (2 puis 3 archivées masquées avec compteur, « Afficher les archives » les montre) ; CA-4 (pilotée ici modifiable ; celle d’un autre PC en lecture seule avec la date de sa copie) ; CA-5 (« Nouvelle compétition », « Nouvelle manifestation » et « Nouvelle épreuve dans … » ouvrent le bon formulaire) ; CA-6 (réponses vides simulées et journal local vidé : message d’invitation) ; hors ligne (réseau coupé : « Hors ligne : liste du … », 158 manifestations de la copie, créations de manifestation et d’épreuve grisées, compétition créée hors ligne « Pas encore envoyée », ouvrable en pilote, envoyée au retour du réseau) ; smartphone 390 px sans débordement. Remarque : avec 158 manifestations (données de test de la CI) la page fait environ 27 000 px de haut sur smartphone ; la liste reste utilisable grâce aux manifestations repliées. Merge dans `dev`. Les données « Recette US-026 … » restent dans le club de preview. |

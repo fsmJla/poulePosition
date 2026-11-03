@@ -37,6 +37,22 @@ export function cheminCompetition(competitionId: string): string {
   return `/competitions/${competitionId}`;
 }
 
+/** US-026 CA-5 : adresse de la page Manifestations avec le formulaire de création d'une manifestation ouvert. */
+export const CHEMIN_NOUVELLE_MANIFESTATION = `${CHEMINS.manifestations}?nouvelle`;
+
+/** US-026 CA-5 : adresse de la page Manifestations avec le formulaire d'une nouvelle épreuve de cette manifestation. */
+export function cheminNouvelleEpreuve(manifestationId: string): string {
+  return `${CHEMINS.manifestations}?epreuve=${manifestationId}`;
+}
+
+/** Formulaire que la partie « ?… » de l'adresse demande d'ouvrir sur la page Manifestations ; null si aucun. */
+export function ouvertureManifestations(recherche: string): { nouvelle: true } | { epreuveDe: string } | null {
+  const parametres = new URLSearchParams(recherche);
+  if (parametres.has('nouvelle')) return { nouvelle: true };
+  const epreuveDe = parametres.get('epreuve');
+  return epreuveDe && MOTIF_IDENTIFIANT.test(epreuveDe) ? { epreuveDe } : null;
+}
+
 const MOTIF_COMPETITION = /^\/competitions\/([^/]+)$/;
 
 /** Pages réservées : un visiteur non connecté est renvoyé à l'écran de connexion (CA-6). */
@@ -70,7 +86,9 @@ function pageDe(chemin: string): { page: Page; competitionId?: string } | null {
  * peut que le changer (US-010 CA-4) ; la gestion des comptes est réservée aux administrateurs (US-007).
  */
 export function resoudreRoute(chemin: string, connecte: boolean, temporaire = false, administrateur = false): Route {
-  const normalise = chemin.length > 1 ? chemin.replace(/\/+$/, '') : chemin;
+  // La partie « ?… » d'une adresse ne choisit pas la page (US-026 CA-5).
+  const sansRecherche = chemin.split('?')[0] ?? chemin;
+  const normalise = sansRecherche.length > 1 ? sansRecherche.replace(/\/+$/, '') : sansRecherche;
   const route = pageDe(normalise);
   if (!route) return { redirection: CHEMINS.accueil };
   const { page } = route;
