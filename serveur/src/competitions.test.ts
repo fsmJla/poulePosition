@@ -72,7 +72,11 @@ const RESUME: ResumeCompetition = {
   rattachement: null,
 };
 
-const evenement = (competitionId: string, seq: number, champs: Partial<Evenement> = {}): Evenement => ({
+const evenement = (
+  competitionId: string,
+  seq: number,
+  champs: Partial<Extract<Evenement, { type: 'CompetitionCreee' }>> = {},
+): Evenement => ({
   competitionId,
   clubId,
   seq,
