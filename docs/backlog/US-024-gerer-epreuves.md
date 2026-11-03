@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-023
 - **Branche / PR :** `us/US-024-gerer-epreuves`
 
@@ -95,4 +95,5 @@ modification grisées avec « Nécessite une connexion internet ».
 |---|---|
 | 2026-10-28 | Créée |
 | 2026-11-02 | Reçoit d'US-025 le sélecteur de rattachement du formulaire de création d'une compétition (CA-3, CA-4) |
-| 2026-11-03 | Démarrée (plan validé) |
+| 2026-11-03 | Démarrée (plan validé) ; sélecteur de rattachement et E2E reçus d'US-025 réalisés |
+| 2026-11-03 | En revue : lint, typage, 737 tests (couverture 94,5 % lignes), build, audit (aucune vulnérabilité haute) et 207 E2E locaux verts |
