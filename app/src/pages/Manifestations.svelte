@@ -15,7 +15,7 @@
     type ErreurManifestations,
     type SaisieManifestation,
   } from '../lib/manifestations';
-  import { CHEMINS } from '../lib/routes';
+  import { CHEMINS, ouvertureManifestations } from '../lib/routes';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
@@ -70,7 +70,11 @@
     erreurListe = resultat.erreur === 'HORS_LIGNE' ? null : resultat.erreur;
   }
 
+  /** US-026 CA-5 : formulaire demandé par l'adresse (« ?nouvelle » ou « ?epreuve=<id> » depuis l'accueil). */
+  const ouverture = ouvertureManifestations(location.search);
+
   onMount(() => {
+    if (ouverture && 'nouvelle' in ouverture) ouvrir('nouvelle');
     const surReseau = () => {
       horsLigne = !navigator.onLine;
       if (!horsLigne) void charger();
@@ -262,6 +266,7 @@
             epreuves={epreuves.filter(({ manifestationId }) => manifestationId === manifestation.id)}
             {horsLigne}
             modifie={chargerEpreuves}
+            ouvrirAuDepart={ouverture !== null && 'epreuveDe' in ouverture && ouverture.epreuveDe === manifestation.id}
           />
           {#if aSupprimer?.id === manifestation.id}
             <div class="confirmation" role="group" aria-label={t.supprimer(manifestation.nom)}>

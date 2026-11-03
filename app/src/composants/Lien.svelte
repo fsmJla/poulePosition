@@ -5,10 +5,12 @@
   interface Proprietes {
     chemin: string;
     naviguer: (chemin: string) => void;
+    /** Nom accessible, quand le texte du lien ne suffit pas à le distinguer (plusieurs liens identiques). */
+    etiquette?: string;
     children: Snippet;
   }
 
-  let { chemin, naviguer, children }: Proprietes = $props();
+  let { chemin, naviguer, etiquette, children }: Proprietes = $props();
 
   function suivre(evenement: MouseEvent) {
     // Ctrl, Maj, clic milieu : laisser le navigateur ouvrir un nouvel onglet.
@@ -18,7 +20,7 @@
   }
 </script>
 
-<a href={chemin} onclick={suivre}>{@render children()}</a>
+<a href={chemin} aria-label={etiquette} onclick={suivre}>{@render children()}</a>
 
 <style>
   a {

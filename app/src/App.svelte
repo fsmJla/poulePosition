@@ -10,6 +10,7 @@
   import { creerClientSession, urlHttp } from './lib/session';
   import { estLocale, ouvrirStockage, type SessionAppareil } from './lib/stockage';
   import { creerSynchronisation } from './lib/synchronisation';
+  import { creerAccueil } from './lib/accueil';
   import { creerClientEpreuves } from './lib/epreuves';
   import { creerClientManifestations } from './lib/manifestations';
   import Entete from './composants/Entete.svelte';
@@ -46,6 +47,7 @@
     urlServeur: urlHttp(urlServeur),
     jeton: async () => (session && !estLocale(session) ? session.jeton : null),
   });
+  const accueil = creerAccueil({ journal, synchronisation, manifestations, epreuves });
   /** Faux tant que la session gardée n'est pas relue : évite d'afficher une page puis d'en changer. */
   let pret = $state(false);
   let chemin = $state(location.pathname);
@@ -132,7 +134,7 @@
     <!-- Pages réservées : entête commun (US-014). -->
     <Entete compte={session.compte} {surDeconnexion} {surOubli} {naviguer} locale={estLocale(session)} />
     {#if route.page === 'organisateur'}
-      <Organisateur {session} {naviguer} />
+      <Organisateur {session} {accueil} {naviguer} />
     {:else if route.page === 'motDePasse'}
       <MotDePasse {client} {session} surChangement={(nouvelle) => (session = nouvelle)} {surSessionPerdue} {naviguer} />
     {:else if route.page === 'profil'}

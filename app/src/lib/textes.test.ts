@@ -156,3 +156,21 @@ describe('textes des épreuves (US-024)', () => {
     expect(textes.epreuves.erreurs.EPREUVE_NON_VIDE).toContain('ne se supprime pas');
   });
 });
+
+describe('textes de l’accueil (US-026)', () => {
+  it('CA-3 : le filtre des archives et le nombre de compétitions masquées', () => {
+    expect(textes.listeClub.afficherArchives).toBe('Afficher les archives');
+    expect(textes.listeClub.archivesMasquees(1)).toBe('1 compétition archivée masquée');
+    expect(textes.listeClub.archivesMasquees(3)).toBe('3 compétitions archivées masquées');
+  });
+
+  it('CA-6 : le message invite à créer une première manifestation ou une première compétition', () => {
+    expect(textes.listeClub.vide).toContain('première manifestation');
+    expect(textes.listeClub.vide).toContain('première compétition');
+  });
+
+  it('hors ligne : les créations de manifestation et d’épreuve sont grisées avec le message habituel', () => {
+    expect(textes.listeClub.horsLigne).toBe('Nécessite une connexion internet');
+    expect(textes.listeClub.jour('2027-03-14')).toBe('14/03/2027');
+  });
+});

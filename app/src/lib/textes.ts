@@ -86,6 +86,26 @@ export const textes = {
     },
     actions: 'Actions',
   },
+  /** US-026 : liste du club sur l'accueil de l'organisateur. */
+  listeClub: {
+    titre: 'Manifestations et compétitions du club',
+    nouvelleManifestation: 'Nouvelle manifestation',
+    nouvelleEpreuve: 'Nouvelle épreuve',
+    nouvelleEpreuveDans: (manifestation: string) => `Nouvelle épreuve dans ${manifestation}`,
+    horsLigne: 'Nécessite une connexion internet',
+    /** Hors ligne, sans aucune copie du club gardée sur l'appareil. */
+    horsLigneSansCopie: 'Hors ligne : seules les compétitions de cet appareil sont listées',
+    chargement: 'Chargement de la liste…',
+    afficherArchives: 'Afficher les archives',
+    archivesMasquees: (nombre: number) =>
+      nombre > 1 ? `${nombre} compétitions archivées masquées` : `${nombre} compétition archivée masquée`,
+    vide: 'Le club n’a encore ni manifestation ni compétition : créez une première manifestation ou une première compétition.',
+    isolees: 'Compétitions isolées',
+    aucuneCompetition: 'Aucune compétition',
+    lectureSeule: 'Lecture seule',
+    jour: (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}`,
+    ouvrir: (nom: string) => `Ouvrir la compétition ${nom}`,
+  },
   motDePasse: {
     titre: 'Changer mon mot de passe',
     temporaire: 'Votre mot de passe est temporaire : choisissez-en un nouveau pour accéder à l’application.',
