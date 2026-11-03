@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-022, US-023, US-025
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-026-lister-competitions`
 
 ## Récit
 
@@ -90,3 +90,4 @@ créations de manifestation et d'épreuve sont grisées.
 |---|---|
 | 2026-10-28 | Créée |
 | 2026-11-03 | Ajout du cas limite « ligne illisible dans l’index du club » (constat de la recette d’US-025) |
+| 2026-11-03 | Démarrée (plan validé ; tri chronologique croissant, sans date en dernier ; « Prendre la main » reste à US-029) |
