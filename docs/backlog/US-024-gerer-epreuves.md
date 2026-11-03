@@ -71,6 +71,24 @@ modification grisées avec « Nécessite une connexion internet ».
   … et le … », avec leurs E2E (US-025 CA-3 et CA-4). Les règles sont déjà dans le domaine (`validerCompetition`
   avec un `CadreRattachement`, `preremplir`, `joursDeManifestation`) et l'événement porte déjà `rattachement`.
 
+- Réalisé :
+  - `paquets/domaine/src/epreuve.ts` : `validerEpreuve`, `normaliserEpreuve`, `estVideEpreuve` ; `estVide` d'une
+    manifestation tient compte de ses épreuves ;
+  - `paquets/protocole/src/epreuves.ts` : demandes et réponses, codes `EPREUVE_INCONNUE` et `EPREUVE_NON_VIDE`
+    (docs/protocole.md §13) ;
+  - `serveur` : table `epreuves` du DO `Club` (avec `club_id`, `manifestation_id` et `version`), routes `/epreuves` ;
+    une manifestation qui contient une épreuve ne se supprime pas ;
+  - `app` : `lib/epreuves.ts` (client, copie locale `copieEpreuves`, base locale en version 6), composant
+    `Epreuves` sous chaque manifestation, sélecteur de rattachement de « Nouvelle compétition » (`cadreDe`, `rattacher`).
+- Décisions du 2026-11-03 :
+  - Les épreuves se gèrent dans la page « Manifestations », sous chaque manifestation, en attendant la liste d'US-026.
+  - La manifestation d'une épreuve ne change pas : le `PATCH` n'accepte pas `manifestationId`.
+  - Hors ligne, « Nouvelle compétition » propose les manifestations et épreuves de la dernière copie ; un rattachement
+    absent de la copie est refusé.
+- Tests : `epreuve.test.ts` et `manifestation.test.ts` (domaine), `epreuves.test.ts` (protocole),
+  `epreuves.test.ts` et `logique.test.ts` (serveur, dans workerd), `epreuves`, `competitions` et `textes` (app), E2E
+  `tests/e2e/epreuves.spec.ts` (dont US-025 CA-3 et CA-4).
+
 ## Suivi
 
 | Date | Événement |

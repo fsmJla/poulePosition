@@ -557,8 +557,8 @@ puis + 1 à chaque modification), `modifieeLe` (millisecondes) et `modifieePar` 
 **Erreurs** : `400 DEMANDE_INVALIDE` (corps mal formé ou refusé par les règles), `404 MANIFESTATION_INCONNUE`,
 `409 MODIFIEE_ENTRE_TEMPS` avec la version courante (`{"ok":false,"erreur":…,"manifestation":{…}}`, l'application
 affiche « Modifié entre-temps par <modifieePar> : rechargez ») et `409 MANIFESTATION_NON_VIDE` : une compétition de
-l'index du club s'y rattache (`rattachement.manifestationId`), la suppression est refusée. Les épreuves s'ajouteront à
-ce contrôle avec US-024 ; une manifestation non vide s'archivera (US-033).
+l'index du club s'y rattache (`rattachement.manifestationId`), ou si elle contient une épreuve (§13), la suppression est
+refusée ; une manifestation non vide s'archivera (US-033).
 
 ### Côté application
 
@@ -569,3 +569,56 @@ ce contrôle avec US-024 ; une manifestation non vide s'archivera (US-033).
   nouvelles dates aux compétitions connues de l'appareil (index du club et compétitions gardées localement, y compris
   pas encore envoyées) et refuse en citant celles qui sortiraient des dates. Le serveur ne fait pas ce contrôle : il
   n'a aucune règle d'escrime.
+
+## 13. Épreuves du club (US-024, ADR-0016 §4)
+
+Une épreuve regroupe des compétitions d'une manifestation sous un même nom (ex. « Championnats de Nouvelle-Aquitaine de
+sabre »). Comme les manifestations (§12), c'est une donnée du club stockée par le DO `Club` (table `epreuves`, avec le
+`clubId` et la manifestation), sans journal ni pilote, modifiable seulement **en ligne**, avec un **numéro de version**.
+Une épreuve appartient toujours à une manifestation et n'en change jamais ; elle n'a pas de dates propres (ce sont celles
+de ses compétitions).
+
+Les quatre routes demandent une **session valide** et un mot de passe définitif (sinon `403 ACCES_REFUSE`), pour tout
+rôle. Même CORS qu'au §7.
+
+**Champs saisis** (règles du domaine, `validerEpreuve`) :
+
+| Champ | Type | Règles |
+|---|---|---|
+| `manifestationId` | texte | Obligatoire, d'une manifestation existante ; fixé à la création |
+| `nom` | texte | Obligatoire, 1 à 100 caractères, espaces autour retirés |
+| `arme` | texte ou `null` | `sabre`, `epee`, `fleuret` ou `sabreLaser` ; `null` : toutes armes |
+| `commentaire` | texte ou `null` | 2 000 caractères au plus |
+
+**Épreuve renvoyée** : les champs saisis, plus `id` (UUID tiré par le serveur), `version`, `modifieeLe` et
+`modifieePar` (comme au §12).
+
+| Route | Corps | Réponse |
+|---|---|---|
+| `GET /epreuves` | — | `200 {"ok":true,"epreuves":[…]}`, regroupées par manifestation |
+| `POST /epreuves` | `manifestationId`, `nom`, `arme`, `commentaire` | `201 {"ok":true,"epreuve":{…}}` |
+| `PATCH /epreuves/<id>` | `nom`, `arme`, `commentaire` et `version` ; **pas** de `manifestationId` | `200 {"ok":true,"epreuve":{…}}` |
+| `DELETE /epreuves/<id>` | — | `200 {"ok":true}` |
+
+**Erreurs** : `400 DEMANDE_INVALIDE` (corps mal formé, refusé par les règles, ou `manifestationId` dans un `PATCH`),
+`404 MANIFESTATION_INCONNUE` (création), `404 EPREUVE_INCONNUE`, `409 MODIFIEE_ENTRE_TEMPS` avec la version courante
+(`{"ok":false,"erreur":…,"epreuve":{…}}`) et `409 EPREUVE_NON_VIDE` : une compétition de l'index du club s'y rattache
+(`rattachement.epreuveId`).
+
+### Côté application
+
+- La dernière liste reçue est gardée dans IndexedDB (table `copieEpreuves`, base locale en version 6), avec sa date.
+  Hors ligne, les épreuves restent consultables sous leur manifestation ; création, modification et suppression sont
+  grisées (« Nécessite une connexion internet »).
+- Les épreuves s'affichent et se gèrent sous chaque manifestation de la page « Manifestations » ; la liste complète du
+  club viendra avec US-026.
+- **Arme** (US-024 CA-4) : le serveur ne contrôle pas l'arme des compétitions (il n'a aucune règle d'escrime). C'est le
+  domaine (`validerCompetition` avec un `CadreRattachement`) qui refuse, à la création d'une compétition, une arme
+  différente de celle de l'épreuve : « Cette épreuve est au sabre ». Changer l'arme d'une épreuve ne modifie pas les
+  compétitions déjà rattachées.
+- **Rattachement d'une compétition** (US-025 CA-3 et CA-4) : le formulaire « Nouvelle compétition » propose « Aucune
+  (compétition isolée) », une manifestation, puis une épreuve de cette manifestation, parmi les dernières listes gardées
+  sur l'appareil (à jour en ligne, sinon la copie). Le lieu de la manifestation et l'arme de l'épreuve sont proposés ;
+  dans une manifestation, la date est obligatoire, proposée parmi ses jours et refusée hors de ses dates. Hors ligne,
+  un rattachement que la copie ne contient pas est refusé (`RATTACHEMENT_INVALIDE`) ; une compétition isolée reste
+  toujours possible.
