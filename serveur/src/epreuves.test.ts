@@ -72,12 +72,6 @@ async function creer(champs: Record<string, unknown> = {}): Promise<Manifestatio
   return ((await reponse.json()) as { manifestation: Manifestation }).manifestation;
 }
 
-async function lister(jeton = jetonOrganisateur): Promise<Manifestation[]> {
-  const reponse = await appeler('GET', '/manifestations', jeton);
-  expect(reponse.status).toBe(200);
-  return ((await reponse.json()) as { manifestations: Manifestation[] }).manifestations;
-}
-
 const saisieEpreuve = (manifestationId: string, champs: Record<string, unknown> = {}) => ({
   manifestationId,
   nom: 'Championnats de Nouvelle-Aquitaine de sabre',
