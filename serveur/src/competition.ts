@@ -4,10 +4,19 @@
 // US-022 (ADR-0016) : copie du journal envoyée par le pilote, ajoutée lot par lot, et appareil pilote.
 import { DurableObject } from 'cloudflare:workers';
 import { messageBienvenue, messageErreur, MESSAGE_PING, MESSAGE_PONG } from '@poule-position/protocole';
-import type { DemandeEnvoi } from '@poule-position/protocole';
+import type { DemandeEnvoi, DemandePriseDeMain } from '@poule-position/protocole';
 import type { Evenement } from '@poule-position/domaine';
 import { erreurMessageClient } from './logique';
-import { deciderAjout, type DecisionAjout, type EtatJournal } from './replication';
+import {
+  deciderAjout,
+  deciderPresence,
+  deciderPriseDeMain,
+  piloteConnecte,
+  type DecisionAjout,
+  type DecisionPresence,
+  type DecisionPriseDeMain,
+  type EtatJournal,
+} from './replication';
 import type { Env } from './index';
 
 /** Clé de l'unique ligne de la table `pilote`. */
@@ -19,6 +28,8 @@ export class Competition extends DurableObject<Env> {
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(MESSAGE_PING, MESSAGE_PONG));
     ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS evenements (seq INTEGER PRIMARY KEY, contenu TEXT NOT NULL)`);
     ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS pilote (cle TEXT PRIMARY KEY, appareil TEXT NOT NULL)`);
+    // US-029 : dernier signe de vie du pilote (lot ou battement), pour savoir s'il est connecté.
+    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS presence (cle TEXT PRIMARY KEY, vu_le INTEGER NOT NULL)`);
   }
 
   private etat(): EtatJournal {
@@ -29,6 +40,10 @@ export class Competition extends DurableObject<Env> {
       .exec<{ appareil: string }>('SELECT appareil FROM pilote WHERE cle = ?', LIGNE_UNIQUE)
       .toArray();
     return { dernierSeq: dernier?.seq ?? 0, piloteAppareil: pilote?.appareil ?? null };
+  }
+
+  private noterPresence(maintenant: number): void {
+    this.ctx.storage.sql.exec('INSERT OR REPLACE INTO presence (cle, vu_le) VALUES (?, ?)', LIGNE_UNIQUE, maintenant);
   }
 
   /** Ajoute un lot s'il vient du pilote et suit le dernier seq (ADR-0016) ; le premier lot fixe le pilote. */
@@ -48,8 +63,48 @@ export class Competition extends DurableObject<Env> {
         LIGNE_UNIQUE,
         demande.appareilId,
       );
+      this.noterPresence(Date.now());
       return decision;
     });
+  }
+
+  /** US-029 CA-1 : désigne l'appareil demandeur comme pilote et renvoie le journal complet. */
+  prendreLaMain(
+    demande: DemandePriseDeMain,
+  ):
+    | (DecisionPriseDeMain & { ok: false })
+    | { ok: true; ancienAppareil: string; evenements: Evenement[]; dernierSeq: number } {
+    return this.ctx.storage.transactionSync(() => {
+      const decision = deciderPriseDeMain(this.etat(), demande);
+      if (!decision.ok) return decision;
+      this.ctx.storage.sql.exec(
+        'INSERT OR REPLACE INTO pilote (cle, appareil) VALUES (?, ?)',
+        LIGNE_UNIQUE,
+        demande.appareilId,
+      );
+      this.noterPresence(Date.now());
+      const journal = this.lire() as NonNullable<ReturnType<Competition['lire']>>;
+      return { ok: true as const, ancienAppareil: decision.ancienAppareil, ...journal };
+    });
+  }
+
+  /** US-029 CA-2 : battement du pilote ; un autre appareil reçoit `PAS_PILOTE`. */
+  battement(appareilId: string): DecisionPresence {
+    return this.ctx.storage.transactionSync(() => {
+      const decision = deciderPresence(this.etat(), appareilId);
+      if (decision.ok) this.noterPresence(Date.now());
+      return decision;
+    });
+  }
+
+  /** US-029 CA-4 : pilote en place et présence, ou null si la compétition n'a encore rien reçu. */
+  etatPilote(): { piloteAppareil: string; connecte: boolean } | null {
+    const { piloteAppareil } = this.etat();
+    if (piloteAppareil === null) return null;
+    const [ligne] = this.ctx.storage.sql
+      .exec<{ vu_le: number }>('SELECT vu_le FROM presence WHERE cle = ?', LIGNE_UNIQUE)
+      .toArray();
+    return { piloteAppareil, connecte: piloteConnecte(ligne?.vu_le ?? null, Date.now()) };
   }
 
   /** Journal complet, ou null si la compétition n'a encore rien reçu. */
