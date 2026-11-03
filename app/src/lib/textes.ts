@@ -334,6 +334,31 @@ export const textes = {
     pilote: 'Ce PC est le pilote',
     lectureSeule: 'Lecture seule : cette compétition est pilotée par un autre PC',
     autreOnglet: 'Cette compétition est ouverte dans un autre onglet : lecture seule ici',
+    /** US-029 : prise de main depuis un autre PC. */
+    prise: {
+      bouton: 'Prendre la main',
+      horsLigne: 'Nécessite une connexion internet',
+      chargement: 'Recherche du pilote…',
+      confirmer: 'Prendre la main sur cette compétition ?',
+      piloteConnecte: (libelle: string) => `Le PC de ${libelle} est connecté et pilote cette compétition`,
+      piloteHorsLigne: (libelle: string) => `Cette compétition est pilotée par le PC de ${libelle}`,
+      valider: 'Prendre la main',
+      annuler: 'Annuler',
+      mainDejaPrise: (libelle: string) => `La main vient d’être prise par ${libelle}`,
+      perte: (libelle: string) => `${libelle} a pris la main depuis un autre PC`,
+      ecartes: (nombre: number) =>
+        nombre > 1
+          ? `${nombre} modifications faites hors ligne n’ont pas été reprises`
+          : `${nombre} modification faite hors ligne n’a pas été reprise`,
+      exporter: 'Exporter en JSON',
+      compris: 'Compris',
+      erreurs: {
+        HORS_LIGNE: 'Nécessite une connexion internet',
+        SESSION_INVALIDE: 'Reconnectez-vous pour prendre la main',
+        COMPETITION_INCONNUE: 'Compétition inconnue du serveur',
+        ERREUR_INATTENDUE: 'Prise de main impossible pour le moment',
+      },
+    },
     pasEncoreEnvoyee: 'Pas encore envoyée',
     enAttente: (nombre: number) =>
       nombre > 1 ? `${nombre} modifications en attente d’envoi` : `${nombre} modification en attente d’envoi`,
