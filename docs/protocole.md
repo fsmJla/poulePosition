@@ -434,6 +434,7 @@ Aucun autre champ n'est accepté.
 | Type | `donnees` | Règles |
 |---|---|---|
 | `CompetitionCreee` | voir ci-dessous | Premier événement d'une compétition, une seule fois. |
+| `CompetitionModifiee` | un ou plusieurs champs de `CompetitionCreee` | Modifie les champs donnés (US-027), seulement ceux qui ont changé. |
 
 **Données de `CompetitionCreee`** (US-025) : exactement ces champs ; un champ facultatif non saisi vaut `null`.
 Le format a été complété par US-025 sans changer de version : rien n'était encore en production.
@@ -455,12 +456,30 @@ La projection ajoute le statut (`preparation`), la publication (`false`) et la f
 qui dépendent de la manifestation ou de l'épreuve (dates, arme de l'épreuve) sont vérifiées à la saisie, où elles
 sont connues, et non à la relecture du journal.
 
+**Données de `CompetitionModifiee`** (US-027) : au moins un des champs ci-dessus, seulement ceux dont la valeur
+change ; les autres restent ce qu'ils étaient. Chaque champ a la même forme que dans `CompetitionCreee`, et
+`horaires`, s'il change, porte les trois heures. Le format est inchangé (`VERSION_JOURNAL` reste à 1) : c'est un
+nouveau type d'événement, que les versions précédentes ne produisaient pas.
+
+Règles du domaine (`verifierEvenement`), dans cet ordre :
+
+- `COMPETITION_INCONNUE` : aucune `CompetitionCreee` avant ;
+- `COMPETITION_ARCHIVEE` : une compétition archivée n'est plus modifiable ;
+- `CHAMP_FIGE` : un champ que le statut interdit de modifier — `arme` et `typeCompetition` quand la compétition est
+  « En cours », tout sauf `commentaire` quand elle est « Terminée » (`champsModifiables`) ;
+- `AUCUNE_MODIFICATION` : le résultat est identique à la compétition (rien n'est écrit, US-027 CA-5) ;
+- sinon, le résultat de la fusion est validé comme une création (`validerCompetition`), d'où les mêmes erreurs.
+
+La projection fusionne les champs, retire les espaces autour des textes, et recalcule `touchesRelais` de la formule
+quand le type change (le reste de la formule relève d'US-028).
+
 ### Règles d'écriture et de lecture
 
 - Un événement est **écrit avant d'être affiché**. La lecture du journal, le contrôle des règles et l'écriture se
   font dans une même transaction : deux écritures ne peuvent pas prendre le même `seq`.
 - Erreurs d'écriture : le code de la règle refusée (`NOM_VIDE`, `SCRATCH_AVANT_APPEL`… ou `COMPETITION_DEJA_CREEE`),
-  `JOURNAL_INCOHERENT` (on n'écrit pas à la suite d'un journal incohérent) ou `ECRITURE_IMPOSSIBLE` (IndexedDB en
+  `COMPETITION_INCONNUE`, `COMPETITION_ARCHIVEE`, `CHAMP_FIGE`, `AUCUNE_MODIFICATION` (US-027), `PAS_PILOTE` (copie d'un
+  autre PC), `JOURNAL_INCOHERENT` (on n'écrit pas à la suite d'un journal incohérent) ou `ECRITURE_IMPOSSIBLE` (IndexedDB en
   échec). Dans tous les cas, rien n'est écrit.
 - **Migration à la lecture** : un événement d'une version antérieure passe par les migrations successives
   (`MIGRATIONS`, de la version `n` à `n + 1`), sans réécrire le journal. Une version sans migration ou venant du
