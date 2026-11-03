@@ -1,5 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { cheminCompetition, resoudreRoute, CHEMINS } from './routes';
+import {
+  cheminCompetition,
+  cheminNouvelleEpreuve,
+  CHEMIN_NOUVELLE_MANIFESTATION,
+  ouvertureManifestations,
+  resoudreRoute,
+  CHEMINS,
+} from './routes';
+
+describe('actions de création de l’accueil (US-026 CA-5)', () => {
+  it('CA-5 : « /manifestations?nouvelle » et « ?epreuve=<id> » mènent à la page Manifestations', () => {
+    expect(resoudreRoute(CHEMIN_NOUVELLE_MANIFESTATION, true)).toEqual({ page: 'manifestations' });
+    expect(resoudreRoute(cheminNouvelleEpreuve('0b6f1c1e-6d1a'), true)).toEqual({ page: 'manifestations' });
+    expect(resoudreRoute(CHEMIN_NOUVELLE_MANIFESTATION, false)).toEqual({ redirection: CHEMINS.connexion });
+  });
+
+  it('CA-5 : l’adresse indique le formulaire à ouvrir', () => {
+    expect(ouvertureManifestations('?nouvelle')).toEqual({ nouvelle: true });
+    expect(ouvertureManifestations('?epreuve=0b6f1c1e-6d1a')).toEqual({ epreuveDe: '0b6f1c1e-6d1a' });
+    expect(ouvertureManifestations('')).toBeNull();
+    expect(ouvertureManifestations('?epreuve=Pas Un Id')).toBeNull();
+    expect(ouvertureManifestations('?autre=1')).toBeNull();
+  });
+});
 
 describe('resoudreRoute', () => {
   it('US-003 CA-6 : l’accueil public est ouvert à tous', () => {
