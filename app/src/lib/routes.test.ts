@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   cheminCompetition,
+  cheminModificationCompetition,
   cheminNouvelleEpreuve,
   CHEMIN_NOUVELLE_MANIFESTATION,
   ouvertureManifestations,
@@ -116,5 +117,17 @@ describe('manifestations (US-023)', () => {
     expect(resoudreRoute('/manifestations', true)).toEqual({ page: 'manifestations' });
     expect(resoudreRoute('/manifestations', true, false, true)).toEqual({ page: 'manifestations' });
     expect(resoudreRoute('/manifestations', true, true)).toEqual({ redirection: CHEMINS.motDePasse });
+  });
+});
+
+describe('modification d’une compétition (US-027)', () => {
+  it('CA-1 : « /competitions/<id>/modifier » est réservée aux comptes connectés et porte l’identifiant', () => {
+    const id = '0b6f1c1e-6d1a-4f0a-9a43-2f3c9e5d7b10';
+    const route = { page: 'modifierCompetition', competitionId: id };
+    expect(cheminModificationCompetition(id)).toBe(`/competitions/${id}/modifier`);
+    expect(resoudreRoute(`/competitions/${id}/modifier`, true)).toEqual(route);
+    expect(resoudreRoute(`/competitions/${id}/modifier/`, true)).toEqual(route);
+    expect(resoudreRoute(`/competitions/${id}/modifier`, false)).toEqual({ redirection: CHEMINS.connexion });
+    expect(resoudreRoute('/competitions/Pas Un Id/modifier', true)).toEqual({ redirection: '/' });
   });
 });

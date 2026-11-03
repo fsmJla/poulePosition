@@ -51,18 +51,36 @@ const CHAMPS_COMPETITION = [
   'rattachement',
 ];
 
-/** Forme des données (US-025) ; les valeurs (arme connue, horaires cohérents…) sont des règles du domaine. */
+const estTexte = (valeur: unknown) => typeof valeur === 'string';
+
+/** Forme de chaque champ (US-025) ; les valeurs (arme connue, horaires cohérents…) sont des règles du domaine. */
+const FORMES: Record<string, (valeur: unknown) => boolean> = {
+  nom: estTexte,
+  arme: estTexte,
+  typeCompetition: estTexte,
+  categorie: estTexteOuNull,
+  sexe: estTexteOuNull,
+  date: estTexteOuNull,
+  lieu: estTexteOuNull,
+  commentaire: estTexteOuNull,
+  horaires: (valeur) => {
+    const horaires = aExactementLesChamps(valeur, ['appel', 'scratch', 'debutPoules']);
+    return horaires !== null && Object.values(horaires).every(estTexteOuNull);
+  },
+  rattachement: estRattachement,
+};
+
+/**
+ * Forme des données : tous les champs pour `CompetitionCreee` ; pour `CompetitionModifiee` (US-027), un ou
+ * plusieurs champs parmi eux, ceux qui ont changé.
+ */
 function donneesValides(type: unknown, donnees: unknown): boolean {
-  if (type !== 'CompetitionCreee') return false;
-  const champs = aExactementLesChamps(donnees, CHAMPS_COMPETITION);
-  if (!champs) return false;
-  const { nom, arme, typeCompetition, categorie, sexe, date, lieu, commentaire } = champs;
-  const horaires = aExactementLesChamps(champs.horaires, ['appel', 'scratch', 'debutPoules']);
+  if (type !== 'CompetitionCreee' && type !== 'CompetitionModifiee') return false;
+  if (donnees === null || typeof donnees !== 'object' || Array.isArray(donnees)) return false;
+  const noms = Object.keys(donnees);
+  const attendus = type === 'CompetitionCreee' ? noms.length === CHAMPS_COMPETITION.length : noms.length > 0;
   return (
-    [nom, arme, typeCompetition].every((texte) => typeof texte === 'string') &&
-    [categorie, sexe, date, lieu, commentaire].every(estTexteOuNull) &&
-    horaires !== null &&
-    Object.values(horaires).every(estTexteOuNull) &&
-    estRattachement(champs.rattachement)
+    attendus &&
+    noms.every((nom) => CHAMPS_COMPETITION.includes(nom) && FORMES[nom]!((donnees as Record<string, unknown>)[nom]))
   );
 }

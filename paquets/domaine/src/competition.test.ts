@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   CATEGORIES,
   formuleParDefaut,
+  champsModifiables,
   joursDeManifestation,
+  modification,
   normaliserCompetition,
   preremplir,
   validerCompetition,
@@ -183,5 +185,56 @@ describe('création d’une compétition (US-025)', () => {
     expect(normaliserCompetition(saisie)).toEqual(
       donnees({ nom: 'Orpi', categorie: 'M15', lieu: null, commentaire: 'Buvette' }),
     );
+  });
+});
+
+describe('modification d’une compétition (US-027)', () => {
+  it('CA-1 : modification() ne garde que les champs changés', () => {
+    const courant = donnees({ lieu: 'Salle A', categorie: 'M13' });
+    expect(modification(courant, { ...courant, nom: 'Autre nom', lieu: 'Salle B' })).toEqual({
+      nom: 'Autre nom',
+      lieu: 'Salle B',
+    });
+  });
+
+  it('CA-1 : un horaire changé porte les trois heures, un rattachement changé est comparé en profondeur', () => {
+    const courant = donnees({ horaires: { appel: '08:00', scratch: '09:00', debutPoules: null } });
+    expect(modification(courant, { ...courant, horaires: { ...courant.horaires, debutPoules: '10:00' } })).toEqual({
+      horaires: { appel: '08:00', scratch: '09:00', debutPoules: '10:00' },
+    });
+    const rattachee = donnees({ rattachement: { manifestationId: 'm1', epreuveId: null } });
+    expect(modification(rattachee, { ...rattachee, rattachement: { manifestationId: 'm1', epreuveId: null } })).toEqual(
+      {},
+    );
+    expect(modification(rattachee, { ...rattachee, rattachement: { manifestationId: 'm1', epreuveId: 'e1' } })).toEqual(
+      {
+        rattachement: { manifestationId: 'm1', epreuveId: 'e1' },
+      },
+    );
+    expect(modification(rattachee, { ...rattachee, rattachement: null })).toEqual({ rattachement: null });
+  });
+
+  it('CA-5 : une saisie identique, ou qui ne diffère que par des espaces, ne change rien', () => {
+    const courant = donnees({ lieu: 'Salle A' });
+    expect(modification(courant, { ...courant })).toEqual({});
+    expect(
+      modification(courant, { ...courant, nom: ` ${courant.nom} `, lieu: ' Salle A ', commentaire: '  ' }),
+    ).toEqual({});
+  });
+
+  it('CA-2 : en préparation tout est modifiable ; en cours, arme et type sont figés', () => {
+    expect(champsModifiables('preparation')).toContain('arme');
+    expect(champsModifiables('preparation')).toContain('typeCompetition');
+    const enCours = champsModifiables('enCours');
+    expect(enCours).not.toContain('arme');
+    expect(enCours).not.toContain('typeCompetition');
+    expect(enCours).toEqual(
+      expect.arrayContaining(['nom', 'categorie', 'sexe', 'date', 'horaires', 'lieu', 'commentaire', 'rattachement']),
+    );
+  });
+
+  it('cas limite : terminée, seul le commentaire est modifiable ; archivée, rien', () => {
+    expect(champsModifiables('terminee')).toEqual(['commentaire']);
+    expect(champsModifiables('archivee')).toEqual([]);
   });
 });

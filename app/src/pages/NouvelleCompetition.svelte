@@ -3,14 +3,19 @@
   // aussi hors ligne ; ce PC en devient le pilote et l'envoi au serveur part aussitôt, ou au retour du réseau (US-022).
   // Le rattachement à une manifestation ou une épreuve (US-024) se choisit parmi les dernières listes du club gardées sur
   // l'appareil : hors ligne, la compétition reste créable, isolée ou rattachée à ce que la copie contient.
-  import { onMount } from 'svelte';
+  // La même page sert à modifier une compétition (US-027, `competitionId` donné) : le formulaire est prérempli depuis le
+  // journal local et écrit `CompetitionModifiee` ; sur un PC qui n'est pas le pilote, il est en lecture seule.
+  import { onMount, untrack } from 'svelte';
   import {
     ARMES,
     CATEGORIES,
+    champsModifiables,
     joursDeManifestation,
     SEXES,
     TYPES_COMPETITION,
+    type ChampDonnees,
     type ErreursCompetition,
+    type Statut,
   } from '@poule-position/domaine';
   import type { Epreuve, Manifestation } from '@poule-position/protocole';
   import Lien from '../composants/Lien.svelte';
@@ -18,12 +23,15 @@
     cadreDe,
     CATEGORIE_LIBRE,
     creerCompetition,
+    modifierCompetition,
     rattacher,
+    saisieDe,
     saisieVide,
     type ErreurCreation,
+    type ErreurModification,
   } from '../lib/competitions';
   import type { ClientEpreuves } from '../lib/epreuves';
-  import type { Journal } from '../lib/journal';
+  import { prendreEcriture, type Journal } from '../lib/journal';
   import type { ClientManifestations } from '../lib/manifestations';
   import { cheminCompetition, CHEMINS } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
@@ -38,16 +46,33 @@
     clientManifestations: ClientManifestations;
     clientEpreuves: ClientEpreuves;
     naviguer: (chemin: string) => void;
+    /** US-027 : compétition à modifier ; absent pour une création. */
+    competitionId?: string;
   }
 
-  let { session, journal, synchronisation, clientManifestations, clientEpreuves, naviguer }: Proprietes = $props();
+  let { session, journal, synchronisation, clientManifestations, clientEpreuves, naviguer, competitionId }: Proprietes =
+    $props();
 
   const t = textes.competitions;
 
   const saisie = $state(saisieVide());
   let erreurs: ErreursCompetition = $state({});
-  let erreur: ErreurCreation | null = $state(null);
+  let erreur: ErreurCreation | ErreurModification | null = $state(null);
   let enCours = $state(false);
+
+  /** US-027 : faux tant que la compétition à modifier n'est pas lue. */
+  let chargee = $state(untrack(() => competitionId === undefined));
+  let introuvable = $state(false);
+  let statut: Statut = $state('preparation');
+  let pilote = $state(true);
+  /** Faux si un autre onglet détient déjà l'écriture de cette compétition. */
+  let ecriture = $state(true);
+  const modification = $derived(competitionId !== undefined);
+  const lectureSeule = $derived(modification && (!pilote || !ecriture));
+
+  /** CA-2, CA-3 et cas limites : un champ figé par le statut, ou tout le formulaire en lecture seule, est désactivé. */
+  const inactif = (champ: ChampDonnees) =>
+    enCours || lectureSeule || (modification && !champsModifiables(statut).includes(champ));
 
   let manifestations: Manifestation[] = $state([]);
   let epreuves: Epreuve[] = $state([]);
@@ -58,11 +83,34 @@
 
   /** Listes du club : à jour en ligne, sinon la dernière copie de l'appareil. */
   onMount(() => {
+    let liberer: (() => void) | null = null;
+    let demonte = false;
+    if (competitionId !== undefined) {
+      const identifiant = competitionId;
+      void (async () => {
+        const { competition } = await journal.lire(identifiant);
+        if (competition) {
+          Object.assign(saisie, saisieDe(competition));
+          statut = competition.statut;
+          pilote = (await journal.etat(identifiant))?.pilote ?? false;
+          if (pilote) {
+            liberer = await prendreEcriture(identifiant);
+            if (demonte) liberer?.();
+            ecriture = liberer !== null;
+          }
+        } else introuvable = true;
+        chargee = true;
+      })();
+    }
     void (async () => {
       const [lues, lus] = await Promise.all([clientManifestations.lister(), clientEpreuves.lister()]);
       manifestations = lues.ok ? lues.manifestations : (lues.copie?.manifestations ?? []);
       epreuves = lus.ok ? lus.epreuves : (lus.copie?.epreuves ?? []);
     })();
+    return () => {
+      demonte = true;
+      liberer?.();
+    };
   });
 
   function choisirManifestation(identifiant: string) {
@@ -76,26 +124,35 @@
     );
   }
 
-  async function creer(evenement: SubmitEvent) {
+  async function enregistrer(evenement: SubmitEvent) {
     evenement.preventDefault();
-    if (enCours) return;
+    if (enCours || lectureSeule) return;
     enCours = true;
     erreur = null;
     try {
-      const resultat = await creerCompetition(
-        journal,
-        $state.snapshot(saisie),
-        {
-          clubId: session.compte.clubId,
-          auteur: session.compte.email,
-        },
-        $state.snapshot(manifestations),
-        $state.snapshot(epreuves),
-      );
+      const contexte = { clubId: session.compte.clubId, auteur: session.compte.email };
+      const resultat =
+        competitionId === undefined
+          ? await creerCompetition(
+              journal,
+              $state.snapshot(saisie),
+              contexte,
+              $state.snapshot(manifestations),
+              $state.snapshot(epreuves),
+            )
+          : await modifierCompetition(
+              journal,
+              competitionId,
+              $state.snapshot(saisie),
+              contexte,
+              $state.snapshot(manifestations),
+              $state.snapshot(epreuves),
+            );
       if (resultat.ok) {
+        const identifiant = 'competitionId' in resultat ? resultat.competitionId : competitionId!;
         // US-022 : envoi après l'écriture ; hors ligne, la compétition attend le retour du réseau.
-        void synchronisation.envoyer(resultat.competitionId);
-        naviguer(cheminCompetition(resultat.competitionId));
+        void synchronisation.envoyer(identifiant);
+        naviguer(cheminCompetition(identifiant));
       } else if ('erreurs' in resultat) {
         erreurs = resultat.erreurs;
       } else {
@@ -129,173 +186,207 @@
 {/snippet}
 
 <main>
-  <h1>{t.titreNouvelle}</h1>
+  <h1>{modification ? t.titreModification : t.titreNouvelle}</h1>
 
-  <form onsubmit={creer} novalidate>
-    <fieldset class="rattachement">
-      <legend>{t.rattachement} <small>({t.facultatif})</small></legend>
-      <div class="ligne">
-        <div class="champ">
-          <label for="manifestation">{t.manifestation}</label>
-          <select
-            id="manifestation"
-            value={saisie.manifestationId}
-            onchange={(evenement) => choisirManifestation(evenement.currentTarget.value)}
-            disabled={enCours}
-            {...invalide('rattachement')}
-          >
-            <option value="">{t.aucuneManifestation}</option>
-            {#each manifestations as manifestation (manifestation.id)}
-              <option value={manifestation.id}>{manifestation.nom}</option>
-            {/each}
-          </select>
-          {@render message('rattachement')}
-        </div>
-        {#if saisie.manifestationId}
+  {#if !chargee}
+    <p role="status">{t.chargement}</p>
+  {:else if introuvable}
+    <p class="message" role="alert">{t.introuvable}</p>
+  {:else}
+    {#if modification && !pilote}
+      <p class="avertissement" role="status">{t.lectureSeule}</p>
+    {:else if modification && !ecriture}
+      <p class="avertissement" role="status">{t.autreOnglet}</p>
+    {/if}
+
+    <form onsubmit={enregistrer} novalidate>
+      <fieldset class="rattachement">
+        <legend>{t.rattachement} <small>({t.facultatif})</small></legend>
+        <div class="ligne">
           <div class="champ">
-            <label for="epreuve">{t.epreuve}</label>
+            <label for="manifestation">{t.manifestation}</label>
             <select
-              id="epreuve"
-              value={saisie.epreuveId}
-              onchange={(evenement) => choisirEpreuve(evenement.currentTarget.value)}
-              disabled={enCours}
+              id="manifestation"
+              value={saisie.manifestationId}
+              onchange={(evenement) => choisirManifestation(evenement.currentTarget.value)}
+              disabled={inactif('rattachement')}
+              {...invalide('rattachement')}
             >
-              <option value="">{t.aucuneEpreuve}</option>
-              {#each epreuvesChoisies as epreuve (epreuve.id)}
-                <option value={epreuve.id}>{epreuve.nom}</option>
+              <option value="">{t.aucuneManifestation}</option>
+              {#each manifestations as manifestation (manifestation.id)}
+                <option value={manifestation.id}>{manifestation.nom}</option>
               {/each}
             </select>
+            {@render message('rattachement')}
+          </div>
+          {#if saisie.manifestationId}
+            <div class="champ">
+              <label for="epreuve">{t.epreuve}</label>
+              <select
+                id="epreuve"
+                value={saisie.epreuveId}
+                onchange={(evenement) => choisirEpreuve(evenement.currentTarget.value)}
+                disabled={inactif('rattachement')}
+              >
+                <option value="">{t.aucuneEpreuve}</option>
+                {#each epreuvesChoisies as epreuve (epreuve.id)}
+                  <option value={epreuve.id}>{epreuve.nom}</option>
+                {/each}
+              </select>
+            </div>
+          {/if}
+        </div>
+      </fieldset>
+
+      <div class="champ">
+        <label for="nom">{t.nom}</label>
+        <input
+          id="nom"
+          type="text"
+          placeholder={t.exempleNom}
+          bind:value={saisie.nom}
+          disabled={inactif('nom')}
+          {...invalide('nom')}
+        />
+        {@render message('nom')}
+      </div>
+
+      <div class="ligne">
+        <div class="champ">
+          <label for="arme">{t.arme}</label>
+          <select id="arme" bind:value={saisie.arme} disabled={inactif('arme')} {...invalide('arme')}>
+            <option value="" disabled>{t.choisirArme}</option>
+            {#each ARMES as arme (arme)}<option value={arme}>{t.armes[arme]}</option>{/each}
+          </select>
+          {@render message('arme')}
+        </div>
+        <div class="champ">
+          <label for="type">{t.type}</label>
+          <select
+            id="type"
+            bind:value={saisie.typeCompetition}
+            disabled={inactif('typeCompetition')}
+            {...invalide('typeCompetition')}
+          >
+            {#each TYPES_COMPETITION as type (type)}<option value={type}>{t.types[type]}</option>{/each}
+          </select>
+          {@render message('typeCompetition')}
+        </div>
+      </div>
+
+      <div class="ligne">
+        <div class="champ">
+          <label for="categorie">{t.categorie} <small>({t.facultatif})</small></label>
+          <select
+            id="categorie"
+            bind:value={saisie.categorie}
+            disabled={inactif('categorie')}
+            {...invalide('categorie')}
+          >
+            <option value="">{t.aucuneCategorie}</option>
+            {#each CATEGORIES as categorie (categorie)}<option value={categorie}>{categorie}</option>{/each}
+            <option value={CATEGORIE_LIBRE}>{t.categorieLibre}</option>
+          </select>
+          {#if saisie.categorie === CATEGORIE_LIBRE}
+            <input
+              type="text"
+              aria-label={t.categorieLibreChamp}
+              bind:value={saisie.categorieLibre}
+              disabled={inactif('categorie')}
+              {...invalide('categorie')}
+            />
+          {/if}
+          {@render message('categorie')}
+        </div>
+        <div class="champ">
+          <label for="sexe">{t.sexe} <small>({t.facultatif})</small></label>
+          <select id="sexe" bind:value={saisie.sexe} disabled={inactif('sexe')} {...invalide('sexe')}>
+            <option value="">{t.aucunSexe}</option>
+            {#each SEXES as sexe (sexe)}<option value={sexe}>{t.sexes[sexe]}</option>{/each}
+          </select>
+          {@render message('sexe')}
+        </div>
+      </div>
+
+      <div class="champ">
+        <label for="date"
+          >{t.date}
+          {#if !cadre}<small>({t.facultatif})</small>{/if}</label
+        >
+        <input
+          id="date"
+          type="date"
+          min={cadre?.manifestation.debut}
+          max={cadre?.manifestation.fin}
+          bind:value={saisie.date}
+          disabled={inactif('date')}
+          {...invalide('date')}
+        />
+        {#if cadre}
+          <!-- US-025 CA-4 : dans une manifestation, la date est proposée parmi ses jours. -->
+          <div class="jours" role="group" aria-label={t.choisirDate}>
+            {#each joursDeManifestation(cadre.manifestation.debut, cadre.manifestation.fin) as jour (jour)}
+              <button
+                type="button"
+                class="jour"
+                aria-pressed={saisie.date === jour}
+                onclick={() => (saisie.date = jour)}
+                disabled={inactif('date')}>{t.dateLongue(jour)}</button
+              >
+            {/each}
           </div>
         {/if}
+        {@render message('date')}
       </div>
-    </fieldset>
 
-    <div class="champ">
-      <label for="nom">{t.nom}</label>
-      <input
-        id="nom"
-        type="text"
-        placeholder={t.exempleNom}
-        bind:value={saisie.nom}
-        disabled={enCours}
-        {...invalide('nom')}
-      />
-      {@render message('nom')}
-    </div>
-
-    <div class="ligne">
-      <div class="champ">
-        <label for="arme">{t.arme}</label>
-        <select id="arme" bind:value={saisie.arme} disabled={enCours} {...invalide('arme')}>
-          <option value="" disabled>{t.choisirArme}</option>
-          {#each ARMES as arme (arme)}<option value={arme}>{t.armes[arme]}</option>{/each}
-        </select>
-        {@render message('arme')}
-      </div>
-      <div class="champ">
-        <label for="type">{t.type}</label>
-        <select id="type" bind:value={saisie.typeCompetition} disabled={enCours} {...invalide('typeCompetition')}>
-          {#each TYPES_COMPETITION as type (type)}<option value={type}>{t.types[type]}</option>{/each}
-        </select>
-        {@render message('typeCompetition')}
-      </div>
-    </div>
-
-    <div class="ligne">
-      <div class="champ">
-        <label for="categorie">{t.categorie} <small>({t.facultatif})</small></label>
-        <select id="categorie" bind:value={saisie.categorie} disabled={enCours} {...invalide('categorie')}>
-          <option value="">{t.aucuneCategorie}</option>
-          {#each CATEGORIES as categorie (categorie)}<option value={categorie}>{categorie}</option>{/each}
-          <option value={CATEGORIE_LIBRE}>{t.categorieLibre}</option>
-        </select>
-        {#if saisie.categorie === CATEGORIE_LIBRE}
-          <input
-            type="text"
-            aria-label={t.categorieLibreChamp}
-            bind:value={saisie.categorieLibre}
-            disabled={enCours}
-            {...invalide('categorie')}
-          />
-        {/if}
-        {@render message('categorie')}
-      </div>
-      <div class="champ">
-        <label for="sexe">{t.sexe} <small>({t.facultatif})</small></label>
-        <select id="sexe" bind:value={saisie.sexe} disabled={enCours} {...invalide('sexe')}>
-          <option value="">{t.aucunSexe}</option>
-          {#each SEXES as sexe (sexe)}<option value={sexe}>{t.sexes[sexe]}</option>{/each}
-        </select>
-        {@render message('sexe')}
-      </div>
-    </div>
-
-    <div class="champ">
-      <label for="date"
-        >{t.date}
-        {#if !cadre}<small>({t.facultatif})</small>{/if}</label
-      >
-      <input
-        id="date"
-        type="date"
-        min={cadre?.manifestation.debut}
-        max={cadre?.manifestation.fin}
-        bind:value={saisie.date}
-        disabled={enCours}
-        {...invalide('date')}
-      />
-      {#if cadre}
-        <!-- US-025 CA-4 : dans une manifestation, la date est proposée parmi ses jours. -->
-        <div class="jours" role="group" aria-label={t.choisirDate}>
-          {#each joursDeManifestation(cadre.manifestation.debut, cadre.manifestation.fin) as jour (jour)}
-            <button
-              type="button"
-              class="jour"
-              aria-pressed={saisie.date === jour}
-              onclick={() => (saisie.date = jour)}
-              disabled={enCours}>{t.dateLongue(jour)}</button
-            >
+      <fieldset>
+        <legend>{t.horaires} <small>({t.facultatif})</small></legend>
+        <div class="ligne horaires">
+          {#each ['appel', 'scratch', 'debutPoules'] as const as champ (champ)}
+            <div class="champ">
+              <label for={champ}>{t[champ]}</label>
+              <input
+                id={champ}
+                type="time"
+                bind:value={saisie[champ]}
+                disabled={inactif('horaires')}
+                {...invalide(champ)}
+              />
+              {@render message(champ)}
+            </div>
           {/each}
         </div>
-      {/if}
-      {@render message('date')}
-    </div>
+      </fieldset>
 
-    <fieldset>
-      <legend>{t.horaires} <small>({t.facultatif})</small></legend>
-      <div class="ligne horaires">
-        {#each ['appel', 'scratch', 'debutPoules'] as const as champ (champ)}
-          <div class="champ">
-            <label for={champ}>{t[champ]}</label>
-            <input id={champ} type="time" bind:value={saisie[champ]} disabled={enCours} {...invalide(champ)} />
-            {@render message(champ)}
-          </div>
-        {/each}
+      <div class="champ">
+        <label for="lieu">{t.lieu} <small>({t.facultatif})</small></label>
+        <input id="lieu" type="text" bind:value={saisie.lieu} disabled={inactif('lieu')} {...invalide('lieu')} />
+        {@render message('lieu')}
       </div>
-    </fieldset>
 
-    <div class="champ">
-      <label for="lieu">{t.lieu} <small>({t.facultatif})</small></label>
-      <input id="lieu" type="text" bind:value={saisie.lieu} disabled={enCours} {...invalide('lieu')} />
-      {@render message('lieu')}
-    </div>
+      <div class="champ">
+        <label for="commentaire">{t.commentaire} <small>({t.facultatif})</small></label>
+        <textarea
+          id="commentaire"
+          rows="3"
+          bind:value={saisie.commentaire}
+          disabled={inactif('commentaire')}
+          {...invalide('commentaire')}></textarea>
+        {@render message('commentaire')}
+      </div>
 
-    <div class="champ">
-      <label for="commentaire">{t.commentaire} <small>({t.facultatif})</small></label>
-      <textarea
-        id="commentaire"
-        rows="3"
-        bind:value={saisie.commentaire}
-        disabled={enCours}
-        {...invalide('commentaire')}></textarea>
-      {@render message('commentaire')}
-    </div>
+      {#if erreur}<p class="message" role="alert">{t.erreurs[erreur]}</p>{/if}
+      {#if !lectureSeule}
+        <button type="submit" disabled={enCours}
+          >{modification ? (enCours ? t.enregistrement : t.enregistrer) : enCours ? t.enCours : t.creer}</button
+        >
+      {/if}
+    </form>
+  {/if}
 
-    {#if erreur}<p class="message" role="alert">{t.erreurs[erreur]}</p>{/if}
-    <button type="submit" disabled={enCours}>{enCours ? t.enCours : t.creer}</button>
-  </form>
-
-  <Lien chemin={CHEMINS.organisateur} {naviguer}>{t.annuler}</Lien>
+  <Lien chemin={competitionId === undefined ? CHEMINS.organisateur : cheminCompetition(competitionId)} {naviguer}
+    >{t.annuler}</Lien
+  >
 </main>
 
 <style>
@@ -412,10 +503,15 @@
     cursor: not-allowed;
   }
 
-  .message {
+  .message,
+  .avertissement {
     margin: 0;
     padding: 0.6rem 0.75rem;
     border-left: 4px solid var(--etat-erreur);
     background: var(--surface);
+  }
+
+  .avertissement {
+    border-left-color: var(--etat-attente);
   }
 </style>

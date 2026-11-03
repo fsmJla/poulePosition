@@ -152,6 +152,18 @@
         clientEpreuves={epreuves}
         {naviguer}
       />
+    {:else if route.page === 'modifierCompetition' && route.competitionId}
+      {#key route.competitionId}
+        <NouvelleCompetition
+          {session}
+          {journal}
+          {synchronisation}
+          clientManifestations={manifestations}
+          clientEpreuves={epreuves}
+          competitionId={route.competitionId}
+          {naviguer}
+        />
+      {/key}
     {:else if route.page === 'competition' && route.competitionId}
       {#key route.competitionId}
         <Competition competitionId={route.competitionId} {journal} {synchronisation} {naviguer} />

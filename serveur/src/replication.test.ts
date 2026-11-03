@@ -14,7 +14,7 @@ const RESUME: ResumeCompetition = {
   rattachement: null,
 };
 
-const evenement = (seq: number, champs: Partial<Evenement> = {}): Evenement => ({
+const evenement = (seq: number, champs: Partial<Extract<Evenement, { type: 'CompetitionCreee' }>> = {}): Evenement => ({
   competitionId: 'c1',
   clubId: 'pessac',
   seq,

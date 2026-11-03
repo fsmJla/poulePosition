@@ -111,3 +111,71 @@ describe('journal d’une compétition (ADR-0001)', () => {
     });
   });
 });
+
+describe('modification d’une compétition (US-027)', () => {
+  const modifiee = (champs: Partial<DonneesCompetition>): Proposition => ({
+    type: 'CompetitionModifiee',
+    donnees: champs,
+  });
+  const creee = () => projeter([evenement(1)]);
+  const enStatut = (statut: 'enCours' | 'terminee' | 'archivee') => {
+    const p = creee();
+    return { ...p, competition: { ...p.competition!, statut } };
+  };
+
+  it('CA-1 : appliquer fusionne une CompetitionModifiee et garde le reste', () => {
+    const { competition, dernierSeq } = projeter([
+      evenement(1),
+      evenement(2, modifiee({ nom: ' Nouveau ', lieu: null })),
+    ]);
+    expect(dernierSeq).toBe(2);
+    expect(competition).toMatchObject({
+      nom: 'Nouveau',
+      lieu: null,
+      arme: 'sabre',
+      categorie: 'M13',
+      creeePar: 'orga@club.fr',
+    });
+  });
+
+  it('CA-1 : la projection s’arrête sur une modification invalide', () => {
+    expect(projeter([evenement(1), evenement(2, modifiee({ nom: '   ' }))])).toMatchObject({
+      dernierSeq: 1,
+      anomalie: { seq: 2, nature: 'INVALIDE' },
+    });
+  });
+
+  it('CA-1 : changer le type recalcule les touches de relais de la formule', () => {
+    const { competition } = projeter([evenement(1), evenement(2, modifiee({ typeCompetition: 'equipes3' }))]);
+    expect(competition?.formule.touchesRelais).toBe(45);
+    expect(competition?.formule.touchesPoules).toBe(5);
+  });
+
+  it('CA-1 : refuse une modification sans compétition créée', () => {
+    expect(verifierEvenement(projectionVide(), modifiee({ nom: 'x' }))).toBe('COMPETITION_INCONNUE');
+  });
+
+  it('CA-2 : en cours, arme et type sont figés, les autres champs restent modifiables', () => {
+    expect(verifierEvenement(enStatut('enCours'), modifiee({ arme: 'epee' }))).toBe('CHAMP_FIGE');
+    expect(verifierEvenement(enStatut('enCours'), modifiee({ typeCompetition: 'equipes2' }))).toBe('CHAMP_FIGE');
+    expect(verifierEvenement(enStatut('enCours'), modifiee({ nom: 'Autre', lieu: 'Ailleurs' }))).toBeNull();
+  });
+
+  it('CA-4 : mêmes erreurs qu’à la création', () => {
+    const horaires = { appel: '09:00', scratch: '08:00', debutPoules: null };
+    expect(verifierEvenement(creee(), modifiee({ horaires }))).toBe('SCRATCH_AVANT_APPEL');
+    expect(verifierEvenement(creee(), modifiee({ nom: 'x'.repeat(101) }))).toBe('NOM_TROP_LONG');
+    expect(verifierEvenement(creee(), modifiee({ date: '2027-02-30' }))).toBe('DATE_INVALIDE');
+  });
+
+  it('CA-5 : une modification qui ne change rien est refusée', () => {
+    expect(verifierEvenement(creee(), modifiee({}))).toBe('AUCUNE_MODIFICATION');
+    expect(verifierEvenement(creee(), modifiee({ nom: ' Challenge Orpi 2027 ' }))).toBe('AUCUNE_MODIFICATION');
+  });
+
+  it('cas limite : terminée, seul le commentaire se modifie ; archivée, tout est refusé', () => {
+    expect(verifierEvenement(enStatut('terminee'), modifiee({ commentaire: 'Bravo' }))).toBeNull();
+    expect(verifierEvenement(enStatut('terminee'), modifiee({ nom: 'Autre' }))).toBe('CHAMP_FIGE');
+    expect(verifierEvenement(enStatut('archivee'), modifiee({ commentaire: 'Bravo' }))).toBe('COMPETITION_ARCHIVEE');
+  });
+});

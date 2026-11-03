@@ -13,7 +13,7 @@ import {
   type Statut,
   type TypeCompetition,
 } from '@poule-position/domaine';
-import type { ErreurCreation } from './competitions';
+import type { ErreurCreation, ErreurModification } from './competitions';
 import type { EtatConnexion } from './connexion';
 import type { ErreurEpreuves } from './epreuves';
 import type { ErreurManifestations } from './manifestations';
@@ -300,6 +300,11 @@ export const textes = {
     commentaire: 'Commentaire',
     facultatif: 'facultatif',
     creer: 'Créer la compétition',
+    /** US-027 : modification d'une compétition. */
+    modifier: 'Modifier',
+    titreModification: 'Modifier la compétition',
+    enregistrer: 'Enregistrer',
+    enregistrement: 'Enregistrement…',
     enCours: 'Création…',
     annuler: 'Annuler',
     armes: {
@@ -381,9 +386,14 @@ export const textes = {
     } satisfies Record<ErreurCompetition, string>,
     erreurs: {
       ECRITURE_IMPOSSIBLE:
-        'Enregistrement impossible sur cet appareil (espace plein ou navigation privée) : rien n’a été créé',
+        'Enregistrement impossible sur cet appareil (espace plein ou navigation privée) : rien n’a été enregistré',
       CLUB_INCONNU: 'Reconnectez-vous une fois en ligne pour créer une compétition sur cet appareil',
-    } satisfies Record<ErreurCreation, string>,
+      INTROUVABLE: 'Compétition introuvable sur cet appareil',
+      PAS_PILOTE: 'Cette compétition est pilotée par un autre PC : modification impossible ici',
+      COMPETITION_ARCHIVEE: 'Cette compétition est archivée : elle n’est plus modifiable',
+      CHAMP_FIGE: 'Ce champ ne peut plus être modifié',
+      JOURNAL_INCOHERENT: 'Le journal de cette compétition est incohérent : modification impossible',
+    } satisfies Record<ErreurCreation | ErreurModification, string>,
   },
   /** US-024 : épreuves, sous chaque manifestation de la page « Manifestations ». */
   epreuves: {

@@ -6,7 +6,7 @@
   import type { Competition } from '@poule-position/domaine';
   import Lien from '../composants/Lien.svelte';
   import { prendreEcriture, type Journal } from '../lib/journal';
-  import { CHEMINS } from '../lib/routes';
+  import { cheminModificationCompetition, CHEMINS } from '../lib/routes';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
 
@@ -90,6 +90,10 @@
       </p>
     {:else if !ecriture}
       <p class="avertissement" role="status">{t.autreOnglet}</p>
+    {/if}
+    <!-- US-027 CA-3 : seul le PC pilote modifie ; ailleurs la compétition reste en lecture seule. -->
+    {#if pilote && ecriture && competition.statut !== 'archivee'}
+      <Lien chemin={cheminModificationCompetition(competitionId)} {naviguer}>{t.modifier}</Lien>
     {/if}
     {#if pilote && enAttente > 0}
       <p class="envoi" role="status">
