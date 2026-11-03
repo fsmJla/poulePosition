@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-025
 - **Branche / PR :** `us/US-027-modifier-competition`
 
@@ -81,3 +81,4 @@ Changer le rattachement hors ligne propose les manifestations et épreuves de la
 - CA-2 n'est testé qu'en unitaire : aucun événement ne pose encore « En cours » (E4). Une E2E sera à ajouter alors.
 - Changer de manifestation vide la date, comme à la création.
 - Format du journal inchangé (`VERSION_JOURNAL` = 1) : nouveau type d'événement, voir `docs/protocole.md` §10.
+| 2026-11-03 | Recette OK sur https://poule-position-git-us-us-027-modifier-c-8dc604-fsmjlas-projects.vercel.app (PC et smartphone, hors ligne) ; CA-2 vérifié en unitaire seulement ; mergée dans `dev` |
