@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2, F12 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-022
 - **Branche / PR :** `us/US-029-prendre-la-main`
 
@@ -60,6 +60,16 @@ entre-temps, CA-3 s'applique.
 - Tout organisateur du club peut prendre la main, sans accord de l'ancien pilote (cas de la panne).
 - Le PC est identifié par un identifiant d'appareil gardé dans IndexedDB, associé au compte connecté.
 
+- Présence du pilote par battements HTTP toutes les 30 s (60 s sans signe = déconnecté), en attendant la WebSocket du
+  pilote (E5) : l'ancien pilote passe en lecture seule 30 s au plus après la prise de main, pas instantanément
+  (décision de l'utilisateur, 2026-11-03 ; ADR-0017).
+- Le nom du pilote affiché est celui du compte suivi du début de l'identifiant de l'appareil : « Julien Lameyre
+  (appareil 7f3a) », ce qui distingue deux PC d'un même compte (décision de l'utilisateur, 2026-11-03).
+- Une compétition terminée ou archivée peut changer de pilote : prendre la main ne modifie pas son contenu.
+- L'export JSON des modifications écartées contient les événements au format du journal ; sa réimportation relève
+  d'US-035.
+- Les battements ne concernent que les compétitions en préparation ou en cours.
+
 ## Questions bloquantes
 
 - Aucune.
@@ -73,3 +83,5 @@ entre-temps, CA-3 s'applique.
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-11-03 | Plan validé ; en cours sur `us/US-029-prendre-la-main` |
+| 2026-11-03 | Implémentée (`PiloteChange`, prise de main, présence, modifications écartées, ADR-0017) ; en revue |

@@ -436,6 +436,7 @@ Aucun autre champ n'est accepté.
 | `CompetitionCreee` | voir ci-dessous | Premier événement d'une compétition, une seule fois. |
 | `CompetitionModifiee` | un ou plusieurs champs de `CompetitionCreee` | Modifie les champs donnés (US-027), seulement ceux qui ont changé. |
 | `FormuleModifiee` | un ou plusieurs réglages de la formule | Modifie la formule de la compétition (US-028), seulement ce qui a changé. |
+| `PiloteChange` | `{ ancienAppareil, nouvelAppareil }` | Un autre PC a pris la main (US-029). |
 
 **Données de `CompetitionCreee`** (US-025) : exactement ces champs ; un champ facultatif non saisi vaut `null`.
 Le format a été complété par US-025 sans changer de version : rien n'était encore en production.
@@ -498,6 +499,12 @@ Règles du domaine (`verifierEvenement`), dans cet ordre :
 La date et l'auteur de chaque changement sont ceux de l'en-tête de l'événement : `historiqueFormule` (domaine) en tire
 la trace des changements de formule (CA-6).
 
+**Données de `PiloteChange`** (US-029) : exactement `ancienAppareil` et `nouvelAppareil`, deux identifiants d'appareil
+(§11). L'auteur et la date sont ceux de l'en-tête. C'est le premier événement que le nouveau pilote écrit après avoir
+pris la main ; il ne change rien à la compétition. Règles du domaine : `COMPETITION_INCONNUE` sans `CompetitionCreee`
+avant, `PILOTE_INVALIDE` pour un appareil vide ou deux appareils identiques. Une compétition terminée ou archivée peut
+changer de pilote. Le format est inchangé (`VERSION_JOURNAL` reste à 1).
+
 ### Règles d'écriture et de lecture
 
 - Un événement est **écrit avant d'être affiché**. La lecture du journal, le contrôle des règles et l'écriture se
@@ -539,7 +546,7 @@ Le DO ajoute le lot si, dans cet ordre :
 
 1. tous ses événements portent le `clubId` du club et le `competitionId` de l'adresse (sinon `403 ACCES_REFUSE`) ;
 2. l'appareil est le pilote : le premier lot fixe le pilote, les suivants doivent venir du même appareil (sinon
-   `409 PAS_PILOTE`, jusqu'à une prise de main, US-029) ;
+   `409 PAS_PILOTE`, jusqu'à une prise de main, US-029, ci-dessous) ;
 3. `depuis` est son dernier `seq` (sinon `409 {"ok":false,"erreur":"SEQ_INATTENDU","dernierSeq":n}` : le pilote
    reprend à `n`). Renvoyer un lot déjà reçu est donc sans effet.
 
@@ -560,6 +567,30 @@ encore été reçu.
 L'application ignore une ligne illisible (format plus ancien, ligne abîmée) et garde les autres (US-023, pour
 US-026).
 
+### Prise de main et présence du pilote (US-029, ADR-0017)
+
+Mêmes contrôles de session que ci-dessus. `appareilId` et `piloteAttendu` suivent le motif d'un identifiant d'appareil.
+
+**`POST /competitions/<competitionId>/pilote`** — prendre la main. Corps : `{ "appareilId": "…", "piloteAttendu": "…" }`
+(l'appareil demandeur et le pilote qu'il croit en place). Le DO le désigne pilote s'il vise bien le pilote en place :
+
+- `200 {"ok":true,"evenements":[…],"dernierSeq":n,"ancienAppareil":"…"}` : journal complet ; l'index du club désigne le
+  nouveau pilote (appareil et nom du compte) ;
+- `409 {"ok":false,"erreur":"MAIN_DEJA_PRISE","piloteAppareil":"…","piloteNom":"…"}` : le pilote n'est plus celui que
+  le demandeur croyait (deux demandes simultanées : une seule réussit) ;
+- `404 COMPETITION_INCONNUE` si rien n'a encore été reçu ; `400 DEMANDE_INVALIDE` pour un corps mal formé.
+
+**`GET /competitions/<competitionId>/pilote`** — `200 {"ok":true,"piloteAppareil":"…","piloteNom":"…","connecte":true}`.
+`connecte` vaut vrai si le pilote a envoyé un lot ou un battement depuis moins de 60 s (`DELAI_PRESENCE_MS`).
+
+**`POST /competitions/<competitionId>/presence`** — battement du pilote. Corps : `{ "appareilId": "…" }`. `200 {"ok":true}`
+pour le pilote en place ; sinon `409 {"ok":false,"erreur":"PAS_PILOTE","piloteAppareil":"…","piloteNom":"…"}`.
+Ces deux routes sont provisoires : la WebSocket du pilote (E5) les remplacera (ADR-0017).
+
+Un refus `PAS_PILOTE` d'un lot porte aussi `piloteAppareil` et `piloteNom` : l'ancien pilote sait qui a pris la main.
+`piloteNom` est le nom du compte ; l'application l'affiche suivi du début de l'identifiant de l'appareil
+(« Julien Lameyre (appareil 7f3a) »), ce qui distingue deux PC d'un même compte.
+
 ### Côté application
 
 - Une compétition créée sur un PC en fait le pilote. Le PC garde, par compétition, le dernier `seq` confirmé et,
@@ -568,6 +599,15 @@ US-026).
   avec une session locale ou une session expirée, les événements attendent dans IndexedDB, sans perte.
 - Une copie n'est jamais écrite localement (`PAS_PILOTE`) et ne remplace jamais le journal d'une compétition pilotée
   ici.
+- **Prendre la main** exige le réseau. L'application interroge le pilote (`GET …/pilote`) pour que la confirmation dise
+  s'il est connecté, puis demande la main, remplace la copie par le journal reçu, devient pilote, écrit `PiloteChange`
+  et l'envoie. Si elle s'interrompt entre-temps, le téléchargement suivant reconnaît que le serveur la désigne comme
+  pilote et rend le journal modifiable.
+- **Perdre la main** : le pilote bat toutes les 30 s (`INTERVALLE_BATTEMENT`) pour chaque compétition en préparation ou en
+  cours qu'il pilote. Sur `PAS_PILOTE` (battement ou lot), il met de côté ses événements non envoyés dans la table
+  IndexedDB `ecartes` (jamais reprise dans le journal), cesse d'être le pilote et télécharge la copie du nouveau
+  pilote. La page affiche « <nom> a pris la main depuis un autre PC » et « n modifications faites hors ligne n'ont pas été
+  reprises », avec « Exporter en JSON » : un fichier `{ competitionId, evenements }` au format du journal.
 
 ### Liste du club sur l'accueil (US-026)
 

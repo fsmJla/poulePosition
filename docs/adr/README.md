@@ -26,3 +26,4 @@ Vue d'ensemble : [`../architecture.md`](../architecture.md).
 | [0014](0014-donnees-personnelles-multi-clubs.md) | Données personnelles, conservation, préparation multi-clubs | Acceptée |
 | [0015](0015-envoi-emails-smtp-ovh.md) | Envoi d'e-mails par le SMTP OVH du club (remplace la partie e-mail de l'ADR-0013) | Acceptée |
 | [0016](0016-replication-index-pilote.md) | Réplication du journal par HTTP, pilote identifié par son appareil, index des compétitions dans le DO `Club` | Acceptée |
+| [0017](0017-prise-de-main-et-presence-du-pilote.md) | Prise de main par HTTP et présence du pilote par battements (provisoire, en attendant la WebSocket) | Acceptée |
