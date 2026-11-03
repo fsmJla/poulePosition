@@ -200,3 +200,24 @@ test('US-024 hors ligne : les épreuves restent consultables, les actions sont g
   ).toHaveCount(1);
   await context.setOffline(false);
 });
+
+test('US-024 smartphone : un nom d’épreuve très long ne fait pas déborder le formulaire de compétition', async ({
+  page,
+}) => {
+  const manifestation = `${nomUnique()} ${'Championnats de Nouvelle-Aquitaine '.repeat(2)}`.trim();
+  const epreuve = `${nomUnique()} ${'Championnats de Nouvelle-Aquitaine de sabre '.repeat(2)}`.trim();
+  await seConnecter(page);
+  await ouvrirPage(page);
+  await creerManifestation(page, manifestation);
+  await creerEpreuve(page, manifestation, epreuve, 'sabre');
+  const debordement = () =>
+    page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+  expect(await debordement()).toBe(false);
+
+  await page.getByRole('link', { name: "Retour à l'accueil de l'organisateur" }).click();
+  await page.getByRole('link', { name: 'Nouvelle compétition' }).click();
+  await page.getByLabel('Manifestation', { exact: true }).selectOption({ label: manifestation });
+  await page.getByLabel('Épreuve', { exact: true }).selectOption({ label: epreuve });
+  await expect(page.getByLabel('Arme')).toHaveValue('sabre');
+  expect(await debordement()).toBe(false);
+});

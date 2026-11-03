@@ -325,6 +325,7 @@
 
   .champ {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-content: start;
     gap: 0.3rem;
   }
@@ -342,6 +343,7 @@
   input,
   select,
   textarea {
+    max-width: 100%;
     padding: 0.6rem 0.75rem;
     border: 1px solid var(--bordure-champ);
     border-radius: var(--rayon);

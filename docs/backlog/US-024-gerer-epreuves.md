@@ -97,3 +97,4 @@ modification grisées avec « Nécessite une connexion internet ».
 | 2026-11-02 | Reçoit d'US-025 le sélecteur de rattachement du formulaire de création d'une compétition (CA-3, CA-4) |
 | 2026-11-03 | Démarrée (plan validé) ; sélecteur de rattachement et E2E reçus d'US-025 réalisés |
 | 2026-11-03 | En revue : lint, typage, 737 tests (couverture 94,5 % lignes), build, audit (aucune vulnérabilité haute) et 207 E2E locaux verts |
+| 2026-11-03 | Recette en preview : écart au format smartphone (le formulaire « Nouvelle compétition » débordait avec un nom d'épreuve long), corrigé avec un E2E de non-débordement |
