@@ -32,6 +32,8 @@ export type ResultatEcriture = { projection: Projection } | { erreur: ErreurJour
 
 export interface Journal {
   lire(competitionId: string): Promise<Projection>;
+  /** Événements lisibles de la compétition, dans l'ordre des `seq` (jusqu'au premier illisible). */
+  evenements(competitionId: string): Promise<Evenement[]>;
   enregistrer(competitionId: string, proposition: Proposition, contexte: Contexte): Promise<ResultatEcriture>;
   /** Ce que cet appareil sait de la compétition (pilote, curseur d'envoi, copie), ou null s'il ne la connaît pas. */
   etat(competitionId: string): Promise<CompetitionLocale | null>;
@@ -66,6 +68,16 @@ export function ouvrirJournal(nom = 'poulePosition', persister: () => Promise<bo
   return {
     async lire(competitionId) {
       return projeterBruts(await evenementsBruts(competitionId));
+    },
+
+    async evenements(competitionId) {
+      const evenements: Evenement[] = [];
+      for (const brut of await evenementsBruts(competitionId)) {
+        const evenement = lireEvenement(brut);
+        if (!evenement) break;
+        evenements.push(evenement);
+      }
+      return evenements;
     },
 
     async enregistrer(competitionId, proposition, { clubId, auteur, maintenant = Date.now }) {

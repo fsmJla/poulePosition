@@ -362,6 +362,11 @@ export const textes = {
     formule: (touchesPoules: number, touchesTableau: number) =>
       `Poules en ${touchesPoules} touches, sans élimination · Tableau en ${touchesTableau} touches`,
     relais: (touches: number) => `Rencontres en relais à ${touches} touches`,
+    /** US-028 CA-4 : avant de changer la formule d'une compétition en cours. */
+    formuleConfirmation: (matchs: number) =>
+      matchs === 1
+        ? '1 match déjà joué : changer la formule le concerne-t-il ?'
+        : `${matchs} matchs déjà joués : changer la formule les concerne-t-il ?`,
     chargement: 'Chargement de la compétition…',
     introuvable: 'Compétition introuvable sur cet appareil',
     retour: "Retour à l'accueil de l'organisateur",

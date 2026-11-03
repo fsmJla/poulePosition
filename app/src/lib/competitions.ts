@@ -4,18 +4,25 @@
 import {
   CATEGORIES,
   champsModifiables,
+  matchsAConfirmer,
   modification,
+  modificationFormule,
   preremplir,
   validerCompetition,
+  validerFormule,
   type Arme,
   type CadreRattachement,
   type DonneesCompetition,
+  type ErreurFormule,
   type ErreursCompetition,
+  type Formule,
+  type Statut,
   type Sexe,
   type TypeCompetition,
 } from '@poule-position/domaine';
 import type { Epreuve, Manifestation } from '@poule-position/protocole';
 import type { Contexte, ErreurJournal, Journal } from './journal';
+import { textes } from './textes';
 
 /** Valeur du choix de catégorie qui ouvre la saisie libre. */
 export const CATEGORIE_LIBRE = 'autre';
@@ -234,4 +241,57 @@ export async function modifierCompetition(
   const { erreur } = resultat;
   const connues = ['PAS_PILOTE', 'COMPETITION_ARCHIVEE', 'CHAMP_FIGE', 'JOURNAL_INCOHERENT'] as const;
   return { ok: false, erreur: connues.find((code) => code === erreur) ?? 'ECRITURE_IMPOSSIBLE' };
+}
+
+/**
+ * `INTROUVABLE` : compétition inconnue de cet appareil ; les codes de formule sont les bornes du domaine ;
+ * `PAS_PILOTE`, `COMPETITION_ARCHIVEE`, `FORMULE_FIGEE` et `JOURNAL_INCOHERENT` viennent du journal.
+ */
+export type ErreurModificationFormule =
+  | 'INTROUVABLE'
+  | ErreurFormule
+  | Extract<
+      ErreurJournal,
+      | 'PAS_PILOTE'
+      | 'COMPETITION_ARCHIVEE'
+      | 'FORMULE_FIGEE'
+      | 'CHAMP_FIGE'
+      | 'JOURNAL_INCOHERENT'
+      | 'ECRITURE_IMPOSSIBLE'
+    >;
+
+export type ResultatModificationFormule =
+  { ok: true; modifiee: boolean } | { ok: false; erreur: ErreurModificationFormule };
+
+/**
+ * US-028 CA-2 : compare la saisie à la formule courante, vérifie les bornes, puis écrit `FormuleModifiee` avec les
+ * seuls réglages changés ; rien n'est écrit si rien ne change. Les touches de relais de la saisie sont ignorées (CA-3).
+ */
+export async function modifierFormule(
+  journal: Journal,
+  competitionId: string,
+  saisie: Formule,
+  { clubId, ...contexte }: Omit<Contexte, 'clubId'> & { clubId?: string | undefined },
+): Promise<ResultatModificationFormule> {
+  const { competition } = await journal.lire(competitionId);
+  if (!competition) return { ok: false, erreur: 'INTROUVABLE' };
+  const changes = modificationFormule(competition.formule, saisie);
+  if (Object.keys(changes).length === 0) return { ok: true, modifiee: false };
+  const invalide = validerFormule(changes);
+  if (invalide) return { ok: false, erreur: invalide };
+  const resultat = await journal.enregistrer(
+    competitionId,
+    { type: 'FormuleModifiee', donnees: changes },
+    { clubId: clubId ?? competition.clubId, ...contexte },
+  );
+  if ('projection' in resultat) return { ok: true, modifiee: true };
+  const { erreur } = resultat;
+  const connues = ['PAS_PILOTE', 'COMPETITION_ARCHIVEE', 'FORMULE_FIGEE', 'CHAMP_FIGE', 'JOURNAL_INCOHERENT'] as const;
+  return { ok: false, erreur: connues.find((code) => code === erreur) ?? 'ECRITURE_IMPOSSIBLE' };
+}
+
+/** US-028 CA-4 : phrase de confirmation avant de changer la formule en cours de compétition, ou null s'il n'y en a pas. */
+export function confirmationFormule(statut: Statut, matchsJoues: number): string | null {
+  const nombre = matchsAConfirmer(statut, matchsJoues);
+  return nombre === null ? null : textes.competitions.formuleConfirmation(nombre);
 }

@@ -1,11 +1,14 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it, vi } from 'vitest';
 import { ouvrirJournal } from './journal';
+import { historiqueFormule } from '@poule-position/domaine';
 import type { Epreuve, Manifestation } from '@poule-position/protocole';
 import {
   cadreDe,
+  confirmationFormule,
   creerCompetition,
   modifierCompetition,
+  modifierFormule,
   rattacher,
   saisieDe,
   saisieVide,
@@ -450,6 +453,119 @@ describe('modification d’une compétition (US-027)', () => {
     });
     vi.spyOn(journal, 'enregistrer').mockResolvedValueOnce({ erreur: 'ECRITURE_IMPOSSIBLE' });
     expect(await modifierCompetition(journal, competitionId, avant, auteur)).toEqual({
+      ok: false,
+      erreur: 'ECRITURE_IMPOSSIBLE',
+    });
+  });
+});
+
+describe('formule d’une compétition (US-028)', () => {
+  const creee = async (champs: Partial<SaisieCompetition> = {}) => {
+    const journal = nouveauJournal();
+    const resultat = await creerCompetition(journal, saisie(champs), auteur);
+    return { journal, competitionId: (resultat as { competitionId: string }).competitionId };
+  };
+  const formuleDe = async (journal: ReturnType<typeof nouveauJournal>, competitionId: string) =>
+    (await journal.lire(competitionId)).competition!.formule;
+
+  it('CA-2 : modifier écrit FormuleModifiee avec les seuls réglages changés', async () => {
+    const { journal, competitionId } = await creee();
+    const courante = await formuleDe(journal, competitionId);
+    const resultat = await modifierFormule(journal, competitionId, { ...courante, touchesTableau: 10 }, auteur);
+    expect(resultat).toEqual({ ok: true, modifiee: true });
+    const evenement = (await journal.aEnvoyer(competitionId)).at(-1);
+    expect(evenement).toMatchObject({ seq: 2, type: 'FormuleModifiee', donnees: { touchesTableau: 10 } });
+    expect(Object.keys(evenement!.donnees)).toEqual(['touchesTableau']);
+    expect(await formuleDe(journal, competitionId)).toMatchObject({ touchesPoules: 5, touchesTableau: 10 });
+  });
+
+  it('CA-2 : des touches hors bornes sont refusées sans rien écrire', async () => {
+    const { journal, competitionId } = await creee();
+    const courante = await formuleDe(journal, competitionId);
+    expect(await modifierFormule(journal, competitionId, { ...courante, touchesPoules: 12 }, auteur)).toEqual({
+      ok: false,
+      erreur: 'TOUCHES_POULES_INVALIDES',
+    });
+    expect(await modifierFormule(journal, competitionId, { ...courante, touchesTableau: 11 }, auteur)).toEqual({
+      ok: false,
+      erreur: 'TOUCHES_TABLEAU_INVALIDES',
+    });
+    expect((await journal.lire(competitionId)).dernierSeq).toBe(1);
+  });
+
+  it('CA-2 : formule inchangée : aucun événement', async () => {
+    const { journal, competitionId } = await creee();
+    const courante = await formuleDe(journal, competitionId);
+    expect(await modifierFormule(journal, competitionId, courante, auteur)).toEqual({ ok: true, modifiee: false });
+    expect((await journal.lire(competitionId)).dernierSeq).toBe(1);
+  });
+
+  it('CA-3 : en équipes, les touches de relais restent celles du type, la saisie n’y change rien', async () => {
+    const { journal, competitionId } = await creee({ typeCompetition: 'equipes3' });
+    const courante = await formuleDe(journal, competitionId);
+    await modifierFormule(journal, competitionId, { ...courante, touchesRelais: 99, matchTroisieme: true }, auteur);
+    expect(await formuleDe(journal, competitionId)).toMatchObject({ touchesRelais: 45, matchTroisieme: true });
+  });
+
+  it('CA-5 : le match pour la 3e place s’active et se désactive', async () => {
+    const { journal, competitionId } = await creee();
+    const courante = await formuleDe(journal, competitionId);
+    await modifierFormule(journal, competitionId, { ...courante, matchTroisieme: true }, auteur);
+    expect((await formuleDe(journal, competitionId)).matchTroisieme).toBe(true);
+    await modifierFormule(journal, competitionId, { ...courante, matchTroisieme: false }, auteur);
+    expect((await formuleDe(journal, competitionId)).matchTroisieme).toBe(false);
+  });
+
+  it('CA-6 : l’historique liste chaque changement avec son auteur et sa date, dans l’ordre', async () => {
+    const { journal, competitionId } = await creee();
+    const courante = await formuleDe(journal, competitionId);
+    await modifierFormule(journal, competitionId, { ...courante, touchesTableau: 10 }, auteur);
+    await modifierFormule(journal, competitionId, { ...courante, touchesTableau: 10, touchesPoules: 4 }, auteur);
+    expect(historiqueFormule(await journal.evenements(competitionId))).toEqual([
+      { seq: 2, date: 1_800_000_000_000, auteur: 'orga@club.fr', changements: { touchesTableau: 10 } },
+      { seq: 3, date: 1_800_000_000_000, auteur: 'orga@club.fr', changements: { touchesPoules: 4 } },
+    ]);
+  });
+
+  it('CA-3 : un PC non pilote ne peut pas modifier la formule (PAS_PILOTE)', async () => {
+    const { journal, competitionId } = await creee();
+    const copie = nouveauJournal();
+    await copie.remplacerCopie(competitionId, await journal.aEnvoyer(competitionId), 1);
+    const courante = await formuleDe(copie, competitionId);
+    expect(await modifierFormule(copie, competitionId, { ...courante, touchesPoules: 4 }, auteur)).toEqual({
+      ok: false,
+      erreur: 'PAS_PILOTE',
+    });
+  });
+
+  it('CA-4 : la confirmation annonce les matchs déjà joués, seulement en cours de compétition', () => {
+    expect(confirmationFormule('enCours', 12)).toBe('12 matchs déjà joués : changer la formule les concerne-t-il ?');
+    expect(confirmationFormule('enCours', 1)).toBe('1 match déjà joué : changer la formule le concerne-t-il ?');
+    expect(confirmationFormule('enCours', 0)).toBeNull();
+    expect(confirmationFormule('preparation', 12)).toBeNull();
+  });
+
+  it('hors ligne : la formule s’écrit dans le journal local sans réseau et reste à envoyer', async () => {
+    const { journal, competitionId } = await creee();
+    await journal.confirmer(competitionId, 1);
+    expect(await journal.aEnvoyer(competitionId)).toEqual([]);
+    const courante = await formuleDe(journal, competitionId);
+    await modifierFormule(journal, competitionId, { ...courante, matchTroisieme: true }, auteur);
+    const attente = await journal.aEnvoyer(competitionId);
+    expect(attente.map(({ seq, type }) => [seq, type])).toEqual([[2, 'FormuleModifiee']]);
+  });
+
+  it('cas limites : compétition inconnue, formule figée, échec d’écriture', async () => {
+    const { journal, competitionId } = await creee();
+    const nouvelle = { ...(await formuleDe(journal, competitionId)), touchesPoules: 4 };
+    expect(await modifierFormule(journal, 'absente', nouvelle, auteur)).toEqual({ ok: false, erreur: 'INTROUVABLE' });
+    vi.spyOn(journal, 'enregistrer').mockResolvedValueOnce({ erreur: 'FORMULE_FIGEE' });
+    expect(await modifierFormule(journal, competitionId, nouvelle, auteur)).toEqual({
+      ok: false,
+      erreur: 'FORMULE_FIGEE',
+    });
+    vi.spyOn(journal, 'enregistrer').mockResolvedValueOnce({ erreur: 'ECRITURE_IMPOSSIBLE' });
+    expect(await modifierFormule(journal, competitionId, nouvelle, auteur)).toEqual({
       ok: false,
       erreur: 'ECRITURE_IMPOSSIBLE',
     });
