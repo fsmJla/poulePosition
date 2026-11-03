@@ -104,3 +104,30 @@ describe('format du journal (docs/protocole.md)', () => {
     expect(lireEvenement(brut({ donnees: donnees({ rattachement: epreuveNumerique }) }))).toBeNull();
   });
 });
+
+describe('événement CompetitionModifiee (US-027)', () => {
+  const modifiee = (donneesModifiees: Record<string, unknown>) =>
+    brut({ seq: 2, type: 'CompetitionModifiee', donnees: donneesModifiees });
+
+  it('CA-1 : lit une CompetitionModifiee qui ne porte que les champs changés', () => {
+    for (const champs of [
+      { nom: 'Autre' },
+      { lieu: null, commentaire: 'Buvette' },
+      { horaires: { appel: '08:00', scratch: null, debutPoules: null } },
+      { rattachement: { manifestationId: 'm1', epreuveId: null }, date: '2027-03-14' },
+    ]) {
+      expect(lireEvenement(modifiee(champs))).toEqual(modifiee(champs));
+    }
+  });
+
+  it('CA-1 : refuse une modification vide, avec un champ inconnu ou mal typé', () => {
+    expect(lireEvenement(modifiee({}))).toBeNull();
+    expect(lireEvenement(modifiee({ inconnu: 'x' }))).toBeNull();
+    expect(lireEvenement(modifiee({ nom: 3 }))).toBeNull();
+    expect(lireEvenement(modifiee({ lieu: undefined }))).toBeNull();
+    expect(lireEvenement(modifiee({ horaires: { appel: '08:00' } }))).toBeNull();
+    expect(lireEvenement(modifiee({ rattachement: { manifestationId: 1, epreuveId: null } }))).toBeNull();
+    expect(lireEvenement(brut({ type: 'CompetitionModifiee', donnees: [] }))).toBeNull();
+    expect(lireEvenement(brut({ type: 'Inconnu' }))).toBeNull();
+  });
+});
