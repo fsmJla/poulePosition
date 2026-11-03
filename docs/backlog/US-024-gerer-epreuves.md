@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-023
-- **Branche / PR :** `us/US-024-gerer-epreuves`
+- **Branche / PR :** `us/US-024-gerer-epreuves` · [PR #46](https://github.com/fsmJla/poulePosition/pull/46)
 
 ## Récit
 
