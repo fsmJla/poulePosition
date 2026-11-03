@@ -3,6 +3,7 @@ export * from './authentification';
 export * from './competitions';
 export * from './comptes';
 export * from './journal';
+export * from './manifestations';
 export * from './messages';
 export * from './reinitialisation';
 export * from './session';

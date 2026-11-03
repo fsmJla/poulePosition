@@ -2,7 +2,7 @@
   // Coquille de l'application (US-003) : session restaurée au démarrage et revalidée à chaque retour en ligne
   // (US-005 CA-5), routage entre pages publiques et réservées. Envoi au serveur du journal des compétitions pilotées
   // ici, au démarrage, à la connexion et à chaque retour en ligne (US-022 CA-2). Création et page d'une compétition
-  // (US-025).
+  // (US-025), manifestations du club (US-023).
   import { onMount } from 'svelte';
   import { URL_SERVEUR_LOCAL } from './lib/connexion';
   import { resoudreRoute, CHEMINS } from './lib/routes';
@@ -10,12 +10,14 @@
   import { creerClientSession, urlHttp } from './lib/session';
   import { estLocale, ouvrirStockage, type SessionAppareil } from './lib/stockage';
   import { creerSynchronisation } from './lib/synchronisation';
+  import { creerClientManifestations } from './lib/manifestations';
   import Entete from './composants/Entete.svelte';
   import Accueil from './pages/Accueil.svelte';
   import Competition from './pages/Competition.svelte';
   import Comptes from './pages/Comptes.svelte';
   import Connexion from './pages/Connexion.svelte';
   import MotDePasseOublie from './pages/MotDePasseOublie.svelte';
+  import Manifestations from './pages/Manifestations.svelte';
   import MotDePasse from './pages/MotDePasse.svelte';
   import NouvelleCompetition from './pages/NouvelleCompetition.svelte';
   import Profil from './pages/Profil.svelte';
@@ -32,6 +34,12 @@
     journal,
     // Une session locale (US-005) n'a pas de jeton : les événements attendent sa revalidation en ligne.
     jeton: async () => (session && !estLocale(session) ? session.jeton : null),
+  });
+  const manifestations = creerClientManifestations({
+    urlServeur: urlHttp(urlServeur),
+    jeton: async () => (session && !estLocale(session) ? session.jeton : null),
+    // US-023 CA-4 : les dates d'une manifestation sont confrontées aux compétitions connues de cet appareil.
+    competitions: () => synchronisation.competitionsConnues(),
   });
   /** Faux tant que la session gardée n'est pas relue : évite d'afficher une page puis d'en changer. */
   let pret = $state(false);
@@ -126,6 +134,8 @@
       <Profil {client} {session} surChangement={(nouvelle) => (session = nouvelle)} {surSessionPerdue} {naviguer} />
     {:else if route.page === 'comptes'}
       <Comptes {client} {surSessionPerdue} />
+    {:else if route.page === 'manifestations'}
+      <Manifestations client={manifestations} {naviguer} />
     {:else if route.page === 'nouvelleCompetition'}
       <NouvelleCompetition {session} {journal} {synchronisation} {naviguer} />
     {:else if route.page === 'competition' && route.competitionId}

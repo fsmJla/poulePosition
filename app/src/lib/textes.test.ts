@@ -116,3 +116,29 @@ describe('textes des compétitions (US-025)', () => {
     expect(textes.competitions.copieDu(new Date(2026, 9, 28, 14, 5).getTime())).toBe('Copie du 28/10 à 14 h 05');
   });
 });
+
+describe('textes des manifestations (US-023)', () => {
+  it('US-023 CA-3 : la date de fin doit suivre la date de début', () => {
+    expect(textes.manifestations.champs.FIN_AVANT_DEBUT).toBe('La date de fin doit suivre la date de début');
+  });
+
+  it('US-023 CA-4 : le message cite les compétitions concernées', () => {
+    expect(textes.manifestations.horsDates(['Sabre M13'])).toBe(
+      'Ces dates n’incluent plus la compétition rattachée : Sabre M13',
+    );
+    expect(textes.manifestations.horsDates(['Sabre M13', 'Épée M15'])).toBe(
+      'Ces dates n’incluent plus les compétitions rattachées : Sabre M13, Épée M15',
+    );
+  });
+
+  it('US-023 cas limites : modification concurrente, réseau perdu, hors ligne', () => {
+    expect(textes.manifestations.modifieeEntreTemps('Bruno')).toBe('Modifié entre-temps par Bruno : rechargez');
+    expect(textes.manifestations.erreurs.HORS_LIGNE).toBe('Réseau perdu : rien n’a changé, réessayez');
+    expect(textes.manifestations.horsLigne).toBe('Nécessite une connexion internet');
+    expect(textes.manifestations.periode('2027-03-14', '2027-03-15')).toBe('du 14/03/2027 au 15/03/2027');
+    expect(textes.manifestations.periode('2027-03-14', '2027-03-14')).toBe('le 14/03/2027');
+    expect(textes.manifestations.listeDu(new Date(2026, 10, 3, 9, 5).getTime())).toBe(
+      'Hors ligne : liste du 03/11 à 9 h 05',
+    );
+  });
+});

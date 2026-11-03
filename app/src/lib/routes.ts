@@ -11,6 +11,7 @@ export type Page =
   | 'motDePasse'
   | 'comptes'
   | 'profil'
+  | 'manifestations'
   | 'nouvelleCompetition'
   | 'competition';
 
@@ -25,6 +26,8 @@ export const CHEMINS = Object.freeze({
   motDePasse: '/mot-de-passe',
   comptes: '/comptes',
   profil: '/profil',
+  /** US-023 : liste, création et modification des manifestations du club. */
+  manifestations: '/manifestations',
   /** US-025 : formulaire de création d'une compétition. */
   nouvelleCompetition: '/competitions/nouvelle',
 } satisfies Record<Exclude<Page, 'competition'>, string>);
@@ -42,6 +45,7 @@ const RESERVEES: readonly Page[] = [
   'motDePasse',
   'comptes',
   'profil',
+  'manifestations',
   'nouvelleCompetition',
   'competition',
 ];

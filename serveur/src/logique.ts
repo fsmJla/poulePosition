@@ -17,7 +17,7 @@ import {
   type CodeErreur,
 } from '@poule-position/protocole';
 
-/** Identifiant de compétition : minuscules, chiffres et tirets, 64 caractères au plus. */
+/** Identifiant de compétition ou de manifestation : minuscules, chiffres et tirets, 64 caractères au plus. */
 const MOTIF_COMPETITION = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 export type Route =
@@ -34,6 +34,8 @@ export type Route =
   | { route: 'comptes' }
   | { route: 'compte'; id: string }
   | { route: 'reinitialisation'; id: string }
+  | { route: 'manifestations' }
+  | { route: 'manifestation'; id: string }
   | { route: 'competitions' }
   | { route: 'evenements'; competitionId: string }
   | { route: 'connexion'; competitionId: string };
@@ -55,6 +57,10 @@ export function analyserChemin(chemin: string): Route | null {
   if (reinitialisation?.[1]) return { route: 'reinitialisation', id: reinitialisation[1] };
   const compte = /^\/comptes\/([A-Za-z0-9-]{1,64})$/.exec(chemin);
   if (compte?.[1]) return { route: 'compte', id: compte[1] };
+  if (chemin === '/manifestations') return { route: 'manifestations' };
+  const manifestation = /^\/manifestations\/([^/]+)$/.exec(chemin)?.[1];
+  if (manifestation)
+    return MOTIF_COMPETITION.test(manifestation) ? { route: 'manifestation', id: manifestation } : null;
   if (chemin === '/competitions') return { route: 'competitions' };
   const morceaux = /^\/competitions\/([^/]+)\/(connexion|evenements)$/.exec(chemin);
   if (!morceaux?.[1] || !MOTIF_COMPETITION.test(morceaux[1])) return null;

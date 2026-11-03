@@ -1,7 +1,8 @@
 <script lang="ts">
   // Accueil de l'organisateur (US-003 CA-1), page réservée : nom et rôle du compte connecté, et la gestion des comptes
   // pour un administrateur (US-007, grisée hors ligne). Le profil (US-016) et la déconnexion (US-003 CA-5) sont dans le
-  // menu de compte de l'entête (US-017). « Nouvelle compétition » pour tout compte (US-025).
+  // menu de compte de l'entête (US-017). « Nouvelle compétition » (US-025) et « Manifestations » (US-023) pour
+  // tout compte.
   import { onMount } from 'svelte';
   import type { SessionAppareil } from '../lib/stockage';
   import Lien from '../composants/Lien.svelte';
@@ -35,6 +36,8 @@
   <nav class="actions" aria-label={textes.organisateur.actions}>
     <!-- US-025 : la création d'une compétition fonctionne aussi hors ligne. La liste viendra avec US-026. -->
     <Lien chemin={CHEMINS.nouvelleCompetition} {naviguer}>{textes.competitions.nouvelle}</Lien>
+    <!-- US-023 : consultables hors ligne (dernière copie), modifiables en ligne seulement. -->
+    <Lien chemin={CHEMINS.manifestations} {naviguer}>{textes.manifestations.entree}</Lien>
     {#if session.compte.role === 'administrateur'}
       {#if horsLigne}
         <span class="inactive" aria-disabled="true">

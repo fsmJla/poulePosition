@@ -4,6 +4,7 @@ import {
   type Arme,
   type CouleurAvatar,
   type ErreurCompetition,
+  type ErreurManifestation,
   type ErreurNouveauMotDePasse,
   type ErreurSaisieCompte,
   type Role,
@@ -13,6 +14,7 @@ import {
 } from '@poule-position/domaine';
 import type { ErreurCreation } from './competitions';
 import type { EtatConnexion } from './connexion';
+import type { ErreurManifestations } from './manifestations';
 import type {
   ErreurChangementMotDePasse,
   ErreurComptes,
@@ -351,6 +353,66 @@ export const textes = {
         'Enregistrement impossible sur cet appareil (espace plein ou navigation privée) : rien n’a été créé',
       CLUB_INCONNU: 'Reconnectez-vous une fois en ligne pour créer une compétition sur cet appareil',
     } satisfies Record<ErreurCreation, string>,
+  },
+  /** US-023 : page « Manifestations ». */
+  manifestations: {
+    titre: 'Manifestations',
+    entree: 'Manifestations',
+    nouvelle: 'Nouvelle manifestation',
+    titreModification: (nom: string) => `Modifier « ${nom} »`,
+    nom: 'Nom',
+    exempleNom: 'Week-end des Championnats NA',
+    debut: 'Date de début',
+    fin: 'Date de fin',
+    lieu: 'Lieu',
+    commentaire: 'Commentaire',
+    facultatif: 'facultatif',
+    creer: 'Créer la manifestation',
+    enregistrer: 'Enregistrer',
+    enCours: 'Enregistrement…',
+    annuler: 'Annuler',
+    boutonModifier: 'Modifier',
+    boutonSupprimer: 'Supprimer',
+    modifier: (nom: string) => `Modifier ${nom}`,
+    supprimer: (nom: string) => `Supprimer ${nom}`,
+    confirmerSuppression: (nom: string) => `Supprimer définitivement « ${nom} » ?`,
+    confirmer: 'Supprimer',
+    recharger: 'Recharger',
+    chargement: 'Chargement des manifestations…',
+    vide: 'Aucune manifestation pour l’instant',
+    horsLigne: 'Nécessite une connexion internet',
+    periode: (debut: string, fin: string) => {
+      const jour = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}`;
+      return debut === fin ? `le ${jour(debut)}` : `du ${jour(debut)} au ${jour(fin)}`;
+    },
+    /** Hors ligne : date de la copie gardée sur l'appareil. */
+    listeDu: (date: number) => {
+      const jour = new Date(date);
+      const deux = (nombre: number) => String(nombre).padStart(2, '0');
+      return `Hors ligne : liste du ${deux(jour.getDate())}/${deux(jour.getMonth() + 1)} à ${jour.getHours()} h ${deux(jour.getMinutes())}`;
+    },
+    horsDates: (noms: readonly string[]) =>
+      noms.length > 1
+        ? `Ces dates n’incluent plus les compétitions rattachées : ${noms.join(', ')}`
+        : `Ces dates n’incluent plus la compétition rattachée : ${noms.join(', ')}`,
+    modifieeEntreTemps: (nom: string) => `Modifié entre-temps par ${nom} : rechargez`,
+    champs: {
+      NOM_VIDE: 'Le nom est obligatoire',
+      NOM_TROP_LONG: 'Le nom fait au plus 100 caractères',
+      DATE_OBLIGATOIRE: 'La date est obligatoire',
+      DATE_INVALIDE: 'Date invalide',
+      FIN_AVANT_DEBUT: 'La date de fin doit suivre la date de début',
+      LIEU_TROP_LONG: 'Le lieu fait au plus 200 caractères',
+      COMMENTAIRE_TROP_LONG: 'Le commentaire fait au plus 2 000 caractères',
+    } satisfies Record<ErreurManifestation, string>,
+    erreurs: {
+      HORS_LIGNE: 'Réseau perdu : rien n’a changé, réessayez',
+      SESSION_INVALIDE: 'Session expirée : reconnectez-vous',
+      MANIFESTATION_INCONNUE: 'Cette manifestation n’existe plus : rechargez',
+      MANIFESTATION_NON_VIDE:
+        'Cette manifestation contient des compétitions : elle ne se supprime pas (elle pourra être archivée)',
+      ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
+    } satisfies Record<ErreurManifestations, string>,
   },
   roles: {
     administrateur: 'Administrateur',

@@ -86,3 +86,12 @@ describe('compétitions (US-025)', () => {
     expect(resoudreRoute('/competitions', true)).toEqual({ redirection: '/' });
   });
 });
+
+describe('manifestations (US-023)', () => {
+  it('US-023 CA-1 : la page est réservée aux comptes connectés, quel que soit leur rôle', () => {
+    expect(resoudreRoute('/manifestations', false)).toEqual({ redirection: CHEMINS.connexion });
+    expect(resoudreRoute('/manifestations', true)).toEqual({ page: 'manifestations' });
+    expect(resoudreRoute('/manifestations', true, false, true)).toEqual({ page: 'manifestations' });
+    expect(resoudreRoute('/manifestations', true, true)).toEqual({ redirection: CHEMINS.motDePasse });
+  });
+});

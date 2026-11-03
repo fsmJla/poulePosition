@@ -1,10 +1,11 @@
 // Stockage local de l'appareil (ADR-0003) : IndexedDB par Dexie. Tables `session` (la session ouverte, une au
 // plus), `appareilConnu` (comptes déjà connectés en ligne sur cet appareil, pour la reconnexion hors ligne) et
 // `essaisLocaux` (frein local de la reconnexion hors ligne, US-005) ; `evenements`, le journal des compétitions, est
-// géré par `journal.ts` (US-021).
+// géré par `journal.ts` (US-021) ; `copieManifestations`, la dernière liste des manifestations, par
+// `manifestations.ts` (US-023).
 import { Dexie, type EntityTable, type Table } from 'dexie';
 import { couleurParDefaut, essaisVides, type CouleurAvatar, type Essais, type Role } from '@poule-position/domaine';
-import type { CompteConnecte, Session } from '@poule-position/protocole';
+import type { CompteConnecte, Manifestation, Session } from '@poule-position/protocole';
 
 /** Compte déjà connecté en ligne sur cet appareil (ADR-0006) : il pourra s'y reconnecter hors ligne (US-005). */
 export interface AppareilConnu {
@@ -73,6 +74,13 @@ export interface CompetitionLocale {
   copieLe: number | null;
 }
 
+/** Manifestations du club telles que reçues du serveur, et date de cette copie (US-023). */
+export interface CopieManifestations {
+  manifestations: Manifestation[];
+  /** Date de la copie, en millisecondes. */
+  copieLe: number;
+}
+
 /** Base IndexedDB de l'appareil, partagée par le stockage de session et le journal des compétitions (US-021). */
 export class Base extends Dexie {
   session!: EntityTable<LigneSession, 'cle'>;
@@ -83,6 +91,8 @@ export class Base extends Dexie {
   /** Identifiant de l'appareil, tiré une fois (US-022). */
   appareil!: EntityTable<{ cle: typeof LIGNE_UNIQUE; id: string }, 'cle'>;
   competitionsLocales!: EntityTable<CompetitionLocale, 'competitionId'>;
+  /** Dernière liste des manifestations du club reçue du serveur, consultable hors ligne (US-023). */
+  copieManifestations!: EntityTable<CopieManifestations & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
 
   constructor(nom: string) {
     super(nom);
@@ -101,6 +111,15 @@ export class Base extends Dexie {
       evenements: '[competitionId+seq]',
       appareil: 'cle',
       competitionsLocales: 'competitionId',
+    });
+    this.version(5).stores({
+      session: 'cle',
+      appareilConnu: 'email',
+      essaisLocaux: 'cle',
+      evenements: '[competitionId+seq]',
+      appareil: 'cle',
+      competitionsLocales: 'competitionId',
+      copieManifestations: 'cle',
     });
   }
 }
