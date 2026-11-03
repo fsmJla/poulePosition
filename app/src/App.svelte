@@ -10,6 +10,7 @@
   import { creerClientSession, urlHttp } from './lib/session';
   import { estLocale, ouvrirStockage, type SessionAppareil } from './lib/stockage';
   import { creerSynchronisation } from './lib/synchronisation';
+  import { creerClientEpreuves } from './lib/epreuves';
   import { creerClientManifestations } from './lib/manifestations';
   import Entete from './composants/Entete.svelte';
   import Accueil from './pages/Accueil.svelte';
@@ -40,6 +41,10 @@
     jeton: async () => (session && !estLocale(session) ? session.jeton : null),
     // US-023 CA-4 : les dates d'une manifestation sont confrontées aux compétitions connues de cet appareil.
     competitions: () => synchronisation.competitionsConnues(),
+  });
+  const epreuves = creerClientEpreuves({
+    urlServeur: urlHttp(urlServeur),
+    jeton: async () => (session && !estLocale(session) ? session.jeton : null),
   });
   /** Faux tant que la session gardée n'est pas relue : évite d'afficher une page puis d'en changer. */
   let pret = $state(false);
@@ -135,9 +140,16 @@
     {:else if route.page === 'comptes'}
       <Comptes {client} {surSessionPerdue} />
     {:else if route.page === 'manifestations'}
-      <Manifestations client={manifestations} {naviguer} />
+      <Manifestations client={manifestations} clientEpreuves={epreuves} {naviguer} />
     {:else if route.page === 'nouvelleCompetition'}
-      <NouvelleCompetition {session} {journal} {synchronisation} {naviguer} />
+      <NouvelleCompetition
+        {session}
+        {journal}
+        {synchronisation}
+        clientManifestations={manifestations}
+        clientEpreuves={epreuves}
+        {naviguer}
+      />
     {:else if route.page === 'competition' && route.competitionId}
       {#key route.competitionId}
         <Competition competitionId={route.competitionId} {journal} {synchronisation} {naviguer} />

@@ -4,6 +4,7 @@ import {
   type Arme,
   type CouleurAvatar,
   type ErreurCompetition,
+  type ErreurEpreuve,
   type ErreurManifestation,
   type ErreurNouveauMotDePasse,
   type ErreurSaisieCompte,
@@ -14,6 +15,7 @@ import {
 } from '@poule-position/domaine';
 import type { ErreurCreation } from './competitions';
 import type { EtatConnexion } from './connexion';
+import type { ErreurEpreuves } from './epreuves';
 import type { ErreurManifestations } from './manifestations';
 import type {
   ErreurChangementMotDePasse,
@@ -322,6 +324,15 @@ export const textes = {
       const jour = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}`;
       return `La date doit être comprise entre le ${jour(debut)} et le ${jour(fin)}`;
     },
+    rattachement: 'Rattachement',
+    manifestation: 'Manifestation',
+    epreuve: 'Épreuve',
+    aucuneManifestation: 'Aucune (compétition isolée)',
+    aucuneEpreuve: 'Aucune épreuve',
+    choisirDate: 'Choisir un jour',
+    /** US-024 CA-4 : « Cette épreuve est au sabre ». */
+    epreuveAu: (arme: Arme) =>
+      `Cette épreuve est ${{ sabre: 'au sabre', epee: 'à l’épée', fleuret: 'au fleuret', sabreLaser: 'au sabre laser' }[arme]}`,
     formuleTitre: 'Formule',
     formule: (touchesPoules: number, touchesTableau: number) =>
       `Poules en ${touchesPoules} touches, sans élimination · Tableau en ${touchesTableau} touches`,
@@ -333,7 +344,7 @@ export const textes = {
       NOM_VIDE: 'Le nom est obligatoire',
       NOM_TROP_LONG: 'Le nom fait au plus 100 caractères',
       ARME_INVALIDE: 'Choisissez une arme',
-      ARME_DIFFERENTE_EPREUVE: 'L’arme doit être celle de l’épreuve',
+      ARME_DIFFERENTE_EPREUVE: 'Cette épreuve est d’une autre arme',
       TYPE_INVALIDE: 'Choisissez un type',
       CATEGORIE_TROP_LONGUE: 'La catégorie fait au plus 30 caractères',
       SEXE_INVALIDE: 'Choisissez un sexe',
@@ -353,6 +364,48 @@ export const textes = {
         'Enregistrement impossible sur cet appareil (espace plein ou navigation privée) : rien n’a été créé',
       CLUB_INCONNU: 'Reconnectez-vous une fois en ligne pour créer une compétition sur cet appareil',
     } satisfies Record<ErreurCreation, string>,
+  },
+  /** US-024 : épreuves, sous chaque manifestation de la page « Manifestations ». */
+  epreuves: {
+    titre: 'Épreuves',
+    nouvelle: 'Nouvelle épreuve',
+    titreModification: (nom: string) => `Modifier l’épreuve « ${nom} »`,
+    nom: 'Nom de l’épreuve',
+    exempleNom: 'Championnats de Nouvelle-Aquitaine de sabre',
+    arme: 'Arme',
+    aucuneArme: 'Toutes armes',
+    commentaire: 'Commentaire',
+    facultatif: 'facultatif',
+    creer: 'Créer l’épreuve',
+    enregistrer: 'Enregistrer',
+    enCours: 'Enregistrement…',
+    annuler: 'Annuler',
+    boutonModifier: 'Modifier',
+    boutonSupprimer: 'Supprimer',
+    ajouter: (manifestation: string) => `Ajouter une épreuve à ${manifestation}`,
+    modifier: (nom: string) => `Modifier l’épreuve ${nom}`,
+    supprimer: (nom: string) => `Supprimer l’épreuve ${nom}`,
+    confirmerSuppression: (nom: string) => `Supprimer définitivement l’épreuve « ${nom} » ?`,
+    confirmer: 'Supprimer',
+    recharger: 'Recharger',
+    aucune: 'Aucune épreuve',
+    horsLigne: 'Nécessite une connexion internet',
+    modifieeEntreTemps: (nom: string) => `Modifiée entre-temps par ${nom} : rechargez`,
+    champs: {
+      NOM_VIDE: 'Le nom est obligatoire',
+      NOM_TROP_LONG: 'Le nom fait au plus 100 caractères',
+      MANIFESTATION_OBLIGATOIRE: 'Une épreuve appartient toujours à une manifestation',
+      ARME_INVALIDE: 'Choisissez une arme de la liste',
+      COMMENTAIRE_TROP_LONG: 'Le commentaire fait au plus 2 000 caractères',
+    } satisfies Record<ErreurEpreuve, string>,
+    erreurs: {
+      HORS_LIGNE: 'Réseau perdu : rien n’a changé, réessayez',
+      SESSION_INVALIDE: 'Session expirée : reconnectez-vous',
+      MANIFESTATION_INCONNUE: 'Cette manifestation n’existe plus : rechargez',
+      EPREUVE_INCONNUE: 'Cette épreuve n’existe plus : rechargez',
+      EPREUVE_NON_VIDE: 'Cette épreuve contient des compétitions : elle ne se supprime pas',
+      ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
+    } satisfies Record<ErreurEpreuves, string>,
   },
   /** US-023 : page « Manifestations ». */
   manifestations: {
@@ -410,7 +463,7 @@ export const textes = {
       SESSION_INVALIDE: 'Session expirée : reconnectez-vous',
       MANIFESTATION_INCONNUE: 'Cette manifestation n’existe plus : rechargez',
       MANIFESTATION_NON_VIDE:
-        'Cette manifestation contient des compétitions : elle ne se supprime pas (elle pourra être archivée)',
+        'Cette manifestation contient des compétitions ou des épreuves : elle ne se supprime pas (elle pourra être archivée)',
       ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
     } satisfies Record<ErreurManifestations, string>,
   },
