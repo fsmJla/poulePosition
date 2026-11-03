@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-025
 - **Branche / PR :** `us/US-028-formule-competition`
 
@@ -100,4 +100,5 @@ Entièrement disponible hors ligne sur le PC pilote (journal local). Lecture seu
 |---|---|
 | 2026-10-28 | Créée |
 | 2026-11-03 | Plan validé ; en cours sur `us/US-028-formule-competition` |
-| 2026-11-03 | Implémentée (événement `FormuleModifiee`, page « Formule », historique) ; en revue |
+| 2026-11-03 | Implémentée (événement `FormuleModifiee`, page « Formule », historique) ; en revue (PR #49) |
+| 2026-11-03 | Recette OK sur https://poule-position-git-us-us-028-formule-co-b6ea07-fsmjlas-projects.vercel.app (PC : défaut, réglages, historique, bornes, hors ligne puis envoi ; lecture seule sur un autre PC couverte par l'E2E de la preview) ; déployée en preview et vérifiée ; mergée dans `dev` |
