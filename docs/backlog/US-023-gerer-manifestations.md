@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-003
 - **Branche / PR :** `us/US-023-gerer-manifestations` · [PR #45](https://github.com/fsmJla/poulePosition/pull/45)
 
@@ -101,3 +101,4 @@ consultables depuis la copie gardée sur l'appareil, mais leur création et leur
 | 2026-10-28 | Créée |
 | 2026-11-03 | Démarrée ; décisions : page « Manifestations » simple (intégrée à l’accueil par US-026), CA-4 vérifié par l’application, CA-5 par le serveur, suppression sans numéro de version, copie locale de la liste |
 | 2026-11-03 | Implémentée (domaine, protocole, DO `Club` et routes, page « Manifestations », copie locale, E2E) ; index du club tolérant avancé d’US-026 ; PR vers `dev` |
+| 2026-11-03 | Recette OK sur https://poule-position-fg8tnjf7y-fsmjlas-projects.vercel.app (Worker de preview déployé depuis la branche ; déployée en preview et vérifiée), avec un compte réel : CA-1 (création, affichée avec ses dates et son lieu ; une manifestation d’un jour s’affiche « le 10/04/2027 ») ; CA-2 (modification du lieu et du commentaire, toujours là au rechargement ; version 2 côté serveur) ; CA-3 (« La date de fin doit suivre la date de début » sous le champ) ; CA-4 (compétition rattachée envoyée au serveur : « Ces dates n’incluent plus la compétition rattachée : Recette US-023 sabre M15 ») ; CA-5 (manifestation vide supprimée après confirmation ; non vide refusée) ; cas limite modification concurrente (deux onglets : « Modifié entre-temps par Julien L : rechargez », « Recharger » reprend la version à jour) ; hors ligne (coupure simulée dans la page : « Hors ligne : liste du 03/11 à 1 h 08 », liste consultable, toutes les actions grisées ; coupure réelle couverte par l’E2E de la CI). Visibilité par un autre organisateur : test d’intégration de la CI. Merge dans `dev`. |
