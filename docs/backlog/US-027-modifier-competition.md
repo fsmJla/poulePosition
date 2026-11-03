@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-025
 - **Branche / PR :** `us/US-027-modifier-competition`
 
@@ -71,3 +71,13 @@ Changer le rattachement hors ligne propose les manifestations et épreuves de la
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-11-03 | Implémentée sur `us/US-027-modifier-competition` ; contrôles locaux verts ; PR ouverte vers `dev` |
+
+## Hypothèses prises pendant l'implémentation
+
+- « Prendre la main » (CA-3) relève d'US-029 : un PC non pilote voit la compétition en lecture seule, sans bouton.
+- Le formulaire de création sert aussi à modifier (route `/competitions/<id>/modifier`).
+- Changer le type recalcule seulement les touches de relais de la formule ; le reste relève d'US-028.
+- CA-2 n'est testé qu'en unitaire : aucun événement ne pose encore « En cours » (E4). Une E2E sera à ajouter alors.
+- Changer de manifestation vide la date, comme à la création.
+- Format du journal inchangé (`VERSION_JOURNAL` = 1) : nouveau type d'événement, voir `docs/protocole.md` §10.
