@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-023
 - **Branche / PR :** `us/US-024-gerer-epreuves` · [PR #46](https://github.com/fsmJla/poulePosition/pull/46)
 
@@ -98,3 +98,4 @@ modification grisées avec « Nécessite une connexion internet ».
 | 2026-11-03 | Démarrée (plan validé) ; sélecteur de rattachement et E2E reçus d'US-025 réalisés |
 | 2026-11-03 | En revue : lint, typage, 737 tests (couverture 94,5 % lignes), build, audit (aucune vulnérabilité haute) et 207 E2E locaux verts |
 | 2026-11-03 | Recette en preview : écart au format smartphone (le formulaire « Nouvelle compétition » débordait avec un nom d'épreuve long), corrigé avec un E2E de non-débordement |
+| 2026-11-03 | Recette OK sur https://poule-position-git-us-us-024-gerer-epreuves-fsmjlas-projects.vercel.app (Worker de preview déployé depuis la branche ; déployée en preview et vérifiée), avec un compte réel : CA-1 (création avec arme et commentaire, persistance au rechargement) ; CA-2 (aucune création hors manifestation) ; CA-3 (modification, modification concurrente « Modifiée entre-temps par … » puis rechargement) ; CA-4 (lieu et arme préremplis, jours proposés, « Cette épreuve est au sabre », « La date doit être comprise entre le 14/03 et le 15/03 », compétition rattachée reçue par le serveur) ; CA-5 (épreuve vide supprimée après confirmation, épreuve et manifestation non vides refusées) ; hors ligne (liste consultable, actions grisées, compétition rattachée créée hors ligne puis envoyée au retour du réseau) ; smartphone 390 px sans débordement après correction. Merge dans `dev`. Les données « Recette US-024 … » restent dans le club de preview. |
