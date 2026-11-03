@@ -20,11 +20,18 @@ import {
 /** Origine d'un événement : le clavier du PC pilote (les saisies smartphone viendront avec E5). */
 export type Source = 'clavier';
 
+/** US-029 : changement de pilote ; les appareils sont ceux de l'ADR-0016, l'auteur est celui de l'en-tête. */
+export interface DonneesPiloteChange {
+  ancienAppareil: string;
+  nouvelAppareil: string;
+}
+
 /** Ce que l'application demande d'enregistrer. */
 export type Proposition =
   | { type: 'CompetitionCreee'; donnees: DonneesCompetition }
   | { type: 'CompetitionModifiee'; donnees: ModificationCompetition }
-  | { type: 'FormuleModifiee'; donnees: ModificationFormule };
+  | { type: 'FormuleModifiee'; donnees: ModificationFormule }
+  | { type: 'PiloteChange'; donnees: DonneesPiloteChange };
 
 /** Événement enregistré : la proposition acceptée, avec son en-tête. */
 export type Evenement = {
@@ -73,6 +80,7 @@ export type ErreurEvenement =
   | ErreurCompetition
   | ErreurFormule
   | 'FORMULE_FIGEE'
+  | 'PILOTE_INVALIDE'
   | 'COMPETITION_DEJA_CREEE'
   | 'COMPETITION_INCONNUE'
   | 'COMPETITION_ARCHIVEE'
@@ -93,6 +101,7 @@ export function verifierEvenement(projection: Projection, proposition: Propositi
     if (competition) return 'COMPETITION_DEJA_CREEE';
     return Object.values(validerCompetition(proposition.donnees))[0] ?? null;
   }
+  if (proposition.type === 'PiloteChange') return verifierPilote(competition, proposition.donnees);
   if (proposition.type === 'FormuleModifiee') return verifierFormule(competition, proposition.donnees);
   // US-027 : la modification est validée sur le résultat de la fusion, comme une création.
   if (!competition) return 'COMPETITION_INCONNUE';
@@ -103,6 +112,13 @@ export function verifierEvenement(projection: Projection, proposition: Propositi
   const fusion = fusionner(competition, proposition.donnees);
   if (Object.keys(modification(competition, fusion)).length === 0) return 'AUCUNE_MODIFICATION';
   return Object.values(validerCompetition(fusion))[0] ?? null;
+}
+
+/** US-029 : prendre la main ne touche pas au contenu, donc reste permis une fois la compétition terminée ou archivée. */
+function verifierPilote(competition: Competition | null, { ancienAppareil, nouvelAppareil }: DonneesPiloteChange) {
+  if (!competition) return 'COMPETITION_INCONNUE';
+  if (!ancienAppareil || !nouvelAppareil || ancienAppareil === nouvelAppareil) return 'PILOTE_INVALIDE';
+  return null;
 }
 
 const CHAMPS_FORMULE: readonly string[] = ['touchesPoules', 'touchesTableau', 'matchTroisieme'];
@@ -127,6 +143,7 @@ function fusionner(competition: Competition, changes: ModificationCompetition): 
 /** Projection après un événement déjà vérifié. */
 export function appliquer(projection: Projection, evenement: Evenement): Projection {
   const { competitionId, clubId, date, auteur } = evenement;
+  if (evenement.type === 'PiloteChange') return { ...projection, dernierSeq: evenement.seq };
   if (evenement.type === 'FormuleModifiee') {
     const { competition } = projection;
     if (!competition) return projection;

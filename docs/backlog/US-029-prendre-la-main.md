@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2, F12 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-022
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-029-prendre-la-main`
 
 ## Récit
 

@@ -82,6 +82,10 @@ const FORMES_FORMULE: Record<string, (valeur: unknown) => boolean> = {
  * `FormuleModifiee` (US-028), un ou plusieurs champs parmi les leurs, ceux qui ont changé.
  */
 function donneesValides(type: unknown, donnees: unknown): boolean {
+  if (type === 'PiloteChange') {
+    const pilote = aExactementLesChamps(donnees, ['ancienAppareil', 'nouvelAppareil']);
+    return pilote !== null && Object.values(pilote).every(estTexte);
+  }
   if (type !== 'CompetitionCreee' && type !== 'CompetitionModifiee' && type !== 'FormuleModifiee') return false;
   if (donnees === null || typeof donnees !== 'object' || Array.isArray(donnees)) return false;
   const noms = Object.keys(donnees);

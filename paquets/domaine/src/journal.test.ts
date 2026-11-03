@@ -263,3 +263,37 @@ describe('formule d’une compétition (US-028)', () => {
     expect(appliquer(vide, evenement(1, formuleModifiee({ touchesPoules: 4 })))).toBe(vide);
   });
 });
+
+describe('changement de pilote (US-029)', () => {
+  type DonneesPilote = Extract<Proposition, { type: 'PiloteChange' }>['donnees'];
+  const pilote = (donneesPilote: DonneesPilote): Proposition => ({ type: 'PiloteChange', donnees: donneesPilote });
+  const creee = () => projeter([evenement(1)]);
+
+  it('CA-1 : PiloteChange s’applique sans rien changer à la compétition', () => {
+    const avant = creee();
+    const apres = projeter([evenement(1), evenement(2, pilote({ ancienAppareil: 'a1', nouvelAppareil: 'a2' }))]);
+    expect(apres.anomalie).toBeNull();
+    expect(apres.dernierSeq).toBe(2);
+    expect(apres.competition).toEqual(avant.competition);
+  });
+
+  it('CA-1 : refuse un changement sans compétition créée', () => {
+    expect(verifierEvenement(projectionVide(), pilote({ ancienAppareil: 'a1', nouvelAppareil: 'a2' }))).toBe(
+      'COMPETITION_INCONNUE',
+    );
+  });
+
+  it('CA-1 : refuse des appareils vides ou identiques', () => {
+    expect(verifierEvenement(creee(), pilote({ ancienAppareil: '', nouvelAppareil: 'a2' }))).toBe('PILOTE_INVALIDE');
+    expect(verifierEvenement(creee(), pilote({ ancienAppareil: 'a1', nouvelAppareil: '' }))).toBe('PILOTE_INVALIDE');
+    expect(verifierEvenement(creee(), pilote({ ancienAppareil: 'a1', nouvelAppareil: 'a1' }))).toBe('PILOTE_INVALIDE');
+  });
+
+  it('cas limite : une compétition terminée ou archivée peut changer de pilote', () => {
+    for (const statut of ['terminee', 'archivee'] as const) {
+      const p = creee();
+      const projection = { ...p, competition: { ...p.competition!, statut } };
+      expect(verifierEvenement(projection, pilote({ ancienAppareil: 'a1', nouvelAppareil: 'a2' }))).toBeNull();
+    }
+  });
+});
