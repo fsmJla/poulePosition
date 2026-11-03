@@ -6,7 +6,7 @@
   import type { Competition } from '@poule-position/domaine';
   import Lien from '../composants/Lien.svelte';
   import { prendreEcriture, type Journal } from '../lib/journal';
-  import { cheminModificationCompetition, CHEMINS } from '../lib/routes';
+  import { cheminFormuleCompetition, cheminModificationCompetition, CHEMINS } from '../lib/routes';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
 
@@ -95,6 +95,8 @@
     {#if pilote && ecriture && competition.statut !== 'archivee'}
       <Lien chemin={cheminModificationCompetition(competitionId)} {naviguer}>{t.modifier}</Lien>
     {/if}
+    <!-- US-028 : la formule se règle sur une page à part, lisible aussi en lecture seule. -->
+    <Lien chemin={cheminFormuleCompetition(competitionId)} {naviguer}>{t.modifierFormule}</Lien>
     {#if pilote && enAttente > 0}
       <p class="envoi" role="status">
         {jamaisEnvoyee ? `${t.enAttente(enAttente)} · ${t.pasEncoreEnvoyee}` : t.enAttente(enAttente)}
@@ -135,7 +137,11 @@
       <dt>{t.formuleTitre}</dt>
       <dd>
         {competition.formule.touchesRelais === null
-          ? t.formule(competition.formule.touchesPoules, competition.formule.touchesTableau)
+          ? t.formule(
+              competition.formule.touchesPoules,
+              competition.formule.touchesTableau,
+              competition.formule.matchTroisieme,
+            )
           : t.relais(competition.formule.touchesRelais)}
       </dd>
     </dl>

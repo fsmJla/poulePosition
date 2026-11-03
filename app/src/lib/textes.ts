@@ -359,14 +359,48 @@ export const textes = {
     epreuveAu: (arme: Arme) =>
       `Cette épreuve est ${{ sabre: 'au sabre', epee: 'à l’épée', fleuret: 'au fleuret', sabreLaser: 'au sabre laser' }[arme]}`,
     formuleTitre: 'Formule',
-    formule: (touchesPoules: number, touchesTableau: number) =>
-      `Poules en ${touchesPoules} touches, sans élimination · Tableau en ${touchesTableau} touches`,
+    formule: (touchesPoules: number, touchesTableau: number, matchTroisieme = false) =>
+      `Poules en ${touchesPoules} touches, sans élimination · Tableau en ${touchesTableau} touches` +
+      (matchTroisieme ? ' · Match pour la 3e place' : ''),
+    modifierFormule: 'Formule',
     relais: (touches: number) => `Rencontres en relais à ${touches} touches`,
     /** US-028 CA-4 : avant de changer la formule d'une compétition en cours. */
     formuleConfirmation: (matchs: number) =>
       matchs === 1
         ? '1 match déjà joué : changer la formule le concerne-t-il ?'
         : `${matchs} matchs déjà joués : changer la formule les concerne-t-il ?`,
+    /** US-028 : page « Formule » d'une compétition. */
+    formulePage: {
+      titre: 'Formule de la compétition',
+      touchesPoules: 'Touches en poules',
+      touchesTableau: 'Touches au tableau',
+      matchTroisieme: 'Match pour la 3e place',
+      relaisFixe: (touches: number) =>
+        `Rencontres en relais à ${touches} touches (fixées par le type de la compétition)`,
+      autresFormules: 'D’autres formules seront proposées plus tard.',
+      enregistrer: 'Enregistrer la formule',
+      confirmer: 'Confirmer le changement',
+      historique: 'Historique de la formule',
+      historiqueVide: 'Aucun changement de formule',
+      retour: 'Retour à la compétition',
+      le: (date: number) => {
+        const jour = new Date(date);
+        const deux = (nombre: number) => String(nombre).padStart(2, '0');
+        return `${deux(jour.getDate())}/${deux(jour.getMonth() + 1)} à ${jour.getHours()} h ${deux(jour.getMinutes())}`;
+      },
+      changement: {
+        touchesPoules: (touches: number) => `Poules en ${touches} touches`,
+        touchesTableau: (touches: number) => `Tableau en ${touches} touches`,
+        matchTroisieme: (actif: boolean) =>
+          actif ? 'Match pour la 3e place activé' : 'Match pour la 3e place désactivé',
+      },
+      erreurs: {
+        TOUCHES_POULES_INVALIDES: 'Les poules se jouent en 3 à 10 touches',
+        TOUCHES_TABLEAU_INVALIDES: 'Le tableau se joue en 10 ou 15 touches',
+        MATCH_TROISIEME_INVALIDE: 'Choisissez si le match pour la 3e place est joué',
+        FORMULE_FIGEE: 'Cette compétition est terminée : sa formule n’est plus modifiable',
+      },
+    },
     chargement: 'Chargement de la compétition…',
     introuvable: 'Compétition introuvable sur cet appareil',
     retour: "Retour à l'accueil de l'organisateur",

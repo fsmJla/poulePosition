@@ -21,6 +21,7 @@
   import MotDePasseOublie from './pages/MotDePasseOublie.svelte';
   import Manifestations from './pages/Manifestations.svelte';
   import MotDePasse from './pages/MotDePasse.svelte';
+  import Formule from './pages/Formule.svelte';
   import NouvelleCompetition from './pages/NouvelleCompetition.svelte';
   import Profil from './pages/Profil.svelte';
   import Reinitialisation from './pages/Reinitialisation.svelte';
@@ -163,6 +164,10 @@
           competitionId={route.competitionId}
           {naviguer}
         />
+      {/key}
+    {:else if route.page === 'formuleCompetition' && route.competitionId}
+      {#key route.competitionId}
+        <Formule {session} competitionId={route.competitionId} {journal} {synchronisation} {naviguer} />
       {/key}
     {:else if route.page === 'competition' && route.competitionId}
       {#key route.competitionId}
