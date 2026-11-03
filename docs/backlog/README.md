@@ -65,7 +65,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-033](US-033-archiver-competition.md) | Archiver ou désarchiver une compétition ou une manifestation | E2 | Prête | US-026 |
 | [US-034](US-034-exporter-competition-json.md) | Exporter une compétition en JSON (P2) | E2 | Prête | US-021 |
 | [US-035](US-035-importer-competition-json.md) | Importer une compétition depuis un fichier JSON (P2) | E2 | Prête | US-034, US-029 |
-| [US-036](US-036-correction-e2e-desactivation-hors-ligne.md) | Corriger le test E2E « désactivation hors ligne » qui échoue sur la preview | E0 | À spécifier | US-008 |
+| [US-036](US-036-correction-e2e-desactivation-hors-ligne.md) | Corriger le test E2E « désactivation hors ligne » qui échoue sur la preview | E0 | En revue | US-008 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
