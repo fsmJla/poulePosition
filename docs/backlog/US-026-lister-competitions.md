@@ -6,7 +6,7 @@
 - **Type :** fonctionnelle
 - **Statut :** En revue
 - **Dépend de :** US-022, US-023, US-025
-- **Branche / PR :** `us/US-026-lister-competitions`
+- **Branche / PR :** `us/US-026-lister-competitions` · [PR #47](https://github.com/fsmJla/poulePosition/pull/47)
 
 ## Récit
 
