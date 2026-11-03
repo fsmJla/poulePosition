@@ -53,7 +53,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-021](US-021-journal-local-competition.md) | Tenir le journal local d'une compétition et sa projection (technique) | E2 | Terminée | US-001 |
 | [US-022](US-022-synchroniser-competitions.md) | Répliquer le journal sur le serveur et retrouver les compétitions du club sur tout PC (technique) | E2 | Terminée | US-021 |
 | [US-023](US-023-gerer-manifestations.md) | Créer et modifier une manifestation | E2 | Terminée | US-003 |
-| [US-024](US-024-gerer-epreuves.md) | Créer et modifier une épreuve dans une manifestation | E2 | Prête | US-023 |
+| [US-024](US-024-gerer-epreuves.md) | Créer et modifier une épreuve dans une manifestation | E2 | Terminée | US-023 |
 | [US-025](US-025-creer-competition.md) | Créer une compétition | E2 | Terminée | US-021, US-022, (US-024) |
 | [US-026](US-026-lister-competitions.md) | Lister les manifestations, épreuves et compétitions du club | E2 | Prête | US-022, US-023, US-025 |
 | [US-027](US-027-modifier-competition.md) | Modifier une compétition | E2 | Prête | US-025 |

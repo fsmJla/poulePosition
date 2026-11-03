@@ -35,6 +35,16 @@ describe('analyserChemin', () => {
     });
   });
 
+  it('US-024 : reconnaît la liste des épreuves et une épreuve', () => {
+    expect(analyserChemin('/epreuves')).toEqual({ route: 'epreuves' });
+    expect(analyserChemin('/epreuves/0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c')).toEqual({
+      route: 'epreuve',
+      id: '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c',
+    });
+    expect(analyserChemin('/epreuves/Pas Un Id')).toBeNull();
+    expect(analyserChemin('/epreuves/e1/autre')).toBeNull();
+  });
+
   it('US-023 : reconnaît la liste des manifestations et une manifestation', () => {
     expect(analyserChemin('/manifestations')).toEqual({ route: 'manifestations' });
     expect(analyserChemin('/manifestations/0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c')).toEqual({

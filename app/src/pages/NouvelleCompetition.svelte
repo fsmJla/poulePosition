@@ -1,11 +1,30 @@
 <script lang="ts">
   // « Nouvelle compétition » (US-025), page réservée : la compétition est écrite dans le journal local, donc créée
   // aussi hors ligne ; ce PC en devient le pilote et l'envoi au serveur part aussitôt, ou au retour du réseau (US-022).
-  // Le rattachement à une manifestation ou une épreuve sera proposé ici avec US-024 : la compétition est créée isolée.
-  import { ARMES, CATEGORIES, SEXES, TYPES_COMPETITION, type ErreursCompetition } from '@poule-position/domaine';
+  // Le rattachement à une manifestation ou une épreuve (US-024) se choisit parmi les dernières listes du club gardées sur
+  // l'appareil : hors ligne, la compétition reste créable, isolée ou rattachée à ce que la copie contient.
+  import { onMount } from 'svelte';
+  import {
+    ARMES,
+    CATEGORIES,
+    joursDeManifestation,
+    SEXES,
+    TYPES_COMPETITION,
+    type ErreursCompetition,
+  } from '@poule-position/domaine';
+  import type { Epreuve, Manifestation } from '@poule-position/protocole';
   import Lien from '../composants/Lien.svelte';
-  import { CATEGORIE_LIBRE, creerCompetition, saisieVide, type ErreurCreation } from '../lib/competitions';
+  import {
+    cadreDe,
+    CATEGORIE_LIBRE,
+    creerCompetition,
+    rattacher,
+    saisieVide,
+    type ErreurCreation,
+  } from '../lib/competitions';
+  import type { ClientEpreuves } from '../lib/epreuves';
   import type { Journal } from '../lib/journal';
+  import type { ClientManifestations } from '../lib/manifestations';
   import { cheminCompetition, CHEMINS } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
@@ -15,10 +34,13 @@
     session: SessionAppareil;
     journal: Journal;
     synchronisation: Synchronisation;
+    /** US-024 : listes pour le choix du rattachement. */
+    clientManifestations: ClientManifestations;
+    clientEpreuves: ClientEpreuves;
     naviguer: (chemin: string) => void;
   }
 
-  let { session, journal, synchronisation, naviguer }: Proprietes = $props();
+  let { session, journal, synchronisation, clientManifestations, clientEpreuves, naviguer }: Proprietes = $props();
 
   const t = textes.competitions;
 
@@ -27,16 +49,49 @@
   let erreur: ErreurCreation | null = $state(null);
   let enCours = $state(false);
 
+  let manifestations: Manifestation[] = $state([]);
+  let epreuves: Epreuve[] = $state([]);
+  const cadre = $derived(cadreDe(saisie, manifestations, epreuves));
+  const epreuvesChoisies = $derived(
+    epreuves.filter(({ manifestationId }) => manifestationId === saisie.manifestationId),
+  );
+
+  /** Listes du club : à jour en ligne, sinon la dernière copie de l'appareil. */
+  onMount(() => {
+    void (async () => {
+      const [lues, lus] = await Promise.all([clientManifestations.lister(), clientEpreuves.lister()]);
+      manifestations = lues.ok ? lues.manifestations : (lues.copie?.manifestations ?? []);
+      epreuves = lus.ok ? lus.epreuves : (lus.copie?.epreuves ?? []);
+    })();
+  });
+
+  function choisirManifestation(identifiant: string) {
+    Object.assign(saisie, rattacher($state.snapshot(saisie), identifiant, '', manifestations, epreuves));
+  }
+
+  function choisirEpreuve(identifiant: string) {
+    Object.assign(
+      saisie,
+      rattacher($state.snapshot(saisie), saisie.manifestationId, identifiant, manifestations, epreuves),
+    );
+  }
+
   async function creer(evenement: SubmitEvent) {
     evenement.preventDefault();
     if (enCours) return;
     enCours = true;
     erreur = null;
     try {
-      const resultat = await creerCompetition(journal, $state.snapshot(saisie), {
-        clubId: session.compte.clubId,
-        auteur: session.compte.email,
-      });
+      const resultat = await creerCompetition(
+        journal,
+        $state.snapshot(saisie),
+        {
+          clubId: session.compte.clubId,
+          auteur: session.compte.email,
+        },
+        $state.snapshot(manifestations),
+        $state.snapshot(epreuves),
+      );
       if (resultat.ok) {
         // US-022 : envoi après l'écriture ; hors ligne, la compétition attend le retour du réseau.
         void synchronisation.envoyer(resultat.competitionId);
@@ -52,6 +107,15 @@
     }
   }
 
+  /** US-025 CA-4 et US-024 CA-4 : les messages qui citent les dates de la manifestation ou l'arme de l'épreuve. */
+  function texteErreur(code: keyof typeof t.champs): string {
+    if (code === 'DATE_HORS_MANIFESTATION' && cadre) {
+      return t.dateHorsManifestation(cadre.manifestation.debut, cadre.manifestation.fin);
+    }
+    if (code === 'ARME_DIFFERENTE_EPREUVE' && cadre?.epreuve) return t.epreuveAu(cadre.epreuve.arme);
+    return t.champs[code];
+  }
+
   /** Attributs d'accessibilité d'un champ, et identifiant de son message d'erreur. */
   const invalide = (champ: keyof ErreursCompetition) => ({
     'aria-invalid': erreurs[champ] ? ('true' as const) : undefined,
@@ -61,13 +125,51 @@
 
 {#snippet message(champ: keyof ErreursCompetition)}
   {@const code = erreurs[champ]}
-  {#if code}<span class="erreur" id="erreur-{champ}">{t.champs[code]}</span>{/if}
+  {#if code}<span class="erreur" id="erreur-{champ}">{texteErreur(code)}</span>{/if}
 {/snippet}
 
 <main>
   <h1>{t.titreNouvelle}</h1>
 
   <form onsubmit={creer} novalidate>
+    <fieldset class="rattachement">
+      <legend>{t.rattachement} <small>({t.facultatif})</small></legend>
+      <div class="ligne">
+        <div class="champ">
+          <label for="manifestation">{t.manifestation}</label>
+          <select
+            id="manifestation"
+            value={saisie.manifestationId}
+            onchange={(evenement) => choisirManifestation(evenement.currentTarget.value)}
+            disabled={enCours}
+            {...invalide('rattachement')}
+          >
+            <option value="">{t.aucuneManifestation}</option>
+            {#each manifestations as manifestation (manifestation.id)}
+              <option value={manifestation.id}>{manifestation.nom}</option>
+            {/each}
+          </select>
+          {@render message('rattachement')}
+        </div>
+        {#if saisie.manifestationId}
+          <div class="champ">
+            <label for="epreuve">{t.epreuve}</label>
+            <select
+              id="epreuve"
+              value={saisie.epreuveId}
+              onchange={(evenement) => choisirEpreuve(evenement.currentTarget.value)}
+              disabled={enCours}
+            >
+              <option value="">{t.aucuneEpreuve}</option>
+              {#each epreuvesChoisies as epreuve (epreuve.id)}
+                <option value={epreuve.id}>{epreuve.nom}</option>
+              {/each}
+            </select>
+          </div>
+        {/if}
+      </div>
+    </fieldset>
+
     <div class="champ">
       <label for="nom">{t.nom}</label>
       <input
@@ -129,8 +231,33 @@
     </div>
 
     <div class="champ">
-      <label for="date">{t.date} <small>({t.facultatif})</small></label>
-      <input id="date" type="date" bind:value={saisie.date} disabled={enCours} {...invalide('date')} />
+      <label for="date"
+        >{t.date}
+        {#if !cadre}<small>({t.facultatif})</small>{/if}</label
+      >
+      <input
+        id="date"
+        type="date"
+        min={cadre?.manifestation.debut}
+        max={cadre?.manifestation.fin}
+        bind:value={saisie.date}
+        disabled={enCours}
+        {...invalide('date')}
+      />
+      {#if cadre}
+        <!-- US-025 CA-4 : dans une manifestation, la date est proposée parmi ses jours. -->
+        <div class="jours" role="group" aria-label={t.choisirDate}>
+          {#each joursDeManifestation(cadre.manifestation.debut, cadre.manifestation.fin) as jour (jour)}
+            <button
+              type="button"
+              class="jour"
+              aria-pressed={saisie.date === jour}
+              onclick={() => (saisie.date = jour)}
+              disabled={enCours}>{t.dateLongue(jour)}</button
+            >
+          {/each}
+        </div>
+      {/if}
       {@render message('date')}
     </div>
 
@@ -198,6 +325,7 @@
 
   .champ {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-content: start;
     gap: 0.3rem;
   }
@@ -215,6 +343,7 @@
   input,
   select,
   textarea {
+    max-width: 100%;
     padding: 0.6rem 0.75rem;
     border: 1px solid var(--bordure-champ);
     border-radius: var(--rayon);
@@ -242,6 +371,25 @@
     margin: 0;
     padding: 0;
     border: none;
+  }
+
+  .jours {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  button.jour {
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--bordure-champ);
+    background: var(--surface);
+    color: var(--texte);
+    font-weight: 400;
+  }
+
+  button.jour[aria-pressed='true'] {
+    border-color: var(--accent);
+    font-weight: 600;
   }
 
   .horaires label {

@@ -72,6 +72,11 @@ describe('manifestation (US-023)', () => {
     expect(estVide('m1', [competition({ rattachement: { manifestationId: 'm1', epreuveId: 'e1' } })])).toBe(false);
   });
 
+  it('CA-5 (US-024) : une manifestation qui contient une épreuve n’est pas vide', () => {
+    expect(estVide('m1', [], [{ manifestationId: 'm2' }])).toBe(true);
+    expect(estVide('m1', [], [{ manifestationId: 'm1' }])).toBe(false);
+  });
+
   it('cas limites : nom de plus de 100 caractères, commentaire de plus de 2 000, lieu de plus de 200', () => {
     expect(validerManifestation(donnees({ nom: 'x'.repeat(101) }))).toEqual({ nom: 'NOM_TROP_LONG' });
     expect(validerManifestation(donnees({ nom: 'x'.repeat(100) }))).toEqual({});

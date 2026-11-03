@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-023
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-024-gerer-epreuves` · [PR #46](https://github.com/fsmJla/poulePosition/pull/46)
 
 ## Récit
 
@@ -71,9 +71,31 @@ modification grisées avec « Nécessite une connexion internet ».
   … et le … », avec leurs E2E (US-025 CA-3 et CA-4). Les règles sont déjà dans le domaine (`validerCompetition`
   avec un `CadreRattachement`, `preremplir`, `joursDeManifestation`) et l'événement porte déjà `rattachement`.
 
+- Réalisé :
+  - `paquets/domaine/src/epreuve.ts` : `validerEpreuve`, `normaliserEpreuve`, `estVideEpreuve` ; `estVide` d'une
+    manifestation tient compte de ses épreuves ;
+  - `paquets/protocole/src/epreuves.ts` : demandes et réponses, codes `EPREUVE_INCONNUE` et `EPREUVE_NON_VIDE`
+    (docs/protocole.md §13) ;
+  - `serveur` : table `epreuves` du DO `Club` (avec `club_id`, `manifestation_id` et `version`), routes `/epreuves` ;
+    une manifestation qui contient une épreuve ne se supprime pas ;
+  - `app` : `lib/epreuves.ts` (client, copie locale `copieEpreuves`, base locale en version 6), composant
+    `Epreuves` sous chaque manifestation, sélecteur de rattachement de « Nouvelle compétition » (`cadreDe`, `rattacher`).
+- Décisions du 2026-11-03 :
+  - Les épreuves se gèrent dans la page « Manifestations », sous chaque manifestation, en attendant la liste d'US-026.
+  - La manifestation d'une épreuve ne change pas : le `PATCH` n'accepte pas `manifestationId`.
+  - Hors ligne, « Nouvelle compétition » propose les manifestations et épreuves de la dernière copie ; un rattachement
+    absent de la copie est refusé.
+- Tests : `epreuve.test.ts` et `manifestation.test.ts` (domaine), `epreuves.test.ts` (protocole),
+  `epreuves.test.ts` et `logique.test.ts` (serveur, dans workerd), `epreuves`, `competitions` et `textes` (app), E2E
+  `tests/e2e/epreuves.spec.ts` (dont US-025 CA-3 et CA-4).
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
 | 2026-11-02 | Reçoit d'US-025 le sélecteur de rattachement du formulaire de création d'une compétition (CA-3, CA-4) |
+| 2026-11-03 | Démarrée (plan validé) ; sélecteur de rattachement et E2E reçus d'US-025 réalisés |
+| 2026-11-03 | En revue : lint, typage, 737 tests (couverture 94,5 % lignes), build, audit (aucune vulnérabilité haute) et 207 E2E locaux verts |
+| 2026-11-03 | Recette en preview : écart au format smartphone (le formulaire « Nouvelle compétition » débordait avec un nom d'épreuve long), corrigé avec un E2E de non-débordement |
+| 2026-11-03 | Recette OK sur https://poule-position-git-us-us-024-gerer-epreuves-fsmjlas-projects.vercel.app (Worker de preview déployé depuis la branche ; déployée en preview et vérifiée), avec un compte réel : CA-1 (création avec arme et commentaire, persistance au rechargement) ; CA-2 (aucune création hors manifestation) ; CA-3 (modification, modification concurrente « Modifiée entre-temps par … » puis rechargement) ; CA-4 (lieu et arme préremplis, jours proposés, « Cette épreuve est au sabre », « La date doit être comprise entre le 14/03 et le 15/03 », compétition rattachée reçue par le serveur) ; CA-5 (épreuve vide supprimée après confirmation, épreuve et manifestation non vides refusées) ; hors ligne (liste consultable, actions grisées, compétition rattachée créée hors ligne puis envoyée au retour du réseau) ; smartphone 390 px sans débordement après correction. Merge dans `dev`. Les données « Recette US-024 … » restent dans le club de preview. |

@@ -142,3 +142,17 @@ describe('textes des manifestations (US-023)', () => {
     );
   });
 });
+
+describe('textes des épreuves (US-024)', () => {
+  it('CA-4 : « Cette épreuve est au <arme> », avec la bonne préposition', () => {
+    expect(textes.competitions.epreuveAu('sabre')).toBe('Cette épreuve est au sabre');
+    expect(textes.competitions.epreuveAu('epee')).toBe('Cette épreuve est à l’épée');
+    expect(textes.competitions.epreuveAu('fleuret')).toBe('Cette épreuve est au fleuret');
+    expect(textes.competitions.epreuveAu('sabreLaser')).toBe('Cette épreuve est au sabre laser');
+  });
+
+  it('hors ligne et CA-5 : « Nécessite une connexion internet », et le refus d’une épreuve non vide', () => {
+    expect(textes.epreuves.horsLigne).toBe('Nécessite une connexion internet');
+    expect(textes.epreuves.erreurs.EPREUVE_NON_VIDE).toContain('ne se supprime pas');
+  });
+});

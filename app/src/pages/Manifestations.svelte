@@ -4,8 +4,10 @@
   // consultable avec sa date, et les actions sont grisées. La liste sera intégrée à l'accueil par US-026.
   import { onMount } from 'svelte';
   import type { ErreursManifestation } from '@poule-position/domaine';
-  import type { Manifestation } from '@poule-position/protocole';
+  import type { Epreuve, Manifestation } from '@poule-position/protocole';
+  import Epreuves from '../composants/Epreuves.svelte';
   import Lien from '../composants/Lien.svelte';
+  import type { ClientEpreuves } from '../lib/epreuves';
   import {
     saisieDe,
     saisieVide,
@@ -18,16 +20,19 @@
 
   interface Proprietes {
     client: ClientManifestations;
+    /** US-024 : épreuves, affichées sous leur manifestation. */
+    clientEpreuves: ClientEpreuves;
     naviguer: (chemin: string) => void;
   }
 
-  let { client, naviguer }: Proprietes = $props();
+  let { client, clientEpreuves, naviguer }: Proprietes = $props();
 
   const t = textes.manifestations;
 
   let manifestations: Manifestation[] | null = $state(null);
   /** Date de la copie affichée hors ligne ; null pour une liste à jour. */
   let copieLe: number | null = $state(null);
+  let epreuves: Epreuve[] = $state([]);
   let erreurListe: ErreurManifestations | null = $state(null);
   let horsLigne = $state(!navigator.onLine);
 
@@ -45,7 +50,14 @@
   let aSupprimer: Manifestation | null = $state(null);
   let erreurSuppression: ErreurManifestations | null = $state(null);
 
+  /** US-024 : épreuves du club, ou leur dernière copie gardée sur l'appareil. */
+  async function chargerEpreuves() {
+    const resultat = await clientEpreuves.lister();
+    epreuves = resultat.ok ? resultat.epreuves : (resultat.copie?.epreuves ?? epreuves);
+  }
+
   async function charger() {
+    void chargerEpreuves();
     const resultat = await client.lister();
     if (resultat.ok) {
       manifestations = resultat.manifestations;
@@ -244,6 +256,13 @@
             {#if manifestation.lieu}<span>{manifestation.lieu}</span>{/if}
             {#if manifestation.commentaire}<span class="commentaire">{manifestation.commentaire}</span>{/if}
           </div>
+          <Epreuves
+            {manifestation}
+            client={clientEpreuves}
+            epreuves={epreuves.filter(({ manifestationId }) => manifestationId === manifestation.id)}
+            {horsLigne}
+            modifie={chargerEpreuves}
+          />
           {#if aSupprimer?.id === manifestation.id}
             <div class="confirmation" role="group" aria-label={t.supprimer(manifestation.nom)}>
               <span>{t.confirmerSuppression(manifestation.nom)}</span>

@@ -83,10 +83,14 @@ export function competitionsHorsDates<T extends CompetitionRattachee>(
   );
 }
 
-/** CA-5 : vrai si aucune compétition ne se rattache à la manifestation (les épreuves s'y ajouteront, US-024). */
+/** CA-5 : vrai si aucune compétition ni aucune épreuve (US-024) ne se rattache à la manifestation. */
 export function estVide(
   manifestationId: string,
   competitions: readonly Pick<CompetitionRattachee, 'rattachement'>[],
+  epreuves: readonly { manifestationId: string }[] = [],
 ): boolean {
-  return !competitions.some((competition) => estRattachee(manifestationId, competition));
+  return (
+    !competitions.some((competition) => estRattachee(manifestationId, competition)) &&
+    !epreuves.some((epreuve) => epreuve.manifestationId === manifestationId)
+  );
 }
