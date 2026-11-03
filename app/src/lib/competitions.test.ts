@@ -2,7 +2,16 @@ import 'fake-indexeddb/auto';
 import { describe, expect, it, vi } from 'vitest';
 import { ouvrirJournal } from './journal';
 import type { Epreuve, Manifestation } from '@poule-position/protocole';
-import { cadreDe, creerCompetition, rattacher, saisieVide, versDonnees, type SaisieCompetition } from './competitions';
+import {
+  cadreDe,
+  creerCompetition,
+  modifierCompetition,
+  rattacher,
+  saisieDe,
+  saisieVide,
+  versDonnees,
+  type SaisieCompetition,
+} from './competitions';
 
 const saisie = (champs: Partial<SaisieCompetition> = {}): SaisieCompetition => ({
   ...saisieVide(),
@@ -267,5 +276,182 @@ describe('rattachement d’une nouvelle compétition (US-025 CA-3 et CA-4, US-02
       [epreuve],
     );
     expect(autre).toEqual({ ok: false, erreurs: { rattachement: 'RATTACHEMENT_INVALIDE' } });
+  });
+});
+
+describe('modification d’une compétition (US-027)', () => {
+  const creee = async (
+    champs: Partial<SaisieCompetition> = {},
+    manifestations: Manifestation[] = [],
+    epreuves: Epreuve[] = [],
+  ) => {
+    const journal = nouveauJournal();
+    const resultat = await creerCompetition(journal, saisie(champs), auteur, manifestations, epreuves);
+    return { journal, competitionId: (resultat as { competitionId: string }).competitionId };
+  };
+  const modifiable = async (journal: ReturnType<typeof nouveauJournal>, competitionId: string) =>
+    saisieDe((await journal.lire(competitionId)).competition!);
+
+  it('CA-1 : le formulaire de modification reprend la compétition, catégorie libre comprise', () => {
+    const ouverte = saisie({
+      categorie: 'autre',
+      categorieLibre: 'Challenge des petits',
+      sexe: 'dames',
+      date: '2027-03-14',
+      appel: '08:30',
+      lieu: 'Salle Bellegrave',
+      manifestationId: 'm1',
+      epreuveId: 'e1',
+    });
+    expect(saisieDe(versDonnees(ouverte))).toEqual(ouverte);
+    expect(saisieDe(versDonnees(saisie({ categorie: 'M13' }))).categorie).toBe('M13');
+  });
+
+  it('CA-1 : modifier écrit CompetitionModifiee avec les seuls champs changés', async () => {
+    const { journal, competitionId } = await creee({ lieu: 'Salle A' });
+    const avant = await modifiable(journal, competitionId);
+    const resultat = await modifierCompetition(
+      journal,
+      competitionId,
+      { ...avant, nom: 'Autre nom', commentaire: 'Buvette' },
+      auteur,
+    );
+    expect(resultat).toEqual({ ok: true, modifiee: true });
+    const evenements = await journal.aEnvoyer(competitionId);
+    expect(evenements.at(-1)).toMatchObject({
+      seq: 2,
+      type: 'CompetitionModifiee',
+      donnees: { nom: 'Autre nom', commentaire: 'Buvette' },
+    });
+    expect(Object.keys(evenements.at(-1)!.donnees)).toEqual(['nom', 'commentaire']);
+    expect((await journal.lire(competitionId)).competition).toMatchObject({ nom: 'Autre nom', lieu: 'Salle A' });
+  });
+
+  it('CA-5 : formulaire inchangé : aucun événement', async () => {
+    const { journal, competitionId } = await creee();
+    const resultat = await modifierCompetition(
+      journal,
+      competitionId,
+      await modifiable(journal, competitionId),
+      auteur,
+    );
+    expect(resultat).toEqual({ ok: true, modifiee: false });
+    expect((await journal.lire(competitionId)).dernierSeq).toBe(1);
+  });
+
+  it('CA-3 : un PC non pilote ne peut pas modifier (PAS_PILOTE)', async () => {
+    const { journal, competitionId } = await creee();
+    const copie = nouveauJournal();
+    await copie.remplacerCopie(competitionId, await journal.aEnvoyer(competitionId), 1);
+    const avant = await modifiable(copie, competitionId);
+    const resultat = await modifierCompetition(copie, competitionId, { ...avant, nom: 'Autre' }, auteur);
+    expect(resultat).toEqual({ ok: false, erreur: 'PAS_PILOTE' });
+    expect((await copie.lire(competitionId)).dernierSeq).toBe(1);
+  });
+
+  it('CA-4 : horaires incohérents refusés sous le champ, sans rien écrire', async () => {
+    const { journal, competitionId } = await creee();
+    const avant = await modifiable(journal, competitionId);
+    const resultat = await modifierCompetition(
+      journal,
+      competitionId,
+      { ...avant, appel: '09:00', scratch: '08:00' },
+      auteur,
+    );
+    expect(resultat).toEqual({ ok: false, erreurs: { scratch: 'SCRATCH_AVANT_APPEL' } });
+    expect((await journal.lire(competitionId)).dernierSeq).toBe(1);
+  });
+
+  it('CA-4 : date hors manifestation et arme différente de l’épreuve refusées', async () => {
+    const { journal, competitionId } = await creee(
+      { manifestationId: 'm1', epreuveId: 'e1', date: '2027-03-14' },
+      [manifestation],
+      [epreuve],
+    );
+    const avant = await modifiable(journal, competitionId);
+    const hors = await modifierCompetition(
+      journal,
+      competitionId,
+      { ...avant, date: '2027-03-20' },
+      auteur,
+      [manifestation],
+      [epreuve],
+    );
+    expect(hors).toEqual({ ok: false, erreurs: { date: 'DATE_HORS_MANIFESTATION' } });
+    const autre = await modifierCompetition(
+      journal,
+      competitionId,
+      { ...avant, arme: 'epee' },
+      auteur,
+      [manifestation],
+      [epreuve],
+    );
+    expect(autre).toEqual({ ok: false, erreurs: { arme: 'ARME_DIFFERENTE_EPREUVE' } });
+    expect((await journal.lire(competitionId)).dernierSeq).toBe(1);
+  });
+
+  it('CA-4 : un nom vide est refusé comme à la création', async () => {
+    const { journal, competitionId } = await creee();
+    const avant = await modifiable(journal, competitionId);
+    const resultat = await modifierCompetition(journal, competitionId, { ...avant, nom: ' ' }, auteur);
+    expect(resultat).toEqual({ ok: false, erreurs: { nom: 'NOM_VIDE' } });
+  });
+
+  it('hors ligne : la modification s’écrit dans le journal local sans réseau et reste à envoyer', async () => {
+    const { journal, competitionId } = await creee();
+    await journal.confirmer(competitionId, 1);
+    expect(await journal.aEnvoyer(competitionId)).toEqual([]);
+    const avant = await modifiable(journal, competitionId);
+    await modifierCompetition(journal, competitionId, { ...avant, lieu: 'Gymnase' }, auteur);
+    const attente = await journal.aEnvoyer(competitionId);
+    expect(attente.map(({ seq, type }) => [seq, type])).toEqual([[2, 'CompetitionModifiee']]);
+  });
+
+  it('hors ligne : se rattacher à une manifestation de la copie est possible, à une inconnue est refusé', async () => {
+    const { journal, competitionId } = await creee();
+    const avant = await modifiable(journal, competitionId);
+    const inconnue = await modifierCompetition(
+      journal,
+      competitionId,
+      { ...avant, manifestationId: 'x', date: '2027-03-14' },
+      auteur,
+      [manifestation],
+      [epreuve],
+    );
+    expect(inconnue).toEqual({ ok: false, erreurs: { rattachement: 'RATTACHEMENT_INVALIDE' } });
+    const rattachee = await modifierCompetition(
+      journal,
+      competitionId,
+      { ...avant, manifestationId: 'm1', date: '2027-03-14' },
+      auteur,
+      [manifestation],
+      [epreuve],
+    );
+    expect(rattachee).toEqual({ ok: true, modifiee: true });
+    const { competition } = await journal.lire(competitionId);
+    expect(competition?.rattachement).toEqual({ manifestationId: 'm1', epreuveId: null });
+  });
+
+  it('hors ligne : un rattachement inchangé mais inconnu de la copie n’empêche pas d’enregistrer', async () => {
+    const { journal, competitionId } = await creee({ manifestationId: 'm1', date: '2027-03-14' }, [manifestation]);
+    const avant = await modifiable(journal, competitionId);
+    const resultat = await modifierCompetition(journal, competitionId, { ...avant, nom: 'Autre' }, auteur, [], []);
+    expect(resultat).toEqual({ ok: true, modifiee: true });
+  });
+
+  it('cas limites : compétition inconnue, archivée, échec d’écriture', async () => {
+    const { journal, competitionId } = await creee();
+    const avant = { ...(await modifiable(journal, competitionId)), nom: 'Autre' };
+    expect(await modifierCompetition(journal, 'absente', avant, auteur)).toEqual({ ok: false, erreur: 'INTROUVABLE' });
+    vi.spyOn(journal, 'enregistrer').mockResolvedValueOnce({ erreur: 'COMPETITION_ARCHIVEE' });
+    expect(await modifierCompetition(journal, competitionId, avant, auteur)).toEqual({
+      ok: false,
+      erreur: 'COMPETITION_ARCHIVEE',
+    });
+    vi.spyOn(journal, 'enregistrer').mockResolvedValueOnce({ erreur: 'ECRITURE_IMPOSSIBLE' });
+    expect(await modifierCompetition(journal, competitionId, avant, auteur)).toEqual({
+      ok: false,
+      erreur: 'ECRITURE_IMPOSSIBLE',
+    });
   });
 });

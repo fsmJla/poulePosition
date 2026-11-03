@@ -1,7 +1,10 @@
-// Création d'une compétition (US-025) : le formulaire est converti en données de l'événement `CompetitionCreee`,
+// Création (US-025) et modification (US-027) d'une compétition : le formulaire est converti en données de l'événement `CompetitionCreee`,
 // vérifié par les règles du domaine, puis écrit dans le journal local. Tout fonctionne hors ligne : l'envoi au serveur
 // est fait ensuite par `synchronisation.ts` (US-022).
 import {
+  CATEGORIES,
+  champsModifiables,
+  modification,
   preremplir,
   validerCompetition,
   type Arme,
@@ -76,6 +79,28 @@ export function versDonnees(saisie: SaisieCompetition): DonneesCompetition {
     rattachement: saisie.manifestationId
       ? { manifestationId: saisie.manifestationId, epreuveId: ouNull(saisie.epreuveId) }
       : null,
+  };
+}
+
+/** US-027 CA-1 : le formulaire de modification, rempli avec les données de la compétition. */
+export function saisieDe(donnees: DonneesCompetition): SaisieCompetition {
+  const { categorie } = donnees;
+  const libre = categorie !== null && !(CATEGORIES as readonly string[]).includes(categorie);
+  return {
+    nom: donnees.nom,
+    arme: donnees.arme,
+    typeCompetition: donnees.typeCompetition,
+    categorie: libre ? CATEGORIE_LIBRE : (categorie ?? ''),
+    categorieLibre: libre ? categorie : '',
+    sexe: donnees.sexe ?? '',
+    date: donnees.date ?? '',
+    appel: donnees.horaires.appel ?? '',
+    scratch: donnees.horaires.scratch ?? '',
+    debutPoules: donnees.horaires.debutPoules ?? '',
+    lieu: donnees.lieu ?? '',
+    commentaire: donnees.commentaire ?? '',
+    manifestationId: donnees.rattachement?.manifestationId ?? '',
+    epreuveId: donnees.rattachement?.epreuveId ?? '',
   };
 }
 
@@ -156,4 +181,57 @@ export async function creerCompetition(
   if ('projection' in resultat) return { ok: true, competitionId };
   // Une compétition neuve n'a ni pilote ailleurs ni journal incohérent : il ne reste que l'échec d'écriture.
   return { ok: false, erreur: 'ECRITURE_IMPOSSIBLE' };
+}
+
+/**
+ * `INTROUVABLE` : compétition inconnue de cet appareil ; `PAS_PILOTE` (CA-3), `COMPETITION_ARCHIVEE`, `CHAMP_FIGE` et
+ * `JOURNAL_INCOHERENT` viennent du journal.
+ */
+export type ErreurModification =
+  | 'INTROUVABLE'
+  | Extract<
+      ErreurJournal,
+      'PAS_PILOTE' | 'COMPETITION_ARCHIVEE' | 'CHAMP_FIGE' | 'JOURNAL_INCOHERENT' | 'ECRITURE_IMPOSSIBLE'
+    >;
+
+export type ResultatModification =
+  | { ok: true; modifiee: boolean }
+  | { ok: false; erreurs: ErreursCompetition }
+  | { ok: false; erreur: ErreurModification };
+
+/**
+ * US-027 CA-1, CA-4 et CA-5 : compare la saisie à la compétition, vérifie ce qui change comme à la création, puis écrit
+ * `CompetitionModifiee` avec les seuls champs changés ; rien n'est écrit si rien ne change.
+ */
+export async function modifierCompetition(
+  journal: Journal,
+  competitionId: string,
+  saisie: SaisieCompetition,
+  { clubId, ...contexte }: Omit<Contexte, 'clubId'> & { clubId?: string | undefined },
+  manifestations: readonly Manifestation[] = [],
+  epreuves: readonly Epreuve[] = [],
+): Promise<ResultatModification> {
+  const { competition } = await journal.lire(competitionId);
+  if (!competition) return { ok: false, erreur: 'INTROUVABLE' };
+  const donnees = versDonnees(saisie);
+  const changes = modification(competition, donnees);
+  if (Object.keys(changes).length === 0) return { ok: true, modifiee: false };
+  if (!champsModifiables(competition.statut).length) return { ok: false, erreur: 'COMPETITION_ARCHIVEE' };
+  // Le cadre ne sert qu'à ce qui change : un rattachement connu de la copie seulement n'empêche pas de modifier le reste.
+  const cadre =
+    'rattachement' in changes || 'date' in changes || 'arme' in changes
+      ? cadreDe(saisie, manifestations, epreuves)
+      : null;
+  const erreurs = validerCompetition(donnees, cadre);
+  if ('rattachement' in changes && donnees.rattachement && !cadre) erreurs.rattachement = 'RATTACHEMENT_INVALIDE';
+  if (Object.keys(erreurs).length > 0) return { ok: false, erreurs };
+  const resultat = await journal.enregistrer(
+    competitionId,
+    { type: 'CompetitionModifiee', donnees: changes },
+    { clubId: clubId ?? competition.clubId, ...contexte },
+  );
+  if ('projection' in resultat) return { ok: true, modifiee: true };
+  const { erreur } = resultat;
+  const connues = ['PAS_PILOTE', 'COMPETITION_ARCHIVEE', 'CHAMP_FIGE', 'JOURNAL_INCOHERENT'] as const;
+  return { ok: false, erreur: connues.find((code) => code === erreur) ?? 'ECRITURE_IMPOSSIBLE' };
 }
