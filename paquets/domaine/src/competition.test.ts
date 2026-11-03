@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   CATEGORIES,
   formuleParDefaut,
+  modificationFormule,
+  validerFormule,
   champsModifiables,
   joursDeManifestation,
   modification,
@@ -236,5 +238,44 @@ describe('modification d’une compétition (US-027)', () => {
   it('cas limite : terminée, seul le commentaire est modifiable ; archivée, rien', () => {
     expect(champsModifiables('terminee')).toEqual(['commentaire']);
     expect(champsModifiables('archivee')).toEqual([]);
+  });
+});
+
+describe('formule d’une compétition (US-028)', () => {
+  const formule = formuleParDefaut('individuelle');
+
+  it('CA-1 : formule par défaut : poules à 5, tableau à 15, sans match pour la 3e place', () => {
+    expect(formule).toEqual({ touchesPoules: 5, touchesTableau: 15, touchesRelais: null, matchTroisieme: false });
+  });
+
+  it('CA-3 : les rencontres en relais se jouent à 20 touches (équipes de 2) ou 45 touches (équipes de 3)', () => {
+    expect(formuleParDefaut('equipes2').touchesRelais).toBe(20);
+    expect(formuleParDefaut('equipes3').touchesRelais).toBe(45);
+    expect(formuleParDefaut('individuelle').touchesRelais).toBeNull();
+  });
+
+  it('CA-2 : la modification ne porte que les réglages changés', () => {
+    expect(modificationFormule(formule, formule)).toEqual({});
+    expect(modificationFormule(formule, { ...formule, touchesTableau: 10 })).toEqual({ touchesTableau: 10 });
+    expect(modificationFormule(formule, { ...formule, touchesPoules: 4, matchTroisieme: true })).toEqual({
+      touchesPoules: 4,
+      matchTroisieme: true,
+    });
+  });
+
+  it('CA-2 : accepte 3 à 10 touches en poules et 10 ou 15 au tableau', () => {
+    for (const touchesPoules of [3, 5, 10]) expect(validerFormule({ touchesPoules })).toBeNull();
+    for (const touchesTableau of [10, 15]) expect(validerFormule({ touchesTableau })).toBeNull();
+    expect(validerFormule({ matchTroisieme: true })).toBeNull();
+  });
+
+  it('CA-2 : refuse des touches hors bornes ou non entières, et un match pour la 3e place non booléen', () => {
+    for (const touchesPoules of [0, 2, 11, 4.5, Number.NaN]) {
+      expect(validerFormule({ touchesPoules })).toBe('TOUCHES_POULES_INVALIDES');
+    }
+    for (const touchesTableau of [5, 12, 20]) {
+      expect(validerFormule({ touchesTableau })).toBe('TOUCHES_TABLEAU_INVALIDES');
+    }
+    expect(validerFormule({ matchTroisieme: 'oui' as unknown as boolean })).toBe('MATCH_TROISIEME_INVALIDE');
   });
 });

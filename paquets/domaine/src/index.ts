@@ -4,6 +4,7 @@ export * from './competition';
 export * from './comptes';
 export * from './epreuve';
 export * from './essais';
+export * from './formule';
 export * from './journal';
 export * from './manifestation';
 export * from './reinitialisation';
