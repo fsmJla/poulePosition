@@ -37,6 +37,9 @@ export const CODES_ERREUR_SESSION = [
   'MANIFESTATION_INCONNUE',
   'MODIFIEE_ENTRE_TEMPS',
   'MANIFESTATION_NON_VIDE',
+  // Épreuves (US-024, §13).
+  'EPREUVE_INCONNUE',
+  'EPREUVE_NON_VIDE',
 ] as const;
 
 export type CodeErreurSession = (typeof CODES_ERREUR_SESSION)[number];

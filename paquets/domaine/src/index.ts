@@ -2,6 +2,7 @@
 export * from './avatar';
 export * from './competition';
 export * from './comptes';
+export * from './epreuve';
 export * from './essais';
 export * from './journal';
 export * from './manifestation';
