@@ -131,3 +131,30 @@ describe('événement CompetitionModifiee (US-027)', () => {
     expect(lireEvenement(brut({ type: 'Inconnu' }))).toBeNull();
   });
 });
+
+describe('événement FormuleModifiee (US-028)', () => {
+  const formule = (donneesFormule: Record<string, unknown>) =>
+    brut({ seq: 2, type: 'FormuleModifiee', donnees: donneesFormule });
+
+  it('CA-2 : lit une FormuleModifiee qui ne porte que les réglages changés', () => {
+    for (const champs of [
+      { touchesPoules: 4 },
+      { touchesTableau: 10 },
+      { matchTroisieme: true },
+      { touchesPoules: 8, touchesTableau: 15, matchTroisieme: false },
+    ]) {
+      expect(lireEvenement(formule(champs))).toEqual(formule(champs));
+    }
+  });
+
+  it('CA-2 : refuse une formule vide, avec un réglage inconnu (touches de relais comprises) ou mal typé', () => {
+    expect(lireEvenement(formule({}))).toBeNull();
+    expect(lireEvenement(formule({ touchesRelais: 20 }))).toBeNull();
+    expect(lireEvenement(formule({ inconnu: 1 }))).toBeNull();
+    expect(lireEvenement(formule({ touchesPoules: '5' }))).toBeNull();
+    expect(lireEvenement(formule({ touchesTableau: 1.5 }))).toBeNull();
+    expect(lireEvenement(formule({ matchTroisieme: 'oui' }))).toBeNull();
+    expect(lireEvenement(formule({ touchesPoules: undefined }))).toBeNull();
+    expect(lireEvenement(brut({ type: 'FormuleModifiee', donnees: [] }))).toBeNull();
+  });
+});

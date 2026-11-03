@@ -435,6 +435,7 @@ Aucun autre champ n'est accepté.
 |---|---|---|
 | `CompetitionCreee` | voir ci-dessous | Premier événement d'une compétition, une seule fois. |
 | `CompetitionModifiee` | un ou plusieurs champs de `CompetitionCreee` | Modifie les champs donnés (US-027), seulement ceux qui ont changé. |
+| `FormuleModifiee` | un ou plusieurs réglages de la formule | Modifie la formule de la compétition (US-028), seulement ce qui a changé. |
 
 **Données de `CompetitionCreee`** (US-025) : exactement ces champs ; un champ facultatif non saisi vaut `null`.
 Le format a été complété par US-025 sans changer de version : rien n'était encore en production.
@@ -471,7 +472,31 @@ Règles du domaine (`verifierEvenement`), dans cet ordre :
 - sinon, le résultat de la fusion est validé comme une création (`validerCompetition`), d'où les mêmes erreurs.
 
 La projection fusionne les champs, retire les espaces autour des textes, et recalcule `touchesRelais` de la formule
-quand le type change (le reste de la formule relève d'US-028).
+quand le type change (le reste de la formule relève de `FormuleModifiee`).
+
+**Données de `FormuleModifiee`** (US-028) : au moins un des réglages ci-dessous, seulement ceux dont la valeur change.
+Les touches de relais n'y figurent pas : elles sont fixées par le type de la compétition (20 touches en équipes de 2,
+45 en équipes de 3, `null` en individuel). Comme `CompetitionModifiee`, c'est un nouveau type d'événement
+(`VERSION_JOURNAL` reste à 1).
+
+| Champ | Type | Règles (domaine, `validerFormule`) |
+|---|---|---|
+| `touchesPoules` | entier | De 3 à 10 touches (5 par défaut) |
+| `touchesTableau` | entier | 10 ou 15 touches (15 par défaut) |
+| `matchTroisieme` | booléen | Match pour la 3e place (`false` par défaut) |
+
+Règles du domaine (`verifierEvenement`), dans cet ordre :
+
+- `COMPETITION_INCONNUE` : aucune `CompetitionCreee` avant ;
+- `COMPETITION_ARCHIVEE` : une compétition archivée n'est plus modifiable ;
+- `FORMULE_FIGEE` : la formule ne se règle plus quand la compétition est « Terminée » ; elle reste réglable en
+  préparation et en cours (CA-4 et CA-5) ;
+- `CHAMP_FIGE` : un réglage inconnu, `touchesRelais` compris ;
+- `TOUCHES_POULES_INVALIDES`, `TOUCHES_TABLEAU_INVALIDES`, `MATCH_TROISIEME_INVALIDE` : valeur hors des bornes ;
+- `AUCUNE_MODIFICATION` : la formule résultante est identique à la courante (rien n'est écrit).
+
+La date et l'auteur de chaque changement sont ceux de l'en-tête de l'événement : `historiqueFormule` (domaine) en tire
+la trace des changements de formule (CA-6).
 
 ### Règles d'écriture et de lecture
 

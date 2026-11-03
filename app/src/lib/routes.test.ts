@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   cheminCompetition,
+  cheminFormuleCompetition,
   cheminModificationCompetition,
   cheminNouvelleEpreuve,
   CHEMIN_NOUVELLE_MANIFESTATION,
@@ -129,5 +130,17 @@ describe('modification d’une compétition (US-027)', () => {
     expect(resoudreRoute(`/competitions/${id}/modifier/`, true)).toEqual(route);
     expect(resoudreRoute(`/competitions/${id}/modifier`, false)).toEqual({ redirection: CHEMINS.connexion });
     expect(resoudreRoute('/competitions/Pas Un Id/modifier', true)).toEqual({ redirection: '/' });
+  });
+});
+
+describe('formule d’une compétition (US-028)', () => {
+  it('CA-2 : « /competitions/<id>/formule » est réservée aux comptes connectés et porte l’identifiant', () => {
+    const id = '0b6f1c1e-6d1a-4f0a-9a43-2f3c9e5d7b10';
+    const route = { page: 'formuleCompetition', competitionId: id };
+    expect(cheminFormuleCompetition(id)).toBe(`/competitions/${id}/formule`);
+    expect(resoudreRoute(`/competitions/${id}/formule`, true)).toEqual(route);
+    expect(resoudreRoute(`/competitions/${id}/formule/`, true)).toEqual(route);
+    expect(resoudreRoute(`/competitions/${id}/formule`, false)).toEqual({ redirection: CHEMINS.connexion });
+    expect(resoudreRoute('/competitions/Pas Un Id/formule', true)).toEqual({ redirection: '/' });
   });
 });

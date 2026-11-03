@@ -203,6 +203,41 @@ export function formuleParDefaut(typeCompetition: TypeCompetition): Formule {
   return { touchesPoules: 5, touchesTableau: 15, touchesRelais: relais[typeCompetition], matchTroisieme: false };
 }
 
+/** Bornes des touches de la formule (US-028 CA-2). */
+export const TOUCHES_POULES_MIN = 3;
+export const TOUCHES_POULES_MAX = 10;
+export const TOUCHES_TABLEAU = [10, 15] as const;
+
+export type ErreurFormule = 'TOUCHES_POULES_INVALIDES' | 'TOUCHES_TABLEAU_INVALIDES' | 'MATCH_TROISIEME_INVALIDE';
+
+/** US-028 : les seuls réglages changés ; les touches de relais suivent le type de la compétition (CA-3). */
+export type ModificationFormule = Partial<Pick<Formule, 'touchesPoules' | 'touchesTableau' | 'matchTroisieme'>>;
+
+/** CA-2 : ce qui diffère entre la formule courante et la saisie ; {} si rien. */
+export function modificationFormule(courante: Formule, saisie: Formule): ModificationFormule {
+  const changes: ModificationFormule = {};
+  if (saisie.touchesPoules !== courante.touchesPoules) changes.touchesPoules = saisie.touchesPoules;
+  if (saisie.touchesTableau !== courante.touchesTableau) changes.touchesTableau = saisie.touchesTableau;
+  if (saisie.matchTroisieme !== courante.matchTroisieme) changes.matchTroisieme = saisie.matchTroisieme;
+  return changes;
+}
+
+/** CA-2 : code du premier réglage refusé, ou null si les réglages sont valides. */
+export function validerFormule(changes: ModificationFormule): ErreurFormule | null {
+  const { touchesPoules, touchesTableau, matchTroisieme } = changes;
+  if (
+    touchesPoules !== undefined &&
+    !(Number.isInteger(touchesPoules) && touchesPoules >= TOUCHES_POULES_MIN && touchesPoules <= TOUCHES_POULES_MAX)
+  ) {
+    return 'TOUCHES_POULES_INVALIDES';
+  }
+  if (touchesTableau !== undefined && !(TOUCHES_TABLEAU as readonly number[]).includes(touchesTableau)) {
+    return 'TOUCHES_TABLEAU_INVALIDES';
+  }
+  if (matchTroisieme !== undefined && typeof matchTroisieme !== 'boolean') return 'MATCH_TROISIEME_INVALIDE';
+  return null;
+}
+
 /** Champs que l'événement `CompetitionModifiee` peut porter : les mêmes que ceux de `CompetitionCreee`. */
 export const CHAMPS_COMPETITION = [
   'nom',

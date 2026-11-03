@@ -179,3 +179,87 @@ describe('modification d’une compétition (US-027)', () => {
     expect(verifierEvenement(enStatut('archivee'), modifiee({ commentaire: 'Bravo' }))).toBe('COMPETITION_ARCHIVEE');
   });
 });
+
+describe('formule d’une compétition (US-028)', () => {
+  type DonneesFormule = Extract<Proposition, { type: 'FormuleModifiee' }>['donnees'];
+  const formuleModifiee = (donneesFormule: DonneesFormule): Proposition => ({
+    type: 'FormuleModifiee',
+    donnees: donneesFormule,
+  });
+  const creee = () => projeter([evenement(1)]);
+  const enStatut = (statut: 'enCours' | 'terminee' | 'archivee') => {
+    const p = creee();
+    return { ...p, competition: { ...p.competition!, statut } };
+  };
+
+  it('CA-2 : appliquer fusionne une FormuleModifiee et garde le reste de la compétition', () => {
+    const { competition, dernierSeq, anomalie } = projeter([
+      evenement(1),
+      evenement(2, formuleModifiee({ touchesTableau: 10, matchTroisieme: true })),
+    ]);
+    expect(anomalie).toBeNull();
+    expect(dernierSeq).toBe(2);
+    expect(competition?.formule).toEqual({
+      touchesPoules: 5,
+      touchesTableau: 10,
+      touchesRelais: null,
+      matchTroisieme: true,
+    });
+    expect(competition?.nom).toBe('Challenge Orpi 2027');
+  });
+
+  it('CA-2 : refuse des touches hors bornes', () => {
+    expect(verifierEvenement(creee(), formuleModifiee({ touchesPoules: 11 }))).toBe('TOUCHES_POULES_INVALIDES');
+    expect(verifierEvenement(creee(), formuleModifiee({ touchesTableau: 12 }))).toBe('TOUCHES_TABLEAU_INVALIDES');
+  });
+
+  it('CA-2 : refuse une formule sans compétition créée', () => {
+    expect(verifierEvenement(projectionVide(), formuleModifiee({ touchesPoules: 4 }))).toBe('COMPETITION_INCONNUE');
+  });
+
+  it('CA-2 : une formule qui ne change rien est refusée', () => {
+    expect(verifierEvenement(creee(), formuleModifiee({}))).toBe('AUCUNE_MODIFICATION');
+    expect(verifierEvenement(creee(), formuleModifiee({ touchesPoules: 5, matchTroisieme: false }))).toBe(
+      'AUCUNE_MODIFICATION',
+    );
+  });
+
+  it('CA-3 : les touches de relais ne se modifient pas, elles suivent le type de la compétition', () => {
+    const relais = { touchesRelais: 45 } as unknown as DonneesFormule;
+    expect(verifierEvenement(creee(), formuleModifiee(relais))).toBe('CHAMP_FIGE');
+    const { competition } = projeter([
+      evenement(1, creation({ typeCompetition: 'equipes2' })),
+      evenement(2, formuleModifiee({ touchesPoules: 4 })),
+    ]);
+    expect(competition?.formule).toMatchObject({ touchesRelais: 20, touchesPoules: 4 });
+  });
+
+  it('CA-4 : en cours, la formule peut changer', () => {
+    expect(verifierEvenement(enStatut('enCours'), formuleModifiee({ touchesTableau: 10 }))).toBeNull();
+  });
+
+  it('CA-5 : le match pour la 3e place s’active tant que la compétition n’est pas terminée', () => {
+    expect(verifierEvenement(creee(), formuleModifiee({ matchTroisieme: true }))).toBeNull();
+    expect(verifierEvenement(enStatut('enCours'), formuleModifiee({ matchTroisieme: true }))).toBeNull();
+    expect(verifierEvenement(enStatut('terminee'), formuleModifiee({ matchTroisieme: true }))).toBe('FORMULE_FIGEE');
+  });
+
+  it('cas limite : terminée, la formule est figée ; archivée, la compétition est refusée', () => {
+    expect(verifierEvenement(enStatut('terminee'), formuleModifiee({ touchesPoules: 4 }))).toBe('FORMULE_FIGEE');
+    expect(verifierEvenement(enStatut('archivee'), formuleModifiee({ touchesPoules: 4 }))).toBe('COMPETITION_ARCHIVEE');
+  });
+
+  it('cas limite : une modification de la compétition garde la formule réglée', () => {
+    const { competition } = projeter([
+      evenement(1),
+      evenement(2, formuleModifiee({ touchesPoules: 8 })),
+      evenement(3, { type: 'CompetitionModifiee', donnees: { nom: 'Autre' } }),
+    ]);
+    expect(competition?.formule.touchesPoules).toBe(8);
+  });
+
+  it('cas limite : appliquer ignore une formule sans compétition créée', () => {
+    const vide = projectionVide();
+    expect(appliquer(vide, evenement(1, formuleModifiee({ touchesPoules: 4 })))).toBe(vide);
+  });
+});
