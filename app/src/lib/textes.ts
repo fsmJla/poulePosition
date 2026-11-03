@@ -367,8 +367,8 @@ export const textes = {
     /** US-028 CA-4 : avant de changer la formule d'une compétition en cours. */
     formuleConfirmation: (matchs: number) =>
       matchs === 1
-        ? '1 match déjà joué : changer la formule le concerne-t-il ?'
-        : `${matchs} matchs déjà joués : changer la formule les concerne-t-il ?`,
+        ? '1 match déjà joué ne change pas : la nouvelle formule s’applique aux matchs restants'
+        : `${matchs} matchs déjà joués ne changent pas : la nouvelle formule s’applique aux matchs restants`,
     /** US-028 : page « Formule » d'une compétition. */
     formulePage: {
       titre: 'Formule de la compétition',

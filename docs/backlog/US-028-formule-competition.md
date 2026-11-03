@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-025
 - **Branche / PR :** `us/US-028-formule-competition`
 
@@ -73,6 +73,18 @@ Entièrement disponible hors ligne sur le PC pilote (journal local). Lecture seu
 - Changer la formule pendant les poules ne réorganise pas les poules ; seule la valeur à atteindre des matchs non
   saisis change.
 
+- Les touches de relais (CA-3) sont fixées par le type de la compétition et ne se règlent pas : `FormuleModifiee` ne les
+  porte pas, et `CHAMP_FIGE` refuse un événement qui les contiendrait.
+- La confirmation de CA-4 annonce le nombre de matchs déjà joués, fourni à la page (`matchsJoues`, **0 pour
+  l'instant**) : aucun match n'existe avant E4 et E6, donc elle ne s'affiche pas encore dans l'application. Elle est
+  testée en unitaire (`matchsAConfirmer`, `confirmationFormule`) et sera branchée sur le vrai décompte par E4.
+- CA-5 : tant qu'il n'y a pas de tableau, la règle se limite à ne refuser l'activation qu'une fois la compétition
+  terminée (`FORMULE_FIGEE`) ; l'ajout du match au tableau relèvera de E6.
+- L'historique (CA-6) est affiché sur la page « Formule » ; une vue complète du journal viendra plus tard
+  (décision de l'utilisateur, 2026-11-03).
+- Valeurs de touches (poules de 3 à 10, tableau de 10 ou 15, relais à 20 et 45) **validées par l'utilisateur**
+  (2026-11-03).
+
 ## Questions bloquantes
 
 - Aucune.
@@ -87,3 +99,5 @@ Entièrement disponible hors ligne sur le PC pilote (journal local). Lecture seu
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-11-03 | Plan validé ; en cours sur `us/US-028-formule-competition` |
+| 2026-11-03 | Implémentée (événement `FormuleModifiee`, page « Formule », historique) ; en revue |

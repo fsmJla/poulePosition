@@ -539,8 +539,12 @@ describe('formule d’une compétition (US-028)', () => {
   });
 
   it('CA-4 : la confirmation annonce les matchs déjà joués, seulement en cours de compétition', () => {
-    expect(confirmationFormule('enCours', 12)).toBe('12 matchs déjà joués : changer la formule les concerne-t-il ?');
-    expect(confirmationFormule('enCours', 1)).toBe('1 match déjà joué : changer la formule le concerne-t-il ?');
+    expect(confirmationFormule('enCours', 12)).toBe(
+      '12 matchs déjà joués ne changent pas : la nouvelle formule s’applique aux matchs restants',
+    );
+    expect(confirmationFormule('enCours', 1)).toBe(
+      '1 match déjà joué ne change pas : la nouvelle formule s’applique aux matchs restants',
+    );
     expect(confirmationFormule('enCours', 0)).toBeNull();
     expect(confirmationFormule('preparation', 12)).toBeNull();
   });
