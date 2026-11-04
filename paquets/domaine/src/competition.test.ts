@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   CATEGORIES,
   formuleParDefaut,
+  modificationParametres,
+  parametresParDefaut,
+  validerParametres,
   modificationFormule,
   validerFormule,
   champsModifiables,
@@ -277,5 +280,42 @@ describe('formule d’une compétition (US-028)', () => {
       expect(validerFormule({ touchesTableau })).toBe('TOUCHES_TABLEAU_INVALIDES');
     }
     expect(validerFormule({ matchTroisieme: 'oui' as unknown as boolean })).toBe('MATCH_TROISIEME_INVALIDE');
+  });
+});
+
+describe('paramètres d’une compétition (US-032)', () => {
+  const parametres = parametresParDefaut();
+
+  it('CA-1 : valeurs par défaut des droits et de l’affichage des noms', () => {
+    expect(parametres).toEqual({
+      arbitreSaisitScores: true,
+      arbitreDeplace: true,
+      tireurSaisitPoule: true,
+      tireurSaisitTableau: true,
+      correctionScore: 'arbitre',
+      prenomInitiale: false,
+    });
+  });
+
+  it('CA-2 : la modification ne porte que les réglages changés', () => {
+    expect(modificationParametres(parametres, parametres)).toEqual({});
+    expect(modificationParametres(parametres, { ...parametres, tireurSaisitPoule: false })).toEqual({
+      tireurSaisitPoule: false,
+    });
+    expect(
+      modificationParametres(parametres, { ...parametres, correctionScore: 'personne', prenomInitiale: true }),
+    ).toEqual({ correctionScore: 'personne', prenomInitiale: true });
+  });
+
+  it('CA-2 : accepte les réglages valides', () => {
+    expect(validerParametres({ arbitreDeplace: false, prenomInitiale: true })).toBeNull();
+    expect(validerParametres({ correctionScore: 'personne' })).toBeNull();
+    expect(validerParametres({ correctionScore: 'arbitre' })).toBeNull();
+  });
+
+  it('CA-2 : refuse un réglage qui n’est pas un booléen, ou une correction inconnue', () => {
+    expect(validerParametres({ arbitreSaisitScores: 'oui' as unknown as boolean })).toBe('PARAMETRE_INVALIDE');
+    expect(validerParametres({ prenomInitiale: 1 as unknown as boolean })).toBe('PARAMETRE_INVALIDE');
+    expect(validerParametres({ correctionScore: 'tireur' as unknown as 'arbitre' })).toBe('CORRECTION_SCORE_INVALIDE');
   });
 });

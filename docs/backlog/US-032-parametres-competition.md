@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-025
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-032-parametres-competition`
 
 ## Récit
 
