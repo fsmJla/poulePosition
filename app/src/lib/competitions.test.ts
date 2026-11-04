@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it, vi } from 'vitest';
 import { ouvrirJournal } from './journal';
-import { historiqueFormule } from '@poule-position/domaine';
+import { historiqueFormule, parametresParDefaut } from '@poule-position/domaine';
 import type { Epreuve, Manifestation } from '@poule-position/protocole';
 import {
   cadreDe,
@@ -9,6 +9,7 @@ import {
   creerCompetition,
   modifierCompetition,
   modifierFormule,
+  modifierParametres,
   rattacher,
   saisieDe,
   saisieVide,
@@ -570,6 +571,99 @@ describe('formule d’une compétition (US-028)', () => {
     });
     vi.spyOn(journal, 'enregistrer').mockResolvedValueOnce({ erreur: 'ECRITURE_IMPOSSIBLE' });
     expect(await modifierFormule(journal, competitionId, nouvelle, auteur)).toEqual({
+      ok: false,
+      erreur: 'ECRITURE_IMPOSSIBLE',
+    });
+  });
+});
+
+describe('paramètres d’une compétition (US-032)', () => {
+  const creee = async () => {
+    const journal = nouveauJournal();
+    const resultat = await creerCompetition(journal, saisie(), auteur);
+    return { journal, competitionId: (resultat as { competitionId: string }).competitionId };
+  };
+  const parametresDe = async (journal: ReturnType<typeof nouveauJournal>, competitionId: string) =>
+    (await journal.lire(competitionId)).competition!.parametres;
+
+  it('CA-1 : une compétition créée a les paramètres par défaut', async () => {
+    const { journal, competitionId } = await creee();
+    expect(await parametresDe(journal, competitionId)).toEqual(parametresParDefaut());
+  });
+
+  it('CA-2 : modifier écrit ParametresModifies avec les seuls réglages changés', async () => {
+    const { journal, competitionId } = await creee();
+    const courants = await parametresDe(journal, competitionId);
+    const resultat = await modifierParametres(
+      journal,
+      competitionId,
+      { ...courants, tireurSaisitPoule: false, prenomInitiale: true },
+      auteur,
+    );
+    expect(resultat).toEqual({ ok: true, modifiee: true });
+    const evenement = (await journal.aEnvoyer(competitionId)).at(-1);
+    expect(evenement).toMatchObject({ seq: 2, type: 'ParametresModifies' });
+    expect(evenement!.donnees).toEqual({ tireurSaisitPoule: false, prenomInitiale: true });
+    expect(await parametresDe(journal, competitionId)).toMatchObject({
+      tireurSaisitPoule: false,
+      prenomInitiale: true,
+      arbitreSaisitScores: true,
+    });
+  });
+
+  it('CA-2 : des paramètres inchangés n’écrivent aucun événement', async () => {
+    const { journal, competitionId } = await creee();
+    const courants = await parametresDe(journal, competitionId);
+    expect(await modifierParametres(journal, competitionId, courants, auteur)).toEqual({ ok: true, modifiee: false });
+    expect((await journal.lire(competitionId)).dernierSeq).toBe(1);
+  });
+
+  it('CA-2 : une correction de score inconnue est refusée sans rien écrire', async () => {
+    const { journal, competitionId } = await creee();
+    const courants = await parametresDe(journal, competitionId);
+    const inconnue = { ...courants, correctionScore: 'tireur' as unknown as 'arbitre' };
+    expect(await modifierParametres(journal, competitionId, inconnue, auteur)).toEqual({
+      ok: false,
+      erreur: 'CORRECTION_SCORE_INVALIDE',
+    });
+    expect((await journal.lire(competitionId)).dernierSeq).toBe(1);
+  });
+
+  it('CA-2 : un PC non pilote ne peut pas modifier les paramètres (PAS_PILOTE)', async () => {
+    const { journal, competitionId } = await creee();
+    const copie = nouveauJournal();
+    await copie.remplacerCopie(competitionId, await journal.aEnvoyer(competitionId), 1);
+    const courants = await parametresDe(copie, competitionId);
+    expect(await modifierParametres(copie, competitionId, { ...courants, prenomInitiale: true }, auteur)).toEqual({
+      ok: false,
+      erreur: 'PAS_PILOTE',
+    });
+  });
+
+  it('hors ligne : les paramètres s’écrivent dans le journal local sans réseau et restent à envoyer', async () => {
+    const { journal, competitionId } = await creee();
+    await journal.confirmer(competitionId, 1);
+    expect(await journal.aEnvoyer(competitionId)).toEqual([]);
+    const courants = await parametresDe(journal, competitionId);
+    await modifierParametres(journal, competitionId, { ...courants, arbitreDeplace: false }, auteur);
+    const attente = await journal.aEnvoyer(competitionId);
+    expect(attente.map(({ seq, type }) => [seq, type])).toEqual([[2, 'ParametresModifies']]);
+  });
+
+  it('cas limites : compétition inconnue, archivée, échec d’écriture', async () => {
+    const { journal, competitionId } = await creee();
+    const nouveaux = { ...(await parametresDe(journal, competitionId)), prenomInitiale: true };
+    expect(await modifierParametres(journal, 'absente', nouveaux, auteur)).toEqual({
+      ok: false,
+      erreur: 'INTROUVABLE',
+    });
+    vi.spyOn(journal, 'enregistrer').mockResolvedValueOnce({ erreur: 'COMPETITION_ARCHIVEE' });
+    expect(await modifierParametres(journal, competitionId, nouveaux, auteur)).toEqual({
+      ok: false,
+      erreur: 'COMPETITION_ARCHIVEE',
+    });
+    vi.spyOn(journal, 'enregistrer').mockResolvedValueOnce({ erreur: 'ECRITURE_IMPOSSIBLE' });
+    expect(await modifierParametres(journal, competitionId, nouveaux, auteur)).toEqual({
       ok: false,
       erreur: 'ECRITURE_IMPOSSIBLE',
     });
