@@ -4,7 +4,7 @@
 - **Fonctionnalité :** qualité, CI/CD (exigences §7)
 - **Priorité :** P1
 - **Type :** correction
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-008 (origine : `tests/e2e/desactivation.spec.ts`)
 - **Branche / PR :** `us/US-036-correction-e2e-desactivation-hors-ligne`
 
@@ -82,4 +82,5 @@ Sans objet : la correction ne touche que le test, pas l'application. Le comporte
 | Date | Événement |
 |---|---|
 | 2026-11-03 | Créée (bloque la CI de la PR #50, US-029) |
-| 2026-11-03 | Plan validé ; test corrigé (attente de la liste avant la coupure du réseau) ; en revue |
+| 2026-11-03 | Plan validé ; test corrigé (attente de la liste avant la coupure du réseau) ; en revue (PR #51) |
+| 2026-11-04 | CI de la PR verte, test passé sur la preview (PC et smartphone) : cause confirmée ; recette sans objet (test seul) ; mergée dans `dev` |
