@@ -16,8 +16,10 @@ formats (PC et smartphone), sans annuler un run devenu périmé.
 
 Un job `cible` choisit les tests avant le job `e2e` (script `outils/choisir-tests-e2e.ts`, testé, sans dépendance) :
 
-1. **Aucun test** si le commit dépassé n'est plus la tête d'aucune branche, ou s'il ne change que des fichiers `docs/` ou
-   `.md`.
+1. **Aucun test** si le commit est dépassé (plus la tête d'aucune branche), ou s'il ne change que des fichiers `docs/`
+   ou `.md` **et** que les commits précédents de la branche, jusqu'au premier déjà testé avec succès, n'ont changé que
+   de la documentation. Un push de plusieurs commits ne déploie que le dernier : un commit de documentation placé après
+   du code jamais testé doit donc déclencher les tests.
 2. **Tout, sur les deux formats**, pour les branches `dev` et `main` : chaque merge d'une US rejoue la suite complète.
 3. **Sur une branche de travail**, le format PC seulement, avec les fichiers de test E2E ajoutés ou modifiés par la
    branche depuis `dev`, plus un socle de base (`connexion.spec.ts`, `competitions.spec.ts`).

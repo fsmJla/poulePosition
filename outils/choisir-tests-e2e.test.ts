@@ -11,6 +11,44 @@ describe('choix des tests E2E de la preview (US-037)', () => {
     }
   });
 
+  it('CA-1 : un commit de documentation après du code déjà testé ne lance rien', () => {
+    const docs = ['docs/backlog/README.md'];
+    expect(choisirTests({ ...base, fichiersCommit: docs, precedents: [{ fichiers: code, teste: true }] }).mode).toBe(
+      'aucun',
+    );
+    expect(
+      choisirTests({
+        ...base,
+        fichiersCommit: docs,
+        precedents: [
+          { fichiers: docs, teste: false },
+          { fichiers: code, teste: true },
+        ],
+      }).mode,
+    ).toBe('aucun');
+  });
+
+  it('CA-1 : un commit de documentation après du code jamais testé (push de plusieurs commits) est testé', () => {
+    const docs = ['docs/backlog/README.md'];
+    for (const precedents of [
+      [{ fichiers: code, teste: false }],
+      [
+        { fichiers: docs, teste: false },
+        { fichiers: ['outils/choisir-tests-e2e.ts'], teste: false },
+      ],
+      [{ fichiers: [], teste: false }],
+    ]) {
+      expect(choisirTests({ ...base, fichiersCommit: docs, precedents }).mode).toBe('cible');
+    }
+  });
+
+  it('CA-1 : une branche qui ne contient que de la documentation n’a rien à tester', () => {
+    const docs = ['docs/backlog/README.md'];
+    expect(choisirTests({ ...base, fichiersCommit: docs, precedents: [{ fichiers: docs, teste: false }] }).mode).toBe(
+      'aucun',
+    );
+  });
+
   it('CA-1 : un commit qui touche aussi du code, un test ou un workflow est testé', () => {
     for (const fichiersCommit of [
       ['docs/backlog/README.md', 'app/src/App.svelte'],

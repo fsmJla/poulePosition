@@ -28,7 +28,9 @@ la preview (38 runs de 8 à 10 minutes). Les causes :
 **CA-1 — Pas de test pour un commit de documentation**
 - **Étant donné** un déploiement de preview dont le commit ne modifie que des fichiers `docs/` ou `.md`
 - **Quand** le workflow se déclenche
-- **Alors** aucun test n'est lancé (le job de tests est sauté) ; un commit qui touche aussi du code, un test ou un
+- **Alors** aucun test n'est lancé (le job de tests est sauté), **à condition que le code qui précède sur la branche
+  ait déjà été testé avec succès**. Un push de plusieurs commits ne déploie que le dernier : un commit de documentation
+  placé après du code encore jamais testé déclenche les tests. Un commit qui touche aussi du code, un test ou un
   workflow est testé.
 
 **CA-2 — Un nouveau commit annule le run précédent de la même branche**
@@ -83,3 +85,4 @@ Sans objet : la correction ne touche que la CI, pas l'application.
 | Date | Événement |
 |---|---|
 | 2026-11-04 | Créée et implémentée à la demande de l'utilisateur ; en cours |
+| 2026-11-04 | Défaut trouvé sur la PR #52 : un push de 3 commits dont le dernier était de la documentation n'a lancé aucun test ; CA-1 précisé (on regarde les commits précédents) et corrigé |
