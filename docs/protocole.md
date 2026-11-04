@@ -437,6 +437,7 @@ Aucun autre champ n'est accepté.
 | `CompetitionModifiee` | un ou plusieurs champs de `CompetitionCreee` | Modifie les champs donnés (US-027), seulement ceux qui ont changé. |
 | `FormuleModifiee` | un ou plusieurs réglages de la formule | Modifie la formule de la compétition (US-028), seulement ce qui a changé. |
 | `PiloteChange` | `{ ancienAppareil, nouvelAppareil }` | Un autre PC a pris la main (US-029). |
+| `ParametresModifies` | un ou plusieurs paramètres de la compétition | Modifie les droits et l'affichage des noms (US-032), seulement ce qui a changé. |
 
 **Données de `CompetitionCreee`** (US-025) : exactement ces champs ; un champ facultatif non saisi vaut `null`.
 Le format a été complété par US-025 sans changer de version : rien n'était encore en production.
@@ -504,6 +505,31 @@ la trace des changements de formule (CA-6).
 pris la main ; il ne change rien à la compétition. Règles du domaine : `COMPETITION_INCONNUE` sans `CompetitionCreee`
 avant, `PILOTE_INVALIDE` pour un appareil vide ou deux appareils identiques. Une compétition terminée ou archivée peut
 changer de pilote. Le format est inchangé (`VERSION_JOURNAL` reste à 1).
+
+**Données de `ParametresModifies`** (US-032, ADR-0007 et ADR-0014) : au moins un des réglages ci-dessous, seulement ceux
+dont la valeur change. Les droits sont appliqués par le pilote à la réception d'une saisie ; dans cette US ils sont
+seulement enregistrés (la saisie smartphone, E5, et l'affichage public, E9, les liront dans la projection).
+
+| Champ | Type | Défaut |
+|---|---|---|
+| `arbitreSaisitScores` | booléen | `true` : l'arbitre saisit les scores de poule et de tableau |
+| `arbitreDeplace` | booléen | `true` : l'arbitre déplace une poule ou un match de piste |
+| `tireurSaisitPoule` | booléen | `true` : le tireur saisit les scores des matchs de sa poule |
+| `tireurSaisitTableau` | booléen | `true` : le tireur saisit le score de ses matchs de tableau |
+| `correctionScore` | texte | `arbitre` ou `personne` (`arbitre` par défaut) : qui corrige un score déjà saisi |
+| `prenomInitiale` | booléen | `false` : afficher les noms au public sous la forme « Prénom N. » |
+
+Règles du domaine (`verifierEvenement`), dans cet ordre :
+
+- `COMPETITION_INCONNUE` : aucune `CompetitionCreee` avant ;
+- `COMPETITION_ARCHIVEE` : les paramètres d'une compétition archivée sont en lecture seule ; une compétition en
+  préparation, en cours ou terminée reste modifiable ;
+- `CHAMP_FIGE` : un réglage inconnu ;
+- `PARAMETRE_INVALIDE` (valeur non booléenne) ou `CORRECTION_SCORE_INVALIDE` ;
+- `AUCUNE_MODIFICATION` : les paramètres résultants sont identiques aux courants (rien n'est écrit).
+
+La projection porte `competition.parametres`, avec les valeurs par défaut à la création : un journal écrit avant
+US-032 n'a donc pas besoin de migration (`VERSION_JOURNAL` reste à 1).
 
 ### Règles d'écriture et de lecture
 

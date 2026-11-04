@@ -176,3 +176,36 @@ describe('événement PiloteChange (US-029)', () => {
     expect(lireEvenement(brut({ type: 'PiloteChange', donnees: [] }))).toBeNull();
   });
 });
+
+describe('événement ParametresModifies (US-032)', () => {
+  const parametres = (donneesParametres: Record<string, unknown>) =>
+    brut({ seq: 2, type: 'ParametresModifies', donnees: donneesParametres });
+
+  it('CA-2 : lit un ParametresModifies qui ne porte que les réglages changés', () => {
+    for (const champs of [
+      { prenomInitiale: true },
+      { tireurSaisitPoule: false, tireurSaisitTableau: false },
+      { correctionScore: 'personne' },
+      {
+        arbitreSaisitScores: true,
+        arbitreDeplace: false,
+        tireurSaisitPoule: true,
+        tireurSaisitTableau: true,
+        correctionScore: 'arbitre',
+        prenomInitiale: false,
+      },
+    ]) {
+      expect(lireEvenement(parametres(champs))).toEqual(parametres(champs));
+    }
+  });
+
+  it('CA-2 : refuse des paramètres vides, inconnus ou mal typés', () => {
+    expect(lireEvenement(parametres({}))).toBeNull();
+    expect(lireEvenement(parametres({ touchesPoules: 4 }))).toBeNull();
+    expect(lireEvenement(parametres({ prenomInitiale: 'oui' }))).toBeNull();
+    expect(lireEvenement(parametres({ arbitreDeplace: null }))).toBeNull();
+    expect(lireEvenement(parametres({ correctionScore: 2 }))).toBeNull();
+    expect(lireEvenement(parametres({ prenomInitiale: undefined }))).toBeNull();
+    expect(lireEvenement(brut({ type: 'ParametresModifies', donnees: [] }))).toBeNull();
+  });
+});

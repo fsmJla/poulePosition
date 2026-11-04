@@ -238,6 +238,71 @@ export function validerFormule(changes: ModificationFormule): ErreurFormule | nu
   return null;
 }
 
+/** Qui peut corriger un score déjà saisi (US-032 CA-1) ; le pilote corrige toujours sur son PC. */
+export const CORRECTIONS_SCORE = ['arbitre', 'personne'] as const;
+export type CorrectionScore = (typeof CORRECTIONS_SCORE)[number];
+
+/**
+ * Paramètres d'une compétition (US-032, ADR-0007 et ADR-0014) : droits des arbitres et des tireurs, et façon de montrer
+ * les noms au public. Ils sont enregistrés ici ; la saisie smartphone (E5) et l'affichage public (E9) les appliqueront.
+ */
+export interface Parametres {
+  arbitreSaisitScores: boolean;
+  arbitreDeplace: boolean;
+  tireurSaisitPoule: boolean;
+  tireurSaisitTableau: boolean;
+  correctionScore: CorrectionScore;
+  /** Montrer les noms au public sous la forme « Prénom N. ». */
+  prenomInitiale: boolean;
+}
+
+export function parametresParDefaut(): Parametres {
+  return {
+    arbitreSaisitScores: true,
+    arbitreDeplace: true,
+    tireurSaisitPoule: true,
+    tireurSaisitTableau: true,
+    correctionScore: 'arbitre',
+    prenomInitiale: false,
+  };
+}
+
+const REGLAGES_OUI_NON = [
+  'arbitreSaisitScores',
+  'arbitreDeplace',
+  'tireurSaisitPoule',
+  'tireurSaisitTableau',
+  'prenomInitiale',
+] as const;
+export const CHAMPS_PARAMETRES: readonly string[] = [...REGLAGES_OUI_NON, 'correctionScore'];
+
+export type ErreurParametres = 'PARAMETRE_INVALIDE' | 'CORRECTION_SCORE_INVALIDE';
+
+/** US-032 CA-2 : les seuls réglages changés. */
+export type ModificationParametres = Partial<Parametres>;
+
+/** CA-2 : ce qui diffère entre les paramètres courants et la saisie ; {} si rien. */
+export function modificationParametres(courants: Parametres, saisie: Parametres): ModificationParametres {
+  const changes: ModificationParametres = {};
+  for (const reglage of REGLAGES_OUI_NON) {
+    if (saisie[reglage] !== courants[reglage]) changes[reglage] = saisie[reglage];
+  }
+  if (saisie.correctionScore !== courants.correctionScore) changes.correctionScore = saisie.correctionScore;
+  return changes;
+}
+
+/** CA-2 : code du premier réglage refusé, ou null si les réglages sont valides. */
+export function validerParametres(changes: ModificationParametres): ErreurParametres | null {
+  for (const reglage of REGLAGES_OUI_NON) {
+    if (changes[reglage] !== undefined && typeof changes[reglage] !== 'boolean') return 'PARAMETRE_INVALIDE';
+  }
+  const { correctionScore } = changes;
+  if (correctionScore !== undefined && !comprend(CORRECTIONS_SCORE, correctionScore)) {
+    return 'CORRECTION_SCORE_INVALIDE';
+  }
+  return null;
+}
+
 /** Champs que l'événement `CompetitionModifiee` peut porter : les mêmes que ceux de `CompetitionCreee`. */
 export const CHAMPS_COMPETITION = [
   'nom',

@@ -7,15 +7,19 @@ import {
   matchsAConfirmer,
   modification,
   modificationFormule,
+  modificationParametres,
   preremplir,
   validerCompetition,
   validerFormule,
+  validerParametres,
   type Arme,
   type CadreRattachement,
   type DonneesCompetition,
   type ErreurFormule,
+  type ErreurParametres,
   type ErreursCompetition,
   type Formule,
+  type Parametres,
   type Statut,
   type Sexe,
   type TypeCompetition,
@@ -294,4 +298,46 @@ export async function modifierFormule(
 export function confirmationFormule(statut: Statut, matchsJoues: number): string | null {
   const nombre = matchsAConfirmer(statut, matchsJoues);
   return nombre === null ? null : textes.competitions.formuleConfirmation(nombre);
+}
+
+/**
+ * `INTROUVABLE` : compétition inconnue de cet appareil ; `CORRECTION_SCORE_INVALIDE` et `PARAMETRE_INVALIDE` sont les
+ * règles du domaine ; `PAS_PILOTE`, `COMPETITION_ARCHIVEE` et `JOURNAL_INCOHERENT` viennent du journal.
+ */
+export type ErreurModificationParametres =
+  | 'INTROUVABLE'
+  | ErreurParametres
+  | Extract<
+      ErreurJournal,
+      'PAS_PILOTE' | 'COMPETITION_ARCHIVEE' | 'CHAMP_FIGE' | 'JOURNAL_INCOHERENT' | 'ECRITURE_IMPOSSIBLE'
+    >;
+
+export type ResultatModificationParametres =
+  { ok: true; modifiee: boolean } | { ok: false; erreur: ErreurModificationParametres };
+
+/**
+ * US-032 CA-2 : compare la saisie aux paramètres courants, vérifie les valeurs, puis écrit `ParametresModifies` avec
+ * les seuls réglages changés ; rien n'est écrit si rien ne change.
+ */
+export async function modifierParametres(
+  journal: Journal,
+  competitionId: string,
+  saisie: Parametres,
+  { clubId, ...contexte }: Omit<Contexte, 'clubId'> & { clubId?: string | undefined },
+): Promise<ResultatModificationParametres> {
+  const { competition } = await journal.lire(competitionId);
+  if (!competition) return { ok: false, erreur: 'INTROUVABLE' };
+  const changes = modificationParametres(competition.parametres, saisie);
+  if (Object.keys(changes).length === 0) return { ok: true, modifiee: false };
+  const invalide = validerParametres(changes);
+  if (invalide) return { ok: false, erreur: invalide };
+  const resultat = await journal.enregistrer(
+    competitionId,
+    { type: 'ParametresModifies', donnees: changes },
+    { clubId: clubId ?? competition.clubId, ...contexte },
+  );
+  if ('projection' in resultat) return { ok: true, modifiee: true };
+  const { erreur } = resultat;
+  const connues = ['PAS_PILOTE', 'COMPETITION_ARCHIVEE', 'CHAMP_FIGE', 'JOURNAL_INCOHERENT'] as const;
+  return { ok: false, erreur: connues.find((code) => code === erreur) ?? 'ECRITURE_IMPOSSIBLE' };
 }

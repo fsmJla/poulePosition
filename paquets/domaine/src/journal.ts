@@ -5,15 +5,22 @@ import {
   formuleParDefaut,
   modification,
   modificationFormule,
+  modificationParametres,
+  CHAMPS_PARAMETRES,
   normaliserCompetition,
   validerCompetition,
+  parametresParDefaut,
   validerFormule,
+  validerParametres,
   type DonneesCompetition,
   type ErreurCompetition,
   type ErreurFormule,
+  type ErreurParametres,
   type Formule,
   type ModificationCompetition,
   type ModificationFormule,
+  type ModificationParametres,
+  type Parametres,
   type Statut,
 } from './competition';
 
@@ -31,7 +38,8 @@ export type Proposition =
   | { type: 'CompetitionCreee'; donnees: DonneesCompetition }
   | { type: 'CompetitionModifiee'; donnees: ModificationCompetition }
   | { type: 'FormuleModifiee'; donnees: ModificationFormule }
-  | { type: 'PiloteChange'; donnees: DonneesPiloteChange };
+  | { type: 'PiloteChange'; donnees: DonneesPiloteChange }
+  | { type: 'ParametresModifies'; donnees: ModificationParametres };
 
 /** Événement enregistré : la proposition acceptée, avec son en-tête. */
 export type Evenement = {
@@ -59,6 +67,8 @@ export interface Competition extends DonneesCompetition {
   publiee: boolean;
   /** US-025 CA-2 : formule par défaut à la création (US-028). */
   formule: Formule;
+  /** US-032 CA-1 : droits et affichage des noms, valeurs par défaut à la création. */
+  parametres: Parametres;
 }
 
 /**
@@ -79,6 +89,7 @@ export interface Projection {
 export type ErreurEvenement =
   | ErreurCompetition
   | ErreurFormule
+  | ErreurParametres
   | 'FORMULE_FIGEE'
   | 'PILOTE_INVALIDE'
   | 'COMPETITION_DEJA_CREEE'
@@ -102,6 +113,7 @@ export function verifierEvenement(projection: Projection, proposition: Propositi
     return Object.values(validerCompetition(proposition.donnees))[0] ?? null;
   }
   if (proposition.type === 'PiloteChange') return verifierPilote(competition, proposition.donnees);
+  if (proposition.type === 'ParametresModifies') return verifierParametres(competition, proposition.donnees);
   if (proposition.type === 'FormuleModifiee') return verifierFormule(competition, proposition.donnees);
   // US-027 : la modification est validée sur le résultat de la fusion, comme une création.
   if (!competition) return 'COMPETITION_INCONNUE';
@@ -119,6 +131,17 @@ function verifierPilote(competition: Competition | null, { ancienAppareil, nouve
   if (!competition) return 'COMPETITION_INCONNUE';
   if (!ancienAppareil || !nouvelAppareil || ancienAppareil === nouvelAppareil) return 'PILOTE_INVALIDE';
   return null;
+}
+
+/** US-032 : les paramètres se règlent à tout moment, sauf une fois la compétition archivée. */
+function verifierParametres(competition: Competition | null, changes: ModificationParametres) {
+  if (!competition) return 'COMPETITION_INCONNUE';
+  if (competition.statut === 'archivee') return 'COMPETITION_ARCHIVEE';
+  if (Object.keys(changes).some((champ) => !CHAMPS_PARAMETRES.includes(champ))) return 'CHAMP_FIGE';
+  const erreur = validerParametres(changes);
+  if (erreur) return erreur;
+  const change = modificationParametres(competition.parametres, { ...competition.parametres, ...changes });
+  return Object.keys(change).length === 0 ? 'AUCUNE_MODIFICATION' : null;
 }
 
 const CHAMPS_FORMULE: readonly string[] = ['touchesPoules', 'touchesTableau', 'matchTroisieme'];
@@ -144,6 +167,12 @@ function fusionner(competition: Competition, changes: ModificationCompetition): 
 export function appliquer(projection: Projection, evenement: Evenement): Projection {
   const { competitionId, clubId, date, auteur } = evenement;
   if (evenement.type === 'PiloteChange') return { ...projection, dernierSeq: evenement.seq };
+  if (evenement.type === 'ParametresModifies') {
+    const { competition } = projection;
+    if (!competition) return projection;
+    const parametres = { ...competition.parametres, ...evenement.donnees };
+    return { ...projection, competition: { ...competition, parametres }, dernierSeq: evenement.seq };
+  }
   if (evenement.type === 'FormuleModifiee') {
     const { competition } = projection;
     if (!competition) return projection;
@@ -172,6 +201,7 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
       statut: 'preparation',
       publiee: false,
       formule: formuleParDefaut(donnees.typeCompetition),
+      parametres: parametresParDefaut(),
     },
     dernierSeq: evenement.seq,
   };

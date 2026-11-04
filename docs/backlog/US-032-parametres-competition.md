@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-025
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-032-parametres-competition`
 
 ## Récit
 
@@ -54,6 +54,13 @@ Disponible hors ligne sur le PC pilote (journal local). Lecture seule sur un PC 
 - Le changement d'un droit en cours de compétition s'applique aux saisies reçues ensuite (le pilote applique les
   droits à la réception, ADR-0005).
 
+- La correction d'un score déjà saisi prend deux valeurs, `arbitre` (défaut) et `personne` ; le pilote corrige
+  toujours sur son PC (validé par l'utilisateur, 2026-11-04).
+- Une compétition terminée garde des paramètres modifiables : seule l'archivée est figée, comme dans l'US (validé,
+  2026-11-04).
+- Les paramètres se règlent sur une page « Paramètres » séparée, comme la formule (validé, 2026-11-04).
+- Dans cette US ils sont seulement enregistrés et affichés ; la page le dit (CA-3).
+
 ## Questions bloquantes
 
 - Aucune.
@@ -67,3 +74,6 @@ Disponible hors ligne sur le PC pilote (journal local). Lecture seule sur un PC 
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-11-04 | Plan validé ; en cours sur `us/US-032-parametres-competition` |
+| 2026-11-04 | Implémentée (`ParametresModifies`, page « Paramètres ») ; en revue (PR #53) |
+| 2026-11-04 | Recette OK sur https://poule-position-git-us-us-032-parametres-908032-fsmjlas-projects.vercel.app (CA-1 valeurs par défaut, CA-2 modification qui survit au rechargement, CA-3 mention des réglages à venir, réglage hors ligne envoyé au retour du réseau, lecture seule sur un second PC qui lit la copie à jour) ; déployée en preview et vérifiée ; mergée dans `dev` |

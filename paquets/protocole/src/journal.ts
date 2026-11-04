@@ -77,6 +77,18 @@ const FORMES_FORMULE: Record<string, (valeur: unknown) => boolean> = {
   matchTroisieme: (valeur) => typeof valeur === 'boolean',
 };
 
+const estBooleen = (valeur: unknown) => typeof valeur === 'boolean';
+
+/** Forme de chaque réglage de `ParametresModifies` (US-032) ; les valeurs permises sont des règles du domaine. */
+const FORMES_PARAMETRES: Record<string, (valeur: unknown) => boolean> = {
+  arbitreSaisitScores: estBooleen,
+  arbitreDeplace: estBooleen,
+  tireurSaisitPoule: estBooleen,
+  tireurSaisitTableau: estBooleen,
+  correctionScore: estTexte,
+  prenomInitiale: estBooleen,
+};
+
 /**
  * Forme des données : tous les champs pour `CompetitionCreee` ; pour `CompetitionModifiee` (US-027) et
  * `FormuleModifiee` (US-028), un ou plusieurs champs parmi les leurs, ceux qui ont changé.
@@ -86,11 +98,13 @@ function donneesValides(type: unknown, donnees: unknown): boolean {
     const pilote = aExactementLesChamps(donnees, ['ancienAppareil', 'nouvelAppareil']);
     return pilote !== null && Object.values(pilote).every(estTexte);
   }
-  if (type !== 'CompetitionCreee' && type !== 'CompetitionModifiee' && type !== 'FormuleModifiee') return false;
+  const modifications = ['CompetitionModifiee', 'FormuleModifiee', 'ParametresModifies'];
+  if (type !== 'CompetitionCreee' && !modifications.includes(type as string)) return false;
   if (donnees === null || typeof donnees !== 'object' || Array.isArray(donnees)) return false;
   const noms = Object.keys(donnees);
   const attendus = type === 'CompetitionCreee' ? noms.length === CHAMPS_COMPETITION.length : noms.length > 0;
-  const formes = type === 'FormuleModifiee' ? FORMES_FORMULE : FORMES;
+  const formes =
+    type === 'FormuleModifiee' ? FORMES_FORMULE : type === 'ParametresModifies' ? FORMES_PARAMETRES : FORMES;
   return (
     attendus &&
     noms.every((nom) => Object.hasOwn(formes, nom) && formes[nom]!((donnees as Record<string, unknown>)[nom]))

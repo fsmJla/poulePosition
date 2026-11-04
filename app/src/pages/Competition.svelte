@@ -8,7 +8,12 @@
   import { prendreEcriture, type Journal } from '../lib/journal';
   import { contenuExport, libellePilote } from '../lib/pilotage';
   import type { Ecart, SessionAppareil } from '../lib/stockage';
-  import { cheminFormuleCompetition, cheminModificationCompetition, CHEMINS } from '../lib/routes';
+  import {
+    cheminFormuleCompetition,
+    cheminModificationCompetition,
+    cheminParametresCompetition,
+    CHEMINS,
+  } from '../lib/routes';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
 
@@ -233,6 +238,8 @@
     {/if}
     <!-- US-028 : la formule se règle sur une page à part, lisible aussi en lecture seule. -->
     <Lien chemin={cheminFormuleCompetition(competitionId)} {naviguer}>{t.modifierFormule}</Lien>
+    <!-- US-032 : paramètres (droits, noms au public), lisibles aussi en lecture seule. -->
+    <Lien chemin={cheminParametresCompetition(competitionId)} {naviguer}>{t.lienParametres}</Lien>
     {#if pilote && enAttente > 0}
       <p class="envoi" role="status">
         {jamaisEnvoyee ? `${t.enAttente(enAttente)} · ${t.pasEncoreEnvoyee}` : t.enAttente(enAttente)}

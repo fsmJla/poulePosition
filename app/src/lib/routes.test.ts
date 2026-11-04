@@ -3,6 +3,7 @@ import {
   cheminCompetition,
   cheminFormuleCompetition,
   cheminModificationCompetition,
+  cheminParametresCompetition,
   cheminNouvelleEpreuve,
   CHEMIN_NOUVELLE_MANIFESTATION,
   ouvertureManifestations,
@@ -142,5 +143,17 @@ describe('formule d’une compétition (US-028)', () => {
     expect(resoudreRoute(`/competitions/${id}/formule/`, true)).toEqual(route);
     expect(resoudreRoute(`/competitions/${id}/formule`, false)).toEqual({ redirection: CHEMINS.connexion });
     expect(resoudreRoute('/competitions/Pas Un Id/formule', true)).toEqual({ redirection: '/' });
+  });
+});
+
+describe('paramètres d’une compétition (US-032)', () => {
+  it('CA-2 : « /competitions/<id>/parametres » est réservée aux comptes connectés et porte l’identifiant', () => {
+    const id = '0b6f1c1e-6d1a-4f0a-9a43-2f3c9e5d7b10';
+    const route = { page: 'parametresCompetition', competitionId: id };
+    expect(cheminParametresCompetition(id)).toBe(`/competitions/${id}/parametres`);
+    expect(resoudreRoute(`/competitions/${id}/parametres`, true)).toEqual(route);
+    expect(resoudreRoute(`/competitions/${id}/parametres/`, true)).toEqual(route);
+    expect(resoudreRoute(`/competitions/${id}/parametres`, false)).toEqual({ redirection: CHEMINS.connexion });
+    expect(resoudreRoute('/competitions/Pas Un Id/parametres', true)).toEqual({ redirection: '/' });
   });
 });

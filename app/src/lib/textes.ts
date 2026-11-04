@@ -394,6 +394,33 @@ export const textes = {
       matchs === 1
         ? '1 match déjà joué ne change pas : la nouvelle formule s’applique aux matchs restants'
         : `${matchs} matchs déjà joués ne changent pas : la nouvelle formule s’applique aux matchs restants`,
+    /** US-032 : page « Paramètres » d'une compétition. */
+    lienParametres: 'Paramètres',
+    parametresPage: {
+      titre: 'Paramètres de la compétition',
+      mention:
+        'Ces réglages sont enregistrés. Ils seront appliqués quand la saisie par smartphone et l’affichage public seront disponibles.',
+      arbitres: 'Arbitres',
+      tireurs: 'Tireurs',
+      affichage: 'Affichage public',
+      reglages: {
+        arbitreSaisitScores: 'Saisir les scores de poule et de tableau',
+        arbitreDeplace: 'Déplacer une poule ou un match de piste',
+        tireurSaisitPoule: 'Saisir les scores des matchs de sa poule',
+        tireurSaisitTableau: 'Saisir le score de ses matchs de tableau',
+        correctionScore: 'Correction d’un score déjà saisi',
+        prenomInitiale: 'Afficher les noms au public sous la forme « Prénom N. »',
+      },
+      corrections: { arbitre: 'Arbitre seulement', personne: 'Personne' },
+      enregistrer: 'Enregistrer les paramètres',
+      enregistre: 'Paramètres enregistrés',
+      archivee: 'Cette compétition est archivée : ses paramètres sont en lecture seule',
+      retour: 'Retour à la compétition',
+      erreurs: {
+        PARAMETRE_INVALIDE: 'Un réglage a une valeur invalide',
+        CORRECTION_SCORE_INVALIDE: 'Choisissez qui peut corriger un score',
+      },
+    },
     /** US-028 : page « Formule » d'une compétition. */
     formulePage: {
       titre: 'Formule de la compétition',
