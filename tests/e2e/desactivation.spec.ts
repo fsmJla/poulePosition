@@ -94,12 +94,14 @@ test('US-008 : un administrateur qui se désactive est déconnecté aussitôt', 
   await expect(page).toHaveURL(/\/connexion$/);
 });
 
-test('US-008 hors ligne : désactivation et suppression sont grisées', async ({ page, context }) => {
+test('US-036 CA-1 : US-008 hors ligne : désactivation et suppression sont grisées', async ({ page, context }) => {
   await ouvrirComptes(page);
   const boutons = [
     page.getByRole('button', { name: 'Désactiver Bruno Petit' }),
     page.getByRole('button', { name: 'Supprimer Bruno Petit' }),
   ];
+  // La liste est chargée au montage de la page : couper le réseau avant son arrivée la ferait échouer (US-036).
+  for (const bouton of boutons) await expect(bouton).toBeVisible();
   await context.setOffline(true);
   for (const bouton of boutons) {
     await expect(bouton).toBeDisabled();
