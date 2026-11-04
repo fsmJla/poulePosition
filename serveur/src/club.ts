@@ -32,6 +32,7 @@ import type {
   Manifestation,
 } from '@poule-position/protocole';
 import type { Env } from './index';
+import { ListeEnMemoire, type Lecture } from './liste-en-memoire';
 
 export interface NouveauCompte {
   email: string;
@@ -83,7 +84,28 @@ export type ResultatCompte =
 const COLONNES = `id, email, nom, role, sel, verificateur, actif, temporaire, version_mdp AS versionMdp,
   derniere_connexion AS derniereConnexion, avatar`;
 
+/** CA-4 : journal du Worker, pour repérer un tableau dont le parcours devient coûteux (quota de lignes lues). */
+const signalerLecture = (liste: string) => (lignesLues: number) =>
+  console.log(JSON.stringify({ evenement: 'liste_lue', liste, lignesLues }));
+
 export class Club extends DurableObject<Env> {
+  /**
+   * US-038 : les listes du club ne sont lues dans la base qu'une fois, puis gardées en mémoire. Le plan gratuit compte
+   * chaque ligne parcourue : relire tout un tableau à chaque requête épuisait le quota quotidien.
+   */
+  private readonly index = new ListeEnMemoire<CompetitionIndexee>(
+    () => this.lireListe('SELECT contenu FROM competitions ORDER BY modifiee_le DESC'),
+    signalerLecture('competitions'),
+  );
+  private readonly listeManifestations = new ListeEnMemoire<Manifestation>(
+    () => this.lireListe('SELECT contenu FROM manifestations ORDER BY debut, id'),
+    signalerLecture('manifestations'),
+  );
+  private readonly listeEpreuves = new ListeEnMemoire<Epreuve>(
+    () => this.lireListe('SELECT contenu FROM epreuves ORDER BY manifestation_id, id'),
+    signalerLecture('epreuves'),
+  );
+
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     ctx.storage.sql.exec(`
@@ -365,43 +387,59 @@ export class Club extends DurableObject<Env> {
       JSON.stringify(ligne),
       ligne.modifieeLe,
     );
+    // CA-2 : la ligne est mise à jour dans la liste gardée, qui reste triée de la plus récente à la plus ancienne.
+    this.index.modifier((lignes) =>
+      [ligne, ...lignes.filter(({ id }) => id !== ligne.id)].sort((a, b) => b.modifieeLe - a.modifieeLe),
+    );
   }
 
   /** US-029 : ligne de l'index d'une compétition, ou null. */
   async ligneCompetition(competitionId: string): Promise<CompetitionIndexee | null> {
-    return this.lignesIndex().find((ligne) => ligne.id === competitionId) ?? null;
+    return this.lireLigneIndex(competitionId);
+  }
+
+  /** CA-3 : une compétition se lit par son identifiant (une ligne), jamais en parcourant tout l'index. */
+  private lireLigneIndex(competitionId: string): CompetitionIndexee | null {
+    const [ligne] = this.ctx.storage.sql
+      .exec<{ contenu: string }>('SELECT contenu FROM competitions WHERE id = ?', competitionId)
+      .toArray();
+    return ligne ? (JSON.parse(ligne.contenu) as CompetitionIndexee) : null;
   }
 
   /** US-029 CA-1 : l'index désigne le nouveau pilote, sans toucher au reste de la ligne. */
   async changerPilote(competitionId: string, piloteAppareil: string, piloteNom: string): Promise<void> {
-    const ligne = this.lignesIndex().find(({ id }) => id === competitionId);
+    const ligne = this.lireLigneIndex(competitionId);
     if (!ligne) return;
     this.ctx.storage.sql.exec(
       'UPDATE competitions SET contenu = ? WHERE id = ?',
       JSON.stringify({ ...ligne, piloteAppareil, piloteNom }),
       competitionId,
     );
+    this.index.modifier((lignes) =>
+      lignes.map((courante) => (courante.id === competitionId ? { ...courante, piloteAppareil, piloteNom } : courante)),
+    );
   }
 
   /** US-022 CA-4 : index des compétitions du club, les plus récemment modifiées d'abord. */
   async listerCompetitions(): Promise<CompetitionIndexee[]> {
-    return this.lignesIndex();
+    return [...this.lignesIndex()];
   }
 
   /** Lecture synchrone de l'index : aucune autre requête ne s'intercale avant l'écriture qui suit. */
-  private lignesIndex(): CompetitionIndexee[] {
-    return this.ctx.storage.sql
-      .exec<{ contenu: string }>('SELECT contenu FROM competitions ORDER BY modifiee_le DESC')
-      .toArray()
-      .map(({ contenu }) => JSON.parse(contenu) as CompetitionIndexee);
+  private lignesIndex(): readonly CompetitionIndexee[] {
+    return this.index.obtenir();
+  }
+
+  /** Lecture complète d'un tableau, avec le nombre de lignes que la base a dû parcourir (CA-4). */
+  private lireListe<T>(requete: string): Lecture<T> {
+    const curseur = this.ctx.storage.sql.exec<{ contenu: string }>(requete);
+    const valeurs = curseur.toArray().map(({ contenu }) => JSON.parse(contenu) as T);
+    return { valeurs, lignesLues: curseur.rowsRead };
   }
 
   /** US-023 CA-1 : manifestations du club, par date de début. */
   async listerManifestations(): Promise<Manifestation[]> {
-    return this.ctx.storage.sql
-      .exec<{ contenu: string }>('SELECT contenu FROM manifestations ORDER BY debut, id')
-      .toArray()
-      .map(({ contenu }) => JSON.parse(contenu) as Manifestation);
+    return [...this.listeManifestations.obtenir()];
   }
 
   /** US-023 CA-1 : enregistre une nouvelle manifestation, en version 1. */
@@ -421,6 +459,7 @@ export class Club extends DurableObject<Env> {
       manifestation.version,
       manifestation.debut,
     );
+    this.listeManifestations.invalider();
     return manifestation;
   }
 
@@ -455,6 +494,7 @@ export class Club extends DurableObject<Env> {
       manifestation.debut,
       id,
     );
+    this.listeManifestations.invalider();
     return { ok: true, manifestation };
   }
 
@@ -469,15 +509,13 @@ export class Club extends DurableObject<Env> {
     const competitions = this.lignesIndex().map(({ rattachement }) => ({ rattachement: rattachement ?? null }));
     if (!estVide(id, competitions, await this.listerEpreuves())) return { ok: false, erreur: 'MANIFESTATION_NON_VIDE' };
     this.ctx.storage.sql.exec('DELETE FROM manifestations WHERE id = ?', id);
+    this.listeManifestations.invalider();
     return { ok: true };
   }
 
   /** US-024 CA-1 : épreuves du club, regroupées par manifestation. */
   async listerEpreuves(): Promise<Epreuve[]> {
-    return this.ctx.storage.sql
-      .exec<{ contenu: string }>('SELECT contenu FROM epreuves ORDER BY manifestation_id, id')
-      .toArray()
-      .map(({ contenu }) => JSON.parse(contenu) as Epreuve);
+    return [...this.listeEpreuves.obtenir()];
   }
 
   /** US-024 CA-1 et CA-2 : enregistre une nouvelle épreuve, en version 1, dans une manifestation existante. */
@@ -495,6 +533,7 @@ export class Club extends DurableObject<Env> {
       JSON.stringify(epreuve),
       epreuve.version,
     );
+    this.listeEpreuves.invalider();
     return { ok: true, epreuve };
   }
 
@@ -535,6 +574,7 @@ export class Club extends DurableObject<Env> {
       epreuve.version,
       id,
     );
+    this.listeEpreuves.invalider();
     return { ok: true, epreuve };
   }
 
@@ -546,6 +586,7 @@ export class Club extends DurableObject<Env> {
     const competitions = this.lignesIndex().map(({ rattachement }) => ({ rattachement: rattachement ?? null }));
     if (!estVideEpreuve(id, competitions)) return { ok: false, erreur: 'EPREUVE_NON_VIDE' };
     this.ctx.storage.sql.exec('DELETE FROM epreuves WHERE id = ?', id);
+    this.listeEpreuves.invalider();
     return { ok: true };
   }
 

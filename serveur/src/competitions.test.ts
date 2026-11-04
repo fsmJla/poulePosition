@@ -322,3 +322,44 @@ describe('prise de main (US-029)', () => {
     expect((await appeler(worker, 'PUT', `/competitions/${id}/pilote`, jeton)).status).toBe(405);
   });
 });
+
+const indexDuClub = async () =>
+  ((await (await appeler(worker, 'GET', '/competitions', jeton)).json()) as { competitions: CompetitionIndexee[] })
+    .competitions;
+
+describe('liste de l’index gardée en mémoire (US-038)', () => {
+  it('CA-2 : la liste reflète chaque écriture, même quand elle a déjà été servie', async () => {
+    const ancienne = crypto.randomUUID();
+    const recente = crypto.randomUUID();
+    await envoyer(ancienne, lot(ancienne, 0, [evenement(ancienne, 1)], 'pc-a'));
+    await envoyer(recente, lot(recente, 0, [evenement(recente, 1, { date: 1_800_000_900_000 })], 'pc-a'));
+    // Deux lectures de suite : la seconde vient de la mémoire.
+    for (let i = 0; i < 2; i++) {
+      const ids = (await indexDuClub()).map(({ id }) => id);
+      expect(ids.indexOf(recente)).toBeLessThan(ids.indexOf(ancienne));
+    }
+
+    // Un nouveau lot sur la plus ancienne la remet en tête et avance son dernier seq.
+    await envoyer(ancienne, lot(ancienne, 1, [evenement(ancienne, 2, { date: 1_800_000_999_999 })], 'pc-a'));
+    const apres = await indexDuClub();
+    const ids = apres.map(({ id }) => id);
+    expect(ids.indexOf(ancienne)).toBeLessThan(ids.indexOf(recente));
+    expect(apres.find(({ id }) => id === ancienne)).toMatchObject({ dernierSeq: 2 });
+    expect(apres.filter(({ id }) => id === ancienne)).toHaveLength(1);
+  });
+
+  it('CA-2 et CA-3 : la prise de main change le pilote de la ligne, sans toucher aux autres ni à l’ordre', async () => {
+    const id = crypto.randomUUID();
+    const autre = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    await envoyer(autre, lot(autre, 0, [evenement(autre, 1)], 'pc-a'));
+    const avant = await indexDuClub();
+    await prendreLaMain(id, { appareilId: 'pc-b', piloteAttendu: 'pc-a' });
+    const apres = await indexDuClub();
+    expect(apres.map(({ id: ligne }) => ligne)).toEqual(avant.map(({ id: ligne }) => ligne));
+    expect(apres.find((ligne) => ligne.id === id)).toMatchObject({ piloteAppareil: 'pc-b' });
+    expect(apres.find((ligne) => ligne.id === autre)).toMatchObject({ piloteAppareil: 'pc-a' });
+    // La ligne désignée par son seul identifiant donne le bon pilote.
+    expect(await (await piloteDe(id)).json()).toMatchObject({ piloteAppareil: 'pc-b', piloteNom: ADMIN.nom });
+  });
+});
