@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-025
 - **Branche / PR :** `us/US-032-parametres-competition`
 
@@ -54,6 +54,13 @@ Disponible hors ligne sur le PC pilote (journal local). Lecture seule sur un PC 
 - Le changement d'un droit en cours de compétition s'applique aux saisies reçues ensuite (le pilote applique les
   droits à la réception, ADR-0005).
 
+- La correction d'un score déjà saisi prend deux valeurs, `arbitre` (défaut) et `personne` ; le pilote corrige
+  toujours sur son PC (validé par l'utilisateur, 2026-11-04).
+- Une compétition terminée garde des paramètres modifiables : seule l'archivée est figée, comme dans l'US (validé,
+  2026-11-04).
+- Les paramètres se règlent sur une page « Paramètres » séparée, comme la formule (validé, 2026-11-04).
+- Dans cette US ils sont seulement enregistrés et affichés ; la page le dit (CA-3).
+
 ## Questions bloquantes
 
 - Aucune.
@@ -67,3 +74,5 @@ Disponible hors ligne sur le PC pilote (journal local). Lecture seule sur un PC 
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-11-04 | Plan validé ; en cours sur `us/US-032-parametres-competition` |
+| 2026-11-04 | Implémentée (`ParametresModifies`, page « Paramètres ») ; en revue |
