@@ -4,7 +4,7 @@
 - **Fonctionnalité :** qualité, CI/CD (exigences §7)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En cours
+- **Statut :** Terminée
 - **Dépend de :** US-013 (workflow des E2E de la preview), US-015 (pas de rapport joint)
 - **Branche / PR :** `us/US-037-economiser-minutes-ci`
 
@@ -85,4 +85,5 @@ Sans objet : la correction ne touche que la CI, pas l'application.
 | Date | Événement |
 |---|---|
 | 2026-11-04 | Créée et implémentée à la demande de l'utilisateur ; en cours |
+| 2026-11-04 | Droit `checks: read` manquant au workflow (403) : ajouté, avec repli prudent (tests lancés si la lecture échoue) ; CI de la PR : choix `cible` (PC, socle), E2E en 1 min 16 s au lieu de 10 min, tous jobs verts ; mergée dans `dev` |
 | 2026-11-04 | Défaut trouvé sur la PR #52 : un push de 3 commits dont le dernier était de la documentation n'a lancé aucun test ; CA-1 précisé (on regarde les commits précédents) et corrigé |
