@@ -61,7 +61,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-029](US-029-prendre-la-main.md) | Prendre la main sur une compétition depuis un autre PC | E2 | Terminée | US-022 |
 | [US-030](US-030-affiche-feuille-de-route.md) | Joindre une affiche et une feuille de route | E2 | Prête | US-022, US-023, US-024, US-025 |
 | [US-031](US-031-publier-competition.md) | Publier ou dépublier une compétition | E2 | Prête | US-022, US-026, (US-030) |
-| [US-032](US-032-parametres-competition.md) | Régler les paramètres d'une compétition (droits des QR codes, « Prénom N. ») | E2 | En revue | US-025 |
+| [US-032](US-032-parametres-competition.md) | Régler les paramètres d'une compétition (droits des QR codes, « Prénom N. ») | E2 | Terminée | US-025 |
 | [US-033](US-033-archiver-competition.md) | Archiver ou désarchiver une compétition ou une manifestation | E2 | Prête | US-026 |
 | [US-034](US-034-exporter-competition-json.md) | Exporter une compétition en JSON (P2) | E2 | Prête | US-021 |
 | [US-035](US-035-importer-competition-json.md) | Importer une compétition depuis un fichier JSON (P2) | E2 | Prête | US-034, US-029 |
