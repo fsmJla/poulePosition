@@ -33,6 +33,8 @@ export const CODES_ERREUR_SESSION = [
   'SEQ_INATTENDU',
   'PAS_PILOTE',
   'COMPETITION_INCONNUE',
+  // Prise de main (US-029).
+  'MAIN_DEJA_PRISE',
   // Manifestations (US-023, §12).
   'MANIFESTATION_INCONNUE',
   'MODIFIEE_ENTRE_TEMPS',

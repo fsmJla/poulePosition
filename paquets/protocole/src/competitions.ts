@@ -61,7 +61,35 @@ export interface CompetitionIndexee extends ResumeCompetition {
   modifieeLe: number;
 }
 
-export type ReponseEnvoi = { ok: true; dernierSeq: number } | { ok: false; erreur: ErreurReponse; dernierSeq?: number };
+/** Pilote en place, joint à un refus pour dire qui a la main (US-029 CA-2 et CA-3). */
+export interface PiloteEnPlace {
+  piloteAppareil?: string;
+  piloteNom?: string;
+}
+
+export type ReponseEnvoi =
+  { ok: true; dernierSeq: number } | ({ ok: false; erreur: ErreurReponse; dernierSeq?: number } & PiloteEnPlace);
+
+/** Corps de `POST /competitions/<id>/pilote` (US-029) : l'appareil qui prend la main et le pilote qu'il croyait en place. */
+export interface DemandePriseDeMain {
+  appareilId: string;
+  piloteAttendu: string;
+}
+
+/** Corps de `POST /competitions/<id>/presence` (US-029) : battement du pilote. */
+export interface DemandePresence {
+  appareilId: string;
+}
+
+export type ReponsePriseDeMain =
+  | { ok: true; evenements: Evenement[]; dernierSeq: number; ancienAppareil: string }
+  | ({ ok: false; erreur: ErreurReponse } & PiloteEnPlace);
+
+/** `GET /competitions/<id>/pilote` : qui pilote, et s'il a donné signe de vie récemment. */
+export type ReponsePilote =
+  { ok: true; piloteAppareil: string; piloteNom: string; connecte: boolean } | { ok: false; erreur: ErreurReponse };
+
+export type ReponsePresence = { ok: true } | ({ ok: false; erreur: ErreurReponse } & PiloteEnPlace);
 
 export type ReponseJournal =
   | { ok: true; evenements: Evenement[]; dernierSeq: number; piloteAppareil: string }
@@ -128,13 +156,64 @@ export function preparerLots(
   return lots;
 }
 
+/** Refus avec, s'ils sont lisibles, le dernier seq du serveur et le pilote en place. */
+function refusDe(brut: unknown): { ok: false; erreur: ErreurReponse; dernierSeq?: number } & PiloteEnPlace {
+  const refus: { ok: false; erreur: ErreurReponse; dernierSeq?: number } & PiloteEnPlace = erreurDe(brut);
+  if (!estObjet(brut)) return refus;
+  if (estEntierPositif(brut.dernierSeq)) refus.dernierSeq = brut.dernierSeq;
+  if (typeof brut.piloteAppareil === 'string') refus.piloteAppareil = brut.piloteAppareil;
+  if (typeof brut.piloteNom === 'string') refus.piloteNom = brut.piloteNom;
+  return refus;
+}
+
 export function analyserReponseEnvoi(brut: unknown): ReponseEnvoi {
   if (estObjet(brut) && brut.ok === true && estEntierPositif(brut.dernierSeq)) {
     return { ok: true, dernierSeq: brut.dernierSeq };
   }
   if (estObjet(brut) && brut.ok === true) return { ok: false, erreur: 'REPONSE_INVALIDE' };
-  const erreur = erreurDe(brut);
-  return estObjet(brut) && estEntierPositif(brut.dernierSeq) ? { ...erreur, dernierSeq: brut.dernierSeq } : erreur;
+  return refusDe(brut);
+}
+
+function analyserDemandeAppareil(brut: unknown, champs: readonly string[]): Record<string, string> | null {
+  const objet = aExactementLesChamps(brut, champs);
+  const valide =
+    objet && champs.every((champ) => typeof objet[champ] === 'string' && MOTIF_IDENTIFIANT.test(objet[champ]));
+  return valide ? (objet as Record<string, string>) : null;
+}
+
+export function analyserDemandePriseDeMain(brut: unknown): { ok: true; demande: DemandePriseDeMain } | { ok: false } {
+  const objet = analyserDemandeAppareil(brut, ['appareilId', 'piloteAttendu']);
+  return objet
+    ? { ok: true, demande: { appareilId: objet.appareilId!, piloteAttendu: objet.piloteAttendu! } }
+    : { ok: false };
+}
+
+export function analyserDemandePresence(brut: unknown): { ok: true; demande: DemandePresence } | { ok: false } {
+  const objet = analyserDemandeAppareil(brut, ['appareilId']);
+  return objet ? { ok: true, demande: { appareilId: objet.appareilId! } } : { ok: false };
+}
+
+export function analyserReponsePriseDeMain(brut: unknown): ReponsePriseDeMain {
+  if (!estObjet(brut) || brut.ok !== true) return refusDe(brut);
+  const { dernierSeq, ancienAppareil } = brut;
+  const evenements = suiteEvenements(brut.evenements, 1);
+  if (!evenements || !estEntierPositif(dernierSeq) || typeof ancienAppareil !== 'string') {
+    return { ok: false, erreur: 'REPONSE_INVALIDE' };
+  }
+  return { ok: true, evenements, dernierSeq, ancienAppareil };
+}
+
+export function analyserReponsePilote(brut: unknown): ReponsePilote {
+  if (!estObjet(brut) || brut.ok !== true) return erreurDe(brut);
+  const { piloteAppareil, piloteNom, connecte } = brut;
+  if (typeof piloteAppareil !== 'string' || typeof piloteNom !== 'string' || typeof connecte !== 'boolean') {
+    return { ok: false, erreur: 'REPONSE_INVALIDE' };
+  }
+  return { ok: true, piloteAppareil, piloteNom, connecte };
+}
+
+export function analyserReponsePresence(brut: unknown): ReponsePresence {
+  return estObjet(brut) && brut.ok === true ? { ok: true } : refusDe(brut);
 }
 
 export function analyserReponseJournal(brut: unknown): ReponseJournal {

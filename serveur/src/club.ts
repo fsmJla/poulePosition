@@ -367,6 +367,22 @@ export class Club extends DurableObject<Env> {
     );
   }
 
+  /** US-029 : ligne de l'index d'une compétition, ou null. */
+  async ligneCompetition(competitionId: string): Promise<CompetitionIndexee | null> {
+    return this.lignesIndex().find((ligne) => ligne.id === competitionId) ?? null;
+  }
+
+  /** US-029 CA-1 : l'index désigne le nouveau pilote, sans toucher au reste de la ligne. */
+  async changerPilote(competitionId: string, piloteAppareil: string, piloteNom: string): Promise<void> {
+    const ligne = this.lignesIndex().find(({ id }) => id === competitionId);
+    if (!ligne) return;
+    this.ctx.storage.sql.exec(
+      'UPDATE competitions SET contenu = ? WHERE id = ?',
+      JSON.stringify({ ...ligne, piloteAppareil, piloteNom }),
+      competitionId,
+    );
+  }
+
   /** US-022 CA-4 : index des compétitions du club, les plus récemment modifiées d'abord. */
   async listerCompetitions(): Promise<CompetitionIndexee[]> {
     return this.lignesIndex();

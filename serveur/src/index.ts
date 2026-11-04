@@ -16,6 +16,8 @@ import {
   analyserDemandeInstallation,
   analyserDemandeSel,
   analyserDemandeEnvoi,
+  analyserDemandePresence,
+  analyserDemandePriseDeMain,
   analyserDemandeEpreuve,
   analyserDemandeManifestation,
   analyserDemandeModificationEpreuve,
@@ -24,6 +26,9 @@ import {
   type ReponseCompetitions,
   type ReponseEnvoi,
   type ReponseJournal,
+  type ReponsePilote,
+  type ReponsePresence,
+  type ReponsePriseDeMain,
   type ReponseEpreuve,
   type ReponseManifestation,
   type CodeErreurInstallation,
@@ -199,6 +204,8 @@ type RouteSession = Extract<
       | 'reinitialisation'
       | 'competitions'
       | 'evenements'
+      | 'pilote'
+      | 'presence'
       | 'manifestations'
       | 'manifestation'
       | 'epreuves'
@@ -218,6 +225,8 @@ const METHODES_SESSION = {
   reinitialisation: ['POST'],
   competitions: ['GET'],
   evenements: ['GET', 'POST'],
+  pilote: ['GET', 'POST'],
+  presence: ['POST'],
   manifestations: ['GET', 'POST'],
   manifestation: ['PATCH', 'DELETE'],
   epreuves: ['GET', 'POST'],
@@ -310,7 +319,12 @@ async function traiterSession(
   const authentifie = await compteDeLaSession(requete, secret, env.CLUB_ID, club);
   if (!authentifie.ok) return authentifie.refus;
 
-  if (route.route === 'competitions' || route.route === 'evenements') {
+  if (
+    route.route === 'competitions' ||
+    route.route === 'evenements' ||
+    route.route === 'pilote' ||
+    route.route === 'presence'
+  ) {
     // US-022 : tout compte du club au mot de passe définitif (administrateur ou organisateur).
     if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
     return gererCompetitions(route, requete, env, club, authentifie.compte);
@@ -599,7 +613,7 @@ function objetCompetition(env: Env, competitionId: string): DurableObjectStub<Co
  * journal. Un lot accepté met à jour l'index avec le résumé fourni par le pilote ; le serveur ne calcule rien.
  */
 async function gererCompetitions(
-  route: Extract<RouteSession, { route: 'competitions' | 'evenements' }>,
+  route: Extract<RouteSession, { route: 'competitions' | 'evenements' | 'pilote' | 'presence' }>,
   requete: Request,
   env: Env,
   club: DurableObjectStub<Club>,
@@ -609,6 +623,8 @@ async function gererCompetitions(
     return Response.json({ ok: true, competitions: await club.listerCompetitions() } satisfies ReponseCompetitions);
   }
   const competition = objetCompetition(env, route.competitionId);
+  if (route.route === 'pilote') return gererPilote(route.competitionId, requete, competition, club, compte);
+  if (route.route === 'presence') return gererPresence(route.competitionId, requete, competition, club);
   if (requete.method === 'GET') {
     const journal = await competition.lire();
     if (!journal) return refuserSession(404, 'COMPETITION_INCONNUE');
@@ -628,11 +644,63 @@ async function gererCompetitions(
   const decision = await competition.ajouter(lieu, analyse.demande);
   if (!decision.ok) {
     const { statut, ...refus } = decision;
-    return Response.json({ ...refus, ok: false } satisfies ReponseEnvoi, { status: statut });
+    const pilote = refus.erreur === 'PAS_PILOTE' ? await piloteEnPlace(club, route.competitionId) : {};
+    return Response.json({ ...refus, ...pilote, ok: false } satisfies ReponseEnvoi, { status: statut });
   }
   await club.indexerCompetition(ligneIndex(route.competitionId, analyse.demande, compte.nom));
   const dernierSeq = analyse.demande.depuis + analyse.demande.evenements.length;
   return Response.json({ ok: true, dernierSeq } satisfies ReponseEnvoi);
+}
+
+/** Pilote en place d'après l'index du club (US-029), joint à un refus pour dire qui a la main. */
+async function piloteEnPlace(club: DurableObjectStub<Club>, competitionId: string) {
+  const ligne = await club.ligneCompetition(competitionId);
+  return ligne ? { piloteAppareil: ligne.piloteAppareil, piloteNom: ligne.piloteNom } : {};
+}
+
+/**
+ * US-029 (docs/protocole.md §11) : `GET` dit qui pilote et s'il est connecté ; `POST` fait prendre la main à l'appareil
+ * demandeur, à condition qu'il vise le pilote réellement en place.
+ */
+async function gererPilote(
+  competitionId: string,
+  requete: Request,
+  competition: DurableObjectStub<Competition>,
+  club: DurableObjectStub<Club>,
+  compte: CompteStocke,
+): Promise<Response> {
+  if (requete.method === 'GET') {
+    const etat = await competition.etatPilote();
+    if (!etat) return refuserSession(404, 'COMPETITION_INCONNUE');
+    const { piloteNom } = (await piloteEnPlace(club, competitionId)) as { piloteNom?: string };
+    return Response.json({ ok: true, ...etat, piloteNom: piloteNom ?? '' } satisfies ReponsePilote);
+  }
+  const analyse = analyserDemandePriseDeMain(await lireJson(requete));
+  if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
+  const decision = await competition.prendreLaMain(analyse.demande);
+  if (!decision.ok) {
+    const { statut, ...refus } = decision;
+    const pilote = refus.erreur === 'MAIN_DEJA_PRISE' ? await piloteEnPlace(club, competitionId) : {};
+    return Response.json({ ...refus, ...pilote, ok: false } satisfies ReponsePriseDeMain, { status: statut });
+  }
+  await club.changerPilote(competitionId, analyse.demande.appareilId, compte.nom);
+  return Response.json(decision satisfies ReponsePriseDeMain);
+}
+
+/** US-029 CA-2 : battement du pilote ; un ancien pilote reçoit `PAS_PILOTE` et le nom de celui qui a pris la main. */
+async function gererPresence(
+  competitionId: string,
+  requete: Request,
+  competition: DurableObjectStub<Competition>,
+  club: DurableObjectStub<Club>,
+): Promise<Response> {
+  const analyse = analyserDemandePresence(await lireJson(requete));
+  if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
+  const decision = await competition.battement(analyse.demande.appareilId);
+  if (decision.ok) return Response.json({ ok: true } satisfies ReponsePresence);
+  const { statut, ...refus } = decision;
+  const pilote = refus.erreur === 'PAS_PILOTE' ? await piloteEnPlace(club, competitionId) : {};
+  return Response.json({ ...refus, ...pilote, ok: false } satisfies ReponsePresence, { status: statut });
 }
 
 /** Compte tel que la liste le décrit : jamais le sel ni le vérificateur. */

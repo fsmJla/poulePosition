@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Evenement } from '@poule-position/domaine';
 import type { DemandeEnvoi, ResumeCompetition } from '@poule-position/protocole';
-import { deciderAjout, ligneIndex } from './replication';
+import {
+  deciderAjout,
+  deciderPresence,
+  deciderPriseDeMain,
+  DELAI_PRESENCE_MS,
+  ligneIndex,
+  piloteConnecte,
+} from './replication';
 
 const RESUME: ResumeCompetition = {
   nom: 'Orpi',
@@ -93,5 +100,50 @@ describe('index des compétitions du club', () => {
       dernierSeq: 2,
       modifieeLe: 1_800_000_000_002,
     });
+  });
+});
+
+describe('prise de main et présence du pilote (US-029)', () => {
+  const etat = { dernierSeq: 3, piloteAppareil: 'pc-a' };
+
+  it('CA-1 : un autre appareil prend la main s’il vise le pilote en place', () => {
+    expect(deciderPriseDeMain(etat, { appareilId: 'pc-b', piloteAttendu: 'pc-a' })).toEqual({
+      ok: true,
+      ancienAppareil: 'pc-a',
+    });
+  });
+
+  it('cas limite : deux demandes simultanées, la seconde vise un pilote qui a changé (MAIN_DEJA_PRISE)', () => {
+    const apres = { dernierSeq: 3, piloteAppareil: 'pc-b' };
+    expect(deciderPriseDeMain(apres, { appareilId: 'pc-c', piloteAttendu: 'pc-a' })).toEqual({
+      ok: false,
+      statut: 409,
+      erreur: 'MAIN_DEJA_PRISE',
+      piloteAppareil: 'pc-b',
+    });
+  });
+
+  it('CA-1 : une compétition sans journal ne peut pas être reprise', () => {
+    expect(
+      deciderPriseDeMain({ dernierSeq: 0, piloteAppareil: null }, { appareilId: 'pc-b', piloteAttendu: 'pc-a' }),
+    ).toEqual({ ok: false, statut: 404, erreur: 'COMPETITION_INCONNUE' });
+  });
+
+  it('CA-2 : le battement du pilote est accepté, celui d’un ancien pilote reçoit PAS_PILOTE', () => {
+    expect(deciderPresence(etat, 'pc-a')).toEqual({ ok: true });
+    expect(deciderPresence(etat, 'pc-b')).toEqual({ ok: false, statut: 409, erreur: 'PAS_PILOTE' });
+    expect(deciderPresence({ dernierSeq: 0, piloteAppareil: null }, 'pc-a')).toEqual({
+      ok: false,
+      statut: 404,
+      erreur: 'COMPETITION_INCONNUE',
+    });
+  });
+
+  it('CA-4 : le pilote est connecté tant que son dernier signe date de moins d’une minute', () => {
+    const maintenant = 1_800_000_000_000;
+    expect(piloteConnecte(maintenant - 1_000, maintenant)).toBe(true);
+    expect(piloteConnecte(maintenant - DELAI_PRESENCE_MS + 1, maintenant)).toBe(true);
+    expect(piloteConnecte(maintenant - DELAI_PRESENCE_MS, maintenant)).toBe(false);
+    expect(piloteConnecte(null, maintenant)).toBe(false);
   });
 });

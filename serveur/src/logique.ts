@@ -40,6 +40,8 @@ export type Route =
   | { route: 'epreuve'; id: string }
   | { route: 'competitions' }
   | { route: 'evenements'; competitionId: string }
+  | { route: 'pilote'; competitionId: string }
+  | { route: 'presence'; competitionId: string }
   | { route: 'connexion'; competitionId: string };
 
 /** Analyse le chemin d'une requête entrante ; null si la route n'existe pas. */
@@ -67,9 +69,10 @@ export function analyserChemin(chemin: string): Route | null {
   const epreuve = /^\/epreuves\/([^/]+)$/.exec(chemin)?.[1];
   if (epreuve) return MOTIF_COMPETITION.test(epreuve) ? { route: 'epreuve', id: epreuve } : null;
   if (chemin === '/competitions') return { route: 'competitions' };
-  const morceaux = /^\/competitions\/([^/]+)\/(connexion|evenements)$/.exec(chemin);
+  const morceaux = /^\/competitions\/([^/]+)\/(connexion|evenements|pilote|presence)$/.exec(chemin);
   if (!morceaux?.[1] || !MOTIF_COMPETITION.test(morceaux[1])) return null;
-  return { route: morceaux[2] === 'evenements' ? 'evenements' : 'connexion', competitionId: morceaux[1] };
+  const route = { connexion: 'connexion', evenements: 'evenements', pilote: 'pilote', presence: 'presence' } as const;
+  return { route: route[morceaux[2] as keyof typeof route], competitionId: morceaux[1] };
 }
 
 /**

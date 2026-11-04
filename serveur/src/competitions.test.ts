@@ -197,7 +197,12 @@ describe('réplication du journal (ADR-0016)', () => {
     await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
     const intrus = await envoyer(id, lot(id, 1, [evenement(id, 2)], 'pc-b'));
     expect(intrus.status).toBe(409);
-    expect(await intrus.json()).toEqual({ ok: false, erreur: 'PAS_PILOTE' });
+    expect(await intrus.json()).toEqual({
+      ok: false,
+      erreur: 'PAS_PILOTE',
+      piloteAppareil: 'pc-a',
+      piloteNom: ADMIN.nom,
+    });
     const journal = (await (await appeler(worker, 'GET', `/competitions/${id}/evenements`, jeton)).json()) as {
       dernierSeq: number;
     };
@@ -213,5 +218,107 @@ describe('réplication du journal (ADR-0016)', () => {
     const gros = { ...lot(id, 0, [evenement(id, 1)]), bourrage: 'x'.repeat(17 * 1024) };
     expect((await envoyer(id, gros)).status).toBe(400);
     expect((await appeler(worker, 'DELETE', `/competitions/${id}/evenements`, jeton)).status).toBe(405);
+  });
+});
+
+const prendreLaMain = (competitionId: string, demande: unknown, jetonSession = jeton) =>
+  appeler(worker, 'POST', `/competitions/${competitionId}/pilote`, jetonSession, demande);
+const battement = (competitionId: string, appareilId: string) =>
+  appeler(worker, 'POST', `/competitions/${competitionId}/presence`, jeton, { appareilId });
+const piloteDe = (competitionId: string) => appeler(worker, 'GET', `/competitions/${competitionId}/pilote`, jeton);
+
+describe('prise de main (US-029)', () => {
+  it('CA-1 : un autre appareil devient le pilote et reçoit le journal complet', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    const reponse = await prendreLaMain(id, { appareilId: 'pc-b', piloteAttendu: 'pc-a' });
+    expect(reponse.status).toBe(200);
+    const corps = (await reponse.json()) as {
+      ok: boolean;
+      evenements: Evenement[];
+      dernierSeq: number;
+      ancienAppareil: string;
+    };
+    expect(corps).toMatchObject({ ok: true, dernierSeq: 1, ancienAppareil: 'pc-a' });
+    expect(corps.evenements).toHaveLength(1);
+
+    const journal = (await (await appeler(worker, 'GET', `/competitions/${id}/evenements`, jeton)).json()) as {
+      piloteAppareil: string;
+    };
+    expect(journal.piloteAppareil).toBe('pc-b');
+    // Le nouveau pilote écrit la suite ; l'ancien est refusé.
+    const suite = await envoyer(id, lot(id, 1, [evenement(id, 2)], 'pc-b'));
+    expect(suite.status).toBe(200);
+    const ancien = await envoyer(id, lot(id, 2, [evenement(id, 3)], 'pc-a'));
+    expect(ancien.status).toBe(409);
+    expect(await ancien.json()).toMatchObject({ ok: false, erreur: 'PAS_PILOTE', piloteAppareil: 'pc-b' });
+  });
+
+  it('CA-1 : l’index du club désigne le nouveau pilote', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    await prendreLaMain(id, { appareilId: 'pc-b', piloteAttendu: 'pc-a' });
+    const { competitions } = (await (await appeler(worker, 'GET', '/competitions', jeton)).json()) as {
+      competitions: CompetitionIndexee[];
+    };
+    expect(competitions.find((c) => c.id === id)).toMatchObject({ piloteAppareil: 'pc-b', piloteNom: ADMIN.nom });
+  });
+
+  it('CA-2 : le battement de l’ancien pilote reçoit PAS_PILOTE avec le nom du nouveau', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    expect((await battement(id, 'pc-a')).status).toBe(200);
+    await prendreLaMain(id, { appareilId: 'pc-b', piloteAttendu: 'pc-a' });
+    const ancien = await battement(id, 'pc-a');
+    expect(ancien.status).toBe(409);
+    expect(await ancien.json()).toEqual({
+      ok: false,
+      erreur: 'PAS_PILOTE',
+      piloteAppareil: 'pc-b',
+      piloteNom: ADMIN.nom,
+    });
+    expect((await battement(id, 'pc-b')).status).toBe(200);
+  });
+
+  it('CA-4 : le pilote qui vient d’envoyer ou de reprendre la main est connecté', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    expect(await (await piloteDe(id)).json()).toEqual({
+      ok: true,
+      piloteAppareil: 'pc-a',
+      piloteNom: ADMIN.nom,
+      connecte: true,
+    });
+    await prendreLaMain(id, { appareilId: 'pc-b', piloteAttendu: 'pc-a' });
+    expect(await (await piloteDe(id)).json()).toMatchObject({ piloteAppareil: 'pc-b', connecte: true });
+  });
+
+  it('cas limite : la seconde de deux demandes simultanées reçoit MAIN_DEJA_PRISE et le pilote en place', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    const [b, c] = await Promise.all([
+      prendreLaMain(id, { appareilId: 'pc-b', piloteAttendu: 'pc-a' }),
+      prendreLaMain(id, { appareilId: 'pc-c', piloteAttendu: 'pc-a' }),
+    ]);
+    expect([b.status, c.status].sort()).toEqual([200, 409]);
+    const refusee = b.status === 409 ? b : c;
+    const gagnant = b.status === 409 ? 'pc-c' : 'pc-b';
+    expect(await refusee.json()).toEqual({
+      ok: false,
+      erreur: 'MAIN_DEJA_PRISE',
+      piloteAppareil: gagnant,
+      piloteNom: ADMIN.nom,
+    });
+  });
+
+  it('cas limites : compétition inconnue, demande invalide, sans session, mauvaise méthode', async () => {
+    const id = crypto.randomUUID();
+    expect((await prendreLaMain(id, { appareilId: 'pc-b', piloteAttendu: 'pc-a' })).status).toBe(404);
+    expect((await piloteDe(id)).status).toBe(404);
+    expect((await battement(id, 'pc-a')).status).toBe(404);
+    expect((await prendreLaMain(id, { appareilId: 'pc-b' })).status).toBe(400);
+    expect((await prendreLaMain(id, '{pas du json')).status).toBe(400);
+    expect((await prendreLaMain(id, { appareilId: 'pc-b', piloteAttendu: 'pc-a' }, '')).status).toBe(401);
+    expect((await appeler(worker, 'PUT', `/competitions/${id}/pilote`, jeton)).status).toBe(405);
   });
 });

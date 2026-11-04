@@ -12,7 +12,7 @@ import {
   type Proposition,
 } from '@poule-position/domaine';
 import { lireEvenement, VERSION_JOURNAL } from '@poule-position/protocole';
-import { Base, LIGNE_UNIQUE, type CompetitionLocale } from './stockage';
+import { Base, LIGNE_UNIQUE, type CompetitionLocale, type Ecart } from './stockage';
 
 /** Qui écrit, et à quelle heure (injectable pour les tests). */
 export interface Contexte {
@@ -47,6 +47,22 @@ export interface Journal {
    * est le pilote (son journal fait foi et n'est jamais remplacé).
    */
   remplacerCopie(competitionId: string, evenements: readonly Evenement[], copieLe: number): Promise<boolean>;
+  /**
+   * US-029 CA-1 : ce PC devient le pilote de la compétition : le journal du serveur remplace la copie locale et tout
+   * ce qu'il contient est considéré comme confirmé.
+   */
+  devenirPilote(competitionId: string, evenements: readonly Evenement[]): Promise<void>;
+  /**
+   * US-029 CA-2 et CA-3 : un autre PC a pris la main. Les événements pas encore envoyés sont mis de côté (jamais
+   * perdus), ce PC cesse d'être le pilote et garde une copie à remplacer. Renvoie le nombre d'événements écartés.
+   */
+  ecarter(
+    competitionId: string,
+    pilote: { piloteAppareil?: string; piloteNom?: string },
+    copieLe: number,
+  ): Promise<number>;
+  lireEcartes(competitionId: string): Promise<Ecart[]>;
+  effacerEcartes(competitionId: string): Promise<void>;
   /** Identifiant de cet appareil, tiré au premier appel puis gardé (ADR-0016). */
   appareil(): Promise<string>;
 }
@@ -152,6 +168,44 @@ export function ouvrirJournal(nom = 'poulePosition', persister: () => Promise<bo
         await base.competitionsLocales.put({ competitionId, pilote: false, confirme, copieLe });
         return true;
       });
+    },
+
+    async devenirPilote(competitionId, evenements) {
+      await base.transaction('rw', base.evenements, base.competitionsLocales, async () => {
+        await base.evenements
+          .where('[competitionId+seq]')
+          .between([competitionId, Dexie.minKey], [competitionId, Dexie.maxKey])
+          .delete();
+        await base.evenements.bulkAdd(evenements.map((evenement) => ({ ...evenement })));
+        const confirme = evenements.at(-1)?.seq ?? 0;
+        await base.competitionsLocales.put({ competitionId, pilote: true, confirme, copieLe: null });
+      });
+    },
+
+    async ecarter(competitionId, pilote, copieLe) {
+      return base.transaction('rw', base.evenements, base.competitionsLocales, base.ecartes, async () => {
+        const locale = await base.competitionsLocales.get(competitionId);
+        if (!locale?.pilote) return 0;
+        const aEcarter: Evenement[] = [];
+        for (const brut of await evenementsBruts(competitionId)) {
+          const evenement = lireEvenement(brut);
+          if (!evenement) break;
+          if (evenement.seq > locale.confirme) aEcarter.push(evenement);
+        }
+        if (aEcarter.length > 0) {
+          await base.ecartes.add({ competitionId, evenements: aEcarter, ...pilote, ecartesLe: copieLe });
+        }
+        await base.competitionsLocales.update(competitionId, { pilote: false, copieLe });
+        return aEcarter.length;
+      });
+    },
+
+    async lireEcartes(competitionId) {
+      return base.ecartes.where('competitionId').equals(competitionId).toArray();
+    },
+
+    async effacerEcartes(competitionId) {
+      await base.ecartes.where('competitionId').equals(competitionId).delete();
     },
 
     async appareil() {

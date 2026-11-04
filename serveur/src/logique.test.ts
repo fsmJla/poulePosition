@@ -63,6 +63,13 @@ describe('analyserChemin', () => {
     });
   });
 
+  it('US-029 : reconnaît le pilote et la présence d’une compétition', () => {
+    const id = '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c';
+    expect(analyserChemin(`/competitions/${id}/pilote`)).toEqual({ route: 'pilote', competitionId: id });
+    expect(analyserChemin(`/competitions/${id}/presence`)).toEqual({ route: 'presence', competitionId: id });
+    expect(analyserChemin('/competitions/Demo/pilote')).toBeNull();
+  });
+
   it.each([
     '/inconnu',
     '/competitions/',

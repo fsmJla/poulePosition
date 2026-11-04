@@ -158,3 +158,21 @@ describe('événement FormuleModifiee (US-028)', () => {
     expect(lireEvenement(brut({ type: 'FormuleModifiee', donnees: [] }))).toBeNull();
   });
 });
+
+describe('événement PiloteChange (US-029)', () => {
+  const pilote = (donneesPilote: Record<string, unknown>) =>
+    brut({ seq: 2, type: 'PiloteChange', donnees: donneesPilote });
+
+  it('CA-1 : lit un PiloteChange avec l’ancien et le nouvel appareil', () => {
+    const champs = { ancienAppareil: 'a1', nouvelAppareil: 'a2' };
+    expect(lireEvenement(pilote(champs))).toEqual(pilote(champs));
+  });
+
+  it('CA-1 : refuse un PiloteChange incomplet, avec un champ en trop ou mal typé', () => {
+    expect(lireEvenement(pilote({}))).toBeNull();
+    expect(lireEvenement(pilote({ ancienAppareil: 'a1' }))).toBeNull();
+    expect(lireEvenement(pilote({ ancienAppareil: 'a1', nouvelAppareil: 2 }))).toBeNull();
+    expect(lireEvenement(pilote({ ancienAppareil: 'a1', nouvelAppareil: 'a2', auteur: 'x' }))).toBeNull();
+    expect(lireEvenement(brut({ type: 'PiloteChange', donnees: [] }))).toBeNull();
+  });
+});

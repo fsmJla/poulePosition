@@ -67,6 +67,13 @@
     let liberer: (() => void) | null = null;
     let demonte = false;
     const surEnLigne = () => void synchronisation.envoyer(competitionId).then(() => recharger());
+    // US-029 CA-2 : un autre PC a pris la main, la formule passe en lecture seule.
+    const arreterPerte = synchronisation.surPerte(({ competitionId: id }) => {
+      if (id !== competitionId) return;
+      pilote = false;
+      liberer?.();
+      void recharger(true);
+    });
 
     void (async () => {
       // Sur un autre PC, la copie du pilote est téléchargée (hors ligne : la dernière copie gardée).
@@ -86,6 +93,7 @@
     return () => {
       demonte = true;
       liberer?.();
+      arreterPerte();
       window.removeEventListener('online', surEnLigne);
     };
   });

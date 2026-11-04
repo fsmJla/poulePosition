@@ -138,13 +138,14 @@ describe('envoi du journal au serveur (ADR-0016)', () => {
     expect(serveur.journaux.get('c1')?.evenements.map(({ seq }) => seq)).toEqual([1]);
   });
 
-  it('US-022 CA-6 : un refus PAS_PILOTE arrête l’envoi, et les événements restent sur le PC', async () => {
+  it('US-022 CA-6 : un refus PAS_PILOTE arrête l’envoi ; depuis US-029, les événements sont mis de côté, pas perdus', async () => {
     const serveur = fauxServeur();
     const journal = nouveauJournal();
     await journal.enregistrer('c1', creation(), contexte);
     serveur.forcer(409, { ok: false, erreur: 'PAS_PILOTE' });
     expect(await synchro(journal, serveur).envoyer('c1')).toBe('pas-pilote');
-    expect(await journal.aEnvoyer('c1')).toHaveLength(1);
+    expect(await journal.aEnvoyer('c1')).toHaveLength(0);
+    expect((await journal.lireEcartes('c1')).flatMap(({ evenements }) => evenements)).toHaveLength(1);
   });
 
   it('US-022 cas limite : une session expirée laisse les événements en attente, rien n’est perdu', async () => {

@@ -2,9 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { projeter, type DonneesCompetition, type Evenement } from '@poule-position/domaine';
 import {
   analyserDemandeEnvoi,
+  analyserDemandePresence,
+  analyserDemandePriseDeMain,
   analyserReponseCompetitions,
   analyserReponseEnvoi,
   analyserReponseJournal,
+  analyserReponsePilote,
+  analyserReponsePresence,
+  analyserReponsePriseDeMain,
   preparerLots,
   resumeDe,
   TAILLE_MAX_LOT,
@@ -217,6 +222,69 @@ describe('lignes illisibles de l’index du club (US-026, avancé par US-023)', 
     expect(analyserReponseCompetitions({ ok: true, competitions: [ancienne, indexee, null] })).toEqual({
       ok: true,
       competitions: [indexee],
+    });
+  });
+});
+
+describe('prise de main et présence du pilote (US-029)', () => {
+  it('CA-1 : lit une demande de prise de main, avec l’appareil qui la fait et le pilote qu’il croyait en place', () => {
+    const corps = { appareilId: 'a2', piloteAttendu: 'a1' };
+    expect(analyserDemandePriseDeMain(corps)).toEqual({ ok: true, demande: corps });
+    expect(analyserDemandePriseDeMain({ appareilId: 'a2' })).toEqual({ ok: false });
+    expect(analyserDemandePriseDeMain({ ...corps, appareilId: 'A 2' })).toEqual({ ok: false });
+    expect(analyserDemandePriseDeMain({ ...corps, piloteAttendu: 3 })).toEqual({ ok: false });
+    expect(analyserDemandePriseDeMain({ ...corps, en: 'trop' })).toEqual({ ok: false });
+    expect(analyserDemandePriseDeMain(null)).toEqual({ ok: false });
+  });
+
+  it('CA-1 : lit la réponse d’une prise de main réussie, journal complet compris', () => {
+    const reponse = { ok: true, evenements: [evenement(1)], dernierSeq: 1, ancienAppareil: 'a1' };
+    expect(analyserReponsePriseDeMain(reponse)).toEqual(reponse);
+    expect(analyserReponsePriseDeMain({ ...reponse, evenements: [{ seq: 1 }] })).toEqual({
+      ok: false,
+      erreur: 'REPONSE_INVALIDE',
+    });
+    expect(analyserReponsePriseDeMain({ ...reponse, ancienAppareil: 3 })).toEqual({
+      ok: false,
+      erreur: 'REPONSE_INVALIDE',
+    });
+  });
+
+  it('cas limite : MAIN_DEJA_PRISE porte le pilote en place et son nom', () => {
+    const refus = { ok: false, erreur: 'MAIN_DEJA_PRISE', piloteAppareil: 'a3', piloteNom: 'Julien Lameyre' };
+    expect(analyserReponsePriseDeMain(refus)).toEqual(refus);
+    expect(analyserReponsePriseDeMain({ ok: false, erreur: 'MAIN_DEJA_PRISE' })).toEqual({
+      ok: false,
+      erreur: 'MAIN_DEJA_PRISE',
+    });
+  });
+
+  it('CA-4 : lit qui pilote et s’il est connecté', () => {
+    const reponse = { ok: true, piloteAppareil: 'a1', piloteNom: 'Julien Lameyre', connecte: true };
+    expect(analyserReponsePilote(reponse)).toEqual(reponse);
+    expect(analyserReponsePilote({ ...reponse, connecte: 'oui' })).toEqual({ ok: false, erreur: 'REPONSE_INVALIDE' });
+    expect(analyserReponsePilote({ ...reponse, piloteNom: 3 })).toEqual({ ok: false, erreur: 'REPONSE_INVALIDE' });
+    expect(analyserReponsePilote({ ok: false, erreur: 'COMPETITION_INCONNUE' })).toEqual({
+      ok: false,
+      erreur: 'COMPETITION_INCONNUE',
+    });
+  });
+
+  it('CA-2 : le battement du pilote est lu, et le refus PAS_PILOTE dit qui a pris la main', () => {
+    expect(analyserDemandePresence({ appareilId: 'a1' })).toEqual({ ok: true, demande: { appareilId: 'a1' } });
+    expect(analyserDemandePresence({})).toEqual({ ok: false });
+    expect(analyserReponsePresence({ ok: true })).toEqual({ ok: true });
+    const refus = { ok: false, erreur: 'PAS_PILOTE', piloteAppareil: 'a2', piloteNom: 'Marie Durand' };
+    expect(analyserReponsePresence(refus)).toEqual(refus);
+    expect(analyserReponsePresence(undefined)).toEqual({ ok: false, erreur: 'REPONSE_INVALIDE' });
+  });
+
+  it('CA-3 : un lot refusé PAS_PILOTE porte aussi le pilote en place', () => {
+    const refus = { ok: false, erreur: 'PAS_PILOTE', piloteAppareil: 'a2', piloteNom: 'Marie Durand' };
+    expect(analyserReponseEnvoi(refus)).toEqual(refus);
+    expect(analyserReponseEnvoi({ ok: false, erreur: 'PAS_PILOTE', piloteNom: 4 })).toEqual({
+      ok: false,
+      erreur: 'PAS_PILOTE',
     });
   });
 });

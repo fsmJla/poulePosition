@@ -5,6 +5,7 @@
 // `manifestations.ts` (US-023).
 import { Dexie, type EntityTable, type Table } from 'dexie';
 import { couleurParDefaut, essaisVides, type CouleurAvatar, type Essais, type Role } from '@poule-position/domaine';
+import type { Evenement } from '@poule-position/domaine';
 import type { CompetitionIndexee, CompteConnecte, Epreuve, Manifestation, Session } from '@poule-position/protocole';
 
 /** Compte déjà connecté en ligne sur cet appareil (ADR-0006) : il pourra s'y reconnecter hors ligne (US-005). */
@@ -74,6 +75,21 @@ export interface CompetitionLocale {
   copieLe: number | null;
 }
 
+/**
+ * Modifications qu'un ancien pilote n'avait pas pu envoyer avant qu'un autre PC prenne la main (US-029 CA-3) : mises de
+ * côté, jamais reprises dans le journal, consultables et exportables.
+ */
+export interface Ecart {
+  id?: number;
+  competitionId: string;
+  evenements: Evenement[];
+  /** Pilote qui a repris la main, tel que le serveur l'a annoncé. */
+  piloteAppareil?: string;
+  piloteNom?: string;
+  /** Date de la mise de côté, en millisecondes. */
+  ecartesLe: number;
+}
+
 /** Manifestations du club telles que reçues du serveur, et date de cette copie (US-023). */
 export interface CopieManifestations {
   manifestations: Manifestation[];
@@ -111,6 +127,8 @@ export class Base extends Dexie {
   copieEpreuves!: EntityTable<CopieEpreuves & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
   /** Dernier index des compétitions du club reçu du serveur, consultable hors ligne (US-026). */
   copieIndex!: EntityTable<CopieIndex & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
+  /** Modifications écartées après une prise de main par un autre PC (US-029). */
+  ecartes!: EntityTable<Ecart, 'id'>;
 
   constructor(nom: string) {
     super(nom);
@@ -159,6 +177,18 @@ export class Base extends Dexie {
       copieManifestations: 'cle',
       copieEpreuves: 'cle',
       copieIndex: 'cle',
+    });
+    this.version(8).stores({
+      session: 'cle',
+      appareilConnu: 'email',
+      essaisLocaux: 'cle',
+      evenements: '[competitionId+seq]',
+      appareil: 'cle',
+      competitionsLocales: 'competitionId',
+      copieManifestations: 'cle',
+      copieEpreuves: 'cle',
+      copieIndex: 'cle',
+      ecartes: '++id, competitionId',
     });
   }
 }

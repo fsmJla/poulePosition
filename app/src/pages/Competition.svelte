@@ -6,18 +6,22 @@
   import type { Competition } from '@poule-position/domaine';
   import Lien from '../composants/Lien.svelte';
   import { prendreEcriture, type Journal } from '../lib/journal';
+  import { contenuExport, libellePilote } from '../lib/pilotage';
+  import type { Ecart, SessionAppareil } from '../lib/stockage';
   import { cheminFormuleCompetition, cheminModificationCompetition, CHEMINS } from '../lib/routes';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
+    /** US-029 : compte et club qui signent le changement de pilote. */
+    session: SessionAppareil;
     competitionId: string;
     journal: Journal;
     synchronisation: Synchronisation;
     naviguer: (chemin: string) => void;
   }
 
-  let { competitionId, journal, synchronisation, naviguer }: Proprietes = $props();
+  let { session, competitionId, journal, synchronisation, naviguer }: Proprietes = $props();
 
   const t = textes.competitions;
 
@@ -41,34 +45,129 @@
     await compterEnAttente();
   }
 
-  onMount(() => {
-    let liberer: (() => void) | null = null;
-    let demonte = false;
-    const surEnLigne = () => void envoyer();
+  /** US-029 CA-3 : modifications d'un ancien pilote que le serveur n'a pas reprises. */
+  let ecartes: Ecart[] = $state([]);
+  /** US-029 CA-2 : celui qui vient de prendre la main, annoncé à l'ancien pilote. */
+  let perteLibelle: string | null = $state(null);
+  let enLigne = $state(navigator.onLine);
 
-    void (async () => {
-      const resultat = await synchronisation.telechargerCopie(competitionId);
-      const copie = resultat.ok ? resultat : resultat.copie;
-      competition = copie?.projection.competition ?? null;
-      copieLe = copie?.copieLe ?? null;
-      pilote = (await journal.etat(competitionId))?.pilote ?? false;
-      if (pilote) {
-        liberer = await prendreEcriture(competitionId);
-        if (demonte) liberer?.();
-        ecriture = liberer !== null;
-        await compterEnAttente();
-        window.addEventListener('online', surEnLigne);
-        void envoyer();
-      }
-      chargee = true;
-    })();
+  let liberer: (() => void) | null = null;
+  let demonte = false;
+
+  /** Lit la compétition (copie à jour si ce PC n'est pas le pilote) et réserve l'écriture si ce PC la pilote. */
+  async function charger() {
+    liberer?.();
+    liberer = null;
+    const resultat = await synchronisation.telechargerCopie(competitionId);
+    const copie = resultat.ok ? resultat : resultat.copie;
+    competition = copie?.projection.competition ?? null;
+    copieLe = copie?.copieLe ?? null;
+    pilote = (await journal.etat(competitionId))?.pilote ?? false;
+    ecartes = await journal.lireEcartes(competitionId);
+    if (pilote) {
+      liberer = await prendreEcriture(competitionId);
+      if (demonte) liberer?.();
+      ecriture = liberer !== null;
+      await compterEnAttente();
+      void envoyer();
+    } else {
+      ecriture = true;
+      enAttente = 0;
+    }
+    chargee = true;
+  }
+
+  onMount(() => {
+    const surEnLigne = () => {
+      enLigne = true;
+      if (pilote) void envoyer();
+    };
+    const surHorsLigne = () => (enLigne = false);
+    window.addEventListener('online', surEnLigne);
+    window.addEventListener('offline', surHorsLigne);
+    // US-029 CA-2 : un autre PC a pris la main, cette page passe aussitôt en lecture seule.
+    const arreterPerte = synchronisation.surPerte((perte) => {
+      if (perte.competitionId !== competitionId) return;
+      perteLibelle = libellePilote(perte.piloteNom, perte.piloteAppareil);
+      void charger();
+    });
+    void charger();
 
     return () => {
       demonte = true;
       liberer?.();
+      arreterPerte();
       window.removeEventListener('online', surEnLigne);
+      window.removeEventListener('offline', surHorsLigne);
     };
   });
+
+  const tp = t.prise;
+  let etapePrise: 'aucune' | 'recherche' | 'confirmation' = $state('aucune');
+  let piloteEnPlace: { appareil: string; libelle: string; connecte: boolean } | null = $state(null);
+  let erreurPrise: string | null = $state(null);
+  let priseEnCours = $state(false);
+
+  /** CA-4 : cherche le pilote en place pour que la confirmation dise s'il est connecté. */
+  async function demanderPrise() {
+    etapePrise = 'recherche';
+    erreurPrise = null;
+    const reponse = await synchronisation.pilote(competitionId);
+    if (!reponse.ok) {
+      etapePrise = 'aucune';
+      erreurPrise = tp.erreurs[reponse.erreur];
+      return;
+    }
+    piloteEnPlace = {
+      appareil: reponse.piloteAppareil,
+      libelle: libellePilote(reponse.piloteNom, reponse.piloteAppareil),
+      connecte: reponse.connecte,
+    };
+    etapePrise = 'confirmation';
+  }
+
+  /** CA-1 : prend la main, puis recharge la compétition, désormais modifiable ici. */
+  async function confirmerPrise() {
+    if (!piloteEnPlace || priseEnCours) return;
+    priseEnCours = true;
+    try {
+      const reponse = await synchronisation.prendreLaMain(competitionId, piloteEnPlace.appareil, {
+        clubId: session.compte.clubId ?? '',
+        auteur: session.compte.email,
+      });
+      etapePrise = 'aucune';
+      if (reponse.ok) {
+        perteLibelle = null;
+        await charger();
+      } else if (reponse.erreur === 'MAIN_DEJA_PRISE') {
+        erreurPrise = tp.mainDejaPrise(libellePilote(reponse.piloteNom, reponse.piloteAppareil));
+      } else {
+        erreurPrise = tp.erreurs[reponse.erreur];
+      }
+    } finally {
+      priseEnCours = false;
+    }
+  }
+
+  /** CA-3 : télécharge les modifications écartées au format du journal. */
+  function exporter() {
+    const lien = document.createElement('a');
+    lien.href = URL.createObjectURL(new Blob([contenuExport(competitionId, ecartes)], { type: 'application/json' }));
+    lien.download = `modifications-ecartees-${competitionId}.json`;
+    lien.click();
+    URL.revokeObjectURL(lien.href);
+  }
+
+  async function comprendre() {
+    await journal.effacerEcartes(competitionId);
+    ecartes = [];
+    perteLibelle = null;
+  }
+
+  const nombreEcartes = $derived(ecartes.reduce((total, { evenements }) => total + evenements.length, 0));
+  const annonceEcart = $derived(
+    ecartes[0]?.piloteNom ? libellePilote(ecartes[0].piloteNom, ecartes[0].piloteAppareil ?? '') : null,
+  );
 </script>
 
 <main>
@@ -90,6 +189,43 @@
       </p>
     {:else if !ecriture}
       <p class="avertissement" role="status">{t.autreOnglet}</p>
+    {/if}
+    <!-- US-029 : mains prises par un autre PC, modifications écartées et prise de main. -->
+    {#if perteLibelle ?? annonceEcart}
+      <p class="avertissement" role="status">{tp.perte(perteLibelle ?? annonceEcart ?? '')}</p>
+    {/if}
+    {#if nombreEcartes > 0}
+      <p class="avertissement" role="alert">{tp.ecartes(nombreEcartes)}</p>
+      <div class="actions">
+        <button type="button" onclick={exporter}>{tp.exporter}</button>
+        <button type="button" class="secondaire" onclick={comprendre}>{tp.compris}</button>
+      </div>
+    {/if}
+    {#if !pilote}
+      {#if etapePrise === 'confirmation' && piloteEnPlace}
+        <div class="prise" role="group" aria-label={tp.confirmer}>
+          <p>{tp.confirmer}</p>
+          <p class="avertissement" role="status">
+            {piloteEnPlace.connecte
+              ? tp.piloteConnecte(piloteEnPlace.libelle)
+              : tp.piloteHorsLigne(piloteEnPlace.libelle)}
+          </p>
+          <div class="actions">
+            <button type="button" onclick={confirmerPrise} disabled={priseEnCours || !enLigne}>{tp.valider}</button>
+            <button type="button" class="secondaire" onclick={() => (etapePrise = 'aucune')}>{tp.annuler}</button>
+          </div>
+        </div>
+      {:else}
+        <button
+          type="button"
+          onclick={demanderPrise}
+          disabled={!enLigne || etapePrise === 'recherche'}
+          aria-describedby={enLigne ? undefined : 'prise-hors-ligne'}
+          >{etapePrise === 'recherche' ? tp.chargement : tp.bouton}</button
+        >
+        {#if !enLigne}<small id="prise-hors-ligne">{tp.horsLigne}</small>{/if}
+      {/if}
+      {#if erreurPrise}<p class="message" role="alert">{erreurPrise}</p>{/if}
     {/if}
     <!-- US-027 CA-3 : seul le PC pilote modifie ; ailleurs la compétition reste en lecture seule. -->
     {#if pilote && ecriture && competition.statut !== 'archivee'}
@@ -204,6 +340,46 @@
 
   .commentaire {
     white-space: pre-line;
+  }
+
+  .prise {
+    display: grid;
+    gap: 0.75rem;
+    width: min(100%, 32rem);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  button {
+    padding: 0.6rem 1rem;
+    border: none;
+    border-radius: var(--rayon);
+    background: var(--accent-fond);
+    color: var(--sur-accent);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button.secondaire {
+    border: 1px solid var(--bordure-champ);
+    background: var(--surface);
+    color: var(--texte);
+    font-weight: 400;
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  small {
+    color: var(--texte-discret);
   }
 
   .avertissement,
