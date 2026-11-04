@@ -4,10 +4,10 @@
 - **Fonctionnalité :** serveur, plan gratuit (règle 1 du `CLAUDE.md`, ADR-0004, ADR-0016)
 - **Priorité :** P1
 - **Type :** correction
-- **Statut :** À spécifier
+- **Statut :** En cours
 - **Dépend de :** US-022 (origine : index des compétitions), US-023 et US-024 (manifestations et épreuves), US-029 (lecture
   d'une compétition par l'index)
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-038-correction-lectures-index`
 
 ## Récit
 
@@ -26,9 +26,12 @@ requête **afin de** rester sous le plafond gratuit de lecture de Cloudflare, qu
 - **Gravité :** élevée. Aucun effet sur la production tant qu'elle n'est pas utilisée, mais elle partage le quota : le
   même défaut un jour de compétition coupe l'index, la liste des compétitions et la prise de main (le PC pilote,
   lui, continue en local). La preview est inutilisable (recette et E2E), la CI de chaque PR en dépend.
-- **Mesure :** le nombre de lignes par table n'a **pas** pu être mesuré (le tableau de bord Cloudflare n'est pas
-  accessible à Claude). L'estimation vient du code et du volume d'E2E ; elle est à confirmer dans
-  *Workers & Pages → Durable Objects → Metrics* (classe `Club` ou `Competition`).
+- **Mesure (tableau de bord Cloudflare, Durable Objects, le 2026-11-04) :** Worker de preview, classe `Club` : 19,01 k
+  requêtes dont 1,94 k en erreur, 946 ko de stockage ; classe `Competition` : 1,68 k requêtes, 24,89 Mo de stockage ;
+  production : 0 requête. Le stockage de la classe `Competition` (une base d'au moins quelques dizaines de ko par
+  compétition) correspond à de l'ordre de **1 000 compétitions** créées par les E2E ; l'index du `Club` en compte donc
+  autant. Environ 5 000 lectures de liste de 1 000 lignes suffisent à atteindre 5 M de lignes, ce que les 19 k requêtes
+  du `Club` rendent plausible. Le nombre exact de lignes n'est pas affiché par le tableau de bord.
 
 ## Cause racine
 
@@ -109,3 +112,4 @@ sans rien lire du serveur. Au retour du réseau, le comportement est celui d'US-
 | Date | Événement |
 |---|---|
 | 2026-11-04 | Créée (alerte Cloudflare : 90 % du plafond de lignes lues, puis service coupé) |
+| 2026-11-04 | Plan validé ; mesures du tableau de bord ajoutées au constat ; en cours |
