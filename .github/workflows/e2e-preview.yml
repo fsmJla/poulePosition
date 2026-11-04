@@ -1,7 +1,9 @@
 # Tests Playwright contre chaque déploiement preview de Vercel (ADR-0008, ADR-0012, US-001 CA-5).
-# Fiabilisé par US-013 : pas d'apt-get (miroirs parfois bloqués), Chromium en cache, délai court à l'installation,
-# arrêt immédiat pour un commit dépassé. Vercel ne donne que le SHA (deployment.ref), pas la branche : un groupe
-# `concurrency` par branche est impossible, d'où la vérification par l'API GitHub.
+# Fiabilisé par US-013 : pas d'apt-get (miroirs parfois bloqués), Chromium en cache, délai court à l'installation.
+# Économe en minutes de CI (US-037, ADR-0018) : le job `cible` choisit quoi tester (outils/choisir-tests-e2e.ts) :
+# rien pour un commit dépassé ou qui ne change que de la documentation, tout sur les deux formats pour `dev` et `main`,
+# sinon le format PC avec les tests E2E modifiés par la branche et un socle. Le job `e2e` annule le run précédent de la
+# même branche. Vercel ne donne que le SHA (deployment.ref), pas la branche : on la lit par l'API GitHub.
 # Aucun rapport joint au run (US-015) : les tests saisissent de vrais identifiants, qu'un rapport ou une trace
 # conserverait en clair. Les échecs se lisent dans les journaux, où GitHub masque les secrets.
 name: E2E sur la preview
@@ -10,51 +12,76 @@ on: deployment_status
 
 permissions:
   contents: read
+  # Lire les résultats des vérifications d'un commit : savoir si le code précédent a déjà été testé (US-037).
+  checks: read
 
 jobs:
-  e2e:
-    name: Playwright sur la preview
+  cible:
+    name: Choisir les tests
     if: github.event.deployment_status.state == 'success' && contains(github.event.deployment.environment, 'Preview')
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 3
+    outputs:
+      mode: ${{ steps.choix.outputs.mode }}
+      branche: ${{ steps.choix.outputs.branche }}
+      specs: ${{ steps.choix.outputs.specs }}
+      projets: ${{ steps.choix.outputs.projets }}
     steps:
-      - name: Arrêter si le commit est dépassé
-        id: commit
+      # Seul le script est récupéré : il n'a besoin ni de dépendances ni d'installation.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.deployment.sha }}
+          sparse-checkout: outils/choisir-tests-e2e.ts
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Choisir les tests
+        id: choix
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ github.event.deployment.sha }}
-        run: |
-          branches=$(gh api "repos/${{ github.repository }}/commits/$SHA/branches-where-head" --jq 'length')
-          if [ "$branches" = "0" ]; then
-            echo "::notice::Commit dépassé ($SHA) : une version plus récente de la branche sera testée."
-            echo "depasse=true" >> "$GITHUB_OUTPUT"
-          fi
+        run: node outils/choisir-tests-e2e.ts
+
+  e2e:
+    name: Playwright sur la preview
+    needs: cible
+    if: needs.cible.outputs.mode != 'aucun'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Un nouveau commit de la même branche annule le run en cours : ses résultats seraient périmés.
+    concurrency:
+      group: e2e-preview-${{ needs.cible.outputs.branche }}
+      cancel-in-progress: true
+    steps:
       - uses: actions/checkout@v7
-        if: steps.commit.outputs.depasse != 'true'
         with:
           ref: ${{ github.event.deployment.sha }}
       - uses: actions/setup-node@v7
-        if: steps.commit.outputs.depasse != 'true'
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-        if: steps.commit.outputs.depasse != 'true'
       - name: Cache de Chromium
-        if: steps.commit.outputs.depasse != 'true'
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       # Sans --with-deps : l'image ubuntu-latest contient déjà les bibliothèques de Chrome.
       - name: Installer Chromium
-        if: steps.commit.outputs.depasse != 'true'
         timeout-minutes: 3
         run: npx playwright install chromium
       - name: Tests E2E
-        if: steps.commit.outputs.depasse != 'true'
-        run: npm run test:e2e
+        run: |
+          if [ "$MODE" = "complet" ]; then
+            npm run test:e2e
+          else
+            npx playwright test $SPECS $PROJETS
+          fi
         env:
+          MODE: ${{ needs.cible.outputs.mode }}
+          SPECS: ${{ needs.cible.outputs.specs }}
+          PROJETS: ${{ needs.cible.outputs.projets }}
           BASE_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           # Compte existant sur le serveur preview, pour les tests de connexion (US-003).

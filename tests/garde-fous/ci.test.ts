@@ -17,7 +17,7 @@ const etapes = workflow
 const etape = (motif: RegExp) => etapes.find((texte) => motif.test(texte));
 const position = (motif: RegExp) => etapes.findIndex((texte) => motif.test(texte));
 
-describe('E2E sur la preview (US-013)', () => {
+describe('E2E sur la preview (US-013, US-037)', () => {
   it('US-013 CA-1 : n’installe aucun paquet système (pas d’apt-get ni de --with-deps)', () => {
     // Les commentaires peuvent expliquer pourquoi ; seules les instructions comptent.
     const instructions = workflow
@@ -43,16 +43,31 @@ describe('E2E sur la preview (US-013)', () => {
     expect(Number(delai)).toBeLessThanOrEqual(3);
   });
 
-  it('US-013 CA-3 : un commit dépassé arrête le run avant l’installation et les tests', () => {
-    const verification = etape(/branches-where-head/);
-    expect(verification).toBeDefined();
-    const id = /id: ([\w-]+)/.exec(verification ?? '')?.[1];
-    expect(id).toBeTruthy();
-    expect(position(/branches-where-head/)).toBeLessThan(position(/actions\/checkout@/));
-    // Toutes les étapes suivantes sont sautées si le commit est dépassé.
-    for (const suivante of etapes.slice(position(/branches-where-head/) + 1)) {
-      expect(suivante, suivante.split('\n')[0]).toContain(`steps.${id}.outputs.depasse != 'true'`);
-    }
+  it('US-013 CA-3 : un commit dépassé ne lance ni installation ni tests (choisi par le job « cible », US-037)', () => {
+    // Le script renvoie mode=aucun pour un commit dépassé (outils/choisir-tests-e2e.test.ts) ; le job des tests en dépend.
+    const tests = workflow.slice(workflow.indexOf('  e2e:'));
+    expect(tests).toContain('needs: cible');
+    expect(tests).toContain("if: needs.cible.outputs.mode != 'aucun'");
+    expect(workflow).toContain('node outils/choisir-tests-e2e.ts');
+  });
+
+  it('US-037 CA-2 : un nouveau commit de la même branche annule le run précédent', () => {
+    expect(workflow).toContain('group: e2e-preview-${{ needs.cible.outputs.branche }}');
+    expect(workflow).toContain('cancel-in-progress: true');
+  });
+
+  it('US-037 CA-3 et CA-4 : tout n’est lancé que dans le mode complet, sinon les tests et formats choisis', () => {
+    const tests = etape(/name: Tests E2E/);
+    expect(tests).toBeDefined();
+    expect(tests).toContain('if [ "$MODE" = "complet" ]; then');
+    expect(tests).toContain('npm run test:e2e');
+    expect(tests).toContain('npx playwright test $SPECS $PROJETS');
+  });
+
+  it('US-037 CA-1 : le job de choix ne récupère que son script et n’installe aucune dépendance', () => {
+    const choix = workflow.slice(workflow.indexOf('  cible:'), workflow.indexOf('  e2e:'));
+    expect(choix).toContain('sparse-checkout: outils/choisir-tests-e2e.ts');
+    expect(choix).not.toMatch(/npm ci|npm install|playwright install/);
   });
 });
 

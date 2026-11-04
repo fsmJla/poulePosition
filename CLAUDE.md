@@ -80,7 +80,8 @@ Hors de ces modes, ne pas modifier le code applicatif sans demande explicite.
 ## Définition de « terminé » (une US)
 
 - [ ] Tous les critères d'acceptation sont couverts par des tests.
-- [ ] Les tests unitaires et E2E passent en CI, avec lint, typage, couverture et audit verts.
+- [ ] Les tests unitaires passent en CI, avec lint, typage, couverture et audit verts ; les E2E de la preview passent
+      (ciblés sur une branche de travail, complets sur `dev` et `main`, ADR-0018) et la suite complète passe en local.
 - [ ] L'US est déployée en preview et vérifiée (`/recette`).
 - [ ] La doc concernée est à jour (US, protocole, ADR, README).
 
