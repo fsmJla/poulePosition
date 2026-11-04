@@ -12,6 +12,8 @@ on: deployment_status
 
 permissions:
   contents: read
+  # Lire les résultats des vérifications d'un commit : savoir si le code précédent a déjà été testé (US-037).
+  checks: read
 
 jobs:
   cible:

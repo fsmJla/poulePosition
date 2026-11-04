@@ -104,11 +104,21 @@ function lirePrecedents(depot: string, sha: string): Precedent[] {
   return precedents;
 }
 
+/** Si l'API ne répond pas, on suppose du code jamais testé : mieux vaut lancer les tests que sauter sans le savoir. */
+function precedentsOuPrudence(depot: string, sha: string): Precedent[] {
+  try {
+    return lirePrecedents(depot, sha);
+  } catch {
+    console.warn('::warning::Lecture des commits précédents impossible : les tests sont lancés par précaution.');
+    return [{ fichiers: [], teste: false }];
+  }
+}
+
 export function lireEntree(depot: string, sha: string): Entree {
   return {
     branches: lignesGh(`repos/${depot}/commits/${sha}/branches-where-head`, '.[].name'),
     fichiersCommit: lignesGh(`repos/${depot}/commits/${sha}`, '.files[]?.filename'),
-    precedents: lirePrecedents(depot, sha),
+    precedents: precedentsOuPrudence(depot, sha),
     fichiersBranche: lignesGh(
       `repos/${depot}/compare/dev...${sha}`,
       '.files[]? | select(.status != "removed") | .filename',
