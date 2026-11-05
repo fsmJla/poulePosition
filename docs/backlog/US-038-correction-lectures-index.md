@@ -4,7 +4,7 @@
 - **Fonctionnalité :** serveur, plan gratuit (règle 1 du `CLAUDE.md`, ADR-0004, ADR-0016)
 - **Priorité :** P1
 - **Type :** correction
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-022 (origine : index des compétitions), US-023 et US-024 (manifestations et épreuves), US-029 (lecture
   d'une compétition par l'index)
 - **Branche / PR :** `us/US-038-correction-lectures-index`
@@ -113,3 +113,4 @@ sans rien lire du serveur. Au retour du réseau, le comportement est celui d'US-
 |---|---|
 | 2026-11-04 | Créée (alerte Cloudflare : 90 % du plafond de lignes lues, puis service coupé) |
 | 2026-11-04 | Plan validé ; mesures du tableau de bord ajoutées au constat ; implémentée (cache `ListeEnMemoire`, lecture d'une ligne par identifiant, journal du remplissage) ; en revue |
+| 2026-11-05 | Quota remis à zéro ; Worker déployé depuis la branche ; E2E de la preview verts (14) ; Terminée. À vérifier au tableau de bord Cloudflare : lignes lues du jour restant basses |
