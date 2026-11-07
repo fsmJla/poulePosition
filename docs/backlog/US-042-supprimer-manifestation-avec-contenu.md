@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-023, US-041
 - **Branche / PR :** `us/US-042-supprimer-manifestation-avec-contenu`
 
@@ -98,3 +98,4 @@ Suspendu hors ligne, comme US-023 (les manifestations ne se modifient qu'en lign
 | 2026-11-07 | Créée |
 | 2026-11-07 | En cours : plan validé, implémentation |
 | 2026-11-07 | En revue : PR vers `dev`, contrôles locaux verts (lint, typage, tests avec couverture, audit sans vulnérabilité haute) ; E2E locaux : 277 passent, 9 ignorés (preview uniquement) |
+| 2026-11-07 | Recette OK sur https://poule-position-git-us-us-042-supprimer-a1b42d-fsmjlas-projects.vercel.app : CA-1 et CA-8 vérifiés à la main en administrateur (décompte, nom à saisir, suppression effective), CA-2 par l'E2E de la preview ; hors ligne et CA-3 à CA-7 couverts par les tests automatisés uniquement |
