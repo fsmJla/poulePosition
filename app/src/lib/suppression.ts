@@ -2,6 +2,7 @@
 // qu'il exige avant d'envoyer la demande. Le serveur refait les mêmes contrôles (rôle, statut) : ici, ils servent à ne
 // pas proposer l'impossible.
 import type { CompetitionListee, Role, Statut } from '@poule-position/domaine';
+import type { ErreurReponse, ReponseSuppressionContenu } from '@poule-position/protocole';
 import type { ErreurSynchronisation } from './synchronisation';
 
 export type MotifRefus = 'ADMINISTRATEUR_REQUIS' | 'EN_COURS';
@@ -76,4 +77,47 @@ export async function supprimerEnSerie(
     surProgression?.(position + 1, ids.length);
   }
   return compte;
+}
+
+/** Garde-fou : nombre maximal de requêtes d'une suppression avec contenu (30 compétitions par requête). */
+const MORCEAUX_MAX = 1000;
+
+/** US-041 et US-042 : résultat d'une suppression avec contenu ; en cas d'échec, ce qui était supprimé et ce qui reste. */
+export type ResultatSuppressionContenu<E extends string> =
+  | { ok: true; supprimees: number }
+  | { ok: false; erreur: E; supprimees: number; restantes: number; enCours?: string[] };
+
+/**
+ * US-041 CA-5 et CA-6, US-042 CA-5 et CA-6 : le serveur supprime un morceau des compétitions par requête ; on enchaîne
+ * jusqu'à la fin, avec la progression. `demander` lève une exception si le réseau est coupé. Si la suite est interrompue,
+ * le serveur garde l'élément et ce qui reste, et relancer la reprend.
+ */
+export async function enchainerSuppressionContenu<E extends string>(
+  demander: () => Promise<ReponseSuppressionContenu>,
+  traduire: (erreur: ErreurReponse) => E,
+  horsLigne: E,
+  inattendue: E,
+  surProgression?: (faites: number, total: number) => void,
+): Promise<ResultatSuppressionContenu<E>> {
+  let faites = 0;
+  let restantes = 0;
+  for (let morceau = 0; morceau < MORCEAUX_MAX; morceau++) {
+    let reponse;
+    try {
+      reponse = await demander();
+    } catch {
+      return { ok: false, erreur: horsLigne, supprimees: faites, restantes };
+    }
+    if (!reponse.ok) {
+      const refus = { ok: false as const, erreur: traduire(reponse.erreur), supprimees: faites, restantes };
+      return reponse.enCours.length > 0 ? { ...refus, enCours: reponse.enCours } : refus;
+    }
+    faites += reponse.supprimees;
+    restantes = reponse.restantes;
+    surProgression?.(faites, faites + restantes);
+    if (reponse.termine) return { ok: true, supprimees: faites };
+    // Un morceau qui ne supprime rien sans terminer : on s'arrête plutôt que de tourner dans le vide.
+    if (reponse.supprimees === 0) return { ok: false, erreur: inattendue, supprimees: faites, restantes };
+  }
+  return { ok: false, erreur: inattendue, supprimees: faites, restantes };
 }

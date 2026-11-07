@@ -11,6 +11,7 @@ import {
 } from '@poule-position/protocole';
 import { DELAI_REPONSE } from './session';
 import { Base, LIGNE_UNIQUE, type CopieEpreuves } from './stockage';
+import { enchainerSuppressionContenu, type ResultatSuppressionContenu } from './suppression';
 
 /** Champs du formulaire, tels que saisis : un texte vide est un champ non renseigné. */
 export interface SaisieEpreuve {
@@ -81,14 +82,6 @@ function erreurDe(erreur: ErreurReponse): ErreurEpreuves {
   ] as const;
   return connues.find((connue) => connue === erreur) ?? 'ERREUR_INATTENDUE';
 }
-
-/** Garde-fou : nombre maximal de requêtes d'une suppression avec contenu (30 compétitions par requête). */
-const MORCEAUX_MAX = 1000;
-
-/** US-041 : résultat d'une suppression avec contenu ; en cas d'échec, ce qui était déjà supprimé et ce qui reste. */
-export type ResultatSuppressionContenu =
-  | { ok: true; supprimees: number }
-  | { ok: false; erreur: ErreurEpreuves; supprimees: number; restantes: number; enCours?: string[] };
 
 class Injoignable extends Error {}
 
@@ -201,28 +194,14 @@ export function creerClientEpreuves({
     async supprimerAvecContenu(
       id: string,
       surProgression?: (faites: number, total: number) => void,
-    ): Promise<ResultatSuppressionContenu> {
-      let faites = 0;
-      let restantes = 0;
-      for (let morceau = 0; morceau < MORCEAUX_MAX; morceau++) {
-        let reponse;
-        try {
-          reponse = analyserReponseSuppressionContenu(await requete('DELETE', `/epreuves/${id}?contenu=1`));
-        } catch {
-          return { ok: false, erreur: 'HORS_LIGNE', supprimees: faites, restantes };
-        }
-        if (!reponse.ok) {
-          const refus = { ok: false as const, erreur: erreurDe(reponse.erreur), supprimees: faites, restantes };
-          return reponse.enCours.length > 0 ? { ...refus, enCours: reponse.enCours } : refus;
-        }
-        faites += reponse.supprimees;
-        restantes = reponse.restantes;
-        surProgression?.(faites, faites + restantes);
-        if (reponse.termine) return { ok: true, supprimees: faites };
-        // Un morceau qui ne supprime rien sans terminer : on s'arrête plutôt que de tourner dans le vide.
-        if (reponse.supprimees === 0) return { ok: false, erreur: 'ERREUR_INATTENDUE', supprimees: faites, restantes };
-      }
-      return { ok: false, erreur: 'ERREUR_INATTENDUE', supprimees: faites, restantes };
+    ): Promise<ResultatSuppressionContenu<ErreurEpreuves>> {
+      return enchainerSuppressionContenu(
+        async () => analyserReponseSuppressionContenu(await requete('DELETE', `/epreuves/${id}?contenu=1`)),
+        erreurDe,
+        'HORS_LIGNE',
+        'ERREUR_INATTENDUE',
+        surProgression,
+      );
     },
   };
 }
