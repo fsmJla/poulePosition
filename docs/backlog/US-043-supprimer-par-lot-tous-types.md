@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-040, US-041, US-042
 - **Branche / PR :** `us/US-043-supprimer-par-lot-tous-types`
 
@@ -94,9 +94,28 @@ coupé en cours de série, elle s'arrête proprement et le compte rendu indique 
 - Les décisions pures (sélection, dédoublonnage, décompte par type, ordre) vont dans `paquets/domaine`, avec leurs tests.
 - US-040 reste valable : son périmètre (compétitions seules) est inclus dans celui-ci.
 
+## Décisions prises pendant l'implémentation
+
+- Les règles pures sont dans `paquets/domaine/src/selection-suppression.ts` (`analyserSelection`, `planSuppression`,
+  `toutCocherListe`, `elementsEnCours`) ; `elementsEnCours` est calculé une fois pour toute la liste, car l'écran le
+  consulte à chaque case (plus de 800 manifestations sur la preview).
+- Un parent est non cochable s'il contient une compétition « En cours », archivées masquées comprises (la liste complète
+  est connue de l'écran) ; le serveur reste la dernière barrière (US-041 et US-042 CA-3).
+- Une sélection de compétitions seules garde les textes d'US-040 (« 2 compétitions sélectionnées », même confirmation) ;
+  dès qu'une manifestation ou une épreuve est cochée, compteur et confirmation sont par type.
+- Un parent coché verrouille son contenu, coché ou non : ses cases apparaissent cochées et grisées (« Supprimée avec X »).
+- `supprimerSerieMixte` remplace `supprimerEnSerie` (US-040), retirée avec `toutCocher`, `selectionnables` et
+  `competitionsVisibles`, devenues inutiles ; leurs garanties (déjà supprimé, arrêt sur session ou réseau, compte rendu)
+  sont reprises par les tests d'US-043. Une manifestation ou une épreuve absente du serveur compte comme supprimée.
+- CA-1 « En cours » n'est testé qu'en unitaire : l'E2E ne sait pas créer une compétition en cours. Les E2E de suppression
+  réelle ne tournent qu'en local (le compte de la preview est un organisateur) ; seul CA-7 y tourne.
+- À noter, hors périmètre : la liste de l'accueil replie les manifestations à chaque relecture des données (changement
+  de réseau, fin d'une suppression), comportement antérieur à cette US.
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-11-07 | Créée |
 | 2026-11-07 | En cours : plan validé, implémentation |
+| 2026-11-07 | En revue : PR vers `dev`, contrôles locaux verts (lint, typage, 1010 tests avec couverture, build, audit sans vulnérabilité haute) ; E2E locaux : 283 passent, 11 ignorés (preview uniquement) |
