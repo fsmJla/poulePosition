@@ -640,6 +640,37 @@ export const textes = {
     supprimer: (nom: string) => `Supprimer ${nom}`,
     confirmerSuppression: (nom: string) => `Supprimer définitivement « ${nom} » ?`,
     confirmer: 'Supprimer',
+    /** US-042 : suppression avec son contenu, réservée aux administrateurs. */
+    contenu: {
+      bouton: 'Supprimer avec son contenu…',
+      supprimer: (nom: string) => `Supprimer avec son contenu la manifestation ${nom}`,
+      horsLigne: 'Connexion requise pour supprimer',
+      titre: (nom: string) => `Supprimer définitivement la manifestation « ${nom} » avec son contenu ?`,
+      combien: (epreuves: number, competitions: number | null) => {
+        const lesEpreuves =
+          epreuves === 0 ? 'aucune épreuve' : epreuves > 1 ? `ses ${epreuves} épreuves` : 'son épreuve';
+        const lesCompetitions =
+          competitions === null
+            ? 'ses compétitions'
+            : competitions === 0
+              ? 'aucune compétition'
+              : competitions > 1
+                ? `ses ${competitions} compétitions (archivées comprises)`
+                : 'sa compétition';
+        return `Sont supprimées avec elle : ${lesEpreuves} et ${lesCompetitions}.`;
+      },
+      avertissement:
+        'La suppression est définitive : les journaux, les saisies et les fichiers joints sont effacés du serveur et de tous les PC du club.',
+      saisie: (nom: string) => `Saisissez « ${nom} » pour confirmer`,
+      valider: 'Supprimer définitivement',
+      progression: (faites: number, total: number) => `Suppression… ${faites} / ${total}`,
+      annuler: 'Annuler',
+      enCours: (noms: string[]) => `Une compétition en cours empêche la suppression : ${noms.join(', ')}`,
+      interrompue: (restantes: number) =>
+        restantes > 1
+          ? `${restantes} compétitions restent, la manifestation n’est pas supprimée : relancez la suppression`
+          : `${restantes} compétition reste, la manifestation n’est pas supprimée : relancez la suppression`,
+    },
     recharger: 'Recharger',
     chargement: 'Chargement des manifestations…',
     vide: 'Aucune manifestation pour l’instant',
@@ -672,6 +703,8 @@ export const textes = {
       HORS_LIGNE: 'Réseau perdu : rien n’a changé, réessayez',
       SESSION_INVALIDE: 'Session expirée : reconnectez-vous',
       MANIFESTATION_INCONNUE: 'Cette manifestation n’existe plus : rechargez',
+      ACCES_REFUSE: 'Seul un administrateur peut supprimer avec son contenu',
+      COMPETITION_EN_COURS: 'Une compétition en cours empêche la suppression',
       MANIFESTATION_NON_VIDE:
         'Cette manifestation contient des compétitions ou des épreuves : elle ne se supprime pas (elle pourra être archivée)',
       ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',

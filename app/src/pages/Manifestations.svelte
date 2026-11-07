@@ -7,6 +7,7 @@
   import type { Epreuve, Manifestation } from '@poule-position/protocole';
   import Epreuves from '../composants/Epreuves.svelte';
   import Lien from '../composants/Lien.svelte';
+  import { nomConfirme } from '../lib/suppression';
   import type { ClientEpreuves } from '../lib/epreuves';
   import {
     saisieDe,
@@ -171,6 +172,50 @@
     }
   }
 
+  /** US-042 : suppression avec son contenu, réservée aux administrateurs. */
+  const tc = t.contenu;
+  let contenuASupprimer: Manifestation | null = $state(null);
+  let nombreCompetitions: number | null = $state(null);
+  let saisieNom = $state('');
+  let progression: { faites: number; total: number } | null = $state(null);
+  let messageContenu: string | null = $state(null);
+
+  async function demanderContenu(manifestation: Manifestation) {
+    contenuASupprimer = manifestation;
+    saisieNom = '';
+    messageContenu = null;
+    nombreCompetitions = null;
+    nombreCompetitions = (await competitionsConnues()).filter(
+      ({ rattachement }) => rattachement?.manifestationId === manifestation.id,
+    ).length;
+  }
+
+  /** CA-1, CA-5 et CA-6 : supprime la manifestation, ses épreuves et ses compétitions, morceau par morceau. */
+  async function supprimerContenu() {
+    if (!contenuASupprimer || enCours || !nomConfirme(saisieNom, contenuASupprimer.nom)) return;
+    enCours = true;
+    messageContenu = null;
+    try {
+      const resultat = await client.supprimerAvecContenu(contenuASupprimer.id, (faites, total) => {
+        progression = { faites, total };
+      });
+      if (resultat.ok) {
+        contenuASupprimer = null;
+      } else if (resultat.erreur === 'COMPETITION_EN_COURS' && resultat.enCours) {
+        messageContenu = tc.enCours(resultat.enCours);
+      } else if (resultat.supprimees > 0 && resultat.restantes > 0) {
+        messageContenu = tc.interrompue(resultat.restantes);
+      } else {
+        messageContenu = t.erreurs[resultat.erreur];
+      }
+      await charger();
+      await apresSuppressionContenu();
+    } finally {
+      progression = null;
+      enCours = false;
+    }
+  }
+
   /** Attributs d'accessibilité d'un champ, et identifiant de son message d'erreur. */
   const invalide = (champ: keyof ErreursManifestation) => ({
     'aria-invalid': erreurs[champ] ? ('true' as const) : undefined,
@@ -298,8 +343,50 @@
                 </button>
               </div>
             </div>
+          {:else if contenuASupprimer?.id === manifestation.id}
+            <!-- US-042 : suppression avec son contenu, confirmée par le nom de la manifestation. -->
+            <div class="confirmation" role="group" aria-label={tc.titre(manifestation.nom)}>
+              <span>{tc.titre(manifestation.nom)}</span>
+              <span>
+                {tc.combien(
+                  epreuves.filter(({ manifestationId }) => manifestationId === manifestation.id).length,
+                  nombreCompetitions,
+                )}
+              </span>
+              <span class="avertissement" role="status">{tc.avertissement}</span>
+              {#if messageContenu}<span class="erreur" role="alert">{messageContenu}</span>{/if}
+              {#if progression}
+                <span role="status">{tc.progression(progression.faites, progression.total)}</span>
+              {:else}
+                <label>
+                  {tc.saisie(manifestation.nom)}
+                  <input type="text" bind:value={saisieNom} autocomplete="off" />
+                </label>
+                <div class="boutons">
+                  <button
+                    type="button"
+                    class="danger"
+                    onclick={supprimerContenu}
+                    disabled={enCours || horsLigne || !nomConfirme(saisieNom, manifestation.nom)}>{tc.valider}</button
+                  >
+                  <button type="button" class="secondaire" onclick={() => (contenuASupprimer = null)} disabled={enCours}
+                    >{tc.annuler}</button
+                  >
+                </div>
+              {/if}
+            </div>
           {:else}
             <div class="boutons">
+              {#if administrateur}
+                <button
+                  type="button"
+                  class="secondaire"
+                  aria-label={tc.supprimer(manifestation.nom)}
+                  onclick={() => demanderContenu(manifestation)}
+                  disabled={horsLigne}>{tc.bouton}</button
+                >
+                {#if horsLigne}<small>{tc.horsLigne}</small>{/if}
+              {/if}
               <button
                 type="button"
                 class="secondaire"

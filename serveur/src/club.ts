@@ -602,6 +602,38 @@ export class Club extends DurableObject<Env> {
     return { ok: true };
   }
 
+  /**
+   * US-042 : la manifestation existe-t-elle, et quelles compétitions de l'index s'y rattachent, directement ou par une de
+   * ses épreuves ? Le statut est celui du dernier résumé du pilote (ADR-0016 §3).
+   */
+  async contenuManifestation(
+    manifestationId: string,
+  ): Promise<{ existe: boolean; competitions: CompetitionASupprimer[] }> {
+    const competitions = this.lignesIndex()
+      .filter(({ rattachement }) => rattachement?.manifestationId === manifestationId)
+      .map(({ id, nom, statut }) => ({ id, nom, statut }));
+    return { existe: this.lireManifestation(manifestationId) !== null, competitions };
+  }
+
+  /**
+   * US-042 : retire la manifestation et ses épreuves, une fois ses compétitions supprimées. Refusée si une compétition
+   * s'y rattache encore (rattachée entre-temps par un PC hors ligne) : la requête suivante la prendra. Une manifestation
+   * inconnue donne un succès sans effet.
+   */
+  async supprimerManifestationEtEpreuves(
+    manifestationId: string,
+  ): Promise<{ ok: true } | { ok: false; erreur: 'MANIFESTATION_NON_VIDE' }> {
+    if (!this.lireManifestation(manifestationId)) return { ok: true };
+    if (this.lignesIndex().some(({ rattachement }) => rattachement?.manifestationId === manifestationId)) {
+      return { ok: false, erreur: 'MANIFESTATION_NON_VIDE' };
+    }
+    this.ctx.storage.sql.exec('DELETE FROM epreuves WHERE manifestation_id = ?', manifestationId);
+    this.listeEpreuves.invalider();
+    this.ctx.storage.sql.exec('DELETE FROM manifestations WHERE id = ?', manifestationId);
+    this.listeManifestations.invalider();
+    return { ok: true };
+  }
+
   /** US-024 CA-1 : épreuves du club, regroupées par manifestation. */
   async listerEpreuves(): Promise<Epreuve[]> {
     return [...this.listeEpreuves.obtenir()];

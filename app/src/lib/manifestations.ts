@@ -11,18 +11,26 @@ import {
   analyserReponseManifestation,
   analyserReponseManifestations,
   analyserReponseSuppression,
+  analyserReponseSuppressionContenu,
   type ErreurReponse,
   type Manifestation,
 } from '@poule-position/protocole';
 import { DELAI_REPONSE } from './session';
 import { Base, LIGNE_UNIQUE, type CopieManifestations } from './stockage';
+import { enchainerSuppressionContenu, type ResultatSuppressionContenu } from './suppression';
 
 /** Champs du formulaire, tels que saisis : un texte vide est un champ non renseigné. */
 export type SaisieManifestation = Record<keyof DonneesManifestation, string>;
 
 /** Erreurs affichées par la page « Manifestations ». */
 export type ErreurManifestations =
-  'HORS_LIGNE' | 'SESSION_INVALIDE' | 'MANIFESTATION_INCONNUE' | 'MANIFESTATION_NON_VIDE' | 'ERREUR_INATTENDUE';
+  | 'HORS_LIGNE'
+  | 'SESSION_INVALIDE'
+  | 'MANIFESTATION_INCONNUE'
+  | 'MANIFESTATION_NON_VIDE'
+  | 'ACCES_REFUSE'
+  | 'COMPETITION_EN_COURS'
+  | 'ERREUR_INATTENDUE';
 
 export type ResultatEnregistrement =
   | { ok: true; manifestation: Manifestation }
@@ -65,8 +73,8 @@ const SESSION_REFUSEE: readonly ErreurReponse[] = ['SESSION_INVALIDE', 'COMPTE_M
 
 function erreurDe(erreur: ErreurReponse): ErreurManifestations {
   if (SESSION_REFUSEE.includes(erreur)) return 'SESSION_INVALIDE';
-  if (erreur === 'MANIFESTATION_INCONNUE' || erreur === 'MANIFESTATION_NON_VIDE') return erreur;
-  return 'ERREUR_INATTENDUE';
+  const connues = ['MANIFESTATION_INCONNUE', 'MANIFESTATION_NON_VIDE', 'ACCES_REFUSE', 'COMPETITION_EN_COURS'] as const;
+  return connues.find((connue) => connue === erreur) ?? 'ERREUR_INATTENDUE';
 }
 
 class Injoignable extends Error {}
@@ -174,6 +182,24 @@ export function creerClientManifestations({
         return { ok: false, erreur: 'HORS_LIGNE' };
       }
       return reponse.ok ? reponse : { ok: false, erreur: erreurDe(reponse.erreur) };
+    },
+
+    /**
+     * US-042 : supprime la manifestation avec ses épreuves et ses compétitions. Le serveur en traite un morceau par
+     * requête (CA-5) : on enchaîne jusqu'à la fin, avec la progression. Si la suite est interrompue, le serveur garde la
+     * manifestation et ce qui reste, et relancer la reprend (CA-6).
+     */
+    async supprimerAvecContenu(
+      id: string,
+      surProgression?: (faites: number, total: number) => void,
+    ): Promise<ResultatSuppressionContenu<ErreurManifestations>> {
+      return enchainerSuppressionContenu(
+        async () => analyserReponseSuppressionContenu(await requete('DELETE', `/manifestations/${id}?contenu=1`)),
+        erreurDe,
+        'HORS_LIGNE',
+        'ERREUR_INATTENDUE',
+        surProgression,
+      );
     },
   };
 }
