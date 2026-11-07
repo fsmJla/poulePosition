@@ -487,7 +487,7 @@
     overflow-y: auto;
   }
 
-  label {
+  .confirmation label {
     display: grid;
     gap: 0.25rem;
   }
