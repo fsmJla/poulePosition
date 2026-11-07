@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-022, US-026, US-029
 - **Branche / PR :** `us/US-039-supprimer-competition`
 
@@ -127,3 +127,5 @@ PC pilote peut donc finir une compétition en cours sans internet, puisqu'une co
 | 2026-11-07 | Créée |
 | 2026-11-07 | En cours : plan validé, implémentation |
 | 2026-11-07 | En revue : PR vers `dev`, contrôles locaux verts (lint, typage, 938 tests, build, audit, 263 E2E) |
+| 2026-11-07 | Recette OK sur https://poule-position-3rak8q24n-fsmjlas-projects.vercel.app (PR #56) : CA-1 et CA-8 vérifiés à l'écran (compte administrateur) ; CA-2 par l'E2E de la preview en CI. CA-3 (aucun écran pour passer une compétition en cours), CA-4 à CA-7 et le hors ligne validés par les tests automatiques, sur décision de l'utilisateur |
+| 2026-11-07 | Terminée |
