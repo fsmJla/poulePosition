@@ -3,7 +3,7 @@
   // manifestation vide. Ce sont des données du club stockées par le serveur : hors ligne, la dernière liste reste
   // consultable avec sa date, et les actions sont grisées. La liste sera intégrée à l'accueil par US-026.
   import { onMount } from 'svelte';
-  import type { ErreursManifestation } from '@poule-position/domaine';
+  import type { CompetitionRattachee, ErreursManifestation } from '@poule-position/domaine';
   import type { Epreuve, Manifestation } from '@poule-position/protocole';
   import Epreuves from '../composants/Epreuves.svelte';
   import Lien from '../composants/Lien.svelte';
@@ -22,10 +22,23 @@
     client: ClientManifestations;
     /** US-024 : épreuves, affichées sous leur manifestation. */
     clientEpreuves: ClientEpreuves;
+    /** US-041 : vrai pour un administrateur (suppression d'une épreuve avec son contenu). */
+    administrateur?: boolean;
+    /** US-041 : compétitions connues de cet appareil, pour annoncer combien partent avec une épreuve. */
+    competitionsConnues?: () => Promise<CompetitionRattachee[]>;
+    /** US-041 : efface les copies locales des compétitions supprimées (lit l'index du club). */
+    apresSuppressionContenu?: () => Promise<void>;
     naviguer: (chemin: string) => void;
   }
 
-  let { client, clientEpreuves, naviguer }: Proprietes = $props();
+  let {
+    client,
+    clientEpreuves,
+    naviguer,
+    administrateur = false,
+    competitionsConnues = async () => [],
+    apresSuppressionContenu = async () => {},
+  }: Proprietes = $props();
 
   const t = textes.manifestations;
 
@@ -266,6 +279,10 @@
             epreuves={epreuves.filter(({ manifestationId }) => manifestationId === manifestation.id)}
             {horsLigne}
             modifie={chargerEpreuves}
+            {administrateur}
+            nombreCompetitions={async (epreuveId) =>
+              (await competitionsConnues()).filter(({ rattachement }) => rattachement?.epreuveId === epreuveId).length}
+            {apresSuppressionContenu}
             ouvrirAuDepart={ouverture !== null && 'epreuveDe' in ouverture && ouverture.epreuveDe === manifestation.id}
           />
           {#if aSupprimer?.id === manifestation.id}

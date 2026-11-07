@@ -155,7 +155,14 @@
     {:else if route.page === 'comptes'}
       <Comptes {client} {surSessionPerdue} />
     {:else if route.page === 'manifestations'}
-      <Manifestations client={manifestations} clientEpreuves={epreuves} {naviguer} />
+      <Manifestations
+        client={manifestations}
+        clientEpreuves={epreuves}
+        {naviguer}
+        administrateur={session.compte.role === 'administrateur'}
+        competitionsConnues={() => synchronisation.competitionsConnues()}
+        apresSuppressionContenu={async () => void (await synchronisation.listerCompetitionsDuClub())}
+      />
     {:else if route.page === 'nouvelleCompetition'}
       <NouvelleCompetition
         {session}
