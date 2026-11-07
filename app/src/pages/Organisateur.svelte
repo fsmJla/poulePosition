@@ -6,7 +6,9 @@
   // d'une compétition non (US-025). La gestion des comptes (US-007) reste réservée aux administrateurs, grisée hors ligne.
   // Le profil (US-016) et la déconnexion (US-003 CA-5) sont dans le menu de compte de l'entête (US-017).
   import { onMount } from 'svelte';
+  import { SvelteSet } from 'svelte/reactivity';
   import {
+    competitionsVisibles,
     construireListe,
     manifestationOuverte,
     type CompetitionListee,
@@ -15,6 +17,13 @@
   import type { SessionAppareil } from '../lib/stockage';
   import Lien from '../composants/Lien.svelte';
   import type { Accueil, DonneesAccueil } from '../lib/accueil';
+  import {
+    confirmationSerie,
+    CONFIRMATION_SERIE,
+    supprimerEnSerie,
+    toutCocher,
+    type CompteRendu,
+  } from '../lib/suppression';
   import { cheminCompetition, cheminNouvelleEpreuve, CHEMIN_NOUVELLE_MANIFESTATION, CHEMINS } from '../lib/routes';
   import { textes } from '../lib/textes';
 
@@ -41,6 +50,53 @@
     donnees = await accueil.charger();
   }
 
+  /** US-040 : suppression de plusieurs compétitions, réservée aux administrateurs. */
+  const ts = t.suppression;
+  const administrateur = $derived(session.compte.role === 'administrateur');
+  const cochees = new SvelteSet<string>();
+  let etapeSerie: 'aucune' | 'confirmation' | 'encours' = $state('aucune');
+  let saisieSerie = $state('');
+  let progression: { faites: number; total: number } | null = $state(null);
+  let compteRendu: CompteRendu | null = $state(null);
+  let nomsSerie = $state(new Map<string, string>());
+
+  const visibles = $derived(liste ? competitionsVisibles(liste) : []);
+  /** CA-2 : seules les compétitions visibles comptent, jamais celles qu'un filtre masque. */
+  const aSupprimer = $derived(visibles.filter(({ id }) => cochees.has(id)));
+
+  function basculer(id: string, coche: boolean) {
+    if (coche) cochees.add(id);
+    else cochees.delete(id);
+  }
+
+  /** CA-2 : « Tout cocher » prend les compétitions visibles et supprimables ; si une sélection existe, elle se vide. */
+  function basculerTout() {
+    const nouvelle = aSupprimer.length > 0 ? new Set<string>() : toutCocher(visibles);
+    cochees.clear();
+    for (const id of nouvelle) cochees.add(id);
+  }
+
+  /** CA-3 : supprime les compétitions cochées une à une, puis relit la liste une seule fois. */
+  async function lancerSerie() {
+    if (etapeSerie !== 'confirmation' || !confirmationSerie(saisieSerie)) return;
+    nomsSerie = new Map(aSupprimer.map(({ id, nom }) => [id, nom]));
+    etapeSerie = 'encours';
+    compteRendu = null;
+    const compte = await supprimerEnSerie(
+      aSupprimer.map(({ id }) => id),
+      (id) => accueil.supprimer(id),
+      (faites, total) => (progression = { faites, total }),
+    );
+    compteRendu = compte;
+    // CA-4 : ce qui n'a pas été supprimé reste coché, pour relancer.
+    cochees.clear();
+    for (const { id } of compte.restantes) cochees.add(id);
+    progression = null;
+    saisieSerie = '';
+    etapeSerie = 'aucune';
+    await charger();
+  }
+
   onMount(() => {
     const surReseau = () => {
       horsLigne = !navigator.onLine;
@@ -58,7 +114,20 @@
 
 {#snippet competition(entree: CompetitionListee)}
   <li class="competition">
-    <Lien chemin={cheminCompetition(entree.id)} {naviguer}>{entree.nom}</Lien>
+    <span class="ligne">
+      <!-- US-040 CA-1 : une compétition en cours ne se coche pas ; CA-5 : pas de case pour un organisateur. -->
+      {#if administrateur}
+        <input
+          type="checkbox"
+          checked={cochees.has(entree.id)}
+          disabled={entree.statut === 'enCours' || horsLigne || etapeSerie === 'encours'}
+          title={entree.statut === 'enCours' ? ts.enCours : undefined}
+          aria-label={ts.cocher(entree.nom)}
+          onchange={(evenement) => basculer(entree.id, evenement.currentTarget.checked)}
+        />
+      {/if}
+      <Lien chemin={cheminCompetition(entree.id)} {naviguer}>{entree.nom}</Lien>
+    </span>
     <span class="infos">
       {tc.armes[entree.arme]}
       {#if entree.categorie}· {entree.categorie}{/if}
@@ -128,6 +197,74 @@
           </label>
           {#if liste.archivesMasquees > 0}<small>{t.archivesMasquees(liste.archivesMasquees)}</small>{/if}
         </div>
+
+        <!-- US-040 : sélection et suppression de plusieurs compétitions, réservées aux administrateurs. -->
+        {#if administrateur && visibles.length > 0}
+          <div class="selection">
+            <span role="status">{ts.selection(aSupprimer.length)}</span>
+            <button
+              type="button"
+              class="secondaire"
+              onclick={basculerTout}
+              disabled={horsLigne || etapeSerie === 'encours'}
+              >{aSupprimer.length > 0 ? ts.toutDecocher : ts.toutCocher}</button
+            >
+            <button
+              type="button"
+              class="danger"
+              onclick={() => (etapeSerie = 'confirmation')}
+              disabled={horsLigne || aSupprimer.length === 0 || etapeSerie !== 'aucune'}
+              aria-describedby={horsLigne ? 'suppression-serie-aide' : undefined}>{ts.bouton}</button
+            >
+            {#if horsLigne}<small id="suppression-serie-aide">{ts.horsLigne}</small>{/if}
+          </div>
+        {/if}
+
+        {#if etapeSerie !== 'aucune'}
+          <div class="confirmation" role="group" aria-label={ts.titre(aSupprimer.length)}>
+            <p>{ts.titre(aSupprimer.length)}</p>
+            <p class="avertissement" role="status">{ts.avertissement}</p>
+            <ul class="noms">
+              {#each aSupprimer as { id, nom } (id)}<li>{nom}</li>{/each}
+            </ul>
+            {#if etapeSerie === 'encours' && progression}
+              <p role="status">{ts.progression(progression.faites, progression.total)}</p>
+            {:else}
+              <label>
+                {ts.saisie(CONFIRMATION_SERIE)}
+                <input type="text" bind:value={saisieSerie} autocomplete="off" />
+              </label>
+              <div class="boutons">
+                <button
+                  type="button"
+                  class="danger"
+                  onclick={lancerSerie}
+                  disabled={horsLigne || !confirmationSerie(saisieSerie)}>{ts.valider}</button
+                >
+                <button type="button" class="secondaire" onclick={() => ((etapeSerie = 'aucune'), (saisieSerie = ''))}
+                  >{ts.annuler}</button
+                >
+              </div>
+            {/if}
+          </div>
+        {/if}
+
+        <!-- CA-4 : compte rendu de la série ; les compétitions restantes restent cochées. -->
+        {#if compteRendu}
+          <div class="compte-rendu">
+            <p role="status">{ts.compteRendu(compteRendu.supprimees.length)}</p>
+            {#if compteRendu.restantes.length > 0}
+              <p role="alert">{ts.restantes(compteRendu.restantes.length)}</p>
+              <ul>
+                {#each compteRendu.restantes as { id, erreur } (id)}
+                  <li>{nomsSerie.get(id) ?? id} · {erreur ? tc.suppression.erreurs[erreur] : ts.nonTraitee}</li>
+                {/each}
+              </ul>
+              {#if compteRendu.interrompue}<p role="alert">{ts.interrompue}</p>{/if}
+            {/if}
+            <button type="button" class="secondaire" onclick={() => (compteRendu = null)}>{ts.fermer}</button>
+          </div>
+        {/if}
 
         {#each liste.manifestations as noeud (noeud.manifestation.id)}
           <details class="manifestation" open={manifestationOuverte(noeud.manifestation, aujourdhui)}>
@@ -319,6 +456,76 @@
   .vide {
     margin: 0;
     color: var(--texte-discret);
+  }
+
+  .ligne {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .selection,
+  .boutons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    align-items: center;
+  }
+
+  .confirmation,
+  .compte-rendu {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--bordure);
+    border-radius: var(--rayon);
+    background: var(--surface);
+  }
+
+  .noms {
+    max-height: 10rem;
+    overflow-y: auto;
+  }
+
+  label {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  input[type='text'] {
+    padding: 0.55rem 0.65rem;
+    border: 1px solid var(--bordure-champ);
+    border-radius: var(--rayon);
+    background: var(--fond);
+    color: var(--texte);
+    font: inherit;
+  }
+
+  button {
+    padding: 0.5rem 0.9rem;
+    border: none;
+    border-radius: var(--rayon);
+    background: var(--accent-fond);
+    color: var(--sur-accent);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button.secondaire {
+    border: 1px solid var(--bordure-champ);
+    background: var(--surface);
+    color: var(--texte);
+    font-weight: 400;
+  }
+
+  button.danger {
+    background: var(--etat-erreur);
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .avertissement {

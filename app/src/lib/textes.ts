@@ -105,6 +105,36 @@ export const textes = {
     lectureSeule: 'Lecture seule',
     jour: (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}`,
     ouvrir: (nom: string) => `Ouvrir la compétition ${nom}`,
+    /** US-040 : suppression de plusieurs compétitions, réservée aux administrateurs. */
+    suppression: {
+      cocher: (nom: string) => `Sélectionner la compétition ${nom}`,
+      enCours: 'Une compétition en cours ne peut pas être supprimée',
+      selection: (nombre: number) =>
+        nombre > 1 ? `${nombre} compétitions sélectionnées` : `${nombre} compétition sélectionnée`,
+      toutCocher: 'Tout cocher',
+      toutDecocher: 'Tout décocher',
+      bouton: 'Supprimer définitivement…',
+      horsLigne: 'Connexion requise pour supprimer',
+      titre: (nombre: number) =>
+        nombre > 1
+          ? `Supprimer définitivement ces ${nombre} compétitions ?`
+          : 'Supprimer définitivement cette compétition ?',
+      avertissement:
+        'La suppression est définitive : les journaux, les saisies et les fichiers joints sont effacés du serveur et de tous les PC du club. Pour garder une trace, archivez plutôt que de supprimer.',
+      saisie: (mot: string) => `Saisissez ${mot} pour confirmer`,
+      valider: 'Supprimer définitivement',
+      progression: (faites: number, total: number) => `Suppression… ${faites} / ${total}`,
+      annuler: 'Annuler',
+      compteRendu: (supprimees: number) =>
+        supprimees > 1 ? `${supprimees} compétitions supprimées` : `${supprimees} compétition supprimée`,
+      restantes: (restantes: number) =>
+        restantes > 1
+          ? `${restantes} compétitions n’ont pas été supprimées`
+          : `${restantes} compétition n’a pas été supprimée`,
+      interrompue: 'La suppression s’est arrêtée : relancez-la quand la connexion ou la session est rétablie',
+      nonTraitee: 'pas traitée',
+      fermer: 'Fermer',
+    },
   },
   motDePasse: {
     titre: 'Changer mon mot de passe',

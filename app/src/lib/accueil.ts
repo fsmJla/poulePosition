@@ -99,6 +99,9 @@ export function creerAccueil({
 
   return {
     /** CA-1 et hors ligne : les données de la liste ; une copie ou une compétition locale remplace une ligne de l'index. */
+    /** US-040 : supprime définitivement une compétition (US-039) ; la liste se recharge à la fin de la série. */
+    supprimer: (competitionId: string) => synchronisation.supprimerCompetition(competitionId),
+
     async charger(): Promise<DonneesAccueil> {
       const [clubs, lesManifestations, lesEpreuves] = await Promise.all([
         index(),
