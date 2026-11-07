@@ -53,6 +53,7 @@ l'ajoute ici avant de l'utiliser.
 | Publication | Réglage d'une compétition : publiée, elle est visible du public sur la page d'accueil (affiche, dates…) ; non publiée, seuls les organisateurs la voient. Sans rapport avec le réseau : « en ligne / hors ligne » est réservé à l'état du réseau. | `publiee` |
 | Prendre la main | Faire de ce PC le pilote d'une compétition (en ligne) ; l'ancien pilote passe en lecture seule (US-029). | `prendreLaMain`, `PiloteChange` |
 | Suppression définitive | Effacement irréversible d'une compétition sur le serveur et sur les PC, réservé aux administrateurs, interdit pour une compétition en cours (US-039). Distincte de l'archivage. | `supprimee` |
+| Suppression avec contenu | Suppression définitive d'une manifestation ou d'une épreuve non vide, avec toutes ses épreuves et ses compétitions (archivées comprises). Réservée aux administrateurs, demandée explicitement, bloquée par une compétition en cours (US-041, US-042). | `avecContenu` |
 | Pierre tombale | Trace gardée par le serveur d'une compétition supprimée (identifiant et date) : elle empêche son retour par un PC qui en garde une copie et lui fait effacer cette copie. | `pierreTombale` |
 | Archivage | Mise de côté réversible d'une compétition ou d'une manifestation : lecture seule, masqué des listes et de la page publique (US-033). | `archivee` |
 | Écran | Affichage géant (distant ou fenêtre locale). | `ecran` |
