@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-024, US-039
 - **Branche / PR :** `us/US-041-supprimer-epreuve-avec-contenu`
 
@@ -123,3 +123,5 @@ jusqu'à sa prochaine synchronisation (US-039).
 | 2026-11-07 | Créée |
 | 2026-11-07 | En cours : plan validé, implémentation |
 | 2026-11-07 | En revue : PR vers `dev`, contrôles locaux verts (lint, typage, 977 tests, build, audit) ; E2E locaux : 272 passent, avec un test différent qui échoue de façon intermittente à chaque suite complète (US-011, US-029, US-040) et passe seul ; un vrai conflit de noms de boutons avec US-024 a été corrigé |
+| 2026-11-07 | Recette OK sur https://poule-position-ee0u9bmba-fsmjlas-projects.vercel.app (PR #60, Worker de preview déployé depuis la branche) : CA-1 et CA-8 vérifiés à l'écran avec un compte administrateur (épreuve avec 3 compétitions supprimée, compétitions absentes de l'accueil et adresse introuvable, confirmation par le nom) ; CA-2 par l'E2E de la preview en CI ; pas de régression sur US-024 (boutons distincts, suppression d'une manifestation vide). CA-3 à CA-7 et le hors ligne validés par les tests automatiques, sur décision de l'utilisateur |
+| 2026-11-07 | Terminée |

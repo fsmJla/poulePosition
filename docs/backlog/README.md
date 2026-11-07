@@ -70,7 +70,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-038](US-038-correction-lectures-index.md) | Corriger les lectures répétées de tout l'index du club (quota Cloudflare) | E2 | Terminée | US-022, US-023, US-024, US-029 |
 | [US-039](US-039-supprimer-competition.md) | Supprimer définitivement une compétition (administrateur) | E2 | Terminée | US-022, US-026, US-029 |
 | [US-040](US-040-supprimer-plusieurs-competitions.md) | Supprimer plusieurs compétitions d'un coup | E2 | Terminée | US-039, US-026 |
-| [US-041](US-041-supprimer-epreuve-avec-contenu.md) | Supprimer une épreuve avec son contenu | E2 | En revue | US-024, US-039 |
+| [US-041](US-041-supprimer-epreuve-avec-contenu.md) | Supprimer une épreuve avec son contenu | E2 | Terminée | US-024, US-039 |
 | [US-042](US-042-supprimer-manifestation-avec-contenu.md) | Supprimer une manifestation avec son contenu | E2 | Prête | US-023, US-041 |
 | [US-043](US-043-supprimer-par-lot-tous-types.md) | Supprimer par lot des manifestations, des épreuves et des compétitions | E2 | Prête | US-040, US-041, US-042 |
 
