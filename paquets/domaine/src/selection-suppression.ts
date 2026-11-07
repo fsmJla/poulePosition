@@ -182,3 +182,14 @@ export function analyserSelection(
 export function planSuppression({ directs }: AnalyseSelection): ElementASupprimer[] {
   return [...directs.manifestations, ...directs.epreuves, ...directs.competitions];
 }
+
+/**
+ * CA-1 : les compétitions en cours et les parents qui en contiennent, calculés d'un coup pour toute la liste (l'écran
+ * le consulte à chaque case, il ne doit pas reconstruire l'arbre à chaque fois).
+ */
+export function elementsEnCours(donnees: DonneesListe): Set<string> {
+  const arbre = construireArbre(donnees);
+  const ids = new Set(arbre.enCours);
+  for (const { id, statut } of arbre.competitions.values()) if (statut === 'enCours') ids.add(id);
+  return ids;
+}

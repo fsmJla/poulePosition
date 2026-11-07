@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { CompetitionListee, DonneesListe } from './liste';
-import { analyserSelection, motifNonCochable, planSuppression, toutCocherListe } from './selection-suppression';
+import {
+  analyserSelection,
+  elementsEnCours,
+  motifNonCochable,
+  planSuppression,
+  toutCocherListe,
+} from './selection-suppression';
 
 const competition = (
   id: string,
@@ -147,5 +153,11 @@ describe('sélection pour la suppression par lot (US-043)', () => {
     };
     expect([...analyserSelection(croisee, cochees('M3'), true).verrouillees.keys()]).toEqual(['x']);
     expect(analyserSelection(croisee, cochees('E1'), true).verrouillees.size).toBe(0);
+  });
+});
+
+describe('éléments non cochables calculés une fois (US-043)', () => {
+  it('US-043 CA-1 : renvoie les compétitions en cours et les parents qui en contiennent, rien d’autre', () => {
+    expect([...elementsEnCours(donnees)].sort()).toEqual(['E3', 'M2', 'c5']);
   });
 });
