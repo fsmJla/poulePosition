@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-040, US-041, US-042
 - **Branche / PR :** `us/US-043-supprimer-par-lot-tous-types`
 
@@ -119,3 +119,4 @@ coupé en cours de série, elle s'arrête proprement et le compte rendu indique 
 | 2026-11-07 | Créée |
 | 2026-11-07 | En cours : plan validé, implémentation |
 | 2026-11-07 | En revue : PR vers `dev`, contrôles locaux verts (lint, typage, 1010 tests avec couverture, build, audit sans vulnérabilité haute) ; E2E locaux : 283 passent, 11 ignorés (preview uniquement) |
+| 2026-11-07 | Recette OK sur https://poule-position-git-us-us-043-supprimer-b05c39-fsmjlas-projects.vercel.app (administrateur, PC) : CA-1, CA-2, CA-4, CA-5 et CA-6 vérifiés à la main avec suppression réelle ; CA-7 par l'E2E de la preview ; « Tout cocher », « épreuve seule », CA-1 « En cours » et hors ligne couverts par les tests automatisés. Un écart d'affichage (case de manifestation centrée au-dessus du nom) a été corrigé et revérifié. Terminée. |
