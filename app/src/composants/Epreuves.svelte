@@ -6,6 +6,7 @@
   import { ARMES, type ErreursEpreuve } from '@poule-position/domaine';
   import type { Epreuve, Manifestation } from '@poule-position/protocole';
   import { saisieDe, saisieVide, type ClientEpreuves, type ErreurEpreuves, type SaisieEpreuve } from '../lib/epreuves';
+  import { nomConfirme } from '../lib/suppression';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
@@ -18,9 +19,25 @@
     modifie: () => Promise<void>;
     /** US-026 CA-5 : ouvre le formulaire de création dès l'affichage (adresse « ?epreuve=<id> » depuis l'accueil). */
     ouvrirAuDepart?: boolean;
+    /** US-041 : vrai pour un administrateur, seul à pouvoir supprimer une épreuve avec son contenu. */
+    administrateur?: boolean;
+    /** US-041 : nombre de compétitions rattachées à l'épreuve, annoncé à la confirmation. */
+    nombreCompetitions?: (epreuveId: string) => Promise<number>;
+    /** US-041 : appelé après une suppression avec contenu, pour effacer les copies locales des compétitions supprimées. */
+    apresSuppressionContenu?: () => Promise<void>;
   }
 
-  let { manifestation, client, epreuves, horsLigne, modifie, ouvrirAuDepart = false }: Proprietes = $props();
+  let {
+    manifestation,
+    client,
+    epreuves,
+    horsLigne,
+    modifie,
+    ouvrirAuDepart = false,
+    administrateur = false,
+    nombreCompetitions = async () => 0,
+    apresSuppressionContenu = async () => {},
+  }: Proprietes = $props();
 
   const t = textes.epreuves;
   const armes = textes.competitions.armes;
@@ -116,6 +133,48 @@
     }
   }
 
+  /** US-041 : suppression avec son contenu, réservée aux administrateurs. */
+  const tc = t.contenu;
+  let contenuASupprimer: Epreuve | null = $state(null);
+  let nombreContenu: number | null = $state(null);
+  let saisieNom = $state('');
+  let progression: { faites: number; total: number } | null = $state(null);
+  let messageContenu: string | null = $state(null);
+
+  async function demanderContenu(epreuve: Epreuve) {
+    contenuASupprimer = epreuve;
+    saisieNom = '';
+    messageContenu = null;
+    nombreContenu = null;
+    nombreContenu = await nombreCompetitions(epreuve.id);
+  }
+
+  /** CA-1, CA-5 et CA-6 : supprime l'épreuve et ses compétitions, morceau par morceau, puis relit les listes. */
+  async function supprimerContenu() {
+    if (!contenuASupprimer || enCours || !nomConfirme(saisieNom, contenuASupprimer.nom)) return;
+    enCours = true;
+    messageContenu = null;
+    try {
+      const resultat = await client.supprimerAvecContenu(contenuASupprimer.id, (faites, total) => {
+        progression = { faites, total };
+      });
+      if (resultat.ok) {
+        contenuASupprimer = null;
+      } else if (resultat.erreur === 'COMPETITION_EN_COURS' && resultat.enCours) {
+        messageContenu = tc.enCours(resultat.enCours);
+      } else if (resultat.supprimees > 0 && resultat.restantes > 0) {
+        messageContenu = tc.interrompue(resultat.restantes);
+      } else {
+        messageContenu = t.erreurs[resultat.erreur];
+      }
+      await modifie();
+      await apresSuppressionContenu();
+    } finally {
+      progression = null;
+      enCours = false;
+    }
+  }
+
   /** Attributs d'accessibilité d'un champ, et identifiant de son message d'erreur. */
   const invalide = (champ: keyof ErreursEpreuve) => ({
     'aria-invalid': erreurs[champ] ? ('true' as const) : undefined,
@@ -155,8 +214,45 @@
                 </button>
               </div>
             </div>
+          {:else if contenuASupprimer?.id === epreuve.id}
+            <!-- US-041 : suppression avec son contenu, confirmée par le nom de l'épreuve. -->
+            <div class="confirmation" role="group" aria-label={tc.titre(epreuve.nom)}>
+              <span>{tc.titre(epreuve.nom)}</span>
+              <span>{tc.combien(nombreContenu)}</span>
+              <span class="avertissement" role="status">{tc.avertissement}</span>
+              {#if messageContenu}<span class="erreur" role="alert">{messageContenu}</span>{/if}
+              {#if progression}
+                <span role="status">{tc.progression(progression.faites, progression.total)}</span>
+              {:else}
+                <label>
+                  {tc.saisie(epreuve.nom)}
+                  <input type="text" bind:value={saisieNom} autocomplete="off" />
+                </label>
+                <div class="boutons">
+                  <button
+                    type="button"
+                    class="danger"
+                    onclick={supprimerContenu}
+                    disabled={enCours || horsLigne || !nomConfirme(saisieNom, epreuve.nom)}>{tc.valider}</button
+                  >
+                  <button type="button" class="secondaire" onclick={() => (contenuASupprimer = null)} disabled={enCours}
+                    >{tc.annuler}</button
+                  >
+                </div>
+              {/if}
+            </div>
           {:else}
             <div class="boutons">
+              {#if administrateur}
+                <button
+                  type="button"
+                  class="secondaire"
+                  aria-label={tc.supprimer(epreuve.nom)}
+                  onclick={() => demanderContenu(epreuve)}
+                  disabled={horsLigne}>{tc.bouton}</button
+                >
+                {#if horsLigne}<small>{tc.horsLigne}</small>{/if}
+              {/if}
               <button
                 type="button"
                 class="secondaire"

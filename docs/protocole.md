@@ -730,7 +730,7 @@ rôle. Même CORS qu'au §7.
 | `GET /epreuves` | — | `200 {"ok":true,"epreuves":[…]}`, regroupées par manifestation |
 | `POST /epreuves` | `manifestationId`, `nom`, `arme`, `commentaire` | `201 {"ok":true,"epreuve":{…}}` |
 | `PATCH /epreuves/<id>` | `nom`, `arme`, `commentaire` et `version` ; **pas** de `manifestationId` | `200 {"ok":true,"epreuve":{…}}` |
-| `DELETE /epreuves/<id>` | — | `200 {"ok":true}` |
+| `DELETE /epreuves/<id>` | — | `200 {"ok":true}` (épreuve vide) ; avec `?contenu=1`, voir §14 |
 
 **Erreurs** : `400 DEMANDE_INVALIDE` (corps mal formé, refusé par les règles, ou `manifestationId` dans un `PATCH`),
 `404 MANIFESTATION_INCONNUE` (création), `404 EPREUVE_INCONNUE`, `409 MODIFIEE_ENTRE_TEMPS` avec la version courante
@@ -796,3 +796,25 @@ US-039 ne l'envoie pas, et l'application lit alors une liste vide.
   annonce une fois : « La compétition <nom> a été supprimée par un administrateur » (suivi de « Des saisies non envoyées
   ont été abandonnées » s'il y en avait). La suppression prime sur les saisies hors ligne.
 - Le PC qui a lui-même demandé la suppression efface sa copie sans annonce.
+
+### Suppression d'une épreuve avec son contenu (US-041, ADR-0020)
+
+`DELETE /epreuves/<id>?contenu=1` supprime l'épreuve **et ses compétitions** (archivées comprises). Il faut un **administrateur**
+au mot de passe définitif (`403 ACCES_REFUSE` sinon). Sans `?contenu=1`, une épreuve non vide reste refusée
+(`409 EPREUVE_NON_VIDE`, §13).
+
+Le serveur supprime au plus **30 compétitions par requête** (limite de 50 sous-requêtes du plan gratuit) et répond :
+
+```json
+{ "ok": true, "termine": false, "supprimees": 30, "restantes": 5 }
+```
+
+tant qu'il en reste ; la dernière requête (`"termine": true`, `"restantes": 0`) retire aussi la ligne de l'épreuve.
+L'application enchaîne les requêtes et affiche la progression. Une interruption laisse l'épreuve et ce qui reste en
+place : **relancer la reprend**, sans recompter ce qui est déjà supprimé. Chaque compétition supprimée a sa pierre
+tombale (ci-dessus).
+
+- **Épreuve inconnue ou vide** : `200 {"ok":true,"termine":true,"supprimees":0,"restantes":0}`, sans autre effet.
+- **Compétition en cours** : `409 {"ok":false,"erreur":"COMPETITION_EN_COURS","enCours":["<noms>"]}` ; rien n'est supprimé,
+  ni dans l'épreuve ni ailleurs. Le serveur lit le statut du dernier résumé envoyé par le pilote.
+- **Compétition rattachée entre-temps** : l'épreuve n'est pas retirée, la réponse a `"termine": false` avec ce qui reste.

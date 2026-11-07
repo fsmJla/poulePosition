@@ -569,6 +569,32 @@ export const textes = {
     supprimer: (nom: string) => `Supprimer l’épreuve ${nom}`,
     confirmerSuppression: (nom: string) => `Supprimer définitivement l’épreuve « ${nom} » ?`,
     confirmer: 'Supprimer',
+    /** US-041 : suppression avec son contenu, réservée aux administrateurs. */
+    contenu: {
+      bouton: 'Supprimer avec son contenu…',
+      supprimer: (nom: string) => `Supprimer avec son contenu l’épreuve ${nom}`,
+      horsLigne: 'Connexion requise pour supprimer',
+      titre: (nom: string) => `Supprimer définitivement l’épreuve « ${nom} » avec son contenu ?`,
+      combien: (nombre: number | null) =>
+        nombre === null
+          ? 'Les compétitions de l’épreuve sont supprimées avec elle.'
+          : nombre === 0
+            ? 'L’épreuve ne contient aucune compétition.'
+            : nombre > 1
+              ? `Les ${nombre} compétitions de l’épreuve (archivées comprises) sont supprimées avec elle.`
+              : 'La compétition de l’épreuve est supprimée avec elle.',
+      avertissement:
+        'La suppression est définitive : les journaux, les saisies et les fichiers joints sont effacés du serveur et de tous les PC du club.',
+      saisie: (nom: string) => `Saisissez « ${nom} » pour confirmer`,
+      valider: 'Supprimer définitivement',
+      progression: (faites: number, total: number) => `Suppression… ${faites} / ${total}`,
+      annuler: 'Annuler',
+      enCours: (noms: string[]) => `Une compétition en cours empêche la suppression : ${noms.join(', ')}`,
+      interrompue: (restantes: number) =>
+        restantes > 1
+          ? `${restantes} compétitions restent, l’épreuve n’est pas supprimée : relancez la suppression`
+          : `${restantes} compétition reste, l’épreuve n’est pas supprimée : relancez la suppression`,
+    },
     recharger: 'Recharger',
     aucune: 'Aucune épreuve',
     horsLigne: 'Nécessite une connexion internet',
@@ -586,6 +612,8 @@ export const textes = {
       MANIFESTATION_INCONNUE: 'Cette manifestation n’existe plus : rechargez',
       EPREUVE_INCONNUE: 'Cette épreuve n’existe plus : rechargez',
       EPREUVE_NON_VIDE: 'Cette épreuve contient des compétitions : elle ne se supprime pas',
+      ACCES_REFUSE: 'Seul un administrateur peut supprimer avec son contenu',
+      COMPETITION_EN_COURS: 'Une compétition en cours empêche la suppression',
       ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
     } satisfies Record<ErreurEpreuves, string>,
   },

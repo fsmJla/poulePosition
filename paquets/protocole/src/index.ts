@@ -8,3 +8,4 @@ export * from './manifestations';
 export * from './messages';
 export * from './reinitialisation';
 export * from './session';
+export * from './suppression-contenu';

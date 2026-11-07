@@ -5,6 +5,7 @@ import {
   analyserReponseEpreuve,
   analyserReponseEpreuves,
   analyserReponseSuppression,
+  analyserReponseSuppressionContenu,
   type Epreuve,
   type ErreurReponse,
 } from '@poule-position/protocole';
@@ -25,6 +26,8 @@ export type ErreurEpreuves =
   | 'MANIFESTATION_INCONNUE'
   | 'EPREUVE_INCONNUE'
   | 'EPREUVE_NON_VIDE'
+  | 'ACCES_REFUSE'
+  | 'COMPETITION_EN_COURS'
   | 'ERREUR_INATTENDUE';
 
 export type ResultatEnregistrementEpreuve =
@@ -69,11 +72,23 @@ const SESSION_REFUSEE: readonly ErreurReponse[] = ['SESSION_INVALIDE', 'COMPTE_M
 
 function erreurDe(erreur: ErreurReponse): ErreurEpreuves {
   if (SESSION_REFUSEE.includes(erreur)) return 'SESSION_INVALIDE';
-  if (erreur === 'MANIFESTATION_INCONNUE' || erreur === 'EPREUVE_INCONNUE' || erreur === 'EPREUVE_NON_VIDE') {
-    return erreur;
-  }
-  return 'ERREUR_INATTENDUE';
+  const connues = [
+    'MANIFESTATION_INCONNUE',
+    'EPREUVE_INCONNUE',
+    'EPREUVE_NON_VIDE',
+    'ACCES_REFUSE',
+    'COMPETITION_EN_COURS',
+  ] as const;
+  return connues.find((connue) => connue === erreur) ?? 'ERREUR_INATTENDUE';
 }
+
+/** Garde-fou : nombre maximal de requêtes d'une suppression avec contenu (30 compétitions par requête). */
+const MORCEAUX_MAX = 1000;
+
+/** US-041 : résultat d'une suppression avec contenu ; en cas d'échec, ce qui était déjà supprimé et ce qui reste. */
+export type ResultatSuppressionContenu =
+  | { ok: true; supprimees: number }
+  | { ok: false; erreur: ErreurEpreuves; supprimees: number; restantes: number; enCours?: string[] };
 
 class Injoignable extends Error {}
 
@@ -176,6 +191,38 @@ export function creerClientEpreuves({
         return { ok: false, erreur: 'HORS_LIGNE' };
       }
       return reponse.ok ? reponse : { ok: false, erreur: erreurDe(reponse.erreur) };
+    },
+
+    /**
+     * US-041 : supprime l'épreuve avec ses compétitions. Le serveur en traite un morceau par requête (CA-5) : on enchaîne
+     * jusqu'à la fin, avec la progression. Si la suite est interrompue, le serveur garde l'épreuve et ce qui reste, et
+     * relancer la reprend (CA-6).
+     */
+    async supprimerAvecContenu(
+      id: string,
+      surProgression?: (faites: number, total: number) => void,
+    ): Promise<ResultatSuppressionContenu> {
+      let faites = 0;
+      let restantes = 0;
+      for (let morceau = 0; morceau < MORCEAUX_MAX; morceau++) {
+        let reponse;
+        try {
+          reponse = analyserReponseSuppressionContenu(await requete('DELETE', `/epreuves/${id}?contenu=1`));
+        } catch {
+          return { ok: false, erreur: 'HORS_LIGNE', supprimees: faites, restantes };
+        }
+        if (!reponse.ok) {
+          const refus = { ok: false as const, erreur: erreurDe(reponse.erreur), supprimees: faites, restantes };
+          return reponse.enCours.length > 0 ? { ...refus, enCours: reponse.enCours } : refus;
+        }
+        faites += reponse.supprimees;
+        restantes = reponse.restantes;
+        surProgression?.(faites, faites + restantes);
+        if (reponse.termine) return { ok: true, supprimees: faites };
+        // Un morceau qui ne supprime rien sans terminer : on s'arrête plutôt que de tourner dans le vide.
+        if (reponse.supprimees === 0) return { ok: false, erreur: 'ERREUR_INATTENDUE', supprimees: faites, restantes };
+      }
+      return { ok: false, erreur: 'ERREUR_INATTENDUE', supprimees: faites, restantes };
     },
   };
 }

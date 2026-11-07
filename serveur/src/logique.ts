@@ -151,6 +151,13 @@ export async function verificateurServeur(cle: string, poivre: string): Promise<
 export const REGLE_INSTALLATION: RegleEssais = { max: 5, fenetre: 60_000, duree: 60_000 };
 
 /**
+ * US-041 (ADR-0020) : compétitions supprimées par requête lors d'une suppression avec contenu. Le plan gratuit de
+ * Cloudflare limite les sous-requêtes d'une requête à 50 ; chaque compétition coûte un appel au DO `Competition`, et le
+ * reste (session, index, épreuve) quelques autres.
+ */
+export const LIMITE_SUPPRESSION_CONTENU = 30;
+
+/**
  * Sel renvoyé pour un e-mail inconnu (US-003 CA-2) : stable et de la taille d'un vrai sel, il ne permet pas de
  * savoir si le compte existe.
  */
