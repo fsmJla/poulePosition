@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-022, US-026, US-029
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-039-supprimer-competition`
 
 ## Récit
 
@@ -116,3 +116,4 @@ PC pilote peut donc finir une compétition en cours sans internet, puisqu'une co
 | Date | Événement |
 |---|---|
 | 2026-11-07 | Créée |
+| 2026-11-07 | En cours : plan validé, implémentation |

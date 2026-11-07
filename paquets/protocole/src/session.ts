@@ -42,6 +42,9 @@ export const CODES_ERREUR_SESSION = [
   // Épreuves (US-024, §13).
   'EPREUVE_INCONNUE',
   'EPREUVE_NON_VIDE',
+  // Suppression définitive d'une compétition (US-039, §14).
+  'COMPETITION_EN_COURS',
+  'COMPETITION_SUPPRIMEE',
 ] as const;
 
 export type CodeErreurSession = (typeof CODES_ERREUR_SESSION)[number];

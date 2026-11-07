@@ -1,5 +1,6 @@
 // Réplication du journal d'une compétition (US-022, ADR-0016) : décisions pures, sans aucune règle d'escrime. Le DO
 // `Competition` ajoute un lot seulement s'il vient du pilote, appartient à la compétition et suit son dernier seq.
+import type { Statut } from '@poule-position/domaine';
 import type { CompetitionIndexee, DemandeEnvoi, DemandePriseDeMain } from '@poule-position/protocole';
 
 /** Ce que le DO `Competition` sait de son journal. */
@@ -80,4 +81,11 @@ export function ligneIndex(competitionId: string, demande: DemandeEnvoi, piloteN
     dernierSeq: dernier.seq,
     modifieeLe: dernier.date,
   };
+}
+
+/** US-039 CA-3 : une compétition en cours ne se supprime pas ; une inconnue se supprime sans effet (CA-7). */
+export type DecisionSuppression = { ok: true } | { ok: false; statut: 409; erreur: 'COMPETITION_EN_COURS' };
+
+export function deciderSuppression(statut: Statut | null): DecisionSuppression {
+  return statut === 'enCours' ? { ok: false, statut: 409, erreur: 'COMPETITION_EN_COURS' } : { ok: true };
 }

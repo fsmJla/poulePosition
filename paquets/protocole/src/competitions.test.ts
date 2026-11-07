@@ -10,6 +10,7 @@ import {
   analyserReponsePilote,
   analyserReponsePresence,
   analyserReponsePriseDeMain,
+  analyserReponseSuppressionCompetition,
   preparerLots,
   resumeDe,
   TAILLE_MAX_LOT,
@@ -165,10 +166,12 @@ describe('réponses du serveur', () => {
     expect(analyserReponseCompetitions({ ok: true, competitions: [indexee] })).toEqual({
       ok: true,
       competitions: [indexee],
+      supprimees: [],
     });
     expect(analyserReponseCompetitions({ ok: true, competitions: [{ ...indexee, dernierSeq: '1' }] })).toEqual({
       ok: true,
       competitions: [],
+      supprimees: [],
     });
     expect(analyserReponseCompetitions({ ok: true, competitions: 'non' })).toEqual({
       ok: false,
@@ -178,6 +181,29 @@ describe('réponses du serveur', () => {
       ok: false,
       erreur: 'SESSION_INVALIDE',
     });
+  });
+});
+
+describe('suppression définitive d’une compétition (US-039)', () => {
+  it('US-039 CA-5 : l’index porte les identifiants des compétitions supprimées, absents d’un ancien serveur', () => {
+    expect(analyserReponseCompetitions({ ok: true, competitions: [], supprimees: ['a', 3, 'b'] })).toEqual({
+      ok: true,
+      competitions: [],
+      supprimees: ['a', 'b'],
+    });
+  });
+
+  it('US-039 CA-1 : lit la réponse de la suppression et ses refus (CA-2, CA-3)', () => {
+    expect(analyserReponseSuppressionCompetition({ ok: true })).toEqual({ ok: true });
+    expect(analyserReponseSuppressionCompetition({ ok: false, erreur: 'COMPETITION_EN_COURS' })).toEqual({
+      ok: false,
+      erreur: 'COMPETITION_EN_COURS',
+    });
+    expect(analyserReponseSuppressionCompetition({ ok: false, erreur: 'ACCES_REFUSE' })).toEqual({
+      ok: false,
+      erreur: 'ACCES_REFUSE',
+    });
+    expect(analyserReponseSuppressionCompetition('n’importe quoi')).toEqual({ ok: false, erreur: 'REPONSE_INVALIDE' });
   });
 });
 
@@ -201,10 +227,12 @@ describe('résumé d’une compétition pour l’index du club (US-025)', () => 
     expect(analyserReponseCompetitions({ ok: true, competitions: [sansDetails] })).toEqual({
       ok: true,
       competitions: [sansDetails],
+      supprimees: [],
     });
     expect(analyserReponseCompetitions({ ok: true, competitions: [{ ...indexee, arme: 'pistolet' }] })).toEqual({
       ok: true,
       competitions: [],
+      supprimees: [],
     });
   });
 });
@@ -222,6 +250,7 @@ describe('lignes illisibles de l’index du club (US-026, avancé par US-023)', 
     expect(analyserReponseCompetitions({ ok: true, competitions: [ancienne, indexee, null] })).toEqual({
       ok: true,
       competitions: [indexee],
+      supprimees: [],
     });
   });
 });

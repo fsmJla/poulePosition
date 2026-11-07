@@ -26,10 +26,15 @@ export class Competition extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(MESSAGE_PING, MESSAGE_PONG));
-    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS evenements (seq INTEGER PRIMARY KEY, contenu TEXT NOT NULL)`);
-    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS pilote (cle TEXT PRIMARY KEY, appareil TEXT NOT NULL)`);
+    this.creerTables();
+  }
+
+  private creerTables(): void {
+    const { sql } = this.ctx.storage;
+    sql.exec(`CREATE TABLE IF NOT EXISTS evenements (seq INTEGER PRIMARY KEY, contenu TEXT NOT NULL)`);
+    sql.exec(`CREATE TABLE IF NOT EXISTS pilote (cle TEXT PRIMARY KEY, appareil TEXT NOT NULL)`);
     // US-029 : dernier signe de vie du pilote (lot ou battement), pour savoir s'il est connecté.
-    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS presence (cle TEXT PRIMARY KEY, vu_le INTEGER NOT NULL)`);
+    sql.exec(`CREATE TABLE IF NOT EXISTS presence (cle TEXT PRIMARY KEY, vu_le INTEGER NOT NULL)`);
   }
 
   private etat(): EtatJournal {
@@ -116,6 +121,23 @@ export class Competition extends DurableObject<Env> {
       .toArray()
       .map(({ contenu }) => JSON.parse(contenu) as Evenement);
     return { evenements, dernierSeq, piloteAppareil };
+  }
+
+  /**
+   * US-039 CA-1 : efface le journal, le pilote et la présence, et ferme les connexions ouvertes. Sans effet sur un
+   * objet déjà vide : une suppression rejouée termine le travail (CA-7).
+   */
+  async supprimer(): Promise<void> {
+    for (const connexion of this.ctx.getWebSockets()) {
+      try {
+        connexion.close(1000, 'Compétition supprimée');
+      } catch {
+        // déjà fermée
+      }
+    }
+    await this.ctx.storage.deleteAll();
+    // deleteAll emporte aussi les tables : l'objet, encore en mémoire, doit pouvoir répondre à une requête retardataire.
+    this.creerTables();
   }
 
   override async fetch(requete: Request): Promise<Response> {

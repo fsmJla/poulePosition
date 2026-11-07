@@ -26,6 +26,7 @@ import {
   type ReponseCompetitions,
   type ReponseEnvoi,
   type ReponseJournal,
+  type ReponseSuppressionCompetition,
   type ReponsePilote,
   type ReponsePresence,
   type ReponsePriseDeMain,
@@ -203,6 +204,7 @@ type RouteSession = Extract<
       | 'compte'
       | 'reinitialisation'
       | 'competitions'
+      | 'competition'
       | 'evenements'
       | 'pilote'
       | 'presence'
@@ -224,6 +226,7 @@ const METHODES_SESSION = {
   compte: ['PATCH', 'DELETE'],
   reinitialisation: ['POST'],
   competitions: ['GET'],
+  competition: ['DELETE'],
   evenements: ['GET', 'POST'],
   pilote: ['GET', 'POST'],
   presence: ['POST'],
@@ -321,6 +324,7 @@ async function traiterSession(
 
   if (
     route.route === 'competitions' ||
+    route.route === 'competition' ||
     route.route === 'evenements' ||
     route.route === 'pilote' ||
     route.route === 'presence'
@@ -613,16 +617,20 @@ function objetCompetition(env: Env, competitionId: string): DurableObjectStub<Co
  * journal. Un lot accepté met à jour l'index avec le résumé fourni par le pilote ; le serveur ne calcule rien.
  */
 async function gererCompetitions(
-  route: Extract<RouteSession, { route: 'competitions' | 'evenements' | 'pilote' | 'presence' }>,
+  route: Extract<RouteSession, { route: 'competitions' | 'competition' | 'evenements' | 'pilote' | 'presence' }>,
   requete: Request,
   env: Env,
   club: DurableObjectStub<Club>,
   compte: CompteStocke,
 ): Promise<Response> {
   if (route.route === 'competitions') {
-    return Response.json({ ok: true, competitions: await club.listerCompetitions() } satisfies ReponseCompetitions);
+    const [competitions, supprimees] = await Promise.all([club.listerCompetitions(), club.listerSupprimees()]);
+    return Response.json({ ok: true, competitions, supprimees } satisfies ReponseCompetitions);
   }
   const competition = objetCompetition(env, route.competitionId);
+  if (route.route === 'competition') return supprimerCompetition(competition, club, compte, route.competitionId);
+  // US-039 CA-4 : une compétition supprimée ne se lit, ne s'écrit et ne se reprend plus.
+  if (await club.supprimee(route.competitionId)) return refuserSession(410, 'COMPETITION_SUPPRIMEE');
   if (route.route === 'pilote') return gererPilote(route.competitionId, requete, competition, club, compte);
   if (route.route === 'presence') return gererPresence(route.competitionId, requete, competition, club);
   if (requete.method === 'GET') {
@@ -650,6 +658,23 @@ async function gererCompetitions(
   await club.indexerCompetition(ligneIndex(route.competitionId, analyse.demande, compte.nom));
   const dernierSeq = analyse.demande.depuis + analyse.demande.evenements.length;
   return Response.json({ ok: true, dernierSeq } satisfies ReponseEnvoi);
+}
+
+/**
+ * US-039 (docs/protocole.md §14) : suppression définitive, réservée aux administrateurs. L'index pose la pierre
+ * tombale avant que le journal soit effacé : une suppression interrompue est terminée par la suivante.
+ */
+async function supprimerCompetition(
+  competition: DurableObjectStub<Competition>,
+  club: DurableObjectStub<Club>,
+  compte: CompteStocke,
+  competitionId: string,
+): Promise<Response> {
+  if (!autorisationAdministrateur(compte)) return refuserSession(403, 'ACCES_REFUSE');
+  const resultat = await club.supprimerCompetition(competitionId);
+  if (!resultat.ok) return refuserSession(resultat.statut, resultat.erreur);
+  if (resultat.aEffacer) await competition.supprimer();
+  return Response.json({ ok: true } satisfies ReponseSuppressionCompetition);
 }
 
 /** Pilote en place d'après l'index du club (US-029), joint à un refus pour dire qui a la main. */

@@ -33,6 +33,7 @@ import type {
 } from '@poule-position/protocole';
 import type { Env } from './index';
 import { ListeEnMemoire, type Lecture } from './liste-en-memoire';
+import { deciderSuppression } from './replication';
 
 export interface NouveauCompte {
   email: string;
@@ -97,6 +98,10 @@ export class Club extends DurableObject<Env> {
     () => this.lireListe('SELECT contenu FROM competitions ORDER BY modifiee_le DESC'),
     signalerLecture('competitions'),
   );
+  private readonly pierresTombales = new ListeEnMemoire<string>(() => {
+    const curseur = this.ctx.storage.sql.exec<{ id: string }>('SELECT id FROM competitions_supprimees ORDER BY id');
+    return { valeurs: curseur.toArray().map(({ id }) => id), lignesLues: curseur.rowsRead };
+  }, signalerLecture('competitions_supprimees'));
   private readonly listeManifestations = new ListeEnMemoire<Manifestation>(
     () => this.lireListe('SELECT contenu FROM manifestations ORDER BY debut, id'),
     signalerLecture('manifestations'),
@@ -158,6 +163,12 @@ export class Club extends DurableObject<Env> {
         club_id TEXT NOT NULL,
         contenu TEXT NOT NULL,
         modifiee_le INTEGER NOT NULL
+      )`);
+    // US-039 (ADR-0019) : pierre tombale d'une compétition supprimée, pour qu'aucun PC ne la recrée.
+    ctx.storage.sql.exec(`
+      CREATE TABLE IF NOT EXISTS competitions_supprimees (
+        id TEXT PRIMARY KEY,
+        supprimee_le INTEGER NOT NULL
       )`);
     // US-023 (ADR-0016 §4) : une ligne par manifestation ; `version` refuse l'écrasement d'une modification concurrente.
     ctx.storage.sql.exec(`
@@ -379,6 +390,8 @@ export class Club extends DurableObject<Env> {
 
   /** US-022 CA-3 : enregistre ou remplace la ligne d'une compétition dans l'index du club. */
   async indexerCompetition(ligne: CompetitionIndexee): Promise<void> {
+    // US-039 CA-4 : un lot arrivé pendant la suppression ne recrée pas la ligne.
+    if (this.estSupprimee(ligne.id)) return;
     this.ctx.storage.sql.exec(
       `INSERT INTO competitions (id, club_id, contenu, modifiee_le) VALUES (?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET contenu = excluded.contenu, modifiee_le = excluded.modifiee_le`,
@@ -391,6 +404,44 @@ export class Club extends DurableObject<Env> {
     this.index.modifier((lignes) =>
       [ligne, ...lignes.filter(({ id }) => id !== ligne.id)].sort((a, b) => b.modifieeLe - a.modifieeLe),
     );
+  }
+
+  private estSupprimee(competitionId: string): boolean {
+    return this.pierresTombales.obtenir().includes(competitionId);
+  }
+
+  /** US-039 CA-4 : vrai si la compétition a été supprimée définitivement. */
+  async supprimee(competitionId: string): Promise<boolean> {
+    return this.estSupprimee(competitionId);
+  }
+
+  /** US-039 CA-5 : identifiants des compétitions supprimées, que les PC effacent de leurs copies. */
+  async listerSupprimees(): Promise<string[]> {
+    return [...this.pierresTombales.obtenir()];
+  }
+
+  /**
+   * US-039 CA-1 : retire la compétition de l'index et pose sa pierre tombale. Refusée si le dernier résumé du pilote
+   * la dit en cours (CA-3). `aEffacer` dit s'il reste un journal à effacer : la ligne existait, ou une suppression
+   * précédente a été interrompue (CA-7) ; une compétition inconnue ne produit aucune écriture.
+   */
+  async supprimerCompetition(
+    competitionId: string,
+  ): Promise<{ ok: true; aEffacer: boolean } | { ok: false; statut: 409; erreur: 'COMPETITION_EN_COURS' }> {
+    const ligne = this.lireLigneIndex(competitionId);
+    const decision = deciderSuppression(ligne?.statut ?? null);
+    if (!decision.ok) return decision;
+    if (this.estSupprimee(competitionId)) return { ok: true, aEffacer: true };
+    if (!ligne) return { ok: true, aEffacer: false };
+    this.ctx.storage.sql.exec(
+      'INSERT OR IGNORE INTO competitions_supprimees (id, supprimee_le) VALUES (?, ?)',
+      competitionId,
+      Date.now(),
+    );
+    this.ctx.storage.sql.exec('DELETE FROM competitions WHERE id = ?', competitionId);
+    this.pierresTombales.invalider();
+    this.index.modifier((lignes) => lignes.filter(({ id }) => id !== competitionId));
+    return { ok: true, aEffacer: true };
   }
 
   /** US-029 : ligne de l'index d'une compétition, ou null. */
