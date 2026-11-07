@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-039, US-026
 - **Branche / PR :** `us/US-040-supprimer-plusieurs-competitions`
 
@@ -85,3 +85,5 @@ coupé en cours de série, elle s'arrête proprement et le compte rendu de CA-4 
 | 2026-11-07 | Créée |
 | 2026-11-07 | En cours : plan validé, implémentation |
 | 2026-11-07 | En revue : PR vers `dev`, contrôles locaux verts (lint, typage, 950 tests, build, audit, 269 E2E) |
+| 2026-11-07 | Recette OK sur https://poule-position-9e65dwhs4-fsmjlas-projects.vercel.app (PR #57) : CA-1, CA-2, CA-3 et CA-4 vérifiés à l'écran (compte administrateur, 2 compétitions de test supprimées, « Tout cocher » = 1072 compétitions visibles) ; CA-5 par l'E2E de la preview en CI. Le cas des restantes après un échec et le hors ligne sont validés par les tests automatiques, sur décision de l'utilisateur. Écart de mise en page (libellé « Afficher les archives ») corrigé sur la branche |
+| 2026-11-07 | Terminée |
