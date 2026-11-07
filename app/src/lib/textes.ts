@@ -7,6 +7,7 @@ import {
   type ErreurEpreuve,
   type ErreurManifestation,
   type ErreurNouveauMotDePasse,
+  type Decompte,
   type ErreurSaisieCompte,
   type Role,
   type Sexe,
@@ -17,6 +18,7 @@ import type { ErreurCreation, ErreurModification } from './competitions';
 import type { EtatConnexion } from './connexion';
 import type { ErreurEpreuves } from './epreuves';
 import type { ErreurManifestations } from './manifestations';
+import type { ErreurLot } from './suppression';
 import type {
   ErreurChangementMotDePasse,
   ErreurComptes,
@@ -26,6 +28,16 @@ import type {
   ErreurProfil,
   MotifFinSession,
 } from './session';
+
+/** US-043 : « 1 manifestation, 3 épreuves, 12 compétitions » ; un type absent de la sélection n'est pas cité. */
+function decompteTexte({ manifestations, epreuves, competitions }: Decompte): string {
+  const parties = [
+    manifestations > 0 ? `${manifestations} ${manifestations > 1 ? 'manifestations' : 'manifestation'}` : null,
+    epreuves > 0 ? `${epreuves} ${epreuves > 1 ? 'épreuves' : 'épreuve'}` : null,
+    competitions > 0 ? `${competitions} ${competitions > 1 ? 'compétitions' : 'compétition'}` : null,
+  ];
+  return parties.filter((partie) => partie !== null).join(', ');
+}
 
 export const textes = {
   /** Nom affiché de l'application (US-014) ; le nom technique reste poulePosition. */
@@ -134,6 +146,33 @@ export const textes = {
       interrompue: 'La suppression s’est arrêtée : relancez-la quand la connexion ou la session est rétablie',
       nonTraitee: 'pas traitée',
       fermer: 'Fermer',
+      /** US-043 : sélection mêlée de manifestations, d'épreuves et de compétitions. */
+      cocherManifestation: (nom: string) => `Sélectionner la manifestation ${nom}`,
+      cocherEpreuve: (nom: string) => `Sélectionner l’épreuve ${nom}`,
+      contientEnCours: 'Contient une compétition en cours',
+      avecParent: (parent: string) => `Supprimée avec ${parent}`,
+      decompte: decompteTexte,
+      selectionMixte: decompteTexte,
+      titreMixte: (decompte: Decompte) => `Supprimer définitivement ${decompteTexte(decompte)} ?`,
+      archiveesMasquees: (nombre: number) =>
+        nombre > 1 ? `dont ${nombre} archivées masquées` : `dont ${nombre} archivée masquée`,
+      compteRenduMixte: (decompte: Decompte) => `Supprimé : ${decompteTexte(decompte)}`,
+      restantesMixte: (restantes: number) =>
+        restantes > 1 ? `${restantes} éléments n’ont pas été supprimés` : `${restantes} élément n’a pas été supprimé`,
+      types: { manifestation: 'manifestation', epreuve: 'épreuve', competition: 'compétition' },
+      erreurs: {
+        HORS_LIGNE: 'Connexion requise pour supprimer',
+        SESSION_INVALIDE: 'Reconnectez-vous pour supprimer',
+        ACCES_REFUSE: 'Seul un administrateur peut supprimer',
+        COMPETITION_EN_COURS: 'Contient une compétition en cours',
+        COMPETITION_INCONNUE: 'Compétition inconnue du serveur',
+        COMPETITION_SUPPRIMEE: 'Déjà supprimée',
+        MANIFESTATION_INCONNUE: 'Manifestation inconnue du serveur',
+        MANIFESTATION_NON_VIDE: 'Manifestation non vide',
+        EPREUVE_INCONNUE: 'Épreuve inconnue du serveur',
+        EPREUVE_NON_VIDE: 'Épreuve non vide',
+        ERREUR_INATTENDUE: 'Suppression impossible pour le moment',
+      } satisfies Record<ErreurLot, string>,
     },
   },
   motDePasse: {

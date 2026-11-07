@@ -8,9 +8,12 @@
   import { onMount } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import {
-    competitionsVisibles,
+    analyserSelection,
     construireListe,
+    elementsEnCours,
     manifestationOuverte,
+    planSuppression,
+    toutCocherListe,
     type CompetitionListee,
     type ListeClub,
   } from '@poule-position/domaine';
@@ -18,11 +21,11 @@
   import Lien from '../composants/Lien.svelte';
   import type { Accueil, DonneesAccueil } from '../lib/accueil';
   import {
+    compterParType,
     confirmationSerie,
     CONFIRMATION_SERIE,
-    supprimerEnSerie,
-    toutCocher,
-    type CompteRendu,
+    supprimerSerieMixte,
+    type CompteRenduLot,
   } from '../lib/suppression';
   import { cheminCompetition, cheminNouvelleEpreuve, CHEMIN_NOUVELLE_MANIFESTATION, CHEMINS } from '../lib/routes';
   import { textes } from '../lib/textes';
@@ -50,47 +53,54 @@
     donnees = await accueil.charger();
   }
 
-  /** US-040 : suppression de plusieurs compétitions, réservée aux administrateurs. */
+  /** US-040 et US-043 : suppression de manifestations, d'épreuves et de compétitions, réservée aux administrateurs. */
   const ts = t.suppression;
   const administrateur = $derived(session.compte.role === 'administrateur');
   const cochees = new SvelteSet<string>();
   let etapeSerie: 'aucune' | 'confirmation' | 'encours' = $state('aucune');
   let saisieSerie = $state('');
   let progression: { faites: number; total: number } | null = $state(null);
-  let compteRendu: CompteRendu | null = $state(null);
-  let nomsSerie = $state(new Map<string, string>());
+  let compteRendu: CompteRenduLot | null = $state(null);
 
-  const visibles = $derived(liste ? competitionsVisibles(liste) : []);
-  /** CA-2 : seules les compétitions visibles comptent, jamais celles qu'un filtre masque. */
-  const aSupprimer = $derived(visibles.filter(({ id }) => cochees.has(id)));
+  /** CA-1 : les éléments qui ne se cochent pas (compétition en cours, ou parent qui en contient une). */
+  const enCours = $derived(donnees ? elementsEnCours(donnees) : new Set<string>());
+  /** CA-2 à CA-4 : ce que couvre la sélection, contenu des parents compris, filtre d'archives pris en compte. */
+  const analyse = $derived(donnees ? analyserSelection(donnees, cochees, afficherArchives) : null);
+  /** CA-5 : les éléments à supprimer, dans l'ordre et sans doublon. */
+  const plan = $derived(analyse ? planSuppression(analyse) : []);
+  /** Une sélection de compétitions seules garde les textes d'US-040. */
+  const seulementCompetitions = $derived(
+    !analyse || (analyse.decompte.manifestations === 0 && analyse.decompte.epreuves === 0),
+  );
 
   function basculer(id: string, coche: boolean) {
     if (coche) cochees.add(id);
     else cochees.delete(id);
   }
 
-  /** CA-2 : « Tout cocher » prend les compétitions visibles et supprimables ; si une sélection existe, elle se vide. */
+  /** CA-3 : « Tout cocher » prend ce que la liste montre et qui est supprimable ; si une sélection existe, elle se vide. */
   function basculerTout() {
-    const nouvelle = aSupprimer.length > 0 ? new Set<string>() : toutCocher(visibles);
+    const nouvelle = cochees.size > 0 || !donnees ? new Set<string>() : toutCocherListe(donnees, afficherArchives);
     cochees.clear();
     for (const id of nouvelle) cochees.add(id);
   }
 
-  /** CA-3 : supprime les compétitions cochées une à une, puis relit la liste une seule fois. */
+  /** CA-4 à CA-6 : supprime le plan élément par élément, puis relit la liste une seule fois. */
   async function lancerSerie() {
     if (etapeSerie !== 'confirmation' || !confirmationSerie(saisieSerie)) return;
-    nomsSerie = new Map(aSupprimer.map(({ id, nom }) => [id, nom]));
+    const aSupprimer = plan;
     etapeSerie = 'encours';
     compteRendu = null;
-    const compte = await supprimerEnSerie(
-      aSupprimer.map(({ id }) => id),
-      (id) => accueil.supprimer(id),
+    progression = { faites: 0, total: aSupprimer.length };
+    const compte = await supprimerSerieMixte(
+      aSupprimer,
+      accueil.actionsLot,
       (faites, total) => (progression = { faites, total }),
     );
     compteRendu = compte;
-    // CA-4 : ce qui n'a pas été supprimé reste coché, pour relancer.
+    // CA-6 : ce qui n'a pas été supprimé reste coché, pour relancer.
     cochees.clear();
-    for (const { id } of compte.restantes) cochees.add(id);
+    for (const { element } of compte.restants) cochees.add(element.id);
     progression = null;
     saisieSerie = '';
     etapeSerie = 'aucune';
@@ -112,20 +122,25 @@
   });
 </script>
 
+{#snippet caseSelection(id: string, libelle: string, motifEnCours: string)}
+  <!-- CA-1 : une case par élément, sauf pour un organisateur (CA-7) ; CA-2 : couverte par un parent coché, elle est cochée et verrouillée. -->
+  {#if administrateur && analyse}
+    {@const parent = analyse.verrouillees.get(id)}
+    <input
+      type="checkbox"
+      checked={parent !== undefined || cochees.has(id)}
+      disabled={enCours.has(id) || parent !== undefined || horsLigne || etapeSerie === 'encours'}
+      title={parent !== undefined ? ts.avecParent(parent) : enCours.has(id) ? motifEnCours : undefined}
+      aria-label={libelle}
+      onchange={(evenement) => basculer(id, evenement.currentTarget.checked)}
+    />
+  {/if}
+{/snippet}
+
 {#snippet competition(entree: CompetitionListee)}
   <li class="competition">
     <span class="ligne">
-      <!-- US-040 CA-1 : une compétition en cours ne se coche pas ; CA-5 : pas de case pour un organisateur. -->
-      {#if administrateur}
-        <input
-          type="checkbox"
-          checked={cochees.has(entree.id)}
-          disabled={entree.statut === 'enCours' || horsLigne || etapeSerie === 'encours'}
-          title={entree.statut === 'enCours' ? ts.enCours : undefined}
-          aria-label={ts.cocher(entree.nom)}
-          onchange={(evenement) => basculer(entree.id, evenement.currentTarget.checked)}
-        />
-      {/if}
+      {@render caseSelection(entree.id, ts.cocher(entree.nom), ts.enCours)}
       <Lien chemin={cheminCompetition(entree.id)} {naviguer}>{entree.nom}</Lien>
     </span>
     <span class="infos">
@@ -198,34 +213,43 @@
           {#if liste.archivesMasquees > 0}<small>{t.archivesMasquees(liste.archivesMasquees)}</small>{/if}
         </div>
 
-        <!-- US-040 : sélection et suppression de plusieurs compétitions, réservées aux administrateurs. -->
-        {#if administrateur && visibles.length > 0}
+        <!-- US-040 et US-043 : sélection et suppression par lot, réservées aux administrateurs. -->
+        {#if administrateur && analyse}
           <div class="selection">
-            <span role="status">{ts.selection(aSupprimer.length)}</span>
+            <span role="status"
+              >{seulementCompetitions
+                ? ts.selection(analyse.decompte.competitions)
+                : ts.selectionMixte(analyse.decompte)}</span
+            >
             <button
               type="button"
               class="secondaire"
               onclick={basculerTout}
               disabled={horsLigne || etapeSerie === 'encours'}
-              >{aSupprimer.length > 0 ? ts.toutDecocher : ts.toutCocher}</button
+              >{cochees.size > 0 ? ts.toutDecocher : ts.toutCocher}</button
             >
             <button
               type="button"
               class="danger"
               onclick={() => (etapeSerie = 'confirmation')}
-              disabled={horsLigne || aSupprimer.length === 0 || etapeSerie !== 'aucune'}
+              disabled={horsLigne || plan.length === 0 || etapeSerie !== 'aucune'}
               aria-describedby={horsLigne ? 'suppression-serie-aide' : undefined}>{ts.bouton}</button
             >
             {#if horsLigne}<small id="suppression-serie-aide">{ts.horsLigne}</small>{/if}
           </div>
         {/if}
 
-        {#if etapeSerie !== 'aucune'}
-          <div class="confirmation" role="group" aria-label={ts.titre(aSupprimer.length)}>
-            <p>{ts.titre(aSupprimer.length)}</p>
+        <!-- CA-4 : un seul message pour toute la sélection, avec le décompte par type et les éléments cochés directement. -->
+        {#if etapeSerie !== 'aucune' && analyse}
+          {@const titre = seulementCompetitions
+            ? ts.titre(analyse.decompte.competitions)
+            : ts.titreMixte(analyse.decompte)}
+          <div class="confirmation" role="group" aria-label={titre}>
+            <p>{titre}</p>
+            {#if analyse.archiveesMasquees > 0}<p>{ts.archiveesMasquees(analyse.archiveesMasquees)}</p>{/if}
             <p class="avertissement" role="status">{ts.avertissement}</p>
             <ul class="noms">
-              {#each aSupprimer as { id, nom } (id)}<li>{nom}</li>{/each}
+              {#each plan as { type, id, nom } (id)}<li>{nom} ({ts.types[type]})</li>{/each}
             </ul>
             {#if etapeSerie === 'encours' && progression}
               <p role="status">{ts.progression(progression.faites, progression.total)}</p>
@@ -249,15 +273,25 @@
           </div>
         {/if}
 
-        <!-- CA-4 : compte rendu de la série ; les compétitions restantes restent cochées. -->
+        <!-- CA-6 : compte rendu de la série ; ce qui reste demeure coché pour relancer. -->
         {#if compteRendu}
+          {@const supprimes = compterParType(compteRendu.supprimes)}
+          {@const restantes = compteRendu.restants.map(({ element }) => element)}
           <div class="compte-rendu">
-            <p role="status">{ts.compteRendu(compteRendu.supprimees.length)}</p>
-            {#if compteRendu.restantes.length > 0}
-              <p role="alert">{ts.restantes(compteRendu.restantes.length)}</p>
+            <p role="status">
+              {supprimes.manifestations === 0 && supprimes.epreuves === 0
+                ? ts.compteRendu(supprimes.competitions)
+                : ts.compteRenduMixte(supprimes)}
+            </p>
+            {#if restantes.length > 0}
+              <p role="alert">
+                {restantes.every(({ type }) => type === 'competition')
+                  ? ts.restantes(restantes.length)
+                  : ts.restantesMixte(restantes.length)}
+              </p>
               <ul>
-                {#each compteRendu.restantes as { id, erreur } (id)}
-                  <li>{nomsSerie.get(id) ?? id} · {erreur ? tc.suppression.erreurs[erreur] : ts.nonTraitee}</li>
+                {#each compteRendu.restants as { element, erreur } (element.id)}
+                  <li>{element.nom} · {erreur ? ts.erreurs[erreur] : ts.nonTraitee}</li>
                 {/each}
               </ul>
               {#if compteRendu.interrompue}<p role="alert">{ts.interrompue}</p>{/if}
@@ -269,6 +303,11 @@
         {#each liste.manifestations as noeud (noeud.manifestation.id)}
           <details class="manifestation" open={manifestationOuverte(noeud.manifestation, aujourdhui)}>
             <summary>
+              {@render caseSelection(
+                noeud.manifestation.id,
+                ts.cocherManifestation(noeud.manifestation.nom),
+                ts.contientEnCours,
+              )}
               <strong>{noeud.manifestation.nom}</strong>
               <span class="infos">
                 {textes.manifestations.periode(noeud.manifestation.debut, noeud.manifestation.fin)}
@@ -284,6 +323,7 @@
               {#each noeud.epreuves as { epreuve, competitions } (epreuve.id)}
                 <div class="epreuve">
                   <h3>
+                    {@render caseSelection(epreuve.id, ts.cocherEpreuve(epreuve.nom), ts.contientEnCours)}
                     {epreuve.nom}
                     {#if epreuve.arme}<small>{tc.armes[epreuve.arme]}</small>{/if}
                   </h3>

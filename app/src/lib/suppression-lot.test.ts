@@ -1,8 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ElementASupprimer } from '@poule-position/domaine';
-import { supprimerSerieMixte, type ActionsLot } from './suppression';
+import { compterParType, supprimerSerieMixte, type ActionsLot } from './suppression';
 
-const element = (type: ElementASupprimer['type'], id: string): ElementASupprimer => ({ type, id, nom: `${type} ${id}` });
+const element = (type: ElementASupprimer['type'], id: string): ElementASupprimer => ({
+  type,
+  id,
+  nom: `${type} ${id}`,
+});
 
 const actions = (reponses: Partial<Record<string, Awaited<ReturnType<ActionsLot['competition']>>>> = {}) => {
   const appels: string[] = [];
@@ -73,5 +77,12 @@ describe('suppression en série de tous types (US-043)', () => {
     const lot = { manifestation: vi.fn(), epreuve: vi.fn(), competition: vi.fn() };
     expect(await supprimerSerieMixte([], lot)).toEqual({ supprimes: [], restants: [], interrompue: null });
     expect(lot.manifestation).not.toHaveBeenCalled();
+  });
+});
+
+describe('décompte par type (US-043)', () => {
+  it('US-043 CA-6 : le compte rendu compte les éléments de chaque type', () => {
+    expect(compterParType(plan)).toEqual({ manifestations: 1, epreuves: 1, competitions: 1 });
+    expect(compterParType([])).toEqual({ manifestations: 0, epreuves: 0, competitions: 0 });
   });
 });
