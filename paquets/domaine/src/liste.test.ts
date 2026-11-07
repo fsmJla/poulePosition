@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  competitionsVisibles,
   construireListe,
   manifestationOuverte,
   type CompetitionListee,
@@ -187,5 +188,41 @@ describe('liste des manifestations, épreuves et compétitions du club (US-026)'
     expect(manifestationOuverte(m, '2027-03-15')).toBe(true);
     expect(manifestationOuverte(m, '2027-03-13')).toBe(false);
     expect(manifestationOuverte(m, '2027-03-16')).toBe(false);
+  });
+});
+
+describe('compétitions visibles de la liste (US-040)', () => {
+  const donnees = {
+    manifestations: [manifestation()],
+    epreuves: [epreuve()],
+    competitions: [
+      competition({ id: 'c1', rattachement: { manifestationId: 'm1', epreuveId: 'e1' } }),
+      competition({ id: 'c2', rattachement: { manifestationId: 'm1', epreuveId: null } }),
+      competition({ id: 'c3' }),
+      competition({ id: 'c4', statut: 'archivee' }),
+    ],
+  };
+
+  it('US-040 CA-2 : réunit les compétitions des épreuves, des manifestations et les isolées, sans les archivées masquées', () => {
+    const liste = construireListe(donnees, { afficherArchives: false });
+    expect(
+      competitionsVisibles(liste)
+        .map(({ id }) => id)
+        .sort(),
+    ).toEqual(['c1', 'c2', 'c3']);
+  });
+
+  it('US-040 CA-2 : avec les archives affichées, elles sont comprises', () => {
+    const liste = construireListe(donnees, { afficherArchives: true });
+    expect(
+      competitionsVisibles(liste)
+        .map(({ id }) => id)
+        .sort(),
+    ).toEqual(['c1', 'c2', 'c3', 'c4']);
+  });
+
+  it('US-040 CA-2 : une liste vide n’a aucune compétition visible', () => {
+    const liste = construireListe({ manifestations: [], epreuves: [], competitions: [] }, { afficherArchives: false });
+    expect(competitionsVisibles(liste)).toEqual([]);
   });
 });
