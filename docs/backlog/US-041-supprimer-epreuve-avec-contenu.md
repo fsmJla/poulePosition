@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-024, US-039
 - **Branche / PR :** `us/US-041-supprimer-epreuve-avec-contenu`
 
@@ -93,6 +93,20 @@ jusqu'à sa prochaine synchronisation (US-039).
 
 - Aucune.
 
+## Décisions prises pendant l'implémentation
+
+- Route `DELETE /epreuves/<id>?contenu=1` (même adresse que la suppression d'une épreuve vide, qui reste refusée sans le
+  paramètre). Réponse `{ ok, termine, supprimees, restantes }` ; ADR-0020 et protocole §14.
+- Le serveur supprime **30 compétitions par requête** (constante `LIMITE_SUPPRESSION_CONTENU`) : le plan gratuit de
+  Cloudflare limite à 50 sous-requêtes, et un lot de pierres tombales se pose en un seul appel au DO `Club`.
+- La règle « une compétition en cours bloque tout » et le découpage en lots sont dans `paquets/domaine`
+  (`planifierSuppressionContenu`), pour être réutilisés par US-042.
+- L'application arrête la boucle si un morceau ne supprime rien sans terminer (compétitions rattachées en continu, par
+  exemple), plutôt que de tourner dans le vide.
+- Le bouton s'appelle « Supprimer avec son contenu l'épreuve X » pour l'accessibilité : un nom qui contiendrait « Supprimer
+  l'épreuve X » (bouton d'une épreuve vide) rendrait ambigus les tests d'US-024.
+- Les E2E de suppression réelle ne tournent qu'en local (le compte de la preview est un organisateur) ; seul CA-2 y tourne.
+
 ## Notes techniques
 
 - Route à définir à l'implémentation (nouvelle ADR, complément d'ADR-0019) : suppression avec contenu explicite, par
@@ -108,3 +122,4 @@ jusqu'à sa prochaine synchronisation (US-039).
 |---|---|
 | 2026-11-07 | Créée |
 | 2026-11-07 | En cours : plan validé, implémentation |
+| 2026-11-07 | En revue : PR vers `dev`, contrôles locaux verts (lint, typage, 977 tests, build, audit) ; E2E locaux : 272 passent, avec un test différent qui échoue de façon intermittente à chaque suite complète (US-011, US-029, US-040) et passe seul ; un vrai conflit de noms de boutons avec US-024 a été corrigé |

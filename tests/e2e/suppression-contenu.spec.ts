@@ -48,7 +48,7 @@ async function rattacherCompetition(page: Page, manifestation: string, epreuve: 
 }
 
 const boutonContenu = (page: Page, epreuve: string) =>
-  page.getByRole('button', { name: `Supprimer l’épreuve ${epreuve} avec son contenu` });
+  page.getByRole('button', { name: `Supprimer avec son contenu l’épreuve ${epreuve}` });
 
 async function preparer(page: Page) {
   const manifestation = nomUnique();

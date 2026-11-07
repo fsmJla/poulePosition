@@ -572,7 +572,7 @@ export const textes = {
     /** US-041 : suppression avec son contenu, réservée aux administrateurs. */
     contenu: {
       bouton: 'Supprimer avec son contenu…',
-      supprimer: (nom: string) => `Supprimer l’épreuve ${nom} avec son contenu`,
+      supprimer: (nom: string) => `Supprimer avec son contenu l’épreuve ${nom}`,
       horsLigne: 'Connexion requise pour supprimer',
       titre: (nom: string) => `Supprimer définitivement l’épreuve « ${nom} » avec son contenu ?`,
       combien: (nombre: number | null) =>

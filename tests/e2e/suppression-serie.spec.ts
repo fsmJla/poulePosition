@@ -30,7 +30,7 @@ async function deuxCompetitions(page: Page) {
   await seConnecter(page);
   for (const nom of noms) await creerCompetition(page, nom);
   await page.goto('/organisateur');
-  await expect(page.getByRole('link', { name: noms[0], exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: noms[0], exact: true })).toBeVisible({ timeout: 20_000 });
   return noms;
 }
 
