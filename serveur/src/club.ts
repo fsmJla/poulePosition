@@ -19,6 +19,7 @@ import {
   estVide,
   estVideEpreuve,
   type DonneesEpreuve,
+  type CompetitionASupprimer,
   type DonneesManifestation,
   type CouleurAvatar,
   type Essais,
@@ -442,6 +443,43 @@ export class Club extends DurableObject<Env> {
     this.pierresTombales.invalider();
     this.index.modifier((lignes) => lignes.filter(({ id }) => id !== competitionId));
     return { ok: true, aEffacer: true };
+  }
+
+  /**
+   * US-041 : l'épreuve existe-t-elle, et quelles compétitions de l'index s'y rattachent ? Le statut est celui du dernier
+   * résumé du pilote (ADR-0016 §3) ; le serveur ne calcule rien d'escrime.
+   */
+  async contenuEpreuve(epreuveId: string): Promise<{ existe: boolean; competitions: CompetitionASupprimer[] }> {
+    const competitions = this.lignesIndex()
+      .filter(({ rattachement }) => rattachement?.epreuveId === epreuveId)
+      .map(({ id, nom, statut }) => ({ id, nom, statut }));
+    return { existe: this.lireEpreuve(epreuveId) !== null, competitions };
+  }
+
+  /**
+   * US-041 : supprime un lot de compétitions (pierre tombale, retrait de l'index) en une seule requête vers ce DO, pour
+   * ne pas épuiser les sous-requêtes du Worker (ADR-0020). Renvoie celles dont le DO `Competition` reste à vider : la
+   * ligne existait, ou une suppression précédente a été interrompue. Une compétition inconnue ne produit aucune écriture.
+   */
+  async supprimerCompetitions(competitionIds: readonly string[]): Promise<string[]> {
+    const aEffacer: string[] = [];
+    for (const competitionId of competitionIds) {
+      if (this.estSupprimee(competitionId)) {
+        aEffacer.push(competitionId);
+        continue;
+      }
+      if (!this.lireLigneIndex(competitionId)) continue;
+      this.ctx.storage.sql.exec(
+        'INSERT OR IGNORE INTO competitions_supprimees (id, supprimee_le) VALUES (?, ?)',
+        competitionId,
+        Date.now(),
+      );
+      this.ctx.storage.sql.exec('DELETE FROM competitions WHERE id = ?', competitionId);
+      aEffacer.push(competitionId);
+    }
+    this.pierresTombales.invalider();
+    this.index.modifier((lignes) => lignes.filter(({ id }) => !competitionIds.includes(id)));
+    return aEffacer;
   }
 
   /** US-029 : ligne de l'index d'une compétition, ou null. */

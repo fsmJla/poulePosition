@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-024, US-039
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-041-supprimer-epreuve-avec-contenu`
 
 ## Récit
 
@@ -107,3 +107,4 @@ jusqu'à sa prochaine synchronisation (US-039).
 | Date | Événement |
 |---|---|
 | 2026-11-07 | Créée |
+| 2026-11-07 | En cours : plan validé, implémentation |

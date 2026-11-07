@@ -31,6 +31,7 @@ import {
   type ReponsePresence,
   type ReponsePriseDeMain,
   type ReponseEpreuve,
+  type ReponseSuppressionContenu,
   type ReponseManifestation,
   type CodeErreurInstallation,
   type CodeErreurSession,
@@ -38,7 +39,7 @@ import {
   type ReponseInstallation,
   type ReponseSession,
 } from '@poule-position/protocole';
-import { couleurParDefaut, REGLE_ADRESSE } from '@poule-position/domaine';
+import { couleurParDefaut, planifierSuppressionContenu, REGLE_ADRESSE } from '@poule-position/domaine';
 import type { Club, CompteStocke } from './club';
 import type { Competition } from './competition';
 import type { Limiteur } from './limiteur';
@@ -58,6 +59,7 @@ import {
   verificateurServeur,
   verifierSession,
   REGLE_INSTALLATION,
+  LIMITE_SUPPRESSION_CONTENU,
   configurationSmtp,
   courrielEssai,
   empreinteJeton,
@@ -343,7 +345,7 @@ async function traiterSession(
   if (route.route === 'epreuves' || route.route === 'epreuve') {
     // US-024 : mêmes droits que les manifestations.
     if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
-    return gererEpreuves(route, requete, club, authentifie.compte);
+    return gererEpreuves(route, requete, env, club, authentifie.compte);
   }
 
   if (route.route === 'comptes' || route.route === 'compte' || route.route === 'reinitialisation') {
@@ -581,6 +583,7 @@ async function gererManifestations(
 async function gererEpreuves(
   route: Extract<RouteSession, { route: 'epreuves' | 'epreuve' }>,
   requete: Request,
+  env: Env,
   club: DurableObjectStub<Club>,
   compte: CompteStocke,
 ): Promise<Response> {
@@ -594,6 +597,10 @@ async function gererEpreuves(
     if (!resultat.ok) return refuserSession(404, resultat.erreur);
     return Response.json(resultat satisfies ReponseEpreuve, { status: 201 });
   }
+  // US-041 : la suppression avec contenu est une demande explicite (`?contenu=1`), réservée aux administrateurs.
+  if (requete.method === 'DELETE' && new URL(requete.url).searchParams.get('contenu') === '1') {
+    return supprimerEpreuveAvecContenu(route.id, env, club, compte);
+  }
   if (requete.method === 'DELETE') {
     const resultat = await club.supprimerEpreuve(route.id);
     if (!resultat.ok) return refuserSession(resultat.erreur === 'EPREUVE_INCONNUE' ? 404 : 409, resultat.erreur);
@@ -605,6 +612,43 @@ async function gererEpreuves(
   if (resultat.ok) return Response.json(resultat satisfies ReponseEpreuve);
   if (resultat.erreur === 'EPREUVE_INCONNUE') return refuserSession(404, resultat.erreur);
   return Response.json(resultat satisfies ReponseEpreuve, { status: 409 });
+}
+
+/**
+ * US-041 (docs/protocole.md §14, ADR-0020) : supprime une épreuve avec ses compétitions, par morceaux. Chaque requête
+ * traite au plus `LIMITE_SUPPRESSION_CONTENU` compétitions (limite de sous-requêtes du plan gratuit) ; l'épreuve n'est
+ * retirée qu'avec la dernière, donc une interruption se reprend en relançant. Une compétition en cours bloque tout, avant
+ * toute écriture.
+ */
+async function supprimerEpreuveAvecContenu(
+  epreuveId: string,
+  env: Env,
+  club: DurableObjectStub<Club>,
+  compte: CompteStocke,
+): Promise<Response> {
+  if (!autorisationAdministrateur(compte)) return refuserSession(403, 'ACCES_REFUSE');
+  const reponse = (supprimees: number, restantes: number) =>
+    Response.json({ ok: true, termine: restantes === 0, supprimees, restantes } satisfies ReponseSuppressionContenu);
+  const { existe, competitions } = await club.contenuEpreuve(epreuveId);
+  if (!existe) return reponse(0, 0);
+  const plan = planifierSuppressionContenu(competitions, LIMITE_SUPPRESSION_CONTENU);
+  if (plan.etat === 'bloquee') {
+    const refus = {
+      ok: false,
+      erreur: 'COMPETITION_EN_COURS',
+      enCours: plan.enCours,
+    } satisfies ReponseSuppressionContenu;
+    return Response.json(refus, { status: 409 });
+  }
+  const aEffacer = await club.supprimerCompetitions(plan.ids);
+  await Promise.all(aEffacer.map((id) => objetCompetition(env, id).supprimer()));
+  if (plan.restantes > 0) return reponse(plan.ids.length, plan.restantes);
+  const fin = await club.supprimerEpreuve(epreuveId);
+  // Une compétition rattachée entre-temps (PC hors ligne) : l'épreuve reste, la suivante la prendra.
+  if (!fin.ok && fin.erreur === 'EPREUVE_NON_VIDE') {
+    return reponse(plan.ids.length, (await club.contenuEpreuve(epreuveId)).competitions.length);
+  }
+  return reponse(plan.ids.length, 0);
 }
 
 /** DO de la compétition, nommé par club (ADR-0014). */
