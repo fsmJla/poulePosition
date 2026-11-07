@@ -1,8 +1,10 @@
 // Suppression définitive d'une compétition (US-039) et de plusieurs d'un coup (US-040) : ce que l'écran propose et ce
 // qu'il exige avant d'envoyer la demande. Le serveur refait les mêmes contrôles (rôle, statut) : ici, ils servent à ne
 // pas proposer l'impossible.
-import type { CompetitionListee, Role, Statut } from '@poule-position/domaine';
+import type { Decompte, ElementASupprimer, Role, Statut } from '@poule-position/domaine';
 import type { ErreurReponse, ReponseSuppressionContenu } from '@poule-position/protocole';
+import type { ErreurEpreuves } from './epreuves';
+import type { ErreurManifestations } from './manifestations';
 import type { ErreurSynchronisation } from './synchronisation';
 
 export type MotifRefus = 'ADMINISTRATEUR_REQUIS' | 'EN_COURS';
@@ -25,59 +27,8 @@ export function confirmationSerie(saisie: string): boolean {
   return saisie.trim() === CONFIRMATION_SERIE;
 }
 
-/** US-040 CA-1 : les compétitions qui peuvent être cochées (jamais une compétition en cours). */
-export function selectionnables(competitions: readonly CompetitionListee[]): CompetitionListee[] {
-  return competitions.filter(({ statut }) => statut !== 'enCours');
-}
-
-/** US-040 CA-2 : « Tout cocher » prend les compétitions visibles et supprimables, jamais celles que le filtre masque. */
-export function toutCocher(visibles: readonly CompetitionListee[]): Set<string> {
-  return new Set(selectionnables(visibles).map(({ id }) => id));
-}
-
-/** Compétition restante après une série : son motif, ou null si la série s'est arrêtée avant d'y arriver. */
-export interface Restante {
-  id: string;
-  erreur: ErreurSynchronisation | null;
-}
-
-/** US-040 CA-4 : ce que la série a supprimé, ce qui reste, et pourquoi elle s'est éventuellement arrêtée. */
-export interface CompteRendu {
-  supprimees: string[];
-  restantes: Restante[];
-  interrompue: ErreurSynchronisation | null;
-}
-
 /** Erreurs qui arrêtent la série : continuer à l'aveugle serait inutile (session perdue, droit retiré, réseau coupé). */
 const ARRETS: readonly ErreurSynchronisation[] = ['ACCES_REFUSE', 'SESSION_INVALIDE', 'HORS_LIGNE'];
-
-/**
- * US-040 CA-3 et CA-4 : supprime les compétitions l'une après l'autre. Une compétition déjà supprimée compte comme
- * supprimée ; un autre refus la laisse restante et la série continue ; une erreur de session ou de réseau l'arrête.
- */
-export async function supprimerEnSerie(
-  ids: readonly string[],
-  supprimer: (id: string) => Promise<{ ok: true } | { ok: false; erreur: ErreurSynchronisation }>,
-  surProgression?: (faites: number, total: number) => void,
-): Promise<CompteRendu> {
-  const compte: CompteRendu = { supprimees: [], restantes: [], interrompue: null };
-  for (const [position, id] of ids.entries()) {
-    const reponse = await supprimer(id);
-    if (reponse.ok || reponse.erreur === 'COMPETITION_SUPPRIMEE') {
-      compte.supprimees.push(id);
-      surProgression?.(position + 1, ids.length);
-      continue;
-    }
-    compte.restantes.push({ id, erreur: reponse.erreur });
-    if (ARRETS.includes(reponse.erreur)) {
-      compte.interrompue = reponse.erreur;
-      compte.restantes.push(...ids.slice(position + 1).map((reste) => ({ id: reste, erreur: null })));
-      return compte;
-    }
-    surProgression?.(position + 1, ids.length);
-  }
-  return compte;
-}
 
 /** Garde-fou : nombre maximal de requêtes d'une suppression avec contenu (30 compétitions par requête). */
 const MORCEAUX_MAX = 1000;
@@ -120,4 +71,69 @@ export async function enchainerSuppressionContenu<E extends string>(
     if (reponse.supprimees === 0) return { ok: false, erreur: inattendue, supprimees: faites, restantes };
   }
   return { ok: false, erreur: inattendue, supprimees: faites, restantes };
+}
+
+/** US-043 : motifs possibles d'un élément resté, quelle que soit la route qui l'a refusé. */
+export type ErreurLot = ErreurSynchronisation | ErreurManifestations | ErreurEpreuves;
+
+type ReponseLot = { ok: true } | { ok: false; erreur: ErreurLot };
+
+/** US-043 CA-5 : une suppression par type, qui répond comme les routes d'US-039, US-041 et US-042. */
+export interface ActionsLot {
+  manifestation: (id: string) => Promise<ReponseLot>;
+  epreuve: (id: string) => Promise<ReponseLot>;
+  competition: (id: string) => Promise<ReponseLot>;
+}
+
+/** Élément resté après la série : son motif, ou null si la série s'est arrêtée avant d'y arriver. */
+export interface RestantLot {
+  element: ElementASupprimer;
+  erreur: ErreurLot | null;
+}
+
+/** US-043 CA-6 : ce que la série a supprimé, ce qui reste, et pourquoi elle s'est éventuellement arrêtée. */
+export interface CompteRenduLot {
+  supprimes: ElementASupprimer[];
+  restants: RestantLot[];
+  interrompue: ErreurLot | null;
+}
+
+/** Un élément absent du serveur est déjà supprimé (idempotence, US-041 CA-7 et US-042 CA-7). */
+const DEJA_SUPPRIMES: readonly ErreurLot[] = ['COMPETITION_SUPPRIMEE', 'MANIFESTATION_INCONNUE', 'EPREUVE_INCONNUE'];
+
+/**
+ * US-043 CA-5 et CA-6 : supprime les éléments du plan l'un après l'autre (le plan est déjà ordonné et dédoublonné par le
+ * domaine). Un refus laisse l'élément restant et la série continue ; une erreur de session ou de réseau l'arrête, et
+ * tout ce qui n'a pas été traité reste sans motif.
+ */
+export async function supprimerSerieMixte(
+  plan: readonly ElementASupprimer[],
+  actions: ActionsLot,
+  surProgression?: (faites: number, total: number) => void,
+): Promise<CompteRenduLot> {
+  const compte: CompteRenduLot = { supprimes: [], restants: [], interrompue: null };
+  for (const [position, element] of plan.entries()) {
+    const reponse = await actions[element.type](element.id);
+    if (reponse.ok || DEJA_SUPPRIMES.includes(reponse.erreur)) {
+      compte.supprimes.push(element);
+      surProgression?.(position + 1, plan.length);
+      continue;
+    }
+    compte.restants.push({ element, erreur: reponse.erreur });
+    if ((ARRETS as readonly ErreurLot[]).includes(reponse.erreur)) {
+      compte.interrompue = reponse.erreur;
+      compte.restants.push(...plan.slice(position + 1).map((reste) => ({ element: reste, erreur: null })));
+      return compte;
+    }
+    surProgression?.(position + 1, plan.length);
+  }
+  return compte;
+}
+
+/** US-043 : combien d'éléments de chaque type dans une liste (pour les comptes rendus). */
+export function compterParType(elements: readonly ElementASupprimer[]): Decompte {
+  const decompte: Decompte = { manifestations: 0, epreuves: 0, competitions: 0 };
+  for (const { type } of elements)
+    decompte[type === 'manifestation' ? 'manifestations' : type === 'epreuve' ? 'epreuves' : 'competitions']++;
+  return decompte;
 }

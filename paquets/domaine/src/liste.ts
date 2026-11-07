@@ -116,14 +116,3 @@ export function construireListe(
 export function manifestationOuverte({ debut, fin }: ManifestationListee, aujourdhui: string): boolean {
   return debut <= aujourdhui && aujourdhui <= fin;
 }
-
-/** US-040 CA-2 : toutes les compétitions que la liste montre, quel que soit leur rang (épreuve, manifestation, isolées). */
-export function competitionsVisibles(liste: ListeClub): CompetitionListee[] {
-  return [
-    ...liste.manifestations.flatMap(({ epreuves, competitions }) => [
-      ...epreuves.flatMap((noeud) => noeud.competitions),
-      ...competitions,
-    ]),
-    ...liste.isolees,
-  ];
-}
