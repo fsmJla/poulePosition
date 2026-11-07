@@ -7,6 +7,7 @@ import type { ClientEpreuves } from './epreuves';
 import type { Journal } from './journal';
 import type { ClientManifestations } from './manifestations';
 import { Base, LIGNE_UNIQUE } from './stockage';
+import type { ActionsLot } from './suppression';
 import type { Synchronisation } from './synchronisation';
 
 /** Données de la liste, avant leur mise en arborescence. */
@@ -101,6 +102,23 @@ export function creerAccueil({
     /** CA-1 et hors ligne : les données de la liste ; une copie ou une compétition locale remplace une ligne de l'index. */
     /** US-040 : supprime définitivement une compétition (US-039) ; la liste se recharge à la fin de la série. */
     supprimer: (competitionId: string) => synchronisation.supprimerCompetition(competitionId),
+
+    /**
+     * US-043 : les trois suppressions d'une série mixte, chacune par la route de son type (US-039, US-041, US-042). Une
+     * épreuve ou une manifestation part avec son contenu, par morceaux, et le serveur garde ce qui reste si la suite est
+     * interrompue.
+     */
+    actionsLot: {
+      manifestation: async (id) => {
+        const resultat = await manifestations.supprimerAvecContenu(id);
+        return resultat.ok ? { ok: true } : { ok: false, erreur: resultat.erreur };
+      },
+      epreuve: async (id) => {
+        const resultat = await epreuves.supprimerAvecContenu(id);
+        return resultat.ok ? { ok: true } : { ok: false, erreur: resultat.erreur };
+      },
+      competition: (id) => synchronisation.supprimerCompetition(id),
+    } satisfies ActionsLot,
 
     async charger(): Promise<DonneesAccueil> {
       const [clubs, lesManifestations, lesEpreuves] = await Promise.all([
