@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-039, US-026
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-040-supprimer-plusieurs-competitions`
 
 ## Récit
 
@@ -73,3 +73,4 @@ coupé en cours de série, elle s'arrête proprement et le compte rendu de CA-4 
 | Date | Événement |
 |---|---|
 | 2026-11-07 | Créée |
+| 2026-11-07 | En cours : plan validé, implémentation |
