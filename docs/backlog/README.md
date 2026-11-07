@@ -69,7 +69,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-037](US-037-economiser-minutes-ci.md) | Économiser les minutes de CI sur les E2E de la preview | E0 | Terminée | US-013, US-015 |
 | [US-038](US-038-correction-lectures-index.md) | Corriger les lectures répétées de tout l'index du club (quota Cloudflare) | E2 | Terminée | US-022, US-023, US-024, US-029 |
 | [US-039](US-039-supprimer-competition.md) | Supprimer définitivement une compétition (administrateur) | E2 | Terminée | US-022, US-026, US-029 |
-| [US-040](US-040-supprimer-plusieurs-competitions.md) | Supprimer plusieurs compétitions d'un coup | E2 | En cours | US-039, US-026 |
+| [US-040](US-040-supprimer-plusieurs-competitions.md) | Supprimer plusieurs compétitions d'un coup | E2 | En revue | US-039, US-026 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
