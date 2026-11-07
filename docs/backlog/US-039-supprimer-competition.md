@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-022, US-026, US-029
 - **Branche / PR :** `us/US-039-supprimer-competition`
 
@@ -100,6 +100,15 @@ PC pilote peut donc finir une compétition en cours sans internet, puisqu'une co
 
 - Aucune.
 
+## Décisions prises pendant l'implémentation
+
+- Les routes `GET` et `POST` de `/competitions/<id>/evenements`, `/pilote` et `/presence` répondent `410 COMPETITION_SUPPRIMEE`
+  tant que la pierre tombale existe ; `DELETE` sur une identifiant mal formé répond `404`.
+- Le test E2E de la suppression réelle ne tourne qu'en local : le compte E2E de la preview est un organisateur. Sur la
+  preview, seul CA-2 (pas de bouton) tourne ; la chaîne réelle est couverte par `serveur/src/suppression.test.ts`.
+- La bannière d'annonce (« supprimée par un administrateur ») est globale dans `App.svelte`, sans table IndexedDB : elle
+  ne survit pas à un rechargement (« une seule fois »).
+
 ## Notes techniques
 
 - Nouvelle route `DELETE /competitions/<id>` (docs/protocole.md à compléter) : session valide et rôle administrateur
@@ -117,3 +126,4 @@ PC pilote peut donc finir une compétition en cours sans internet, puisqu'une co
 |---|---|
 | 2026-11-07 | Créée |
 | 2026-11-07 | En cours : plan validé, implémentation |
+| 2026-11-07 | En revue : PR vers `dev`, contrôles locaux verts (lint, typage, 938 tests, build, audit, 263 E2E) |
