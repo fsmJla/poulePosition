@@ -13,6 +13,7 @@
   import { creerAccueil } from './lib/accueil';
   import { creerClientEpreuves } from './lib/epreuves';
   import { creerClientManifestations } from './lib/manifestations';
+  import { textes } from './lib/textes';
   import Entete from './composants/Entete.svelte';
   import Accueil from './pages/Accueil.svelte';
   import Competition from './pages/Competition.svelte';
@@ -32,6 +33,11 @@
   const client = creerClientSession({ urlServeur: urlHttp(urlServeur), stockage: ouvrirStockage() });
 
   let session = $state<SessionAppareil | null>(null);
+  let annonces = $state<{ competitionId: string; texte: string }[]>([]);
+
+  function fermerAnnonce(competitionId: string) {
+    annonces = annonces.filter((annonce) => annonce.competitionId !== competitionId);
+  }
   const journal = ouvrirJournal();
   const synchronisation = creerSynchronisation({
     urlServeur: urlHttp(urlServeur),
@@ -90,8 +96,13 @@
       session = restauree;
       pret = true;
     });
+    const arreterSuppression = synchronisation.surSuppression(({ competitionId, nom, abandonnees }) => {
+      const texte = textes.competitions.suppression.annonce(nom, abandonnees);
+      annonces = [...annonces.filter((annonce) => annonce.competitionId !== competitionId), { competitionId, texte }];
+    });
     const arreterEnvoi = synchronisation.surveiller();
     return () => {
+      arreterSuppression();
       arreterEnvoi();
       window.removeEventListener('popstate', surRetour);
       window.removeEventListener('online', surEnLigne);
@@ -181,3 +192,51 @@
     {/if}
   {/if}
 {/if}
+
+<!-- US-039 CA-5 et CA-6 : ce PC vient d'effacer la copie d'une compétition supprimée par un administrateur. -->
+{#if annonces.length > 0}
+  <div class="annonces">
+    {#each annonces as annonce (annonce.competitionId)}
+      <p role="status">
+        {annonce.texte}
+        <button type="button" onclick={() => fermerAnnonce(annonce.competitionId)}
+          >{textes.competitions.suppression.fermer}</button
+        >
+      </p>
+    {/each}
+  </div>
+{/if}
+
+<style>
+  .annonces {
+    position: fixed;
+    inset: auto 1rem 1rem;
+    display: grid;
+    gap: 0.5rem;
+    justify-items: center;
+  }
+
+  .annonces p {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 32rem;
+    margin: 0;
+    padding: 0.6rem 0.75rem;
+    border-left: 4px solid var(--etat-attente);
+    background: var(--surface);
+    color: var(--texte);
+    outline: 1px solid var(--bordure-champ);
+  }
+
+  .annonces button {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--bordure-champ);
+    border-radius: var(--rayon);
+    background: var(--surface);
+    color: var(--texte);
+    font: inherit;
+    cursor: pointer;
+  }
+</style>

@@ -61,6 +61,11 @@ export interface Journal {
     pilote: { piloteAppareil?: string; piloteNom?: string },
     copieLe: number,
   ): Promise<number>;
+  /**
+   * US-039 CA-5 et CA-6 : la compétition a été supprimée sur le serveur. Efface la copie locale (journal, ligne locale,
+   * modifications écartées) et renvoie le nombre d'événements pas encore envoyés, abandonnés avec elle.
+   */
+  supprimerCopie(competitionId: string): Promise<number>;
   lireEcartes(competitionId: string): Promise<Ecart[]>;
   effacerEcartes(competitionId: string): Promise<void>;
   /** Identifiant de cet appareil, tiré au premier appel puis gardé (ADR-0016). */
@@ -197,6 +202,27 @@ export function ouvrirJournal(nom = 'poulePosition', persister: () => Promise<bo
         }
         await base.competitionsLocales.update(competitionId, { pilote: false, copieLe });
         return aEcarter.length;
+      });
+    },
+
+    async supprimerCopie(competitionId) {
+      return base.transaction('rw', base.evenements, base.competitionsLocales, base.ecartes, async () => {
+        const locale = await base.competitionsLocales.get(competitionId);
+        let abandonnes = 0;
+        if (locale?.pilote) {
+          for (const brut of await evenementsBruts(competitionId)) {
+            const evenement = lireEvenement(brut);
+            if (!evenement) break;
+            if (evenement.seq > locale.confirme) abandonnes++;
+          }
+        }
+        await base.evenements
+          .where('[competitionId+seq]')
+          .between([competitionId, Dexie.minKey], [competitionId, Dexie.maxKey])
+          .delete();
+        await base.competitionsLocales.delete(competitionId);
+        await base.ecartes.where('competitionId').equals(competitionId).delete();
+        return abandonnes;
       });
     },
 

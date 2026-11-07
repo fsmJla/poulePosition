@@ -14,6 +14,7 @@
     cheminParametresCompetition,
     CHEMINS,
   } from '../lib/routes';
+  import { nomConfirme, peutSupprimer } from '../lib/suppression';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
 
@@ -169,6 +170,32 @@
     perteLibelle = null;
   }
 
+  /** US-039 : suppression définitive, proposée aux seuls administrateurs. */
+  const ts = t.suppression;
+  let etapeSuppression: 'aucune' | 'confirmation' = $state('aucune');
+  let saisieNom = $state('');
+  let suppressionEnCours = $state(false);
+  let erreurSuppression: string | null = $state(null);
+  const droitSuppression = $derived(droit());
+
+  function droit() {
+    return competition ? peutSupprimer(session.compte.role, competition.statut) : null;
+  }
+
+  /** CA-1 : supprime sur le serveur, puis revient à la liste ; CA-8 : le nom saisi doit être exact. */
+  async function supprimer() {
+    if (!competition || suppressionEnCours || !nomConfirme(saisieNom, competition.nom)) return;
+    suppressionEnCours = true;
+    erreurSuppression = null;
+    try {
+      const reponse = await synchronisation.supprimerCompetition(competitionId);
+      if (reponse.ok) naviguer(CHEMINS.organisateur);
+      else erreurSuppression = ts.erreurs[reponse.erreur];
+    } finally {
+      suppressionEnCours = false;
+    }
+  }
+
   const nombreEcartes = $derived(ecartes.reduce((total, { evenements }) => total + evenements.length, 0));
   const annonceEcart = $derived(
     ecartes[0]?.piloteNom ? libellePilote(ecartes[0].piloteNom, ecartes[0].piloteAppareil ?? '') : null,
@@ -288,6 +315,49 @@
           : t.relais(competition.formule.touchesRelais)}
       </dd>
     </dl>
+
+    <!-- US-039 : suppression définitive, réservée aux administrateurs, en ligne, hors compétition en cours. -->
+    {#if session.compte.role === 'administrateur'}
+      {#if etapeSuppression === 'confirmation'}
+        <div class="prise" role="group" aria-label={ts.titre}>
+          <p>{ts.titre}</p>
+          <p class="avertissement" role="status">{ts.avertissement}</p>
+          <label>
+            {ts.saisie(competition.nom)}
+            <input type="text" bind:value={saisieNom} autocomplete="off" />
+          </label>
+          <div class="actions">
+            <button
+              type="button"
+              class="danger"
+              onclick={supprimer}
+              disabled={suppressionEnCours || !enLigne || !nomConfirme(saisieNom, competition.nom)}
+              >{suppressionEnCours ? ts.suppression : ts.valider}</button
+            >
+            <button
+              type="button"
+              class="secondaire"
+              onclick={() => ((etapeSuppression = 'aucune'), (saisieNom = ''), (erreurSuppression = null))}
+              >{ts.annuler}</button
+            >
+          </div>
+        </div>
+      {:else}
+        <button
+          type="button"
+          class="danger"
+          onclick={() => (etapeSuppression = 'confirmation')}
+          disabled={!enLigne || !droitSuppression?.ok}
+          aria-describedby="suppression-aide">{ts.bouton}</button
+        >
+        {#if !enLigne}
+          <small id="suppression-aide">{ts.horsLigne}</small>
+        {:else if droitSuppression && !droitSuppression.ok}
+          <small id="suppression-aide">{ts.enCours}</small>
+        {/if}
+      {/if}
+      {#if erreurSuppression}<p class="message" role="alert">{erreurSuppression}</p>{/if}
+    {/if}
   {/if}
 
   <Lien chemin={CHEMINS.organisateur} {naviguer}>{t.retour}</Lien>
@@ -371,6 +441,24 @@
     font: inherit;
     font-weight: 600;
     cursor: pointer;
+  }
+
+  button.danger {
+    background: var(--etat-erreur);
+  }
+
+  label {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  input {
+    padding: 0.55rem 0.65rem;
+    border: 1px solid var(--bordure-champ);
+    border-radius: var(--rayon);
+    background: var(--surface);
+    color: var(--texte);
+    font: inherit;
   }
 
   button.secondaire {
