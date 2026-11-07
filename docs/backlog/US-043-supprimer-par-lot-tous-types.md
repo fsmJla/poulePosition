@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-040, US-041, US-042
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-043-supprimer-par-lot-tous-types`
 
 ## Récit
 
@@ -99,3 +99,4 @@ coupé en cours de série, elle s'arrête proprement et le compte rendu indique 
 | Date | Événement |
 |---|---|
 | 2026-11-07 | Créée |
+| 2026-11-07 | En cours : plan validé, implémentation |
