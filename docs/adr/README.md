@@ -29,3 +29,4 @@ Vue d'ensemble : [`../architecture.md`](../architecture.md).
 | [0017](0017-prise-de-main-et-presence-du-pilote.md) | Prise de main par HTTP et présence du pilote par battements (provisoire, en attendant la WebSocket) | Acceptée |
 | [0018](0018-economie-minutes-ci.md) | Économie des minutes de CI : E2E de la preview choisis selon le commit | Acceptée |
 | [0019](0019-suppression-definitive-pierres-tombales.md) | Suppression définitive d'une compétition et pierres tombales | Acceptée |
+| [0020](0020-suppression-avec-contenu-par-morceaux.md) | Suppression d'une épreuve ou d'une manifestation avec son contenu, par morceaux | Acceptée |
