@@ -63,6 +63,12 @@ describe('analyserChemin', () => {
     });
   });
 
+  it('US-039 : reconnaît la route d’une compétition seule, pour sa suppression', () => {
+    const id = '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c';
+    expect(analyserChemin(`/competitions/${id}`)).toEqual({ route: 'competition', competitionId: id });
+    expect(analyserChemin('/competitions/Demo')).toBeNull();
+  });
+
   it('US-029 : reconnaît le pilote et la présence d’une compétition', () => {
     const id = '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c';
     expect(analyserChemin(`/competitions/${id}/pilote`)).toEqual({ route: 'pilote', competitionId: id });

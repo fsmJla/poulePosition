@@ -95,8 +95,12 @@ export type ReponseJournal =
   | { ok: true; evenements: Evenement[]; dernierSeq: number; piloteAppareil: string }
   | { ok: false; erreur: ErreurReponse };
 
+/** `supprimees` : identifiants des compétitions supprimées (pierres tombales, US-039), à effacer des copies locales. */
 export type ReponseCompetitions =
-  { ok: true; competitions: CompetitionIndexee[] } | { ok: false; erreur: ErreurReponse };
+  { ok: true; competitions: CompetitionIndexee[]; supprimees: string[] } | { ok: false; erreur: ErreurReponse };
+
+/** Réponse de `DELETE /competitions/<id>` (US-039). */
+export type ReponseSuppressionCompetition = { ok: true } | { ok: false; erreur: ErreurReponse };
 
 function estObjet(brut: unknown): brut is Record<string, unknown> {
   return brut !== null && typeof brut === 'object' && !Array.isArray(brut);
@@ -250,5 +254,11 @@ export function analyserReponseCompetitions(brut: unknown): ReponseCompetitions 
   if (!estObjet(brut) || brut.ok !== true) return erreurDe(brut);
   if (!Array.isArray(brut.competitions)) return { ok: false, erreur: 'REPONSE_INVALIDE' };
   const competitions = brut.competitions.map(analyserIndexee);
-  return { ok: true, competitions: competitions.filter((competition) => competition !== null) };
+  // Absent d'un serveur antérieur à US-039 : aucune compétition supprimée.
+  const supprimees = Array.isArray(brut.supprimees) ? brut.supprimees.filter((id) => typeof id === 'string') : [];
+  return { ok: true, competitions: competitions.filter((competition) => competition !== null), supprimees };
+}
+
+export function analyserReponseSuppressionCompetition(brut: unknown): ReponseSuppressionCompetition {
+  return estObjet(brut) && brut.ok === true ? { ok: true } : erreurDe(brut);
 }

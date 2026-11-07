@@ -357,6 +357,37 @@ export const textes = {
         SESSION_INVALIDE: 'Reconnectez-vous pour prendre la main',
         COMPETITION_INCONNUE: 'Compétition inconnue du serveur',
         ERREUR_INATTENDUE: 'Prise de main impossible pour le moment',
+        ACCES_REFUSE: 'Prise de main impossible pour le moment',
+        COMPETITION_EN_COURS: 'Prise de main impossible pour le moment',
+        COMPETITION_SUPPRIMEE: 'Cette compétition a été supprimée',
+      },
+    },
+    /** US-039 : suppression définitive d'une compétition, réservée aux administrateurs. */
+    suppression: {
+      bouton: 'Supprimer définitivement…',
+      horsLigne: 'Connexion requise pour supprimer',
+      enCours: 'Une compétition en cours ne peut pas être supprimée',
+      titre: 'Supprimer définitivement cette compétition ?',
+      avertissement:
+        'La suppression est définitive : le journal, les saisies et les fichiers joints sont effacés du serveur et de tous les PC du club. Pour garder une trace, archivez la compétition plutôt que de la supprimer.',
+      saisie: (nom: string) => `Saisissez « ${nom} » pour confirmer`,
+      valider: 'Supprimer définitivement',
+      suppression: 'Suppression…',
+      annuler: 'Annuler',
+      /** Annonce faite une seule fois sur un PC dont la copie vient d'être effacée. */
+      annonce: (nom: string, abandonnees: number) =>
+        `La compétition ${nom || 'sans nom'} a été supprimée par un administrateur${
+          abandonnees > 0 ? '. Des saisies non envoyées ont été abandonnées' : ''
+        }`,
+      fermer: 'Fermer',
+      erreurs: {
+        HORS_LIGNE: 'Connexion requise pour supprimer',
+        SESSION_INVALIDE: 'Reconnectez-vous pour supprimer',
+        ACCES_REFUSE: 'Seul un administrateur peut supprimer une compétition',
+        COMPETITION_EN_COURS: 'Une compétition en cours ne peut pas être supprimée',
+        COMPETITION_INCONNUE: 'Compétition inconnue du serveur',
+        COMPETITION_SUPPRIMEE: 'Cette compétition est déjà supprimée',
+        ERREUR_INATTENDUE: 'Suppression impossible pour le moment',
       },
     },
     pasEncoreEnvoyee: 'Pas encore envoyée',

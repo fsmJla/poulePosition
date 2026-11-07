@@ -39,6 +39,7 @@ export type Route =
   | { route: 'epreuves' }
   | { route: 'epreuve'; id: string }
   | { route: 'competitions' }
+  | { route: 'competition'; competitionId: string }
   | { route: 'evenements'; competitionId: string }
   | { route: 'pilote'; competitionId: string }
   | { route: 'presence'; competitionId: string }
@@ -69,6 +70,8 @@ export function analyserChemin(chemin: string): Route | null {
   const epreuve = /^\/epreuves\/([^/]+)$/.exec(chemin)?.[1];
   if (epreuve) return MOTIF_COMPETITION.test(epreuve) ? { route: 'epreuve', id: epreuve } : null;
   if (chemin === '/competitions') return { route: 'competitions' };
+  const seule = /^\/competitions\/([^/]+)$/.exec(chemin)?.[1];
+  if (seule) return MOTIF_COMPETITION.test(seule) ? { route: 'competition', competitionId: seule } : null;
   const morceaux = /^\/competitions\/([^/]+)\/(connexion|evenements|pilote|presence)$/.exec(chemin);
   if (!morceaux?.[1] || !MOTIF_COMPETITION.test(morceaux[1])) return null;
   const route = { connexion: 'connexion', evenements: 'evenements', pilote: 'pilote', presence: 'presence' } as const;

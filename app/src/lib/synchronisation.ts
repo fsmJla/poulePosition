@@ -10,6 +10,7 @@ import {
   analyserReponsePilote,
   analyserReponsePresence,
   analyserReponsePriseDeMain,
+  analyserReponseSuppressionCompetition,
   preparerLots,
   resumeDe,
   type CompetitionIndexee,
@@ -19,7 +20,7 @@ import { DELAI_REPONSE } from './session';
 import type { Contexte, Journal } from './journal';
 
 /** Résultat d'un envoi : tout est confirmé, il reste des événements à envoyer, ou l'envoi est bloqué. */
-export type EtatEnvoi = 'a-jour' | 'en-attente' | 'session-expiree' | 'pas-pilote';
+export type EtatEnvoi = 'a-jour' | 'en-attente' | 'session-expiree' | 'pas-pilote' | 'supprimee';
 
 /** US-029 : ce PC n'est plus le pilote ; `ecartes` modifications faites hors ligne n'ont pas été reprises. */
 export interface PerteDeMain {
@@ -29,10 +30,25 @@ export interface PerteDeMain {
   ecartes: number;
 }
 
+/** US-039 : la copie locale d'une compétition supprimée sur le serveur vient d'être effacée. */
+export interface SuppressionLocale {
+  competitionId: string;
+  nom: string;
+  /** Événements saisis ici mais pas encore envoyés, abandonnés avec la copie. */
+  abandonnees: number;
+}
+
 /** Intervalle entre deux battements du pilote (US-029, ADR-0016 : présence provisoire en attendant la WebSocket). */
 export const INTERVALLE_BATTEMENT = 30_000;
 
-export type ErreurSynchronisation = 'HORS_LIGNE' | 'SESSION_INVALIDE' | 'COMPETITION_INCONNUE' | 'ERREUR_INATTENDUE';
+export type ErreurSynchronisation =
+  | 'HORS_LIGNE'
+  | 'SESSION_INVALIDE'
+  | 'COMPETITION_INCONNUE'
+  | 'ERREUR_INATTENDUE'
+  | 'ACCES_REFUSE'
+  | 'COMPETITION_EN_COURS'
+  | 'COMPETITION_SUPPRIMEE';
 
 /** Copie d'une compétition : la projection de son journal, et la date du téléchargement (null si pilotée ici). */
 export interface Copie {
@@ -69,11 +85,16 @@ export function creerSynchronisation({
   delai = DELAI_REPONSE,
 }: OptionsSynchronisation) {
   /** Envoie une requête et lit sa réponse JSON ; lève Injoignable si le serveur ne répond pas à temps. */
-  async function requete(chemin: string, jetonSession: string, corps?: unknown): Promise<unknown> {
+  async function requete(
+    chemin: string,
+    jetonSession: string,
+    corps?: unknown,
+    methode: 'GET' | 'POST' | 'DELETE' = corps === undefined ? 'GET' : 'POST',
+  ): Promise<unknown> {
     let reponse: Response;
     try {
       reponse = await envoyer(`${urlServeur}${chemin}`, {
-        method: corps === undefined ? 'GET' : 'POST',
+        method: methode,
         signal: AbortSignal.timeout(delai),
         headers: {
           Authorization: `Bearer ${jetonSession}`,
@@ -117,6 +138,10 @@ export function creerSynchronisation({
           await perdre(competitionId, reponse);
           return 'pas-pilote';
         }
+        if (reponse.erreur === 'COMPETITION_SUPPRIMEE') {
+          await effacerSupprimee(competitionId);
+          return 'supprimee';
+        }
         if (SESSION_REFUSEE.includes(reponse.erreur)) return 'session-expiree';
         if (reponse.erreur !== 'SEQ_INATTENDU' || reponse.dernierSeq === undefined) return 'en-attente';
         // Le serveur a un autre dernier seq (accusé perdu, lot renvoyé) : on reprend de là.
@@ -147,6 +172,20 @@ export function creerSynchronisation({
   }
 
   const ecouteursPerte = new Set<(perte: PerteDeMain) => void>();
+  const ecouteursSuppression = new Set<(suppression: SuppressionLocale) => void>();
+
+  /**
+   * US-039 CA-5 et CA-6 : le serveur dit la compétition supprimée. La copie locale est effacée, avec les saisies pas
+   * encore envoyées (la suppression prime), puis les écouteurs en sont avertis, une seule fois. Sans copie locale, il
+   * n'y a rien à effacer ni à annoncer.
+   */
+  async function effacerSupprimee(competitionId: string): Promise<void> {
+    if (!(await journal.etat(competitionId))) return;
+    const { competition } = await journal.lire(competitionId);
+    const abandonnees = await journal.supprimerCopie(competitionId);
+    const suppression = { competitionId, nom: competition?.nom ?? '', abandonnees };
+    ecouteursSuppression.forEach((ecouteur) => ecouteur(suppression));
+  }
 
   /** US-029 : un autre PC a pris la main ; les événements en attente sont écartés et la copie du nouveau pilote la remplace. */
   async function perdre(
@@ -167,7 +206,8 @@ export function creerSynchronisation({
 
   function erreurDe(erreur: ErreurReponse): ErreurSynchronisation {
     if (SESSION_REFUSEE.includes(erreur)) return 'SESSION_INVALIDE';
-    return erreur === 'COMPETITION_INCONNUE' ? erreur : 'ERREUR_INATTENDUE';
+    const connues = ['COMPETITION_INCONNUE', 'ACCES_REFUSE', 'COMPETITION_EN_COURS', 'COMPETITION_SUPPRIMEE'] as const;
+    return connues.find((connue) => connue === erreur) ?? 'ERREUR_INATTENDUE';
   }
 
   async function copieLocale(competitionId: string): Promise<Copie | null> {
@@ -198,7 +238,13 @@ export function creerSynchronisation({
     } catch {
       return echec('HORS_LIGNE');
     }
-    if (!reponse.ok) return echec(erreurDe(reponse.erreur));
+    if (!reponse.ok) {
+      if (reponse.erreur === 'COMPETITION_SUPPRIMEE') {
+        await effacerSupprimee(competitionId);
+        return { ok: false, erreur: 'COMPETITION_SUPPRIMEE' };
+      }
+      return echec(erreurDe(reponse.erreur));
+    }
     if (reponse.piloteAppareil === (await journal.appareil())) {
       await journal.devenirPilote(competitionId, reponse.evenements);
       return { ok: true, projection: await journal.lire(competitionId), copieLe: null };
@@ -224,6 +270,7 @@ export function creerSynchronisation({
     }
     if (reponse.ok) return { ok: true };
     if (reponse.erreur === 'PAS_PILOTE') return { ok: false, perte: await perdre(competitionId, reponse) };
+    if (reponse.erreur === 'COMPETITION_SUPPRIMEE') await effacerSupprimee(competitionId);
     return { ok: false, erreur: erreurDe(reponse.erreur) };
   }
 
@@ -267,10 +314,41 @@ export function creerSynchronisation({
       if (!jetonSession) return { ok: false, erreur: enLigne() && urlServeur ? 'SESSION_INVALIDE' : 'HORS_LIGNE' };
       try {
         const reponse = analyserReponseCompetitions(await requete('/competitions', jetonSession));
-        return reponse.ok ? reponse : { ok: false, erreur: erreurDe(reponse.erreur) };
+        if (!reponse.ok) return { ok: false, erreur: erreurDe(reponse.erreur) };
+        // US-039 CA-5 : les copies locales des compétitions supprimées sont effacées, et la liste ne les montre plus.
+        for (const id of reponse.supprimees) await effacerSupprimee(id);
+        return { ok: true, competitions: reponse.competitions.filter(({ id }) => !reponse.supprimees.includes(id)) };
       } catch {
         return { ok: false, erreur: 'HORS_LIGNE' };
       }
+    },
+
+    /**
+     * US-039 CA-1 : supprime définitivement la compétition sur le serveur (administrateur, en ligne), puis efface la
+     * copie de ce PC sans l'annoncer : c'est l'administrateur qui l'a demandé. Hors ligne, rien n'est tenté (CA-8).
+     */
+    async supprimerCompetition(
+      competitionId: string,
+    ): Promise<{ ok: true } | { ok: false; erreur: ErreurSynchronisation }> {
+      const jetonSession = await jetonEnLigne();
+      if (!jetonSession) return sansReseau();
+      let reponse;
+      try {
+        reponse = analyserReponseSuppressionCompetition(
+          await requete(`/competitions/${competitionId}`, jetonSession, undefined, 'DELETE'),
+        );
+      } catch {
+        return { ok: false, erreur: 'HORS_LIGNE' };
+      }
+      if (!reponse.ok) return { ok: false, erreur: erreurDe(reponse.erreur) };
+      await journal.supprimerCopie(competitionId);
+      return { ok: true };
+    },
+
+    /** US-039 CA-5 : avertit quand une compétition de cet appareil est effacée parce qu'elle a été supprimée. */
+    surSuppression(ecouteur: (suppression: SuppressionLocale) => void): () => void {
+      ecouteursSuppression.add(ecouteur);
+      return () => ecouteursSuppression.delete(ecouteur);
     },
 
     /**
@@ -368,7 +446,11 @@ export function creerSynchronisation({
 
     /** US-022 CA-2 : envoie ce qui attend maintenant, puis à chaque retour du réseau ; renvoie de quoi arrêter. */
     surveiller(cible: EventTarget = window, intervalle = INTERVALLE_BATTEMENT): () => void {
-      const auRetour = () => void envoyerTout();
+      // US-039 CA-5 : lire l'index du club suffit à effacer les copies des compétitions supprimées.
+      const auRetour = () => {
+        void envoyerTout();
+        void this.listerCompetitionsDuClub();
+      };
       cible.addEventListener('online', auRetour);
       auRetour();
       // US-029 : le pilote en ligne signale sa présence ; un ancien pilote apprend ainsi qu'il a perdu la main.

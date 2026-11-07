@@ -5,6 +5,7 @@ import {
   deciderAjout,
   deciderPresence,
   deciderPriseDeMain,
+  deciderSuppression,
   DELAI_PRESENCE_MS,
   ligneIndex,
   piloteConnecte,
@@ -145,5 +146,21 @@ describe('prise de main et présence du pilote (US-029)', () => {
     expect(piloteConnecte(maintenant - DELAI_PRESENCE_MS + 1, maintenant)).toBe(true);
     expect(piloteConnecte(maintenant - DELAI_PRESENCE_MS, maintenant)).toBe(false);
     expect(piloteConnecte(null, maintenant)).toBe(false);
+  });
+});
+
+describe('décision de suppression définitive (US-039)', () => {
+  it('US-039 CA-1 : une compétition qui n’est pas en cours se supprime', () => {
+    for (const statut of ['preparation', 'terminee', 'archivee'] as const) {
+      expect(deciderSuppression(statut)).toEqual({ ok: true });
+    }
+  });
+
+  it('US-039 CA-3 : une compétition en cours ne se supprime pas', () => {
+    expect(deciderSuppression('enCours')).toEqual({ ok: false, statut: 409, erreur: 'COMPETITION_EN_COURS' });
+  });
+
+  it('US-039 CA-7 : une compétition inconnue de l’index se supprime sans effet', () => {
+    expect(deciderSuppression(null)).toEqual({ ok: true });
   });
 });
