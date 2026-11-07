@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-023, US-041
 - **Branche / PR :** `us/US-042-supprimer-manifestation-avec-contenu`
 
@@ -97,3 +97,4 @@ Suspendu hors ligne, comme US-023 (les manifestations ne se modifient qu'en lign
 |---|---|
 | 2026-11-07 | Créée |
 | 2026-11-07 | En cours : plan validé, implémentation |
+| 2026-11-07 | En revue : PR vers `dev`, contrôles locaux verts (lint, typage, tests avec couverture, audit sans vulnérabilité haute) ; E2E locaux : 277 passent, 9 ignorés (preview uniquement) |
