@@ -303,12 +303,14 @@
         {#each liste.manifestations as noeud (noeud.manifestation.id)}
           <details class="manifestation" open={manifestationOuverte(noeud.manifestation, aujourdhui)}>
             <summary>
-              {@render caseSelection(
-                noeud.manifestation.id,
-                ts.cocherManifestation(noeud.manifestation.nom),
-                ts.contientEnCours,
-              )}
-              <strong>{noeud.manifestation.nom}</strong>
+              <span class="ligne">
+                {@render caseSelection(
+                  noeud.manifestation.id,
+                  ts.cocherManifestation(noeud.manifestation.nom),
+                  ts.contientEnCours,
+                )}
+                <strong>{noeud.manifestation.nom}</strong>
+              </span>
               <span class="infos">
                 {textes.manifestations.periode(noeud.manifestation.debut, noeud.manifestation.fin)}
                 {#if noeud.manifestation.lieu}· {noeud.manifestation.lieu}{/if}
