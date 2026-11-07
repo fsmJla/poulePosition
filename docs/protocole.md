@@ -48,7 +48,8 @@
 | `PATCH /comptes/<id>` | Modifier le nom, le rôle ou l'état (actif ou désactivé) d'un compte (§9) |
 | `DELETE /comptes/<id>` | Supprimer définitivement un compte (§9, US-008) |
 | `POST /comptes/<id>/mot-de-passe` | Réinitialiser le mot de passe d'un compte (§9, US-009) |
-| `GET /competitions` | Index des compétitions du club (§11, US-022) |
+| `GET /competitions` | Index des compétitions du club et liste des compétitions supprimées (§11, §14) |
+| `DELETE /competitions/<competitionId>` | Supprimer définitivement une compétition, administrateur seulement (§14, US-039) |
 | `GET /competitions/<competitionId>/evenements` | Télécharger le journal d'une compétition (§11) |
 | `POST /competitions/<competitionId>/evenements` | Envoyer un lot d'événements du PC pilote (§11) |
 | `GET /manifestations`, `POST /manifestations` | Lister et créer les manifestations du club (§12, US-023) |
@@ -753,3 +754,45 @@ rôle. Même CORS qu'au §7.
   dans une manifestation, la date est obligatoire, proposée parmi ses jours et refusée hors de ses dates. Hors ligne,
   un rattachement que la copie ne contient pas est refusé (`RATTACHEMENT_INVALIDE`) ; une compétition isolée reste
   toujours possible.
+
+## 14. Suppression définitive d'une compétition (US-039, ADR-0019)
+
+Contrairement à l'archivage (US-033), la suppression efface la compétition du serveur et, à leur prochaine
+synchronisation, des PC du club. Elle ne se fait qu'**en ligne**, par un **administrateur** au mot de passe définitif.
+Même CORS qu'au §7.
+
+| Route | Corps | Réponse |
+|---|---|---|
+| `DELETE /competitions/<competitionId>` | — | `200 {"ok":true}` |
+
+La suppression est **idempotente** : une compétition inconnue ou déjà supprimée reçoit aussi `200 {"ok":true}`, sans
+aucune écriture si elle n'a jamais existé. Une suppression interrompue (pierre tombale posée, journal pas encore effacé)
+est terminée par la suivante.
+
+**Erreurs** : `401` (session), `403 ACCES_REFUSE` (compte qui n'est pas administrateur, ou mot de passe temporaire),
+`404` (identifiant mal formé), `409 COMPETITION_EN_COURS` : le dernier résumé du pilote donne le statut `enCours` (le
+serveur ne décide d'aucune règle d'escrime, il lit ce statut).
+
+**Pierre tombale.** Le DO `Club` garde, dans la table `competitions_supprimees` (identifiant, date), la trace de chaque
+compétition supprimée, retire sa ligne de l'index, puis le DO `Competition` efface son stockage (journal, pilote,
+présence) et ferme ses WebSocket. L'identifiant n'est jamais réutilisé. Tant que la pierre tombale existe, toute route
+sur cette compétition répond `410 COMPETITION_SUPPRIMEE` : `GET` et `POST /competitions/<id>/evenements`,
+`GET` et `POST /competitions/<id>/pilote`, `POST /competitions/<id>/presence`. Un lot en cours pendant la suppression ne
+recrée pas la ligne d'index.
+
+**Index.** `GET /competitions` ajoute `supprimees` : les identifiants des compétitions supprimées. Un serveur antérieur à
+US-039 ne l'envoie pas, et l'application lit alors une liste vide.
+
+```json
+{ "ok": true, "competitions": [], "supprimees": ["0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c"] }
+```
+
+### Côté application
+
+- L'administrateur voit « Supprimer définitivement… » sur la page d'une compétition. Le bouton est grisé hors ligne
+  (« Connexion requise pour supprimer ») et pour une compétition en cours ; la confirmation exige de saisir le nom exact.
+- À chaque lecture de l'index (démarrage, retour du réseau, accueil), et à chaque `410 COMPETITION_SUPPRIMEE` reçu pour un
+  lot, un battement ou un téléchargement, le PC efface sa copie locale (journal, ligne locale, modifications écartées) et
+  annonce une fois : « La compétition <nom> a été supprimée par un administrateur » (suivi de « Des saisies non envoyées
+  ont été abandonnées » s'il y en avait). La suppression prime sur les saisies hors ligne.
+- Le PC qui a lui-même demandé la suppression efface sa copie sans annonce.

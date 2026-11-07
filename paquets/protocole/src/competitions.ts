@@ -97,8 +97,7 @@ export type ReponseJournal =
 
 /** `supprimees` : identifiants des compétitions supprimées (pierres tombales, US-039), à effacer des copies locales. */
 export type ReponseCompetitions =
-  | { ok: true; competitions: CompetitionIndexee[]; supprimees: string[] }
-  | { ok: false; erreur: ErreurReponse };
+  { ok: true; competitions: CompetitionIndexee[]; supprimees: string[] } | { ok: false; erreur: ErreurReponse };
 
 /** Réponse de `DELETE /competitions/<id>` (US-039). */
 export type ReponseSuppressionCompetition = { ok: true } | { ok: false; erreur: ErreurReponse };
