@@ -15,8 +15,22 @@ const manifestation = {
   debut: '2027-03-13',
   fin: '2027-03-14',
   lieu: 'Salle Bellegrave',
+  commentaire: null,
+  version: 1,
+  modifieeLe: 0,
+  modifieePar: 'orga@club.fr',
 } as Manifestation;
-const competition = { id: 'c1', clubId: 'pessac', manifestationId: 'm1', nom: 'Sabre', arme: 'sabre' } as Competition;
+const competition = {
+  id: 'c1',
+  clubId: 'pessac',
+  manifestationId: 'm1',
+  nom: 'Sabre',
+  arme: 'sabre',
+  commentaire: null,
+  version: 1,
+  modifieeLe: 0,
+  modifieePar: 'orga@club.fr',
+} as Competition;
 
 const donnees = (champs: Partial<DonneesEpreuve> = {}): DonneesEpreuve => ({
   nom: 'M13 Hommes',

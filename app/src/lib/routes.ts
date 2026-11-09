@@ -60,9 +60,13 @@ export function cheminNouvelleCompetition(manifestationId: string): string {
 }
 
 /** Formulaire que la partie « ?… » de l'adresse demande d'ouvrir sur la page Manifestations ; null si aucun. */
-export function ouvertureManifestations(recherche: string): { nouvelle: true } | { competitionDe: string } | null {
+export function ouvertureManifestations(
+  recherche: string,
+): { nouvelle: true } | { competitionDe: string } | { modifier: string } | null {
   const parametres = new URLSearchParams(recherche);
   if (parametres.has('nouvelle')) return { nouvelle: true };
+  const modifier = parametres.get('modifier');
+  if (modifier && MOTIF_IDENTIFIANT.test(modifier)) return { modifier };
   const competitionDe = parametres.get('competition');
   return competitionDe && MOTIF_IDENTIFIANT.test(competitionDe) ? { competitionDe } : null;
 }
@@ -85,6 +89,11 @@ export function cheminParametresEpreuve(epreuveId: string): string {
 /** US-048 : grille des épreuves d'une compétition. */
 export function cheminGrilleEpreuves(competitionId: string): string {
   return `/competitions/${competitionId}/epreuves`;
+}
+
+/** US-049 : page Manifestations avec le formulaire de modification de cette manifestation ouvert. */
+export function cheminModificationManifestation(manifestationId: string): string {
+  return `${CHEMINS.manifestations}?modifier=${manifestationId}`;
 }
 
 /** US-049 : plan d'une manifestation. */

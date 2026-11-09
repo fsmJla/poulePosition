@@ -36,7 +36,7 @@
   import type { ClientCompetitions } from '../lib/competitions';
   import { prendreEcriture, type Journal } from '../lib/journal';
   import type { ClientManifestations } from '../lib/manifestations';
-  import { cheminEpreuve, CHEMINS } from '../lib/routes';
+  import { cheminEpreuve, cheminPlanManifestation, CHEMINS, preselectionEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -128,6 +128,13 @@
       const [lues, lus] = await Promise.all([clientManifestations.lister(), clientCompetitions.lister()]);
       manifestations = lues.ok ? lues.manifestations : (lues.copie?.manifestations ?? []);
       competitions = lus.ok ? lus.competitions : (lus.copie?.competitions ?? []);
+      // US-049 CA-2 : « + Épreuve » du plan ouvre le formulaire avec la compétition et le jour déjà choisis.
+      const demande = epreuveId === undefined ? preselectionEpreuve(location.search) : null;
+      if (demande && competitions.some(({ id }) => id === demande.competitionId)) {
+        depart = demande.competitionId;
+        choisirCompetition(demande.competitionId);
+        if (demande.jour) saisie.date = demande.jour;
+      }
     })();
     return () => {
       demonte = true;
@@ -135,6 +142,13 @@
       window.removeEventListener('online', surReseau);
       window.removeEventListener('offline', surReseau);
     };
+  });
+
+  /** US-049 : compétition préchoisie par le plan ; « Annuler » y revient. */
+  let depart = $state<string | null>(null);
+  const retour = $derived.by(() => {
+    const manifestationId = competitions.find(({ id }) => id === depart)?.manifestationId;
+    return manifestationId ? cheminPlanManifestation(manifestationId) : null;
   });
 
   function choisirCompetition(identifiant: string) {
@@ -391,7 +405,9 @@
     </form>
   {/if}
 
-  <Lien chemin={epreuveId === undefined ? CHEMINS.organisateur : cheminEpreuve(epreuveId)} {naviguer}>{t.annuler}</Lien>
+  <Lien chemin={epreuveId === undefined ? (retour ?? CHEMINS.organisateur) : cheminEpreuve(epreuveId)} {naviguer}
+    >{t.annuler}</Lien
+  >
 </main>
 
 <style>

@@ -4,6 +4,7 @@ import {
   cheminFormuleEpreuve,
   cheminGrilleEpreuves,
   cheminModificationEpreuve,
+  cheminModificationManifestation,
   cheminNouvelleEpreuveDans,
   cheminPlanManifestation,
   preselectionEpreuve,
@@ -197,5 +198,14 @@ describe('plan de la manifestation (US-049)', () => {
     expect(preselectionEpreuve(`?competition=${id}&jour=demain`)).toEqual({ competitionId: id, jour: null });
     expect(preselectionEpreuve('?competition=pas un id')).toBeNull();
     expect(preselectionEpreuve('')).toBeNull();
+  });
+});
+
+describe('modification depuis le plan (US-049)', () => {
+  it('CA-2 : « Modifier la manifestation » ouvre la page Manifestations sur le formulaire de cette manifestation', () => {
+    const id = '0b6f1c1e-6d1a-4f0a-9a43-2f3c9e5d7b10';
+    expect(cheminModificationManifestation(id)).toBe(`/manifestations?modifier=${id}`);
+    expect(ouvertureManifestations(`?modifier=${id}`)).toEqual({ modifier: id });
+    expect(ouvertureManifestations('?modifier=pas un id')).toBeNull();
   });
 });
