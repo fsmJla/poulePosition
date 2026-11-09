@@ -65,7 +65,7 @@ const resume = (statut: ResumeEpreuve['statut'] = 'preparation'): ResumeEpreuve 
   date: '2027-03-14',
   statut,
   publiee: false,
-  rattachement: null,
+  rattachement: { competitionId: 'c-test' },
 });
 
 const evenement = (epreuveId: string, seq: number): Evenement => ({
@@ -87,7 +87,7 @@ const evenement = (epreuveId: string, seq: number): Evenement => ({
     horaires: { appel: null, scratch: null, debutPoules: null },
     lieu: null,
     commentaire: null,
-    rattachement: null,
+    rattachement: { competitionId: 'c-test' },
   },
 });
 

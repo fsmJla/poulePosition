@@ -22,6 +22,7 @@ import {
   NOM_EXPEDITEUR,
   empreinteJeton,
   lienReinitialisation,
+  requetesCompetitionsSeules,
   requetesInversionVocabulaire,
 } from './logique';
 
@@ -464,5 +465,25 @@ describe('requetesInversionVocabulaire (US-044, ADR-0021)', () => {
   it('US-044 CA-5 : une base neuve ou déjà au nouveau schéma n’a rien à faire', () => {
     expect(requetesInversionVocabulaire([])).toEqual([]);
     expect(requetesInversionVocabulaire(['id', 'club_id', 'contenu', 'modifiee_le'])).toEqual([]);
+  });
+});
+
+describe('requetesCompetitionsSeules (US-045)', () => {
+  const colonnes = (notnull: number) => [
+    { name: 'id', notnull: 0 },
+    { name: 'manifestation_id', notnull },
+    { name: 'contenu', notnull: 1 },
+  ];
+
+  it('US-045 CA-2 : recrée la table de l’ancien schéma, où la manifestation est obligatoire', () => {
+    expect(requetesCompetitionsSeules(colonnes(1))).toEqual(['DROP TABLE IF EXISTS competitions']);
+  });
+
+  it('US-045 CA-2 : ne touche pas à une table qui accepte déjà une manifestation absente', () => {
+    expect(requetesCompetitionsSeules(colonnes(0))).toEqual([]);
+  });
+
+  it('US-045 CA-2 : ne fait rien sur une base neuve (table absente)', () => {
+    expect(requetesCompetitionsSeules([])).toEqual([]);
   });
 });

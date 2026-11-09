@@ -8,6 +8,7 @@ import {
   type ErreursManifestation,
 } from '@poule-position/domaine';
 import {
+  analyserReponseCompetitions,
   analyserReponseManifestation,
   analyserReponseManifestations,
   analyserReponseSuppression,
@@ -117,6 +118,17 @@ export function creerClientManifestations({
     return ligne ? { manifestations: ligne.manifestations, copieLe: ligne.copieLe } : null;
   }
 
+  /** Compétitions du club à jour ; à défaut de réponse, leur dernière copie gardée sur l'appareil. */
+  async function competitionsDuClub(): Promise<{ id: string; manifestationId: string | null }[]> {
+    try {
+      const reponse = analyserReponseCompetitions(await requete('GET', '/competitions'));
+      if (reponse.ok) return reponse.competitions;
+    } catch {
+      // Réseau perdu : la copie suffit.
+    }
+    return (await base.copieCompetitions.get(LIGNE_UNIQUE))?.competitions ?? [];
+  }
+
   async function enregistrer(
     methode: 'POST' | 'PATCH',
     chemin: string,
@@ -168,7 +180,10 @@ export function creerClientManifestations({
       const donnees = versDonnees(saisie);
       const erreurs = validerManifestation(donnees);
       if (Object.keys(erreurs).length > 0) return { ok: false, erreurs };
-      const horsDates = epreuvesHorsDates(depart.id, donnees.debut, donnees.fin, await epreuves());
+      // Les épreuves sont dans les compétitions : la liste à jour des compétitions du club dit lesquelles sont dans cette
+      // manifestation (à défaut, sa dernière copie).
+      const competitions = await competitionsDuClub();
+      const horsDates = epreuvesHorsDates(depart.id, donnees.debut, donnees.fin, await epreuves(), competitions);
       if (horsDates.length > 0) return { ok: false, erreur: 'EPREUVES_HORS_DATES', epreuves: horsDates };
       return enregistrer('PATCH', `/manifestations/${depart.id}`, { ...donnees, version: depart.version });
     },

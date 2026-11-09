@@ -77,8 +77,16 @@ async function lister(jeton = jetonOrganisateur): Promise<Manifestation[]> {
   return ((await reponse.json()) as { manifestations: Manifestation[] }).manifestations;
 }
 
-/** Épreuve rattachée à la manifestation, envoyée par un pilote (US-022) : elle apparaît dans l'index du club. */
+/** Épreuve dans une compétition de la manifestation, envoyée par un pilote (US-022) : elle apparaît dans l'index du club. */
 async function rattacherEpreuve(manifestationId: string) {
+  const creation = await appeler('POST', '/competitions', jetonAdmin, {
+    manifestationId,
+    nom: 'Sabre',
+    arme: 'sabre',
+    commentaire: null,
+  });
+  expect(creation.status).toBe(201);
+  const { id: competitionId } = ((await creation.json()) as { competition: { id: string } }).competition;
   const epreuveId = crypto.randomUUID();
   const evenement: Evenement = {
     epreuveId,
@@ -99,7 +107,7 @@ async function rattacherEpreuve(manifestationId: string) {
       horaires: { appel: null, scratch: null, debutPoules: null },
       lieu: null,
       commentaire: null,
-      rattachement: { manifestationId, competitionId: null },
+      rattachement: { competitionId },
     },
   };
   const lot: DemandeEnvoi = {
@@ -114,7 +122,7 @@ async function rattacherEpreuve(manifestationId: string) {
       date: '2027-03-15',
       statut: 'preparation',
       publiee: false,
-      rattachement: { manifestationId, competitionId: null },
+      rattachement: { competitionId },
     },
   };
   expect((await appeler('POST', `/epreuves/${epreuveId}/evenements`, jetonAdmin, lot)).status).toBe(200);
@@ -195,7 +203,7 @@ describe('manifestations du club (US-023)', () => {
     expect((await appeler('DELETE', `/manifestations/${id}`, jetonOrganisateur)).status).toBe(404);
   });
 
-  it('CA-5 : refuse de supprimer une manifestation qui contient une épreuve', async () => {
+  it('CA-5 : refuse de supprimer une manifestation dont une compétition contient une épreuve', async () => {
     const { id } = await creer();
     await rattacherEpreuve(id);
     const reponse = await appeler('DELETE', `/manifestations/${id}`, jetonOrganisateur);

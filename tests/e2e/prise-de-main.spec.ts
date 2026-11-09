@@ -11,8 +11,9 @@ const LIBELLE_PC = /\(appareil [0-9a-f]{4}\)/;
 
 /** Crée une épreuve par le formulaire et attend que le serveur l'ait reçue. */
 async function creerEpreuve(page: Page, nom: string) {
-  await page.goto('/epreuves/nouvelle');
-  await page.getByLabel('Nom', { exact: true }).fill(nom);
+  // US-045 : toute épreuve est dans une compétition ; ici, une compétition seule créée avec elle (même nom).
+  await page.goto('/epreuves/nouvelle?seule');
+  await page.getByLabel('Nom de la compétition et de son épreuve').fill(nom);
   await page.getByLabel('Arme').selectOption('sabre');
   await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
   await expect(page).toHaveURL(MOTIF_PAGE_EPREUVE);

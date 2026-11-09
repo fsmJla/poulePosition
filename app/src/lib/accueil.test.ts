@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import type { EpreuveIndexee, Competition, Manifestation } from '@poule-position/protocole';
+import { construireListe } from '@poule-position/domaine';
 import { creerAccueil } from './accueil';
 import { creerEpreuve, saisieVide, type SaisieEpreuve } from './epreuves';
 import type { ClientCompetitions } from './competitions';
@@ -41,7 +42,7 @@ const indexee = (champs: Partial<EpreuveIndexee> = {}): EpreuveIndexee => ({
   date: '2027-03-15',
   statut: 'enCours',
   publiee: true,
-  rattachement: { manifestationId: 'm1', competitionId: null },
+  rattachement: { competitionId: 'e1' },
   piloteAppareil: 'autre-pc',
   piloteNom: 'Bruno',
   dernierSeq: 3,
@@ -101,6 +102,8 @@ const saisie = (champs: Partial<SaisieEpreuve> = {}): SaisieEpreuve => ({
   ...saisieVide(),
   nom: 'Sabre M13',
   arme: 'sabre',
+  competitionId: 'e1',
+  date: '2027-03-15',
   ...champs,
 });
 
@@ -122,7 +125,7 @@ describe('chargement de la liste du club (US-026)', () => {
         date: '2027-03-15',
         statut: 'enCours',
         publiee: true,
-        rattachement: { manifestationId: 'm1', competitionId: null },
+        rattachement: { competitionId: 'e1' },
         pilote: false,
         nonEnvoyee: false,
       },
@@ -131,7 +134,7 @@ describe('chargement de la liste du club (US-026)', () => {
 
   it('CA-2 : une épreuve pilotée par ce PC l’indique, et sa version locale l’emporte sur l’index', async () => {
     const a = accueil({});
-    const creation = await creerEpreuve(a.journal, saisie(), auteur);
+    const creation = await creerEpreuve(a.journal, saisie(), auteur, [manifestation], [competition]);
     const id = (creation as { epreuveId: string }).epreuveId;
     const avecIndex = accueil({ index: [indexee({ id, nom: 'Ancien nom', statut: 'preparation' })] }, a.nomBase);
     const { epreuves } = await avecIndex.charger();
@@ -141,14 +144,14 @@ describe('chargement de la liste du club (US-026)', () => {
 
   it('cas limite : une épreuve locale dont rien n’est parvenu au serveur est « non envoyée »', async () => {
     const a = accueil({});
-    await creerEpreuve(a.journal, saisie(), auteur);
+    await creerEpreuve(a.journal, saisie(), auteur, [manifestation], [competition]);
     const { epreuves } = await a.charger();
     expect(epreuves[0]).toMatchObject({ pilote: true, nonEnvoyee: true });
   });
 
   it('cas limite : une épreuve dont le serveur a reçu des événements n’est plus « non envoyée »', async () => {
     const a = accueil({});
-    const creation = await creerEpreuve(a.journal, saisie(), auteur);
+    const creation = await creerEpreuve(a.journal, saisie(), auteur, [manifestation], [competition]);
     const id = (creation as { epreuveId: string }).epreuveId;
     await a.journal.confirmer(id, 1);
     const { epreuves } = await a.charger();
@@ -163,7 +166,7 @@ describe('chargement de la liste du club (US-026)', () => {
       { index: 'hors-ligne', manifestations: 'hors-ligne', competitions: 'hors-ligne' },
       enLigne.nomBase,
     );
-    await creerEpreuve(horsLigne.journal, saisie(), auteur);
+    await creerEpreuve(horsLigne.journal, saisie(), auteur, [manifestation], [competition]);
     const donnees = await horsLigne.charger();
     expect(donnees.horsLigne).toBe(true);
     expect(donnees.copieLe).toBe(MAINTENANT);
@@ -174,7 +177,7 @@ describe('chargement de la liste du club (US-026)', () => {
 
   it('hors ligne : sans aucune copie, seules les épreuves locales sont listées, sans date', async () => {
     const a = accueil({ index: 'hors-ligne', manifestations: 'hors-ligne', competitions: 'hors-ligne' });
-    await creerEpreuve(a.journal, saisie(), auteur);
+    await creerEpreuve(a.journal, saisie(), auteur, [manifestation], [competition]);
     const donnees = await a.charger();
     expect(donnees).toMatchObject({ horsLigne: true, copieLe: null, manifestations: [], competitions: [] });
     expect(donnees.epreuves).toHaveLength(1);
@@ -183,6 +186,26 @@ describe('chargement de la liste du club (US-026)', () => {
   it('cas limite : l’index ne contient que les lignes lisibles (le protocole ignore les autres) et la liste les affiche', async () => {
     const { charger } = accueil({ index: [indexee({ id: 'lisible' })], manifestations: [manifestation] });
     expect((await charger()).epreuves.map(({ id }) => id)).toEqual(['lisible']);
+  });
+
+  it('US-045 CA-7 : une épreuve dont la compétition a disparu est chargée et rangée « à rattacher »', async () => {
+    const a = accueil({
+      index: [indexee({ id: 'orpheline', rattachement: { competitionId: 'disparue' } }), indexee()],
+      manifestations: [manifestation],
+      competitions: [competition],
+    });
+    const donnees = await a.charger();
+    const liste = construireListe(donnees, { afficherArchives: false });
+    expect(liste.aRattacher.map(({ id }) => id)).toEqual(['orpheline']);
+    expect(liste.manifestations[0]?.competitions[0]?.epreuves.map(({ id }) => id)).toEqual(['c-index']);
+  });
+
+  it('US-045 CA-5 : une compétition seule est chargée avec sa manifestation absente', async () => {
+    const seule = { ...competition, id: 'cs', manifestationId: null };
+    const a = accueil({ index: [indexee({ rattachement: { competitionId: 'cs' } })], competitions: [seule] });
+    const liste = construireListe(await a.charger(), { afficherArchives: false });
+    expect(liste.competitionsSeules.map(({ competition: { id } }) => id)).toEqual(['cs']);
+    expect(liste.competitionsSeules[0]?.epreuves).toHaveLength(1);
   });
 
   it('cas limite : une copie locale sans épreuve projetée est ignorée sans erreur', async () => {

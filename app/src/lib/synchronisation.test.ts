@@ -18,7 +18,7 @@ const creation = (nom = 'Challenge Orpi 2027'): Proposition => ({
     horaires: { appel: null, scratch: null, debutPoules: null },
     lieu: null,
     commentaire: null,
-    rattachement: null,
+    rattachement: { competitionId: 'c-test' },
   },
 });
 let horloge = 1_800_000_000_000;
@@ -289,7 +289,7 @@ describe('création d’une épreuve (US-025)', () => {
           date: '2027-03-14',
           statut: 'preparation',
           publiee: false,
-          rattachement: null,
+          rattachement: { competitionId: 'c-test' },
         },
       ],
     });
@@ -330,7 +330,7 @@ describe('épreuves connues (US-023 CA-4)', () => {
 
     const epreuves = await synchro(journal, serveur).epreuvesConnues();
     expect(epreuves.map(({ id, nom }) => `${id}:${nom}`).sort()).toEqual(['c1:Envoyée', 'c3:Locale']);
-    expect(epreuves[0]).toMatchObject({ date: '2027-03-14', rattachement: null });
+    expect(epreuves[0]).toMatchObject({ date: '2027-03-14', rattachement: { competitionId: 'c-test' } });
   });
 
   it('US-023 hors ligne : sans index, seules les épreuves de cet appareil sont connues', async () => {

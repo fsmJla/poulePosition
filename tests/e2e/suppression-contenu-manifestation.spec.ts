@@ -37,12 +37,10 @@ async function creerManifestationEtCompetition(page: Page, manifestation: string
 }
 
 /** Crée, par le formulaire, une épreuve rattachée à la manifestation (et à la compétition si elle est donnée). */
-async function rattacherEpreuve(page: Page, manifestation: string, competition: string | null, epreuve: string) {
+async function rattacherEpreuve(page: Page, manifestation: string, competition: string, epreuve: string) {
   await page.goto('/epreuves/nouvelle');
-  await page.getByLabel('Manifestation', { exact: true }).selectOption({ label: manifestation });
-  if (competition) await page.getByLabel('Compétition', { exact: true }).selectOption({ label: competition });
+  await page.getByLabel('Compétition', { exact: true }).selectOption({ label: `${competition} — ${manifestation}` });
   await page.getByLabel('Nom', { exact: true }).fill(epreuve);
-  if (!competition) await page.getByLabel('Arme').selectOption('sabre');
   await page.getByRole('button', { name: 'lundi 15 mars 2027' }).click();
   await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
   await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
@@ -61,7 +59,7 @@ async function preparer(page: Page) {
   await ouvrirPage(page);
   await creerManifestationEtCompetition(page, manifestation, competition);
   await rattacherEpreuve(page, manifestation, competition, dansCompetition);
-  await rattacherEpreuve(page, manifestation, null, directe);
+  await rattacherEpreuve(page, manifestation, competition, directe);
   await page.goto('/manifestations');
   await expect(carteCompetition(page, manifestation, competition)).toBeVisible({ timeout: 20_000 });
   return { manifestation, competition, dansCompetition, directe };

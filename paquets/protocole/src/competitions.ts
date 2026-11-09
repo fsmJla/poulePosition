@@ -37,9 +37,7 @@ const estVersion = (valeur: unknown): valeur is number => Number.isInteger(valeu
 
 function estDonnees(objet: Record<string, unknown>): boolean {
   const { manifestationId, nom, arme, commentaire } = objet;
-  return (
-    [manifestationId, nom].every((texte) => typeof texte === 'string') && [arme, commentaire].every(estTexteOuNull)
-  );
+  return typeof nom === 'string' && [manifestationId, arme, commentaire].every(estTexteOuNull);
 }
 
 /** Données lisibles et valides selon les règles du domaine (CA-1 à CA-3), normalisées ; null sinon. */
@@ -59,8 +57,8 @@ export function analyserDemandeModificationCompetition(
   brut: unknown,
 ): { ok: true; demande: DemandeModificationCompetition } | { ok: false } {
   const objet = aExactementLesChamps(brut, ['nom', 'arme', 'commentaire', 'version']);
-  // La manifestation n'est pas modifiable : on valide les autres champs avec un identifiant factice.
-  const donnees = donneesValides(objet && { ...objet, manifestationId: '-' });
+  // La manifestation n'est pas modifiable : on valide les autres champs sans elle.
+  const donnees = donneesValides(objet && { ...objet, manifestationId: null });
   if (!donnees || !estVersion(objet?.version)) return { ok: false };
   const { nom, arme, commentaire } = donnees;
   return { ok: true, demande: { nom, arme, commentaire, version: objet.version } };

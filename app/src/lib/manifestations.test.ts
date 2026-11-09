@@ -1,8 +1,9 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it, vi } from 'vitest';
 import type { EpreuveRattachee } from '@poule-position/domaine';
-import type { Manifestation } from '@poule-position/protocole';
+import type { Competition, Manifestation } from '@poule-position/protocole';
 import { creerClientManifestations, saisieDe, saisieVide, type SaisieManifestation } from './manifestations';
+import { Base, LIGNE_UNIQUE } from './stockage';
 
 const URL_SERVEUR = 'http://serveur.test';
 const MAINTENANT = 1_900_000_000_000;
@@ -66,7 +67,7 @@ const rattachee = (champs: Partial<EpreuveRattachee> = {}): EpreuveRattachee => 
   id: 'c1',
   nom: 'Sabre M13',
   date: '2027-03-15',
-  rattachement: { manifestationId: 'm1', competitionId: null },
+  rattachement: { competitionId: 'e1' },
   ...champs,
 });
 
@@ -99,7 +100,8 @@ describe('manifestations côté application (US-023)', () => {
       ok: true,
       manifestation: modifiee,
     });
-    expect(serveur.requetes[0]?.corps).toEqual({ ...saisie({ lieu: 'Gymnase' }), commentaire: null, version: 1 });
+    const envoi = serveur.requetes.find(({ route }) => route.startsWith('PATCH'));
+    expect(envoi?.corps).toEqual({ ...saisie({ lieu: 'Gymnase' }), commentaire: null, version: 1 });
     expect(saisieDe(manifestation())).toEqual({ ...saisie(), commentaire: '' });
   });
 
@@ -112,15 +114,23 @@ describe('manifestations côté application (US-023)', () => {
     expect(serveur.requetes).toHaveLength(0);
   });
 
-  it('CA-4 : la modification est refusée en citant les épreuves hors des nouvelles dates', async () => {
+  it('CA-4 : la modification est refusée en citant les épreuves de ses compétitions hors des nouvelles dates (US-045)', async () => {
     const serveur = fauxServeur({});
     const epreuves = async () => [rattachee(), rattachee({ id: 'c2', nom: 'Épée M15', date: '2027-03-14' })];
-    const resultat = await client(serveur, { epreuves }).modifier(
+    // Les compétitions du club : celle de ces épreuves est dans la manifestation m1.
+    const nomBase = `test-${crypto.randomUUID()}`;
+    await new Base(nomBase).copieCompetitions.put({
+      cle: LIGNE_UNIQUE,
+      competitions: [{ id: 'e1', manifestationId: 'm1' } as Competition],
+      copieLe: MAINTENANT,
+    });
+    const resultat = await client(serveur, { epreuves, nomBase }).modifier(
       manifestation(),
       saisie({ debut: '2027-03-14', fin: '2027-03-14' }),
     );
     expect(resultat).toEqual({ ok: false, erreur: 'EPREUVES_HORS_DATES', epreuves: [rattachee()] });
-    expect(serveur.requetes).toHaveLength(0);
+    // Seule la liste des compétitions est lue : rien n'est modifié.
+    expect(serveur.requetes.map(({ route }) => route)).toEqual(['GET /competitions']);
   });
 
   it('CA-5 : supprime une manifestation ; une manifestation non vide est refusée', async () => {

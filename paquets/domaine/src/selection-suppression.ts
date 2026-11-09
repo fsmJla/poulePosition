@@ -31,13 +31,13 @@ export interface AnalyseSelection {
   archiveesMasquees: number;
 }
 
-/** Les liens de parenté de la liste : une épreuve dépend d'une compétition, sinon d'une manifestation, sinon de personne. */
+/** Les liens de parenté de la liste (US-045) : une épreuve dépend de sa compétition, une compétition de sa manifestation s'il y en a une. */
 interface Arbre {
   manifestations: Map<string, ManifestationListee>;
   competitions: Map<string, CompetitionListee>;
   epreuves: Map<string, EpreuveListee>;
   competitionsDe: Map<string, CompetitionListee[]>;
-  /** Épreuves rattachées à une compétition, ou directement à une manifestation (clé : identifiant du parent). */
+  /** Épreuves de chaque compétition (clé : identifiant de la compétition). */
   epreuvesDe: Map<string, EpreuveListee[]>;
   /** Identifiants de parents qui contiennent une épreuve en cours. */
   enCours: Set<string>;
@@ -49,12 +49,9 @@ function ajouter<T>(index: Map<string, T[]>, cle: string, valeur: T) {
   else index.set(cle, [valeur]);
 }
 
-/** Même règle que la liste : une compétition d'une autre manifestation ne compte pas, l’épreuve dépend alors de sa manifestation. */
-function parentDe(epreuve: EpreuveListee, arbre: Pick<Arbre, 'manifestations' | 'competitions'>): string | null {
-  const { rattachement } = epreuve;
-  if (!rattachement || !arbre.manifestations.has(rattachement.manifestationId)) return null;
-  const competition = rattachement.competitionId ? arbre.competitions.get(rattachement.competitionId) : undefined;
-  return competition?.manifestationId === rattachement.manifestationId ? competition.id : rattachement.manifestationId;
+/** Même règle que la liste : une épreuve dépend de sa compétition ; sans compétition connue (« à rattacher »), de personne. */
+function parentDe(epreuve: EpreuveListee, arbre: Pick<Arbre, 'competitions'>): string | null {
+  return arbre.competitions.has(epreuve.rattachement.competitionId) ? epreuve.rattachement.competitionId : null;
 }
 
 function construireArbre({ manifestations, competitions, epreuves }: DonneesListe): Arbre {
@@ -67,7 +64,7 @@ function construireArbre({ manifestations, competitions, epreuves }: DonneesList
     enCours: new Set(),
   };
   for (const competition of arbre.competitions.values()) {
-    if (arbre.manifestations.has(competition.manifestationId))
+    if (competition.manifestationId !== null && arbre.manifestations.has(competition.manifestationId))
       ajouter(arbre.competitionsDe, competition.manifestationId, competition);
   }
   for (const epreuve of arbre.epreuves.values()) {
@@ -76,13 +73,13 @@ function construireArbre({ manifestations, competitions, epreuves }: DonneesList
     ajouter(arbre.epreuvesDe, parent, epreuve);
     if (epreuve.statut !== 'enCours') continue;
     arbre.enCours.add(parent);
-    const competition = arbre.competitions.get(parent);
-    if (competition) arbre.enCours.add(competition.manifestationId);
+    const manifestationId = arbre.competitions.get(parent)?.manifestationId;
+    if (manifestationId) arbre.enCours.add(manifestationId);
   }
   return arbre;
 }
 
-/** Les épreuves qu'emporte un parent : les siennes, et pour une manifestation celles de ses compétitions. */
+/** Les épreuves qu'emporte un parent : celles de sa compétition, ou de toutes les compétitions d'une manifestation. */
 function contenuDe(arbre: Arbre, id: string): { competitions: CompetitionListee[]; epreuves: EpreuveListee[] } {
   const competitions = arbre.competitionsDe.get(id) ?? [];
   const epreuves = [

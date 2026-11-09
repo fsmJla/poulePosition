@@ -65,7 +65,10 @@ export function saisieDe({ nom, arme, commentaire }: Competition): SaisieCompeti
   return { nom, arme: arme ?? '', commentaire: commentaire ?? '' };
 }
 
-function versDonnees(manifestationId: string, { nom, arme, commentaire }: SaisieCompetition): DonneesCompetition {
+function versDonnees(
+  manifestationId: string | null,
+  { nom, arme, commentaire }: SaisieCompetition,
+): DonneesCompetition {
   return {
     manifestationId,
     nom,
@@ -165,8 +168,8 @@ export function creerClientCompetitions({
       return { ok: true, competitions };
     },
 
-    /** CA-1 et CA-2 : crée une compétition dans une manifestation, après les règles du domaine. */
-    async creer(manifestationId: string, saisie: SaisieCompetition): Promise<ResultatEnregistrementCompetition> {
+    /** CA-1 et CA-2 : crée une compétition, dans une manifestation ou seule (null, US-045), après les règles du domaine. */
+    async creer(manifestationId: string | null, saisie: SaisieCompetition): Promise<ResultatEnregistrementCompetition> {
       const donnees = versDonnees(manifestationId, saisie);
       const erreurs = validerCompetition(donnees);
       if (Object.keys(erreurs).length > 0) return { ok: false, erreurs };

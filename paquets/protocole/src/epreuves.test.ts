@@ -29,7 +29,7 @@ const donnees = (nom = 'Orpi'): DonneesEpreuve => ({
   horaires: { appel: null, scratch: null, debutPoules: null },
   lieu: 'Salle Bellegrave',
   commentaire: null,
-  rattachement: null,
+  rattachement: { competitionId: 'e1' },
 });
 
 const evenement = (seq: number, nom = 'Orpi'): Evenement => ({
@@ -53,7 +53,7 @@ const resume = (champs: Record<string, unknown> = {}): ResumeEpreuve =>
     date: '2027-03-14',
     statut: 'preparation',
     publiee: false,
-    rattachement: null,
+    rattachement: { competitionId: 'e1' },
     ...champs,
   }) as ResumeEpreuve;
 
@@ -97,9 +97,15 @@ describe('demande d’envoi d’un lot (ADR-0016)', () => {
       date: 3,
       statut: 'inconnu',
       publiee: 'non',
-      rattachement: { manifestationId: 3, competitionId: null },
+      rattachement: { competitionId: 3 },
     })) {
       expect(analyserDemandeEnvoi(demande({ resume: resume({ [champ]: valeur }) }))).toEqual({ ok: false });
+    }
+  });
+
+  it('US-045 CA-1 : refuse un résumé sans compétition, vide ou avec une manifestation en plus', () => {
+    for (const rattachement of [null, { competitionId: '' }, { competitionId: 'e1', manifestationId: 'm1' }, {}]) {
+      expect(analyserDemandeEnvoi(demande({ resume: resume({ rattachement }) }))).toEqual({ ok: false });
     }
   });
 
@@ -213,8 +219,8 @@ describe('résumé d’une épreuve pour l’index du club (US-025)', () => {
     expect(resumeDe(epreuve!)).toEqual(resume());
   });
 
-  it('US-025 CA-3 : le résumé garde le rattachement de l’épreuve', () => {
-    const rattachement = { manifestationId: 'm1', competitionId: 'e1' };
+  it('US-045 CA-3 : le résumé garde le rattachement de l’épreuve, sa seule compétition', () => {
+    const rattachement = { competitionId: 'e2' };
     const { epreuve } = projeter([
       { ...evenement(1), type: 'EpreuveCreee' as const, donnees: { ...donnees(), rattachement } },
     ]);

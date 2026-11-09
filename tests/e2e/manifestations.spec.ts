@@ -69,8 +69,8 @@ test('US-023 CA-4 : des dates qui excluent une épreuve rattachée sont refusée
   const urlServeur = new URL((await liste).url()).origin;
   await creer(page, nom);
 
-  // Le sélecteur de rattachement viendra avec US-024 : l’épreuve rattachée est envoyée directement au serveur,
-  // comme le ferait son PC pilote (US-022).
+  // L’épreuve, dans une compétition de la manifestation (US-045), est envoyée directement au serveur, comme le ferait
+  // son PC pilote (US-022).
   await page.evaluate(
     async ({ urlServeur, nom, epreuve }) => {
       const base = await new Promise<IDBDatabase>((ok, ko) => {
@@ -86,7 +86,13 @@ test('US-023 CA-4 : des dates qui excluent une épreuve rattachée sont refusée
       const entetes = { Authorization: `Bearer ${session.jeton}`, 'Content-Type': 'application/json' };
       const { manifestations } = await (await fetch(`${urlServeur}/manifestations`, { headers: entetes })).json();
       const manifestationId = manifestations.find((manifestation: { nom: string }) => manifestation.nom === nom).id;
-      const rattachement = { manifestationId, competitionId: null };
+      const creation = await fetch(`${urlServeur}/competitions`, {
+        method: 'POST',
+        headers: entetes,
+        body: JSON.stringify({ manifestationId, nom: `Compétition ${nom}`, arme: 'sabre', commentaire: null }),
+      });
+      const { competition } = await creation.json();
+      const rattachement = { competitionId: competition.id };
       const epreuveId = crypto.randomUUID();
       const lot = {
         appareilId: crypto.randomUUID(),

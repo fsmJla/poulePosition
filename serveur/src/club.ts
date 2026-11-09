@@ -33,7 +33,7 @@ import type {
   Manifestation,
 } from '@poule-position/protocole';
 import type { Env } from './index';
-import { requetesInversionVocabulaire } from './logique';
+import { requetesCompetitionsSeules, requetesInversionVocabulaire, type ColonneSql } from './logique';
 import { ListeEnMemoire, type Lecture } from './liste-en-memoire';
 import { deciderSuppression } from './replication';
 
@@ -164,6 +164,13 @@ export class Club extends DurableObject<Env> {
     for (const requete of requetesInversionVocabulaire(colonnesEpreuves.map(({ name }) => name))) {
       ctx.storage.sql.exec(requete);
     }
+    // US-045 : une compétition peut être seule, `manifestation_id` accepte NULL (ancien schéma : table recréée).
+    const colonnesCompetitions = ctx.storage.sql.exec<Record<keyof ColonneSql, SqlStorageValue>>(
+      'PRAGMA table_info(competitions)',
+    );
+    for (const requete of requetesCompetitionsSeules(colonnesCompetitions.toArray() as unknown as ColonneSql[])) {
+      ctx.storage.sql.exec(requete);
+    }
     // US-022 (ADR-0016) : une ligne par épreuve, le résumé fourni par le pilote complété par le Worker.
     ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS epreuves (
@@ -187,12 +194,13 @@ export class Club extends DurableObject<Env> {
         version INTEGER NOT NULL,
         debut TEXT NOT NULL
       )`);
-    // US-024 (ADR-0016 §4) : une ligne par compétition, rattachée à une manifestation, avec le même contrôle de version.
+    // US-024 (ADR-0016 §4) : une ligne par compétition, avec le même contrôle de version ; rattachée à une manifestation,
+    // ou seule (US-045 : `manifestation_id` NULL).
     ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS competitions (
         id TEXT PRIMARY KEY,
         club_id TEXT NOT NULL,
-        manifestation_id TEXT NOT NULL,
+        manifestation_id TEXT,
         contenu TEXT NOT NULL,
         version INTEGER NOT NULL
       )`);
@@ -449,6 +457,7 @@ export class Club extends DurableObject<Env> {
     this.ctx.storage.sql.exec('DELETE FROM epreuves WHERE id = ?', epreuveId);
     this.pierresTombales.invalider();
     this.index.modifier((lignes) => lignes.filter(({ id }) => id !== epreuveId));
+    this.retirerCompetitionsSeulesVides(ligne.rattachement ? [ligne.rattachement.competitionId] : []);
     return { ok: true, aEffacer: true };
   }
 
@@ -470,23 +479,48 @@ export class Club extends DurableObject<Env> {
    */
   async supprimerEpreuves(epreuveIds: readonly string[]): Promise<string[]> {
     const aEffacer: string[] = [];
+    const competitions = new Set<string>();
     for (const epreuveId of epreuveIds) {
       if (this.estSupprimee(epreuveId)) {
         aEffacer.push(epreuveId);
         continue;
       }
-      if (!this.lireLigneIndex(epreuveId)) continue;
+      const ligne = this.lireLigneIndex(epreuveId);
+      if (!ligne) continue;
       this.ctx.storage.sql.exec(
         'INSERT OR IGNORE INTO epreuves_supprimees (id, supprimee_le) VALUES (?, ?)',
         epreuveId,
         Date.now(),
       );
       this.ctx.storage.sql.exec('DELETE FROM epreuves WHERE id = ?', epreuveId);
+      if (ligne.rattachement) competitions.add(ligne.rattachement.competitionId);
       aEffacer.push(epreuveId);
     }
     this.pierresTombales.invalider();
     this.index.modifier((lignes) => lignes.filter(({ id }) => !epreuveIds.includes(id)));
+    this.retirerCompetitionsSeulesVides([...competitions]);
     return aEffacer;
+  }
+
+  /**
+   * US-045 CA-6 : une compétition seule n'a de sens que par ses épreuves ; la dernière épreuve supprimée l'emporte. Une
+   * compétition d'une manifestation, elle, reste (vide) : elle se supprime à part.
+   */
+  private retirerCompetitionsSeulesVides(competitionIds: readonly string[]) {
+    const restantes = new Set(this.lignesIndex().map(({ rattachement }) => rattachement?.competitionId));
+    for (const id of competitionIds) {
+      if (restantes.has(id) || this.lireCompetition(id)?.manifestationId !== null) continue;
+      this.ctx.storage.sql.exec('DELETE FROM competitions WHERE id = ?', id);
+      this.listeCompetitions.invalider();
+    }
+  }
+
+  /** Identifiants des compétitions d'une manifestation. */
+  private competitionsDe(manifestationId: string): string[] {
+    return this.listeCompetitions
+      .obtenir()
+      .filter((competition) => competition.manifestationId === manifestationId)
+      .map(({ id }) => id);
   }
 
   /** US-029 : ligne de l'index d'une épreuve, ou null. */
@@ -595,15 +629,14 @@ export class Club extends DurableObject<Env> {
   }
 
   /**
-   * US-023 CA-5 : supprime une manifestation vide. Une épreuve de l'index qui s'y rattache l'en empêche (les
-   * lignes d'avant US-025, sans rattachement, ne comptent pas).
+   * US-023 CA-5 : supprime une manifestation vide : une compétition qui s'y rattache l'en empêche (ses épreuves sont
+   * dans ses compétitions, US-045).
    */
   async supprimerManifestation(
     id: string,
   ): Promise<{ ok: true } | { ok: false; erreur: 'MANIFESTATION_INCONNUE' | 'MANIFESTATION_NON_VIDE' }> {
     if (!this.lireManifestation(id)) return { ok: false, erreur: 'MANIFESTATION_INCONNUE' };
-    const epreuves = this.lignesIndex().map(({ rattachement }) => ({ rattachement: rattachement ?? null }));
-    if (!estVide(id, epreuves, await this.listerCompetitions())) return { ok: false, erreur: 'MANIFESTATION_NON_VIDE' };
+    if (!estVide(id, await this.listerCompetitions())) return { ok: false, erreur: 'MANIFESTATION_NON_VIDE' };
     this.ctx.storage.sql.exec('DELETE FROM manifestations WHERE id = ?', id);
     this.listeManifestations.invalider();
     return { ok: true };
@@ -614,8 +647,9 @@ export class Club extends DurableObject<Env> {
    * ses compétitions ? Le statut est celui du dernier résumé du pilote (ADR-0016 §3).
    */
   async contenuManifestation(manifestationId: string): Promise<{ existe: boolean; epreuves: EpreuveASupprimer[] }> {
+    const competitions = new Set(this.competitionsDe(manifestationId));
     const epreuves = this.lignesIndex()
-      .filter(({ rattachement }) => rattachement?.manifestationId === manifestationId)
+      .filter(({ rattachement }) => rattachement && competitions.has(rattachement.competitionId))
       .map(({ id, nom, statut }) => ({ id, nom, statut }));
     return { existe: this.lireManifestation(manifestationId) !== null, epreuves };
   }
@@ -629,7 +663,8 @@ export class Club extends DurableObject<Env> {
     manifestationId: string,
   ): Promise<{ ok: true } | { ok: false; erreur: 'MANIFESTATION_NON_VIDE' }> {
     if (!this.lireManifestation(manifestationId)) return { ok: true };
-    if (this.lignesIndex().some(({ rattachement }) => rattachement?.manifestationId === manifestationId)) {
+    const competitions = new Set(this.competitionsDe(manifestationId));
+    if (this.lignesIndex().some(({ rattachement }) => rattachement && competitions.has(rattachement.competitionId))) {
       return { ok: false, erreur: 'MANIFESTATION_NON_VIDE' };
     }
     this.ctx.storage.sql.exec('DELETE FROM competitions WHERE manifestation_id = ?', manifestationId);
@@ -649,7 +684,10 @@ export class Club extends DurableObject<Env> {
     donnees: DonneesCompetition,
     auteur: string,
   ): Promise<{ ok: true; competition: Competition } | { ok: false; erreur: 'MANIFESTATION_INCONNUE' }> {
-    if (!this.lireManifestation(donnees.manifestationId)) return { ok: false, erreur: 'MANIFESTATION_INCONNUE' };
+    // US-045 CA-2 : une compétition seule (manifestation null) n'a rien à vérifier.
+    if (donnees.manifestationId !== null && !this.lireManifestation(donnees.manifestationId)) {
+      return { ok: false, erreur: 'MANIFESTATION_INCONNUE' };
+    }
     const competition = {
       id: crypto.randomUUID(),
       ...donnees,

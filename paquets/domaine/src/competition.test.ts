@@ -25,9 +25,11 @@ describe('compétition (US-024)', () => {
     });
   });
 
-  it('CA-2 : une compétition appartient toujours à une manifestation', () => {
+  it('US-045 CA-2 : une compétition est dans une manifestation, ou seule', () => {
+    expect(validerCompetition(donnees({ manifestationId: 'm1' }))).toEqual({});
+    expect(validerCompetition(donnees({ manifestationId: null }))).toEqual({});
     expect(validerCompetition(donnees({ manifestationId: '' }))).toEqual({
-      manifestationId: 'MANIFESTATION_OBLIGATOIRE',
+      manifestationId: 'MANIFESTATION_INVALIDE',
     });
   });
 
@@ -38,11 +40,10 @@ describe('compétition (US-024)', () => {
   });
 
   it('CA-5 : une compétition est vide si aucune épreuve ne s’y rattache', () => {
-    const dans = { rattachement: { manifestationId: 'm1', competitionId: 'e1' } };
-    const autre = { rattachement: { manifestationId: 'm1', competitionId: 'e2' } };
-    const sansCompetition = { rattachement: { manifestationId: 'm1', competitionId: null } };
+    const dans = { rattachement: { competitionId: 'e1' } };
+    const autre = { rattachement: { competitionId: 'e2' } };
     expect(estVideCompetition('e1', [])).toBe(true);
-    expect(estVideCompetition('e1', [autre, sansCompetition, { rattachement: null }])).toBe(true);
+    expect(estVideCompetition('e1', [autre, { rattachement: null }])).toBe(true);
     expect(estVideCompetition('e1', [autre, dans])).toBe(false);
   });
 });

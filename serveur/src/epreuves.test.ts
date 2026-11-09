@@ -69,7 +69,7 @@ const RESUME: ResumeEpreuve = {
   date: '2027-03-14',
   statut: 'preparation',
   publiee: false,
-  rattachement: null,
+  rattachement: { competitionId: 'c-test' },
 };
 
 const evenement = (
@@ -95,7 +95,7 @@ const evenement = (
     horaires: { appel: null, scratch: null, debutPoules: null },
     lieu: null,
     commentaire: null,
-    rattachement: null,
+    rattachement: { competitionId: 'c-test' },
   },
   ...champs,
 });

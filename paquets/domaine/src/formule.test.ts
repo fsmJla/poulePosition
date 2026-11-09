@@ -19,7 +19,7 @@ const creation: Evenement = {
     horaires: { appel: null, scratch: null, debutPoules: null },
     lieu: null,
     commentaire: null,
-    rattachement: null,
+    rattachement: { competitionId: 'c1' },
   },
 };
 const formule = (

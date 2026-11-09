@@ -38,8 +38,7 @@ async function creerManifestationEtCompetition(page: Page, manifestation: string
 /** Crée, par le formulaire, une épreuve rattachée à la compétition, et attend que le serveur l'ait reçue. */
 async function rattacherEpreuve(page: Page, manifestation: string, competition: string, epreuve: string) {
   await page.goto('/epreuves/nouvelle');
-  await page.getByLabel('Manifestation', { exact: true }).selectOption({ label: manifestation });
-  await page.getByLabel('Compétition', { exact: true }).selectOption({ label: competition });
+  await page.getByLabel('Compétition', { exact: true }).selectOption({ label: `${competition} — ${manifestation}` });
   await page.getByLabel('Nom', { exact: true }).fill(epreuve);
   await page.getByRole('button', { name: 'lundi 15 mars 2027' }).click();
   await page.getByRole('button', { name: 'Créer l’épreuve' }).click();

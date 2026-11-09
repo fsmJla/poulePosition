@@ -82,13 +82,18 @@ describe('compétitions côté application (US-024)', () => {
     expect(await c.copie()).toEqual({ competitions: [competition()], copieLe: MAINTENANT });
   });
 
-  it('CA-2 : sans manifestation, la création est refusée sans rien envoyer', async () => {
-    const serveur = fauxServeur({});
-    expect(await client(serveur).creer('', saisie())).toEqual({
-      ok: false,
-      erreurs: { manifestationId: 'MANIFESTATION_OBLIGATOIRE' },
+  it('US-045 CA-2 : une compétition se crée seule (manifestation null), l’identifiant vide est refusé sans rien envoyer', async () => {
+    const serveur = fauxServeur({
+      'POST /competitions': { statut: 201, corps: { ok: true, competition: competition({ manifestationId: null }) } },
     });
-    expect(serveur.requetes).toHaveLength(0);
+    expect(await client(serveur).creer(null, saisie())).toMatchObject({ ok: true });
+    expect(serveur.requetes[0]?.corps).toMatchObject({ manifestationId: null });
+    const refus = fauxServeur({});
+    expect(await client(refus).creer('', saisie())).toEqual({
+      ok: false,
+      erreurs: { manifestationId: 'MANIFESTATION_INVALIDE' },
+    });
+    expect(refus.requetes).toHaveLength(0);
   });
 
   it('CA-1 : un nom vide est refusé sans rien envoyer', async () => {

@@ -25,6 +25,7 @@ import {
   type TypeEpreuve,
 } from '@poule-position/domaine';
 import type { Competition, Manifestation } from '@poule-position/protocole';
+import type { ClientCompetitions } from './competitions';
 import type { Contexte, ErreurJournal, Journal } from './journal';
 import { textes } from './textes';
 
@@ -46,9 +47,7 @@ export interface SaisieEpreuve {
   debutPoules: string;
   lieu: string;
   commentaire: string;
-  /** Manifestation choisie (US-024) ; vide pour une épreuve isolée. */
-  manifestationId: string;
-  /** Compétition de cette manifestation ; vide si aucune. */
+  /** US-045 : compétition de l'épreuve, toujours choisie ; vide tant que le formulaire n'en a pas. */
   competitionId: string;
 }
 
@@ -67,7 +66,6 @@ export function saisieVide(): SaisieEpreuve {
     debutPoules: '',
     lieu: '',
     commentaire: '',
-    manifestationId: '',
     competitionId: '',
   };
 }
@@ -87,9 +85,7 @@ export function versDonnees(saisie: SaisieEpreuve): DonneesEpreuve {
     horaires: { appel: ouNull(saisie.appel), scratch: ouNull(saisie.scratch), debutPoules: ouNull(saisie.debutPoules) },
     lieu: ouNull(saisie.lieu),
     commentaire: ouNull(saisie.commentaire),
-    rattachement: saisie.manifestationId
-      ? { manifestationId: saisie.manifestationId, competitionId: ouNull(saisie.competitionId) }
-      : null,
+    rattachement: { competitionId: saisie.competitionId },
   };
 }
 
@@ -110,47 +106,41 @@ export function saisieDe(donnees: DonneesEpreuve): SaisieEpreuve {
     debutPoules: donnees.horaires.debutPoules ?? '',
     lieu: donnees.lieu ?? '',
     commentaire: donnees.commentaire ?? '',
-    manifestationId: donnees.rattachement?.manifestationId ?? '',
-    competitionId: donnees.rattachement?.competitionId ?? '',
+    competitionId: donnees.rattachement.competitionId,
   };
 }
 
 /**
- * Ce que l'appareil sait du rattachement choisi (dernières copies gardées) ; null pour une épreuve isolée, ou si la
- * manifestation, ou la compétition de cette manifestation, est inconnue de l'appareil.
+ * Ce que l'appareil sait de la compétition choisie (dernières copies gardées) ; null si elle est inconnue de l'appareil,
+ * ou si sa manifestation l'est.
  */
 export function cadreDe(
-  { manifestationId, competitionId }: Pick<SaisieEpreuve, 'manifestationId' | 'competitionId'>,
+  { competitionId }: Pick<SaisieEpreuve, 'competitionId'>,
   manifestations: readonly Manifestation[],
   competitions: readonly Competition[],
 ): CadreRattachement | null {
-  const manifestation = manifestations.find(({ id }) => id === manifestationId);
+  const competition = competitions.find(({ id }) => id === competitionId);
+  if (!competition) return null;
+  if (competition.manifestationId === null) return { manifestation: null, arme: competition.arme };
+  const manifestation = manifestations.find(({ id }) => id === competition.manifestationId);
   if (!manifestation) return null;
   const { debut, fin, lieu } = manifestation;
-  if (competitionId === '') return { manifestation: { debut, fin, lieu }, competition: null };
-  const competition = competitions.find(({ id }) => id === competitionId);
-  if (!competition || competition.manifestationId !== manifestationId) return null;
-  return { manifestation: { debut, fin, lieu }, competition: competition.arme ? { arme: competition.arme } : null };
+  return { manifestation: { debut, fin, lieu }, arme: competition.arme };
 }
 
 /**
- * US-025 CA-3 : applique le choix de rattachement au formulaire. Le lieu de la manifestation et l'arme de la compétition sont
- * proposés sans écraser le lieu saisi ; un autre choix de manifestation efface la date et la compétition de l'ancienne.
+ * US-045 CA-3 : applique le choix de la compétition au formulaire. Le lieu de la manifestation et l'arme de la compétition
+ * sont proposés sans écraser le lieu saisi ; passer à une compétition d'une autre manifestation efface la date.
  */
 export function rattacher(
   saisie: SaisieEpreuve,
-  manifestationId: string,
   competitionId: string,
   manifestations: readonly Manifestation[],
   competitions: readonly Competition[],
 ): SaisieEpreuve {
-  const change = manifestationId !== saisie.manifestationId;
-  const suivante = {
-    ...saisie,
-    manifestationId,
-    competitionId: manifestationId ? competitionId : '',
-    date: change ? '' : saisie.date,
-  };
+  const manifestationDe = (id: string) => competitions.find((competition) => competition.id === id)?.manifestationId;
+  const change = manifestationDe(competitionId) !== manifestationDe(saisie.competitionId);
+  const suivante = { ...saisie, competitionId, date: change ? '' : saisie.date };
   const cadre = cadreDe(suivante, manifestations, competitions);
   if (!cadre) return suivante;
   const proposition = preremplir(cadre);
@@ -177,8 +167,8 @@ export async function creerEpreuve(
   const donnees = versDonnees(saisie);
   const cadre = cadreDe(saisie, manifestations, competitions);
   const erreurs = validerEpreuve(donnees, cadre);
-  // Hors ligne, seule la dernière copie est connue : un rattachement qu'elle ne contient pas est refusé.
-  if (donnees.rattachement && !cadre) erreurs.rattachement = 'RATTACHEMENT_INVALIDE';
+  // Hors ligne, seule la dernière copie est connue : une compétition qu'elle ne contient pas est refusée (CA-1 si vide).
+  if (donnees.rattachement.competitionId && !cadre) erreurs.rattachement = 'RATTACHEMENT_INVALIDE';
   if (Object.keys(erreurs).length > 0) return { ok: false, erreurs };
   if (!clubId) return { ok: false, erreur: 'CLUB_INCONNU' };
   const epreuveId = crypto.randomUUID();
@@ -186,6 +176,52 @@ export async function creerEpreuve(
   if ('projection' in resultat) return { ok: true, epreuveId };
   // Une épreuve neuve n'a ni pilote ailleurs ni journal incohérent : il ne reste que l'échec d'écriture.
   return { ok: false, erreur: 'ECRITURE_IMPOSSIBLE' };
+}
+
+/** Erreurs de la création en ligne de la compétition seule (US-045 CA-4), avant l'écriture de l'épreuve. */
+export type ErreurCompetitionSeule = 'HORS_LIGNE' | 'SESSION_INVALIDE' | 'ERREUR_INATTENDUE';
+
+export type ResultatCreationSeule = ResultatCreation | { ok: false; erreur: ErreurCompetitionSeule };
+
+/** Identifiant provisoire de la compétition seule, le temps de vérifier l'épreuve avant de la créer en ligne. */
+const COMPETITION_A_CREER = 'a-creer';
+
+/**
+ * US-045 CA-4 : crée une compétition seule et sa première épreuve en une étape. L'épreuve porte le nom de la compétition
+ * et son arme. Les règles de l'épreuve sont vérifiées d'abord, pour ne rien créer en ligne d'une saisie refusée ; la
+ * compétition se crée en ligne seulement (hors ligne : `HORS_LIGNE`, rien n'est écrit), puis l'épreuve s'écrit dans le
+ * journal local. Si cette écriture échoue, la compétition créée est retirée (au mieux).
+ */
+export async function creerCompetitionSeule(
+  journal: Journal,
+  competitions: Pick<ClientCompetitions, 'creer' | 'supprimer'>,
+  saisie: SaisieEpreuve,
+  contexte: Omit<Contexte, 'clubId'> & { clubId: string | undefined },
+): Promise<ResultatCreationSeule> {
+  const erreurs = validerEpreuve(versDonnees({ ...saisie, competitionId: COMPETITION_A_CREER }), {
+    manifestation: null,
+    arme: null,
+  });
+  if (Object.keys(erreurs).length > 0) return { ok: false, erreurs };
+  if (!contexte.clubId) return { ok: false, erreur: 'CLUB_INCONNU' };
+  const creation = await competitions.creer(null, { nom: saisie.nom, arme: saisie.arme, commentaire: '' });
+  if (!creation.ok) {
+    const erreur = 'erreur' in creation ? creation.erreur : null;
+    return {
+      ok: false,
+      erreur: erreur === 'HORS_LIGNE' || erreur === 'SESSION_INVALIDE' ? erreur : 'ERREUR_INATTENDUE',
+    };
+  }
+  const { competition } = creation;
+  const resultat = await creerEpreuve(
+    journal,
+    { ...saisie, competitionId: competition.id },
+    contexte,
+    [],
+    [competition],
+  );
+  if (!resultat.ok) void competitions.supprimer(competition.id);
+  return resultat;
 }
 
 /**
@@ -226,7 +262,9 @@ export async function modifierEpreuve(
       ? cadreDe(saisie, manifestations, competitions)
       : null;
   const erreurs = validerEpreuve(donnees, cadre);
-  if ('rattachement' in changes && donnees.rattachement && !cadre) erreurs.rattachement = 'RATTACHEMENT_INVALIDE';
+  if ('rattachement' in changes && donnees.rattachement.competitionId && !cadre) {
+    erreurs.rattachement = 'RATTACHEMENT_INVALIDE';
+  }
   if (Object.keys(erreurs).length > 0) return { ok: false, erreurs };
   const resultat = await journal.enregistrer(
     epreuveId,

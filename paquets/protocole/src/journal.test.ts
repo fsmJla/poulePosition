@@ -11,7 +11,7 @@ const donnees = (champs: Record<string, unknown> = {}) => ({
   horaires: { appel: '08:30', scratch: null, debutPoules: '09:30' },
   lieu: null,
   commentaire: null,
-  rattachement: null,
+  rattachement: { competitionId: 'e1' },
   ...champs,
 });
 
@@ -77,11 +77,21 @@ describe('format du journal (docs/protocole.md)', () => {
       horaires: { appel: '08:30', scratch: '09:00', debutPoules: '09:30' },
       lieu: 'Salle Bellegrave',
       commentaire: 'Buvette',
-      rattachement: { manifestationId: 'm1', competitionId: 'e1' },
+      rattachement: { competitionId: 'e1' },
     });
     expect(lireEvenement(brut({ donnees: complete }))).toEqual(brut({ donnees: complete }));
-    const dansManifestation = donnees({ rattachement: { manifestationId: 'm1', competitionId: null } });
-    expect(lireEvenement(brut({ donnees: dansManifestation }))).not.toBeNull();
+  });
+
+  it('US-045 CA-1 : refuse une épreuve sans compétition, ou avec l’ancien rattachement à une manifestation', () => {
+    for (const rattachement of [
+      null,
+      { competitionId: '' },
+      { competitionId: null },
+      { manifestationId: 'm1', competitionId: 'e1' },
+      { manifestationId: 'm1' },
+    ]) {
+      expect(lireEvenement(brut({ donnees: donnees({ rattachement }) }))).toBeNull();
+    }
   });
 
   it('US-025 CA-1 : refuse des données d’épreuve incomplètes ou mal typées', () => {
@@ -99,8 +109,7 @@ describe('format du journal (docs/protocole.md)', () => {
     expect(lireEvenement(brut({ donnees: donnees({ horaires: { appel: null } }) }))).toBeNull();
     const horaireNumerique = { appel: 830, scratch: null, debutPoules: null };
     expect(lireEvenement(brut({ donnees: donnees({ horaires: horaireNumerique }) }))).toBeNull();
-    expect(lireEvenement(brut({ donnees: donnees({ rattachement: { manifestationId: 'm1' } }) }))).toBeNull();
-    const competitionNumerique = { manifestationId: 'm1', competitionId: 2 };
+    const competitionNumerique = { competitionId: 2 };
     expect(lireEvenement(brut({ donnees: donnees({ rattachement: competitionNumerique }) }))).toBeNull();
   });
 });
@@ -114,7 +123,7 @@ describe('événement EpreuveModifiee (US-027)', () => {
       { nom: 'Autre' },
       { lieu: null, commentaire: 'Buvette' },
       { horaires: { appel: '08:00', scratch: null, debutPoules: null } },
-      { rattachement: { manifestationId: 'm1', competitionId: null }, date: '2027-03-14' },
+      { rattachement: { competitionId: 'e2' }, date: '2027-03-14' },
     ]) {
       expect(lireEvenement(modifiee(champs))).toEqual(modifiee(champs));
     }
@@ -126,7 +135,8 @@ describe('événement EpreuveModifiee (US-027)', () => {
     expect(lireEvenement(modifiee({ nom: 3 }))).toBeNull();
     expect(lireEvenement(modifiee({ lieu: undefined }))).toBeNull();
     expect(lireEvenement(modifiee({ horaires: { appel: '08:00' } }))).toBeNull();
-    expect(lireEvenement(modifiee({ rattachement: { manifestationId: 1, competitionId: null } }))).toBeNull();
+    expect(lireEvenement(modifiee({ rattachement: { competitionId: 1 } }))).toBeNull();
+    expect(lireEvenement(modifiee({ rattachement: null }))).toBeNull();
     expect(lireEvenement(brut({ type: 'EpreuveModifiee', donnees: [] }))).toBeNull();
     expect(lireEvenement(brut({ type: 'Inconnu' }))).toBeNull();
   });

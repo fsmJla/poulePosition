@@ -33,7 +33,7 @@ const manifestation = (id: string) => ({
   fin: '2027-03-15',
   lieu: null,
 });
-const competition = (id: string, manifestationId: string) => ({
+const competition = (id: string, manifestationId: string | null) => ({
   id,
   manifestationId,
   nom: `Compétition ${id}`,
@@ -41,19 +41,19 @@ const competition = (id: string, manifestationId: string) => ({
 });
 
 /**
- * M1 : compétitions E1 (c1, c2 archivée) et E2 (c3), épreuve directe c4.
- * M2 : compétition E3 (c5 en cours). M3 : vide. c6 isolée.
+ * M1 : compétitions E1 (c1, c2 archivée) et E2 (c3, c4).
+ * M2 : compétition E3 (c5 en cours). M3 : vide. E4 : compétition seule (c6).
  */
 const donnees: DonneesListe = {
   manifestations: [manifestation('M1'), manifestation('M2'), manifestation('M3')],
-  competitions: [competition('E1', 'M1'), competition('E2', 'M1'), competition('E3', 'M2')],
+  competitions: [competition('E1', 'M1'), competition('E2', 'M1'), competition('E3', 'M2'), competition('E4', null)],
   epreuves: [
-    epreuve('c1', { manifestationId: 'M1', competitionId: 'E1' }),
-    epreuve('c2', { manifestationId: 'M1', competitionId: 'E1' }, 'archivee'),
-    epreuve('c3', { manifestationId: 'M1', competitionId: 'E2' }),
-    epreuve('c4', { manifestationId: 'M1', competitionId: null }),
-    epreuve('c5', { manifestationId: 'M2', competitionId: 'E3' }, 'enCours'),
-    epreuve('c6', null),
+    epreuve('c1', { competitionId: 'E1' }),
+    epreuve('c2', { competitionId: 'E1' }, 'archivee'),
+    epreuve('c3', { competitionId: 'E2' }),
+    epreuve('c4', { competitionId: 'E2' }),
+    epreuve('c5', { competitionId: 'E3' }, 'enCours'),
+    epreuve('c6', { competitionId: 'E4' }),
   ],
 };
 
@@ -67,7 +67,7 @@ describe('sélection pour la suppression par lot (US-043)', () => {
   });
 
   it('US-043 CA-1 : les autres éléments se cochent, parents comme épreuves', () => {
-    for (const id of ['M1', 'M3', 'E1', 'E2', 'c1', 'c2', 'c6']) expect(motifNonCochable(donnees, id)).toBeNull();
+    for (const id of ['M1', 'M3', 'E1', 'E2', 'E4', 'c1', 'c2', 'c6']) expect(motifNonCochable(donnees, id)).toBeNull();
   });
 
   it('US-043 CA-2 : cocher un parent verrouille ses compétitions et ses épreuves, avec le nom du parent', () => {
@@ -98,7 +98,7 @@ describe('sélection pour la suppression par lot (US-043)', () => {
   it('US-043 CA-3 : « tout cocher » prend les éléments visibles et supprimables, jamais ceux qu’un filtre masque', () => {
     const sansArchives = toutCocherListe(donnees, false);
     expect(sansArchives.has('c2')).toBe(false);
-    expect([...sansArchives].sort()).toEqual(['E1', 'E2', 'M1', 'M3', 'c1', 'c3', 'c4', 'c6']);
+    expect([...sansArchives].sort()).toEqual(['E1', 'E2', 'E4', 'M1', 'M3', 'c1', 'c3', 'c4', 'c6']);
     expect(toutCocherListe(donnees, true).has('c2')).toBe(true);
   });
 
@@ -132,11 +132,7 @@ describe('sélection pour la suppression par lot (US-043)', () => {
 
   it('US-043 CA-5 : les compétitions restantes partent avant les épreuves restantes', () => {
     const analyse = analyserSelection(donnees, cochees('c4', 'E2', 'c6'), true);
-    expect(planSuppression(analyse).map(({ type, id }) => `${type}:${id}`)).toEqual([
-      'competition:E2',
-      'epreuve:c4',
-      'epreuve:c6',
-    ]);
+    expect(planSuppression(analyse).map(({ type, id }) => `${type}:${id}`)).toEqual(['competition:E2', 'epreuve:c6']);
   });
 
   it('US-043 CA-6 : un élément devenu non supprimable (en cours) est ignoré de la sélection', () => {
@@ -151,13 +147,17 @@ describe('sélection pour la suppression par lot (US-043)', () => {
     expect(analyse.decompte).toEqual({ manifestations: 0, competitions: 0, epreuves: 0 });
   });
 
-  it('US-043 : une épreuve rattachée à la compétition d’une autre manifestation dépend de sa manifestation', () => {
-    const croisee: DonneesListe = {
-      ...donnees,
-      epreuves: [epreuve('x', { manifestationId: 'M3', competitionId: 'E1' })],
-    };
-    expect([...analyserSelection(croisee, cochees('M3'), true).verrouillees.keys()]).toEqual(['x']);
-    expect(analyserSelection(croisee, cochees('E1'), true).verrouillees.size).toBe(0);
+  it('US-045 CA-6 : les types sont manifestation, compétition et épreuve ; une compétition seule se coche avec son contenu', () => {
+    const { verrouillees, decompte } = analyserSelection(donnees, cochees('E4'), true);
+    expect([...verrouillees.keys()]).toEqual(['c6']);
+    expect(decompte).toEqual({ manifestations: 0, competitions: 1, epreuves: 1 });
+  });
+
+  it('US-045 CA-7 : une épreuve dont la compétition a disparu ne dépend de personne et se coche seule', () => {
+    const orpheline: DonneesListe = { ...donnees, epreuves: [epreuve('x', { competitionId: 'disparue' })] };
+    expect(motifNonCochable(orpheline, 'x')).toBeNull();
+    expect(analyserSelection(orpheline, cochees('M1', 'E1'), true).verrouillees.has('x')).toBe(false);
+    expect(analyserSelection(orpheline, cochees('x'), true).decompte.epreuves).toBe(1);
   });
 });
 
