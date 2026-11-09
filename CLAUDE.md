@@ -17,10 +17,10 @@ Application d'organisation et de suivi de compétitions d'escrime (poules, table
 ## Architecture en bref (détails dans les ADR)
 
 - `app/` : PWA Svelte 5 + Vite + TypeScript, un build pour quatre usages (pilote, saisie, écran, spectateur).
-- `serveur/` : Worker Cloudflare et Durable Objects (`Competition`, `Club`, `Limiteur`), issu du relais. Il ne contient **aucune logique métier d'escrime**.
+- `serveur/` : Worker Cloudflare et Durable Objects (`Epreuve`, `Club`, `Limiteur`), issu du relais. Il ne contient **aucune logique métier d'escrime**.
 - `paquets/domaine/` : règles métier **pures** (aucun accès réseau, stockage ou DOM). Tout calcul métier vit ici.
 - `paquets/protocole/` : types et validation des messages, partagés par l'app et le serveur.
-- L'état d'une compétition est un **journal d'événements**. Seul le PC pilote l'écrit. Les smartphones *proposent* des saisies, que le pilote accepte ou refuse.
+- L'état d'une épreuve est un **journal d'événements**. Seul le PC pilote l'écrit. Les smartphones *proposent* des saisies, que le pilote accepte ou refuse.
 
 ## Commandes du projet (Node 24)
 
@@ -35,7 +35,7 @@ parallèle. **Ne jamais arrêter un processus sans avoir vérifié qu'il apparti
 1. **Gratuit uniquement.** Tout nouveau service ou toute nouvelle dépendance payante passe d'abord par une ADR
    qui documente les limites du plan gratuit (quotas, mise en veille, conditions). Ne jamais ajouter de moyen de paiement.
 2. **Hors ligne d'abord.** Chaque fonctionnalité précise son comportement sans internet, et ce comportement est testé.
-   Le PC pilote doit toujours pouvoir continuer la compétition seul.
+   Le PC pilote doit toujours pouvoir continuer l'épreuve seul.
 3. **Le PC pilote fait foi.** Aucune écriture métier ne se fait hors du pilote. Le serveur stocke et diffuse, il ne décide pas.
 4. **Langue.** Le code (identifiants, commentaires), les docs, les messages de commit et l'interface sont en **français**, comme dans le relais.
    Exceptions : les mots-clés et les API imposées par les outils. Les textes de l'interface passent par le catalogue de traduction.

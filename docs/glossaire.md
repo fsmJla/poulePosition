@@ -1,12 +1,8 @@
 # Glossaire
 
 Vocabulaire à employer **tel quel** dans le code (identifiants en français, sans accents dans les noms de
-variables : `competition`, `piste`, `poule`), dans les docs et dans l'interface. Si un terme manque, on
+variables : `epreuve`, `piste`, `poule`), dans les docs et dans l'interface. Si un terme manque, on
 l'ajoute ici avant de l'utiliser.
-
-> **Vocabulaire révisé le 2026-11-08 (ADR-0021, US-044).** La **compétition** est désormais le regroupement et
-> l'**épreuve** l'unité qui se tire, comme dans l'usage de l'escrime. Jusqu'à la livraison d'US-044, le code et les US
-> déjà réalisées emploient encore l'ancien sens : `competition` pour l'épreuve, `epreuve` pour la compétition.
 
 ## Escrime
 

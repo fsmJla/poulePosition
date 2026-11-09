@@ -46,9 +46,9 @@ Une perte de connexion ne fait donc perdre que ces fonctions de partage (ADR-000
                     │                                               │                        │
  ┌──────────────────┴──────── Cloudflare Workers Free (ADR-0004) ───┴────────────────────────┴───────┐
  │  Worker : routes HTTP/WS, origines, authentification (ADR-0006), limiteur d'essais                 │
- │  DO « Epreuve » (1 par épreuve, SQLite) : copie du journal, dernières vues publiées,       │
+ │  DO « Epreuve » (1 par épreuve, SQLite) : copie du journal, dernières vues publiées,               │
  │      boîte de saisies en attente, fichiers joints, WebSockets en hibernation (≤ 300 clients)       │
- │  DO « Club » (1 par club, SQLite) : comptes, index des épreuves                                │
+ │  DO « Club » (1 par club, SQLite) : comptes, index des épreuves                                    │
  │  DO « Limiteur » (1 par IP) : repris tel quel du relais                                            │
  └────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```

@@ -12,6 +12,9 @@
 > US-007 : gestion des comptes par les administrateurs (§9) ; US-009 : réinitialisation d'un mot de passe (§9).
 > US-021 : format du journal d'une épreuve (§10), stocké sur le PC pilote.
 > US-022 : réplication du journal et index des épreuves du club (§11, ADR-0016).
+> US-044 (ADR-0021) : vocabulaire inversé. L'**épreuve** est l'unité qui se tire (journal, pilote : `/epreuves/<epreuveId>/…`) ;
+> la **compétition** est le regroupement d'épreuves (`/competitions`, §13). Les anciennes routes de l'unité sous
+> `/competitions/<id>/…` n'existent plus.
 > Les rôles, la synchronisation du journal et les saisies (ADR-0005) viendront avec leurs US.
 
 ## 1. Adresses
@@ -54,6 +57,8 @@
 | `POST /epreuves/<epreuveId>/evenements` | Envoyer un lot d'événements du PC pilote (§11) |
 | `GET /manifestations`, `POST /manifestations` | Lister et créer les manifestations du club (§12, US-023) |
 | `PATCH /manifestations/<id>`, `DELETE /manifestations/<id>` | Modifier ou supprimer une manifestation (§12) |
+| `GET /competitions`, `POST /competitions` | Lister et créer les compétitions du club (§13, US-024) |
+| `PATCH /competitions/<id>`, `DELETE /competitions/<id>` | Modifier ou supprimer une compétition (§13, §14) |
 | `OPTIONS` sur ces routes | Requête CORS préalable (§7) ; méthodes `GET, POST, PATCH, DELETE` |
 | WebSocket `/epreuves/<epreuveId>/connexion` | Connexion à une épreuve (§3) |
 | Tout autre chemin | `404` |
@@ -642,7 +647,7 @@ Aucune route nouvelle : l'accueil de l'organisateur réunit `GET /epreuves` (§1
 `GET /competitions` (§13), et les épreuves gardées sur l'appareil.
 
 - **Dernière copie de l'index** : la réponse de `GET /epreuves` est gardée dans IndexedDB (table `copieIndex`,
-  base locale en version 7), avec sa date. Hors ligne, la liste s'affiche depuis cette copie, les copies des
+  base locale en version 10), avec sa date. Hors ligne, la liste s'affiche depuis cette copie, les copies des
   manifestations et des compétitions et les épreuves locales (« Hors ligne : liste du … »). Sans aucune copie, seules les
   épreuves de l'appareil sont listées.
 - **Fusion** : pour une même épreuve, la version locale de celle que ce PC pilote l'emporte sur la ligne de l'index.
@@ -739,7 +744,7 @@ rôle. Même CORS qu'au §7.
 
 ### Côté application
 
-- La dernière liste reçue est gardée dans IndexedDB (table `copieCompetitions`, base locale en version 6), avec sa date.
+- La dernière liste reçue est gardée dans IndexedDB (table `copieCompetitions`, base locale en version 10), avec sa date.
   Hors ligne, les compétitions restent consultables sous leur manifestation ; création, modification et suppression sont
   grisées (« Nécessite une connexion internet »).
 - Les compétitions s'affichent et se gèrent sous chaque manifestation de la page « Manifestations » ; la liste complète du
