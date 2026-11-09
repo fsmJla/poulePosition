@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-044
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-045-rattacher-epreuve-a-competition` / —
 
 ## Récit
 
@@ -99,3 +99,4 @@ Testé par un E2E réseau coupé (choix limité aux compétitions de la copie, c
 | Date | Événement |
 |---|---|
 | 2026-11-08 | Créée (analyse d'impact du changement de modèle) |
+| 2026-11-09 | Plan validé ; implémentation démarrée sur la branche `us/US-045-rattacher-epreuve-a-competition` |

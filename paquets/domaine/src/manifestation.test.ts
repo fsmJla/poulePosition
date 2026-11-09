@@ -21,9 +21,17 @@ const epreuve = (champs: Partial<EpreuveRattachee> = {}): EpreuveRattachee => ({
   id: 'c1',
   nom: 'Sabre M13',
   date: '2027-03-15',
-  rattachement: { manifestationId: 'm1', competitionId: null },
+  rattachement: { competitionId: 'e1' },
   ...champs,
 });
+
+/** Compétitions connues : e1 et e2 dans la manifestation m1, e3 dans m2, e4 seule. */
+const competitions = [
+  { id: 'e1', manifestationId: 'm1' },
+  { id: 'e2', manifestationId: 'm1' },
+  { id: 'e3', manifestationId: 'm2' },
+  { id: 'e4', manifestationId: null },
+];
 
 describe('manifestation (US-023)', () => {
   it('CA-1 : nom, dates de début et de fin obligatoires, lieu et commentaire facultatifs', () => {
@@ -47,34 +55,26 @@ describe('manifestation (US-023)', () => {
     expect(validerManifestation(donnees({ debut: '2027-03-14', fin: '2027-03-14' }))).toEqual({});
   });
 
-  it('CA-4 : liste les épreuves rattachées dont la date sort des nouvelles dates', () => {
+  it('CA-4 : liste les épreuves de ses compétitions dont la date sort des nouvelles dates (US-045)', () => {
     const epreuves = [
       epreuve(),
-      epreuve({ id: 'c2', nom: 'Épée M15', date: '2027-03-14' }),
+      epreuve({ id: 'c2', nom: 'Épée M15', date: '2027-03-14', rattachement: { competitionId: 'e2' } }),
       epreuve({ id: 'c3', nom: 'Sans date', date: null }),
-      epreuve({ id: 'c4', nom: 'Autre manifestation', rattachement: { manifestationId: 'm2', competitionId: null } }),
-      epreuve({ id: 'c5', nom: 'Isolée', rattachement: null }),
+      epreuve({ id: 'c4', nom: 'Autre manifestation', rattachement: { competitionId: 'e3' } }),
+      epreuve({ id: 'c5', nom: 'Compétition seule', rattachement: { competitionId: 'e4' } }),
+      epreuve({ id: 'c6', nom: 'Sans compétition', rattachement: null }),
     ];
-    expect(epreuvesHorsDates('m1', '2027-03-14', '2027-03-14', epreuves)).toEqual([epreuves[0]]);
-    expect(epreuvesHorsDates('m1', '2027-03-14', '2027-03-15', epreuves)).toEqual([]);
-    expect(epreuvesHorsDates('m1', '2027-03-15', '2027-03-16', epreuves).map(({ id }) => id)).toEqual(['c2']);
-  });
-
-  it('CA-5 : une manifestation est vide si aucune épreuve ne s’y rattache', () => {
-    expect(estVide('m1', [])).toBe(true);
+    expect(epreuvesHorsDates('m1', '2027-03-14', '2027-03-14', epreuves, competitions)).toEqual([epreuves[0]]);
+    expect(epreuvesHorsDates('m1', '2027-03-14', '2027-03-15', epreuves, competitions)).toEqual([]);
     expect(
-      estVide('m1', [
-        epreuve({ rattachement: null }),
-        epreuve({ rattachement: { manifestationId: 'm2', competitionId: null } }),
-      ]),
-    ).toBe(true);
-    expect(estVide('m1', [epreuve()])).toBe(false);
-    expect(estVide('m1', [epreuve({ rattachement: { manifestationId: 'm1', competitionId: 'e1' } })])).toBe(false);
+      epreuvesHorsDates('m1', '2027-03-15', '2027-03-16', epreuves, competitions).map(({ id }) => id),
+    ).toEqual(['c2']);
   });
 
-  it('CA-5 (US-024) : une manifestation qui contient une compétition n’est pas vide', () => {
-    expect(estVide('m1', [], [{ manifestationId: 'm2' }])).toBe(true);
-    expect(estVide('m1', [], [{ manifestationId: 'm1' }])).toBe(false);
+  it('CA-5 (US-024, US-045) : une manifestation est vide si aucune compétition ne s’y rattache', () => {
+    expect(estVide('m1', [])).toBe(true);
+    expect(estVide('m1', [{ manifestationId: 'm2' }, { manifestationId: null }])).toBe(true);
+    expect(estVide('m1', [{ manifestationId: 'm1' }])).toBe(false);
   });
 
   it('cas limites : nom de plus de 100 caractères, commentaire de plus de 2 000, lieu de plus de 200', () => {

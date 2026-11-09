@@ -1,18 +1,19 @@
-// Règles d'une compétition (US-024) : champs, arme cohérente avec ses épreuves, compétition vide. Une compétition appartient
-// toujours à une manifestation et n'a pas de dates propres ; elle est stockée par le serveur (ADR-0016).
+// Règles d'une compétition (US-024) : champs, arme cohérente avec ses épreuves, compétition vide. Une compétition est dans
+// une manifestation ou seule (US-045) et n'a pas de dates propres ; elle est stockée par le serveur (ADR-0016).
 import { ARMES, LONGUEUR_MAX_COMMENTAIRE, type Arme, type Rattachement } from './epreuve';
 import { validerNom } from './comptes';
 
 /** Champs saisis d'une compétition ; arme et commentaire facultatifs non saisis : null. */
 export interface DonneesCompetition {
-  manifestationId: string;
+  /** Manifestation qui la contient ; null pour une compétition seule (US-045). */
+  manifestationId: string | null;
   nom: string;
   arme: Arme | null;
   commentaire: string | null;
 }
 
 export type ErreurCompetition =
-  'NOM_VIDE' | 'NOM_TROP_LONG' | 'MANIFESTATION_OBLIGATOIRE' | 'ARME_INVALIDE' | 'COMMENTAIRE_TROP_LONG';
+  'NOM_VIDE' | 'NOM_TROP_LONG' | 'MANIFESTATION_INVALIDE' | 'ARME_INVALIDE' | 'COMMENTAIRE_TROP_LONG';
 
 /** Une erreur par champ, pour l'afficher sous le champ en cause. */
 export type ErreursCompetition = Partial<Record<keyof DonneesCompetition, ErreurCompetition>>;
@@ -33,8 +34,8 @@ export function validerCompetition(saisie: DonneesCompetition): ErreursCompetiti
   const erreurs: ErreursCompetition = {};
   const nom = validerNom(donnees.nom);
   if (nom) erreurs.nom = nom as ErreurCompetition;
-  // CA-2 : une compétition appartient toujours à une manifestation.
-  if (donnees.manifestationId === '') erreurs.manifestationId = 'MANIFESTATION_OBLIGATOIRE';
+  // US-045 CA-2 : dans une manifestation, ou seule (null) ; un identifiant vide n'est pas une manifestation.
+  if (donnees.manifestationId === '') erreurs.manifestationId = 'MANIFESTATION_INVALIDE';
   if (donnees.arme !== null && !(ARMES as readonly unknown[]).includes(donnees.arme)) erreurs.arme = 'ARME_INVALIDE';
   if ((donnees.commentaire?.length ?? 0) > LONGUEUR_MAX_COMMENTAIRE) erreurs.commentaire = 'COMMENTAIRE_TROP_LONG';
   return erreurs;

@@ -27,7 +27,7 @@ const donnees = (champs: Partial<DonneesEpreuve> = {}): DonneesEpreuve => ({
   horaires: { appel: null, scratch: null, debutPoules: null },
   lieu: null,
   commentaire: null,
-  rattachement: null,
+  rattachement: { competitionId: 'c1' },
   ...champs,
 });
 
@@ -35,14 +35,17 @@ const horaires = (appel: string | null, scratch: string | null, debutPoules: str
   horaires: { appel, scratch, debutPoules },
 });
 
-/** Manifestation du 14 au 15 mars, à Pessac, avec une compétition au sabre. */
-const cadre = (competition: CadreRattachement['competition'] = null): CadreRattachement => ({
+/** Compétition de la manifestation du 14 au 15 mars, à Pessac, éventuellement au sabre. */
+const cadre = (arme: CadreRattachement['arme'] = null): CadreRattachement => ({
   manifestation: { debut: '2027-03-14', fin: '2027-03-15', lieu: 'Salle Bellegrave, Pessac' },
-  competition,
+  arme,
 });
 
-const dansManifestation = { rattachement: { manifestationId: 'm1', competitionId: null } };
-const dansCompetition = { rattachement: { manifestationId: 'm1', competitionId: 'e1' } };
+/** Compétition seule : ni manifestation ni dates propres. */
+const seule = (arme: CadreRattachement['arme'] = null): CadreRattachement => ({ manifestation: null, arme });
+
+const dansManifestation = { rattachement: { competitionId: 'c1' } };
+const dansCompetition = { rattachement: { competitionId: 'c2' } };
 
 describe('création d’une épreuve (US-025)', () => {
   it('CA-1 : accepte une épreuve complète (arme, type, catégorie, sexe, date, horaires, lieu, commentaire)', () => {
@@ -114,28 +117,35 @@ describe('création d’une épreuve (US-025)', () => {
     expect(formuleParDefaut('equipes3').touchesRelais).toBe(45);
   });
 
-  it('CA-3 : une épreuve peut être isolée, dans une manifestation ou dans une compétition', () => {
+  it('US-045 CA-3 : une épreuve est dans une compétition, seule ou d’une manifestation', () => {
     expect(validerEpreuve(donnees())).toEqual({});
     expect(validerEpreuve(donnees({ ...dansManifestation, date: '2027-03-14' }), cadre())).toEqual({});
-    const competition = cadre({ arme: 'sabre' });
-    expect(validerEpreuve(donnees({ ...dansCompetition, date: '2027-03-15' }), competition)).toEqual({});
+    expect(validerEpreuve(donnees({ ...dansCompetition, date: '2027-03-15' }), cadre('sabre'))).toEqual({});
+    expect(validerEpreuve(donnees(dansCompetition), seule('sabre'))).toEqual({});
   });
 
-  it('CA-3 : refuse un rattachement sans manifestation', () => {
-    const vide = { rattachement: { manifestationId: '', competitionId: null } };
-    expect(validerEpreuve(donnees(vide))).toEqual({ rattachement: 'RATTACHEMENT_INVALIDE' });
-    const competitionVide = { rattachement: { manifestationId: 'm1', competitionId: '' } };
-    expect(validerEpreuve(donnees(competitionVide))).toEqual({ rattachement: 'RATTACHEMENT_INVALIDE' });
+  it('US-045 CA-1 : refuse une épreuve sans compétition', () => {
+    const vide = { rattachement: { competitionId: '' } };
+    expect(validerEpreuve(donnees(vide))).toEqual({ rattachement: 'RATTACHEMENT_OBLIGATOIRE' });
+    const absent = { rattachement: null } as unknown as Partial<DonneesEpreuve>;
+    expect(validerEpreuve(donnees(absent))).toEqual({ rattachement: 'RATTACHEMENT_OBLIGATOIRE' });
   });
 
-  it('CA-3 : préremplit le lieu de la manifestation et l’arme de la compétition', () => {
+  it('US-045 CA-3 : préremplit le lieu de la manifestation et l’arme de la compétition', () => {
     expect(preremplir(cadre())).toEqual({ lieu: 'Salle Bellegrave, Pessac', arme: null });
-    expect(preremplir(cadre({ arme: 'epee' }))).toEqual({ lieu: 'Salle Bellegrave, Pessac', arme: 'epee' });
+    expect(preremplir(cadre('epee'))).toEqual({ lieu: 'Salle Bellegrave, Pessac', arme: 'epee' });
+    expect(preremplir(seule('fleuret'))).toEqual({ lieu: null, arme: 'fleuret' });
   });
 
-  it('CA-3 : refuse une arme différente de celle de la compétition (US-024 CA-4)', () => {
+  it('US-045 CA-3 : refuse une arme différente de celle de la compétition (US-024 CA-4)', () => {
     const fleuret = donnees({ ...dansCompetition, arme: 'fleuret', date: '2027-03-14' });
-    expect(validerEpreuve(fleuret, cadre({ arme: 'sabre' }))).toEqual({ arme: 'ARME_DIFFERENTE_COMPETITION' });
+    expect(validerEpreuve(fleuret, cadre('sabre'))).toEqual({ arme: 'ARME_DIFFERENTE_COMPETITION' });
+    expect(validerEpreuve(fleuret, seule('sabre'))).toEqual({ arme: 'ARME_DIFFERENTE_COMPETITION' });
+  });
+
+  it('US-045 CA-3 : une compétition seule n’impose aucune date à ses épreuves', () => {
+    expect(validerEpreuve(donnees(), seule())).toEqual({});
+    expect(validerEpreuve(donnees({ date: '2030-01-01' }), seule())).toEqual({});
   });
 
   it('CA-4 : refuse une date hors de la manifestation', () => {
@@ -207,16 +217,11 @@ describe('modification d’une épreuve (US-027)', () => {
     expect(modification(courant, { ...courant, horaires: { ...courant.horaires, debutPoules: '10:00' } })).toEqual({
       horaires: { appel: '08:00', scratch: '09:00', debutPoules: '10:00' },
     });
-    const rattachee = donnees({ rattachement: { manifestationId: 'm1', competitionId: null } });
-    expect(
-      modification(rattachee, { ...rattachee, rattachement: { manifestationId: 'm1', competitionId: null } }),
-    ).toEqual({});
-    expect(
-      modification(rattachee, { ...rattachee, rattachement: { manifestationId: 'm1', competitionId: 'e1' } }),
-    ).toEqual({
-      rattachement: { manifestationId: 'm1', competitionId: 'e1' },
+    const rattachee = donnees({ rattachement: { competitionId: 'c1' } });
+    expect(modification(rattachee, { ...rattachee, rattachement: { competitionId: 'c1' } })).toEqual({});
+    expect(modification(rattachee, { ...rattachee, rattachement: { competitionId: 'c2' } })).toEqual({
+      rattachement: { competitionId: 'c2' },
     });
-    expect(modification(rattachee, { ...rattachee, rattachement: null })).toEqual({ rattachement: null });
   });
 
   it('CA-5 : une saisie identique, ou qui ne diffère que par des espaces, ne change rien', () => {

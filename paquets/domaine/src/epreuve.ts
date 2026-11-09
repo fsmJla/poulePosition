@@ -1,5 +1,5 @@
-// Règles d'une épreuve (US-025) : champs, validation de la création, rattachement à une manifestation ou à une
-// compétition, formule par défaut (US-028). Les messages lisibles sont fournis par l'application à partir des codes.
+// Règles d'une épreuve (US-025) : champs, validation de la création, rattachement à une compétition (US-045), formule
+// par défaut (US-028). Les messages lisibles sont fournis par l'application à partir des codes.
 import { validerNom } from './comptes';
 
 export const ARMES = ['sabre', 'epee', 'fleuret', 'sabreLaser'] as const;
@@ -45,10 +45,9 @@ export interface Horaires {
   debutPoules: string | null;
 }
 
-/** Manifestation, et éventuellement compétition, qui contiennent l’épreuve ; null pour une épreuve isolée. */
+/** US-045 : toute épreuve appartient à une compétition ; sa manifestation, s'il y en a une, se déduit de la compétition. */
 export interface Rattachement {
-  manifestationId: string;
-  competitionId: string | null;
+  competitionId: string;
 }
 
 /** Données de l'événement `EpreuveCreee` : un champ facultatif non saisi vaut null. */
@@ -63,13 +62,16 @@ export interface DonneesEpreuve {
   horaires: Horaires;
   lieu: string | null;
   commentaire: string | null;
-  rattachement: Rattachement | null;
+  rattachement: Rattachement;
 }
 
-/** Ce que l'appareil sait du rattachement choisi (dernière copie gardée, US-023 et US-024). */
+/**
+ * Ce que l'appareil sait de la compétition choisie (dernière copie gardée, US-023, US-024 et US-045) : la manifestation
+ * qui la contient, null pour une compétition seule, et son arme, null si elle n'en a pas.
+ */
 export interface CadreRattachement {
-  manifestation: { debut: string; fin: string; lieu: string | null };
-  competition: { arme: Arme } | null;
+  manifestation: { debut: string; fin: string; lieu: string | null } | null;
+  arme: Arme | null;
 }
 
 /** Formule de l’épreuve (US-028) : un tour de poules sans élimination, puis un tableau. */
@@ -98,6 +100,7 @@ export type ErreurEpreuve =
   | 'POULES_AVANT_APPEL'
   | 'LIEU_TROP_LONG'
   | 'COMMENTAIRE_TROP_LONG'
+  | 'RATTACHEMENT_OBLIGATOIRE'
   | 'RATTACHEMENT_INVALIDE';
 
 export type ChampEpreuve = Exclude<keyof DonneesEpreuve, 'horaires'> | keyof Horaires;
@@ -136,7 +139,7 @@ export function validerEpreuve(saisie: DonneesEpreuve, cadre: CadreRattachement 
   const nom = validerNom(donnees.nom);
   if (nom) erreurs.nom = nom as ErreurEpreuve;
   if (!comprend(ARMES, donnees.arme)) erreurs.arme = 'ARME_INVALIDE';
-  else if (donnees.rattachement?.competitionId && cadre?.competition && cadre.competition.arme !== donnees.arme) {
+  else if (cadre?.arme && cadre.arme !== donnees.arme) {
     erreurs.arme = 'ARME_DIFFERENTE_COMPETITION';
   }
   if (!comprend(TYPES_EPREUVE, donnees.typeEpreuve)) erreurs.typeEpreuve = 'TYPE_INVALIDE';
@@ -147,17 +150,16 @@ export function validerEpreuve(saisie: DonneesEpreuve, cadre: CadreRattachement 
   Object.assign(erreurs, erreursHoraires(donnees.horaires));
   if ((donnees.lieu?.length ?? 0) > LONGUEUR_MAX_LIEU) erreurs.lieu = 'LIEU_TROP_LONG';
   if ((donnees.commentaire?.length ?? 0) > LONGUEUR_MAX_COMMENTAIRE) erreurs.commentaire = 'COMMENTAIRE_TROP_LONG';
-  const { rattachement } = donnees;
-  if (rattachement && (rattachement.manifestationId === '' || rattachement.competitionId === '')) {
-    erreurs.rattachement = 'RATTACHEMENT_INVALIDE';
-  }
+  // US-045 CA-1 : une épreuve est toujours dans une compétition.
+  if (!donnees.rattachement?.competitionId) erreurs.rattachement = 'RATTACHEMENT_OBLIGATOIRE';
   return erreurs;
 }
 
-function erreurDate({ date, rattachement }: DonneesEpreuve, cadre: CadreRattachement | null) {
+function erreurDate({ date }: DonneesEpreuve, cadre: CadreRattachement | null) {
   if (date !== null && !estDate(date)) return 'DATE_INVALIDE';
-  if (!rattachement || !cadre) return null;
-  // CA-4 : dans une manifestation, la date est obligatoire et comprise entre ses dates (texte ISO : ordre des jours).
+  // US-045 CA-3 : dans une manifestation, la date est obligatoire et comprise entre ses dates (texte ISO : ordre des
+  // jours) ; une compétition seule n'a pas de dates propres, celles de ses épreuves sont libres.
+  if (!cadre?.manifestation) return null;
   if (date === null) return 'DATE_OBLIGATOIRE';
   const { debut, fin } = cadre.manifestation;
   return date < debut || date > fin ? 'DATE_HORS_MANIFESTATION' : null;
@@ -191,7 +193,7 @@ export function joursDeManifestation(debut: string, fin: string): string[] {
 
 /** CA-3 : lieu de la manifestation et arme de la compétition, proposés (modifiables) dans le formulaire. */
 export function preremplir(cadre: CadreRattachement): { lieu: string | null; arme: Arme | null } {
-  return { lieu: cadre.manifestation.lieu, arme: cadre.competition?.arme ?? null };
+  return { lieu: cadre.manifestation?.lieu ?? null, arme: cadre.arme };
 }
 
 /** Formule d'une nouvelle épreuve (US-028 CA-1 et CA-3). */

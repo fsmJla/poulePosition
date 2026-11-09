@@ -12,7 +12,7 @@ const donnees = (champs: Partial<DonneesEpreuve> = {}): DonneesEpreuve => ({
   horaires: { appel: '08:30', scratch: '09:00', debutPoules: '09:30' },
   lieu: 'Salle Bellegrave',
   commentaire: null,
-  rattachement: null,
+  rattachement: { competitionId: 'c1' },
   ...champs,
 });
 

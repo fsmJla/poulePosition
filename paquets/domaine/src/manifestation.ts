@@ -65,8 +65,14 @@ export function validerManifestation(saisie: DonneesManifestation): ErreursManif
   return erreurs;
 }
 
-const estRattachee = (manifestationId: string, { rattachement }: Pick<EpreuveRattachee, 'rattachement'>) =>
-  rattachement?.manifestationId === manifestationId;
+/** US-045 : une épreuve est dans la manifestation de sa compétition. */
+const estRattachee = (
+  manifestationId: string,
+  { rattachement }: Pick<EpreuveRattachee, 'rattachement'>,
+  competitions: readonly { id: string; manifestationId: string | null }[],
+) =>
+  rattachement !== null &&
+  competitions.some(({ id, manifestationId: parent }) => id === rattachement.competitionId && parent === manifestationId);
 
 /** CA-4 : épreuves de la manifestation dont la date ne serait plus comprise entre `debut` et `fin`. */
 export function epreuvesHorsDates<T extends EpreuveRattachee>(
@@ -74,21 +80,17 @@ export function epreuvesHorsDates<T extends EpreuveRattachee>(
   debut: string,
   fin: string,
   epreuves: readonly T[],
+  competitions: readonly { id: string; manifestationId: string | null }[],
 ): T[] {
   return epreuves.filter(
     (epreuve) =>
-      estRattachee(manifestationId, epreuve) && epreuve.date !== null && (epreuve.date < debut || epreuve.date > fin),
+      estRattachee(manifestationId, epreuve, competitions) &&
+      epreuve.date !== null &&
+      (epreuve.date < debut || epreuve.date > fin),
   );
 }
 
-/** CA-5 : vrai si aucune épreuve ni aucune compétition (US-024) ne se rattache à la manifestation. */
-export function estVide(
-  manifestationId: string,
-  epreuves: readonly Pick<EpreuveRattachee, 'rattachement'>[],
-  competitions: readonly { manifestationId: string }[] = [],
-): boolean {
-  return (
-    !epreuves.some((epreuve) => estRattachee(manifestationId, epreuve)) &&
-    !competitions.some((competition) => competition.manifestationId === manifestationId)
-  );
+/** CA-5 : vrai si aucune compétition (US-024, US-045) ne se rattache à la manifestation ; ses épreuves sont dans ses compétitions. */
+export function estVide(manifestationId: string, competitions: readonly { manifestationId: string | null }[]): boolean {
+  return !competitions.some((competition) => competition.manifestationId === manifestationId);
 }
