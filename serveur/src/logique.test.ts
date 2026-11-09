@@ -25,24 +25,24 @@ import {
 } from './logique';
 
 describe('analyserChemin', () => {
-  it('reconnaît l’accueil, la santé et la connexion à une compétition', () => {
+  it('reconnaît l’accueil, la santé et la connexion à une épreuve', () => {
     expect(analyserChemin('/')).toEqual({ route: 'accueil' });
     expect(analyserChemin('/sante')).toEqual({ route: 'sante' });
-    expect(analyserChemin('/competitions/demo/connexion')).toEqual({ route: 'connexion', competitionId: 'demo' });
-    expect(analyserChemin('/competitions/club-1-2027/connexion')).toEqual({
+    expect(analyserChemin('/epreuves/demo/connexion')).toEqual({ route: 'connexion', epreuveId: 'demo' });
+    expect(analyserChemin('/epreuves/club-1-2027/connexion')).toEqual({
       route: 'connexion',
-      competitionId: 'club-1-2027',
+      epreuveId: 'club-1-2027',
     });
   });
 
-  it('US-024 : reconnaît la liste des épreuves et une épreuve', () => {
-    expect(analyserChemin('/epreuves')).toEqual({ route: 'epreuves' });
-    expect(analyserChemin('/epreuves/0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c')).toEqual({
-      route: 'epreuve',
+  it('US-024 : reconnaît la liste des compétitions et une compétition', () => {
+    expect(analyserChemin('/competitions')).toEqual({ route: 'competitions' });
+    expect(analyserChemin('/competitions/0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c')).toEqual({
+      route: 'competition',
       id: '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c',
     });
-    expect(analyserChemin('/epreuves/Pas Un Id')).toBeNull();
-    expect(analyserChemin('/epreuves/e1/autre')).toBeNull();
+    expect(analyserChemin('/competitions/Pas Un Id')).toBeNull();
+    expect(analyserChemin('/competitions/e1/autre')).toBeNull();
   });
 
   it('US-023 : reconnaît la liste des manifestations et une manifestation', () => {
@@ -55,37 +55,37 @@ describe('analyserChemin', () => {
     expect(analyserChemin('/manifestations/m1/autre')).toBeNull();
   });
 
-  it('US-022 : reconnaît l’index des compétitions et le journal d’une compétition', () => {
-    expect(analyserChemin('/competitions')).toEqual({ route: 'competitions' });
-    expect(analyserChemin('/competitions/0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c/evenements')).toEqual({
+  it('US-022 : reconnaît l’index des épreuves et le journal d’une épreuve', () => {
+    expect(analyserChemin('/epreuves')).toEqual({ route: 'epreuves' });
+    expect(analyserChemin('/epreuves/0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c/evenements')).toEqual({
       route: 'evenements',
-      competitionId: '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c',
+      epreuveId: '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c',
     });
   });
 
-  it('US-039 : reconnaît la route d’une compétition seule, pour sa suppression', () => {
+  it('US-039 : reconnaît la route d’une épreuve seule, pour sa suppression', () => {
     const id = '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c';
-    expect(analyserChemin(`/competitions/${id}`)).toEqual({ route: 'competition', competitionId: id });
-    expect(analyserChemin('/competitions/Demo')).toBeNull();
+    expect(analyserChemin(`/epreuves/${id}`)).toEqual({ route: 'epreuve', epreuveId: id });
+    expect(analyserChemin('/epreuves/Demo')).toBeNull();
   });
 
-  it('US-029 : reconnaît le pilote et la présence d’une compétition', () => {
+  it('US-029 : reconnaît le pilote et la présence d’une épreuve', () => {
     const id = '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c';
-    expect(analyserChemin(`/competitions/${id}/pilote`)).toEqual({ route: 'pilote', competitionId: id });
-    expect(analyserChemin(`/competitions/${id}/presence`)).toEqual({ route: 'presence', competitionId: id });
-    expect(analyserChemin('/competitions/Demo/pilote')).toBeNull();
+    expect(analyserChemin(`/epreuves/${id}/pilote`)).toEqual({ route: 'pilote', epreuveId: id });
+    expect(analyserChemin(`/epreuves/${id}/presence`)).toEqual({ route: 'presence', epreuveId: id });
+    expect(analyserChemin('/epreuves/Demo/pilote')).toBeNull();
   });
 
   it.each([
     '/inconnu',
-    '/competitions/',
-    '/competitions/Demo/evenements',
-    '/competitions/demo/evenements/plus',
-    '/competitions//connexion',
-    '/competitions/Demo/connexion',
-    '/competitions/-demo/connexion',
-    `/competitions/${'a'.repeat(65)}/connexion`,
-    '/competitions/demo/connexion/plus',
+    '/epreuves/',
+    '/epreuves/Demo/evenements',
+    '/epreuves/demo/evenements/plus',
+    '/epreuves//connexion',
+    '/epreuves/Demo/connexion',
+    '/epreuves/-demo/connexion',
+    `/epreuves/${'a'.repeat(65)}/connexion`,
+    '/epreuves/demo/connexion/plus',
   ])('refuse le chemin %s', (chemin) => {
     expect(analyserChemin(chemin)).toBeNull();
   });

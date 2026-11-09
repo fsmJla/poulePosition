@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Evenement } from '@poule-position/domaine';
-import type { DemandeEnvoi, ResumeCompetition } from '@poule-position/protocole';
+import type { DemandeEnvoi, ResumeEpreuve } from '@poule-position/protocole';
 import {
   deciderAjout,
   deciderPresence,
@@ -11,7 +11,7 @@ import {
   piloteConnecte,
 } from './replication';
 
-const RESUME: ResumeCompetition = {
+const RESUME: ResumeEpreuve = {
   nom: 'Orpi',
   arme: 'sabre',
   categorie: 'M13',
@@ -22,19 +22,19 @@ const RESUME: ResumeCompetition = {
   rattachement: null,
 };
 
-const evenement = (seq: number, champs: Partial<Extract<Evenement, { type: 'CompetitionCreee' }>> = {}): Evenement => ({
-  competitionId: 'c1',
+const evenement = (seq: number, champs: Partial<Extract<Evenement, { type: 'EpreuveCreee' }>> = {}): Evenement => ({
+  epreuveId: 'c1',
   clubId: 'pessac',
   seq,
   version: 1,
   date: 1_800_000_000_000 + seq,
   auteur: 'orga@club.fr',
   source: 'clavier',
-  type: 'CompetitionCreee',
+  type: 'EpreuveCreee',
   donnees: {
     nom: 'Orpi',
     arme: 'sabre',
-    typeCompetition: 'individuelle',
+    typeEpreuve: 'individuelle',
     categorie: 'M13',
     sexe: null,
     date: '2027-03-14',
@@ -54,10 +54,10 @@ const demande = (depuis: number, evenements: Evenement[], appareilId = 'pc-a'): 
 });
 
 const vide = { dernierSeq: 0, piloteAppareil: null };
-const lieu = { clubId: 'pessac', competitionId: 'c1' };
+const lieu = { clubId: 'pessac', epreuveId: 'c1' };
 
 describe('ajout d’un lot au journal du serveur (ADR-0016)', () => {
-  it('US-022 CA-1 : accepte le premier lot d’une compétition, qui fixe son pilote', () => {
+  it('US-022 CA-1 : accepte le premier lot d’une épreuve, qui fixe son pilote', () => {
     expect(deciderAjout(vide, demande(0, [evenement(1)]), lieu)).toEqual({ ok: true });
   });
 
@@ -75,10 +75,10 @@ describe('ajout d’un lot au journal du serveur (ADR-0016)', () => {
     expect(deciderAjout(vide, demande(1, [evenement(2)]), lieu)).toMatchObject({ erreur: 'SEQ_INATTENDU' });
   });
 
-  it('US-022 CA-5 : refuse un événement d’un autre club ou d’une autre compétition', () => {
+  it('US-022 CA-5 : refuse un événement d’un autre club ou d’une autre épreuve', () => {
     const refus = { ok: false, statut: 403, erreur: 'ACCES_REFUSE' };
     expect(deciderAjout(vide, demande(0, [evenement(1, { clubId: 'autre' })]), lieu)).toEqual(refus);
-    expect(deciderAjout(vide, demande(0, [evenement(1, { competitionId: 'c2' })]), lieu)).toEqual(refus);
+    expect(deciderAjout(vide, demande(0, [evenement(1, { epreuveId: 'c2' })]), lieu)).toEqual(refus);
   });
 
   it('US-022 CA-6 : refuse le lot d’un appareil qui n’est pas le pilote, même bien numéroté', () => {
@@ -91,7 +91,7 @@ describe('ajout d’un lot au journal du serveur (ADR-0016)', () => {
   });
 });
 
-describe('index des compétitions du club', () => {
+describe('index des épreuves du club', () => {
   it('US-022 CA-3 : la ligne reprend le résumé du pilote, son appareil, son compte et le dernier événement', () => {
     expect(ligneIndex('c1', demande(0, [evenement(1), evenement(2)]), 'Orga')).toEqual({
       id: 'c1',
@@ -124,10 +124,10 @@ describe('prise de main et présence du pilote (US-029)', () => {
     });
   });
 
-  it('CA-1 : une compétition sans journal ne peut pas être reprise', () => {
+  it('CA-1 : une épreuve sans journal ne peut pas être reprise', () => {
     expect(
       deciderPriseDeMain({ dernierSeq: 0, piloteAppareil: null }, { appareilId: 'pc-b', piloteAttendu: 'pc-a' }),
-    ).toEqual({ ok: false, statut: 404, erreur: 'COMPETITION_INCONNUE' });
+    ).toEqual({ ok: false, statut: 404, erreur: 'EPREUVE_INCONNUE' });
   });
 
   it('CA-2 : le battement du pilote est accepté, celui d’un ancien pilote reçoit PAS_PILOTE', () => {
@@ -136,7 +136,7 @@ describe('prise de main et présence du pilote (US-029)', () => {
     expect(deciderPresence({ dernierSeq: 0, piloteAppareil: null }, 'pc-a')).toEqual({
       ok: false,
       statut: 404,
-      erreur: 'COMPETITION_INCONNUE',
+      erreur: 'EPREUVE_INCONNUE',
     });
   });
 
@@ -150,17 +150,17 @@ describe('prise de main et présence du pilote (US-029)', () => {
 });
 
 describe('décision de suppression définitive (US-039)', () => {
-  it('US-039 CA-1 : une compétition qui n’est pas en cours se supprime', () => {
+  it('US-039 CA-1 : une épreuve qui n’est pas en cours se supprime', () => {
     for (const statut of ['preparation', 'terminee', 'archivee'] as const) {
       expect(deciderSuppression(statut)).toEqual({ ok: true });
     }
   });
 
-  it('US-039 CA-3 : une compétition en cours ne se supprime pas', () => {
-    expect(deciderSuppression('enCours')).toEqual({ ok: false, statut: 409, erreur: 'COMPETITION_EN_COURS' });
+  it('US-039 CA-3 : une épreuve en cours ne se supprime pas', () => {
+    expect(deciderSuppression('enCours')).toEqual({ ok: false, statut: 409, erreur: 'EPREUVE_EN_COURS' });
   });
 
-  it('US-039 CA-7 : une compétition inconnue de l’index se supprime sans effet', () => {
+  it('US-039 CA-7 : une épreuve inconnue de l’index se supprime sans effet', () => {
     expect(deciderSuppression(null)).toEqual({ ok: true });
   });
 });

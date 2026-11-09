@@ -1,21 +1,21 @@
-// Modification d'une compétition (US-027) : formulaire prérempli, événement limité aux champs changés, lecture seule hors
+// Modification d'une épreuve (US-027) : formulaire prérempli, événement limité aux champs changés, lecture seule hors
 // du PC pilote, mêmes validations qu'à la création, modification hors ligne.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
 
-/** Nom unique, pour reconnaître la compétition de ce test parmi celles du club. */
+/** Nom unique, pour reconnaître l’épreuve de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 
-const MOTIF_PAGE_COMPETITION = /\/competitions\/[0-9a-f-]{36}$/;
+const MOTIF_PAGE_EPREUVE = /\/epreuves\/[0-9a-f-]{36}$/;
 
-/** Crée une compétition par le formulaire et attend que le serveur l'ait reçue. */
-async function creerCompetition(page: Page, nom: string) {
-  await page.goto('/competitions/nouvelle');
+/** Crée une épreuve par le formulaire et attend que le serveur l'ait reçue. */
+async function creerEpreuve(page: Page, nom: string) {
+  await page.goto('/epreuves/nouvelle');
   await page.getByLabel('Nom', { exact: true }).fill(nom);
   await page.getByLabel('Arme').selectOption('sabre');
   await page.getByLabel('Lieu').fill('Salle Bellegrave');
-  await page.getByRole('button', { name: 'Créer la compétition' }).click();
-  await expect(page).toHaveURL(MOTIF_PAGE_COMPETITION);
+  await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
+  await expect(page).toHaveURL(MOTIF_PAGE_EPREUVE);
   // La page n'affiche le compte des envois en attente qu'une fois chargée : attendre le pilote évite un faux « zéro ».
   await expect(page.getByText('Ce PC est le pilote', { exact: true })).toBeVisible();
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
@@ -23,8 +23,8 @@ async function creerCompetition(page: Page, nom: string) {
 
 const ouvrirModification = async (page: Page) => {
   await page.getByRole('link', { name: 'Modifier', exact: true }).click();
-  await expect(page).toHaveURL(/\/competitions\/[0-9a-f-]{36}\/modifier$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Modifier la compétition');
+  await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}\/modifier$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Modifier l’épreuve');
 };
 
 const enregistrer = (page: Page) => page.getByRole('button', { name: 'Enregistrer' }).click();
@@ -33,7 +33,7 @@ test('US-027 CA-1 : modifier le nom, le lieu et les horaires met la page à jour
   const nom = nomUnique();
   const nouveauNom = nomUnique();
   await seConnecter(page);
-  await creerCompetition(page, nom);
+  await creerEpreuve(page, nom);
 
   await ouvrirModification(page);
   await expect(page.getByLabel('Nom', { exact: true })).toHaveValue(nom);
@@ -44,7 +44,7 @@ test('US-027 CA-1 : modifier le nom, le lieu et les horaires met la page à jour
   await page.getByLabel('Scratch').fill('09:00');
   await enregistrer(page);
 
-  await expect(page).toHaveURL(MOTIF_PAGE_COMPETITION);
+  await expect(page).toHaveURL(MOTIF_PAGE_EPREUVE);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(nouveauNom);
   await expect(page.getByText('Gymnase Nord')).toBeVisible();
   await expect(page.getByText('08:30')).toBeVisible();
@@ -55,13 +55,13 @@ test('US-027 CA-1 : modifier le nom, le lieu et les horaires met la page à jour
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(nouveauNom);
 });
 
-test('US-027 CA-3 : un autre PC voit la compétition en lecture seule, sans bouton « Modifier »', async ({
+test('US-027 CA-3 : un autre PC voit l’épreuve en lecture seule, sans bouton « Modifier »', async ({
   page,
   browser,
   baseURL,
 }) => {
   await seConnecter(page);
-  await creerCompetition(page, nomUnique());
+  await creerEpreuve(page, nomUnique());
   const adresse = new URL(page.url()).pathname;
 
   const autrePc = await browser.newContext({ baseURL });
@@ -69,13 +69,13 @@ test('US-027 CA-3 : un autre PC voit la compétition en lecture seule, sans bout
     const autre = await autrePc.newPage();
     await seConnecter(autre);
     await autre.goto(adresse);
-    await expect(autre.getByText('Lecture seule : cette compétition est pilotée par un autre PC')).toBeVisible({
+    await expect(autre.getByText('Lecture seule : cette épreuve est pilotée par un autre PC')).toBeVisible({
       timeout: 20_000,
     });
     await expect(autre.getByRole('link', { name: 'Modifier', exact: true })).toHaveCount(0);
 
     await autre.goto(`${adresse}/modifier`);
-    await expect(autre.getByText('Lecture seule : cette compétition est pilotée par un autre PC')).toBeVisible();
+    await expect(autre.getByText('Lecture seule : cette épreuve est pilotée par un autre PC')).toBeVisible();
     await expect(autre.getByLabel('Nom', { exact: true })).toBeDisabled();
     await expect(autre.getByRole('button', { name: 'Enregistrer' })).toHaveCount(0);
   } finally {
@@ -85,7 +85,7 @@ test('US-027 CA-3 : un autre PC voit la compétition en lecture seule, sans bout
 
 test('US-027 CA-4 : les horaires incohérents sont refusés avec le message de la création', async ({ page }) => {
   await seConnecter(page);
-  await creerCompetition(page, nomUnique());
+  await creerEpreuve(page, nomUnique());
 
   await ouvrirModification(page);
   await page.getByLabel('Appel').fill('09:00');
@@ -106,14 +106,14 @@ test('US-027 CA-5 : enregistrer sans rien changer n’ajoute aucune modification
   context,
 }) => {
   await seConnecter(page);
-  await creerCompetition(page, nomUnique());
+  await creerEpreuve(page, nomUnique());
 
   // Hors ligne, une modification écrite resterait « en attente d'envoi » : son absence prouve qu'aucun événement n'a été écrit.
   await context.setOffline(true);
   await ouvrirModification(page);
   await enregistrer(page);
 
-  await expect(page).toHaveURL(MOTIF_PAGE_COMPETITION);
+  await expect(page).toHaveURL(MOTIF_PAGE_EPREUVE);
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0);
   await context.setOffline(false);
 });
@@ -121,14 +121,14 @@ test('US-027 CA-5 : enregistrer sans rien changer n’ajoute aucune modification
 test('US-027 hors ligne : modifier réseau coupé, puis envoyer au retour du réseau', async ({ page, context }) => {
   const nouveauNom = nomUnique();
   await seConnecter(page);
-  await creerCompetition(page, nomUnique());
+  await creerEpreuve(page, nomUnique());
 
   await context.setOffline(true);
   await ouvrirModification(page);
   await page.getByLabel('Nom', { exact: true }).fill(nouveauNom);
   await enregistrer(page);
 
-  await expect(page).toHaveURL(MOTIF_PAGE_COMPETITION);
+  await expect(page).toHaveURL(MOTIF_PAGE_EPREUVE);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(nouveauNom);
   await expect(page.getByText('1 modification en attente d’envoi')).toBeVisible();
 

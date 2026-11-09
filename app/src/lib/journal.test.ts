@@ -5,11 +5,11 @@ import type { Proposition } from '@poule-position/domaine';
 import { ouvrirJournal, prendreEcriture, type Contexte } from './journal';
 
 const creation = (nom = 'Challenge Orpi 2027'): Proposition => ({
-  type: 'CompetitionCreee',
+  type: 'EpreuveCreee',
   donnees: {
     nom,
     arme: 'sabre',
-    typeCompetition: 'individuelle',
+    typeEpreuve: 'individuelle',
     categorie: 'M13',
     sexe: null,
     date: '2027-03-14',
@@ -42,28 +42,28 @@ describe('journal local (ADR-0003)', () => {
     const nom = nomBase();
     const journal = ouvrirJournal(nom, persister());
     const resultat = await journal.enregistrer('c1', creation(), contexte);
-    expect(resultat).toMatchObject({ projection: { competition: { nom: 'Challenge Orpi 2027' }, dernierSeq: 1 } });
+    expect(resultat).toMatchObject({ projection: { epreuve: { nom: 'Challenge Orpi 2027' }, dernierSeq: 1 } });
     expect(await lignes(nom)).toEqual([
       {
-        competitionId: 'c1',
+        epreuveId: 'c1',
         clubId: 'pessac',
         seq: 1,
         version: 1,
         date: horloge,
         auteur: 'orga@club.fr',
         source: 'clavier',
-        type: 'CompetitionCreee',
+        type: 'EpreuveCreee',
         donnees: creation().donnees,
       },
     ]);
   });
 
-  it('US-021 CA-1 : numérote sans trou par compétition, chacune à partir de 1', async () => {
+  it('US-021 CA-1 : numérote sans trou par épreuve, chacune à partir de 1', async () => {
     const nom = nomBase();
     const journal = ouvrirJournal(nom, persister());
     await journal.enregistrer('c1', creation(), contexte);
     await journal.enregistrer('c2', creation('Lambart'), contexte);
-    const seqs = (await lignes(nom)).map(({ competitionId, seq }) => `${competitionId}:${seq}`);
+    const seqs = (await lignes(nom)).map(({ epreuveId, seq }) => `${epreuveId}:${seq}`);
     expect(seqs.sort()).toEqual(['c1:1', 'c2:1']);
   });
 
@@ -74,9 +74,9 @@ describe('journal local (ADR-0003)', () => {
       journal.enregistrer('c1', creation(), contexte),
       journal.enregistrer('c1', creation(), contexte),
     ]);
-    // La seconde voit la première : la compétition existe déjà (CA-4), aucun doublon de seq n'est écrit.
+    // La seconde voit la première : l’épreuve existe déjà (CA-4), aucun doublon de seq n'est écrit.
     expect(resultats.map((resultat) => ('erreur' in resultat ? resultat.erreur : 'ok')).sort()).toEqual([
-      'COMPETITION_DEJA_CREEE',
+      'EPREUVE_DEJA_CREEE',
       'ok',
     ]);
     expect(await lignes(nom)).toHaveLength(1);
@@ -85,16 +85,16 @@ describe('journal local (ADR-0003)', () => {
   it('US-021 CA-2 : relit la projection calculée depuis le journal', async () => {
     const nom = nomBase();
     const journal = ouvrirJournal(nom, persister());
-    expect(await journal.lire('c1')).toEqual({ competition: null, dernierSeq: 0, anomalie: null });
+    expect(await journal.lire('c1')).toEqual({ epreuve: null, dernierSeq: 0, anomalie: null });
     const { projection } = (await journal.enregistrer('c1', creation(), contexte)) as { projection: unknown };
     expect(await journal.lire('c1')).toEqual(projection);
   });
 
-  it('US-021 CA-3 : retrouve la compétition à l’identique après réouverture de la base', async () => {
+  it('US-021 CA-3 : retrouve l’épreuve à l’identique après réouverture de la base', async () => {
     const nom = nomBase();
     await ouvrirJournal(nom, persister()).enregistrer('c1', creation(), contexte);
     const rouverte = await ouvrirJournal(nom, persister()).lire('c1');
-    expect(rouverte).toMatchObject({ competition: { id: 'c1', nom: 'Challenge Orpi 2027' }, dernierSeq: 1 });
+    expect(rouverte).toMatchObject({ epreuve: { id: 'c1', nom: 'Challenge Orpi 2027' }, dernierSeq: 1 });
   });
 
   it('US-021 CA-4 : un événement refusé n’écrit rien et remonte son code', async () => {
@@ -110,10 +110,10 @@ describe('journal local (ADR-0003)', () => {
     await journal.enregistrer('c1', creation(), contexte);
     const base = new Dexie(nom);
     await base.open();
-    await base.table('evenements').put({ competitionId: 'c1', seq: 2, version: 99 });
+    await base.table('evenements').put({ epreuveId: 'c1', seq: 2, version: 99 });
     base.close();
     expect(await journal.lire('c1')).toMatchObject({ dernierSeq: 1, anomalie: { seq: 2, nature: 'ILLISIBLE' } });
-    expect(await lignes(nom)).toContainEqual({ competitionId: 'c1', seq: 2, version: 99 });
+    expect(await lignes(nom)).toContainEqual({ epreuveId: 'c1', seq: 2, version: 99 });
   });
 
   it('US-021 cas limite : refuse d’écrire à la suite d’un journal incohérent', async () => {
@@ -122,7 +122,7 @@ describe('journal local (ADR-0003)', () => {
     await journal.lire('c1');
     const base = new Dexie(nom);
     await base.open();
-    await base.table('evenements').put({ competitionId: 'c1', seq: 2, version: 99 });
+    await base.table('evenements').put({ epreuveId: 'c1', seq: 2, version: 99 });
     base.close();
     expect(await journal.enregistrer('c1', creation(), contexte)).toEqual({ erreur: 'JOURNAL_INCOHERENT' });
   });
@@ -197,8 +197,8 @@ describe('pilote et copies (US-022, ADR-0016)', () => {
     const journal = ouvrirJournal(nomBase(), persister());
     expect(await journal.etat('c1')).toBeNull();
     await journal.enregistrer('c1', creation(), contexte);
-    expect(await journal.etat('c1')).toEqual({ competitionId: 'c1', pilote: true, confirme: 0, copieLe: null });
-    expect(await journal.competitionsLocales()).toHaveLength(1);
+    expect(await journal.etat('c1')).toEqual({ epreuveId: 'c1', pilote: true, confirme: 0, copieLe: null });
+    expect(await journal.epreuvesLocales()).toHaveLength(1);
   });
 
   it('US-022 CA-1 : à envoyer = ce qui suit le dernier seq confirmé', async () => {
@@ -217,9 +217,9 @@ describe('pilote et copies (US-022, ADR-0016)', () => {
 
     const journal = ouvrirJournal(nomBase(), persister());
     expect(await journal.remplacerCopie('c1', evenements, 1_900_000_000_000)).toBe(true);
-    expect(await journal.lire('c1')).toMatchObject({ competition: { nom: 'Orpi' }, dernierSeq: 1 });
+    expect(await journal.lire('c1')).toMatchObject({ epreuve: { nom: 'Orpi' }, dernierSeq: 1 });
     expect(await journal.etat('c1')).toEqual({
-      competitionId: 'c1',
+      epreuveId: 'c1',
       pilote: false,
       confirme: 1,
       copieLe: 1_900_000_000_000,
@@ -229,11 +229,11 @@ describe('pilote et copies (US-022, ADR-0016)', () => {
     expect(await journal.remplacerCopie('c1', evenements, 1_900_000_000_001)).toBe(true);
   });
 
-  it('US-022 : une copie ne remplace jamais le journal d’une compétition pilotée par ce PC', async () => {
+  it('US-022 : une copie ne remplace jamais le journal d’une épreuve pilotée par ce PC', async () => {
     const journal = ouvrirJournal(nomBase(), persister());
     await journal.enregistrer('c1', creation('Mienne'), contexte);
     expect(await journal.remplacerCopie('c1', [], 1)).toBe(false);
-    expect(await journal.lire('c1')).toMatchObject({ competition: { nom: 'Mienne' } });
+    expect(await journal.lire('c1')).toMatchObject({ epreuve: { nom: 'Mienne' } });
   });
 
   it('US-022 : l’identifiant de l’appareil est tiré une fois et gardé', async () => {
@@ -245,21 +245,21 @@ describe('pilote et copies (US-022, ADR-0016)', () => {
   });
 });
 
-describe('création d’une compétition (US-025)', () => {
+describe('création d’une épreuve (US-025)', () => {
   it('US-025 CA-2 : la création est écrite dans le journal local et rend ce PC pilote', async () => {
     const journal = ouvrirJournal(nomBase(), persister());
     const resultat = await journal.enregistrer('c1', creation(), contexte);
     expect(resultat).toMatchObject({
-      projection: { competition: { nom: 'Challenge Orpi 2027', statut: 'preparation', publiee: false } },
+      projection: { epreuve: { nom: 'Challenge Orpi 2027', statut: 'preparation', publiee: false } },
     });
-    expect(await journal.etat('c1')).toEqual({ competitionId: 'c1', pilote: true, confirme: 0, copieLe: null });
+    expect(await journal.etat('c1')).toEqual({ epreuveId: 'c1', pilote: true, confirme: 0, copieLe: null });
   });
 
   it('US-025 CA-5 : des horaires incohérents ne sont pas écrits', async () => {
     const nom = nomBase();
     const journal = ouvrirJournal(nom, persister());
     const incoherente = creation();
-    if (incoherente.type === 'CompetitionCreee') {
+    if (incoherente.type === 'EpreuveCreee') {
       incoherente.donnees.horaires = { appel: '09:00', scratch: '08:00', debutPoules: null };
     }
     expect(await journal.enregistrer('c1', incoherente, contexte)).toEqual({ erreur: 'SCRATCH_AVANT_APPEL' });

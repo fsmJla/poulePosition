@@ -10,11 +10,11 @@ import { creerSynchronisation } from './synchronisation';
 
 const URL_SERVEUR = 'http://serveur.test';
 const creation = (nom = 'Challenge Orpi 2027'): Proposition => ({
-  type: 'CompetitionCreee',
+  type: 'EpreuveCreee',
   donnees: {
     nom,
     arme: 'sabre',
-    typeCompetition: 'individuelle',
+    typeEpreuve: 'individuelle',
     categorie: 'M13',
     sexe: null,
     date: '2027-03-14',
@@ -24,7 +24,7 @@ const creation = (nom = 'Challenge Orpi 2027'): Proposition => ({
     rattachement: null,
   },
 });
-const modification = (nom: string): Proposition => ({ type: 'CompetitionModifiee', donnees: { nom } });
+const modification = (nom: string): Proposition => ({ type: 'EpreuveModifiee', donnees: { nom } });
 
 let horloge = 1_800_000_000_000;
 const contexteDe = (auteur: string): Contexte => ({ clubId: 'pessac', auteur, maintenant: () => ++horloge });
@@ -33,7 +33,7 @@ const marie = contexteDe('marie@club.fr');
 
 const nouveauJournal = () => ouvrirJournal(`test-${crypto.randomUUID()}`, async () => true);
 
-/** Serveur simulé : journal et pilote par compétition, présence, noms des comptes par appareil. */
+/** Serveur simulé : journal et pilote par épreuve, présence, noms des comptes par appareil. */
 function serveurSimule() {
   const journaux = new Map<string, { evenements: Evenement[]; pilote: string; connecte: boolean }>();
   const noms = new Map<string, string>();
@@ -49,17 +49,17 @@ function serveurSimule() {
   const envoyer = vi.fn(async (adresse: string | URL | Request, init?: RequestInit): Promise<Response> => {
     if (!reseau) throw new TypeError('Failed to fetch');
     const chemin = String(adresse).replace(URL_SERVEUR, '');
-    const [, id = '', action] = /^\/competitions\/([^/]+)\/(evenements|pilote|presence)$/.exec(chemin) ?? [];
+    const [, id = '', action] = /^\/epreuves\/([^/]+)\/(evenements|pilote|presence)$/.exec(chemin) ?? [];
     const journal = journaux.get(id);
     const corps = init?.body ? JSON.parse(String(init.body)) : undefined;
     if (action === 'pilote' && init?.method === 'GET') {
-      if (!journal) return repondre(404, { ok: false, erreur: 'COMPETITION_INCONNUE' });
+      if (!journal) return repondre(404, { ok: false, erreur: 'EPREUVE_INCONNUE' });
       return repondre(200, { ok: true, ...enPlace(journal), connecte: journal.connecte });
     }
     if (action === 'pilote') {
       const analyse = analyserDemandePriseDeMain(corps);
       if (!analyse.ok) return repondre(400, { ok: false, erreur: 'DEMANDE_INVALIDE' });
-      if (!journal) return repondre(404, { ok: false, erreur: 'COMPETITION_INCONNUE' });
+      if (!journal) return repondre(404, { ok: false, erreur: 'EPREUVE_INCONNUE' });
       const { appareilId, piloteAttendu } = analyse.demande;
       if (journal.pilote !== piloteAttendu) {
         return repondre(409, { ok: false, erreur: 'MAIN_DEJA_PRISE', ...enPlace(journal) });
@@ -76,14 +76,14 @@ function serveurSimule() {
     if (action === 'presence') {
       const analyse = analyserDemandePresence(corps);
       if (!analyse.ok) return repondre(400, { ok: false, erreur: 'DEMANDE_INVALIDE' });
-      if (!journal) return repondre(404, { ok: false, erreur: 'COMPETITION_INCONNUE' });
+      if (!journal) return repondre(404, { ok: false, erreur: 'EPREUVE_INCONNUE' });
       if (journal.pilote !== analyse.demande.appareilId) {
         return repondre(409, { ok: false, erreur: 'PAS_PILOTE', ...enPlace(journal) });
       }
       return repondre(200, { ok: true });
     }
     if (init?.method === 'GET') {
-      if (!journal) return repondre(404, { ok: false, erreur: 'COMPETITION_INCONNUE' });
+      if (!journal) return repondre(404, { ok: false, erreur: 'EPREUVE_INCONNUE' });
       return repondre(200, {
         ok: true,
         evenements: journal.evenements,
@@ -132,7 +132,7 @@ function pc(serveur: ReturnType<typeof serveurSimule>, nom: string, enLigne = ()
 
 type Pc = ReturnType<typeof pc>;
 
-/** Le PC crée la compétition, l'envoie, et le serveur retient son nom. */
+/** Le PC crée l’épreuve, l'envoie, et le serveur retient son nom. */
 async function creerEtEnvoyer(serveur: ReturnType<typeof serveurSimule>, poste: Pc, id: string, contexte = orga) {
   serveur.noms.set(await poste.appareil(), poste.nom);
   await poste.journal.enregistrer(id, creation(), contexte);
@@ -151,8 +151,8 @@ describe('prise de main (US-029)', () => {
     expect(resultat).toEqual({ ok: true });
 
     expect(await b.journal.etat('c1')).toMatchObject({ pilote: true, copieLe: null });
-    const { competition, dernierSeq } = await b.journal.lire('c1');
-    expect(competition?.nom).toBe('Challenge Orpi 2027');
+    const { epreuve, dernierSeq } = await b.journal.lire('c1');
+    expect(epreuve?.nom).toBe('Challenge Orpi 2027');
     expect(dernierSeq).toBe(2);
     const journalServeur = serveur.journaux.get('c1')!;
     expect(journalServeur.pilote).toBe(await b.appareil());
@@ -177,11 +177,11 @@ describe('prise de main (US-029)', () => {
     await b.synchronisation.prendreLaMain('c1', await a.appareil(), marie);
 
     const pertes: string[] = [];
-    a.synchronisation.surPerte(({ competitionId, piloteNom }) => pertes.push(`${competitionId}:${piloteNom}`));
+    a.synchronisation.surPerte(({ epreuveId, piloteNom }) => pertes.push(`${epreuveId}:${piloteNom}`));
     const battement = await a.synchronisation.battre('c1');
     expect(battement).toEqual({
       ok: false,
-      perte: { competitionId: 'c1', piloteAppareil: await b.appareil(), piloteNom: 'Marie', ecartes: 0 },
+      perte: { epreuveId: 'c1', piloteAppareil: await b.appareil(), piloteNom: 'Marie', ecartes: 0 },
     });
     expect(pertes).toEqual(['c1:Marie']);
     expect(await a.journal.etat('c1')).toMatchObject({ pilote: false });
@@ -209,20 +209,20 @@ describe('prise de main (US-029)', () => {
     expect(ecartes).toHaveLength(1);
     expect(ecartes[0]).toMatchObject({ piloteNom: 'Marie', piloteAppareil: await b.appareil() });
     expect(ecartes[0]?.evenements.map(({ seq, type }) => [seq, type])).toEqual([
-      [2, 'CompetitionModifiee'],
-      [3, 'CompetitionModifiee'],
+      [2, 'EpreuveModifiee'],
+      [3, 'EpreuveModifiee'],
     ]);
     expect(await a.synchronisation.enAttente('c1')).toBe(0);
     // Le serveur n'a rien repris de ces événements.
     expect(serveur.journaux.get('c1')?.evenements.map(({ type }) => type)).toEqual([
-      'CompetitionCreee',
+      'EpreuveCreee',
       'PiloteChange',
     ]);
 
-    const exporte = JSON.parse(contenuExport('c1', ecartes)) as { competitionId: string; evenements: Evenement[] };
-    expect(exporte.competitionId).toBe('c1');
+    const exporte = JSON.parse(contenuExport('c1', ecartes)) as { epreuveId: string; evenements: Evenement[] };
+    expect(exporte.epreuveId).toBe('c1');
     expect(exporte.evenements).toHaveLength(2);
-    expect(exporte.evenements[0]).toMatchObject({ type: 'CompetitionModifiee', donnees: { nom: 'Hors ligne 1' } });
+    expect(exporte.evenements[0]).toMatchObject({ type: 'EpreuveModifiee', donnees: { nom: 'Hors ligne 1' } });
 
     await a.journal.effacerEcartes('c1');
     expect(await a.journal.lireEcartes('c1')).toEqual([]);
@@ -243,18 +243,18 @@ describe('prise de main (US-029)', () => {
     expect(await b.synchronisation.pilote('c1')).toMatchObject({ ok: true, connecte: false });
   });
 
-  it('CA-5 : un PC qui pilote déjà une compétition en pilote deux', async () => {
+  it('CA-5 : un PC qui pilote déjà une épreuve en pilote deux', async () => {
     const serveur = serveurSimule();
     const a = pc(serveur, 'Julien');
     const b = pc(serveur, 'Marie');
     await creerEtEnvoyer(serveur, a, 'c1');
     await creerEtEnvoyer(serveur, b, 'c2', marie);
     await b.synchronisation.prendreLaMain('c1', await a.appareil(), marie);
-    const locales = await b.journal.competitionsLocales();
+    const locales = await b.journal.epreuvesLocales();
     expect(
       locales
         .filter(({ pilote }) => pilote)
-        .map(({ competitionId }) => competitionId)
+        .map(({ epreuveId }) => epreuveId)
         .sort(),
     ).toEqual(['c1', 'c2']);
     expect(await b.synchronisation.battre('c1')).toEqual({ ok: true });
@@ -311,12 +311,12 @@ describe('prise de main (US-029)', () => {
     expect(await c.journal.etat('c1')).toBeNull();
   });
 
-  it('cas limite : prise de main sur une compétition inconnue du serveur', async () => {
+  it('cas limite : prise de main sur une épreuve inconnue du serveur', async () => {
     const serveur = serveurSimule();
     const b = pc(serveur, 'Marie');
     expect(await b.synchronisation.prendreLaMain('absente', 'x', marie)).toEqual({
       ok: false,
-      erreur: 'COMPETITION_INCONNUE',
+      erreur: 'EPREUVE_INCONNUE',
     });
   });
 
@@ -332,7 +332,7 @@ describe('prise de main (US-029)', () => {
     expect(await b.journal.etat('c1')).toMatchObject({ pilote: true, copieLe: null, confirme: 1 });
   });
 
-  it('CA-2 : le battement général ne concerne que les compétitions pilotées ici', async () => {
+  it('CA-2 : le battement général ne concerne que les épreuves pilotées ici', async () => {
     const serveur = serveurSimule();
     const a = pc(serveur, 'Julien');
     const b = pc(serveur, 'Marie');
@@ -359,11 +359,11 @@ describe('export des modifications écartées (US-029)', () => {
     const journal: Journal = nouveauJournal();
     await journal.enregistrer('c1', creation(), orga);
     const texte = contenuExport('c1', [
-      { id: 1, competitionId: 'c1', evenements: await journal.aEnvoyer('c1'), ecartesLe: 1 },
+      { id: 1, epreuveId: 'c1', evenements: await journal.aEnvoyer('c1'), ecartesLe: 1 },
     ]);
     expect(JSON.parse(texte)).toMatchObject({
-      competitionId: 'c1',
-      evenements: [{ seq: 1, type: 'CompetitionCreee' }],
+      epreuveId: 'c1',
+      evenements: [{ seq: 1, type: 'EpreuveCreee' }],
     });
   });
 });

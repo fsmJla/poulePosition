@@ -2,17 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { historiqueFormule, matchsAConfirmer } from './formule';
 import type { Evenement } from './journal';
 
-const base = { competitionId: 'c1', clubId: 'pessac', version: 1, source: 'clavier' as const };
+const base = { epreuveId: 'c1', clubId: 'pessac', version: 1, source: 'clavier' as const };
 const creation: Evenement = {
   ...base,
   seq: 1,
   date: 1_800_000_000_000,
   auteur: 'orga@club.fr',
-  type: 'CompetitionCreee',
+  type: 'EpreuveCreee',
   donnees: {
     nom: 'Orpi',
     arme: 'sabre',
-    typeCompetition: 'individuelle',
+    typeEpreuve: 'individuelle',
     categorie: null,
     sexe: null,
     date: null,
@@ -40,7 +40,7 @@ describe('trace des changements de formule (US-028)', () => {
     const journal: Evenement[] = [
       creation,
       formule(2, 'orga@club.fr', { touchesTableau: 10 }),
-      { ...creation, seq: 3, type: 'CompetitionModifiee', donnees: { nom: 'Autre' } },
+      { ...creation, seq: 3, type: 'EpreuveModifiee', donnees: { nom: 'Autre' } },
       formule(4, 'adjoint@club.fr', { touchesPoules: 4, matchTroisieme: true }),
     ];
     expect(historiqueFormule(journal)).toEqual([
@@ -59,7 +59,7 @@ describe('trace des changements de formule (US-028)', () => {
   });
 });
 
-describe('changement de formule en cours de compétition (US-028)', () => {
+describe('changement de formule en cours d’épreuve (US-028)', () => {
   it('CA-4 : en cours, la confirmation annonce le nombre de matchs déjà joués', () => {
     expect(matchsAConfirmer('enCours', 12)).toBe(12);
   });

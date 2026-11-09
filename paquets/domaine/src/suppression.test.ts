@@ -1,33 +1,33 @@
 import { describe, expect, it } from 'vitest';
-import { planifierSuppressionContenu, type CompetitionASupprimer } from './suppression';
+import { planifierSuppressionContenu, type EpreuveASupprimer } from './suppression';
 
-const competition = (id: string, statut: CompetitionASupprimer['statut'] = 'preparation'): CompetitionASupprimer => ({
+const epreuve = (id: string, statut: EpreuveASupprimer['statut'] = 'preparation'): EpreuveASupprimer => ({
   id,
-  nom: `Compétition ${id}`,
+  nom: `Épreuve ${id}`,
   statut,
 });
 
 describe('suppression d’un contenu (US-041)', () => {
-  it('US-041 CA-3 : une compétition en cours bloque, avec le nom de chacune', () => {
+  it('US-041 CA-3 : une épreuve en cours bloque, avec le nom de chacune', () => {
     const plan = planifierSuppressionContenu(
-      [competition('a'), competition('b', 'enCours'), competition('c', 'enCours')],
+      [epreuve('a'), epreuve('b', 'enCours'), epreuve('c', 'enCours')],
       30,
     );
-    expect(plan).toEqual({ etat: 'bloquee', enCours: ['Compétition b', 'Compétition c'] });
+    expect(plan).toEqual({ etat: 'bloquee', enCours: ['Épreuve b', 'Épreuve c'] });
   });
 
-  it('US-041 CA-3 : le blocage vaut même si la compétition en cours dépasse la limite du lot', () => {
-    const toutes = [competition('a'), competition('b'), competition('c', 'enCours')];
-    expect(planifierSuppressionContenu(toutes, 2)).toEqual({ etat: 'bloquee', enCours: ['Compétition c'] });
+  it('US-041 CA-3 : le blocage vaut même si l’épreuve en cours dépasse la limite du lot', () => {
+    const toutes = [epreuve('a'), epreuve('b'), epreuve('c', 'enCours')];
+    expect(planifierSuppressionContenu(toutes, 2)).toEqual({ etat: 'bloquee', enCours: ['Épreuve c'] });
   });
 
   it('US-041 CA-1 : tout part en un lot quand le contenu tient dans la limite, archivées comprises', () => {
-    const plan = planifierSuppressionContenu([competition('a'), competition('b', 'archivee'), competition('c')], 30);
+    const plan = planifierSuppressionContenu([epreuve('a'), epreuve('b', 'archivee'), epreuve('c')], 30);
     expect(plan).toEqual({ etat: 'lot', ids: ['a', 'b', 'c'], restantes: 0 });
   });
 
   it('US-041 CA-5 : le lot est limité et le reste est compté', () => {
-    const toutes = Array.from({ length: 35 }, (_, i) => competition(`c${i}`));
+    const toutes = Array.from({ length: 35 }, (_, i) => epreuve(`c${i}`));
     const plan = planifierSuppressionContenu(toutes, 30);
     expect(plan.etat).toBe('lot');
     if (plan.etat === 'lot') {

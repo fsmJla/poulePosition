@@ -137,7 +137,7 @@ test('US-006 CA-1, CA-3 et hors ligne : oublier l’appareil, puis la reconnexio
 
   // L'oubli fonctionne sans réseau : l'effacement est purement local.
   await choisirDansMenuCompte(page, 'Se déconnecter et oublier cet appareil');
-  await expect(page.getByText('Les compétitions enregistrées sur cet appareil sont conservées.')).toBeVisible();
+  await expect(page.getByText('Les épreuves enregistrées sur cet appareil sont conservées.')).toBeVisible();
   await page.getByRole('button', { name: 'Oublier cet appareil', exact: true }).click();
   await expect(page).toHaveURL(/\/connexion$/);
 

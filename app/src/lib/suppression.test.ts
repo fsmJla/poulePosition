@@ -7,8 +7,8 @@ import {
   peutSupprimer,
 } from './suppression';
 
-describe('suppression définitive d’une compétition (US-039)', () => {
-  it('US-039 CA-1 : un administrateur supprime une compétition qui n’est pas en cours', () => {
+describe('suppression définitive d’une épreuve (US-039)', () => {
+  it('US-039 CA-1 : un administrateur supprime une épreuve qui n’est pas en cours', () => {
     for (const statut of ['preparation', 'terminee', 'archivee'] as const) {
       expect(peutSupprimer('administrateur', statut)).toEqual({ ok: true });
     }
@@ -18,11 +18,11 @@ describe('suppression définitive d’une compétition (US-039)', () => {
     expect(peutSupprimer('organisateur', 'terminee')).toEqual({ ok: false, motif: 'ADMINISTRATEUR_REQUIS' });
   });
 
-  it('US-039 CA-3 : une compétition en cours ne se supprime pas', () => {
+  it('US-039 CA-3 : une épreuve en cours ne se supprime pas', () => {
     expect(peutSupprimer('administrateur', 'enCours')).toEqual({ ok: false, motif: 'EN_COURS' });
   });
 
-  it('US-039 CA-8 : le nom saisi doit être exactement celui de la compétition', () => {
+  it('US-039 CA-8 : le nom saisi doit être exactement celui de l’épreuve', () => {
     expect(nomConfirme('Challenge Orpi', 'Challenge Orpi')).toBe(true);
     expect(nomConfirme('  Challenge Orpi ', 'Challenge Orpi')).toBe(true);
     expect(nomConfirme('challenge orpi', 'Challenge Orpi')).toBe(false);
@@ -30,7 +30,7 @@ describe('suppression définitive d’une compétition (US-039)', () => {
   });
 });
 
-describe('suppression de plusieurs compétitions (US-040)', () => {
+describe('suppression de plusieurs épreuves (US-040)', () => {
   it('US-040 CA-3 : la confirmation exige SUPPRIMER, exactement', () => {
     expect(CONFIRMATION_SERIE).toBe('SUPPRIMER');
     expect(confirmationSerie('SUPPRIMER')).toBe(true);
@@ -84,11 +84,11 @@ describe('enchaînement des morceaux d’une suppression avec contenu (US-041, U
     expect(await resultat).toEqual({ ok: false, erreur: 'HORS_LIGNE', supprimees: 30, restantes: 50 });
   });
 
-  it('US-042 CA-3 : un refus joint les noms des compétitions en cours', async () => {
-    const { resultat } = enchainer([{ ok: false, erreur: 'COMPETITION_EN_COURS', enCours: ['Sabre M13'] }]);
+  it('US-042 CA-3 : un refus joint les noms des épreuves en cours', async () => {
+    const { resultat } = enchainer([{ ok: false, erreur: 'EPREUVE_EN_COURS', enCours: ['Sabre M13'] }]);
     expect(await resultat).toEqual({
       ok: false,
-      erreur: 'COMPETITION_EN_COURS',
+      erreur: 'EPREUVE_EN_COURS',
       supprimees: 0,
       restantes: 0,
       enCours: ['Sabre M13'],

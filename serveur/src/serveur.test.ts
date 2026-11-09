@@ -21,7 +21,7 @@ afterAll(async () => {
   await worker?.dispose();
 });
 
-function connecter(origine: string, chemin = '/competitions/demo/connexion') {
+function connecter(origine: string, chemin = '/epreuves/demo/connexion') {
   return worker.fetch(`http://localhost${chemin}`, { headers: { Upgrade: 'websocket', Origin: origine } });
 }
 
@@ -57,7 +57,7 @@ describe('serveur', () => {
 
   it('renvoie 404 sur une route inconnue et 426 sans demande de WebSocket', async () => {
     expect((await worker.fetch('http://localhost/inconnu')).status).toBe(404);
-    expect((await worker.fetch('http://localhost/competitions/demo/connexion')).status).toBe(426);
+    expect((await worker.fetch('http://localhost/epreuves/demo/connexion')).status).toBe(426);
   });
 
   it('US-001 CA-8 : une origine non autorisée est refusée (403)', async () => {
@@ -88,9 +88,9 @@ describe('serveur', () => {
     expect(preflight.status).toBe(403);
   });
 
-  it('US-001 CA-8 : la connexion reçoit bienvenue avec la compétition', async () => {
+  it('US-001 CA-8 : la connexion reçoit bienvenue avec l’épreuve', async () => {
     const { socket, prochain } = await ouvrir();
-    expect(JSON.parse(await prochain())).toEqual({ v: 1, type: 'bienvenue', competitionId: 'demo' });
+    expect(JSON.parse(await prochain())).toEqual({ v: 1, type: 'bienvenue', epreuveId: 'demo' });
     socket.close();
   });
 

@@ -60,19 +60,19 @@ test('US-023 CA-3 : la date de fin doit suivre la date de début', async ({ page
   await expect(page.getByLabel('Date de fin')).toHaveAttribute('aria-invalid', 'true');
 });
 
-test('US-023 CA-4 : des dates qui excluent une compétition rattachée sont refusées, en la citant', async ({ page }) => {
+test('US-023 CA-4 : des dates qui excluent une épreuve rattachée sont refusées, en la citant', async ({ page }) => {
   const nom = nomUnique();
-  const competition = `Compétition ${nom}`;
+  const epreuve = `Épreuve ${nom}`;
   await seConnecter(page);
   const liste = page.waitForResponse((reponse) => reponse.url().endsWith('/manifestations'));
   await ouvrirPage(page);
   const urlServeur = new URL((await liste).url()).origin;
   await creer(page, nom);
 
-  // Le sélecteur de rattachement viendra avec US-024 : la compétition rattachée est envoyée directement au serveur,
+  // Le sélecteur de rattachement viendra avec US-024 : l’épreuve rattachée est envoyée directement au serveur,
   // comme le ferait son PC pilote (US-022).
   await page.evaluate(
-    async ({ urlServeur, nom, competition }) => {
+    async ({ urlServeur, nom, epreuve }) => {
       const base = await new Promise<IDBDatabase>((ok, ko) => {
         const ouverture = indexedDB.open('poulePosition');
         ouverture.onsuccess = () => ok(ouverture.result);
@@ -86,25 +86,25 @@ test('US-023 CA-4 : des dates qui excluent une compétition rattachée sont refu
       const entetes = { Authorization: `Bearer ${session.jeton}`, 'Content-Type': 'application/json' };
       const { manifestations } = await (await fetch(`${urlServeur}/manifestations`, { headers: entetes })).json();
       const manifestationId = manifestations.find((manifestation: { nom: string }) => manifestation.nom === nom).id;
-      const rattachement = { manifestationId, epreuveId: null };
-      const competitionId = crypto.randomUUID();
+      const rattachement = { manifestationId, competitionId: null };
+      const epreuveId = crypto.randomUUID();
       const lot = {
         appareilId: crypto.randomUUID(),
         depuis: 0,
         evenements: [
           {
-            competitionId,
+            epreuveId,
             clubId: session.compte.clubId,
             seq: 1,
             version: 1,
             date: Date.now(),
             auteur: session.compte.email,
             source: 'clavier',
-            type: 'CompetitionCreee',
+            type: 'EpreuveCreee',
             donnees: {
-              nom: competition,
+              nom: epreuve,
               arme: 'sabre',
-              typeCompetition: 'individuelle',
+              typeEpreuve: 'individuelle',
               categorie: null,
               sexe: null,
               date: '2027-03-15',
@@ -116,7 +116,7 @@ test('US-023 CA-4 : des dates qui excluent une compétition rattachée sont refu
           },
         ],
         resume: {
-          nom: competition,
+          nom: epreuve,
           arme: 'sabre',
           categorie: null,
           sexe: null,
@@ -126,21 +126,21 @@ test('US-023 CA-4 : des dates qui excluent une compétition rattachée sont refu
           rattachement,
         },
       };
-      const envoi = await fetch(`${urlServeur}/competitions/${competitionId}/evenements`, {
+      const envoi = await fetch(`${urlServeur}/epreuves/${epreuveId}/evenements`, {
         method: 'POST',
         headers: entetes,
         body: JSON.stringify(lot),
       });
       if (!envoi.ok) throw new Error(`Envoi refusé : ${envoi.status}`);
     },
-    { urlServeur, nom, competition },
+    { urlServeur, nom, epreuve },
   );
 
   await page.getByRole('button', { name: `Modifier ${nom}` }).click();
   await remplir(page, { fin: '2027-03-14' });
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.getByRole('alert')).toHaveText(
-    `Ces dates n’incluent plus la compétition rattachée : ${competition}`,
+    `Ces dates n’incluent plus l’épreuve rattachée : ${epreuve}`,
     { timeout: 20_000 },
   );
 
@@ -148,7 +148,7 @@ test('US-023 CA-4 : des dates qui excluent une compétition rattachée sont refu
   await page.getByRole('button', { name: 'Annuler' }).click();
   await page.getByRole('button', { name: `Supprimer ${nom}` }).click();
   await page.getByRole('button', { name: 'Supprimer', exact: true }).click();
-  await expect(page.getByText(/contient des compétitions/)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(/contient des épreuves/)).toBeVisible({ timeout: 20_000 });
 });
 
 test('US-023 CA-5 : supprimer une manifestation vide, après confirmation', async ({ page }) => {

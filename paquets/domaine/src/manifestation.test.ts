@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  competitionsHorsDates,
+  epreuvesHorsDates,
   estVide,
   normaliserManifestation,
   validerManifestation,
-  type CompetitionRattachee,
+  type EpreuveRattachee,
   type DonneesManifestation,
 } from './manifestation';
 
@@ -17,11 +17,11 @@ const donnees = (champs: Partial<DonneesManifestation> = {}): DonneesManifestati
   ...champs,
 });
 
-const competition = (champs: Partial<CompetitionRattachee> = {}): CompetitionRattachee => ({
+const epreuve = (champs: Partial<EpreuveRattachee> = {}): EpreuveRattachee => ({
   id: 'c1',
   nom: 'Sabre M13',
   date: '2027-03-15',
-  rattachement: { manifestationId: 'm1', epreuveId: null },
+  rattachement: { manifestationId: 'm1', competitionId: null },
   ...champs,
 });
 
@@ -47,32 +47,32 @@ describe('manifestation (US-023)', () => {
     expect(validerManifestation(donnees({ debut: '2027-03-14', fin: '2027-03-14' }))).toEqual({});
   });
 
-  it('CA-4 : liste les compétitions rattachées dont la date sort des nouvelles dates', () => {
-    const competitions = [
-      competition(),
-      competition({ id: 'c2', nom: 'Épée M15', date: '2027-03-14' }),
-      competition({ id: 'c3', nom: 'Sans date', date: null }),
-      competition({ id: 'c4', nom: 'Autre manifestation', rattachement: { manifestationId: 'm2', epreuveId: null } }),
-      competition({ id: 'c5', nom: 'Isolée', rattachement: null }),
+  it('CA-4 : liste les épreuves rattachées dont la date sort des nouvelles dates', () => {
+    const epreuves = [
+      epreuve(),
+      epreuve({ id: 'c2', nom: 'Épée M15', date: '2027-03-14' }),
+      epreuve({ id: 'c3', nom: 'Sans date', date: null }),
+      epreuve({ id: 'c4', nom: 'Autre manifestation', rattachement: { manifestationId: 'm2', competitionId: null } }),
+      epreuve({ id: 'c5', nom: 'Isolée', rattachement: null }),
     ];
-    expect(competitionsHorsDates('m1', '2027-03-14', '2027-03-14', competitions)).toEqual([competitions[0]]);
-    expect(competitionsHorsDates('m1', '2027-03-14', '2027-03-15', competitions)).toEqual([]);
-    expect(competitionsHorsDates('m1', '2027-03-15', '2027-03-16', competitions).map(({ id }) => id)).toEqual(['c2']);
+    expect(epreuvesHorsDates('m1', '2027-03-14', '2027-03-14', epreuves)).toEqual([epreuves[0]]);
+    expect(epreuvesHorsDates('m1', '2027-03-14', '2027-03-15', epreuves)).toEqual([]);
+    expect(epreuvesHorsDates('m1', '2027-03-15', '2027-03-16', epreuves).map(({ id }) => id)).toEqual(['c2']);
   });
 
-  it('CA-5 : une manifestation est vide si aucune compétition ne s’y rattache', () => {
+  it('CA-5 : une manifestation est vide si aucune épreuve ne s’y rattache', () => {
     expect(estVide('m1', [])).toBe(true);
     expect(
       estVide('m1', [
-        competition({ rattachement: null }),
-        competition({ rattachement: { manifestationId: 'm2', epreuveId: null } }),
+        epreuve({ rattachement: null }),
+        epreuve({ rattachement: { manifestationId: 'm2', competitionId: null } }),
       ]),
     ).toBe(true);
-    expect(estVide('m1', [competition()])).toBe(false);
-    expect(estVide('m1', [competition({ rattachement: { manifestationId: 'm1', epreuveId: 'e1' } })])).toBe(false);
+    expect(estVide('m1', [epreuve()])).toBe(false);
+    expect(estVide('m1', [epreuve({ rattachement: { manifestationId: 'm1', competitionId: 'e1' } })])).toBe(false);
   });
 
-  it('CA-5 (US-024) : une manifestation qui contient une épreuve n’est pas vide', () => {
+  it('CA-5 (US-024) : une manifestation qui contient une compétition n’est pas vide', () => {
     expect(estVide('m1', [], [{ manifestationId: 'm2' }])).toBe(true);
     expect(estVide('m1', [], [{ manifestationId: 'm1' }])).toBe(false);
   });

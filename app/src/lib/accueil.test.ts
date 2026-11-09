@@ -1,9 +1,9 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
-import type { CompetitionIndexee, Epreuve, Manifestation } from '@poule-position/protocole';
+import type { EpreuveIndexee, Competition, Manifestation } from '@poule-position/protocole';
 import { creerAccueil } from './accueil';
-import { creerCompetition, saisieVide, type SaisieCompetition } from './competitions';
-import type { ClientEpreuves } from './epreuves';
+import { creerEpreuve, saisieVide, type SaisieEpreuve } from './epreuves';
+import type { ClientCompetitions } from './competitions';
 import { ouvrirJournal } from './journal';
 import type { ClientManifestations } from './manifestations';
 import type { Synchronisation } from './synchronisation';
@@ -22,7 +22,7 @@ const manifestation: Manifestation = {
   modifieeLe: 1,
   modifieePar: 'Orga',
 };
-const epreuve: Epreuve = {
+const competition: Competition = {
   id: 'e1',
   manifestationId: 'm1',
   nom: 'Championnats de sabre',
@@ -32,7 +32,7 @@ const epreuve: Epreuve = {
   modifieeLe: 1,
   modifieePar: 'Orga',
 };
-const indexee = (champs: Partial<CompetitionIndexee> = {}): CompetitionIndexee => ({
+const indexee = (champs: Partial<EpreuveIndexee> = {}): EpreuveIndexee => ({
   id: 'c-index',
   nom: 'Épée dames',
   arme: 'epee',
@@ -41,7 +41,7 @@ const indexee = (champs: Partial<CompetitionIndexee> = {}): CompetitionIndexee =
   date: '2027-03-15',
   statut: 'enCours',
   publiee: true,
-  rattachement: { manifestationId: 'm1', epreuveId: null },
+  rattachement: { manifestationId: 'm1', competitionId: null },
   piloteAppareil: 'autre-pc',
   piloteNom: 'Bruno',
   dernierSeq: 3,
@@ -50,21 +50,21 @@ const indexee = (champs: Partial<CompetitionIndexee> = {}): CompetitionIndexee =
 });
 
 interface Reseau {
-  index?: CompetitionIndexee[] | 'hors-ligne';
+  index?: EpreuveIndexee[] | 'hors-ligne';
   manifestations?: Manifestation[] | 'hors-ligne';
-  epreuves?: Epreuve[] | 'hors-ligne';
+  competitions?: Competition[] | 'hors-ligne';
 }
 
-const copies = new Map<string, { manifestations?: Manifestation[]; epreuves?: Epreuve[] }>();
+const copies = new Map<string, { manifestations?: Manifestation[]; competitions?: Competition[] }>();
 
 /** Un accueil sur une base neuve ; `reseau` décrit ce que le serveur répond. */
 function accueil(reseau: Reseau, nomBase = `test-${crypto.randomUUID()}`) {
   const journal = ouvrirJournal(nomBase, async () => true);
   const synchronisation = {
-    listerCompetitionsDuClub: async () =>
+    listerEpreuvesDuClub: async () =>
       reseau.index === undefined || reseau.index === 'hors-ligne'
         ? { ok: false as const, erreur: 'HORS_LIGNE' as const }
-        : { ok: true as const, competitions: reseau.index },
+        : { ok: true as const, epreuves: reseau.index },
   } as unknown as Synchronisation;
   // Comme les vrais clients : la dernière liste reçue est gardée, et rendue en cas d'échec.
   const gardees = copies.get(nomBase) ?? {};
@@ -79,25 +79,25 @@ function accueil(reseau: Reseau, nomBase = `test-${crypto.randomUUID()}`) {
       return { ok: true as const, manifestations: reseau.manifestations };
     },
   } as unknown as ClientManifestations;
-  const epreuves = {
+  const competitions = {
     lister: async () => {
-      if (reseau.epreuves === undefined || reseau.epreuves === 'hors-ligne') {
-        const copie = gardees.epreuves ? { epreuves: gardees.epreuves, copieLe: MAINTENANT } : null;
+      if (reseau.competitions === undefined || reseau.competitions === 'hors-ligne') {
+        const copie = gardees.competitions ? { competitions: gardees.competitions, copieLe: MAINTENANT } : null;
         return { ok: false as const, erreur: 'HORS_LIGNE' as const, copie };
       }
-      gardees.epreuves = reseau.epreuves;
-      return { ok: true as const, epreuves: reseau.epreuves };
+      gardees.competitions = reseau.competitions;
+      return { ok: true as const, competitions: reseau.competitions };
     },
-  } as unknown as ClientEpreuves;
+  } as unknown as ClientCompetitions;
 
   return {
     journal,
     nomBase,
-    ...creerAccueil({ journal, synchronisation, manifestations, epreuves, nomBase, maintenant: () => MAINTENANT }),
+    ...creerAccueil({ journal, synchronisation, manifestations, competitions, nomBase, maintenant: () => MAINTENANT }),
   };
 }
 
-const saisie = (champs: Partial<SaisieCompetition> = {}): SaisieCompetition => ({
+const saisie = (champs: Partial<SaisieEpreuve> = {}): SaisieEpreuve => ({
   ...saisieVide(),
   nom: 'Sabre M13',
   arme: 'sabre',
@@ -105,14 +105,14 @@ const saisie = (champs: Partial<SaisieCompetition> = {}): SaisieCompetition => (
 });
 
 describe('chargement de la liste du club (US-026)', () => {
-  it('CA-1 : en ligne, réunit manifestations, épreuves et compétitions du club', async () => {
-    const { charger } = accueil({ index: [indexee()], manifestations: [manifestation], epreuves: [epreuve] });
+  it('CA-1 : en ligne, réunit manifestations, compétitions et épreuves du club', async () => {
+    const { charger } = accueil({ index: [indexee()], manifestations: [manifestation], competitions: [competition] });
     const donnees = await charger();
     expect(donnees.horsLigne).toBe(false);
     expect(donnees.copieLe).toBeNull();
     expect(donnees.manifestations.map(({ id }) => id)).toEqual(['m1']);
-    expect(donnees.epreuves.map(({ id }) => id)).toEqual(['e1']);
-    expect(donnees.competitions).toEqual([
+    expect(donnees.competitions.map(({ id }) => id)).toEqual(['e1']);
+    expect(donnees.epreuves).toEqual([
       {
         id: 'c-index',
         nom: 'Épée dames',
@@ -122,72 +122,72 @@ describe('chargement de la liste du club (US-026)', () => {
         date: '2027-03-15',
         statut: 'enCours',
         publiee: true,
-        rattachement: { manifestationId: 'm1', epreuveId: null },
+        rattachement: { manifestationId: 'm1', competitionId: null },
         pilote: false,
         nonEnvoyee: false,
       },
     ]);
   });
 
-  it('CA-2 : une compétition pilotée par ce PC l’indique, et sa version locale l’emporte sur l’index', async () => {
+  it('CA-2 : une épreuve pilotée par ce PC l’indique, et sa version locale l’emporte sur l’index', async () => {
     const a = accueil({});
-    const creation = await creerCompetition(a.journal, saisie(), auteur);
-    const id = (creation as { competitionId: string }).competitionId;
+    const creation = await creerEpreuve(a.journal, saisie(), auteur);
+    const id = (creation as { epreuveId: string }).epreuveId;
     const avecIndex = accueil({ index: [indexee({ id, nom: 'Ancien nom', statut: 'preparation' })] }, a.nomBase);
-    const { competitions } = await avecIndex.charger();
-    expect(competitions).toHaveLength(1);
-    expect(competitions[0]).toMatchObject({ id, nom: 'Sabre M13', pilote: true });
+    const { epreuves } = await avecIndex.charger();
+    expect(epreuves).toHaveLength(1);
+    expect(epreuves[0]).toMatchObject({ id, nom: 'Sabre M13', pilote: true });
   });
 
-  it('cas limite : une compétition locale dont rien n’est parvenu au serveur est « non envoyée »', async () => {
+  it('cas limite : une épreuve locale dont rien n’est parvenu au serveur est « non envoyée »', async () => {
     const a = accueil({});
-    await creerCompetition(a.journal, saisie(), auteur);
-    const { competitions } = await a.charger();
-    expect(competitions[0]).toMatchObject({ pilote: true, nonEnvoyee: true });
+    await creerEpreuve(a.journal, saisie(), auteur);
+    const { epreuves } = await a.charger();
+    expect(epreuves[0]).toMatchObject({ pilote: true, nonEnvoyee: true });
   });
 
-  it('cas limite : une compétition dont le serveur a reçu des événements n’est plus « non envoyée »', async () => {
+  it('cas limite : une épreuve dont le serveur a reçu des événements n’est plus « non envoyée »', async () => {
     const a = accueil({});
-    const creation = await creerCompetition(a.journal, saisie(), auteur);
-    const id = (creation as { competitionId: string }).competitionId;
+    const creation = await creerEpreuve(a.journal, saisie(), auteur);
+    const id = (creation as { epreuveId: string }).epreuveId;
     await a.journal.confirmer(id, 1);
-    const { competitions } = await a.charger();
-    expect(competitions[0]).toMatchObject({ pilote: true, nonEnvoyee: false });
+    const { epreuves } = await a.charger();
+    expect(epreuves[0]).toMatchObject({ pilote: true, nonEnvoyee: false });
   });
 
-  it('hors ligne : la liste vient des dernières copies et des compétitions locales, avec la date de la copie', async () => {
-    const enLigne = accueil({ index: [indexee()], manifestations: [manifestation], epreuves: [epreuve] });
+  it('hors ligne : la liste vient des dernières copies et des épreuves locales, avec la date de la copie', async () => {
+    const enLigne = accueil({ index: [indexee()], manifestations: [manifestation], competitions: [competition] });
     await enLigne.charger();
-    // Plus tard, sans réseau : les copies gardées sur l'appareil, et une compétition créée entre-temps.
+    // Plus tard, sans réseau : les copies gardées sur l'appareil, et une épreuve créée entre-temps.
     const horsLigne = accueil(
-      { index: 'hors-ligne', manifestations: 'hors-ligne', epreuves: 'hors-ligne' },
+      { index: 'hors-ligne', manifestations: 'hors-ligne', competitions: 'hors-ligne' },
       enLigne.nomBase,
     );
-    await creerCompetition(horsLigne.journal, saisie(), auteur);
+    await creerEpreuve(horsLigne.journal, saisie(), auteur);
     const donnees = await horsLigne.charger();
     expect(donnees.horsLigne).toBe(true);
     expect(donnees.copieLe).toBe(MAINTENANT);
     expect(donnees.manifestations.map(({ id }) => id)).toEqual(['m1']);
-    expect(donnees.epreuves.map(({ id }) => id)).toEqual(['e1']);
-    expect(donnees.competitions.map(({ nom }) => nom).sort()).toEqual(['Sabre M13', 'Épée dames'].sort());
+    expect(donnees.competitions.map(({ id }) => id)).toEqual(['e1']);
+    expect(donnees.epreuves.map(({ nom }) => nom).sort()).toEqual(['Sabre M13', 'Épée dames'].sort());
   });
 
-  it('hors ligne : sans aucune copie, seules les compétitions locales sont listées, sans date', async () => {
-    const a = accueil({ index: 'hors-ligne', manifestations: 'hors-ligne', epreuves: 'hors-ligne' });
-    await creerCompetition(a.journal, saisie(), auteur);
+  it('hors ligne : sans aucune copie, seules les épreuves locales sont listées, sans date', async () => {
+    const a = accueil({ index: 'hors-ligne', manifestations: 'hors-ligne', competitions: 'hors-ligne' });
+    await creerEpreuve(a.journal, saisie(), auteur);
     const donnees = await a.charger();
-    expect(donnees).toMatchObject({ horsLigne: true, copieLe: null, manifestations: [], epreuves: [] });
-    expect(donnees.competitions).toHaveLength(1);
+    expect(donnees).toMatchObject({ horsLigne: true, copieLe: null, manifestations: [], competitions: [] });
+    expect(donnees.epreuves).toHaveLength(1);
   });
 
   it('cas limite : l’index ne contient que les lignes lisibles (le protocole ignore les autres) et la liste les affiche', async () => {
     const { charger } = accueil({ index: [indexee({ id: 'lisible' })], manifestations: [manifestation] });
-    expect((await charger()).competitions.map(({ id }) => id)).toEqual(['lisible']);
+    expect((await charger()).epreuves.map(({ id }) => id)).toEqual(['lisible']);
   });
 
-  it('cas limite : une copie locale sans compétition projetée est ignorée sans erreur', async () => {
+  it('cas limite : une copie locale sans épreuve projetée est ignorée sans erreur', async () => {
     const a = accueil({});
     await a.journal.remplacerCopie('copie-1', [], MAINTENANT);
-    expect((await a.charger()).competitions).toEqual([]);
+    expect((await a.charger()).epreuves).toEqual([]);
   });
 });

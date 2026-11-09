@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   construireListe,
   manifestationOuverte,
-  type CompetitionListee,
   type EpreuveListee,
+  type CompetitionListee,
   type ManifestationListee,
 } from './liste';
 
@@ -16,7 +16,7 @@ const manifestation = (champs: Partial<ManifestationListee> = {}): Manifestation
   ...champs,
 });
 
-const epreuve = (champs: Partial<EpreuveListee> = {}): EpreuveListee => ({
+const competition = (champs: Partial<CompetitionListee> = {}): CompetitionListee => ({
   id: 'e1',
   manifestationId: 'm1',
   nom: 'Championnats de sabre',
@@ -24,7 +24,7 @@ const epreuve = (champs: Partial<EpreuveListee> = {}): EpreuveListee => ({
   ...champs,
 });
 
-const competition = (champs: Partial<CompetitionListee> = {}): CompetitionListee => ({
+const epreuve = (champs: Partial<EpreuveListee> = {}): EpreuveListee => ({
   id: 'c1',
   nom: 'Sabre M13',
   arme: 'sabre',
@@ -39,18 +39,18 @@ const competition = (champs: Partial<CompetitionListee> = {}): CompetitionListee
   ...champs,
 });
 
-const dans = (manifestationId: string, epreuveId: string | null = null) => ({ manifestationId, epreuveId });
+const dans = (manifestationId: string, competitionId: string | null = null) => ({ manifestationId, competitionId });
 
-describe('liste des manifestations, épreuves et compétitions du club (US-026)', () => {
-  it('CA-1 : range les compétitions sous leur épreuve ou leur manifestation, puis les isolées', () => {
+describe('liste des manifestations, compétitions et épreuves du club (US-026)', () => {
+  it('CA-1 : range les épreuves sous leur compétition ou leur manifestation, puis les isolées', () => {
     const liste = construireListe(
       {
         manifestations: [manifestation()],
-        epreuves: [epreuve()],
-        competitions: [
-          competition({ id: 'c1', rattachement: dans('m1', 'e1') }),
-          competition({ id: 'c2', rattachement: dans('m1') }),
-          competition({ id: 'c3' }),
+        competitions: [competition()],
+        epreuves: [
+          epreuve({ id: 'c1', rattachement: dans('m1', 'e1') }),
+          epreuve({ id: 'c2', rattachement: dans('m1') }),
+          epreuve({ id: 'c3' }),
         ],
       },
       { afficherArchives: false },
@@ -58,124 +58,124 @@ describe('liste des manifestations, épreuves et compétitions du club (US-026)'
     expect(liste.manifestations).toHaveLength(1);
     const [noeud] = liste.manifestations;
     expect(noeud?.manifestation.id).toBe('m1');
-    expect(noeud?.epreuves.map(({ epreuve: { id }, competitions }) => [id, competitions.map(({ id }) => id)])).toEqual([
+    expect(noeud?.competitions.map(({ competition: { id }, epreuves }) => [id, epreuves.map(({ id }) => id)])).toEqual([
       ['e1', ['c1']],
     ]);
-    expect(noeud?.competitions.map(({ id }) => id)).toEqual(['c2']);
+    expect(noeud?.epreuves.map(({ id }) => id)).toEqual(['c2']);
     expect(liste.isolees.map(({ id }) => id)).toEqual(['c3']);
   });
 
-  it('CA-1 : trie les manifestations par début, leurs épreuves par nom, les compétitions par date (sans date en dernier)', () => {
+  it('CA-1 : trie les manifestations par début, leurs compétitions par nom, les épreuves par date (sans date en dernier)', () => {
     const liste = construireListe(
       {
         manifestations: [manifestation({ id: 'm2', debut: '2027-05-01', fin: '2027-05-01' }), manifestation()],
-        epreuves: [epreuve({ id: 'e2', nom: 'Zèbres' }), epreuve({ id: 'e1', nom: 'Aigles' })],
-        competitions: [
-          competition({ id: 'sans', date: null }),
-          competition({ id: 'tard', date: '2027-09-01' }),
-          competition({ id: 'tot', date: '2027-01-01' }),
-          competition({ id: 'meme-a', nom: 'A', date: '2027-02-01' }),
-          competition({ id: 'meme-b', nom: 'B', date: '2027-02-01' }),
+        competitions: [competition({ id: 'e2', nom: 'Zèbres' }), competition({ id: 'e1', nom: 'Aigles' })],
+        epreuves: [
+          epreuve({ id: 'sans', date: null }),
+          epreuve({ id: 'tard', date: '2027-09-01' }),
+          epreuve({ id: 'tot', date: '2027-01-01' }),
+          epreuve({ id: 'meme-a', nom: 'A', date: '2027-02-01' }),
+          epreuve({ id: 'meme-b', nom: 'B', date: '2027-02-01' }),
         ],
       },
       { afficherArchives: false },
     );
     expect(liste.manifestations.map(({ manifestation: { id } }) => id)).toEqual(['m1', 'm2']);
-    expect(liste.manifestations[0]?.epreuves.map(({ epreuve: { nom } }) => nom)).toEqual(['Aigles', 'Zèbres']);
+    expect(liste.manifestations[0]?.competitions.map(({ competition: { nom } }) => nom)).toEqual(['Aigles', 'Zèbres']);
     expect(liste.isolees.map(({ id }) => id)).toEqual(['tot', 'meme-a', 'meme-b', 'tard', 'sans']);
   });
 
-  it('CA-1 : une compétition dont la manifestation est inconnue est affichée parmi les isolées', () => {
+  it('CA-1 : une épreuve dont la manifestation est inconnue est affichée parmi les isolées', () => {
     const liste = construireListe(
       {
         manifestations: [manifestation()],
-        epreuves: [],
-        competitions: [competition({ id: 'orpheline', rattachement: dans('disparue') })],
+        competitions: [],
+        epreuves: [epreuve({ id: 'orpheline', rattachement: dans('disparue') })],
       },
       { afficherArchives: false },
     );
     expect(liste.isolees.map(({ id }) => id)).toEqual(['orpheline']);
   });
 
-  it('CA-1 : une épreuve inconnue place la compétition directement sous sa manifestation', () => {
+  it('CA-1 : une compétition inconnue place l’épreuve directement sous sa manifestation', () => {
     const liste = construireListe(
       {
         manifestations: [manifestation()],
-        epreuves: [],
-        competitions: [competition({ rattachement: dans('m1', 'x') })],
+        competitions: [],
+        epreuves: [epreuve({ rattachement: dans('m1', 'x') })],
       },
       { afficherArchives: false },
     );
-    expect(liste.manifestations[0]?.competitions.map(({ id }) => id)).toEqual(['c1']);
+    expect(liste.manifestations[0]?.epreuves.map(({ id }) => id)).toEqual(['c1']);
   });
 
-  it('CA-1 : une épreuve vide et une manifestation vide sont listées', () => {
+  it('CA-1 : une compétition vide et une manifestation vide sont listées', () => {
     const liste = construireListe(
-      { manifestations: [manifestation()], epreuves: [epreuve()], competitions: [] },
+      { manifestations: [manifestation()], competitions: [competition()], epreuves: [] },
       { afficherArchives: false },
     );
-    expect(liste.manifestations[0]?.epreuves).toHaveLength(1);
-    expect(liste.manifestations[0]?.epreuves[0]?.competitions).toEqual([]);
+    expect(liste.manifestations[0]?.competitions).toHaveLength(1);
+    expect(liste.manifestations[0]?.competitions[0]?.epreuves).toEqual([]);
     expect(liste.vide).toBe(false);
   });
 
   it('CA-2 : une entrée garde statut, publication, pilote de ce PC et envoi', () => {
-    const entree = competition({ statut: 'enCours', publiee: true, pilote: false, nonEnvoyee: true });
+    const entree = epreuve({ statut: 'enCours', publiee: true, pilote: false, nonEnvoyee: true });
     const liste = construireListe(
-      { manifestations: [], epreuves: [], competitions: [entree] },
+      { manifestations: [], competitions: [], epreuves: [entree] },
       { afficherArchives: false },
     );
     expect(liste.isolees[0]).toEqual(entree);
   });
 
-  it('CA-3 : les compétitions archivées sont masquées par défaut et comptées', () => {
-    const competitions = [
-      competition({ id: 'a', statut: 'archivee' }),
-      competition({ id: 'b', statut: 'archivee', rattachement: dans('m1', 'e1') }),
-      competition({ id: 'c' }),
+  it('CA-3 : les épreuves archivées sont masquées par défaut et comptées', () => {
+    const epreuves = [
+      epreuve({ id: 'a', statut: 'archivee' }),
+      epreuve({ id: 'b', statut: 'archivee', rattachement: dans('m1', 'e1') }),
+      epreuve({ id: 'c' }),
     ];
-    const donnees = { manifestations: [manifestation()], epreuves: [epreuve()], competitions };
+    const donnees = { manifestations: [manifestation()], competitions: [competition()], epreuves };
     const masquees = construireListe(donnees, { afficherArchives: false });
     expect(masquees.isolees.map(({ id }) => id)).toEqual(['c']);
-    expect(masquees.manifestations[0]?.epreuves[0]?.competitions).toEqual([]);
+    expect(masquees.manifestations[0]?.competitions[0]?.epreuves).toEqual([]);
     expect(masquees.archivesMasquees).toBe(2);
   });
 
   it('CA-3 : « Afficher les archives » les montre', () => {
-    const competitions = [competition({ id: 'a', statut: 'archivee' }), competition({ id: 'c' })];
-    const liste = construireListe({ manifestations: [], epreuves: [], competitions }, { afficherArchives: true });
+    const epreuves = [epreuve({ id: 'a', statut: 'archivee' }), epreuve({ id: 'c' })];
+    const liste = construireListe({ manifestations: [], competitions: [], epreuves }, { afficherArchives: true });
     expect(liste.isolees.map(({ id }) => id)).toEqual(['c', 'a'].sort());
     expect(liste.archivesMasquees).toBe(0);
   });
 
-  it('CA-6 : un club sans manifestation ni compétition a une liste vide', () => {
-    const liste = construireListe({ manifestations: [], epreuves: [], competitions: [] }, { afficherArchives: false });
+  it('CA-6 : un club sans manifestation ni épreuve a une liste vide', () => {
+    const liste = construireListe({ manifestations: [], competitions: [], epreuves: [] }, { afficherArchives: false });
     expect(liste).toEqual({ manifestations: [], isolees: [], archivesMasquees: 0, vide: true });
   });
 
-  it('CA-6 : des compétitions toutes archivées ne font pas une liste vide', () => {
+  it('CA-6 : des épreuves toutes archivées ne font pas une liste vide', () => {
     const liste = construireListe(
-      { manifestations: [], epreuves: [], competitions: [competition({ statut: 'archivee' })] },
+      { manifestations: [], competitions: [], epreuves: [epreuve({ statut: 'archivee' })] },
       { afficherArchives: false },
     );
     expect(liste.vide).toBe(false);
     expect(liste.archivesMasquees).toBe(1);
   });
 
-  it('cas limite : une centaine de compétitions restent triées et rangées', () => {
-    const competitions = Array.from({ length: 100 }, (_, i) =>
-      competition({
+  it('cas limite : une centaine d’épreuves restent triées et rangées', () => {
+    const epreuves = Array.from({ length: 100 }, (_, i) =>
+      epreuve({
         id: `c${i}`,
-        nom: `Compétition ${i}`,
+        nom: `Épreuve ${i}`,
         date: `2027-0${(i % 9) + 1}-10`,
         rattachement: i % 2 ? dans('m1') : null,
       }),
     );
     const liste = construireListe(
-      { manifestations: [manifestation()], epreuves: [], competitions },
+      { manifestations: [manifestation()], competitions: [], epreuves },
       { afficherArchives: false },
     );
-    expect(liste.manifestations[0]?.competitions).toHaveLength(50);
+    expect(liste.manifestations[0]?.epreuves).toHaveLength(50);
     expect(liste.isolees).toHaveLength(50);
     const dates = liste.isolees.map(({ date }) => date ?? '');
     expect(dates).toEqual([...dates].sort());
