@@ -33,6 +33,7 @@ import type {
   Manifestation,
 } from '@poule-position/protocole';
 import type { Env } from './index';
+import { requetesInversionVocabulaire } from './logique';
 import { ListeEnMemoire, type Lecture } from './liste-en-memoire';
 import { deciderSuppression } from './replication';
 
@@ -157,6 +158,12 @@ export class Club extends DurableObject<Env> {
         expire_le INTEGER NOT NULL,
         demandes TEXT NOT NULL
       )`);
+    // US-044 (ADR-0021) : les tables d'avant l'inversion du vocabulaire (données de test) sont supprimées, puis recréées
+    // ci-dessous sous leur nouveau sens. Les comptes ne sont pas touchés.
+    const colonnesEpreuves = ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(epreuves)').toArray();
+    for (const requete of requetesInversionVocabulaire(colonnesEpreuves.map(({ name }) => name))) {
+      ctx.storage.sql.exec(requete);
+    }
     // US-022 (ADR-0016) : une ligne par épreuve, le résumé fourni par le pilote complété par le Worker.
     ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS epreuves (

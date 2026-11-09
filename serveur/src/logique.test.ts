@@ -22,6 +22,7 @@ import {
   NOM_EXPEDITEUR,
   empreinteJeton,
   lienReinitialisation,
+  requetesInversionVocabulaire,
 } from './logique';
 
 describe('analyserChemin', () => {
@@ -448,5 +449,20 @@ describe('réinitialisation par e-mail (US-019)', () => {
   it('US-020 CA-3 : une demande venue du domaine du club reçoit un lien vers ce domaine', () => {
     const club = 'https://poule-position.pessac-escrime.fr';
     expect(lienReinitialisation(club, `${club},${PRODUCTION}`, club, JETON)).toBe(`${club}/reinitialisation#${JETON}`);
+  });
+});
+
+describe('requetesInversionVocabulaire (US-044, ADR-0021)', () => {
+  it('US-044 CA-5 : une table epreuves de l’ancien sens (avec manifestation_id) est supprimée avec ses voisines', () => {
+    expect(requetesInversionVocabulaire(['id', 'club_id', 'manifestation_id', 'contenu', 'version'])).toEqual([
+      'DROP TABLE IF EXISTS epreuves',
+      'DROP TABLE IF EXISTS competitions',
+      'DROP TABLE IF EXISTS competitions_supprimees',
+    ]);
+  });
+
+  it('US-044 CA-5 : une base neuve ou déjà au nouveau schéma n’a rien à faire', () => {
+    expect(requetesInversionVocabulaire([])).toEqual([]);
+    expect(requetesInversionVocabulaire(['id', 'club_id', 'contenu', 'modifiee_le'])).toEqual([]);
   });
 });

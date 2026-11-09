@@ -132,60 +132,79 @@ export class Base extends Dexie {
 
   constructor(nom: string) {
     super(nom);
+    // Versions 1 à 8 : historique, avec le vocabulaire d'avant US-044 (competitionId : l'unité qui se tire ; copieEpreuves :
+    // le regroupement). Dexie en a besoin pour mettre à niveau une base déjà ouverte par une ancienne version.
     this.version(1).stores({ session: 'cle', appareilConnu: 'email' });
     this.version(2).stores({ session: 'cle', appareilConnu: 'email', essaisLocaux: 'cle' });
     this.version(3).stores({
       session: 'cle',
       appareilConnu: 'email',
       essaisLocaux: 'cle',
-      evenements: '[epreuveId+seq]',
+      evenements: '[competitionId+seq]',
     });
     this.version(4).stores({
       session: 'cle',
       appareilConnu: 'email',
       essaisLocaux: 'cle',
-      evenements: '[epreuveId+seq]',
+      evenements: '[competitionId+seq]',
       appareil: 'cle',
-      epreuvesLocales: 'epreuveId',
+      competitionsLocales: 'competitionId',
     });
     this.version(5).stores({
       session: 'cle',
       appareilConnu: 'email',
       essaisLocaux: 'cle',
-      evenements: '[epreuveId+seq]',
+      evenements: '[competitionId+seq]',
       appareil: 'cle',
-      epreuvesLocales: 'epreuveId',
+      competitionsLocales: 'competitionId',
       copieManifestations: 'cle',
     });
     this.version(6).stores({
       session: 'cle',
       appareilConnu: 'email',
       essaisLocaux: 'cle',
-      evenements: '[epreuveId+seq]',
+      evenements: '[competitionId+seq]',
       appareil: 'cle',
-      epreuvesLocales: 'epreuveId',
+      competitionsLocales: 'competitionId',
       copieManifestations: 'cle',
-      copieCompetitions: 'cle',
+      copieEpreuves: 'cle',
     });
     this.version(7).stores({
       session: 'cle',
       appareilConnu: 'email',
       essaisLocaux: 'cle',
-      evenements: '[epreuveId+seq]',
+      evenements: '[competitionId+seq]',
       appareil: 'cle',
-      epreuvesLocales: 'epreuveId',
+      competitionsLocales: 'competitionId',
       copieManifestations: 'cle',
-      copieCompetitions: 'cle',
+      copieEpreuves: 'cle',
       copieIndex: 'cle',
     });
     this.version(8).stores({
       session: 'cle',
       appareilConnu: 'email',
       essaisLocaux: 'cle',
-      evenements: '[epreuveId+seq]',
+      evenements: '[competitionId+seq]',
       appareil: 'cle',
-      epreuvesLocales: 'epreuveId',
+      competitionsLocales: 'competitionId',
       copieManifestations: 'cle',
+      copieEpreuves: 'cle',
+      copieIndex: 'cle',
+      ecartes: '++id, competitionId',
+    });
+    // US-044 (ADR-0021) : l'unité qui se tire s'appelle « épreuve ». Dexie ne change pas une clé primaire : les magasins
+    // dont l'identifiant change sont supprimés (version 9, leurs journaux de test sont perdus) puis recréés (version 10).
+    // La session, l'appareil connu, le frein local, l'identifiant de l'appareil et les manifestations sont conservés.
+    this.version(9).stores({
+      evenements: null,
+      competitionsLocales: null,
+      copieEpreuves: null,
+      copieIndex: null,
+      ecartes: null,
+    });
+    this.version(10).stores({
+      evenements: '[epreuveId+seq]',
+      epreuvesLocales: 'epreuveId',
       copieCompetitions: 'cle',
       copieIndex: 'cle',
       ecartes: '++id, epreuveId',

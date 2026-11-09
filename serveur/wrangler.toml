@@ -22,11 +22,17 @@ class_name = "Limiteur"
 # Plan gratuit : Durable Objects à stockage SQLite uniquement.
 [[migrations]]
 tag = "v1"
-new_sqlite_classes = ["Epreuve"]
+new_sqlite_classes = ["Competition"]
 
 [[migrations]]
 tag = "v2"
 new_sqlite_classes = ["Club", "Limiteur"]
+
+# US-044, ADR-0021 : l’unité qui se tire s’appelle désormais « épreuve ». La classe `Competition` (v1) devient `Epreuve` ; la
+# preview hérite de cette migration (pas de [[env.preview.migrations]]). Pas de migration de données (rien en production).
+[[migrations]]
+tag = "v3"
+renamed_classes = [{ from = "Competition", to = "Epreuve" }]
 
 # Secrets (wrangler secret put, par environnement ; jamais dans le dépôt) : POIVRE (créé une fois, ne change
 # jamais : le changer invaliderait tous les mots de passe) et SECRET_INSTALLATION (création du 1er administrateur).

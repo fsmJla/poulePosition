@@ -348,3 +348,14 @@ export function lienReinitialisation(
   const base = origine && origineAutorisee(origine, motifs) ? origine : urlApplication.replace(/\/+$/, '');
   return `${base}/reinitialisation#${jeton}`;
 }
+
+/**
+ * US-044 CA-5 (ADR-0021) : requêtes qui préparent le schéma du DO `Club` à l'inversion du vocabulaire. Avant elle, la
+ * table `epreuves` était le regroupement (elle a une colonne `manifestation_id`) et `competitions` l'unité qui se tire ;
+ * ces tables, qui n'ont que des données de test, sont supprimées pour être recréées sous leur nouveau sens. Les comptes
+ * ne sont pas touchés. Une base déjà au nouveau schéma, ou neuve, n'a rien à faire.
+ */
+export function requetesInversionVocabulaire(colonnesEpreuves: readonly string[]): string[] {
+  if (!colonnesEpreuves.includes('manifestation_id')) return [];
+  return ['epreuves', 'competitions', 'competitions_supprimees'].map((table) => `DROP TABLE IF EXISTS ${table}`);
+}
