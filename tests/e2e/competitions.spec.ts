@@ -1,5 +1,5 @@
 // Compétitions du club (US-024) : création, modification, suppression, hors ligne, et rattachement d'une épreuve
-// (formulaire « Nouvelle épreuve » : US-025 CA-3 et CA-4, US-024 CA-4).
+// (formulaire « Nouvelle épreuve » : US-045 CA-1 et CA-3, US-025 CA-4, US-024 CA-4).
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
 
@@ -126,11 +126,9 @@ test('US-024 CA-3, CA-4 et CA-5 : rattacher une épreuve à une compétition (ar
 
   await page.getByRole('link', { name: 'Nouvelle épreuve' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Nouvelle épreuve');
-  // US-025 CA-3 : « Aucune » par défaut, puis la manifestation et la compétition.
-  await expect(page.getByLabel('Manifestation', { exact: true })).toHaveValue('');
-  await expect(page.getByLabel('Compétition', { exact: true })).toHaveCount(0);
-  await page.getByLabel('Manifestation', { exact: true }).selectOption({ label: manifestation });
-  await page.getByLabel('Compétition', { exact: true }).selectOption({ label: competition });
+  // US-045 CA-1 et CA-3 : aucune compétition choisie par défaut ; celle d'une manifestation se nomme avec elle.
+  await expect(page.getByLabel('Compétition', { exact: true })).toHaveValue('');
+  await page.getByLabel('Compétition', { exact: true }).selectOption({ label: `${competition} — ${manifestation}` });
   // Le lieu de la manifestation et l'arme de la compétition sont proposés.
   await expect(page.getByLabel('Lieu')).toHaveValue('Salle Bellegrave');
   await expect(page.getByLabel('Arme')).toHaveValue('sabre');
@@ -164,17 +162,6 @@ test('US-024 CA-3, CA-4 et CA-5 : rattacher une épreuve à une compétition (ar
   await expect(carteCompetition(page, manifestation, competition)).toBeVisible();
 });
 
-test('US-025 CA-3 : sans choix de rattachement, l’épreuve est créée isolée', async ({ page }) => {
-  const epreuve = nomUnique();
-  await seConnecter(page);
-  await page.getByRole('link', { name: 'Nouvelle épreuve' }).click();
-  await page.getByLabel('Nom', { exact: true }).fill(epreuve);
-  await page.getByLabel('Arme').selectOption('fleuret');
-  await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
-  await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(epreuve);
-});
-
 test('US-024 hors ligne : les compétitions restent consultables, les actions sont grisées', async ({
   page,
   context,
@@ -197,12 +184,12 @@ test('US-024 hors ligne : les compétitions restent consultables, les actions so
   await expect(page.getByRole('button', { name: `Modifier la compétition ${competition}` })).toBeDisabled();
   await expect(page.getByRole('button', { name: `Supprimer la compétition ${competition}` })).toBeDisabled();
 
-  // La création d'une épreuve reste possible hors ligne, rattachée à ce que la copie contient.
+  // La création d'une épreuve reste possible hors ligne, dans une compétition que la copie contient (US-045).
   await page.getByRole('link', { name: "Retour à l'accueil de l'organisateur" }).click();
   await page.getByRole('link', { name: 'Nouvelle épreuve' }).click();
-  await expect(
-    page.getByLabel('Manifestation', { exact: true }).locator('option', { hasText: manifestation }),
-  ).toHaveCount(1);
+  await expect(page.getByLabel('Compétition', { exact: true }).locator('option', { hasText: competition })).toHaveCount(
+    1,
+  );
   await context.setOffline(false);
 });
 
@@ -221,8 +208,7 @@ test('US-024 smartphone : un nom de compétition très long ne fait pas déborde
 
   await page.getByRole('link', { name: "Retour à l'accueil de l'organisateur" }).click();
   await page.getByRole('link', { name: 'Nouvelle épreuve' }).click();
-  await page.getByLabel('Manifestation', { exact: true }).selectOption({ label: manifestation });
-  await page.getByLabel('Compétition', { exact: true }).selectOption({ label: competition });
+  await page.getByLabel('Compétition', { exact: true }).selectOption({ label: `${competition} — ${manifestation}` });
   await expect(page.getByLabel('Arme')).toHaveValue('sabre');
   expect(await debordement()).toBe(false);
 });

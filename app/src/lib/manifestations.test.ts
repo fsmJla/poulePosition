@@ -100,7 +100,8 @@ describe('manifestations côté application (US-023)', () => {
       ok: true,
       manifestation: modifiee,
     });
-    expect(serveur.requetes[0]?.corps).toEqual({ ...saisie({ lieu: 'Gymnase' }), commentaire: null, version: 1 });
+    const envoi = serveur.requetes.find(({ route }) => route.startsWith('PATCH'));
+    expect(envoi?.corps).toEqual({ ...saisie({ lieu: 'Gymnase' }), commentaire: null, version: 1 });
     expect(saisieDe(manifestation())).toEqual({ ...saisie(), commentaire: '' });
   });
 
@@ -128,7 +129,8 @@ describe('manifestations côté application (US-023)', () => {
       saisie({ debut: '2027-03-14', fin: '2027-03-14' }),
     );
     expect(resultat).toEqual({ ok: false, erreur: 'EPREUVES_HORS_DATES', epreuves: [rattachee()] });
-    expect(serveur.requetes).toHaveLength(0);
+    // Seule la liste des compétitions est lue : rien n'est modifié.
+    expect(serveur.requetes.map(({ route }) => route)).toEqual(['GET /competitions']);
   });
 
   it('CA-5 : supprime une manifestation ; une manifestation non vide est refusée', async () => {

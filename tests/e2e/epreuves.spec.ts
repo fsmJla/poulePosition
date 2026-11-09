@@ -1,4 +1,6 @@
-// Création d'une épreuve (US-025) : formulaire, page de l’épreuve, création hors ligne.
+// Création d'une épreuve (US-025, US-045) : formulaire, page de l’épreuve, création hors ligne. Toute épreuve est dans une
+// compétition : ces tests créent en ligne une compétition seule avec sa première épreuve (US-045 CA-4), puis, hors ligne,
+// une épreuve dans cette compétition connue de l'appareil.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
 
@@ -13,11 +15,24 @@ async function ouvrirFormulaire(page: Page) {
 
 const MOTIF_PAGE_EPREUVE = /\/epreuves\/[0-9a-f-]{36}$/;
 const creer = (page: Page) => page.getByRole('button', { name: 'Créer l’épreuve' }).click();
+const competition = (page: Page) => page.getByLabel('Compétition', { exact: true });
+const choisirSeule = (page: Page) => competition(page).selectOption({ label: 'Nouvelle compétition seule (en ligne)' });
 
 test('US-025 CA-1 : le formulaire « Nouvelle épreuve » propose tous les champs', async ({ page }) => {
   await seConnecter(page);
   await ouvrirFormulaire(page);
-  for (const champ of ['Nom', 'Arme', 'Type', 'Catégorie', 'Sexe', 'Date', 'Appel', 'Scratch', 'Début des poules']) {
+  for (const champ of [
+    'Compétition',
+    'Nom',
+    'Arme',
+    'Type',
+    'Catégorie',
+    'Sexe',
+    'Date',
+    'Appel',
+    'Scratch',
+    'Début des poules',
+  ]) {
     await expect(page.getByLabel(champ, { exact: false }).first()).toBeVisible();
   }
   await expect(page.getByLabel('Lieu')).toBeVisible();
@@ -30,12 +45,24 @@ test('US-025 CA-1 : le formulaire « Nouvelle épreuve » propose tous les champ
   await expect(page.getByLabel('Catégorie libre')).toBeVisible();
 });
 
-test('US-025 CA-2 : créer une épreuve mène à sa page, en préparation, non publiée, pilotée par ce PC', async ({
+test('US-045 CA-1 : sans compétition choisie, la création est impossible et le message le dit', async ({ page }) => {
+  await seConnecter(page);
+  await ouvrirFormulaire(page);
+  await page.getByLabel('Nom').fill(nomUnique());
+  await page.getByLabel('Arme').selectOption('sabre');
+  await creer(page);
+  await expect(page.getByText('Choisissez la compétition de cette épreuve')).toBeVisible();
+  await expect(competition(page)).toHaveAttribute('aria-invalid', 'true');
+  await expect(page).toHaveURL(/\/epreuves\/nouvelle$/);
+});
+
+test('US-025 CA-2 et US-045 CA-4 : créer une compétition seule mène à la page de son épreuve, en préparation, non publiée, pilotée par ce PC', async ({
   page,
 }) => {
   const nom = nomUnique();
   await seConnecter(page);
   await ouvrirFormulaire(page);
+  await choisirSeule(page);
   await page.getByLabel('Nom').fill(nom);
   await page.getByLabel('Arme').selectOption('sabre');
   await page.getByLabel('Catégorie').selectOption('M13');
@@ -48,6 +75,7 @@ test('US-025 CA-2 : créer une épreuve mène à sa page, en préparation, non p
   await creer(page);
 
   await expect(page).toHaveURL(MOTIF_PAGE_EPREUVE);
+  // CA-4 : l'épreuve porte le nom de la compétition et s'ouvre directement.
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(nom);
   await expect(page.getByText('En préparation', { exact: true })).toBeVisible();
   await expect(page.getByText('Non publiée', { exact: true })).toBeVisible();
@@ -62,6 +90,7 @@ test('US-025 CA-2 : créer une épreuve mène à sa page, en préparation, non p
 test('US-025 CA-5 : des horaires incohérents sont refusés, le message nomme les deux horaires', async ({ page }) => {
   await seConnecter(page);
   await ouvrirFormulaire(page);
+  await choisirSeule(page);
   await page.getByLabel('Nom').fill(nomUnique());
   await page.getByLabel('Arme').selectOption('epee');
   await page.getByLabel('Appel').fill('09:00');
@@ -80,6 +109,7 @@ test('US-025 CA-5 : des horaires incohérents sont refusés, le message nomme le
 test('US-025 cas limites : nom et arme obligatoires, nom trop long, message sous le champ', async ({ page }) => {
   await seConnecter(page);
   await ouvrirFormulaire(page);
+  await choisirSeule(page);
   await creer(page);
   await expect(page.getByText('Le nom est obligatoire')).toBeVisible();
   await expect(page.getByText('Choisissez une arme')).toBeVisible();
@@ -90,11 +120,33 @@ test('US-025 cas limites : nom et arme obligatoires, nom trop long, message sous
   await expect(page).toHaveURL(/\/epreuves\/nouvelle$/);
 });
 
-test('US-025 CA-6 : créée hors ligne, puis envoyée au retour du réseau', async ({ page, context }) => {
+test('US-025 CA-6 et US-045 hors ligne : créée dans une compétition connue de l’appareil, puis envoyée au retour du réseau', async ({
+  page,
+  context,
+}) => {
+  const connue = nomUnique();
   const nom = nomUnique();
   await seConnecter(page);
+  // En ligne : la compétition seule est créée avec sa première épreuve, et sa copie est gardée sur l'appareil.
+  await ouvrirFormulaire(page);
+  await choisirSeule(page);
+  await page.getByLabel('Nom').fill(connue);
+  await page.getByLabel('Arme').selectOption('fleuret');
+  await creer(page);
+  await expect(page).toHaveURL(MOTIF_PAGE_EPREUVE);
+  await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
+
+  // La copie des compétitions de l'appareil se remplit à la lecture de la liste du club.
+  const copie = page.waitForResponse((reponse) => /\/competitions$/.test(reponse.url()));
+  await page.goto('/organisateur');
+  await copie;
   await context.setOffline(true);
   await ouvrirFormulaire(page);
+  // Hors ligne : créer une compétition est grisé, le choix se limite aux compétitions de la copie.
+  await expect(
+    page.getByRole('option', { name: /Nouvelle compétition seule \(nécessite une connexion internet\)/ }),
+  ).toBeDisabled();
+  await competition(page).selectOption({ label: `${connue} (seule)` });
   await page.getByLabel('Nom').fill(nom);
   await page.getByLabel('Arme').selectOption('fleuret');
   await creer(page);
@@ -110,6 +162,7 @@ test('US-025 CA-6 : créée hors ligne, puis envoyée au retour du réseau', asy
 test('US-025 cas limite : un deuxième onglet sur la même épreuve est en lecture seule', async ({ page, context }) => {
   await seConnecter(page);
   await ouvrirFormulaire(page);
+  await choisirSeule(page);
   await page.getByLabel('Nom').fill(nomUnique());
   await page.getByLabel('Arme').selectOption('sabreLaser');
   await creer(page);

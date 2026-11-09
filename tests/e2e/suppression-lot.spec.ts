@@ -38,14 +38,18 @@ async function creerManifestationEtCompetition(page: Page, manifestation: string
   ).toBeVisible({ timeout: 20_000 });
 }
 
-/** Crée, par le formulaire, une épreuve rattachée à la manifestation (et à la compétition si elle est donnée), ou isolée. */
+/** Crée, par le formulaire, une épreuve dans la compétition de la manifestation, ou une compétition seule avec son épreuve. */
 async function creerEpreuve(page: Page, manifestation: string | null, competition: string | null, nom: string) {
-  await page.goto('/epreuves/nouvelle');
-  if (manifestation) await page.getByLabel('Manifestation', { exact: true }).selectOption({ label: manifestation });
-  if (competition) await page.getByLabel('Compétition', { exact: true }).selectOption({ label: competition });
-  await page.getByLabel('Nom', { exact: true }).fill(nom);
-  if (!competition) await page.getByLabel('Arme').selectOption('sabre');
-  if (manifestation) await page.getByRole('button', { name: 'lundi 15 mars 2027' }).click();
+  if (manifestation && competition) {
+    await page.goto('/epreuves/nouvelle');
+    await page.getByLabel('Compétition', { exact: true }).selectOption({ label: `${competition} — ${manifestation}` });
+    await page.getByLabel('Nom', { exact: true }).fill(nom);
+    await page.getByRole('button', { name: 'lundi 15 mars 2027' }).click();
+  } else {
+    await page.goto('/epreuves/nouvelle?seule');
+    await page.getByLabel('Nom de la compétition et de son épreuve').fill(nom);
+    await page.getByLabel('Arme').selectOption('sabre');
+  }
   await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
   await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
@@ -63,7 +67,7 @@ async function preparer(page: Page) {
   await seConnecter(page);
   await creerManifestationEtCompetition(page, donnees.manifestation, donnees.competition);
   await creerEpreuve(page, donnees.manifestation, donnees.competition, donnees.dansCompetition);
-  await creerEpreuve(page, donnees.manifestation, null, donnees.directe);
+  await creerEpreuve(page, donnees.manifestation, donnees.competition, donnees.directe);
   await creerEpreuve(page, null, null, donnees.isolee);
   await ouvrirLaListe(page, donnees.manifestation, donnees.isolee);
   return donnees;
@@ -147,21 +151,21 @@ test('US-043 CA-5 : une compétition et des épreuves cochées sans leur manifes
   test.skip(Boolean(process.env.BASE_URL), AVEC_ADMINISTRATEUR);
   const { manifestation, competition, dansCompetition, directe, isolee } = await preparer(page);
 
+  // Cocher la compétition couvre ses deux épreuves (dansCompetition et directe).
   await caseCompetition(page, competition).check();
-  await caseEpreuve(page, dansCompetition).check();
   await caseEpreuve(page, isolee).check();
-  await expect(page.getByText('1 compétition, 2 épreuves', { exact: true })).toBeVisible();
+  await expect(page.getByText('1 compétition, 3 épreuves', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Supprimer définitivement…' }).click();
-  const fenetre = page.getByRole('group', { name: 'Supprimer définitivement 1 compétition, 2 épreuves ?' });
+  const fenetre = page.getByRole('group', { name: 'Supprimer définitivement 1 compétition, 3 épreuves ?' });
   await fenetre.getByLabel('Saisissez SUPPRIMER pour confirmer').fill('SUPPRIMER');
   await fenetre.getByRole('button', { name: 'Supprimer définitivement', exact: true }).click();
 
-  await expect(page.getByText('Supprimé : 1 compétition, 1 épreuve')).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText(/^Supprimé : 1 compétition/)).toBeVisible({ timeout: 60_000 });
   await expect(caseCompetition(page, competition)).toHaveCount(0);
   await expect(page.getByRole('link', { name: isolee, exact: true })).toHaveCount(0);
-  // La manifestation et son épreuve directe restent (la liste relue replie la manifestation).
-  await page.locator('summary').filter({ hasText: manifestation }).click();
-  await expect(page.getByRole('link', { name: directe, exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: directe, exact: true })).toHaveCount(0);
+  // La manifestation reste, sans la compétition (la liste relue la replie).
+  await expect(caseManifestation(page, manifestation)).toBeVisible();
 });
 
 test('US-043 hors ligne : cases et bouton sont grisés, avec « Connexion requise pour supprimer »', async ({

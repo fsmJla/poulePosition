@@ -30,21 +30,26 @@ async function creerCompetition(page: Page, manifestation: string, nom: string) 
   });
 }
 
-/** Crée une épreuve par le formulaire, rattachée ou non, et attend sa page. */
+/**
+ * Crée une épreuve par le formulaire et attend sa page : dans une compétition de manifestation si elle est donnée,
+ * sinon dans une compétition seule créée avec elle, au même nom (US-045 CA-4).
+ */
 async function creerEpreuve(
   page: Page,
   nom: string,
-  rattachement?: { manifestation: string; competition?: string; jour: string },
+  rattachement?: { manifestation: string; competition: string; jour: string },
 ) {
-  await page.goto('/epreuves/nouvelle');
   if (rattachement) {
-    await page.getByLabel('Manifestation', { exact: true }).selectOption({ label: rattachement.manifestation });
-    if (rattachement.competition) {
-      await page.getByLabel('Compétition', { exact: true }).selectOption({ label: rattachement.competition });
-    }
+    await page.goto('/epreuves/nouvelle');
+    await page
+      .getByLabel('Compétition', { exact: true })
+      .selectOption({ label: `${rattachement.competition} — ${rattachement.manifestation}` });
     await page.getByLabel('Date').fill(rattachement.jour);
+    await page.getByLabel('Nom', { exact: true }).fill(nom);
+  } else {
+    await page.goto('/epreuves/nouvelle?seule');
+    await page.getByLabel('Nom de la compétition et de son épreuve').fill(nom);
   }
-  await page.getByLabel('Nom', { exact: true }).fill(nom);
   await page.getByLabel('Arme').selectOption('sabre');
   await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
   await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
@@ -55,9 +60,9 @@ async function creerEpreuve(
  * Envoie directement au serveur une épreuve « d'un autre PC », comme le ferait son pilote (US-022) : elle apparaît
  * dans l'index du club sans être gardée sur cet appareil. `statut` est celui de son résumé.
  */
-async function injecter(page: Page, nom: string, statut: 'preparation' | 'archivee') {
+async function injecter(page: Page, nom: string, statut: 'preparation' | 'archivee', competitionExistante = true) {
   await page.evaluate(
-    async ({ nom, statut }) => {
+    async ({ nom, statut, competitionExistante }) => {
       const base = await new Promise<IDBDatabase>((ok, ko) => {
         const ouverture = indexedDB.open('poulePosition');
         ouverture.onsuccess = () => ok(ouverture.result);
@@ -71,7 +76,18 @@ async function injecter(page: Page, nom: string, statut: 'preparation' | 'archiv
       const urlServeur = (window as unknown as { __urlServeur?: string }).__urlServeur;
       const entetes = { Authorization: `Bearer ${session.jeton}`, 'Content-Type': 'application/json' };
       const epreuveId = crypto.randomUUID();
-      const rattachement = null;
+      // Toute épreuve est dans une compétition (US-045) : une compétition seule, ou une compétition inconnue (CA-7).
+      let competitionId = crypto.randomUUID();
+      if (competitionExistante) {
+        const creation = await fetch(`${urlServeur}/competitions`, {
+          method: 'POST',
+          headers: entetes,
+          body: JSON.stringify({ manifestationId: null, nom, arme: 'epee', commentaire: null }),
+        });
+        if (!creation.ok) throw new Error(`Compétition refusée : ${creation.status}`);
+        competitionId = (await creation.json()).competition.id;
+      }
+      const rattachement = { competitionId };
       const lot = {
         appareilId: crypto.randomUUID(),
         depuis: 0,
@@ -117,7 +133,7 @@ async function injecter(page: Page, nom: string, statut: 'preparation' | 'archiv
       });
       if (!envoi.ok) throw new Error(`Envoi refusé : ${envoi.status}`);
     },
-    { nom, statut },
+    { nom, statut, competitionExistante },
   );
 }
 
@@ -129,7 +145,7 @@ async function exposerServeur(page: Page) {
   await page.evaluate((url) => ((window as unknown as { __urlServeur: string }).__urlServeur = url), origine);
 }
 
-test('US-026 CA-1 et CA-2 : manifestation repliable avec sa compétition et ses épreuves, triées par date, puis les isolées', async ({
+test('US-026 CA-1 et CA-2 : manifestation repliable avec sa compétition et ses épreuves, triées par date, puis les compétitions seules (US-045 CA-5)', async ({
   page,
 }) => {
   const manifestation = nomUnique();
@@ -165,10 +181,11 @@ test('US-026 CA-1 et CA-2 : manifestation repliable avec sa compétition et ses 
   await expect(ligne).toContainText('Non publiée');
   await expect(ligne).toContainText('Ce PC est le pilote');
 
-  // L’épreuve isolée n'est dans aucune manifestation.
+  // US-045 CA-5 : une compétition seule n'est dans aucune manifestation, et tient sur une ligne avec sa seule épreuve.
   await expect(epreuveDe(page, isolee)).toBeVisible();
   await expect(manifestationDe(page, isolee)).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'Épreuves isolées' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Épreuves isolées' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Épreuves sans compétition' })).toHaveCount(0);
 });
 
 test('US-026 CA-4 : ouvrir une épreuve pilotée ici (modifiable), ou celle d’un autre PC (lecture seule)', async ({
@@ -245,7 +262,7 @@ test('US-026 CA-6 : un club sans manifestation ni épreuve invite à en créer u
   await page.route('**/manifestations', vide({ ok: true, manifestations: [] }));
   await page.route('**/competitions', vide({ ok: true, competitions: [] }));
   await page.goto('/organisateur');
-  await expect(page.getByText(/première manifestation ou une première épreuve/)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(/première manifestation ou une première compétition/)).toBeVisible({ timeout: 20_000 });
 });
 
 test('US-026 hors ligne : la liste vient de la copie et des épreuves locales, créations grisées', async ({
@@ -255,7 +272,10 @@ test('US-026 hors ligne : la liste vient de la copie et des épreuves locales, c
   const locale = nomUnique();
   await seConnecter(page);
   await creerEpreuve(page, locale);
+  // La copie des compétitions de l'appareil se remplit à la lecture de la liste du club.
+  const copie = page.waitForResponse((reponse) => /\/competitions$/.test(reponse.url()));
   await page.goto('/organisateur');
+  await copie;
   await expect(epreuveDe(page, locale)).toBeVisible({ timeout: 20_000 });
 
   await context.setOffline(true);
@@ -271,11 +291,45 @@ test('US-026 hors ligne : la liste vient de la copie et des épreuves locales, c
   // Une épreuve créée hors ligne est listée « Pas encore envoyée ».
   const horsLigne = nomUnique();
   await page.getByRole('link', { name: 'Nouvelle épreuve' }).click();
+  await page.getByLabel('Compétition', { exact: true }).selectOption({ label: `${locale} (seule)` });
   await page.getByLabel('Nom', { exact: true }).fill(horsLigne);
-  await page.getByLabel('Arme').selectOption('fleuret');
+  await page.getByLabel('Arme').selectOption('sabre');
   await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
   await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
   await page.getByRole('link', { name: "Accueil de l'organisateur" }).click();
   await expect(epreuveDe(page, horsLigne)).toContainText('Pas encore envoyée', { timeout: 20_000 });
   await context.setOffline(false);
+});
+
+test('US-045 CA-2, CA-4 et CA-5 : « Nouvelle compétition seule » crée la compétition et son épreuve, listées sur une ligne', async ({
+  page,
+}) => {
+  const nom = nomUnique();
+  await seConnecter(page);
+  await page.goto('/organisateur');
+  await page.getByRole('link', { name: 'Nouvelle compétition seule' }).click();
+  await expect(page).toHaveURL(/\/epreuves\/nouvelle\?seule$/);
+  await expect(page.getByLabel('Compétition', { exact: true })).toHaveValue('+seule');
+  await page.getByLabel('Nom de la compétition et de son épreuve').fill(nom);
+  await page.getByLabel('Arme').selectOption('epee');
+  await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
+  await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(nom);
+
+  await page.goto('/organisateur');
+  // Une ligne, sans niveau « compétition » tant qu'elle n'a qu'une épreuve.
+  await expect(epreuveDe(page, nom)).toHaveCount(1, { timeout: 20_000 });
+  await expect(page.getByRole('heading', { name: nom })).toHaveCount(0);
+});
+
+test('US-045 CA-7 : une épreuve dont la compétition a disparu est à rattacher, avec le motif', async ({ page }) => {
+  const orpheline = nomUnique();
+  await seConnecter(page);
+  await exposerServeur(page);
+  await injecter(page, orpheline, 'preparation', false);
+
+  await page.goto('/organisateur');
+  const zone = page.locator('.a-rattacher');
+  await expect(epreuveDe(zone, orpheline)).toBeVisible({ timeout: 20_000 });
+  await expect(zone).toContainText('Sa compétition a été supprimée : choisissez-en une autre');
 });
