@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-043
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-044-inverser-vocabulaire-competition-epreuve` (PR : à ouvrir par `/fin-impl-US`)
 
 ## Récit
 
@@ -125,3 +125,4 @@ le vérifient.
 | Date | Événement |
 |---|---|
 | 2026-11-08 | Créée (analyse d'impact du changement de vocabulaire) |
+| 2026-11-09 | ADR-0021 acceptée ; passée à En cours (branche `us/US-044-inverser-vocabulaire-competition-epreuve`) |
