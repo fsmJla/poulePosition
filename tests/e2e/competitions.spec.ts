@@ -78,7 +78,9 @@ test('US-024 CA-2 : une compétition se crée toujours depuis une manifestation'
   await ouvrirPage(page);
   // Pas de bouton « Nouvelle compétition » en dehors d'une manifestation : seule la section d'une manifestation en offre un.
   await expect(page.getByRole('button', { name: 'Nouvelle compétition', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /^Ajouter une compétition à / }).first()).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('button', { name: /^Ajouter une compétition à / }).first()).toBeVisible({
+    timeout: 20_000,
+  });
 });
 
 test('US-024 CA-3 : modifier une compétition, visible au rechargement', async ({ page }) => {
@@ -173,7 +175,10 @@ test('US-025 CA-3 : sans choix de rattachement, l’épreuve est créée isolée
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(epreuve);
 });
 
-test('US-024 hors ligne : les compétitions restent consultables, les actions sont grisées', async ({ page, context }) => {
+test('US-024 hors ligne : les compétitions restent consultables, les actions sont grisées', async ({
+  page,
+  context,
+}) => {
   const manifestation = nomUnique();
   const competition = nomUnique();
   await seConnecter(page);

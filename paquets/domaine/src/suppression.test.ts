@@ -9,10 +9,7 @@ const epreuve = (id: string, statut: EpreuveASupprimer['statut'] = 'preparation'
 
 describe('suppression d’un contenu (US-041)', () => {
   it('US-041 CA-3 : une épreuve en cours bloque, avec le nom de chacune', () => {
-    const plan = planifierSuppressionContenu(
-      [epreuve('a'), epreuve('b', 'enCours'), epreuve('c', 'enCours')],
-      30,
-    );
+    const plan = planifierSuppressionContenu([epreuve('a'), epreuve('b', 'enCours'), epreuve('c', 'enCours')], 30);
     expect(plan).toEqual({ etat: 'bloquee', enCours: ['Épreuve b', 'Épreuve c'] });
   });
 

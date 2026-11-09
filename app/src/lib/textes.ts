@@ -128,9 +128,7 @@ export const textes = {
       bouton: 'Supprimer définitivement…',
       horsLigne: 'Connexion requise pour supprimer',
       titre: (nombre: number) =>
-        nombre > 1
-          ? `Supprimer définitivement ces ${nombre} épreuves ?`
-          : 'Supprimer définitivement cette épreuve ?',
+        nombre > 1 ? `Supprimer définitivement ces ${nombre} épreuves ?` : 'Supprimer définitivement cette épreuve ?',
       avertissement:
         'La suppression est définitive : les journaux, les saisies et les fichiers joints sont effacés du serveur et de tous les PC du club. Pour garder une trace, archivez plutôt que de supprimer.',
       saisie: (mot: string) => `Saisissez ${mot} pour confirmer`,
@@ -140,9 +138,7 @@ export const textes = {
       compteRendu: (supprimees: number) =>
         supprimees > 1 ? `${supprimees} épreuves supprimées` : `${supprimees} épreuve supprimée`,
       restantes: (restantes: number) =>
-        restantes > 1
-          ? `${restantes} épreuves n’ont pas été supprimées`
-          : `${restantes} épreuve n’a pas été supprimée`,
+        restantes > 1 ? `${restantes} épreuves n’ont pas été supprimées` : `${restantes} épreuve n’a pas été supprimée`,
       interrompue: 'La suppression s’est arrêtée : relancez-la quand la connexion ou la session est rétablie',
       nonTraitee: 'pas traitée',
       fermer: 'Fermer',
@@ -527,8 +523,7 @@ export const textes = {
       touchesPoules: 'Touches en poules',
       touchesTableau: 'Touches au tableau',
       matchTroisieme: 'Match pour la 3e place',
-      relaisFixe: (touches: number) =>
-        `Rencontres en relais à ${touches} touches (fixées par le type de l’épreuve)`,
+      relaisFixe: (touches: number) => `Rencontres en relais à ${touches} touches (fixées par le type de l’épreuve)`,
       autresFormules: 'D’autres formules seront proposées plus tard.',
       enregistrer: 'Enregistrer la formule',
       confirmer: 'Confirmer le changement',
@@ -687,7 +682,11 @@ export const textes = {
       titre: (nom: string) => `Supprimer définitivement la manifestation « ${nom} » avec son contenu ?`,
       combien: (competitions: number, epreuves: number | null) => {
         const lesCompetitions =
-          competitions === 0 ? 'aucune compétition' : competitions > 1 ? `ses ${competitions} compétitions` : 'son compétition';
+          competitions === 0
+            ? 'aucune compétition'
+            : competitions > 1
+              ? `ses ${competitions} compétitions`
+              : 'son compétition';
         const lesEpreuves =
           epreuves === null
             ? 'ses épreuves'

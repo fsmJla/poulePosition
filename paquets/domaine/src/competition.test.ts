@@ -26,7 +26,9 @@ describe('compétition (US-024)', () => {
   });
 
   it('CA-2 : une compétition appartient toujours à une manifestation', () => {
-    expect(validerCompetition(donnees({ manifestationId: '' }))).toEqual({ manifestationId: 'MANIFESTATION_OBLIGATOIRE' });
+    expect(validerCompetition(donnees({ manifestationId: '' }))).toEqual({
+      manifestationId: 'MANIFESTATION_OBLIGATOIRE',
+    });
   });
 
   it('CA-1 : retire les espaces et remplace un commentaire vide par null', () => {

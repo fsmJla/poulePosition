@@ -214,10 +214,7 @@ describe('prise de main (US-029)', () => {
     ]);
     expect(await a.synchronisation.enAttente('c1')).toBe(0);
     // Le serveur n'a rien repris de ces événements.
-    expect(serveur.journaux.get('c1')?.evenements.map(({ type }) => type)).toEqual([
-      'EpreuveCreee',
-      'PiloteChange',
-    ]);
+    expect(serveur.journaux.get('c1')?.evenements.map(({ type }) => type)).toEqual(['EpreuveCreee', 'PiloteChange']);
 
     const exporte = JSON.parse(contenuExport('c1', ecartes)) as { epreuveId: string; evenements: Evenement[] };
     expect(exporte.epreuveId).toBe('c1');

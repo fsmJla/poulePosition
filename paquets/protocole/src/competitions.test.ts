@@ -57,7 +57,10 @@ describe('demandes sur les compétitions (US-024)', () => {
 
 describe('réponses du serveur (US-024)', () => {
   it('CA-1 : lit la liste des compétitions du club', () => {
-    expect(analyserReponseCompetitions({ ok: true, competitions: [competition] })).toEqual({ ok: true, competitions: [competition] });
+    expect(analyserReponseCompetitions({ ok: true, competitions: [competition] })).toEqual({
+      ok: true,
+      competitions: [competition],
+    });
     expect(analyserReponseCompetitions({ ok: true, competitions: [{ ...competition, version: 0 }] })).toEqual({
       ok: false,
       erreur: 'REPONSE_INVALIDE',

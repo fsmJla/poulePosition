@@ -1,6 +1,11 @@
 // Compétitions du club (US-024, docs/protocole.md §13) : données du club stockées par le serveur, modifiables en ligne
 // seulement. La dernière liste reçue est gardée dans IndexedDB : hors ligne, elle reste consultable avec sa date.
-import { validerCompetition, type Arme, type DonneesCompetition, type ErreursCompetition } from '@poule-position/domaine';
+import {
+  validerCompetition,
+  type Arme,
+  type DonneesCompetition,
+  type ErreursCompetition,
+} from '@poule-position/domaine';
 import {
   analyserReponseCompetition,
   analyserReponseCompetitions,
@@ -145,7 +150,8 @@ export function creerClientCompetitions({
 
     /** CA-1 : liste du club, gardée sur l'appareil ; en cas d'échec, la dernière copie est jointe. */
     async lister(): Promise<
-      { ok: true; competitions: Competition[] } | { ok: false; erreur: ErreurCompetitions; copie: CopieCompetitions | null }
+      | { ok: true; competitions: Competition[] }
+      | { ok: false; erreur: ErreurCompetitions; copie: CopieCompetitions | null }
     > {
       let reponse;
       try {

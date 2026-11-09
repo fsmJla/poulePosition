@@ -208,14 +208,14 @@ describe('modification d’une épreuve (US-027)', () => {
       horaires: { appel: '08:00', scratch: '09:00', debutPoules: '10:00' },
     });
     const rattachee = donnees({ rattachement: { manifestationId: 'm1', competitionId: null } });
-    expect(modification(rattachee, { ...rattachee, rattachement: { manifestationId: 'm1', competitionId: null } })).toEqual(
-      {},
-    );
-    expect(modification(rattachee, { ...rattachee, rattachement: { manifestationId: 'm1', competitionId: 'e1' } })).toEqual(
-      {
-        rattachement: { manifestationId: 'm1', competitionId: 'e1' },
-      },
-    );
+    expect(
+      modification(rattachee, { ...rattachee, rattachement: { manifestationId: 'm1', competitionId: null } }),
+    ).toEqual({});
+    expect(
+      modification(rattachee, { ...rattachee, rattachement: { manifestationId: 'm1', competitionId: 'e1' } }),
+    ).toEqual({
+      rattachement: { manifestationId: 'm1', competitionId: 'e1' },
+    });
     expect(modification(rattachee, { ...rattachee, rattachement: null })).toEqual({ rattachement: null });
   });
 

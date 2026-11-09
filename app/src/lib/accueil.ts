@@ -137,9 +137,10 @@ export function creerAccueil({
           ? lesManifestations.manifestations
           : (lesManifestations.copie?.manifestations ?? [])
         ).map(({ id, nom, debut, fin, lieu }) => ({ id, nom, debut, fin, lieu })),
-        competitions: (lesCompetitions.ok ? lesCompetitions.competitions : (lesCompetitions.copie?.competitions ?? [])).map(
-          ({ id, manifestationId, nom, arme }) => ({ id, manifestationId, nom, arme }),
-        ),
+        competitions: (lesCompetitions.ok
+          ? lesCompetitions.competitions
+          : (lesCompetitions.copie?.competitions ?? [])
+        ).map(({ id, manifestationId, nom, arme }) => ({ id, manifestationId, nom, arme })),
         epreuves: [...epreuves.values()],
         horsLigne: clubs.horsLigne,
         copieLe: clubs.copieLe,

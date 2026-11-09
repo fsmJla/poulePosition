@@ -107,10 +107,7 @@ test('US-025 CA-6 : créée hors ligne, puis envoyée au retour du réseau', asy
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
 });
 
-test('US-025 cas limite : un deuxième onglet sur la même épreuve est en lecture seule', async ({
-  page,
-  context,
-}) => {
+test('US-025 cas limite : un deuxième onglet sur la même épreuve est en lecture seule', async ({ page, context }) => {
   await seConnecter(page);
   await ouvrirFormulaire(page);
   await page.getByLabel('Nom').fill(nomUnique());
@@ -121,8 +118,8 @@ test('US-025 cas limite : un deuxième onglet sur la même épreuve est en lectu
 
   const autreOnglet = await context.newPage();
   await autreOnglet.goto(page.url());
-  await expect(
-    autreOnglet.getByText('Cette épreuve est ouverte dans un autre onglet : lecture seule ici'),
-  ).toBeVisible({ timeout: 20_000 });
+  await expect(autreOnglet.getByText('Cette épreuve est ouverte dans un autre onglet : lecture seule ici')).toBeVisible(
+    { timeout: 20_000 },
+  );
   await autreOnglet.close();
 });

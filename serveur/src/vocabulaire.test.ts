@@ -94,9 +94,7 @@ beforeAll(async () => {
     body: JSON.stringify(await preparerDemandeInstallation(ADMIN)),
   });
   expect(installation.status).toBe(201);
-  const { sel } = (await (
-    await appeler('POST', '/session/sel', { email: ADMIN.email })
-  ).json()) as { sel: string };
+  const { sel } = (await (await appeler('POST', '/session/sel', { email: ADMIN.email })).json()) as { sel: string };
   const reponse = await appeler('POST', '/session', {
     email: ADMIN.email,
     cle: await deriverCle(ADMIN.motDePasse, sel),

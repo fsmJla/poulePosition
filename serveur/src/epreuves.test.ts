@@ -324,8 +324,7 @@ describe('prise de main (US-029)', () => {
 });
 
 const indexDuClub = async () =>
-  ((await (await appeler(worker, 'GET', '/epreuves', jeton)).json()) as { epreuves: EpreuveIndexee[] })
-    .epreuves;
+  ((await (await appeler(worker, 'GET', '/epreuves', jeton)).json()) as { epreuves: EpreuveIndexee[] }).epreuves;
 
 describe('liste de l’index gardée en mémoire (US-038)', () => {
   it('CA-2 : la liste reflète chaque écriture, même quand elle a déjà été servie', async () => {

@@ -56,11 +56,7 @@ export interface Journal {
    * US-029 CA-2 et CA-3 : un autre PC a pris la main. Les événements pas encore envoyés sont mis de côté (jamais
    * perdus), ce PC cesse d'être le pilote et garde une copie à remplacer. Renvoie le nombre d'événements écartés.
    */
-  ecarter(
-    epreuveId: string,
-    pilote: { piloteAppareil?: string; piloteNom?: string },
-    copieLe: number,
-  ): Promise<number>;
+  ecarter(epreuveId: string, pilote: { piloteAppareil?: string; piloteNom?: string }, copieLe: number): Promise<number>;
   /**
    * US-039 CA-5 et CA-6 : l’épreuve a été supprimée sur le serveur. Efface la copie locale (journal, ligne locale,
    * modifications écartées) et renvoie le nombre d'événements pas encore envoyés, abandonnés avec elle.
@@ -81,10 +77,7 @@ export function ouvrirJournal(nom = 'poulePosition', persister: () => Promise<bo
 
   /** Journal d'une épreuve, dans l'ordre des `seq`. */
   const evenementsBruts = (epreuveId: string) =>
-    base.evenements
-      .where('[epreuveId+seq]')
-      .between([epreuveId, Dexie.minKey], [epreuveId, Dexie.maxKey])
-      .toArray();
+    base.evenements.where('[epreuveId+seq]').between([epreuveId, Dexie.minKey], [epreuveId, Dexie.maxKey]).toArray();
 
   return {
     async lire(epreuveId) {

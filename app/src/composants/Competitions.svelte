@@ -5,7 +5,13 @@
   import { onMount } from 'svelte';
   import { ARMES, type ErreursCompetition } from '@poule-position/domaine';
   import type { Competition, Manifestation } from '@poule-position/protocole';
-  import { saisieDe, saisieVide, type ClientCompetitions, type ErreurCompetitions, type SaisieCompetition } from '../lib/competitions';
+  import {
+    saisieDe,
+    saisieVide,
+    type ClientCompetitions,
+    type ErreurCompetitions,
+    type SaisieCompetition,
+  } from '../lib/competitions';
   import { nomConfirme } from '../lib/suppression';
   import { textes } from '../lib/textes';
 

@@ -67,7 +67,8 @@ function construireArbre({ manifestations, competitions, epreuves }: DonneesList
     enCours: new Set(),
   };
   for (const competition of arbre.competitions.values()) {
-    if (arbre.manifestations.has(competition.manifestationId)) ajouter(arbre.competitionsDe, competition.manifestationId, competition);
+    if (arbre.manifestations.has(competition.manifestationId))
+      ajouter(arbre.competitionsDe, competition.manifestationId, competition);
   }
   for (const epreuve of arbre.epreuves.values()) {
     const parent = parentDe(epreuve, arbre);

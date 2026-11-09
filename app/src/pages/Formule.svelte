@@ -148,11 +148,7 @@
   {:else}
     <h2>{epreuve.nom}</h2>
     <p class="resume">
-      {t.formule(
-        epreuve.formule.touchesPoules,
-        epreuve.formule.touchesTableau,
-        epreuve.formule.matchTroisieme,
-      )}
+      {t.formule(epreuve.formule.touchesPoules, epreuve.formule.touchesTableau, epreuve.formule.matchTroisieme)}
     </p>
     {#if epreuve.formule.touchesRelais !== null}
       <p class="resume">{tf.relaisFixe(epreuve.formule.touchesRelais)}</p>

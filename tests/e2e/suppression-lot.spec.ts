@@ -12,9 +12,9 @@ const AVEC_ADMINISTRATEUR = 'administrateur réel : local uniquement (le compte 
 
 const caseManifestation = (page: Page, nom: string) =>
   page.getByRole('checkbox', { name: `Sélectionner la manifestation ${nom}` });
-const caseCompetition = (page: Page, nom: string) => page.getByRole('checkbox', { name: `Sélectionner la compétition ${nom}` });
-const caseEpreuve = (page: Page, nom: string) =>
-  page.getByRole('checkbox', { name: `Sélectionner l’épreuve ${nom}` });
+const caseCompetition = (page: Page, nom: string) =>
+  page.getByRole('checkbox', { name: `Sélectionner la compétition ${nom}` });
+const caseEpreuve = (page: Page, nom: string) => page.getByRole('checkbox', { name: `Sélectionner l’épreuve ${nom}` });
 
 /** Crée une manifestation du 14 au 15 mars 2027 et une compétition au sabre, et attend qu'elles soient dans la liste. */
 async function creerManifestationEtCompetition(page: Page, manifestation: string, competition: string) {

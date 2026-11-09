@@ -613,9 +613,7 @@ export class Club extends DurableObject<Env> {
    * US-042 : la manifestation existe-t-elle, et quelles épreuves de l'index s'y rattachent, directement ou par une de
    * ses compétitions ? Le statut est celui du dernier résumé du pilote (ADR-0016 §3).
    */
-  async contenuManifestation(
-    manifestationId: string,
-  ): Promise<{ existe: boolean; epreuves: EpreuveASupprimer[] }> {
+  async contenuManifestation(manifestationId: string): Promise<{ existe: boolean; epreuves: EpreuveASupprimer[] }> {
     const epreuves = this.lignesIndex()
       .filter(({ rattachement }) => rattachement?.manifestationId === manifestationId)
       .map(({ id, nom, statut }) => ({ id, nom, statut }));
@@ -652,7 +650,13 @@ export class Club extends DurableObject<Env> {
     auteur: string,
   ): Promise<{ ok: true; competition: Competition } | { ok: false; erreur: 'MANIFESTATION_INCONNUE' }> {
     if (!this.lireManifestation(donnees.manifestationId)) return { ok: false, erreur: 'MANIFESTATION_INCONNUE' };
-    const competition = { id: crypto.randomUUID(), ...donnees, version: 1, modifieeLe: Date.now(), modifieePar: auteur };
+    const competition = {
+      id: crypto.randomUUID(),
+      ...donnees,
+      version: 1,
+      modifieeLe: Date.now(),
+      modifieePar: auteur,
+    };
     this.ctx.storage.sql.exec(
       'INSERT INTO competitions (id, club_id, manifestation_id, contenu, version) VALUES (?, ?, ?, ?, ?)',
       competition.id,

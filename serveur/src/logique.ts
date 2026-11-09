@@ -64,8 +64,7 @@ export function analyserChemin(chemin: string): Route | null {
   if (compte?.[1]) return { route: 'compte', id: compte[1] };
   if (chemin === '/manifestations') return { route: 'manifestations' };
   const manifestation = /^\/manifestations\/([^/]+)$/.exec(chemin)?.[1];
-  if (manifestation)
-    return MOTIF_EPREUVE.test(manifestation) ? { route: 'manifestation', id: manifestation } : null;
+  if (manifestation) return MOTIF_EPREUVE.test(manifestation) ? { route: 'manifestation', id: manifestation } : null;
   if (chemin === '/competitions') return { route: 'competitions' };
   const competition = /^\/competitions\/([^/]+)$/.exec(chemin)?.[1];
   if (competition) return MOTIF_EPREUVE.test(competition) ? { route: 'competition', id: competition } : null;

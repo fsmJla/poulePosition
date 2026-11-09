@@ -164,9 +164,7 @@ export function rattacher(
 export type ErreurCreation = Extract<ErreurJournal, 'ECRITURE_IMPOSSIBLE'> | 'CLUB_INCONNU';
 
 export type ResultatCreation =
-  | { ok: true; epreuveId: string }
-  | { ok: false; erreurs: ErreursEpreuve }
-  | { ok: false; erreur: ErreurCreation };
+  { ok: true; epreuveId: string } | { ok: false; erreurs: ErreursEpreuve } | { ok: false; erreur: ErreurCreation };
 
 /** CA-2 à CA-4 : vérifie la saisie, puis écrit `EpreuveCreee` dans le journal local ; ce PC devient le pilote. */
 export async function creerEpreuve(
@@ -184,11 +182,7 @@ export async function creerEpreuve(
   if (Object.keys(erreurs).length > 0) return { ok: false, erreurs };
   if (!clubId) return { ok: false, erreur: 'CLUB_INCONNU' };
   const epreuveId = crypto.randomUUID();
-  const resultat = await journal.enregistrer(
-    epreuveId,
-    { type: 'EpreuveCreee', donnees },
-    { clubId, ...contexte },
-  );
+  const resultat = await journal.enregistrer(epreuveId, { type: 'EpreuveCreee', donnees }, { clubId, ...contexte });
   if ('projection' in resultat) return { ok: true, epreuveId };
   // Une épreuve neuve n'a ni pilote ailleurs ni journal incohérent : il ne reste que l'échec d'écriture.
   return { ok: false, erreur: 'ECRITURE_IMPOSSIBLE' };
@@ -206,9 +200,7 @@ export type ErreurModification =
     >;
 
 export type ResultatModification =
-  | { ok: true; modifiee: boolean }
-  | { ok: false; erreurs: ErreursEpreuve }
-  | { ok: false; erreur: ErreurModification };
+  { ok: true; modifiee: boolean } | { ok: false; erreurs: ErreursEpreuve } | { ok: false; erreur: ErreurModification };
 
 /**
  * US-027 CA-1, CA-4 et CA-5 : compare la saisie à l’épreuve, vérifie ce qui change comme à la création, puis écrit
@@ -256,12 +248,7 @@ export type ErreurModificationFormule =
   | ErreurFormule
   | Extract<
       ErreurJournal,
-      | 'PAS_PILOTE'
-      | 'EPREUVE_ARCHIVEE'
-      | 'FORMULE_FIGEE'
-      | 'CHAMP_FIGE'
-      | 'JOURNAL_INCOHERENT'
-      | 'ECRITURE_IMPOSSIBLE'
+      'PAS_PILOTE' | 'EPREUVE_ARCHIVEE' | 'FORMULE_FIGEE' | 'CHAMP_FIGE' | 'JOURNAL_INCOHERENT' | 'ECRITURE_IMPOSSIBLE'
     >;
 
 export type ResultatModificationFormule =

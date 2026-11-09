@@ -101,7 +101,9 @@ export function construireListe(
     if (!rattachement || !parent) isolees.push(epreuve);
     else {
       const competition = rattachement.competitionId ? noeudsCompetitions.get(rattachement.competitionId) : undefined;
-      (competition?.competition.manifestationId === parent.manifestation.id ? competition : parent).epreuves.push(epreuve);
+      (competition?.competition.manifestationId === parent.manifestation.id ? competition : parent).epreuves.push(
+        epreuve,
+      );
     }
   }
   return {

@@ -28,6 +28,8 @@ export function estRattachement(brut: unknown): boolean {
   if (brut === null) return true;
   const rattachement = aExactementLesChamps(brut, ['manifestationId', 'competitionId']);
   return (
-    rattachement !== null && typeof rattachement.manifestationId === 'string' && estTexteOuNull(rattachement.competitionId)
+    rattachement !== null &&
+    typeof rattachement.manifestationId === 'string' &&
+    estTexteOuNull(rattachement.competitionId)
   );
 }

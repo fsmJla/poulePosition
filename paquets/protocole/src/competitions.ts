@@ -18,7 +18,8 @@ export interface Competition extends DonneesCompetition {
 /** Corps de `PATCH /competitions/<id>` : nom, arme, commentaire et version ; la manifestation ne change pas. */
 export type DemandeModificationCompetition = Omit<DonneesCompetition, 'manifestationId'> & { version: number };
 
-export type ReponseCompetition = { ok: true; competition: Competition } | { ok: false; erreur: ErreurReponse; competition?: Competition };
+export type ReponseCompetition =
+  { ok: true; competition: Competition } | { ok: false; erreur: ErreurReponse; competition?: Competition };
 
 const CHAMPS = ['manifestationId', 'nom', 'arme', 'commentaire'] as const;
 

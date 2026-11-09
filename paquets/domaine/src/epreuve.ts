@@ -130,10 +130,7 @@ export function normaliserEpreuve(donnees: DonneesEpreuve): DonneesEpreuve {
  * CA-1 à CA-5 : erreurs de la saisie, une par champ ({} si elle est valide). Le cadre (manifestation, compétition) n'est
  * connu qu'au moment de la saisie : sans lui, seules les règles propres à l’épreuve sont vérifiées.
  */
-export function validerEpreuve(
-  saisie: DonneesEpreuve,
-  cadre: CadreRattachement | null = null,
-): ErreursEpreuve {
+export function validerEpreuve(saisie: DonneesEpreuve, cadre: CadreRattachement | null = null): ErreursEpreuve {
   const donnees = normaliserEpreuve(saisie);
   const erreurs: ErreursEpreuve = {};
   const nom = validerNom(donnees.nom);
@@ -324,8 +321,7 @@ export type ModificationEpreuve = Partial<DonneesEpreuve>;
 /** US-027 CA-2 et cas limites : champs modifiables selon le statut (arme et type figés en cours, commentaire seul ensuite). */
 export function champsModifiables(statut: Statut): readonly ChampDonnees[] {
   if (statut === 'preparation') return CHAMPS_EPREUVE;
-  if (statut === 'enCours')
-    return CHAMPS_EPREUVE.filter((champ) => champ !== 'arme' && champ !== 'typeEpreuve');
+  if (statut === 'enCours') return CHAMPS_EPREUVE.filter((champ) => champ !== 'arme' && champ !== 'typeEpreuve');
   return statut === 'terminee' ? ['commentaire'] : [];
 }
 

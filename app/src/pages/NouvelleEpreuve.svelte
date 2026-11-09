@@ -384,9 +384,7 @@
     </form>
   {/if}
 
-  <Lien chemin={epreuveId === undefined ? CHEMINS.organisateur : cheminEpreuve(epreuveId)} {naviguer}
-    >{t.annuler}</Lien
-  >
+  <Lien chemin={epreuveId === undefined ? CHEMINS.organisateur : cheminEpreuve(epreuveId)} {naviguer}>{t.annuler}</Lien>
 </main>
 
 <style>

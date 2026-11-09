@@ -77,9 +77,7 @@ export function epreuvesHorsDates<T extends EpreuveRattachee>(
 ): T[] {
   return epreuves.filter(
     (epreuve) =>
-      estRattachee(manifestationId, epreuve) &&
-      epreuve.date !== null &&
-      (epreuve.date < debut || epreuve.date > fin),
+      estRattachee(manifestationId, epreuve) && epreuve.date !== null && (epreuve.date < debut || epreuve.date > fin),
   );
 }
 

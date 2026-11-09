@@ -33,10 +33,7 @@ export const CHEMINS = Object.freeze({
   manifestations: '/manifestations',
   /** US-025 : formulaire de création d'une épreuve. */
   nouvelleEpreuve: '/epreuves/nouvelle',
-} satisfies Record<
-  Exclude<Page, 'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve'>,
-  string
->);
+} satisfies Record<Exclude<Page, 'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve'>, string>);
 
 /** US-025 : page d'une épreuve. */
 export function cheminEpreuve(epreuveId: string): string {
@@ -101,15 +98,11 @@ export type Route = { page: Page; epreuveId?: string } | { redirection: string }
 /** Page désignée par une adresse normalisée, avec l'identifiant de l’épreuve s'il y en a un ; null si inconnue. */
 function pageDe(chemin: string): { page: Page; epreuveId?: string } | null {
   const page = (
-    Object.keys(CHEMINS) as Exclude<
-      Page,
-      'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve'
-    >[]
+    Object.keys(CHEMINS) as Exclude<Page, 'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve'>[]
   ).find((candidate) => CHEMINS[candidate] === chemin);
   if (page) return { page };
   const modifiee = MOTIF_MODIFICATION.exec(chemin)?.[1];
-  if (modifiee)
-    return MOTIF_IDENTIFIANT.test(modifiee) ? { page: 'modifierEpreuve', epreuveId: modifiee } : null;
+  if (modifiee) return MOTIF_IDENTIFIANT.test(modifiee) ? { page: 'modifierEpreuve', epreuveId: modifiee } : null;
   const formule = MOTIF_FORMULE.exec(chemin)?.[1];
   if (formule) return MOTIF_IDENTIFIANT.test(formule) ? { page: 'formuleEpreuve', epreuveId: formule } : null;
   const parametres = MOTIF_PARAMETRES.exec(chemin)?.[1];

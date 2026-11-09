@@ -33,7 +33,12 @@ const manifestation = (id: string) => ({
   fin: '2027-03-15',
   lieu: null,
 });
-const competition = (id: string, manifestationId: string) => ({ id, manifestationId, nom: `Compétition ${id}`, arme: null });
+const competition = (id: string, manifestationId: string) => ({
+  id,
+  manifestationId,
+  nom: `Compétition ${id}`,
+  arme: null,
+});
 
 /**
  * M1 : compétitions E1 (c1, c2 archivée) et E2 (c3), épreuve directe c4.

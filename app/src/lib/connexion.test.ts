@@ -56,9 +56,7 @@ afterEach(() => {
 
 describe('urlConnexion', () => {
   it('construit l’adresse de connexion à une épreuve', () => {
-    expect(urlConnexion('wss://serveur.workers.dev', 'demo')).toBe(
-      'wss://serveur.workers.dev/epreuves/demo/connexion',
-    );
+    expect(urlConnexion('wss://serveur.workers.dev', 'demo')).toBe('wss://serveur.workers.dev/epreuves/demo/connexion');
     expect(urlConnexion(' ws://localhost:8787/ ', 'demo')).toBe('ws://localhost:8787/epreuves/demo/connexion');
   });
 

@@ -8,12 +8,7 @@
   import { prendreEcriture, type Journal } from '../lib/journal';
   import { contenuExport, libellePilote } from '../lib/pilotage';
   import type { Ecart, SessionAppareil } from '../lib/stockage';
-  import {
-    cheminFormuleEpreuve,
-    cheminModificationEpreuve,
-    cheminParametresEpreuve,
-    CHEMINS,
-  } from '../lib/routes';
+  import { cheminFormuleEpreuve, cheminModificationEpreuve, cheminParametresEpreuve, CHEMINS } from '../lib/routes';
   import { nomConfirme, peutSupprimer } from '../lib/suppression';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -307,11 +302,7 @@
       <dt>{t.formuleTitre}</dt>
       <dd>
         {epreuve.formule.touchesRelais === null
-          ? t.formule(
-              epreuve.formule.touchesPoules,
-              epreuve.formule.touchesTableau,
-              epreuve.formule.matchTroisieme,
-            )
+          ? t.formule(epreuve.formule.touchesPoules, epreuve.formule.touchesTableau, epreuve.formule.matchTroisieme)
           : t.relais(epreuve.formule.touchesRelais)}
       </dd>
     </dl>

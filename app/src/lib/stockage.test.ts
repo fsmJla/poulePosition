@@ -127,7 +127,9 @@ describe('migration du stockage local vers le vocabulaire inversé (US-044, ADR-
       copieIndex: 'cle',
       ecartes: '++id, competitionId',
     });
-    await ancienne.table('session').put({ cle: 'courante', jeton: session.jeton, expireLe: session.expireLe, compte: session.compte });
+    await ancienne
+      .table('session')
+      .put({ cle: 'courante', jeton: session.jeton, expireLe: session.expireLe, compte: session.compte });
     await ancienne.table('appareilConnu').put(appareil);
     await ancienne.table('evenements').put({ competitionId: 'c1', seq: 1, type: 'CompetitionCreee' });
     await ancienne.table('competitionsLocales').put({ competitionId: 'c1' });

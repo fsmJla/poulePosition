@@ -217,9 +217,7 @@
         {#if administrateur && analyse}
           <div class="selection">
             <span role="status"
-              >{seulementEpreuves
-                ? ts.selection(analyse.decompte.epreuves)
-                : ts.selectionMixte(analyse.decompte)}</span
+              >{seulementEpreuves ? ts.selection(analyse.decompte.epreuves) : ts.selectionMixte(analyse.decompte)}</span
             >
             <button
               type="button"
@@ -241,9 +239,7 @@
 
         <!-- CA-4 : un seul message pour toute la sélection, avec le décompte par type et les éléments cochés directement. -->
         {#if etapeSerie !== 'aucune' && analyse}
-          {@const titre = seulementEpreuves
-            ? ts.titre(analyse.decompte.epreuves)
-            : ts.titreMixte(analyse.decompte)}
+          {@const titre = seulementEpreuves ? ts.titre(analyse.decompte.epreuves) : ts.titreMixte(analyse.decompte)}
           <div class="confirmation" role="group" aria-label={titre}>
             <p>{titre}</p>
             {#if analyse.archiveesMasquees > 0}<p>{ts.archiveesMasquees(analyse.archiveesMasquees)}</p>{/if}

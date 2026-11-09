@@ -139,10 +139,9 @@ test('US-023 CA-4 : des dates qui excluent une épreuve rattachée sont refusée
   await page.getByRole('button', { name: `Modifier ${nom}` }).click();
   await remplir(page, { fin: '2027-03-14' });
   await page.getByRole('button', { name: 'Enregistrer' }).click();
-  await expect(page.getByRole('alert')).toHaveText(
-    `Ces dates n’incluent plus l’épreuve rattachée : ${epreuve}`,
-    { timeout: 20_000 },
-  );
+  await expect(page.getByRole('alert')).toHaveText(`Ces dates n’incluent plus l’épreuve rattachée : ${epreuve}`, {
+    timeout: 20_000,
+  });
 
   // CA-5 : non vide, elle ne se supprime pas.
   await page.getByRole('button', { name: 'Annuler' }).click();

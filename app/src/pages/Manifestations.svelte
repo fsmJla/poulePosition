@@ -326,9 +326,12 @@
             modifie={chargerCompetitions}
             {administrateur}
             nombreEpreuves={async (competitionId) =>
-              (await epreuvesConnues()).filter(({ rattachement }) => rattachement?.competitionId === competitionId).length}
+              (await epreuvesConnues()).filter(({ rattachement }) => rattachement?.competitionId === competitionId)
+                .length}
             {apresSuppressionContenu}
-            ouvrirAuDepart={ouverture !== null && 'competitionDe' in ouverture && ouverture.competitionDe === manifestation.id}
+            ouvrirAuDepart={ouverture !== null &&
+              'competitionDe' in ouverture &&
+              ouverture.competitionDe === manifestation.id}
           />
           {#if aSupprimer?.id === manifestation.id}
             <div class="confirmation" role="group" aria-label={t.supprimer(manifestation.nom)}>

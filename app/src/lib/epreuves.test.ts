@@ -183,9 +183,17 @@ describe('rattachement d’une nouvelle épreuve (US-025 CA-3 et CA-4, US-024 CA
 
   it('CA-3 (US-025) : choisir un rattachement préremplit le lieu et l’arme sans écraser une saisie', () => {
     const choisie = rattacher(saisieVide(), 'm1', 'e1', [manifestation], [competition]);
-    expect(choisie).toMatchObject({ manifestationId: 'm1', competitionId: 'e1', lieu: 'Salle Bellegrave', arme: 'sabre' });
+    expect(choisie).toMatchObject({
+      manifestationId: 'm1',
+      competitionId: 'e1',
+      lieu: 'Salle Bellegrave',
+      arme: 'sabre',
+    });
     const saisie2 = { ...saisieVide(), lieu: 'Ailleurs', arme: 'epee' as const };
-    expect(rattacher(saisie2, 'm1', '', [manifestation], [competition])).toMatchObject({ lieu: 'Ailleurs', arme: 'epee' });
+    expect(rattacher(saisie2, 'm1', '', [manifestation], [competition])).toMatchObject({
+      lieu: 'Ailleurs',
+      arme: 'epee',
+    });
     expect(rattacher(saisie2, 'm1', 'e1', [manifestation], [competition])).toMatchObject({ arme: 'sabre' });
   });
 
@@ -215,13 +223,7 @@ describe('rattachement d’une nouvelle épreuve (US-025 CA-3 et CA-4, US-024 CA
       [competition],
     );
     expect(hors).toEqual({ ok: false, erreurs: { date: 'DATE_HORS_MANIFESTATION' } });
-    const sans = await creerEpreuve(
-      nouveauJournal(),
-      saisie({ manifestationId: 'm1' }),
-      auteur,
-      [manifestation],
-      [],
-    );
+    const sans = await creerEpreuve(nouveauJournal(), saisie({ manifestationId: 'm1' }), auteur, [manifestation], []);
     expect(sans).toEqual({ ok: false, erreurs: { date: 'DATE_OBLIGATOIRE' } });
   });
 
@@ -333,12 +335,7 @@ describe('modification d’une épreuve (US-027)', () => {
 
   it('CA-5 : formulaire inchangé : aucun événement', async () => {
     const { journal, epreuveId } = await creee();
-    const resultat = await modifierEpreuve(
-      journal,
-      epreuveId,
-      await modifiable(journal, epreuveId),
-      auteur,
-    );
+    const resultat = await modifierEpreuve(journal, epreuveId, await modifiable(journal, epreuveId), auteur);
     expect(resultat).toEqual({ ok: true, modifiee: false });
     expect((await journal.lire(epreuveId)).dernierSeq).toBe(1);
   });
@@ -356,12 +353,7 @@ describe('modification d’une épreuve (US-027)', () => {
   it('CA-4 : horaires incohérents refusés sous le champ, sans rien écrire', async () => {
     const { journal, epreuveId } = await creee();
     const avant = await modifiable(journal, epreuveId);
-    const resultat = await modifierEpreuve(
-      journal,
-      epreuveId,
-      { ...avant, appel: '09:00', scratch: '08:00' },
-      auteur,
-    );
+    const resultat = await modifierEpreuve(journal, epreuveId, { ...avant, appel: '09:00', scratch: '08:00' }, auteur);
     expect(resultat).toEqual({ ok: false, erreurs: { scratch: 'SCRATCH_AVANT_APPEL' } });
     expect((await journal.lire(epreuveId)).dernierSeq).toBe(1);
   });

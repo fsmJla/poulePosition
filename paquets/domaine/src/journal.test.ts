@@ -125,10 +125,7 @@ describe('modification d’une épreuve (US-027)', () => {
   };
 
   it('CA-1 : appliquer fusionne une EpreuveModifiee et garde le reste', () => {
-    const { epreuve, dernierSeq } = projeter([
-      evenement(1),
-      evenement(2, modifiee({ nom: ' Nouveau ', lieu: null })),
-    ]);
+    const { epreuve, dernierSeq } = projeter([evenement(1), evenement(2, modifiee({ nom: ' Nouveau ', lieu: null }))]);
     expect(dernierSeq).toBe(2);
     expect(epreuve).toMatchObject({
       nom: 'Nouveau',

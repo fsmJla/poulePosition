@@ -60,7 +60,9 @@ function client(
 describe('compétitions côté application (US-024)', () => {
   it('CA-1 : le formulaire démarre vide ; arme et commentaire vides partent à null, dans la manifestation', async () => {
     expect(saisieVide()).toEqual({ nom: '', arme: '', commentaire: '' });
-    const serveur = fauxServeur({ 'POST /competitions': { statut: 201, corps: { ok: true, competition: competition() } } });
+    const serveur = fauxServeur({
+      'POST /competitions': { statut: 201, corps: { ok: true, competition: competition() } },
+    });
     expect(await client(serveur).creer('m1', saisie({ arme: '' }))).toEqual({ ok: true, competition: competition() });
     expect(serveur.requetes[0]?.corps).toEqual({
       manifestationId: 'm1',
@@ -72,7 +74,9 @@ describe('compétitions côté application (US-024)', () => {
   });
 
   it('CA-1 : la liste reçue est gardée sur l’appareil, avec sa date', async () => {
-    const serveur = fauxServeur({ 'GET /competitions': { statut: 200, corps: { ok: true, competitions: [competition()] } } });
+    const serveur = fauxServeur({
+      'GET /competitions': { statut: 200, corps: { ok: true, competitions: [competition()] } },
+    });
     const c = client(serveur);
     expect(await c.lister()).toEqual({ ok: true, competitions: [competition()] });
     expect(await c.copie()).toEqual({ competitions: [competition()], copieLe: MAINTENANT });
@@ -98,7 +102,9 @@ describe('compétitions côté application (US-024)', () => {
 
   it('CA-3 : la modification part avec la version de départ, sans la manifestation', async () => {
     const modifiee = competition({ arme: 'epee', version: 2 });
-    const serveur = fauxServeur({ 'PATCH /competitions/e1': { statut: 200, corps: { ok: true, competition: modifiee } } });
+    const serveur = fauxServeur({
+      'PATCH /competitions/e1': { statut: 200, corps: { ok: true, competition: modifiee } },
+    });
     expect(await client(serveur).modifier(competition(), saisie({ arme: 'epee' }))).toEqual({
       ok: true,
       competition: modifiee,
@@ -148,7 +154,9 @@ describe('compétitions côté application (US-024)', () => {
   });
 
   it('hors ligne : la dernière copie reste consultable ; création, modification et suppression sont refusées', async () => {
-    const serveur = fauxServeur({ 'GET /competitions': { statut: 200, corps: { ok: true, competitions: [competition()] } } });
+    const serveur = fauxServeur({
+      'GET /competitions': { statut: 200, corps: { ok: true, competitions: [competition()] } },
+    });
     const nomBase = `test-${crypto.randomUUID()}`;
     await client(serveur, { nomBase }).lister();
 
@@ -173,7 +181,9 @@ describe('compétitions côté application (US-024)', () => {
   });
 
   it('session : une session refusée par le serveur est signalée', async () => {
-    const serveur = fauxServeur({ 'GET /competitions': { statut: 401, corps: { ok: false, erreur: 'SESSION_INVALIDE' } } });
+    const serveur = fauxServeur({
+      'GET /competitions': { statut: 401, corps: { ok: false, erreur: 'SESSION_INVALIDE' } },
+    });
     expect(await client(serveur).lister()).toMatchObject({ ok: false, erreur: 'SESSION_INVALIDE' });
   });
 });

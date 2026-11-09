@@ -166,9 +166,7 @@ export function creerSynchronisation({
   /** Envoie tout ce qui attend, pour chaque épreuve pilotée ici (démarrage, retour du réseau). */
   async function envoyerTout(): Promise<void> {
     const locales = await journal.epreuvesLocales();
-    await Promise.all(
-      locales.filter(({ pilote }) => pilote).map(({ epreuveId }) => envoyerEpreuve(epreuveId)),
-    );
+    await Promise.all(locales.filter(({ pilote }) => pilote).map(({ epreuveId }) => envoyerEpreuve(epreuveId)));
   }
 
   const ecouteursPerte = new Set<(perte: PerteDeMain) => void>();
@@ -327,9 +325,7 @@ export function creerSynchronisation({
      * US-039 CA-1 : supprime définitivement l’épreuve sur le serveur (administrateur, en ligne), puis efface la
      * copie de ce PC sans l'annoncer : c'est l'administrateur qui l'a demandé. Hors ligne, rien n'est tenté (CA-8).
      */
-    async supprimerEpreuve(
-      epreuveId: string,
-    ): Promise<{ ok: true } | { ok: false; erreur: ErreurSynchronisation }> {
+    async supprimerEpreuve(epreuveId: string): Promise<{ ok: true } | { ok: false; erreur: ErreurSynchronisation }> {
       const jetonSession = await jetonEnLigne();
       if (!jetonSession) return sansReseau();
       let reponse;
@@ -360,8 +356,7 @@ export function creerSynchronisation({
       const connues = new Map<string, EpreuveRattachee>();
       const index = await this.listerEpreuvesDuClub();
       if (index.ok) {
-        for (const { id, nom, date, rattachement } of index.epreuves)
-          connues.set(id, { id, nom, date, rattachement });
+        for (const { id, nom, date, rattachement } of index.epreuves) connues.set(id, { id, nom, date, rattachement });
       }
       for (const { epreuveId } of await journal.epreuvesLocales()) {
         const { epreuve } = await journal.lire(epreuveId);
@@ -406,9 +401,7 @@ export function creerSynchronisation({
       let reponse;
       try {
         const corps = { appareilId, piloteAttendu };
-        reponse = analyserReponsePriseDeMain(
-          await requete(`/epreuves/${epreuveId}/pilote`, jetonSession, corps),
-        );
+        reponse = analyserReponsePriseDeMain(await requete(`/epreuves/${epreuveId}/pilote`, jetonSession, corps));
       } catch {
         return { ok: false, erreur: 'HORS_LIGNE' };
       }
