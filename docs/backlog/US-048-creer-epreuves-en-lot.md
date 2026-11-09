@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-045
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-048-creer-epreuves-en-lot` / [#66](https://github.com/fsmJla/poulePosition/pull/66)
 
 ## Récit
 
@@ -84,6 +84,16 @@ coupé.
   la grille seulement ; le formulaire unitaire garde la liberté actuelle.
 - Une compétition seule n'a pas de jours propres : la date de chaque épreuve y est facultative, comme aujourd'hui.
 
+- Retour après la création : US-049 (plan de la manifestation) n'existe pas encore, la page revient à la liste du club ;
+  US-049 branchera le retour au plan (validé le 2026-11-09).
+- Les doublons sont détectés avec l'index du club et les journaux locaux de l'appareil : hors ligne, une épreuve créée
+  ailleurs et inconnue de l'appareil n'est pas vue (le serveur ne décide pas).
+- Réglages communs : type, touches des poules, touches du tableau, match pour la 3e place et appel de chaque jour ;
+  scratch et début des poules restent à régler épreuve par épreuve (US-027).
+- Une compétition seule à une seule épreuve tient sur une ligne dans la liste : le lien « Ajouter des épreuves »
+  n'y figure pas (le niveau « compétition » n'est pas affiché, US-045) ; la grille reste joignable par l'adresse
+  `/competitions/<id>/epreuves`, et le plan d'US-049 donnera l'accès.
+
 ## Questions bloquantes
 
 - Aucune.
@@ -94,8 +104,28 @@ coupé.
   à créer (noms, jours, horaires) et les doublons refusés ; tests de chaque critère.
 - Glossaire : « Grille des épreuves ».
 
+## Réalisation
+
+| Critère | Tests |
+|---|---|
+| CA-1 | `lot.test.ts` (domaine, lignes et colonnes), `routes.test.ts`, E2E `grille.spec.ts` « CA-1, CA-3, CA-4, CA-5 et CA-6 » |
+| CA-2 | `lot.test.ts` « CA-2 » (cases occupées, refusées), E2E `grille.spec.ts` « CA-2 » |
+| CA-3 | `lot.test.ts` « CA-3 » (nom généré, jour par défaut, répartition), E2E « CA-1, CA-3… » |
+| CA-4 | `lot.test.ts` « CA-4 », `lot.test.ts` (app) « CA-4 » (formule du lot), E2E « CA-1, CA-3… » (type, appel du jour) |
+| CA-5 | `lot.test.ts` (app) « CA-5 » (un journal par épreuve, ce PC pilote), E2E « CA-1, CA-3… » (retour à la liste) |
+| CA-6 | `lot.test.ts` « CA-6 » (domaine), E2E « CA-1, CA-3… » (ligne « Open ») |
+| CA-7 | `lot.test.ts` « CA-7 », E2E `grille.spec.ts` « CA-7 » |
+| Hors ligne | E2E `grille.spec.ts` « hors ligne » : grille ouverte réseau coupé, épreuves « Pas encore envoyée », envoyées au retour |
+| Cas limites | `lot.test.ts` (app : échec au milieu du lot, sans club, lot vide), `lot.test.ts` (domaine : validation d'une ligne), E2E « cas limite : un nom vide » |
+
+Aucun changement du protocole, du serveur ni du journal : ce sont des `EpreuveCreee` locaux ordinaires, suivis d'une
+`FormuleModifiee` quand la formule du lot diffère de la formule par défaut (US-028).
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-11-08 | Créée (maquette d'ergonomie de création) |
+| 2026-11-09 | Plan validé ; implémentation démarrée sur la branche `us/US-048-creer-epreuves-en-lot` |
+| 2026-11-09 | Implémentée ; contrôles locaux verts ; passée « En revue » |
+| 2026-11-09 | Recette OK sur https://poule-position-jfev6f3v4-fsmjlas-projects.vercel.app : CA-1 à CA-7 vérifiés à la main sur PC (grille, catégorie libre, lot de 4 épreuves avec types, appel et jours, cases déjà créées, compétition sans arme) ; les 5 épreuves envoyées au serveur ; données de test supprimées. Hors ligne et smartphone couverts par les E2E de la CI sur la preview. Déployée en preview et vérifiée ; passée « Terminée » |

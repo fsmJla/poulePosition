@@ -333,6 +333,7 @@
               (await epreuvesConnues()).filter(({ rattachement }) => rattachement?.competitionId === competitionId)
                 .length}
             {apresSuppressionContenu}
+            {naviguer}
             ouvrirAuDepart={ouverture !== null &&
               'competitionDe' in ouverture &&
               ouverture.competitionDe === manifestation.id}

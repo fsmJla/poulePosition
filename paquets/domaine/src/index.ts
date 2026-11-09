@@ -11,5 +11,6 @@ export * from './reinitialisation';
 export * from './sessions';
 export { calculerIndice, type Touches } from './indice';
 export * from './liste';
+export * from './lot';
 export * from './selection-suppression';
 export * from './suppression';

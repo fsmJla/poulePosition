@@ -405,6 +405,58 @@ export const textes = {
     pilote: 'Ce PC est le pilote',
     lectureSeule: 'Lecture seule : cette épreuve est pilotée par un autre PC',
     autreOnglet: 'Cette épreuve est ouverte dans un autre onglet : lecture seule ici',
+    /** US-048 : grille des épreuves, pour créer d'un coup les épreuves d'une compétition. */
+    grille: {
+      ajouter: 'Ajouter des épreuves',
+      ajouterA: (competition: string) => `Ajouter des épreuves à ${competition}`,
+      titre: 'Ajouter des épreuves',
+      chargement: 'Chargement de la compétition…',
+      introuvable:
+        'Cette compétition est introuvable sur cet appareil : ouvrez la liste du club en ligne, puis réessayez.',
+      ariane: 'Compétition',
+      sansArme: 'toutes armes',
+      armeDuLot: 'Arme du lot',
+      armeDuLotAide:
+        'Cette compétition n’a pas d’arme : l’arme choisie vaut pour tout le lot. Refaites un lot pour une autre arme.',
+      choisirArme: 'Choisir une arme',
+      grille: 'Catégories et sexes',
+      case: (categorie: string, sexe: string) => `${categorie} ${sexe}`,
+      dejaCreee: 'déjà créée',
+      categorieLibre: 'Catégorie libre',
+      categorieLibreExemple: 'Open, Vétérans 50+',
+      ajouterCategorie: 'Ajouter la catégorie',
+      categoriesLibres: {
+        CATEGORIE_VIDE: 'Saisissez le nom de la catégorie',
+        CATEGORIE_TROP_LONGUE: 'La catégorie fait au plus 30 caractères',
+        CATEGORIE_EXISTANTE: 'Cette catégorie est déjà dans la grille',
+      } as Record<string, string>,
+      reglages: 'Réglages communs',
+      reglagesAide:
+        'Ils s’appliquent à toutes les épreuves du lot, et restent modifiables ensuite épreuve par épreuve.',
+      appelDuJour: (jour: string) => `Appel du ${jour}`,
+      touchesPoules: 'Touches en poules',
+      touchesTableau: 'Touches au tableau',
+      matchTroisieme: 'Match pour la 3e place',
+      lieuRepris: (lieu: string) => `Lieu : ${lieu}`,
+      seraCreees: (nombre: number) =>
+        nombre > 1 ? `${nombre} épreuves seront créées` : `${nombre} épreuve sera créée`,
+      aucuneCochee: 'Aucune case cochée : cochez les catégories et les sexes des épreuves à créer.',
+      nomEpreuve: (cle: string) => `Nom de l’épreuve ${cle}`,
+      jourEpreuve: (cle: string) => `Jour de l’épreuve ${cle}`,
+      sansJour: 'Sans jour',
+      repartition: (jour: string, nombre: number) => `${jour} : ${nombre}`,
+      creer: (nombre: number) => (nombre > 1 ? `Créer les ${nombre} épreuves` : 'Créer l’épreuve'),
+      creation: 'Création…',
+      annuler: 'Annuler',
+      /** Compte rendu d'un lot interrompu : les cases manquantes restent cochées pour relancer. */
+      partiel: (creees: number, manquantes: number) =>
+        `${creees} épreuve${creees > 1 ? 's' : ''} créée${creees > 1 ? 's' : ''}, ${manquantes} manquante${manquantes > 1 ? 's' : ''} : les cases restent cochées, relancez la création.`,
+      sansFormule: (nombre: number) =>
+        nombre > 1
+          ? `${nombre} épreuves gardent la formule par défaut : changez-la dans chacune d’elles.`
+          : '1 épreuve garde la formule par défaut : changez-la dans l’épreuve.',
+      clubInconnu: 'Compte sans club : aucune épreuve n’a été créée',
+    },
     /** US-029 : prise de main depuis un autre PC. */
     prise: {
       bouton: 'Prendre la main',
