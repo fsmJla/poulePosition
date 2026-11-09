@@ -73,7 +73,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-041](US-041-supprimer-epreuve-avec-contenu.md) | Supprimer une épreuve avec son contenu | E2 | Terminée | US-024, US-039 |
 | [US-042](US-042-supprimer-manifestation-avec-contenu.md) | Supprimer une manifestation avec son contenu | E2 | Terminée | US-023, US-041 |
 | [US-043](US-043-supprimer-par-lot-tous-types.md) | Supprimer par lot des manifestations, des épreuves et des compétitions | E2 | Terminée | US-040, US-041, US-042 |
-| [US-044](US-044-inverser-vocabulaire-competition-epreuve.md) | Inverser le vocabulaire compétition / épreuve (technique) | E2 | En revue | US-043 |
+| [US-044](US-044-inverser-vocabulaire-competition-epreuve.md) | Inverser le vocabulaire compétition / épreuve (technique) | E2 | Terminée | US-043 |
 | [US-045](US-045-rattacher-epreuve-a-competition.md) | Rattacher toute épreuve à une compétition | E2 | Prête | US-044 |
 | [US-046](US-046-point-entree-creer.md) | Un seul point d'entrée « Créer », et l'aide « Comment ça s'organise » | E2 | Prête | US-047, US-048 |
 | [US-047](US-047-assistant-manifestation.md) | Créer une manifestation avec un assistant | E2 | Prête | US-048, US-049 |

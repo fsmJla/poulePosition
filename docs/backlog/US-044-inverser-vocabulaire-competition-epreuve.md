@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-043
 - **Branche / PR :** `us/US-044-inverser-vocabulaire-competition-epreuve` · [PR #64](https://github.com/fsmJla/poulePosition/pull/64)
 
@@ -148,3 +148,5 @@ le vérifient.
 | 2026-11-08 | Créée (analyse d'impact du changement de vocabulaire) |
 | 2026-11-09 | ADR-0021 acceptée ; passée à En cours (branche `us/US-044-inverser-vocabulaire-competition-epreuve`) |
 | 2026-11-09 | Implémentée (6 commits) : lint, typage, 1032 tests unitaires, couverture, build, audit et E2E locaux verts (1 E2E instable, repassé) ; passée à En revue |
+| 2026-11-09 | Corrections pendant la recette : accords (« sa compétition », « son épreuve ») et slogan « Gestion de compétitions d'escrime » rétabli (sens générique), chacun gardé par un test ; CI relancée après un incident GitHub Actions |
+| 2026-11-09 | Recette OK sur https://poule-position-g6q5p621q-fsmjlas-projects.vercel.app (commit `254aa4d`) : CA-2, CA-4, CA-5, CA-6, CA-7 et hors ligne vérifiés au navigateur (hors ligne simulé dans la page, format étroit à 500 px) ; données de test supprimées ; passée à Terminée |
