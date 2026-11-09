@@ -1,6 +1,6 @@
-// Règles d'une manifestation (US-023) : champs et dates, compétitions rattachées hors des dates, manifestation vide.
+// Règles d'une manifestation (US-023) : champs et dates, épreuves rattachées hors des dates, manifestation vide.
 // Une manifestation n'a ni journal ni pilote : elle est stockée par le serveur avec un numéro de version (ADR-0016).
-import { estDate, LONGUEUR_MAX_COMMENTAIRE, LONGUEUR_MAX_LIEU, type Rattachement } from './competition';
+import { estDate, LONGUEUR_MAX_COMMENTAIRE, LONGUEUR_MAX_LIEU, type Rattachement } from './epreuve';
 import { validerNom } from './comptes';
 
 /** Champs saisis d'une manifestation ; dates au format `AAAA-MM-JJ`, texte facultatif non saisi : null. */
@@ -24,8 +24,8 @@ export type ErreurManifestation =
 /** Une erreur par champ, pour l'afficher sous le champ en cause. */
 export type ErreursManifestation = Partial<Record<keyof DonneesManifestation, ErreurManifestation>>;
 
-/** Ce qu'il faut savoir d'une compétition pour la confronter à une manifestation (résumé de l'index du club). */
-export interface CompetitionRattachee {
+/** Ce qu'il faut savoir d'une épreuve pour la confronter à une manifestation (résumé de l'index du club). */
+export interface EpreuveRattachee {
   id: string;
   nom: string;
   date: string | null;
@@ -65,32 +65,30 @@ export function validerManifestation(saisie: DonneesManifestation): ErreursManif
   return erreurs;
 }
 
-const estRattachee = (manifestationId: string, { rattachement }: Pick<CompetitionRattachee, 'rattachement'>) =>
+const estRattachee = (manifestationId: string, { rattachement }: Pick<EpreuveRattachee, 'rattachement'>) =>
   rattachement?.manifestationId === manifestationId;
 
-/** CA-4 : compétitions de la manifestation dont la date ne serait plus comprise entre `debut` et `fin`. */
-export function competitionsHorsDates<T extends CompetitionRattachee>(
+/** CA-4 : épreuves de la manifestation dont la date ne serait plus comprise entre `debut` et `fin`. */
+export function epreuvesHorsDates<T extends EpreuveRattachee>(
   manifestationId: string,
   debut: string,
   fin: string,
-  competitions: readonly T[],
+  epreuves: readonly T[],
 ): T[] {
-  return competitions.filter(
-    (competition) =>
-      estRattachee(manifestationId, competition) &&
-      competition.date !== null &&
-      (competition.date < debut || competition.date > fin),
+  return epreuves.filter(
+    (epreuve) =>
+      estRattachee(manifestationId, epreuve) && epreuve.date !== null && (epreuve.date < debut || epreuve.date > fin),
   );
 }
 
-/** CA-5 : vrai si aucune compétition ni aucune épreuve (US-024) ne se rattache à la manifestation. */
+/** CA-5 : vrai si aucune épreuve ni aucune compétition (US-024) ne se rattache à la manifestation. */
 export function estVide(
   manifestationId: string,
-  competitions: readonly Pick<CompetitionRattachee, 'rattachement'>[],
-  epreuves: readonly { manifestationId: string }[] = [],
+  epreuves: readonly Pick<EpreuveRattachee, 'rattachement'>[],
+  competitions: readonly { manifestationId: string }[] = [],
 ): boolean {
   return (
-    !competitions.some((competition) => estRattachee(manifestationId, competition)) &&
-    !epreuves.some((epreuve) => epreuve.manifestationId === manifestationId)
+    !epreuves.some((epreuve) => estRattachee(manifestationId, epreuve)) &&
+    !competitions.some((competition) => competition.manifestationId === manifestationId)
   );
 }

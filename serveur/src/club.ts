@@ -1,6 +1,6 @@
 // Durable Object « Club » : un objet par club (idFromName(`club:<clubId>`), ADR-0014). Comptes des administrateurs
 // et des organisateurs (ADR-0006), essais de connexion erronés par e-mail (US-004) et demandes de réinitialisation
-// par e-mail (US-019), index des compétitions du club (US-022, ADR-0016) et manifestations (US-023), en SQLite. Les
+// par e-mail (US-019), index des épreuves du club (US-022, ADR-0016) et manifestations (US-023), en SQLite. Les
 // écritures d'un même objet sont sérialisées : deux créations simultanées du premier administrateur, ou d'un même
 // e-mail, ne peuvent pas aboutir toutes les deux, et deux modifications d'une même manifestation non plus.
 import { DurableObject } from 'cloudflare:workers';
@@ -17,22 +17,23 @@ import {
   noterDemande,
   estCouleurAvatar,
   estVide,
-  estVideEpreuve,
-  type DonneesEpreuve,
-  type CompetitionASupprimer,
+  estVideCompetition,
+  type DonneesCompetition,
+  type EpreuveASupprimer,
   type DonneesManifestation,
   type CouleurAvatar,
   type Essais,
   type Role,
 } from '@poule-position/domaine';
 import type {
-  CompetitionIndexee,
-  DemandeModificationEpreuve,
+  EpreuveIndexee,
+  DemandeModificationCompetition,
   DemandeModificationManifestation,
-  Epreuve,
+  Competition,
   Manifestation,
 } from '@poule-position/protocole';
 import type { Env } from './index';
+import { requetesInversionVocabulaire } from './logique';
 import { ListeEnMemoire, type Lecture } from './liste-en-memoire';
 import { deciderSuppression } from './replication';
 
@@ -95,21 +96,21 @@ export class Club extends DurableObject<Env> {
    * US-038 : les listes du club ne sont lues dans la base qu'une fois, puis gardées en mémoire. Le plan gratuit compte
    * chaque ligne parcourue : relire tout un tableau à chaque requête épuisait le quota quotidien.
    */
-  private readonly index = new ListeEnMemoire<CompetitionIndexee>(
-    () => this.lireListe('SELECT contenu FROM competitions ORDER BY modifiee_le DESC'),
-    signalerLecture('competitions'),
+  private readonly index = new ListeEnMemoire<EpreuveIndexee>(
+    () => this.lireListe('SELECT contenu FROM epreuves ORDER BY modifiee_le DESC'),
+    signalerLecture('epreuves'),
   );
   private readonly pierresTombales = new ListeEnMemoire<string>(() => {
-    const curseur = this.ctx.storage.sql.exec<{ id: string }>('SELECT id FROM competitions_supprimees ORDER BY id');
+    const curseur = this.ctx.storage.sql.exec<{ id: string }>('SELECT id FROM epreuves_supprimees ORDER BY id');
     return { valeurs: curseur.toArray().map(({ id }) => id), lignesLues: curseur.rowsRead };
-  }, signalerLecture('competitions_supprimees'));
+  }, signalerLecture('epreuves_supprimees'));
   private readonly listeManifestations = new ListeEnMemoire<Manifestation>(
     () => this.lireListe('SELECT contenu FROM manifestations ORDER BY debut, id'),
     signalerLecture('manifestations'),
   );
-  private readonly listeEpreuves = new ListeEnMemoire<Epreuve>(
-    () => this.lireListe('SELECT contenu FROM epreuves ORDER BY manifestation_id, id'),
-    signalerLecture('epreuves'),
+  private readonly listeCompetitions = new ListeEnMemoire<Competition>(
+    () => this.lireListe('SELECT contenu FROM competitions ORDER BY manifestation_id, id'),
+    signalerLecture('competitions'),
   );
 
   constructor(ctx: DurableObjectState, env: Env) {
@@ -157,17 +158,23 @@ export class Club extends DurableObject<Env> {
         expire_le INTEGER NOT NULL,
         demandes TEXT NOT NULL
       )`);
-    // US-022 (ADR-0016) : une ligne par compétition, le résumé fourni par le pilote complété par le Worker.
+    // US-044 (ADR-0021) : les tables d'avant l'inversion du vocabulaire (données de test) sont supprimées, puis recréées
+    // ci-dessous sous leur nouveau sens. Les comptes ne sont pas touchés.
+    const colonnesEpreuves = ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(epreuves)').toArray();
+    for (const requete of requetesInversionVocabulaire(colonnesEpreuves.map(({ name }) => name))) {
+      ctx.storage.sql.exec(requete);
+    }
+    // US-022 (ADR-0016) : une ligne par épreuve, le résumé fourni par le pilote complété par le Worker.
     ctx.storage.sql.exec(`
-      CREATE TABLE IF NOT EXISTS competitions (
+      CREATE TABLE IF NOT EXISTS epreuves (
         id TEXT PRIMARY KEY,
         club_id TEXT NOT NULL,
         contenu TEXT NOT NULL,
         modifiee_le INTEGER NOT NULL
       )`);
-    // US-039 (ADR-0019) : pierre tombale d'une compétition supprimée, pour qu'aucun PC ne la recrée.
+    // US-039 (ADR-0019) : pierre tombale d'une épreuve supprimée, pour qu'aucun PC ne la recrée.
     ctx.storage.sql.exec(`
-      CREATE TABLE IF NOT EXISTS competitions_supprimees (
+      CREATE TABLE IF NOT EXISTS epreuves_supprimees (
         id TEXT PRIMARY KEY,
         supprimee_le INTEGER NOT NULL
       )`);
@@ -180,9 +187,9 @@ export class Club extends DurableObject<Env> {
         version INTEGER NOT NULL,
         debut TEXT NOT NULL
       )`);
-    // US-024 (ADR-0016 §4) : une ligne par épreuve, rattachée à une manifestation, avec le même contrôle de version.
+    // US-024 (ADR-0016 §4) : une ligne par compétition, rattachée à une manifestation, avec le même contrôle de version.
     ctx.storage.sql.exec(`
-      CREATE TABLE IF NOT EXISTS epreuves (
+      CREATE TABLE IF NOT EXISTS competitions (
         id TEXT PRIMARY KEY,
         club_id TEXT NOT NULL,
         manifestation_id TEXT NOT NULL,
@@ -389,12 +396,12 @@ export class Club extends DurableObject<Env> {
     return this.lireCompte('id', id);
   }
 
-  /** US-022 CA-3 : enregistre ou remplace la ligne d'une compétition dans l'index du club. */
-  async indexerCompetition(ligne: CompetitionIndexee): Promise<void> {
+  /** US-022 CA-3 : enregistre ou remplace la ligne d'une épreuve dans l'index du club. */
+  async indexerEpreuve(ligne: EpreuveIndexee): Promise<void> {
     // US-039 CA-4 : un lot arrivé pendant la suppression ne recrée pas la ligne.
     if (this.estSupprimee(ligne.id)) return;
     this.ctx.storage.sql.exec(
-      `INSERT INTO competitions (id, club_id, contenu, modifiee_le) VALUES (?, ?, ?, ?)
+      `INSERT INTO epreuves (id, club_id, contenu, modifiee_le) VALUES (?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET contenu = excluded.contenu, modifiee_le = excluded.modifiee_le`,
       ligne.id,
       this.env.CLUB_ID,
@@ -407,115 +414,115 @@ export class Club extends DurableObject<Env> {
     );
   }
 
-  private estSupprimee(competitionId: string): boolean {
-    return this.pierresTombales.obtenir().includes(competitionId);
+  private estSupprimee(epreuveId: string): boolean {
+    return this.pierresTombales.obtenir().includes(epreuveId);
   }
 
-  /** US-039 CA-4 : vrai si la compétition a été supprimée définitivement. */
-  async supprimee(competitionId: string): Promise<boolean> {
-    return this.estSupprimee(competitionId);
+  /** US-039 CA-4 : vrai si l’épreuve a été supprimée définitivement. */
+  async supprimee(epreuveId: string): Promise<boolean> {
+    return this.estSupprimee(epreuveId);
   }
 
-  /** US-039 CA-5 : identifiants des compétitions supprimées, que les PC effacent de leurs copies. */
+  /** US-039 CA-5 : identifiants des épreuves supprimées, que les PC effacent de leurs copies. */
   async listerSupprimees(): Promise<string[]> {
     return [...this.pierresTombales.obtenir()];
   }
 
   /**
-   * US-039 CA-1 : retire la compétition de l'index et pose sa pierre tombale. Refusée si le dernier résumé du pilote
+   * US-039 CA-1 : retire l’épreuve de l'index et pose sa pierre tombale. Refusée si le dernier résumé du pilote
    * la dit en cours (CA-3). `aEffacer` dit s'il reste un journal à effacer : la ligne existait, ou une suppression
-   * précédente a été interrompue (CA-7) ; une compétition inconnue ne produit aucune écriture.
+   * précédente a été interrompue (CA-7) ; une épreuve inconnue ne produit aucune écriture.
    */
-  async supprimerCompetition(
-    competitionId: string,
-  ): Promise<{ ok: true; aEffacer: boolean } | { ok: false; statut: 409; erreur: 'COMPETITION_EN_COURS' }> {
-    const ligne = this.lireLigneIndex(competitionId);
+  async supprimerEpreuve(
+    epreuveId: string,
+  ): Promise<{ ok: true; aEffacer: boolean } | { ok: false; statut: 409; erreur: 'EPREUVE_EN_COURS' }> {
+    const ligne = this.lireLigneIndex(epreuveId);
     const decision = deciderSuppression(ligne?.statut ?? null);
     if (!decision.ok) return decision;
-    if (this.estSupprimee(competitionId)) return { ok: true, aEffacer: true };
+    if (this.estSupprimee(epreuveId)) return { ok: true, aEffacer: true };
     if (!ligne) return { ok: true, aEffacer: false };
     this.ctx.storage.sql.exec(
-      'INSERT OR IGNORE INTO competitions_supprimees (id, supprimee_le) VALUES (?, ?)',
-      competitionId,
+      'INSERT OR IGNORE INTO epreuves_supprimees (id, supprimee_le) VALUES (?, ?)',
+      epreuveId,
       Date.now(),
     );
-    this.ctx.storage.sql.exec('DELETE FROM competitions WHERE id = ?', competitionId);
+    this.ctx.storage.sql.exec('DELETE FROM epreuves WHERE id = ?', epreuveId);
     this.pierresTombales.invalider();
-    this.index.modifier((lignes) => lignes.filter(({ id }) => id !== competitionId));
+    this.index.modifier((lignes) => lignes.filter(({ id }) => id !== epreuveId));
     return { ok: true, aEffacer: true };
   }
 
   /**
-   * US-041 : l'épreuve existe-t-elle, et quelles compétitions de l'index s'y rattachent ? Le statut est celui du dernier
+   * US-041 : la compétition existe-t-elle, et quelles épreuves de l'index s'y rattachent ? Le statut est celui du dernier
    * résumé du pilote (ADR-0016 §3) ; le serveur ne calcule rien d'escrime.
    */
-  async contenuEpreuve(epreuveId: string): Promise<{ existe: boolean; competitions: CompetitionASupprimer[] }> {
-    const competitions = this.lignesIndex()
-      .filter(({ rattachement }) => rattachement?.epreuveId === epreuveId)
+  async contenuCompetition(competitionId: string): Promise<{ existe: boolean; epreuves: EpreuveASupprimer[] }> {
+    const epreuves = this.lignesIndex()
+      .filter(({ rattachement }) => rattachement?.competitionId === competitionId)
       .map(({ id, nom, statut }) => ({ id, nom, statut }));
-    return { existe: this.lireEpreuve(epreuveId) !== null, competitions };
+    return { existe: this.lireCompetition(competitionId) !== null, epreuves };
   }
 
   /**
-   * US-041 : supprime un lot de compétitions (pierre tombale, retrait de l'index) en une seule requête vers ce DO, pour
-   * ne pas épuiser les sous-requêtes du Worker (ADR-0020). Renvoie celles dont le DO `Competition` reste à vider : la
-   * ligne existait, ou une suppression précédente a été interrompue. Une compétition inconnue ne produit aucune écriture.
+   * US-041 : supprime un lot d’épreuves (pierre tombale, retrait de l'index) en une seule requête vers ce DO, pour
+   * ne pas épuiser les sous-requêtes du Worker (ADR-0020). Renvoie celles dont le DO `Epreuve` reste à vider : la
+   * ligne existait, ou une suppression précédente a été interrompue. Une épreuve inconnue ne produit aucune écriture.
    */
-  async supprimerCompetitions(competitionIds: readonly string[]): Promise<string[]> {
+  async supprimerEpreuves(epreuveIds: readonly string[]): Promise<string[]> {
     const aEffacer: string[] = [];
-    for (const competitionId of competitionIds) {
-      if (this.estSupprimee(competitionId)) {
-        aEffacer.push(competitionId);
+    for (const epreuveId of epreuveIds) {
+      if (this.estSupprimee(epreuveId)) {
+        aEffacer.push(epreuveId);
         continue;
       }
-      if (!this.lireLigneIndex(competitionId)) continue;
+      if (!this.lireLigneIndex(epreuveId)) continue;
       this.ctx.storage.sql.exec(
-        'INSERT OR IGNORE INTO competitions_supprimees (id, supprimee_le) VALUES (?, ?)',
-        competitionId,
+        'INSERT OR IGNORE INTO epreuves_supprimees (id, supprimee_le) VALUES (?, ?)',
+        epreuveId,
         Date.now(),
       );
-      this.ctx.storage.sql.exec('DELETE FROM competitions WHERE id = ?', competitionId);
-      aEffacer.push(competitionId);
+      this.ctx.storage.sql.exec('DELETE FROM epreuves WHERE id = ?', epreuveId);
+      aEffacer.push(epreuveId);
     }
     this.pierresTombales.invalider();
-    this.index.modifier((lignes) => lignes.filter(({ id }) => !competitionIds.includes(id)));
+    this.index.modifier((lignes) => lignes.filter(({ id }) => !epreuveIds.includes(id)));
     return aEffacer;
   }
 
-  /** US-029 : ligne de l'index d'une compétition, ou null. */
-  async ligneCompetition(competitionId: string): Promise<CompetitionIndexee | null> {
-    return this.lireLigneIndex(competitionId);
+  /** US-029 : ligne de l'index d'une épreuve, ou null. */
+  async ligneEpreuve(epreuveId: string): Promise<EpreuveIndexee | null> {
+    return this.lireLigneIndex(epreuveId);
   }
 
-  /** CA-3 : une compétition se lit par son identifiant (une ligne), jamais en parcourant tout l'index. */
-  private lireLigneIndex(competitionId: string): CompetitionIndexee | null {
+  /** CA-3 : une épreuve se lit par son identifiant (une ligne), jamais en parcourant tout l'index. */
+  private lireLigneIndex(epreuveId: string): EpreuveIndexee | null {
     const [ligne] = this.ctx.storage.sql
-      .exec<{ contenu: string }>('SELECT contenu FROM competitions WHERE id = ?', competitionId)
+      .exec<{ contenu: string }>('SELECT contenu FROM epreuves WHERE id = ?', epreuveId)
       .toArray();
-    return ligne ? (JSON.parse(ligne.contenu) as CompetitionIndexee) : null;
+    return ligne ? (JSON.parse(ligne.contenu) as EpreuveIndexee) : null;
   }
 
   /** US-029 CA-1 : l'index désigne le nouveau pilote, sans toucher au reste de la ligne. */
-  async changerPilote(competitionId: string, piloteAppareil: string, piloteNom: string): Promise<void> {
-    const ligne = this.lireLigneIndex(competitionId);
+  async changerPilote(epreuveId: string, piloteAppareil: string, piloteNom: string): Promise<void> {
+    const ligne = this.lireLigneIndex(epreuveId);
     if (!ligne) return;
     this.ctx.storage.sql.exec(
-      'UPDATE competitions SET contenu = ? WHERE id = ?',
+      'UPDATE epreuves SET contenu = ? WHERE id = ?',
       JSON.stringify({ ...ligne, piloteAppareil, piloteNom }),
-      competitionId,
+      epreuveId,
     );
     this.index.modifier((lignes) =>
-      lignes.map((courante) => (courante.id === competitionId ? { ...courante, piloteAppareil, piloteNom } : courante)),
+      lignes.map((courante) => (courante.id === epreuveId ? { ...courante, piloteAppareil, piloteNom } : courante)),
     );
   }
 
-  /** US-022 CA-4 : index des compétitions du club, les plus récemment modifiées d'abord. */
-  async listerCompetitions(): Promise<CompetitionIndexee[]> {
+  /** US-022 CA-4 : index des épreuves du club, les plus récemment modifiées d'abord. */
+  async listerEpreuves(): Promise<EpreuveIndexee[]> {
     return [...this.lignesIndex()];
   }
 
   /** Lecture synchrone de l'index : aucune autre requête ne s'intercale avant l'écriture qui suit. */
-  private lignesIndex(): readonly CompetitionIndexee[] {
+  private lignesIndex(): readonly EpreuveIndexee[] {
     return this.index.obtenir();
   }
 
@@ -588,100 +595,104 @@ export class Club extends DurableObject<Env> {
   }
 
   /**
-   * US-023 CA-5 : supprime une manifestation vide. Une compétition de l'index qui s'y rattache l'en empêche (les
+   * US-023 CA-5 : supprime une manifestation vide. Une épreuve de l'index qui s'y rattache l'en empêche (les
    * lignes d'avant US-025, sans rattachement, ne comptent pas).
    */
   async supprimerManifestation(
     id: string,
   ): Promise<{ ok: true } | { ok: false; erreur: 'MANIFESTATION_INCONNUE' | 'MANIFESTATION_NON_VIDE' }> {
     if (!this.lireManifestation(id)) return { ok: false, erreur: 'MANIFESTATION_INCONNUE' };
-    const competitions = this.lignesIndex().map(({ rattachement }) => ({ rattachement: rattachement ?? null }));
-    if (!estVide(id, competitions, await this.listerEpreuves())) return { ok: false, erreur: 'MANIFESTATION_NON_VIDE' };
+    const epreuves = this.lignesIndex().map(({ rattachement }) => ({ rattachement: rattachement ?? null }));
+    if (!estVide(id, epreuves, await this.listerCompetitions())) return { ok: false, erreur: 'MANIFESTATION_NON_VIDE' };
     this.ctx.storage.sql.exec('DELETE FROM manifestations WHERE id = ?', id);
     this.listeManifestations.invalider();
     return { ok: true };
   }
 
   /**
-   * US-042 : la manifestation existe-t-elle, et quelles compétitions de l'index s'y rattachent, directement ou par une de
-   * ses épreuves ? Le statut est celui du dernier résumé du pilote (ADR-0016 §3).
+   * US-042 : la manifestation existe-t-elle, et quelles épreuves de l'index s'y rattachent, directement ou par une de
+   * ses compétitions ? Le statut est celui du dernier résumé du pilote (ADR-0016 §3).
    */
-  async contenuManifestation(
-    manifestationId: string,
-  ): Promise<{ existe: boolean; competitions: CompetitionASupprimer[] }> {
-    const competitions = this.lignesIndex()
+  async contenuManifestation(manifestationId: string): Promise<{ existe: boolean; epreuves: EpreuveASupprimer[] }> {
+    const epreuves = this.lignesIndex()
       .filter(({ rattachement }) => rattachement?.manifestationId === manifestationId)
       .map(({ id, nom, statut }) => ({ id, nom, statut }));
-    return { existe: this.lireManifestation(manifestationId) !== null, competitions };
+    return { existe: this.lireManifestation(manifestationId) !== null, epreuves };
   }
 
   /**
-   * US-042 : retire la manifestation et ses épreuves, une fois ses compétitions supprimées. Refusée si une compétition
+   * US-042 : retire la manifestation et ses compétitions, une fois ses épreuves supprimées. Refusée si une épreuve
    * s'y rattache encore (rattachée entre-temps par un PC hors ligne) : la requête suivante la prendra. Une manifestation
    * inconnue donne un succès sans effet.
    */
-  async supprimerManifestationEtEpreuves(
+  async supprimerManifestationEtCompetitions(
     manifestationId: string,
   ): Promise<{ ok: true } | { ok: false; erreur: 'MANIFESTATION_NON_VIDE' }> {
     if (!this.lireManifestation(manifestationId)) return { ok: true };
     if (this.lignesIndex().some(({ rattachement }) => rattachement?.manifestationId === manifestationId)) {
       return { ok: false, erreur: 'MANIFESTATION_NON_VIDE' };
     }
-    this.ctx.storage.sql.exec('DELETE FROM epreuves WHERE manifestation_id = ?', manifestationId);
-    this.listeEpreuves.invalider();
+    this.ctx.storage.sql.exec('DELETE FROM competitions WHERE manifestation_id = ?', manifestationId);
+    this.listeCompetitions.invalider();
     this.ctx.storage.sql.exec('DELETE FROM manifestations WHERE id = ?', manifestationId);
     this.listeManifestations.invalider();
     return { ok: true };
   }
 
-  /** US-024 CA-1 : épreuves du club, regroupées par manifestation. */
-  async listerEpreuves(): Promise<Epreuve[]> {
-    return [...this.listeEpreuves.obtenir()];
+  /** US-024 CA-1 : compétitions du club, regroupées par manifestation. */
+  async listerCompetitions(): Promise<Competition[]> {
+    return [...this.listeCompetitions.obtenir()];
   }
 
-  /** US-024 CA-1 et CA-2 : enregistre une nouvelle épreuve, en version 1, dans une manifestation existante. */
-  async creerEpreuve(
-    donnees: DonneesEpreuve,
+  /** US-024 CA-1 et CA-2 : enregistre une nouvelle compétition, en version 1, dans une manifestation existante. */
+  async creerCompetition(
+    donnees: DonneesCompetition,
     auteur: string,
-  ): Promise<{ ok: true; epreuve: Epreuve } | { ok: false; erreur: 'MANIFESTATION_INCONNUE' }> {
+  ): Promise<{ ok: true; competition: Competition } | { ok: false; erreur: 'MANIFESTATION_INCONNUE' }> {
     if (!this.lireManifestation(donnees.manifestationId)) return { ok: false, erreur: 'MANIFESTATION_INCONNUE' };
-    const epreuve = { id: crypto.randomUUID(), ...donnees, version: 1, modifieeLe: Date.now(), modifieePar: auteur };
+    const competition = {
+      id: crypto.randomUUID(),
+      ...donnees,
+      version: 1,
+      modifieeLe: Date.now(),
+      modifieePar: auteur,
+    };
     this.ctx.storage.sql.exec(
-      'INSERT INTO epreuves (id, club_id, manifestation_id, contenu, version) VALUES (?, ?, ?, ?, ?)',
-      epreuve.id,
+      'INSERT INTO competitions (id, club_id, manifestation_id, contenu, version) VALUES (?, ?, ?, ?, ?)',
+      competition.id,
       this.env.CLUB_ID,
-      epreuve.manifestationId,
-      JSON.stringify(epreuve),
-      epreuve.version,
+      competition.manifestationId,
+      JSON.stringify(competition),
+      competition.version,
     );
-    this.listeEpreuves.invalider();
-    return { ok: true, epreuve };
+    this.listeCompetitions.invalider();
+    return { ok: true, competition };
   }
 
-  private lireEpreuve(id: string): Epreuve | null {
+  private lireCompetition(id: string): Competition | null {
     const ligne = this.ctx.storage.sql
-      .exec<{ contenu: string }>('SELECT contenu FROM epreuves WHERE id = ?', id)
+      .exec<{ contenu: string }>('SELECT contenu FROM competitions WHERE id = ?', id)
       .toArray()[0];
-    return ligne ? (JSON.parse(ligne.contenu) as Epreuve) : null;
+    return ligne ? (JSON.parse(ligne.contenu) as Competition) : null;
   }
 
   /**
    * US-024 CA-3 : remplace nom, arme et commentaire si la demande part de la version courante ; sinon, refus avec la
-   * version courante. La manifestation ne change pas, et les compétitions rattachées non plus.
+   * version courante. La manifestation ne change pas, et les épreuves rattachées non plus.
    */
-  async modifierEpreuve(
+  async modifierCompetition(
     id: string,
-    { version, ...donnees }: DemandeModificationEpreuve,
+    { version, ...donnees }: DemandeModificationCompetition,
     auteur: string,
   ): Promise<
-    | { ok: true; epreuve: Epreuve }
-    | { ok: false; erreur: 'EPREUVE_INCONNUE' }
-    | { ok: false; erreur: 'MODIFIEE_ENTRE_TEMPS'; epreuve: Epreuve }
+    | { ok: true; competition: Competition }
+    | { ok: false; erreur: 'COMPETITION_INCONNUE' }
+    | { ok: false; erreur: 'MODIFIEE_ENTRE_TEMPS'; competition: Competition }
   > {
-    const courante = this.lireEpreuve(id);
-    if (!courante) return { ok: false, erreur: 'EPREUVE_INCONNUE' };
-    if (courante.version !== version) return { ok: false, erreur: 'MODIFIEE_ENTRE_TEMPS', epreuve: courante };
-    const epreuve = {
+    const courante = this.lireCompetition(id);
+    if (!courante) return { ok: false, erreur: 'COMPETITION_INCONNUE' };
+    if (courante.version !== version) return { ok: false, erreur: 'MODIFIEE_ENTRE_TEMPS', competition: courante };
+    const competition = {
       id,
       manifestationId: courante.manifestationId,
       ...donnees,
@@ -690,24 +701,24 @@ export class Club extends DurableObject<Env> {
       modifieePar: auteur,
     };
     this.ctx.storage.sql.exec(
-      'UPDATE epreuves SET contenu = ?, version = ? WHERE id = ?',
-      JSON.stringify(epreuve),
-      epreuve.version,
+      'UPDATE competitions SET contenu = ?, version = ? WHERE id = ?',
+      JSON.stringify(competition),
+      competition.version,
       id,
     );
-    this.listeEpreuves.invalider();
-    return { ok: true, epreuve };
+    this.listeCompetitions.invalider();
+    return { ok: true, competition };
   }
 
-  /** US-024 CA-5 : supprime une épreuve vide. Une compétition de l'index qui s'y rattache l'en empêche. */
-  async supprimerEpreuve(
+  /** US-024 CA-5 : supprime une compétition vide. Une épreuve de l'index qui s'y rattache l'en empêche. */
+  async supprimerCompetition(
     id: string,
-  ): Promise<{ ok: true } | { ok: false; erreur: 'EPREUVE_INCONNUE' | 'EPREUVE_NON_VIDE' }> {
-    if (!this.lireEpreuve(id)) return { ok: false, erreur: 'EPREUVE_INCONNUE' };
-    const competitions = this.lignesIndex().map(({ rattachement }) => ({ rattachement: rattachement ?? null }));
-    if (!estVideEpreuve(id, competitions)) return { ok: false, erreur: 'EPREUVE_NON_VIDE' };
-    this.ctx.storage.sql.exec('DELETE FROM epreuves WHERE id = ?', id);
-    this.listeEpreuves.invalider();
+  ): Promise<{ ok: true } | { ok: false; erreur: 'COMPETITION_INCONNUE' | 'COMPETITION_NON_VIDE' }> {
+    if (!this.lireCompetition(id)) return { ok: false, erreur: 'COMPETITION_INCONNUE' };
+    const epreuves = this.lignesIndex().map(({ rattachement }) => ({ rattachement: rattachement ?? null }));
+    if (!estVideCompetition(id, epreuves)) return { ok: false, erreur: 'COMPETITION_NON_VIDE' };
+    this.ctx.storage.sql.exec('DELETE FROM competitions WHERE id = ?', id);
+    this.listeCompetitions.invalider();
     return { ok: true };
   }
 

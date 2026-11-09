@@ -1,9 +1,9 @@
-// Sélection pour la suppression par lot (US-043) : l'administrateur coche des manifestations, des épreuves et des
-// compétitions de la liste du club. Règles pures : ce qui se coche, ce que couvre un parent coché, le décompte par type
+// Sélection pour la suppression par lot (US-043) : l'administrateur coche des manifestations, des compétitions et des
+// épreuves de la liste du club. Règles pures : ce qui se coche, ce que couvre un parent coché, le décompte par type
 // et l'ordre de suppression. L'application s'en sert pour l'écran et pour enchaîner les requêtes.
-import type { CompetitionListee, DonneesListe, EpreuveListee, ManifestationListee } from './liste';
+import type { EpreuveListee, DonneesListe, CompetitionListee, ManifestationListee } from './liste';
 
-export type TypeElement = 'manifestation' | 'epreuve' | 'competition';
+export type TypeElement = 'manifestation' | 'competition' | 'epreuve';
 
 /** CA-1 : pourquoi un élément ne se coche pas. */
 export type MotifNonCochable = 'EN_COURS' | 'INCONNU';
@@ -16,30 +16,30 @@ export interface ElementASupprimer {
 
 export interface Decompte {
   manifestations: number;
-  epreuves: number;
   competitions: number;
+  epreuves: number;
 }
 
 export interface AnalyseSelection {
   /** CA-4 : les éléments cochés directement, c'est-à-dire que ni un parent coché ne couvre, ni leur état ne bloque. */
-  directs: { manifestations: ElementASupprimer[]; epreuves: ElementASupprimer[]; competitions: ElementASupprimer[] };
+  directs: { manifestations: ElementASupprimer[]; competitions: ElementASupprimer[]; epreuves: ElementASupprimer[] };
   /** CA-2 : les éléments couverts par un parent coché (cochés ou non), avec le nom de ce parent ; leur case est verrouillée. */
   verrouillees: Map<string, string>;
   /** CA-2 : tout ce qui sera supprimé, contenu des parents compris. */
   decompte: Decompte;
-  /** CA-3 : compétitions archivées que la liste masque et qui partent avec leur parent coché. */
+  /** CA-3 : épreuves archivées que la liste masque et qui partent avec leur parent coché. */
   archiveesMasquees: number;
 }
 
-/** Les liens de parenté de la liste : une compétition dépend d'une épreuve, sinon d'une manifestation, sinon de personne. */
+/** Les liens de parenté de la liste : une épreuve dépend d'une compétition, sinon d'une manifestation, sinon de personne. */
 interface Arbre {
   manifestations: Map<string, ManifestationListee>;
-  epreuves: Map<string, EpreuveListee>;
   competitions: Map<string, CompetitionListee>;
-  epreuvesDe: Map<string, EpreuveListee[]>;
-  /** Compétitions rattachées à une épreuve, ou directement à une manifestation (clé : identifiant du parent). */
+  epreuves: Map<string, EpreuveListee>;
   competitionsDe: Map<string, CompetitionListee[]>;
-  /** Identifiants de parents qui contiennent une compétition en cours. */
+  /** Épreuves rattachées à une compétition, ou directement à une manifestation (clé : identifiant du parent). */
+  epreuvesDe: Map<string, EpreuveListee[]>;
+  /** Identifiants de parents qui contiennent une épreuve en cours. */
   enCours: Set<string>;
 }
 
@@ -49,70 +49,71 @@ function ajouter<T>(index: Map<string, T[]>, cle: string, valeur: T) {
   else index.set(cle, [valeur]);
 }
 
-/** Même règle que la liste : une épreuve d'une autre manifestation ne compte pas, la compétition dépend alors de sa manifestation. */
-function parentDe(competition: CompetitionListee, arbre: Pick<Arbre, 'manifestations' | 'epreuves'>): string | null {
-  const { rattachement } = competition;
+/** Même règle que la liste : une compétition d'une autre manifestation ne compte pas, l’épreuve dépend alors de sa manifestation. */
+function parentDe(epreuve: EpreuveListee, arbre: Pick<Arbre, 'manifestations' | 'competitions'>): string | null {
+  const { rattachement } = epreuve;
   if (!rattachement || !arbre.manifestations.has(rattachement.manifestationId)) return null;
-  const epreuve = rattachement.epreuveId ? arbre.epreuves.get(rattachement.epreuveId) : undefined;
-  return epreuve?.manifestationId === rattachement.manifestationId ? epreuve.id : rattachement.manifestationId;
+  const competition = rattachement.competitionId ? arbre.competitions.get(rattachement.competitionId) : undefined;
+  return competition?.manifestationId === rattachement.manifestationId ? competition.id : rattachement.manifestationId;
 }
 
-function construireArbre({ manifestations, epreuves, competitions }: DonneesListe): Arbre {
+function construireArbre({ manifestations, competitions, epreuves }: DonneesListe): Arbre {
   const arbre: Arbre = {
     manifestations: new Map(manifestations.map((m) => [m.id, m])),
-    epreuves: new Map(epreuves.map((e) => [e.id, e])),
-    competitions: new Map(competitions.map((c) => [c.id, c])),
-    epreuvesDe: new Map(),
+    competitions: new Map(competitions.map((e) => [e.id, e])),
+    epreuves: new Map(epreuves.map((c) => [c.id, c])),
     competitionsDe: new Map(),
+    epreuvesDe: new Map(),
     enCours: new Set(),
   };
-  for (const epreuve of arbre.epreuves.values()) {
-    if (arbre.manifestations.has(epreuve.manifestationId)) ajouter(arbre.epreuvesDe, epreuve.manifestationId, epreuve);
-  }
   for (const competition of arbre.competitions.values()) {
-    const parent = parentDe(competition, arbre);
+    if (arbre.manifestations.has(competition.manifestationId))
+      ajouter(arbre.competitionsDe, competition.manifestationId, competition);
+  }
+  for (const epreuve of arbre.epreuves.values()) {
+    const parent = parentDe(epreuve, arbre);
     if (parent === null) continue;
-    ajouter(arbre.competitionsDe, parent, competition);
-    if (competition.statut !== 'enCours') continue;
+    ajouter(arbre.epreuvesDe, parent, epreuve);
+    if (epreuve.statut !== 'enCours') continue;
     arbre.enCours.add(parent);
-    const epreuve = arbre.epreuves.get(parent);
-    if (epreuve) arbre.enCours.add(epreuve.manifestationId);
+    const competition = arbre.competitions.get(parent);
+    if (competition) arbre.enCours.add(competition.manifestationId);
   }
   return arbre;
 }
 
-/** Les compétitions qu'emporte un parent : les siennes, et pour une manifestation celles de ses épreuves. */
-function contenuDe(arbre: Arbre, id: string): { epreuves: EpreuveListee[]; competitions: CompetitionListee[] } {
-  const epreuves = arbre.epreuvesDe.get(id) ?? [];
-  const competitions = [
-    ...(arbre.competitionsDe.get(id) ?? []),
-    ...epreuves.flatMap(({ id: epreuveId }) => arbre.competitionsDe.get(epreuveId) ?? []),
+/** Les épreuves qu'emporte un parent : les siennes, et pour une manifestation celles de ses compétitions. */
+function contenuDe(arbre: Arbre, id: string): { competitions: CompetitionListee[]; epreuves: EpreuveListee[] } {
+  const competitions = arbre.competitionsDe.get(id) ?? [];
+  const epreuves = [
+    ...(arbre.epreuvesDe.get(id) ?? []),
+    ...competitions.flatMap(({ id: competitionId }) => arbre.epreuvesDe.get(competitionId) ?? []),
   ];
-  return { epreuves, competitions };
+  return { competitions, epreuves };
 }
 
 function motif(arbre: Arbre, id: string): MotifNonCochable | null {
-  const competition = arbre.competitions.get(id);
-  if (competition) return competition.statut === 'enCours' ? 'EN_COURS' : null;
-  if (arbre.manifestations.has(id) || arbre.epreuves.has(id)) return arbre.enCours.has(id) ? 'EN_COURS' : null;
+  const epreuve = arbre.epreuves.get(id);
+  if (epreuve) return epreuve.statut === 'enCours' ? 'EN_COURS' : null;
+  if (arbre.manifestations.has(id) || arbre.competitions.has(id)) return arbre.enCours.has(id) ? 'EN_COURS' : null;
   return 'INCONNU';
 }
 
-/** CA-1 : une compétition en cours, ou un parent qui en contient une, ne se coche pas ; null si la case est libre. */
+/** CA-1 : une épreuve en cours, ou un parent qui en contient une, ne se coche pas ; null si la case est libre. */
 export function motifNonCochable(donnees: DonneesListe, id: string): MotifNonCochable | null {
   return motif(construireArbre(donnees), id);
 }
 
 /**
- * CA-3 : « Tout cocher » prend tout ce que la liste montre et qui est supprimable. Les compétitions archivées ne sont
+ * CA-3 : « Tout cocher » prend tout ce que la liste montre et qui est supprimable. Les épreuves archivées ne sont
  * prises que si la liste les affiche ; leurs parents cochés les emportent de toute façon, et la confirmation le dit.
  */
 export function toutCocherListe(donnees: DonneesListe, afficherArchives: boolean): Set<string> {
   const arbre = construireArbre(donnees);
   const cochables = [
     ...arbre.manifestations.keys(),
-    ...arbre.epreuves.keys(),
-    ...[...arbre.competitions.values()]
+    ...arbre.competitions.keys(),
+    ...[...arbre.epreuves.values()]
       .filter(({ statut }) => afficherArchives || statut !== 'archivee')
       .map(({ id }) => id),
   ];
@@ -131,17 +132,17 @@ export function analyserSelection(
   const arbre = construireArbre(donnees);
   const cochees = new Set([...selection].filter((id) => motif(arbre, id) === null));
   const analyse: AnalyseSelection = {
-    directs: { manifestations: [], epreuves: [], competitions: [] },
+    directs: { manifestations: [], competitions: [], epreuves: [] },
     verrouillees: new Map(),
-    decompte: { manifestations: 0, epreuves: 0, competitions: 0 },
+    decompte: { manifestations: 0, competitions: 0, epreuves: 0 },
     archiveesMasquees: 0,
   };
   const supprimees = new Set<string>();
-  const compter = (competition: CompetitionListee, parentCoche: boolean) => {
-    if (supprimees.has(competition.id)) return;
-    supprimees.add(competition.id);
-    analyse.decompte.competitions++;
-    if (parentCoche && !afficherArchives && competition.statut === 'archivee') analyse.archiveesMasquees++;
+  const compter = (epreuve: EpreuveListee, parentCoche: boolean) => {
+    if (supprimees.has(epreuve.id)) return;
+    supprimees.add(epreuve.id);
+    analyse.decompte.epreuves++;
+    if (parentCoche && !afficherArchives && epreuve.statut === 'archivee') analyse.archiveesMasquees++;
   };
   const verrouiller = (id: string, parent: string) => {
     if (!analyse.verrouillees.has(id)) analyse.verrouillees.set(id, parent);
@@ -151,45 +152,45 @@ export function analyserSelection(
     if (!cochees.has(manifestation.id)) continue;
     analyse.directs.manifestations.push({ type: 'manifestation', id: manifestation.id, nom: manifestation.nom });
     analyse.decompte.manifestations++;
-    const { epreuves, competitions } = contenuDe(arbre, manifestation.id);
-    for (const epreuve of epreuves) {
-      analyse.decompte.epreuves++;
-      verrouiller(epreuve.id, manifestation.nom);
-    }
+    const { competitions, epreuves } = contenuDe(arbre, manifestation.id);
     for (const competition of competitions) {
-      compter(competition, true);
+      analyse.decompte.competitions++;
       verrouiller(competition.id, manifestation.nom);
     }
-  }
-  for (const epreuve of arbre.epreuves.values()) {
-    if (!cochees.has(epreuve.id) || analyse.verrouillees.has(epreuve.id)) continue;
-    analyse.directs.epreuves.push({ type: 'epreuve', id: epreuve.id, nom: epreuve.nom });
-    analyse.decompte.epreuves++;
-    for (const competition of arbre.competitionsDe.get(epreuve.id) ?? []) {
-      compter(competition, true);
-      verrouiller(competition.id, epreuve.nom);
+    for (const epreuve of epreuves) {
+      compter(epreuve, true);
+      verrouiller(epreuve.id, manifestation.nom);
     }
   }
   for (const competition of arbre.competitions.values()) {
     if (!cochees.has(competition.id) || analyse.verrouillees.has(competition.id)) continue;
     analyse.directs.competitions.push({ type: 'competition', id: competition.id, nom: competition.nom });
-    compter(competition, false);
+    analyse.decompte.competitions++;
+    for (const epreuve of arbre.epreuvesDe.get(competition.id) ?? []) {
+      compter(epreuve, true);
+      verrouiller(epreuve.id, competition.nom);
+    }
+  }
+  for (const epreuve of arbre.epreuves.values()) {
+    if (!cochees.has(epreuve.id) || analyse.verrouillees.has(epreuve.id)) continue;
+    analyse.directs.epreuves.push({ type: 'epreuve', id: epreuve.id, nom: epreuve.nom });
+    compter(epreuve, false);
   }
   return analyse;
 }
 
-/** CA-5 : l'ordre de suppression, chaque élément une seule fois : manifestations, puis épreuves, puis compétitions. */
+/** CA-5 : l'ordre de suppression, chaque élément une seule fois : manifestations, puis compétitions, puis épreuves. */
 export function planSuppression({ directs }: AnalyseSelection): ElementASupprimer[] {
-  return [...directs.manifestations, ...directs.epreuves, ...directs.competitions];
+  return [...directs.manifestations, ...directs.competitions, ...directs.epreuves];
 }
 
 /**
- * CA-1 : les compétitions en cours et les parents qui en contiennent, calculés d'un coup pour toute la liste (l'écran
+ * CA-1 : les épreuves en cours et les parents qui en contiennent, calculés d'un coup pour toute la liste (l'écran
  * le consulte à chaque case, il ne doit pas reconstruire l'arbre à chaque fois).
  */
 export function elementsEnCours(donnees: DonneesListe): Set<string> {
   const arbre = construireArbre(donnees);
   const ids = new Set(arbre.enCours);
-  for (const { id, statut } of arbre.competitions.values()) if (statut === 'enCours') ids.add(id);
+  for (const { id, statut } of arbre.epreuves.values()) if (statut === 'enCours') ids.add(id);
   return ids;
 }

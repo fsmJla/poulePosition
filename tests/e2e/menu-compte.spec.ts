@@ -36,7 +36,7 @@ test('US-017 CA-2 : le menu montre l’avatar, le nom, l’e-mail, puis les troi
 
   await boutonMenuCompte(page).click();
   await menu(page).getByRole('button', { name: 'Se déconnecter et oublier cet appareil' }).click();
-  await expect(page.getByText('Les compétitions enregistrées sur cet appareil sont conservées.')).toBeVisible();
+  await expect(page.getByText('Les épreuves enregistrées sur cet appareil sont conservées.')).toBeVisible();
   await page.getByRole('button', { name: 'Annuler' }).click();
 
   await boutonMenuCompte(page).click();

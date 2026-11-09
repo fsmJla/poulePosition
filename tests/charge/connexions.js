@@ -1,4 +1,4 @@
-// Test de charge k6 : N clients WebSocket connectés à une compétition (pic attendu : 150, exigences §6).
+// Test de charge k6 : N clients WebSocket connectés à une épreuve (pic attendu : 150, exigences §6).
 // JAMAIS lancé automatiquement : uniquement à la main, avec l'utilisateur (/test-charge), contre la PREVIEW.
 //
 //   npm run test:charge                                (preview, 150 clients, palier de 2 min)
@@ -33,11 +33,11 @@ export const options = {
 };
 
 export default function () {
-  const url = `${URL_SERVEUR}/competitions/charge/connexion`;
+  const url = `${URL_SERVEUR}/epreuves/charge/connexion`;
   const reponse = ws.connect(url, { headers: { Origin: ORIGINE } }, (socket) => {
     socket.on('message', (message) => {
       const contenu = JSON.parse(message);
-      if (contenu.type === 'bienvenue') check(contenu, { 'bienvenue reçu': (c) => c.competitionId === 'charge' });
+      if (contenu.type === 'bienvenue') check(contenu, { 'bienvenue reçu': (c) => c.epreuveId === 'charge' });
     });
     // Ping de maintien, comme l'application (texte exact du protocole).
     socket.setInterval(() => socket.send('{"v":1,"type":"ping"}'), 30_000);

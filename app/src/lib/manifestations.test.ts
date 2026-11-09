@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it, vi } from 'vitest';
-import type { CompetitionRattachee } from '@poule-position/domaine';
+import type { EpreuveRattachee } from '@poule-position/domaine';
 import type { Manifestation } from '@poule-position/protocole';
 import { creerClientManifestations, saisieDe, saisieVide, type SaisieManifestation } from './manifestations';
 
@@ -54,7 +54,7 @@ function client(
     urlServeur: URL_SERVEUR,
     nomBase: `test-${crypto.randomUUID()}`,
     jeton: async () => 'jeton',
-    competitions: async () => [],
+    epreuves: async () => [],
     envoyer: serveur.envoyer,
     enLigne: () => true,
     maintenant: () => MAINTENANT,
@@ -62,11 +62,11 @@ function client(
   });
 }
 
-const rattachee = (champs: Partial<CompetitionRattachee> = {}): CompetitionRattachee => ({
+const rattachee = (champs: Partial<EpreuveRattachee> = {}): EpreuveRattachee => ({
   id: 'c1',
   nom: 'Sabre M13',
   date: '2027-03-15',
-  rattachement: { manifestationId: 'm1', epreuveId: null },
+  rattachement: { manifestationId: 'm1', competitionId: null },
   ...champs,
 });
 
@@ -112,14 +112,14 @@ describe('manifestations côté application (US-023)', () => {
     expect(serveur.requetes).toHaveLength(0);
   });
 
-  it('CA-4 : la modification est refusée en citant les compétitions hors des nouvelles dates', async () => {
+  it('CA-4 : la modification est refusée en citant les épreuves hors des nouvelles dates', async () => {
     const serveur = fauxServeur({});
-    const competitions = async () => [rattachee(), rattachee({ id: 'c2', nom: 'Épée M15', date: '2027-03-14' })];
-    const resultat = await client(serveur, { competitions }).modifier(
+    const epreuves = async () => [rattachee(), rattachee({ id: 'c2', nom: 'Épée M15', date: '2027-03-14' })];
+    const resultat = await client(serveur, { epreuves }).modifier(
       manifestation(),
       saisie({ debut: '2027-03-14', fin: '2027-03-14' }),
     );
-    expect(resultat).toEqual({ ok: false, erreur: 'COMPETITIONS_HORS_DATES', competitions: [rattachee()] });
+    expect(resultat).toEqual({ ok: false, erreur: 'EPREUVES_HORS_DATES', epreuves: [rattachee()] });
     expect(serveur.requetes).toHaveLength(0);
   });
 

@@ -1,6 +1,6 @@
-// Liste du club (US-026) : manifestations avec leurs épreuves et leurs compétitions, puis compétitions isolées. Logique
-// pure : l'application fournit les données (index du club, copies hors ligne, compétitions locales) déjà fusionnées.
-import type { Arme, Rattachement, Sexe, Statut } from './competition';
+// Liste du club (US-026) : manifestations avec leurs compétitions et leurs épreuves, puis épreuves isolées. Logique
+// pure : l'application fournit les données (index du club, copies hors ligne, épreuves locales) déjà fusionnées.
+import type { Arme, Rattachement, Sexe, Statut } from './epreuve';
 
 export interface ManifestationListee {
   id: string;
@@ -11,15 +11,15 @@ export interface ManifestationListee {
   lieu: string | null;
 }
 
-export interface EpreuveListee {
+export interface CompetitionListee {
   id: string;
   manifestationId: string;
   nom: string;
   arme: Arme | null;
 }
 
-/** Une compétition de la liste : son résumé, si ce PC en est le pilote, et si le serveur l'a déjà reçue. */
-export interface CompetitionListee {
+/** Une épreuve de la liste : son résumé, si ce PC en est le pilote, et si le serveur l'a déjà reçue. */
+export interface EpreuveListee {
   id: string;
   nom: string;
   arme: Arme;
@@ -31,42 +31,42 @@ export interface CompetitionListee {
   rattachement: Rattachement | null;
   /** CA-2 : vrai si ce PC est le pilote. */
   pilote: boolean;
-  /** Cas limite : compétition locale dont rien n'est encore parvenu au serveur. */
+  /** Cas limite : épreuve locale dont rien n'est encore parvenu au serveur. */
   nonEnvoyee: boolean;
 }
 
-export interface NoeudEpreuve {
-  epreuve: EpreuveListee;
-  competitions: CompetitionListee[];
+export interface NoeudCompetition {
+  competition: CompetitionListee;
+  epreuves: EpreuveListee[];
 }
 
 export interface NoeudManifestation {
   manifestation: ManifestationListee;
-  epreuves: NoeudEpreuve[];
-  /** Compétitions rattachées à la manifestation sans épreuve. */
-  competitions: CompetitionListee[];
+  competitions: NoeudCompetition[];
+  /** Épreuves rattachées à la manifestation sans compétition. */
+  epreuves: EpreuveListee[];
 }
 
 export interface ListeClub {
   manifestations: NoeudManifestation[];
-  /** Compétitions isolées (et celles dont la manifestation est inconnue de cet appareil). */
-  isolees: CompetitionListee[];
-  /** CA-3 : nombre de compétitions archivées que la liste ne montre pas. */
+  /** Épreuves isolées (et celles dont la manifestation est inconnue de cet appareil). */
+  isolees: EpreuveListee[];
+  /** CA-3 : nombre d’épreuves archivées que la liste ne montre pas. */
   archivesMasquees: number;
-  /** CA-6 : vrai si le club n'a ni manifestation ni compétition (archivées comprises). */
+  /** CA-6 : vrai si le club n'a ni manifestation ni épreuve (archivées comprises). */
   vide: boolean;
 }
 
 export interface DonneesListe {
   manifestations: readonly ManifestationListee[];
-  epreuves: readonly EpreuveListee[];
   competitions: readonly CompetitionListee[];
+  epreuves: readonly EpreuveListee[];
 }
 
 const comparer = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
-/** CA-1 : par date croissante, les compétitions sans date en dernier, puis par nom et identifiant. */
-function parDate(a: CompetitionListee, b: CompetitionListee): number {
+/** CA-1 : par date croissante, les épreuves sans date en dernier, puis par nom et identifiant. */
+function parDate(a: EpreuveListee, b: EpreuveListee): number {
   if (a.date !== b.date) {
     if (a.date === null) return 1;
     if (b.date === null) return -1;
@@ -75,40 +75,42 @@ function parDate(a: CompetitionListee, b: CompetitionListee): number {
   return comparer(a.nom, b.nom) || comparer(a.id, b.id);
 }
 
-/** CA-1 à CA-3 et CA-6 : l'arborescence du club, triée, avec ou sans les compétitions archivées. */
+/** CA-1 à CA-3 et CA-6 : l'arborescence du club, triée, avec ou sans les épreuves archivées. */
 export function construireListe(
-  { manifestations, epreuves, competitions }: DonneesListe,
+  { manifestations, competitions, epreuves }: DonneesListe,
   { afficherArchives }: { afficherArchives: boolean },
 ): ListeClub {
-  const visibles = competitions.filter(({ statut }) => afficherArchives || statut !== 'archivee');
+  const visibles = epreuves.filter(({ statut }) => afficherArchives || statut !== 'archivee');
   const noeuds = new Map<string, NoeudManifestation>(
     [...manifestations]
       .sort((a, b) => comparer(a.debut, b.debut) || comparer(a.nom, b.nom) || comparer(a.id, b.id))
-      .map((manifestation) => [manifestation.id, { manifestation, epreuves: [], competitions: [] }]),
+      .map((manifestation) => [manifestation.id, { manifestation, competitions: [], epreuves: [] }]),
   );
-  const noeudsEpreuves = new Map<string, NoeudEpreuve>();
-  for (const epreuve of [...epreuves].sort((a, b) => comparer(a.nom, b.nom) || comparer(a.id, b.id))) {
-    const noeud = { epreuve, competitions: [] };
-    const parent = noeuds.get(epreuve.manifestationId);
+  const noeudsCompetitions = new Map<string, NoeudCompetition>();
+  for (const competition of [...competitions].sort((a, b) => comparer(a.nom, b.nom) || comparer(a.id, b.id))) {
+    const noeud = { competition, epreuves: [] };
+    const parent = noeuds.get(competition.manifestationId);
     if (!parent) continue;
-    parent.epreuves.push(noeud);
-    noeudsEpreuves.set(epreuve.id, noeud);
+    parent.competitions.push(noeud);
+    noeudsCompetitions.set(competition.id, noeud);
   }
-  const isolees: CompetitionListee[] = [];
-  for (const competition of [...visibles].sort(parDate)) {
-    const { rattachement } = competition;
+  const isolees: EpreuveListee[] = [];
+  for (const epreuve of [...visibles].sort(parDate)) {
+    const { rattachement } = epreuve;
     const parent = rattachement ? noeuds.get(rattachement.manifestationId) : undefined;
-    if (!rattachement || !parent) isolees.push(competition);
+    if (!rattachement || !parent) isolees.push(epreuve);
     else {
-      const epreuve = rattachement.epreuveId ? noeudsEpreuves.get(rattachement.epreuveId) : undefined;
-      (epreuve?.epreuve.manifestationId === parent.manifestation.id ? epreuve : parent).competitions.push(competition);
+      const competition = rattachement.competitionId ? noeudsCompetitions.get(rattachement.competitionId) : undefined;
+      (competition?.competition.manifestationId === parent.manifestation.id ? competition : parent).epreuves.push(
+        epreuve,
+      );
     }
   }
   return {
     manifestations: [...noeuds.values()],
     isolees,
-    archivesMasquees: competitions.length - visibles.length,
-    vide: manifestations.length === 0 && competitions.length === 0,
+    archivesMasquees: epreuves.length - visibles.length,
+    vide: manifestations.length === 0 && epreuves.length === 0,
   };
 }
 

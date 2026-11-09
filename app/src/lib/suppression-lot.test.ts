@@ -8,7 +8,7 @@ const element = (type: ElementASupprimer['type'], id: string): ElementASupprimer
   nom: `${type} ${id}`,
 });
 
-const actions = (reponses: Partial<Record<string, Awaited<ReturnType<ActionsLot['competition']>>>> = {}) => {
+const actions = (reponses: Partial<Record<string, Awaited<ReturnType<ActionsLot['epreuve']>>>> = {}) => {
   const appels: string[] = [];
   const faire = (type: string) => async (id: string) => {
     appels.push(`${type}:${id}`);
@@ -16,20 +16,20 @@ const actions = (reponses: Partial<Record<string, Awaited<ReturnType<ActionsLot[
   };
   const lot: ActionsLot = {
     manifestation: faire('manifestation'),
-    epreuve: faire('epreuve'),
     competition: faire('competition'),
+    epreuve: faire('epreuve'),
   };
   return { appels, lot };
 };
 
-const plan = [element('manifestation', 'M1'), element('epreuve', 'E1'), element('competition', 'c1')];
+const plan = [element('manifestation', 'M1'), element('competition', 'E1'), element('epreuve', 'c1')];
 
 describe('suppression en série de tous types (US-043)', () => {
   it('US-043 CA-5 : chaque élément est supprimé par la route de son type, dans l’ordre du plan, avec la progression', async () => {
     const { appels, lot } = actions();
     const progression: [number, number][] = [];
     const compte = await supprimerSerieMixte(plan, lot, (faites, total) => progression.push([faites, total]));
-    expect(appels).toEqual(['manifestation:M1', 'epreuve:E1', 'competition:c1']);
+    expect(appels).toEqual(['manifestation:M1', 'competition:E1', 'epreuve:c1']);
     expect(compte).toEqual({ supprimes: plan, restants: [], interrompue: null });
     expect(progression).toEqual([
       [1, 3],
@@ -39,11 +39,11 @@ describe('suppression en série de tous types (US-043)', () => {
   });
 
   it('US-043 CA-6 : un refus laisse l’élément restant, avec son motif, et la série continue', async () => {
-    const { appels, lot } = actions({ E1: { ok: false, erreur: 'COMPETITION_EN_COURS' } });
+    const { appels, lot } = actions({ E1: { ok: false, erreur: 'EPREUVE_EN_COURS' } });
     const compte = await supprimerSerieMixte(plan, lot);
     expect(appels).toHaveLength(3);
     expect(compte.supprimes).toEqual([plan[0], plan[2]]);
-    expect(compte.restants).toEqual([{ element: plan[1], erreur: 'COMPETITION_EN_COURS' }]);
+    expect(compte.restants).toEqual([{ element: plan[1], erreur: 'EPREUVE_EN_COURS' }]);
     expect(compte.interrompue).toBeNull();
   });
 
@@ -63,7 +63,7 @@ describe('suppression en série de tous types (US-043)', () => {
   });
 
   it('US-043 cas limite : un élément déjà supprimé par un autre administrateur compte comme supprimé', async () => {
-    const inconnues = ['MANIFESTATION_INCONNUE', 'EPREUVE_INCONNUE', 'COMPETITION_SUPPRIMEE'] as const;
+    const inconnues = ['MANIFESTATION_INCONNUE', 'COMPETITION_INCONNUE', 'EPREUVE_SUPPRIMEE'] as const;
     const { lot } = actions({
       M1: { ok: false, erreur: inconnues[0] },
       E1: { ok: false, erreur: inconnues[1] },
@@ -74,7 +74,7 @@ describe('suppression en série de tous types (US-043)', () => {
   });
 
   it('US-043 : une série vide n’appelle rien', async () => {
-    const lot = { manifestation: vi.fn(), epreuve: vi.fn(), competition: vi.fn() };
+    const lot = { manifestation: vi.fn(), competition: vi.fn(), epreuve: vi.fn() };
     expect(await supprimerSerieMixte([], lot)).toEqual({ supprimes: [], restants: [], interrompue: null });
     expect(lot.manifestation).not.toHaveBeenCalled();
   });
@@ -82,7 +82,7 @@ describe('suppression en série de tous types (US-043)', () => {
 
 describe('décompte par type (US-043)', () => {
   it('US-043 CA-6 : le compte rendu compte les éléments de chaque type', () => {
-    expect(compterParType(plan)).toEqual({ manifestations: 1, epreuves: 1, competitions: 1 });
-    expect(compterParType([])).toEqual({ manifestations: 0, epreuves: 0, competitions: 0 });
+    expect(compterParType(plan)).toEqual({ manifestations: 1, competitions: 1, epreuves: 1 });
+    expect(compterParType([])).toEqual({ manifestations: 0, competitions: 0, epreuves: 0 });
   });
 });

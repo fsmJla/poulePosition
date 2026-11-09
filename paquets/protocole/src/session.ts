@@ -32,19 +32,19 @@ export const CODES_ERREUR_SESSION = [
   // Réplication du journal (US-022, §11).
   'SEQ_INATTENDU',
   'PAS_PILOTE',
-  'COMPETITION_INCONNUE',
+  'EPREUVE_INCONNUE',
   // Prise de main (US-029).
   'MAIN_DEJA_PRISE',
   // Manifestations (US-023, §12).
   'MANIFESTATION_INCONNUE',
   'MODIFIEE_ENTRE_TEMPS',
   'MANIFESTATION_NON_VIDE',
-  // Épreuves (US-024, §13).
-  'EPREUVE_INCONNUE',
-  'EPREUVE_NON_VIDE',
-  // Suppression définitive d'une compétition (US-039, §14).
-  'COMPETITION_EN_COURS',
-  'COMPETITION_SUPPRIMEE',
+  // Compétitions (US-024, §13).
+  'COMPETITION_INCONNUE',
+  'COMPETITION_NON_VIDE',
+  // Suppression définitive d'une épreuve (US-039, §14).
+  'EPREUVE_EN_COURS',
+  'EPREUVE_SUPPRIMEE',
 ] as const;
 
 export type CodeErreurSession = (typeof CODES_ERREUR_SESSION)[number];
@@ -59,7 +59,7 @@ export interface CompteConnecte {
   /** Couleur de l'avatar (US-016). */
   avatar: CouleurAvatar;
   /**
-   * Club du compte (US-025), gardé avec la session et l'appareil connu pour créer une compétition hors ligne. Absent
+   * Club du compte (US-025), gardé avec la session et l'appareil connu pour créer une épreuve hors ligne. Absent
    * d'une session ouverte auprès d'un serveur antérieur à US-025, jusqu'à sa revalidation en ligne.
    */
   clubId?: string;

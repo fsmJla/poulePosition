@@ -1,11 +1,11 @@
-// Suppression d'une épreuve ou d'une manifestation avec son contenu (US-041, US-042, docs/protocole.md §14) : le serveur
-// supprime un morceau des compétitions par requête et dit s'il en reste ; l'application enchaîne les requêtes.
+// Suppression d'une compétition ou d'une manifestation avec son contenu (US-041, US-042, docs/protocole.md §14) : le serveur
+// supprime un morceau des épreuves par requête et dit s'il en reste ; l'application enchaîne les requêtes.
 import { CODES_ERREUR_SESSION, type ErreurReponse } from './session';
 
 export type ReponseSuppressionContenu =
-  /** `supprimees` : compétitions supprimées par cette requête ; `restantes` : celles qui restent après elle. */
+  /** `supprimees` : épreuves supprimées par cette requête ; `restantes` : celles qui restent après elle. */
   | { ok: true; termine: boolean; supprimees: number; restantes: number }
-  /** `enCours` : noms des compétitions en cours qui bloquent la suppression (`COMPETITION_EN_COURS`). */
+  /** `enCours` : noms des épreuves en cours qui bloquent la suppression (`EPREUVE_EN_COURS`). */
   | { ok: false; erreur: ErreurReponse; enCours: string[] };
 
 const estEntier = (valeur: unknown): valeur is number => Number.isInteger(valeur) && (valeur as number) >= 0;

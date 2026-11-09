@@ -1,5 +1,5 @@
-// Formule d'une compétition (US-028) : trace des changements et confirmation en cours de compétition.
-import type { ModificationFormule, Statut } from './competition';
+// Formule d'une épreuve (US-028) : trace des changements et confirmation en cours d’épreuve.
+import type { ModificationFormule, Statut } from './epreuve';
 import type { Evenement } from './journal';
 
 /** Un changement de formule tel que le journal l'a enregistré (CA-6). */

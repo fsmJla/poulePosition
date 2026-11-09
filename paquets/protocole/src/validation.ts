@@ -23,11 +23,13 @@ export function estTexteOuNull(valeur: unknown): valeur is string | null {
   return valeur === null || typeof valeur === 'string';
 }
 
-/** Vrai pour le rattachement d'une compétition : null, ou `{ manifestationId, epreuveId }` (US-025). */
+/** Vrai pour le rattachement d'une épreuve : null, ou `{ manifestationId, competitionId }` (US-025). */
 export function estRattachement(brut: unknown): boolean {
   if (brut === null) return true;
-  const rattachement = aExactementLesChamps(brut, ['manifestationId', 'epreuveId']);
+  const rattachement = aExactementLesChamps(brut, ['manifestationId', 'competitionId']);
   return (
-    rattachement !== null && typeof rattachement.manifestationId === 'string' && estTexteOuNull(rattachement.epreuveId)
+    rattachement !== null &&
+    typeof rattachement.manifestationId === 'string' &&
+    estTexteOuNull(rattachement.competitionId)
   );
 }

@@ -1,8 +1,9 @@
 import 'fake-indexeddb/auto';
+import Dexie from 'dexie';
 import { describe, expect, it } from 'vitest';
 import { couleurParDefaut } from '@poule-position/domaine';
 import type { Session } from '@poule-position/protocole';
-import { ouvrirStockage, type AppareilConnu, type SessionLocale } from './stockage';
+import { Base, ouvrirStockage, type AppareilConnu, type SessionLocale } from './stockage';
 
 const session: Session = {
   jeton: 'a.b.c',
@@ -107,5 +108,54 @@ describe('avatar gardé sur l’appareil (US-016)', () => {
     delete compteAncien.avatar;
     await stockage.ecrireSession({ ...session, compte: compteAncien as typeof session.compte });
     expect((await ouvrirStockage(nom).lireSession())?.compte.avatar).toBe(couleurParDefaut(appareil.email));
+  });
+});
+
+describe('migration du stockage local vers le vocabulaire inversé (US-044, ADR-0021)', () => {
+  /** Une base telle que l'ancienne version (8) l'a laissée : journaux, session et appareil connu. */
+  async function ancienneBase(nom: string): Promise<void> {
+    const ancienne = new Dexie(nom);
+    ancienne.version(8).stores({
+      session: 'cle',
+      appareilConnu: 'email',
+      essaisLocaux: 'cle',
+      evenements: '[competitionId+seq]',
+      appareil: 'cle',
+      competitionsLocales: 'competitionId',
+      copieManifestations: 'cle',
+      copieEpreuves: 'cle',
+      copieIndex: 'cle',
+      ecartes: '++id, competitionId',
+    });
+    await ancienne
+      .table('session')
+      .put({ cle: 'courante', jeton: session.jeton, expireLe: session.expireLe, compte: session.compte });
+    await ancienne.table('appareilConnu').put(appareil);
+    await ancienne.table('evenements').put({ competitionId: 'c1', seq: 1, type: 'CompetitionCreee' });
+    await ancienne.table('competitionsLocales').put({ competitionId: 'c1' });
+    await ancienne.table('ecartes').add({ competitionId: 'c1' });
+    ancienne.close();
+  }
+
+  it('US-044 CA-6 : les journaux de l’ancienne version sont effacés et les magasins sont indexés par epreuveId', async () => {
+    const nom = `test-${crypto.randomUUID()}`;
+    await ancienneBase(nom);
+    const base = new Base(nom);
+    await base.open();
+    expect(await base.evenements.count()).toBe(0);
+    expect(base.evenements.schema.primKey.keyPath).toEqual(['epreuveId', 'seq']);
+    expect(base.epreuvesLocales.schema.primKey.keyPath).toBe('epreuveId');
+    expect(await base.epreuvesLocales.count()).toBe(0);
+    expect(base.ecartes.schema.idxByName['epreuveId']).toBeDefined();
+    expect(await base.ecartes.count()).toBe(0);
+    base.close();
+  });
+
+  it('US-044 CA-6 : la session et l’appareil connu sont conservés, l’utilisateur reste connecté', async () => {
+    const nom = `test-${crypto.randomUUID()}`;
+    await ancienneBase(nom);
+    const stockage = ouvrirStockage(nom);
+    expect(await stockage.lireSession()).toEqual(session);
+    expect(await stockage.lireAppareilConnu(appareil.email)).toEqual(appareil);
   });
 });

@@ -3,8 +3,8 @@ import {
   LONGUEUR_MIN_MOT_DE_PASSE,
   type Arme,
   type CouleurAvatar,
-  type ErreurCompetition,
   type ErreurEpreuve,
+  type ErreurCompetition,
   type ErreurManifestation,
   type ErreurNouveauMotDePasse,
   type Decompte,
@@ -12,11 +12,11 @@ import {
   type Role,
   type Sexe,
   type Statut,
-  type TypeCompetition,
+  type TypeEpreuve,
 } from '@poule-position/domaine';
-import type { ErreurCreation, ErreurModification } from './competitions';
+import type { ErreurCreation, ErreurModification } from './epreuves';
 import type { EtatConnexion } from './connexion';
-import type { ErreurEpreuves } from './epreuves';
+import type { ErreurCompetitions } from './competitions';
 import type { ErreurManifestations } from './manifestations';
 import type { ErreurLot } from './suppression';
 import type {
@@ -29,12 +29,12 @@ import type {
   MotifFinSession,
 } from './session';
 
-/** US-043 : « 1 manifestation, 3 épreuves, 12 compétitions » ; un type absent de la sélection n'est pas cité. */
-function decompteTexte({ manifestations, epreuves, competitions }: Decompte): string {
+/** US-043 : « 1 manifestation, 3 compétitions, 12 épreuves » ; un type absent de la sélection n'est pas cité. */
+function decompteTexte({ manifestations, competitions, epreuves }: Decompte): string {
   const parties = [
     manifestations > 0 ? `${manifestations} ${manifestations > 1 ? 'manifestations' : 'manifestation'}` : null,
-    epreuves > 0 ? `${epreuves} ${epreuves > 1 ? 'épreuves' : 'épreuve'}` : null,
     competitions > 0 ? `${competitions} ${competitions > 1 ? 'compétitions' : 'compétition'}` : null,
+    epreuves > 0 ? `${epreuves} ${epreuves > 1 ? 'épreuves' : 'épreuve'}` : null,
   ];
   return parties.filter((partie) => partie !== null).join(', ');
 }
@@ -85,7 +85,7 @@ export const textes = {
     oublier: {
       bouton: 'Se déconnecter et oublier cet appareil',
       avertissement:
-        'Votre session et votre mot de passe enregistré sur cet appareil seront effacés : vous ne pourrez plus vous y reconnecter hors ligne. Les compétitions enregistrées sur cet appareil sont conservées.',
+        'Votre session et votre mot de passe enregistré sur cet appareil seront effacés : vous ne pourrez plus vous y reconnecter hors ligne. Les épreuves enregistrées sur cet appareil sont conservées.',
       confirmer: 'Oublier cet appareil',
       annuler: 'Annuler',
     },
@@ -100,37 +100,35 @@ export const textes = {
   },
   /** US-026 : liste du club sur l'accueil de l'organisateur. */
   listeClub: {
-    titre: 'Manifestations et compétitions du club',
+    titre: 'Manifestations et épreuves du club',
     nouvelleManifestation: 'Nouvelle manifestation',
-    nouvelleEpreuve: 'Nouvelle épreuve',
-    nouvelleEpreuveDans: (manifestation: string) => `Nouvelle épreuve dans ${manifestation}`,
+    nouvelleCompetition: 'Nouvelle compétition',
+    nouvelleCompetitionDans: (manifestation: string) => `Nouvelle compétition dans ${manifestation}`,
     horsLigne: 'Nécessite une connexion internet',
     /** Hors ligne, sans aucune copie du club gardée sur l'appareil. */
-    horsLigneSansCopie: 'Hors ligne : seules les compétitions de cet appareil sont listées',
+    horsLigneSansCopie: 'Hors ligne : seules les épreuves de cet appareil sont listées',
     chargement: 'Chargement de la liste…',
     afficherArchives: 'Afficher les archives',
     archivesMasquees: (nombre: number) =>
-      nombre > 1 ? `${nombre} compétitions archivées masquées` : `${nombre} compétition archivée masquée`,
-    vide: 'Le club n’a encore ni manifestation ni compétition : créez une première manifestation ou une première compétition.',
-    isolees: 'Compétitions isolées',
-    aucuneCompetition: 'Aucune compétition',
+      nombre > 1 ? `${nombre} épreuves archivées masquées` : `${nombre} épreuve archivée masquée`,
+    vide: 'Le club n’a encore ni manifestation ni épreuve : créez une première manifestation ou une première épreuve.',
+    isolees: 'Épreuves isolées',
+    aucuneEpreuve: 'Aucune épreuve',
     lectureSeule: 'Lecture seule',
     jour: (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}`,
-    ouvrir: (nom: string) => `Ouvrir la compétition ${nom}`,
-    /** US-040 : suppression de plusieurs compétitions, réservée aux administrateurs. */
+    ouvrir: (nom: string) => `Ouvrir l’épreuve ${nom}`,
+    /** US-040 : suppression de plusieurs épreuves, réservée aux administrateurs. */
     suppression: {
-      cocher: (nom: string) => `Sélectionner la compétition ${nom}`,
-      enCours: 'Une compétition en cours ne peut pas être supprimée',
+      cocher: (nom: string) => `Sélectionner l’épreuve ${nom}`,
+      enCours: 'Une épreuve en cours ne peut pas être supprimée',
       selection: (nombre: number) =>
-        nombre > 1 ? `${nombre} compétitions sélectionnées` : `${nombre} compétition sélectionnée`,
+        nombre > 1 ? `${nombre} épreuves sélectionnées` : `${nombre} épreuve sélectionnée`,
       toutCocher: 'Tout cocher',
       toutDecocher: 'Tout décocher',
       bouton: 'Supprimer définitivement…',
       horsLigne: 'Connexion requise pour supprimer',
       titre: (nombre: number) =>
-        nombre > 1
-          ? `Supprimer définitivement ces ${nombre} compétitions ?`
-          : 'Supprimer définitivement cette compétition ?',
+        nombre > 1 ? `Supprimer définitivement ces ${nombre} épreuves ?` : 'Supprimer définitivement cette épreuve ?',
       avertissement:
         'La suppression est définitive : les journaux, les saisies et les fichiers joints sont effacés du serveur et de tous les PC du club. Pour garder une trace, archivez plutôt que de supprimer.',
       saisie: (mot: string) => `Saisissez ${mot} pour confirmer`,
@@ -138,18 +136,16 @@ export const textes = {
       progression: (faites: number, total: number) => `Suppression… ${faites} / ${total}`,
       annuler: 'Annuler',
       compteRendu: (supprimees: number) =>
-        supprimees > 1 ? `${supprimees} compétitions supprimées` : `${supprimees} compétition supprimée`,
+        supprimees > 1 ? `${supprimees} épreuves supprimées` : `${supprimees} épreuve supprimée`,
       restantes: (restantes: number) =>
-        restantes > 1
-          ? `${restantes} compétitions n’ont pas été supprimées`
-          : `${restantes} compétition n’a pas été supprimée`,
+        restantes > 1 ? `${restantes} épreuves n’ont pas été supprimées` : `${restantes} épreuve n’a pas été supprimée`,
       interrompue: 'La suppression s’est arrêtée : relancez-la quand la connexion ou la session est rétablie',
       nonTraitee: 'pas traitée',
       fermer: 'Fermer',
-      /** US-043 : sélection mêlée de manifestations, d'épreuves et de compétitions. */
+      /** US-043 : sélection mêlée de manifestations, de compétitions et d’épreuves. */
       cocherManifestation: (nom: string) => `Sélectionner la manifestation ${nom}`,
-      cocherEpreuve: (nom: string) => `Sélectionner l’épreuve ${nom}`,
-      contientEnCours: 'Contient une compétition en cours',
+      cocherCompetition: (nom: string) => `Sélectionner la compétition ${nom}`,
+      contientEnCours: 'Contient une épreuve en cours',
       avecParent: (parent: string) => `Supprimée avec ${parent}`,
       decompte: decompteTexte,
       selectionMixte: decompteTexte,
@@ -159,18 +155,18 @@ export const textes = {
       compteRenduMixte: (decompte: Decompte) => `Supprimé : ${decompteTexte(decompte)}`,
       restantesMixte: (restantes: number) =>
         restantes > 1 ? `${restantes} éléments n’ont pas été supprimés` : `${restantes} élément n’a pas été supprimé`,
-      types: { manifestation: 'manifestation', epreuve: 'épreuve', competition: 'compétition' },
+      types: { manifestation: 'manifestation', competition: 'compétition', epreuve: 'épreuve' },
       erreurs: {
         HORS_LIGNE: 'Connexion requise pour supprimer',
         SESSION_INVALIDE: 'Reconnectez-vous pour supprimer',
         ACCES_REFUSE: 'Seul un administrateur peut supprimer',
-        COMPETITION_EN_COURS: 'Contient une compétition en cours',
-        COMPETITION_INCONNUE: 'Compétition inconnue du serveur',
-        COMPETITION_SUPPRIMEE: 'Déjà supprimée',
+        EPREUVE_EN_COURS: 'Contient une épreuve en cours',
+        EPREUVE_INCONNUE: 'Épreuve inconnue du serveur',
+        EPREUVE_SUPPRIMEE: 'Déjà supprimée',
         MANIFESTATION_INCONNUE: 'Manifestation inconnue du serveur',
         MANIFESTATION_NON_VIDE: 'Manifestation non vide',
-        EPREUVE_INCONNUE: 'Épreuve inconnue du serveur',
-        EPREUVE_NON_VIDE: 'Épreuve non vide',
+        COMPETITION_INCONNUE: 'Compétition inconnue du serveur',
+        COMPETITION_NON_VIDE: 'Compétition non vide',
         ERREUR_INATTENDUE: 'Suppression impossible pour le moment',
       } satisfies Record<ErreurLot, string>,
     },
@@ -345,10 +341,10 @@ export const textes = {
       ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
     } satisfies Record<ErreurComptes, string>,
   },
-  /** US-025 : création et page d'une compétition. */
-  competitions: {
-    nouvelle: 'Nouvelle compétition',
-    titreNouvelle: 'Nouvelle compétition',
+  /** US-025 : création et page d'une épreuve. */
+  epreuves: {
+    nouvelle: 'Nouvelle épreuve',
+    titreNouvelle: 'Nouvelle épreuve',
     nom: 'Nom',
     exempleNom: 'Championnats NA sabre M13',
     arme: 'Arme',
@@ -368,10 +364,10 @@ export const textes = {
     lieu: 'Lieu',
     commentaire: 'Commentaire',
     facultatif: 'facultatif',
-    creer: 'Créer la compétition',
-    /** US-027 : modification d'une compétition. */
+    creer: 'Créer l’épreuve',
+    /** US-027 : modification d'une épreuve. */
     modifier: 'Modifier',
-    titreModification: 'Modifier la compétition',
+    titreModification: 'Modifier l’épreuve',
     enregistrer: 'Enregistrer',
     enregistrement: 'Enregistrement…',
     enCours: 'Création…',
@@ -386,7 +382,7 @@ export const textes = {
       individuelle: 'Individuelle',
       equipes2: 'Équipes de 2',
       equipes3: 'Équipes de 3',
-    } satisfies Record<TypeCompetition, string>,
+    } satisfies Record<TypeEpreuve, string>,
     sexes: {
       hommes: 'Hommes',
       dames: 'Dames',
@@ -401,16 +397,16 @@ export const textes = {
     publiee: 'Publiée',
     nonPubliee: 'Non publiée',
     pilote: 'Ce PC est le pilote',
-    lectureSeule: 'Lecture seule : cette compétition est pilotée par un autre PC',
-    autreOnglet: 'Cette compétition est ouverte dans un autre onglet : lecture seule ici',
+    lectureSeule: 'Lecture seule : cette épreuve est pilotée par un autre PC',
+    autreOnglet: 'Cette épreuve est ouverte dans un autre onglet : lecture seule ici',
     /** US-029 : prise de main depuis un autre PC. */
     prise: {
       bouton: 'Prendre la main',
       horsLigne: 'Nécessite une connexion internet',
       chargement: 'Recherche du pilote…',
-      confirmer: 'Prendre la main sur cette compétition ?',
-      piloteConnecte: (libelle: string) => `Le PC de ${libelle} est connecté et pilote cette compétition`,
-      piloteHorsLigne: (libelle: string) => `Cette compétition est pilotée par le PC de ${libelle}`,
+      confirmer: 'Prendre la main sur cette épreuve ?',
+      piloteConnecte: (libelle: string) => `Le PC de ${libelle} est connecté et pilote cette épreuve`,
+      piloteHorsLigne: (libelle: string) => `Cette épreuve est pilotée par le PC de ${libelle}`,
       valider: 'Prendre la main',
       annuler: 'Annuler',
       mainDejaPrise: (libelle: string) => `La main vient d’être prise par ${libelle}`,
@@ -424,45 +420,45 @@ export const textes = {
       erreurs: {
         HORS_LIGNE: 'Nécessite une connexion internet',
         SESSION_INVALIDE: 'Reconnectez-vous pour prendre la main',
-        COMPETITION_INCONNUE: 'Compétition inconnue du serveur',
+        EPREUVE_INCONNUE: 'Épreuve inconnue du serveur',
         ERREUR_INATTENDUE: 'Prise de main impossible pour le moment',
         ACCES_REFUSE: 'Prise de main impossible pour le moment',
-        COMPETITION_EN_COURS: 'Prise de main impossible pour le moment',
-        COMPETITION_SUPPRIMEE: 'Cette compétition a été supprimée',
+        EPREUVE_EN_COURS: 'Prise de main impossible pour le moment',
+        EPREUVE_SUPPRIMEE: 'Cette épreuve a été supprimée',
       },
     },
-    /** US-039 : suppression définitive d'une compétition, réservée aux administrateurs. */
+    /** US-039 : suppression définitive d'une épreuve, réservée aux administrateurs. */
     suppression: {
       bouton: 'Supprimer définitivement…',
       horsLigne: 'Connexion requise pour supprimer',
-      enCours: 'Une compétition en cours ne peut pas être supprimée',
-      titre: 'Supprimer définitivement cette compétition ?',
+      enCours: 'Une épreuve en cours ne peut pas être supprimée',
+      titre: 'Supprimer définitivement cette épreuve ?',
       avertissement:
-        'La suppression est définitive : le journal, les saisies et les fichiers joints sont effacés du serveur et de tous les PC du club. Pour garder une trace, archivez la compétition plutôt que de la supprimer.',
+        'La suppression est définitive : le journal, les saisies et les fichiers joints sont effacés du serveur et de tous les PC du club. Pour garder une trace, archivez l’épreuve plutôt que de la supprimer.',
       saisie: (nom: string) => `Saisissez « ${nom} » pour confirmer`,
       valider: 'Supprimer définitivement',
       suppression: 'Suppression…',
       annuler: 'Annuler',
       /** Annonce faite une seule fois sur un PC dont la copie vient d'être effacée. */
       annonce: (nom: string, abandonnees: number) =>
-        `La compétition ${nom || 'sans nom'} a été supprimée par un administrateur${
+        `L’épreuve ${nom || 'sans nom'} a été supprimée par un administrateur${
           abandonnees > 0 ? '. Des saisies non envoyées ont été abandonnées' : ''
         }`,
       fermer: 'Fermer',
       erreurs: {
         HORS_LIGNE: 'Connexion requise pour supprimer',
         SESSION_INVALIDE: 'Reconnectez-vous pour supprimer',
-        ACCES_REFUSE: 'Seul un administrateur peut supprimer une compétition',
-        COMPETITION_EN_COURS: 'Une compétition en cours ne peut pas être supprimée',
-        COMPETITION_INCONNUE: 'Compétition inconnue du serveur',
-        COMPETITION_SUPPRIMEE: 'Cette compétition est déjà supprimée',
+        ACCES_REFUSE: 'Seul un administrateur peut supprimer une épreuve',
+        EPREUVE_EN_COURS: 'Une épreuve en cours ne peut pas être supprimée',
+        EPREUVE_INCONNUE: 'Épreuve inconnue du serveur',
+        EPREUVE_SUPPRIMEE: 'Cette épreuve est déjà supprimée',
         ERREUR_INATTENDUE: 'Suppression impossible pour le moment',
       },
     },
     pasEncoreEnvoyee: 'Pas encore envoyée',
     enAttente: (nombre: number) =>
       nombre > 1 ? `${nombre} modifications en attente d’envoi` : `${nombre} modification en attente d’envoi`,
-    /** US-022 : date de la copie d'une compétition pilotée par un autre PC (« Copie du 28/10 à 14 h 05 »). */
+    /** US-022 : date de la copie d'une épreuve pilotée par un autre PC (« Copie du 28/10 à 14 h 05 »). */
     copieDu: (date: number) => {
       const jour = new Date(date);
       const deux = (nombre: number) => String(nombre).padStart(2, '0');
@@ -476,28 +472,28 @@ export const textes = {
     },
     rattachement: 'Rattachement',
     manifestation: 'Manifestation',
-    epreuve: 'Épreuve',
-    aucuneManifestation: 'Aucune (compétition isolée)',
-    aucuneEpreuve: 'Aucune épreuve',
+    competition: 'Compétition',
+    aucuneManifestation: 'Aucune (épreuve isolée)',
+    aucuneCompetition: 'Aucune compétition',
     choisirDate: 'Choisir un jour',
-    /** US-024 CA-4 : « Cette épreuve est au sabre ». */
-    epreuveAu: (arme: Arme) =>
-      `Cette épreuve est ${{ sabre: 'au sabre', epee: 'à l’épée', fleuret: 'au fleuret', sabreLaser: 'au sabre laser' }[arme]}`,
+    /** US-024 CA-4 : « Cette compétition est au sabre ». */
+    competitionAu: (arme: Arme) =>
+      `Cette compétition est ${{ sabre: 'au sabre', epee: 'à l’épée', fleuret: 'au fleuret', sabreLaser: 'au sabre laser' }[arme]}`,
     formuleTitre: 'Formule',
     formule: (touchesPoules: number, touchesTableau: number, matchTroisieme = false) =>
       `Poules en ${touchesPoules} touches, sans élimination · Tableau en ${touchesTableau} touches` +
       (matchTroisieme ? ' · Match pour la 3e place' : ''),
     modifierFormule: 'Formule',
     relais: (touches: number) => `Rencontres en relais à ${touches} touches`,
-    /** US-028 CA-4 : avant de changer la formule d'une compétition en cours. */
+    /** US-028 CA-4 : avant de changer la formule d'une épreuve en cours. */
     formuleConfirmation: (matchs: number) =>
       matchs === 1
         ? '1 match déjà joué ne change pas : la nouvelle formule s’applique aux matchs restants'
         : `${matchs} matchs déjà joués ne changent pas : la nouvelle formule s’applique aux matchs restants`,
-    /** US-032 : page « Paramètres » d'une compétition. */
+    /** US-032 : page « Paramètres » d'une épreuve. */
     lienParametres: 'Paramètres',
     parametresPage: {
-      titre: 'Paramètres de la compétition',
+      titre: 'Paramètres de l’épreuve',
       mention:
         'Ces réglages sont enregistrés. Ils seront appliqués quand la saisie par smartphone et l’affichage public seront disponibles.',
       arbitres: 'Arbitres',
@@ -514,27 +510,26 @@ export const textes = {
       corrections: { arbitre: 'Arbitre seulement', personne: 'Personne' },
       enregistrer: 'Enregistrer les paramètres',
       enregistre: 'Paramètres enregistrés',
-      archivee: 'Cette compétition est archivée : ses paramètres sont en lecture seule',
-      retour: 'Retour à la compétition',
+      archivee: 'Cette épreuve est archivée : ses paramètres sont en lecture seule',
+      retour: 'Retour à l’épreuve',
       erreurs: {
         PARAMETRE_INVALIDE: 'Un réglage a une valeur invalide',
         CORRECTION_SCORE_INVALIDE: 'Choisissez qui peut corriger un score',
       },
     },
-    /** US-028 : page « Formule » d'une compétition. */
+    /** US-028 : page « Formule » d'une épreuve. */
     formulePage: {
-      titre: 'Formule de la compétition',
+      titre: 'Formule de l’épreuve',
       touchesPoules: 'Touches en poules',
       touchesTableau: 'Touches au tableau',
       matchTroisieme: 'Match pour la 3e place',
-      relaisFixe: (touches: number) =>
-        `Rencontres en relais à ${touches} touches (fixées par le type de la compétition)`,
+      relaisFixe: (touches: number) => `Rencontres en relais à ${touches} touches (fixées par le type de l’épreuve)`,
       autresFormules: 'D’autres formules seront proposées plus tard.',
       enregistrer: 'Enregistrer la formule',
       confirmer: 'Confirmer le changement',
       historique: 'Historique de la formule',
       historiqueVide: 'Aucun changement de formule',
-      retour: 'Retour à la compétition',
+      retour: 'Retour à l’épreuve',
       le: (date: number) => {
         const jour = new Date(date);
         const deux = (nombre: number) => String(nombre).padStart(2, '0');
@@ -550,17 +545,17 @@ export const textes = {
         TOUCHES_POULES_INVALIDES: 'Les poules se jouent en 3 à 10 touches',
         TOUCHES_TABLEAU_INVALIDES: 'Le tableau se joue en 10 ou 15 touches',
         MATCH_TROISIEME_INVALIDE: 'Choisissez si le match pour la 3e place est joué',
-        FORMULE_FIGEE: 'Cette compétition est terminée : sa formule n’est plus modifiable',
+        FORMULE_FIGEE: 'Cette épreuve est terminée : sa formule n’est plus modifiable',
       },
     },
-    chargement: 'Chargement de la compétition…',
-    introuvable: 'Compétition introuvable sur cet appareil',
+    chargement: 'Chargement de l’épreuve…',
+    introuvable: 'Épreuve introuvable sur cet appareil',
     retour: "Retour à l'accueil de l'organisateur",
     champs: {
       NOM_VIDE: 'Le nom est obligatoire',
       NOM_TROP_LONG: 'Le nom fait au plus 100 caractères',
       ARME_INVALIDE: 'Choisissez une arme',
-      ARME_DIFFERENTE_EPREUVE: 'Cette épreuve est d’une autre arme',
+      ARME_DIFFERENTE_COMPETITION: 'Cette compétition est d’une autre arme',
       TYPE_INVALIDE: 'Choisissez un type',
       CATEGORIE_TROP_LONGUE: 'La catégorie fait au plus 30 caractères',
       SEXE_INVALIDE: 'Choisissez un sexe',
@@ -574,87 +569,87 @@ export const textes = {
       LIEU_TROP_LONG: 'Le lieu fait au plus 200 caractères',
       COMMENTAIRE_TROP_LONG: 'Le commentaire fait au plus 2 000 caractères',
       RATTACHEMENT_INVALIDE: 'Rattachement invalide',
-    } satisfies Record<ErreurCompetition, string>,
+    } satisfies Record<ErreurEpreuve, string>,
     erreurs: {
       ECRITURE_IMPOSSIBLE:
         'Enregistrement impossible sur cet appareil (espace plein ou navigation privée) : rien n’a été enregistré',
-      CLUB_INCONNU: 'Reconnectez-vous une fois en ligne pour créer une compétition sur cet appareil',
-      INTROUVABLE: 'Compétition introuvable sur cet appareil',
-      PAS_PILOTE: 'Cette compétition est pilotée par un autre PC : modification impossible ici',
-      COMPETITION_ARCHIVEE: 'Cette compétition est archivée : elle n’est plus modifiable',
+      CLUB_INCONNU: 'Reconnectez-vous une fois en ligne pour créer une épreuve sur cet appareil',
+      INTROUVABLE: 'Épreuve introuvable sur cet appareil',
+      PAS_PILOTE: 'Cette épreuve est pilotée par un autre PC : modification impossible ici',
+      EPREUVE_ARCHIVEE: 'Cette épreuve est archivée : elle n’est plus modifiable',
       CHAMP_FIGE: 'Ce champ ne peut plus être modifié',
-      JOURNAL_INCOHERENT: 'Le journal de cette compétition est incohérent : modification impossible',
+      JOURNAL_INCOHERENT: 'Le journal de cette épreuve est incohérent : modification impossible',
     } satisfies Record<ErreurCreation | ErreurModification, string>,
   },
-  /** US-024 : épreuves, sous chaque manifestation de la page « Manifestations ». */
-  epreuves: {
-    titre: 'Épreuves',
-    nouvelle: 'Nouvelle épreuve',
-    titreModification: (nom: string) => `Modifier l’épreuve « ${nom} »`,
-    nom: 'Nom de l’épreuve',
+  /** US-024 : compétitions, sous chaque manifestation de la page « Manifestations ». */
+  competitions: {
+    titre: 'Compétitions',
+    nouvelle: 'Nouvelle compétition',
+    titreModification: (nom: string) => `Modifier la compétition « ${nom} »`,
+    nom: 'Nom de la compétition',
     exempleNom: 'Championnats de Nouvelle-Aquitaine de sabre',
     arme: 'Arme',
     aucuneArme: 'Toutes armes',
     commentaire: 'Commentaire',
     facultatif: 'facultatif',
-    creer: 'Créer l’épreuve',
+    creer: 'Créer la compétition',
     enregistrer: 'Enregistrer',
     enCours: 'Enregistrement…',
     annuler: 'Annuler',
     boutonModifier: 'Modifier',
     boutonSupprimer: 'Supprimer',
-    ajouter: (manifestation: string) => `Ajouter une épreuve à ${manifestation}`,
-    modifier: (nom: string) => `Modifier l’épreuve ${nom}`,
-    supprimer: (nom: string) => `Supprimer l’épreuve ${nom}`,
-    confirmerSuppression: (nom: string) => `Supprimer définitivement l’épreuve « ${nom} » ?`,
+    ajouter: (manifestation: string) => `Ajouter une compétition à ${manifestation}`,
+    modifier: (nom: string) => `Modifier la compétition ${nom}`,
+    supprimer: (nom: string) => `Supprimer la compétition ${nom}`,
+    confirmerSuppression: (nom: string) => `Supprimer définitivement la compétition « ${nom} » ?`,
     confirmer: 'Supprimer',
     /** US-041 : suppression avec son contenu, réservée aux administrateurs. */
     contenu: {
       bouton: 'Supprimer avec son contenu…',
-      supprimer: (nom: string) => `Supprimer avec son contenu l’épreuve ${nom}`,
+      supprimer: (nom: string) => `Supprimer avec son contenu la compétition ${nom}`,
       horsLigne: 'Connexion requise pour supprimer',
-      titre: (nom: string) => `Supprimer définitivement l’épreuve « ${nom} » avec son contenu ?`,
+      titre: (nom: string) => `Supprimer définitivement la compétition « ${nom} » avec son contenu ?`,
       combien: (nombre: number | null) =>
         nombre === null
-          ? 'Les compétitions de l’épreuve sont supprimées avec elle.'
+          ? 'Les épreuves de la compétition sont supprimées avec elle.'
           : nombre === 0
-            ? 'L’épreuve ne contient aucune compétition.'
+            ? 'La compétition ne contient aucune épreuve.'
             : nombre > 1
-              ? `Les ${nombre} compétitions de l’épreuve (archivées comprises) sont supprimées avec elle.`
-              : 'La compétition de l’épreuve est supprimée avec elle.',
+              ? `Les ${nombre} épreuves de la compétition (archivées comprises) sont supprimées avec elle.`
+              : 'L’épreuve de la compétition est supprimée avec elle.',
       avertissement:
         'La suppression est définitive : les journaux, les saisies et les fichiers joints sont effacés du serveur et de tous les PC du club.',
       saisie: (nom: string) => `Saisissez « ${nom} » pour confirmer`,
       valider: 'Supprimer définitivement',
       progression: (faites: number, total: number) => `Suppression… ${faites} / ${total}`,
       annuler: 'Annuler',
-      enCours: (noms: string[]) => `Une compétition en cours empêche la suppression : ${noms.join(', ')}`,
+      enCours: (noms: string[]) => `Une épreuve en cours empêche la suppression : ${noms.join(', ')}`,
       interrompue: (restantes: number) =>
         restantes > 1
-          ? `${restantes} compétitions restent, l’épreuve n’est pas supprimée : relancez la suppression`
-          : `${restantes} compétition reste, l’épreuve n’est pas supprimée : relancez la suppression`,
+          ? `${restantes} épreuves restent, la compétition n’est pas supprimée : relancez la suppression`
+          : `${restantes} épreuve reste, la compétition n’est pas supprimée : relancez la suppression`,
     },
     recharger: 'Recharger',
-    aucune: 'Aucune épreuve',
+    aucune: 'Aucune compétition',
     horsLigne: 'Nécessite une connexion internet',
     modifieeEntreTemps: (nom: string) => `Modifiée entre-temps par ${nom} : rechargez`,
     champs: {
       NOM_VIDE: 'Le nom est obligatoire',
       NOM_TROP_LONG: 'Le nom fait au plus 100 caractères',
-      MANIFESTATION_OBLIGATOIRE: 'Une épreuve appartient toujours à une manifestation',
+      MANIFESTATION_OBLIGATOIRE: 'Une compétition appartient toujours à une manifestation',
       ARME_INVALIDE: 'Choisissez une arme de la liste',
       COMMENTAIRE_TROP_LONG: 'Le commentaire fait au plus 2 000 caractères',
-    } satisfies Record<ErreurEpreuve, string>,
+    } satisfies Record<ErreurCompetition, string>,
     erreurs: {
       HORS_LIGNE: 'Réseau perdu : rien n’a changé, réessayez',
       SESSION_INVALIDE: 'Session expirée : reconnectez-vous',
       MANIFESTATION_INCONNUE: 'Cette manifestation n’existe plus : rechargez',
-      EPREUVE_INCONNUE: 'Cette épreuve n’existe plus : rechargez',
-      EPREUVE_NON_VIDE: 'Cette épreuve contient des compétitions : elle ne se supprime pas',
+      COMPETITION_INCONNUE: 'Cette compétition n’existe plus : rechargez',
+      COMPETITION_NON_VIDE: 'Cette compétition contient des épreuves : elle ne se supprime pas',
       ACCES_REFUSE: 'Seul un administrateur peut supprimer avec son contenu',
-      COMPETITION_EN_COURS: 'Une compétition en cours empêche la suppression',
+      EPREUVE_EN_COURS: 'Une épreuve en cours empêche la suppression',
       ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
-    } satisfies Record<ErreurEpreuves, string>,
+    } satisfies Record<ErreurCompetitions, string>,
   },
   /** US-023 : page « Manifestations ». */
   manifestations: {
@@ -685,18 +680,22 @@ export const textes = {
       supprimer: (nom: string) => `Supprimer avec son contenu la manifestation ${nom}`,
       horsLigne: 'Connexion requise pour supprimer',
       titre: (nom: string) => `Supprimer définitivement la manifestation « ${nom} » avec son contenu ?`,
-      combien: (epreuves: number, competitions: number | null) => {
-        const lesEpreuves =
-          epreuves === 0 ? 'aucune épreuve' : epreuves > 1 ? `ses ${epreuves} épreuves` : 'son épreuve';
+      combien: (competitions: number, epreuves: number | null) => {
         const lesCompetitions =
-          competitions === null
-            ? 'ses compétitions'
-            : competitions === 0
-              ? 'aucune compétition'
-              : competitions > 1
-                ? `ses ${competitions} compétitions (archivées comprises)`
-                : 'sa compétition';
-        return `Sont supprimées avec elle : ${lesEpreuves} et ${lesCompetitions}.`;
+          competitions === 0
+            ? 'aucune compétition'
+            : competitions > 1
+              ? `ses ${competitions} compétitions`
+              : 'sa compétition';
+        const lesEpreuves =
+          epreuves === null
+            ? 'ses épreuves'
+            : epreuves === 0
+              ? 'aucune épreuve'
+              : epreuves > 1
+                ? `ses ${epreuves} épreuves (archivées comprises)`
+                : 'son épreuve';
+        return `Sont supprimées avec elle : ${lesCompetitions} et ${lesEpreuves}.`;
       },
       avertissement:
         'La suppression est définitive : les journaux, les saisies et les fichiers joints sont effacés du serveur et de tous les PC du club.',
@@ -704,11 +703,11 @@ export const textes = {
       valider: 'Supprimer définitivement',
       progression: (faites: number, total: number) => `Suppression… ${faites} / ${total}`,
       annuler: 'Annuler',
-      enCours: (noms: string[]) => `Une compétition en cours empêche la suppression : ${noms.join(', ')}`,
+      enCours: (noms: string[]) => `Une épreuve en cours empêche la suppression : ${noms.join(', ')}`,
       interrompue: (restantes: number) =>
         restantes > 1
-          ? `${restantes} compétitions restent, la manifestation n’est pas supprimée : relancez la suppression`
-          : `${restantes} compétition reste, la manifestation n’est pas supprimée : relancez la suppression`,
+          ? `${restantes} épreuves restent, la manifestation n’est pas supprimée : relancez la suppression`
+          : `${restantes} épreuve reste, la manifestation n’est pas supprimée : relancez la suppression`,
     },
     recharger: 'Recharger',
     chargement: 'Chargement des manifestations…',
@@ -726,8 +725,8 @@ export const textes = {
     },
     horsDates: (noms: readonly string[]) =>
       noms.length > 1
-        ? `Ces dates n’incluent plus les compétitions rattachées : ${noms.join(', ')}`
-        : `Ces dates n’incluent plus la compétition rattachée : ${noms.join(', ')}`,
+        ? `Ces dates n’incluent plus les épreuves rattachées : ${noms.join(', ')}`
+        : `Ces dates n’incluent plus l’épreuve rattachée : ${noms.join(', ')}`,
     modifieeEntreTemps: (nom: string) => `Modifié entre-temps par ${nom} : rechargez`,
     champs: {
       NOM_VIDE: 'Le nom est obligatoire',
@@ -743,9 +742,9 @@ export const textes = {
       SESSION_INVALIDE: 'Session expirée : reconnectez-vous',
       MANIFESTATION_INCONNUE: 'Cette manifestation n’existe plus : rechargez',
       ACCES_REFUSE: 'Seul un administrateur peut supprimer avec son contenu',
-      COMPETITION_EN_COURS: 'Une compétition en cours empêche la suppression',
+      EPREUVE_EN_COURS: 'Une épreuve en cours empêche la suppression',
       MANIFESTATION_NON_VIDE:
-        'Cette manifestation contient des compétitions ou des épreuves : elle ne se supprime pas (elle pourra être archivée)',
+        'Cette manifestation contient des épreuves ou des compétitions : elle ne se supprime pas (elle pourra être archivée)',
       ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
     } satisfies Record<ErreurManifestations, string>,
   },

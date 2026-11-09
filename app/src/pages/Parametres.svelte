@@ -1,35 +1,35 @@
 <script lang="ts">
-  // Paramètres d'une compétition (US-032), page réservée : droits des arbitres et des tireurs, correction d'un score et
+  // Paramètres d'une épreuve (US-032), page réservée : droits des arbitres et des tireurs, correction d'un score et
   // affichage « Prénom N. », écrits dans le journal local (donc aussi hors ligne) et envoyés ensuite. Sur un PC qui n'est
-  // pas le pilote, ou une fois la compétition archivée, ils sont en lecture seule. Ils sont seulement enregistrés ici :
+  // pas le pilote, ou une fois l’épreuve archivée, ils sont en lecture seule. Ils sont seulement enregistrés ici :
   // la saisie smartphone (E5) et l'affichage public (E9) les appliqueront.
   import { onMount } from 'svelte';
-  import { CORRECTIONS_SCORE, type Competition, type Parametres } from '@poule-position/domaine';
+  import { CORRECTIONS_SCORE, type Epreuve, type Parametres } from '@poule-position/domaine';
   import Lien from '../composants/Lien.svelte';
-  import { modifierParametres, type ErreurModificationParametres } from '../lib/competitions';
+  import { modifierParametres, type ErreurModificationParametres } from '../lib/epreuves';
   import { prendreEcriture, type Journal } from '../lib/journal';
-  import { cheminCompetition } from '../lib/routes';
+  import { cheminEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
     session: SessionAppareil;
-    competitionId: string;
+    epreuveId: string;
     journal: Journal;
     synchronisation: Synchronisation;
     naviguer: (chemin: string) => void;
   }
 
-  let { session, competitionId, journal, synchronisation, naviguer }: Proprietes = $props();
+  let { session, epreuveId, journal, synchronisation, naviguer }: Proprietes = $props();
 
-  const t = textes.competitions;
+  const t = textes.epreuves;
   const tp = t.parametresPage;
 
-  let competition = $state<Competition | null>(null);
+  let epreuve = $state<Epreuve | null>(null);
   let chargee = $state(false);
   let pilote = $state(false);
-  /** Faux si un autre onglet détient déjà l'écriture de cette compétition. */
+  /** Faux si un autre onglet détient déjà l'écriture de cette épreuve. */
   let ecriture = $state(true);
   let enAttente = $state(0);
   let enCours = $state(false);
@@ -44,24 +44,24 @@
     correctionScore: 'arbitre',
     prenomInitiale: false,
   });
-  const archivee = $derived(competition?.statut === 'archivee');
+  const archivee = $derived(epreuve?.statut === 'archivee');
   const lectureSeule = $derived(!pilote || !ecriture || archivee);
 
   /** Relit le journal ; la saisie n'est remplacée que sur demande, pour ne pas écraser ce que le pilote coche. */
   async function recharger(remettreSaisie = false) {
-    const { competition: lue } = await journal.lire(competitionId);
-    competition = lue;
+    const { epreuve: lue } = await journal.lire(epreuveId);
+    epreuve = lue;
     if (lue && remettreSaisie) Object.assign(saisie, { ...lue.parametres });
-    enAttente = pilote ? await synchronisation.enAttente(competitionId) : 0;
+    enAttente = pilote ? await synchronisation.enAttente(epreuveId) : 0;
   }
 
   onMount(() => {
     let liberer: (() => void) | null = null;
     let demonte = false;
-    const surEnLigne = () => void synchronisation.envoyer(competitionId).then(() => recharger());
+    const surEnLigne = () => void synchronisation.envoyer(epreuveId).then(() => recharger());
     // US-029 CA-2 : un autre PC a pris la main, les paramètres passent en lecture seule.
-    const arreterPerte = synchronisation.surPerte(({ competitionId: id }) => {
-      if (id !== competitionId) return;
+    const arreterPerte = synchronisation.surPerte(({ epreuveId: id }) => {
+      if (id !== epreuveId) return;
       pilote = false;
       liberer?.();
       void recharger(true);
@@ -69,17 +69,17 @@
 
     void (async () => {
       // Sur un autre PC, la copie du pilote est téléchargée (hors ligne : la dernière copie gardée).
-      await synchronisation.telechargerCopie(competitionId);
-      pilote = (await journal.etat(competitionId))?.pilote ?? false;
+      await synchronisation.telechargerCopie(epreuveId);
+      pilote = (await journal.etat(epreuveId))?.pilote ?? false;
       if (pilote) {
-        liberer = await prendreEcriture(competitionId);
+        liberer = await prendreEcriture(epreuveId);
         if (demonte) liberer?.();
         ecriture = liberer !== null;
         window.addEventListener('online', surEnLigne);
       }
       await recharger(true);
       chargee = true;
-      if (pilote) void synchronisation.envoyer(competitionId).then(() => recharger());
+      if (pilote) void synchronisation.envoyer(epreuveId).then(() => recharger());
     })();
 
     return () => {
@@ -92,12 +92,12 @@
 
   async function enregistrer(evenement: SubmitEvent) {
     evenement.preventDefault();
-    if (enCours || lectureSeule || !competition) return;
+    if (enCours || lectureSeule || !epreuve) return;
     enCours = true;
     erreur = null;
     enregistre = false;
     try {
-      const resultat = await modifierParametres(journal, competitionId, $state.snapshot(saisie), {
+      const resultat = await modifierParametres(journal, epreuveId, $state.snapshot(saisie), {
         clubId: session.compte.clubId,
         auteur: session.compte.email,
       });
@@ -105,7 +105,7 @@
       await recharger(true);
       if (resultat.ok) {
         enregistre = true;
-        void synchronisation.envoyer(competitionId).then(() => recharger());
+        void synchronisation.envoyer(epreuveId).then(() => recharger());
       }
     } finally {
       enCours = false;
@@ -135,10 +135,10 @@
 
   {#if !chargee}
     <p role="status">{t.chargement}</p>
-  {:else if !competition}
+  {:else if !epreuve}
     <p class="message" role="alert">{t.introuvable}</p>
   {:else}
-    <h2>{competition.nom}</h2>
+    <h2>{epreuve.nom}</h2>
 
     {#if !pilote}
       <p class="avertissement" role="status">{t.lectureSeule}</p>
@@ -185,7 +185,7 @@
     </form>
   {/if}
 
-  <Lien chemin={cheminCompetition(competitionId)} {naviguer}>{tp.retour}</Lien>
+  <Lien chemin={cheminEpreuve(epreuveId)} {naviguer}>{tp.retour}</Lien>
 </main>
 
 <style>

@@ -1,6 +1,6 @@
 // Point d'entrée du Worker : routes, origines autorisées, transmission de la connexion WebSocket au Durable Object
-// de la compétition, installation du premier administrateur, connexion, session, gestion des comptes et réplication
-// du journal des compétitions (US-022, ADR-0016), manifestations du club (US-023).
+// de l’épreuve, installation du premier administrateur, connexion, session, gestion des comptes et réplication
+// du journal des épreuves (US-022, ADR-0016), manifestations du club (US-023).
 // Protocole : docs/protocole.md.
 import {
   analyserDemandeChangementMotDePasse,
@@ -18,19 +18,19 @@ import {
   analyserDemandeEnvoi,
   analyserDemandePresence,
   analyserDemandePriseDeMain,
-  analyserDemandeEpreuve,
+  analyserDemandeCompetition,
   analyserDemandeManifestation,
-  analyserDemandeModificationEpreuve,
+  analyserDemandeModificationCompetition,
   analyserDemandeModificationManifestation,
   TAILLE_MAX_LOT,
-  type ReponseCompetitions,
+  type ReponseEpreuves,
   type ReponseEnvoi,
   type ReponseJournal,
-  type ReponseSuppressionCompetition,
+  type ReponseSuppressionEpreuve,
   type ReponsePilote,
   type ReponsePresence,
   type ReponsePriseDeMain,
-  type ReponseEpreuve,
+  type ReponseCompetition,
   type ReponseSuppressionContenu,
   type ReponseManifestation,
   type CodeErreurInstallation,
@@ -43,10 +43,10 @@ import {
   couleurParDefaut,
   planifierSuppressionContenu,
   REGLE_ADRESSE,
-  type CompetitionASupprimer,
+  type EpreuveASupprimer,
 } from '@poule-position/domaine';
 import type { Club, CompteStocke } from './club';
-import type { Competition } from './competition';
+import type { Epreuve } from './epreuve';
 import type { Limiteur } from './limiteur';
 import { ligneIndex } from './replication';
 import type { Route } from './logique';
@@ -72,14 +72,14 @@ import {
 } from './logique';
 
 export { Club } from './club';
-export { Competition } from './competition';
+export { Epreuve } from './epreuve';
 export { Limiteur } from './limiteur';
 import { creerExpediteur } from './courriel';
 import { courrielReinitialisation } from './gabarits';
 import { transportSmtp } from './smtp';
 
 export interface Env {
-  COMPETITIONS: DurableObjectNamespace<Competition>;
+  EPREUVES: DurableObjectNamespace<Epreuve>;
   CLUB: DurableObjectNamespace<Club>;
   LIMITEUR: DurableObjectNamespace<Limiteur>;
   ORIGINES: string;
@@ -112,10 +112,10 @@ export default {
     if (!origineAutorisee(requete.headers.get('Origin'), env.ORIGINES)) {
       return new Response('Origine refusée', { status: 403 });
     }
-    const competition = objetCompetition(env, route.competitionId);
-    const url = new URL('https://competition/connexion');
-    url.searchParams.set('competitionId', route.competitionId);
-    return competition.fetch(new Request(url, requete));
+    const epreuve = objetEpreuve(env, route.epreuveId);
+    const url = new URL('https://epreuve/connexion');
+    url.searchParams.set('epreuveId', route.epreuveId);
+    return epreuve.fetch(new Request(url, requete));
   },
 } satisfies ExportedHandler<Env>;
 
@@ -210,15 +210,15 @@ type RouteSession = Extract<
       | 'comptes'
       | 'compte'
       | 'reinitialisation'
-      | 'competitions'
-      | 'competition'
+      | 'epreuves'
+      | 'epreuve'
       | 'evenements'
       | 'pilote'
       | 'presence'
       | 'manifestations'
       | 'manifestation'
-      | 'epreuves'
-      | 'epreuve';
+      | 'competitions'
+      | 'competition';
   }
 >;
 
@@ -232,15 +232,15 @@ const METHODES_SESSION = {
   comptes: ['GET', 'POST'],
   compte: ['PATCH', 'DELETE'],
   reinitialisation: ['POST'],
-  competitions: ['GET'],
-  competition: ['DELETE'],
+  epreuves: ['GET'],
+  epreuve: ['DELETE'],
   evenements: ['GET', 'POST'],
   pilote: ['GET', 'POST'],
   presence: ['POST'],
   manifestations: ['GET', 'POST'],
   manifestation: ['PATCH', 'DELETE'],
-  epreuves: ['GET', 'POST'],
-  epreuve: ['PATCH', 'DELETE'],
+  competitions: ['GET', 'POST'],
+  competition: ['PATCH', 'DELETE'],
 } as const;
 
 /**
@@ -330,15 +330,15 @@ async function traiterSession(
   if (!authentifie.ok) return authentifie.refus;
 
   if (
-    route.route === 'competitions' ||
-    route.route === 'competition' ||
+    route.route === 'epreuves' ||
+    route.route === 'epreuve' ||
     route.route === 'evenements' ||
     route.route === 'pilote' ||
     route.route === 'presence'
   ) {
     // US-022 : tout compte du club au mot de passe définitif (administrateur ou organisateur).
     if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
-    return gererCompetitions(route, requete, env, club, authentifie.compte);
+    return gererEpreuves(route, requete, env, club, authentifie.compte);
   }
 
   if (route.route === 'manifestations' || route.route === 'manifestation') {
@@ -347,10 +347,10 @@ async function traiterSession(
     return gererManifestations(route, requete, env, club, authentifie.compte);
   }
 
-  if (route.route === 'epreuves' || route.route === 'epreuve') {
+  if (route.route === 'competitions' || route.route === 'competition') {
     // US-024 : mêmes droits que les manifestations.
     if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
-    return gererEpreuves(route, requete, env, club, authentifie.compte);
+    return gererCompetitions(route, requete, env, club, authentifie.compte);
   }
 
   if (route.route === 'comptes' || route.route === 'compte' || route.route === 'reinitialisation') {
@@ -587,55 +587,55 @@ async function gererManifestations(
 }
 
 /**
- * US-024 (ADR-0016 §4, docs/protocole.md §13) : épreuves du club, stockées dans le DO `Club` avec le même contrôle de
- * version que les manifestations. Une épreuve reste dans sa manifestation et ne se supprime que vide.
+ * US-024 (ADR-0016 §4, docs/protocole.md §13) : compétitions du club, stockées dans le DO `Club` avec le même contrôle de
+ * version que les manifestations. Une compétition reste dans sa manifestation et ne se supprime que vide.
  */
-async function gererEpreuves(
-  route: Extract<RouteSession, { route: 'epreuves' | 'epreuve' }>,
+async function gererCompetitions(
+  route: Extract<RouteSession, { route: 'competitions' | 'competition' }>,
   requete: Request,
   env: Env,
   club: DurableObjectStub<Club>,
   compte: CompteStocke,
 ): Promise<Response> {
-  if (route.route === 'epreuves' && requete.method === 'GET') {
-    return Response.json({ ok: true, epreuves: await club.listerEpreuves() });
+  if (route.route === 'competitions' && requete.method === 'GET') {
+    return Response.json({ ok: true, competitions: await club.listerCompetitions() });
   }
-  if (route.route === 'epreuves') {
-    const analyse = analyserDemandeEpreuve(await lireJson(requete));
+  if (route.route === 'competitions') {
+    const analyse = analyserDemandeCompetition(await lireJson(requete));
     if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
-    const resultat = await club.creerEpreuve(analyse.demande, compte.nom);
+    const resultat = await club.creerCompetition(analyse.demande, compte.nom);
     if (!resultat.ok) return refuserSession(404, resultat.erreur);
-    return Response.json(resultat satisfies ReponseEpreuve, { status: 201 });
+    return Response.json(resultat satisfies ReponseCompetition, { status: 201 });
   }
   // US-041 : la suppression avec contenu est une demande explicite (`?contenu=1`), réservée aux administrateurs.
   if (requete.method === 'DELETE' && new URL(requete.url).searchParams.get('contenu') === '1') {
-    return supprimerEpreuveAvecContenu(route.id, env, club, compte);
+    return supprimerCompetitionAvecContenu(route.id, env, club, compte);
   }
   if (requete.method === 'DELETE') {
-    const resultat = await club.supprimerEpreuve(route.id);
-    if (!resultat.ok) return refuserSession(resultat.erreur === 'EPREUVE_INCONNUE' ? 404 : 409, resultat.erreur);
+    const resultat = await club.supprimerCompetition(route.id);
+    if (!resultat.ok) return refuserSession(resultat.erreur === 'COMPETITION_INCONNUE' ? 404 : 409, resultat.erreur);
     return Response.json({ ok: true });
   }
-  const analyse = analyserDemandeModificationEpreuve(await lireJson(requete));
+  const analyse = analyserDemandeModificationCompetition(await lireJson(requete));
   if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
-  const resultat = await club.modifierEpreuve(route.id, analyse.demande, compte.nom);
-  if (resultat.ok) return Response.json(resultat satisfies ReponseEpreuve);
-  if (resultat.erreur === 'EPREUVE_INCONNUE') return refuserSession(404, resultat.erreur);
-  return Response.json(resultat satisfies ReponseEpreuve, { status: 409 });
+  const resultat = await club.modifierCompetition(route.id, analyse.demande, compte.nom);
+  if (resultat.ok) return Response.json(resultat satisfies ReponseCompetition);
+  if (resultat.erreur === 'COMPETITION_INCONNUE') return refuserSession(404, resultat.erreur);
+  return Response.json(resultat satisfies ReponseCompetition, { status: 409 });
 }
 
-/** Contenu d'un élément à supprimer : existe-t-il, et quelles compétitions de l'index lui sont rattachées. */
+/** Contenu d'un élément à supprimer : existe-t-il, et quelles épreuves de l'index lui sont rattachées. */
 interface ContenuASupprimer {
   existe: boolean;
-  competitions: CompetitionASupprimer[];
+  epreuves: EpreuveASupprimer[];
 }
 
 /**
- * US-041 et US-042 (docs/protocole.md §14, ADR-0020) : supprime une épreuve ou une manifestation avec ses compétitions,
- * par morceaux. Chaque requête traite au plus `LIMITE_SUPPRESSION_CONTENU` compétitions (limite de sous-requêtes du plan
- * gratuit) ; l'élément n'est retiré qu'avec la dernière, donc une interruption se reprend en relançant. Une compétition en
- * cours bloque tout, avant toute écriture. `terminer` retire l'élément une fois ses compétitions supprimées et renvoie le
- * nombre de compétitions apparues entre-temps (PC hors ligne) : 0 si l'élément est retiré.
+ * US-041 et US-042 (docs/protocole.md §14, ADR-0020) : supprime une compétition ou une manifestation avec ses épreuves,
+ * par morceaux. Chaque requête traite au plus `LIMITE_SUPPRESSION_CONTENU` épreuves (limite de sous-requêtes du plan
+ * gratuit) ; l'élément n'est retiré qu'avec la dernière, donc une interruption se reprend en relançant. Une épreuve en
+ * cours bloque tout, avant toute écriture. `terminer` retire l'élément une fois ses épreuves supprimées et renvoie le
+ * nombre d’épreuves apparues entre-temps (PC hors ligne) : 0 si l'élément est retiré.
  */
 async function supprimerContenuParMorceaux(
   env: Env,
@@ -647,26 +647,26 @@ async function supprimerContenuParMorceaux(
   if (!autorisationAdministrateur(compte)) return refuserSession(403, 'ACCES_REFUSE');
   const reponse = (supprimees: number, restantes: number) =>
     Response.json({ ok: true, termine: restantes === 0, supprimees, restantes } satisfies ReponseSuppressionContenu);
-  const { existe, competitions } = await lireContenu();
+  const { existe, epreuves } = await lireContenu();
   if (!existe) return reponse(0, 0);
-  const plan = planifierSuppressionContenu(competitions, LIMITE_SUPPRESSION_CONTENU);
+  const plan = planifierSuppressionContenu(epreuves, LIMITE_SUPPRESSION_CONTENU);
   if (plan.etat === 'bloquee') {
     const refus = {
       ok: false,
-      erreur: 'COMPETITION_EN_COURS',
+      erreur: 'EPREUVE_EN_COURS',
       enCours: plan.enCours,
     } satisfies ReponseSuppressionContenu;
     return Response.json(refus, { status: 409 });
   }
-  const aEffacer = await club.supprimerCompetitions(plan.ids);
-  await Promise.all(aEffacer.map((id) => objetCompetition(env, id).supprimer()));
+  const aEffacer = await club.supprimerEpreuves(plan.ids);
+  await Promise.all(aEffacer.map((id) => objetEpreuve(env, id).supprimer()));
   if (plan.restantes > 0) return reponse(plan.ids.length, plan.restantes);
   return reponse(plan.ids.length, await terminer());
 }
 
-/** US-041 : une épreuve avec ses compétitions ; elle est retirée avec le dernier morceau. */
-function supprimerEpreuveAvecContenu(
-  epreuveId: string,
+/** US-041 : une compétition avec ses épreuves ; elle est retirée avec le dernier morceau. */
+function supprimerCompetitionAvecContenu(
+  competitionId: string,
   env: Env,
   club: DurableObjectStub<Club>,
   compte: CompteStocke,
@@ -675,18 +675,18 @@ function supprimerEpreuveAvecContenu(
     env,
     club,
     compte,
-    () => club.contenuEpreuve(epreuveId),
+    () => club.contenuCompetition(competitionId),
     async () => {
-      const fin = await club.supprimerEpreuve(epreuveId);
-      if (!fin.ok && fin.erreur === 'EPREUVE_NON_VIDE') {
-        return (await club.contenuEpreuve(epreuveId)).competitions.length;
+      const fin = await club.supprimerCompetition(competitionId);
+      if (!fin.ok && fin.erreur === 'COMPETITION_NON_VIDE') {
+        return (await club.contenuCompetition(competitionId)).epreuves.length;
       }
       return 0;
     },
   );
 }
 
-/** US-042 : une manifestation avec ses compétitions et ses épreuves ; elles sont retirées avec le dernier morceau. */
+/** US-042 : une manifestation avec ses épreuves et ses compétitions ; elles sont retirées avec le dernier morceau. */
 function supprimerManifestationAvecContenu(
   manifestationId: string,
   env: Env,
@@ -699,41 +699,41 @@ function supprimerManifestationAvecContenu(
     compte,
     () => club.contenuManifestation(manifestationId),
     async () => {
-      const fin = await club.supprimerManifestationEtEpreuves(manifestationId);
-      return fin.ok ? 0 : (await club.contenuManifestation(manifestationId)).competitions.length;
+      const fin = await club.supprimerManifestationEtCompetitions(manifestationId);
+      return fin.ok ? 0 : (await club.contenuManifestation(manifestationId)).epreuves.length;
     },
   );
 }
 
-/** DO de la compétition, nommé par club (ADR-0014). */
-function objetCompetition(env: Env, competitionId: string): DurableObjectStub<Competition> {
-  return env.COMPETITIONS.get(env.COMPETITIONS.idFromName(`competition:${env.CLUB_ID}:${competitionId}`));
+/** DO de l’épreuve, nommé par club (ADR-0014). */
+function objetEpreuve(env: Env, epreuveId: string): DurableObjectStub<Epreuve> {
+  return env.EPREUVES.get(env.EPREUVES.idFromName(`epreuve:${env.CLUB_ID}:${epreuveId}`));
 }
 
 /**
- * US-022 (ADR-0016, docs/protocole.md §11) : index des compétitions du club, téléchargement et envoi d'un lot du
+ * US-022 (ADR-0016, docs/protocole.md §11) : index des épreuves du club, téléchargement et envoi d'un lot du
  * journal. Un lot accepté met à jour l'index avec le résumé fourni par le pilote ; le serveur ne calcule rien.
  */
-async function gererCompetitions(
-  route: Extract<RouteSession, { route: 'competitions' | 'competition' | 'evenements' | 'pilote' | 'presence' }>,
+async function gererEpreuves(
+  route: Extract<RouteSession, { route: 'epreuves' | 'epreuve' | 'evenements' | 'pilote' | 'presence' }>,
   requete: Request,
   env: Env,
   club: DurableObjectStub<Club>,
   compte: CompteStocke,
 ): Promise<Response> {
-  if (route.route === 'competitions') {
-    const [competitions, supprimees] = await Promise.all([club.listerCompetitions(), club.listerSupprimees()]);
-    return Response.json({ ok: true, competitions, supprimees } satisfies ReponseCompetitions);
+  if (route.route === 'epreuves') {
+    const [epreuves, supprimees] = await Promise.all([club.listerEpreuves(), club.listerSupprimees()]);
+    return Response.json({ ok: true, epreuves, supprimees } satisfies ReponseEpreuves);
   }
-  const competition = objetCompetition(env, route.competitionId);
-  if (route.route === 'competition') return supprimerCompetition(competition, club, compte, route.competitionId);
-  // US-039 CA-4 : une compétition supprimée ne se lit, ne s'écrit et ne se reprend plus.
-  if (await club.supprimee(route.competitionId)) return refuserSession(410, 'COMPETITION_SUPPRIMEE');
-  if (route.route === 'pilote') return gererPilote(route.competitionId, requete, competition, club, compte);
-  if (route.route === 'presence') return gererPresence(route.competitionId, requete, competition, club);
+  const epreuve = objetEpreuve(env, route.epreuveId);
+  if (route.route === 'epreuve') return supprimerEpreuve(epreuve, club, compte, route.epreuveId);
+  // US-039 CA-4 : une épreuve supprimée ne se lit, ne s'écrit et ne se reprend plus.
+  if (await club.supprimee(route.epreuveId)) return refuserSession(410, 'EPREUVE_SUPPRIMEE');
+  if (route.route === 'pilote') return gererPilote(route.epreuveId, requete, epreuve, club, compte);
+  if (route.route === 'presence') return gererPresence(route.epreuveId, requete, epreuve, club);
   if (requete.method === 'GET') {
-    const journal = await competition.lire();
-    if (!journal) return refuserSession(404, 'COMPETITION_INCONNUE');
+    const journal = await epreuve.lire();
+    if (!journal) return refuserSession(404, 'EPREUVE_INCONNUE');
     return Response.json({ ok: true, ...journal } satisfies ReponseJournal);
   }
   const texte = await requete.text();
@@ -746,14 +746,14 @@ async function gererCompetitions(
   }
   const analyse = analyserDemandeEnvoi(corps);
   if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
-  const lieu = { clubId: env.CLUB_ID, competitionId: route.competitionId };
-  const decision = await competition.ajouter(lieu, analyse.demande);
+  const lieu = { clubId: env.CLUB_ID, epreuveId: route.epreuveId };
+  const decision = await epreuve.ajouter(lieu, analyse.demande);
   if (!decision.ok) {
     const { statut, ...refus } = decision;
-    const pilote = refus.erreur === 'PAS_PILOTE' ? await piloteEnPlace(club, route.competitionId) : {};
+    const pilote = refus.erreur === 'PAS_PILOTE' ? await piloteEnPlace(club, route.epreuveId) : {};
     return Response.json({ ...refus, ...pilote, ok: false } satisfies ReponseEnvoi, { status: statut });
   }
-  await club.indexerCompetition(ligneIndex(route.competitionId, analyse.demande, compte.nom));
+  await club.indexerEpreuve(ligneIndex(route.epreuveId, analyse.demande, compte.nom));
   const dernierSeq = analyse.demande.depuis + analyse.demande.evenements.length;
   return Response.json({ ok: true, dernierSeq } satisfies ReponseEnvoi);
 }
@@ -762,22 +762,22 @@ async function gererCompetitions(
  * US-039 (docs/protocole.md §14) : suppression définitive, réservée aux administrateurs. L'index pose la pierre
  * tombale avant que le journal soit effacé : une suppression interrompue est terminée par la suivante.
  */
-async function supprimerCompetition(
-  competition: DurableObjectStub<Competition>,
+async function supprimerEpreuve(
+  epreuve: DurableObjectStub<Epreuve>,
   club: DurableObjectStub<Club>,
   compte: CompteStocke,
-  competitionId: string,
+  epreuveId: string,
 ): Promise<Response> {
   if (!autorisationAdministrateur(compte)) return refuserSession(403, 'ACCES_REFUSE');
-  const resultat = await club.supprimerCompetition(competitionId);
+  const resultat = await club.supprimerEpreuve(epreuveId);
   if (!resultat.ok) return refuserSession(resultat.statut, resultat.erreur);
-  if (resultat.aEffacer) await competition.supprimer();
-  return Response.json({ ok: true } satisfies ReponseSuppressionCompetition);
+  if (resultat.aEffacer) await epreuve.supprimer();
+  return Response.json({ ok: true } satisfies ReponseSuppressionEpreuve);
 }
 
 /** Pilote en place d'après l'index du club (US-029), joint à un refus pour dire qui a la main. */
-async function piloteEnPlace(club: DurableObjectStub<Club>, competitionId: string) {
-  const ligne = await club.ligneCompetition(competitionId);
+async function piloteEnPlace(club: DurableObjectStub<Club>, epreuveId: string) {
+  const ligne = await club.ligneEpreuve(epreuveId);
   return ligne ? { piloteAppareil: ligne.piloteAppareil, piloteNom: ligne.piloteNom } : {};
 }
 
@@ -786,43 +786,43 @@ async function piloteEnPlace(club: DurableObjectStub<Club>, competitionId: strin
  * demandeur, à condition qu'il vise le pilote réellement en place.
  */
 async function gererPilote(
-  competitionId: string,
+  epreuveId: string,
   requete: Request,
-  competition: DurableObjectStub<Competition>,
+  epreuve: DurableObjectStub<Epreuve>,
   club: DurableObjectStub<Club>,
   compte: CompteStocke,
 ): Promise<Response> {
   if (requete.method === 'GET') {
-    const etat = await competition.etatPilote();
-    if (!etat) return refuserSession(404, 'COMPETITION_INCONNUE');
-    const { piloteNom } = (await piloteEnPlace(club, competitionId)) as { piloteNom?: string };
+    const etat = await epreuve.etatPilote();
+    if (!etat) return refuserSession(404, 'EPREUVE_INCONNUE');
+    const { piloteNom } = (await piloteEnPlace(club, epreuveId)) as { piloteNom?: string };
     return Response.json({ ok: true, ...etat, piloteNom: piloteNom ?? '' } satisfies ReponsePilote);
   }
   const analyse = analyserDemandePriseDeMain(await lireJson(requete));
   if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
-  const decision = await competition.prendreLaMain(analyse.demande);
+  const decision = await epreuve.prendreLaMain(analyse.demande);
   if (!decision.ok) {
     const { statut, ...refus } = decision;
-    const pilote = refus.erreur === 'MAIN_DEJA_PRISE' ? await piloteEnPlace(club, competitionId) : {};
+    const pilote = refus.erreur === 'MAIN_DEJA_PRISE' ? await piloteEnPlace(club, epreuveId) : {};
     return Response.json({ ...refus, ...pilote, ok: false } satisfies ReponsePriseDeMain, { status: statut });
   }
-  await club.changerPilote(competitionId, analyse.demande.appareilId, compte.nom);
+  await club.changerPilote(epreuveId, analyse.demande.appareilId, compte.nom);
   return Response.json(decision satisfies ReponsePriseDeMain);
 }
 
 /** US-029 CA-2 : battement du pilote ; un ancien pilote reçoit `PAS_PILOTE` et le nom de celui qui a pris la main. */
 async function gererPresence(
-  competitionId: string,
+  epreuveId: string,
   requete: Request,
-  competition: DurableObjectStub<Competition>,
+  epreuve: DurableObjectStub<Epreuve>,
   club: DurableObjectStub<Club>,
 ): Promise<Response> {
   const analyse = analyserDemandePresence(await lireJson(requete));
   if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
-  const decision = await competition.battement(analyse.demande.appareilId);
+  const decision = await epreuve.battement(analyse.demande.appareilId);
   if (decision.ok) return Response.json({ ok: true } satisfies ReponsePresence);
   const { statut, ...refus } = decision;
-  const pilote = refus.erreur === 'PAS_PILOTE' ? await piloteEnPlace(club, competitionId) : {};
+  const pilote = refus.erreur === 'PAS_PILOTE' ? await piloteEnPlace(club, epreuveId) : {};
   return Response.json({ ...refus, ...pilote, ok: false } satisfies ReponsePresence, { status: statut });
 }
 

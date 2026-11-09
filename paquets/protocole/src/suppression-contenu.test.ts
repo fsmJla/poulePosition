@@ -17,10 +17,10 @@ describe('réponse d’une suppression avec contenu (US-041, docs/protocole.md �
     });
   });
 
-  it('US-041 CA-3 : lit le refus avec les noms des compétitions en cours', () => {
+  it('US-041 CA-3 : lit le refus avec les noms des épreuves en cours', () => {
     expect(
-      analyserReponseSuppressionContenu({ ok: false, erreur: 'COMPETITION_EN_COURS', enCours: ['Sabre M13', 'Épée'] }),
-    ).toEqual({ ok: false, erreur: 'COMPETITION_EN_COURS', enCours: ['Sabre M13', 'Épée'] });
+      analyserReponseSuppressionContenu({ ok: false, erreur: 'EPREUVE_EN_COURS', enCours: ['Sabre M13', 'Épée'] }),
+    ).toEqual({ ok: false, erreur: 'EPREUVE_EN_COURS', enCours: ['Sabre M13', 'Épée'] });
   });
 
   it('US-041 CA-2 : lit un refus sans liste', () => {

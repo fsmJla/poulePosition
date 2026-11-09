@@ -1,5 +1,5 @@
-// Durable Object « Competition » : une instance par compétition (idFromName(`competition:<clubId>:<id>`), ADR-0014).
-// US-001 : accepte les connexions et souhaite la bienvenue. WebSockets en hibernation : une compétition
+// Durable Object « Epreuve » : une instance par épreuve (idFromName(`epreuve:<clubId>:<id>`), ADR-0014).
+// US-001 : accepte les connexions et souhaite la bienvenue. WebSockets en hibernation : une épreuve
 // silencieuse ne consomme pas de durée, et le ping reçoit son pong sans réveiller l'objet (ADR-0004).
 // US-022 (ADR-0016) : copie du journal envoyée par le pilote, ajoutée lot par lot, et appareil pilote.
 import { DurableObject } from 'cloudflare:workers';
@@ -22,7 +22,7 @@ import type { Env } from './index';
 /** Clé de l'unique ligne de la table `pilote`. */
 const LIGNE_UNIQUE = 'courante';
 
-export class Competition extends DurableObject<Env> {
+export class Epreuve extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(MESSAGE_PING, MESSAGE_PONG));
@@ -52,7 +52,7 @@ export class Competition extends DurableObject<Env> {
   }
 
   /** Ajoute un lot s'il vient du pilote et suit le dernier seq (ADR-0016) ; le premier lot fixe le pilote. */
-  ajouter(lieu: { clubId: string; competitionId: string }, demande: DemandeEnvoi): DecisionAjout {
+  ajouter(lieu: { clubId: string; epreuveId: string }, demande: DemandeEnvoi): DecisionAjout {
     return this.ctx.storage.transactionSync(() => {
       const decision = deciderAjout(this.etat(), demande, lieu);
       if (!decision.ok) return decision;
@@ -88,7 +88,7 @@ export class Competition extends DurableObject<Env> {
         demande.appareilId,
       );
       this.noterPresence(Date.now());
-      const journal = this.lire() as NonNullable<ReturnType<Competition['lire']>>;
+      const journal = this.lire() as NonNullable<ReturnType<Epreuve['lire']>>;
       return { ok: true as const, ancienAppareil: decision.ancienAppareil, ...journal };
     });
   }
@@ -102,7 +102,7 @@ export class Competition extends DurableObject<Env> {
     });
   }
 
-  /** US-029 CA-4 : pilote en place et présence, ou null si la compétition n'a encore rien reçu. */
+  /** US-029 CA-4 : pilote en place et présence, ou null si l’épreuve n'a encore rien reçu. */
   etatPilote(): { piloteAppareil: string; connecte: boolean } | null {
     const { piloteAppareil } = this.etat();
     if (piloteAppareil === null) return null;
@@ -112,7 +112,7 @@ export class Competition extends DurableObject<Env> {
     return { piloteAppareil, connecte: piloteConnecte(ligne?.vu_le ?? null, Date.now()) };
   }
 
-  /** Journal complet, ou null si la compétition n'a encore rien reçu. */
+  /** Journal complet, ou null si l’épreuve n'a encore rien reçu. */
   lire(): { evenements: Evenement[]; dernierSeq: number; piloteAppareil: string } | null {
     const { dernierSeq, piloteAppareil } = this.etat();
     if (piloteAppareil === null) return null;
@@ -130,7 +130,7 @@ export class Competition extends DurableObject<Env> {
   async supprimer(): Promise<void> {
     for (const connexion of this.ctx.getWebSockets()) {
       try {
-        connexion.close(1000, 'Compétition supprimée');
+        connexion.close(1000, 'Épreuve supprimée');
       } catch {
         // déjà fermée
       }
@@ -141,10 +141,10 @@ export class Competition extends DurableObject<Env> {
   }
 
   override async fetch(requete: Request): Promise<Response> {
-    const competitionId = new URL(requete.url).searchParams.get('competitionId') ?? '';
+    const epreuveId = new URL(requete.url).searchParams.get('epreuveId') ?? '';
     const [client, serveur] = Object.values(new WebSocketPair()) as [WebSocket, WebSocket];
     this.ctx.acceptWebSocket(serveur);
-    serveur.send(messageBienvenue(competitionId));
+    serveur.send(messageBienvenue(epreuveId));
     return new Response(null, { status: 101, webSocket: client });
   }
 

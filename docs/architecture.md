@@ -9,8 +9,8 @@
 > | Authentification hors ligne | **Appareil déjà identifié en ligne** + mot de passe vérifiable localement |
 > | Multi-clubs | **Mon club**, données préparées pour plusieurs clubs (identifiant de club partout) |
 > | Taille maximale | **~200 tireurs, ~20 pistes** |
-> | Portée du QR code | **Toute la compétition**, révocable |
-> | Droits par défaut | **Arbitres et tireurs saisissent** (paramétrable par compétition) |
+> | Portée du QR code | **Toute l’épreuve**, révocable |
+> | Droits par défaut | **Arbitres et tireurs saisissent** (paramétrable par épreuve) |
 > | Mineurs | **Pas de traitement spécifique** (purge à 1 an pour tous) |
 > | Staging | Non pour l'instant |
 >
@@ -46,9 +46,9 @@ Une perte de connexion ne fait donc perdre que ces fonctions de partage (ADR-000
                     │                                               │                        │
  ┌──────────────────┴──────── Cloudflare Workers Free (ADR-0004) ───┴────────────────────────┴───────┐
  │  Worker : routes HTTP/WS, origines, authentification (ADR-0006), limiteur d'essais                 │
- │  DO « Competition » (1 par compétition, SQLite) : copie du journal, dernières vues publiées,       │
+ │  DO « Epreuve » (1 par épreuve, SQLite) : copie du journal, dernières vues publiées,               │
  │      boîte de saisies en attente, fichiers joints, WebSockets en hibernation (≤ 300 clients)       │
- │  DO « Club » (1 par club, SQLite) : comptes, index des compétitions                                │
+ │  DO « Club » (1 par club, SQLite) : comptes, index des épreuves                                    │
  │  DO « Limiteur » (1 par IP) : repris tel quel du relais                                            │
  └────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -84,7 +84,7 @@ poulePosition/
 └─ docs/                exigences, architecture, ADR, backlog
 ```
 
-## 5. Budget gratuit : marge estimée pour un jour de compétition
+## 5. Budget gratuit : marge estimée pour un jour d’épreuve
 
 Hypothèse : 150 clients connectés 10 h, 200 tireurs, ~1 500 matchs saisis, ping applicatif toutes les 30 s.
 

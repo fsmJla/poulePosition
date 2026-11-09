@@ -181,7 +181,7 @@ describe('avatar du compte (US-016)', () => {
 });
 
 describe('club du compte (US-025)', () => {
-  it('US-025 CA-6 : lit le club du compte connecté, gardé pour créer une compétition hors ligne', () => {
+  it('US-025 CA-6 : lit le club du compte connecté, gardé pour créer une épreuve hors ligne', () => {
     const lue = analyserReponseSession(sessionValide);
     expect(lue.ok && lue.session.compte.clubId).toBe('pessac');
   });

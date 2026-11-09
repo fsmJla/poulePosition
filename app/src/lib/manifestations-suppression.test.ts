@@ -26,7 +26,7 @@ function client(envoyer: ReturnType<typeof serveur>, enLigne = true) {
     jeton: async () => 'jeton',
     envoyer,
     enLigne: () => enLigne,
-    competitions: async () => [],
+    epreuves: async () => [],
   });
 }
 
@@ -68,11 +68,11 @@ describe('suppression d’une manifestation avec son contenu, côté PC (US-042)
     expect(await client(relance).supprimerAvecContenu('m1')).toEqual({ ok: true, supprimees: 20 });
   });
 
-  it('US-042 CA-3 : une compétition en cours est refusée avec les noms, sans rien supprimer', async () => {
-    const envoyer = serveur([reponse(409, { ok: false, erreur: 'COMPETITION_EN_COURS', enCours: ['Épée M15'] })]);
+  it('US-042 CA-3 : une épreuve en cours est refusée avec les noms, sans rien supprimer', async () => {
+    const envoyer = serveur([reponse(409, { ok: false, erreur: 'EPREUVE_EN_COURS', enCours: ['Épée M15'] })]);
     expect(await client(envoyer).supprimerAvecContenu('m1')).toEqual({
       ok: false,
-      erreur: 'COMPETITION_EN_COURS',
+      erreur: 'EPREUVE_EN_COURS',
       supprimees: 0,
       restantes: 0,
       enCours: ['Épée M15'],

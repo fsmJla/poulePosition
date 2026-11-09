@@ -1,21 +1,21 @@
-// Formule d'une compétition (US-028) : valeurs par défaut, réglage des touches et du match pour la 3e place, historique
+// Formule d'une épreuve (US-028) : valeurs par défaut, réglage des touches et du match pour la 3e place, historique
 // des changements, lecture seule hors du PC pilote, réglage hors ligne.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
 
-/** Nom unique, pour reconnaître la compétition de ce test parmi celles du club. */
+/** Nom unique, pour reconnaître l’épreuve de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 
-const MOTIF_PAGE_COMPETITION = /\/competitions\/[0-9a-f-]{36}$/;
+const MOTIF_PAGE_EPREUVE = /\/epreuves\/[0-9a-f-]{36}$/;
 
-/** Crée une compétition par le formulaire et attend que le serveur l'ait reçue. */
-async function creerCompetition(page: Page, nom: string) {
-  await page.goto('/competitions/nouvelle');
+/** Crée une épreuve par le formulaire et attend que le serveur l'ait reçue. */
+async function creerEpreuve(page: Page, nom: string) {
+  await page.goto('/epreuves/nouvelle');
   await page.getByLabel('Nom', { exact: true }).fill(nom);
   await page.getByLabel('Arme').selectOption('sabre');
   await page.getByLabel('Lieu').fill('Salle Bellegrave');
-  await page.getByRole('button', { name: 'Créer la compétition' }).click();
-  await expect(page).toHaveURL(MOTIF_PAGE_COMPETITION);
+  await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
+  await expect(page).toHaveURL(MOTIF_PAGE_EPREUVE);
   // La page n'affiche le compte des envois en attente qu'une fois chargée : attendre le pilote évite un faux « zéro ».
   await expect(page.getByText('Ce PC est le pilote', { exact: true })).toBeVisible();
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
@@ -23,15 +23,15 @@ async function creerCompetition(page: Page, nom: string) {
 
 const ouvrirFormule = async (page: Page) => {
   await page.getByRole('link', { name: 'Formule', exact: true }).click();
-  await expect(page).toHaveURL(/\/competitions\/[0-9a-f-]{36}\/formule$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Formule de la compétition');
+  await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}\/formule$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Formule de l’épreuve');
 };
 
 const enregistrer = (page: Page) => page.getByRole('button', { name: 'Enregistrer la formule' }).click();
 
-test('US-028 CA-1 : une nouvelle compétition a la formule par défaut', async ({ page }) => {
+test('US-028 CA-1 : une nouvelle épreuve a la formule par défaut', async ({ page }) => {
   await seConnecter(page);
-  await creerCompetition(page, nomUnique());
+  await creerEpreuve(page, nomUnique());
 
   await expect(page.getByText('Poules en 5 touches, sans élimination · Tableau en 15 touches')).toBeVisible();
   await ouvrirFormule(page);
@@ -45,7 +45,7 @@ test('US-028 CA-2 et CA-6 : régler les touches et la 3e place met la formule à
   page,
 }) => {
   await seConnecter(page);
-  await creerCompetition(page, nomUnique());
+  await creerEpreuve(page, nomUnique());
   await ouvrirFormule(page);
   await expect(page.getByText('Aucun changement de formule')).toBeVisible();
 
@@ -74,7 +74,7 @@ test('US-028 CA-2 et CA-6 : régler les touches et la 3e place met la formule à
 
 test('US-028 CA-2 : des touches hors bornes sont refusées', async ({ page }) => {
   await seConnecter(page);
-  await creerCompetition(page, nomUnique());
+  await creerEpreuve(page, nomUnique());
   await ouvrirFormule(page);
 
   await page.getByLabel('Touches en poules').fill('12');
@@ -85,7 +85,7 @@ test('US-028 CA-2 : des touches hors bornes sont refusées', async ({ page }) =>
 
 test('US-028 : un autre PC voit la formule en lecture seule', async ({ page, browser, baseURL }) => {
   await seConnecter(page);
-  await creerCompetition(page, nomUnique());
+  await creerEpreuve(page, nomUnique());
   const adresse = new URL(page.url()).pathname;
 
   const autrePc = await browser.newContext({ baseURL });
@@ -93,7 +93,7 @@ test('US-028 : un autre PC voit la formule en lecture seule', async ({ page, bro
     const autre = await autrePc.newPage();
     await seConnecter(autre);
     await autre.goto(`${adresse}/formule`);
-    await expect(autre.getByText('Lecture seule : cette compétition est pilotée par un autre PC')).toBeVisible({
+    await expect(autre.getByText('Lecture seule : cette épreuve est pilotée par un autre PC')).toBeVisible({
       timeout: 20_000,
     });
     await expect(autre.getByLabel('Touches en poules')).toBeDisabled();
@@ -109,7 +109,7 @@ test('US-028 hors ligne : régler la formule réseau coupé, puis l’envoyer au
   context,
 }) => {
   await seConnecter(page);
-  await creerCompetition(page, nomUnique());
+  await creerEpreuve(page, nomUnique());
 
   await context.setOffline(true);
   await ouvrirFormule(page);

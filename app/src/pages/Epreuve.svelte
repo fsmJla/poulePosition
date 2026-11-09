@@ -1,19 +1,14 @@
 <script lang="ts">
-  // Page d'une compétition (US-025 CA-2), réservée : ses informations, son statut, sa publication et son pilote. Sur
+  // Page d'une épreuve (US-025 CA-2), réservée : ses informations, son statut, sa publication et son pilote. Sur
   // le PC pilote, l'écriture est réservée à un seul onglet (US-021) et les modifications en attente d'envoi sont
   // comptées (US-022) ; sur un autre PC, c'est une copie en lecture seule, datée.
   import { onMount } from 'svelte';
-  import type { Competition } from '@poule-position/domaine';
+  import type { Epreuve } from '@poule-position/domaine';
   import Lien from '../composants/Lien.svelte';
   import { prendreEcriture, type Journal } from '../lib/journal';
   import { contenuExport, libellePilote } from '../lib/pilotage';
   import type { Ecart, SessionAppareil } from '../lib/stockage';
-  import {
-    cheminFormuleCompetition,
-    cheminModificationCompetition,
-    cheminParametresCompetition,
-    CHEMINS,
-  } from '../lib/routes';
+  import { cheminFormuleEpreuve, cheminModificationEpreuve, cheminParametresEpreuve, CHEMINS } from '../lib/routes';
   import { nomConfirme, peutSupprimer } from '../lib/suppression';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -21,33 +16,33 @@
   interface Proprietes {
     /** US-029 : compte et club qui signent le changement de pilote. */
     session: SessionAppareil;
-    competitionId: string;
+    epreuveId: string;
     journal: Journal;
     synchronisation: Synchronisation;
     naviguer: (chemin: string) => void;
   }
 
-  let { session, competitionId, journal, synchronisation, naviguer }: Proprietes = $props();
+  let { session, epreuveId, journal, synchronisation, naviguer }: Proprietes = $props();
 
-  const t = textes.competitions;
+  const t = textes.epreuves;
 
-  let competition: Competition | null = $state(null);
+  let epreuve: Epreuve | null = $state(null);
   let chargee = $state(false);
   let pilote = $state(false);
   let copieLe: number | null = $state(null);
-  /** Faux si un autre onglet détient déjà l'écriture de cette compétition. */
+  /** Faux si un autre onglet détient déjà l'écriture de cette épreuve. */
   let ecriture = $state(true);
   let enAttente = $state(0);
   let jamaisEnvoyee = $state(false);
 
   async function compterEnAttente() {
-    enAttente = await synchronisation.enAttente(competitionId);
-    jamaisEnvoyee = await synchronisation.jamaisEnvoyee(competitionId);
+    enAttente = await synchronisation.enAttente(epreuveId);
+    jamaisEnvoyee = await synchronisation.jamaisEnvoyee(epreuveId);
   }
 
   /** Envoie ce qui attend (sans effet hors ligne), puis met l'indicateur à jour. */
   async function envoyer() {
-    await synchronisation.envoyer(competitionId);
+    await synchronisation.envoyer(epreuveId);
     await compterEnAttente();
   }
 
@@ -60,18 +55,18 @@
   let liberer: (() => void) | null = null;
   let demonte = false;
 
-  /** Lit la compétition (copie à jour si ce PC n'est pas le pilote) et réserve l'écriture si ce PC la pilote. */
+  /** Lit l’épreuve (copie à jour si ce PC n'est pas le pilote) et réserve l'écriture si ce PC la pilote. */
   async function charger() {
     liberer?.();
     liberer = null;
-    const resultat = await synchronisation.telechargerCopie(competitionId);
+    const resultat = await synchronisation.telechargerCopie(epreuveId);
     const copie = resultat.ok ? resultat : resultat.copie;
-    competition = copie?.projection.competition ?? null;
+    epreuve = copie?.projection.epreuve ?? null;
     copieLe = copie?.copieLe ?? null;
-    pilote = (await journal.etat(competitionId))?.pilote ?? false;
-    ecartes = await journal.lireEcartes(competitionId);
+    pilote = (await journal.etat(epreuveId))?.pilote ?? false;
+    ecartes = await journal.lireEcartes(epreuveId);
     if (pilote) {
-      liberer = await prendreEcriture(competitionId);
+      liberer = await prendreEcriture(epreuveId);
       if (demonte) liberer?.();
       ecriture = liberer !== null;
       await compterEnAttente();
@@ -93,7 +88,7 @@
     window.addEventListener('offline', surHorsLigne);
     // US-029 CA-2 : un autre PC a pris la main, cette page passe aussitôt en lecture seule.
     const arreterPerte = synchronisation.surPerte((perte) => {
-      if (perte.competitionId !== competitionId) return;
+      if (perte.epreuveId !== epreuveId) return;
       perteLibelle = libellePilote(perte.piloteNom, perte.piloteAppareil);
       void charger();
     });
@@ -118,7 +113,7 @@
   async function demanderPrise() {
     etapePrise = 'recherche';
     erreurPrise = null;
-    const reponse = await synchronisation.pilote(competitionId);
+    const reponse = await synchronisation.pilote(epreuveId);
     if (!reponse.ok) {
       etapePrise = 'aucune';
       erreurPrise = tp.erreurs[reponse.erreur];
@@ -132,12 +127,12 @@
     etapePrise = 'confirmation';
   }
 
-  /** CA-1 : prend la main, puis recharge la compétition, désormais modifiable ici. */
+  /** CA-1 : prend la main, puis recharge l’épreuve, désormais modifiable ici. */
   async function confirmerPrise() {
     if (!piloteEnPlace || priseEnCours) return;
     priseEnCours = true;
     try {
-      const reponse = await synchronisation.prendreLaMain(competitionId, piloteEnPlace.appareil, {
+      const reponse = await synchronisation.prendreLaMain(epreuveId, piloteEnPlace.appareil, {
         clubId: session.compte.clubId ?? '',
         auteur: session.compte.email,
       });
@@ -158,14 +153,14 @@
   /** CA-3 : télécharge les modifications écartées au format du journal. */
   function exporter() {
     const lien = document.createElement('a');
-    lien.href = URL.createObjectURL(new Blob([contenuExport(competitionId, ecartes)], { type: 'application/json' }));
-    lien.download = `modifications-ecartees-${competitionId}.json`;
+    lien.href = URL.createObjectURL(new Blob([contenuExport(epreuveId, ecartes)], { type: 'application/json' }));
+    lien.download = `modifications-ecartees-${epreuveId}.json`;
     lien.click();
     URL.revokeObjectURL(lien.href);
   }
 
   async function comprendre() {
-    await journal.effacerEcartes(competitionId);
+    await journal.effacerEcartes(epreuveId);
     ecartes = [];
     perteLibelle = null;
   }
@@ -179,16 +174,16 @@
   const droitSuppression = $derived(droit());
 
   function droit() {
-    return competition ? peutSupprimer(session.compte.role, competition.statut) : null;
+    return epreuve ? peutSupprimer(session.compte.role, epreuve.statut) : null;
   }
 
   /** CA-1 : supprime sur le serveur, puis revient à la liste ; CA-8 : le nom saisi doit être exact. */
   async function supprimer() {
-    if (!competition || suppressionEnCours || !nomConfirme(saisieNom, competition.nom)) return;
+    if (!epreuve || suppressionEnCours || !nomConfirme(saisieNom, epreuve.nom)) return;
     suppressionEnCours = true;
     erreurSuppression = null;
     try {
-      const reponse = await synchronisation.supprimerCompetition(competitionId);
+      const reponse = await synchronisation.supprimerEpreuve(epreuveId);
       if (reponse.ok) naviguer(CHEMINS.organisateur);
       else erreurSuppression = ts.erreurs[reponse.erreur];
     } finally {
@@ -205,13 +200,13 @@
 <main>
   {#if !chargee}
     <p role="status">{t.chargement}</p>
-  {:else if !competition}
+  {:else if !epreuve}
     <p class="message" role="alert">{t.introuvable}</p>
   {:else}
-    <h1>{competition.nom}</h1>
+    <h1>{epreuve.nom}</h1>
     <ul class="etiquettes">
-      <li>{t.statuts[competition.statut]}</li>
-      <li>{competition.publiee ? t.publiee : t.nonPubliee}</li>
+      <li>{t.statuts[epreuve.statut]}</li>
+      <li>{epreuve.publiee ? t.publiee : t.nonPubliee}</li>
       {#if pilote}<li class="pilote">{t.pilote}</li>{/if}
     </ul>
 
@@ -259,14 +254,14 @@
       {/if}
       {#if erreurPrise}<p class="message" role="alert">{erreurPrise}</p>{/if}
     {/if}
-    <!-- US-027 CA-3 : seul le PC pilote modifie ; ailleurs la compétition reste en lecture seule. -->
-    {#if pilote && ecriture && competition.statut !== 'archivee'}
-      <Lien chemin={cheminModificationCompetition(competitionId)} {naviguer}>{t.modifier}</Lien>
+    <!-- US-027 CA-3 : seul le PC pilote modifie ; ailleurs l’épreuve reste en lecture seule. -->
+    {#if pilote && ecriture && epreuve.statut !== 'archivee'}
+      <Lien chemin={cheminModificationEpreuve(epreuveId)} {naviguer}>{t.modifier}</Lien>
     {/if}
     <!-- US-028 : la formule se règle sur une page à part, lisible aussi en lecture seule. -->
-    <Lien chemin={cheminFormuleCompetition(competitionId)} {naviguer}>{t.modifierFormule}</Lien>
+    <Lien chemin={cheminFormuleEpreuve(epreuveId)} {naviguer}>{t.modifierFormule}</Lien>
     <!-- US-032 : paramètres (droits, noms au public), lisibles aussi en lecture seule. -->
-    <Lien chemin={cheminParametresCompetition(competitionId)} {naviguer}>{t.lienParametres}</Lien>
+    <Lien chemin={cheminParametresEpreuve(epreuveId)} {naviguer}>{t.lienParametres}</Lien>
     {#if pilote && enAttente > 0}
       <p class="envoi" role="status">
         {jamaisEnvoyee ? `${t.enAttente(enAttente)} · ${t.pasEncoreEnvoyee}` : t.enAttente(enAttente)}
@@ -275,55 +270,51 @@
 
     <dl>
       <dt>{t.arme}</dt>
-      <dd>{t.armes[competition.arme]}</dd>
+      <dd>{t.armes[epreuve.arme]}</dd>
       <dt>{t.type}</dt>
-      <dd>{t.types[competition.typeCompetition]}</dd>
-      {#if competition.categorie}
+      <dd>{t.types[epreuve.typeEpreuve]}</dd>
+      {#if epreuve.categorie}
         <dt>{t.categorie}</dt>
-        <dd>{competition.categorie}</dd>
+        <dd>{epreuve.categorie}</dd>
       {/if}
-      {#if competition.sexe}
+      {#if epreuve.sexe}
         <dt>{t.sexe}</dt>
-        <dd>{t.sexes[competition.sexe]}</dd>
+        <dd>{t.sexes[epreuve.sexe]}</dd>
       {/if}
-      {#if competition.date}
+      {#if epreuve.date}
         <dt>{t.date}</dt>
-        <dd>{t.dateLongue(competition.date)}</dd>
+        <dd>{t.dateLongue(epreuve.date)}</dd>
       {/if}
       {#each ['appel', 'scratch', 'debutPoules'] as const as champ (champ)}
-        {#if competition.horaires[champ]}
+        {#if epreuve.horaires[champ]}
           <dt>{t[champ]}</dt>
-          <dd>{competition.horaires[champ]}</dd>
+          <dd>{epreuve.horaires[champ]}</dd>
         {/if}
       {/each}
-      {#if competition.lieu}
+      {#if epreuve.lieu}
         <dt>{t.lieu}</dt>
-        <dd>{competition.lieu}</dd>
+        <dd>{epreuve.lieu}</dd>
       {/if}
-      {#if competition.commentaire}
+      {#if epreuve.commentaire}
         <dt>{t.commentaire}</dt>
-        <dd class="commentaire">{competition.commentaire}</dd>
+        <dd class="commentaire">{epreuve.commentaire}</dd>
       {/if}
       <dt>{t.formuleTitre}</dt>
       <dd>
-        {competition.formule.touchesRelais === null
-          ? t.formule(
-              competition.formule.touchesPoules,
-              competition.formule.touchesTableau,
-              competition.formule.matchTroisieme,
-            )
-          : t.relais(competition.formule.touchesRelais)}
+        {epreuve.formule.touchesRelais === null
+          ? t.formule(epreuve.formule.touchesPoules, epreuve.formule.touchesTableau, epreuve.formule.matchTroisieme)
+          : t.relais(epreuve.formule.touchesRelais)}
       </dd>
     </dl>
 
-    <!-- US-039 : suppression définitive, réservée aux administrateurs, en ligne, hors compétition en cours. -->
+    <!-- US-039 : suppression définitive, réservée aux administrateurs, en ligne, hors épreuve en cours. -->
     {#if session.compte.role === 'administrateur'}
       {#if etapeSuppression === 'confirmation'}
         <div class="prise" role="group" aria-label={ts.titre}>
           <p>{ts.titre}</p>
           <p class="avertissement" role="status">{ts.avertissement}</p>
           <label>
-            {ts.saisie(competition.nom)}
+            {ts.saisie(epreuve.nom)}
             <input type="text" bind:value={saisieNom} autocomplete="off" />
           </label>
           <div class="actions">
@@ -331,7 +322,7 @@
               type="button"
               class="danger"
               onclick={supprimer}
-              disabled={suppressionEnCours || !enLigne || !nomConfirme(saisieNom, competition.nom)}
+              disabled={suppressionEnCours || !enLigne || !nomConfirme(saisieNom, epreuve.nom)}
               >{suppressionEnCours ? ts.suppression : ts.valider}</button
             >
             <button

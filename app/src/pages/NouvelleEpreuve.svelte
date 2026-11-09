@@ -1,10 +1,10 @@
 <script lang="ts">
-  // « Nouvelle compétition » (US-025), page réservée : la compétition est écrite dans le journal local, donc créée
+  // « Nouvelle épreuve » (US-025), page réservée : l’épreuve est écrite dans le journal local, donc créée
   // aussi hors ligne ; ce PC en devient le pilote et l'envoi au serveur part aussitôt, ou au retour du réseau (US-022).
-  // Le rattachement à une manifestation ou une épreuve (US-024) se choisit parmi les dernières listes du club gardées sur
-  // l'appareil : hors ligne, la compétition reste créable, isolée ou rattachée à ce que la copie contient.
-  // La même page sert à modifier une compétition (US-027, `competitionId` donné) : le formulaire est prérempli depuis le
-  // journal local et écrit `CompetitionModifiee` ; sur un PC qui n'est pas le pilote, il est en lecture seule.
+  // Le rattachement à une manifestation ou une compétition (US-024) se choisit parmi les dernières listes du club gardées sur
+  // l'appareil : hors ligne, l’épreuve reste créable, isolée ou rattachée à ce que la copie contient.
+  // La même page sert à modifier une épreuve (US-027, `epreuveId` donné) : le formulaire est prérempli depuis le
+  // journal local et écrit `EpreuveModifiee` ; sur un PC qui n'est pas le pilote, il est en lecture seule.
   import { onMount, untrack } from 'svelte';
   import {
     ARMES,
@@ -12,28 +12,28 @@
     champsModifiables,
     joursDeManifestation,
     SEXES,
-    TYPES_COMPETITION,
+    TYPES_EPREUVE,
     type ChampDonnees,
-    type ErreursCompetition,
+    type ErreursEpreuve,
     type Statut,
   } from '@poule-position/domaine';
-  import type { Epreuve, Manifestation } from '@poule-position/protocole';
+  import type { Competition, Manifestation } from '@poule-position/protocole';
   import Lien from '../composants/Lien.svelte';
   import {
     cadreDe,
     CATEGORIE_LIBRE,
-    creerCompetition,
-    modifierCompetition,
+    creerEpreuve,
+    modifierEpreuve,
     rattacher,
     saisieDe,
     saisieVide,
     type ErreurCreation,
     type ErreurModification,
-  } from '../lib/competitions';
-  import type { ClientEpreuves } from '../lib/epreuves';
+  } from '../lib/epreuves';
+  import type { ClientCompetitions } from '../lib/competitions';
   import { prendreEcriture, type Journal } from '../lib/journal';
   import type { ClientManifestations } from '../lib/manifestations';
-  import { cheminCompetition, CHEMINS } from '../lib/routes';
+  import { cheminEpreuve, CHEMINS } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -44,30 +44,30 @@
     synchronisation: Synchronisation;
     /** US-024 : listes pour le choix du rattachement. */
     clientManifestations: ClientManifestations;
-    clientEpreuves: ClientEpreuves;
+    clientCompetitions: ClientCompetitions;
     naviguer: (chemin: string) => void;
-    /** US-027 : compétition à modifier ; absent pour une création. */
-    competitionId?: string;
+    /** US-027 : épreuve à modifier ; absent pour une création. */
+    epreuveId?: string;
   }
 
-  let { session, journal, synchronisation, clientManifestations, clientEpreuves, naviguer, competitionId }: Proprietes =
+  let { session, journal, synchronisation, clientManifestations, clientCompetitions, naviguer, epreuveId }: Proprietes =
     $props();
 
-  const t = textes.competitions;
+  const t = textes.epreuves;
 
   const saisie = $state(saisieVide());
-  let erreurs: ErreursCompetition = $state({});
+  let erreurs: ErreursEpreuve = $state({});
   let erreur: ErreurCreation | ErreurModification | null = $state(null);
   let enCours = $state(false);
 
-  /** US-027 : faux tant que la compétition à modifier n'est pas lue. */
-  let chargee = $state(untrack(() => competitionId === undefined));
+  /** US-027 : faux tant que l’épreuve à modifier n'est pas lue. */
+  let chargee = $state(untrack(() => epreuveId === undefined));
   let introuvable = $state(false);
   let statut: Statut = $state('preparation');
   let pilote = $state(true);
-  /** Faux si un autre onglet détient déjà l'écriture de cette compétition. */
+  /** Faux si un autre onglet détient déjà l'écriture de cette épreuve. */
   let ecriture = $state(true);
-  const modification = $derived(competitionId !== undefined);
+  const modification = $derived(epreuveId !== undefined);
   const lectureSeule = $derived(modification && (!pilote || !ecriture));
 
   /** CA-2, CA-3 et cas limites : un champ figé par le statut, ou tout le formulaire en lecture seule, est désactivé. */
@@ -75,23 +75,23 @@
     enCours || lectureSeule || (modification && !champsModifiables(statut).includes(champ));
 
   let manifestations: Manifestation[] = $state([]);
-  let epreuves: Epreuve[] = $state([]);
-  const cadre = $derived(cadreDe(saisie, manifestations, epreuves));
-  const epreuvesChoisies = $derived(
-    epreuves.filter(({ manifestationId }) => manifestationId === saisie.manifestationId),
+  let competitions: Competition[] = $state([]);
+  const cadre = $derived(cadreDe(saisie, manifestations, competitions));
+  const competitionsChoisies = $derived(
+    competitions.filter(({ manifestationId }) => manifestationId === saisie.manifestationId),
   );
 
   /** Listes du club : à jour en ligne, sinon la dernière copie de l'appareil. */
   onMount(() => {
     let liberer: (() => void) | null = null;
     let demonte = false;
-    if (competitionId !== undefined) {
-      const identifiant = competitionId;
+    if (epreuveId !== undefined) {
+      const identifiant = epreuveId;
       void (async () => {
-        const { competition } = await journal.lire(identifiant);
-        if (competition) {
-          Object.assign(saisie, saisieDe(competition));
-          statut = competition.statut;
+        const { epreuve } = await journal.lire(identifiant);
+        if (epreuve) {
+          Object.assign(saisie, saisieDe(epreuve));
+          statut = epreuve.statut;
           pilote = (await journal.etat(identifiant))?.pilote ?? false;
           if (pilote) {
             liberer = await prendreEcriture(identifiant);
@@ -103,9 +103,9 @@
       })();
     }
     void (async () => {
-      const [lues, lus] = await Promise.all([clientManifestations.lister(), clientEpreuves.lister()]);
+      const [lues, lus] = await Promise.all([clientManifestations.lister(), clientCompetitions.lister()]);
       manifestations = lues.ok ? lues.manifestations : (lues.copie?.manifestations ?? []);
-      epreuves = lus.ok ? lus.epreuves : (lus.copie?.epreuves ?? []);
+      competitions = lus.ok ? lus.competitions : (lus.copie?.competitions ?? []);
     })();
     return () => {
       demonte = true;
@@ -114,13 +114,13 @@
   });
 
   function choisirManifestation(identifiant: string) {
-    Object.assign(saisie, rattacher($state.snapshot(saisie), identifiant, '', manifestations, epreuves));
+    Object.assign(saisie, rattacher($state.snapshot(saisie), identifiant, '', manifestations, competitions));
   }
 
-  function choisirEpreuve(identifiant: string) {
+  function choisirCompetition(identifiant: string) {
     Object.assign(
       saisie,
-      rattacher($state.snapshot(saisie), saisie.manifestationId, identifiant, manifestations, epreuves),
+      rattacher($state.snapshot(saisie), saisie.manifestationId, identifiant, manifestations, competitions),
     );
   }
 
@@ -132,27 +132,27 @@
     try {
       const contexte = { clubId: session.compte.clubId, auteur: session.compte.email };
       const resultat =
-        competitionId === undefined
-          ? await creerCompetition(
+        epreuveId === undefined
+          ? await creerEpreuve(
               journal,
               $state.snapshot(saisie),
               contexte,
               $state.snapshot(manifestations),
-              $state.snapshot(epreuves),
+              $state.snapshot(competitions),
             )
-          : await modifierCompetition(
+          : await modifierEpreuve(
               journal,
-              competitionId,
+              epreuveId,
               $state.snapshot(saisie),
               contexte,
               $state.snapshot(manifestations),
-              $state.snapshot(epreuves),
+              $state.snapshot(competitions),
             );
       if (resultat.ok) {
-        const identifiant = 'competitionId' in resultat ? resultat.competitionId : competitionId!;
-        // US-022 : envoi après l'écriture ; hors ligne, la compétition attend le retour du réseau.
+        const identifiant = 'epreuveId' in resultat ? resultat.epreuveId : epreuveId!;
+        // US-022 : envoi après l'écriture ; hors ligne, l’épreuve attend le retour du réseau.
         void synchronisation.envoyer(identifiant);
-        naviguer(cheminCompetition(identifiant));
+        naviguer(cheminEpreuve(identifiant));
       } else if ('erreurs' in resultat) {
         erreurs = resultat.erreurs;
       } else {
@@ -164,23 +164,23 @@
     }
   }
 
-  /** US-025 CA-4 et US-024 CA-4 : les messages qui citent les dates de la manifestation ou l'arme de l'épreuve. */
+  /** US-025 CA-4 et US-024 CA-4 : les messages qui citent les dates de la manifestation ou l'arme de la compétition. */
   function texteErreur(code: keyof typeof t.champs): string {
     if (code === 'DATE_HORS_MANIFESTATION' && cadre) {
       return t.dateHorsManifestation(cadre.manifestation.debut, cadre.manifestation.fin);
     }
-    if (code === 'ARME_DIFFERENTE_EPREUVE' && cadre?.epreuve) return t.epreuveAu(cadre.epreuve.arme);
+    if (code === 'ARME_DIFFERENTE_COMPETITION' && cadre?.competition) return t.competitionAu(cadre.competition.arme);
     return t.champs[code];
   }
 
   /** Attributs d'accessibilité d'un champ, et identifiant de son message d'erreur. */
-  const invalide = (champ: keyof ErreursCompetition) => ({
+  const invalide = (champ: keyof ErreursEpreuve) => ({
     'aria-invalid': erreurs[champ] ? ('true' as const) : undefined,
     'aria-describedby': erreurs[champ] ? `erreur-${champ}` : undefined,
   });
 </script>
 
-{#snippet message(champ: keyof ErreursCompetition)}
+{#snippet message(champ: keyof ErreursEpreuve)}
   {@const code = erreurs[champ]}
   {#if code}<span class="erreur" id="erreur-{champ}">{texteErreur(code)}</span>{/if}
 {/snippet}
@@ -221,16 +221,16 @@
           </div>
           {#if saisie.manifestationId}
             <div class="champ">
-              <label for="epreuve">{t.epreuve}</label>
+              <label for="competition">{t.competition}</label>
               <select
-                id="epreuve"
-                value={saisie.epreuveId}
-                onchange={(evenement) => choisirEpreuve(evenement.currentTarget.value)}
+                id="competition"
+                value={saisie.competitionId}
+                onchange={(evenement) => choisirCompetition(evenement.currentTarget.value)}
                 disabled={inactif('rattachement')}
               >
-                <option value="">{t.aucuneEpreuve}</option>
-                {#each epreuvesChoisies as epreuve (epreuve.id)}
-                  <option value={epreuve.id}>{epreuve.nom}</option>
+                <option value="">{t.aucuneCompetition}</option>
+                {#each competitionsChoisies as competition (competition.id)}
+                  <option value={competition.id}>{competition.nom}</option>
                 {/each}
               </select>
             </div>
@@ -264,13 +264,13 @@
           <label for="type">{t.type}</label>
           <select
             id="type"
-            bind:value={saisie.typeCompetition}
-            disabled={inactif('typeCompetition')}
-            {...invalide('typeCompetition')}
+            bind:value={saisie.typeEpreuve}
+            disabled={inactif('typeEpreuve')}
+            {...invalide('typeEpreuve')}
           >
-            {#each TYPES_COMPETITION as type (type)}<option value={type}>{t.types[type]}</option>{/each}
+            {#each TYPES_EPREUVE as type (type)}<option value={type}>{t.types[type]}</option>{/each}
           </select>
-          {@render message('typeCompetition')}
+          {@render message('typeEpreuve')}
         </div>
       </div>
 
@@ -384,9 +384,7 @@
     </form>
   {/if}
 
-  <Lien chemin={competitionId === undefined ? CHEMINS.organisateur : cheminCompetition(competitionId)} {naviguer}
-    >{t.annuler}</Lien
-  >
+  <Lien chemin={epreuveId === undefined ? CHEMINS.organisateur : cheminEpreuve(epreuveId)} {naviguer}>{t.annuler}</Lien>
 </main>
 
 <style>

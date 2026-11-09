@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { parametresParDefaut, type DonneesCompetition } from './competition';
+import { parametresParDefaut, type DonneesEpreuve } from './epreuve';
 import { appliquer, projectionVide, projeter, verifierEvenement, type Evenement, type Proposition } from './journal';
 
-const donnees = (champs: Partial<DonneesCompetition> = {}): DonneesCompetition => ({
+const donnees = (champs: Partial<DonneesEpreuve> = {}): DonneesEpreuve => ({
   nom: 'Challenge Orpi 2027',
   arme: 'sabre',
-  typeCompetition: 'individuelle',
+  typeEpreuve: 'individuelle',
   categorie: 'M13',
   sexe: 'mixte',
   date: '2027-03-14',
@@ -16,12 +16,12 @@ const donnees = (champs: Partial<DonneesCompetition> = {}): DonneesCompetition =
   ...champs,
 });
 
-const creation = (champs: Partial<DonneesCompetition> = {}): Proposition => ({
-  type: 'CompetitionCreee',
+const creation = (champs: Partial<DonneesEpreuve> = {}): Proposition => ({
+  type: 'EpreuveCreee',
   donnees: donnees(champs),
 });
 const evenement = (seq: number, proposition: Proposition = creation()): Evenement => ({
-  competitionId: 'c1',
+  epreuveId: 'c1',
   clubId: 'pessac',
   seq,
   version: 1,
@@ -31,10 +31,10 @@ const evenement = (seq: number, proposition: Proposition = creation()): Evenemen
   ...proposition,
 });
 
-describe('journal d’une compétition (ADR-0001)', () => {
-  it('US-021 CA-2 : la création donne une compétition, avec son nom, son club, sa date et son auteur', () => {
+describe('journal d’une épreuve (ADR-0001)', () => {
+  it('US-021 CA-2 : la création donne une épreuve, avec son nom, son club, sa date et son auteur', () => {
     expect(projeter([evenement(1)])).toEqual({
-      competition: {
+      epreuve: {
         id: 'c1',
         clubId: 'pessac',
         ...donnees(),
@@ -50,9 +50,9 @@ describe('journal d’une compétition (ADR-0001)', () => {
     });
   });
 
-  it('US-025 CA-2 : la compétition créée est en préparation, non publiée, avec la formule par défaut', () => {
-    const { competition } = projeter([evenement(1, creation({ typeCompetition: 'equipes2' }))]);
-    expect(competition).toMatchObject({ statut: 'preparation', publiee: false, formule: { touchesRelais: 20 } });
+  it('US-025 CA-2 : l’épreuve créée est en préparation, non publiée, avec la formule par défaut', () => {
+    const { epreuve } = projeter([evenement(1, creation({ typeEpreuve: 'equipes2' }))]);
+    expect(epreuve).toMatchObject({ statut: 'preparation', publiee: false, formule: { touchesRelais: 20 } });
   });
 
   it('US-025 CA-5 : refuse des horaires incohérents dans le journal', () => {
@@ -61,8 +61,8 @@ describe('journal d’une compétition (ADR-0001)', () => {
   });
 
   it('US-025 cas limite : les textes facultatifs sont enregistrés sans les espaces autour', () => {
-    const { competition } = projeter([evenement(1, creation({ lieu: '  ', commentaire: ' Buvette ' }))]);
-    expect(competition).toMatchObject({ lieu: null, commentaire: 'Buvette' });
+    const { epreuve } = projeter([evenement(1, creation({ lieu: '  ', commentaire: ' Buvette ' }))]);
+    expect(epreuve).toMatchObject({ lieu: null, commentaire: 'Buvette' });
   });
 
   it('US-021 CA-2 : le même journal donne toujours la même projection', () => {
@@ -82,12 +82,12 @@ describe('journal d’une compétition (ADR-0001)', () => {
     expect(verifierEvenement(projectionVide(), creation({ nom: 'x'.repeat(100) }))).toBeNull();
   });
 
-  it('US-021 CA-4 : refuse une deuxième création de la même compétition', () => {
-    expect(verifierEvenement(projeter([evenement(1)]), creation())).toBe('COMPETITION_DEJA_CREEE');
+  it('US-021 CA-4 : refuse une deuxième création de la même épreuve', () => {
+    expect(verifierEvenement(projeter([evenement(1)]), creation())).toBe('EPREUVE_DEJA_CREEE');
   });
 
   it('US-021 CA-4 : le nom est enregistré sans les espaces autour', () => {
-    expect(appliquer(projectionVide(), evenement(1, creation({ nom: '  Orpi  ' }))).competition?.nom).toBe('Orpi');
+    expect(appliquer(projectionVide(), evenement(1, creation({ nom: '  Orpi  ' }))).epreuve?.nom).toBe('Orpi');
   });
 
   it('US-021 cas limite : un trou de seq arrête la projection au dernier événement cohérent', () => {
@@ -95,7 +95,7 @@ describe('journal d’une compétition (ADR-0001)', () => {
       dernierSeq: 1,
       anomalie: { seq: 3, nature: 'TROU' },
     });
-    expect(projeter([evenement(2)])).toMatchObject({ competition: null, anomalie: { seq: 2, nature: 'TROU' } });
+    expect(projeter([evenement(2)])).toMatchObject({ epreuve: null, anomalie: { seq: 2, nature: 'TROU' } });
   });
 
   it('US-021 cas limite : un doublon de seq arrête la projection et le signale', () => {
@@ -113,24 +113,21 @@ describe('journal d’une compétition (ADR-0001)', () => {
   });
 });
 
-describe('modification d’une compétition (US-027)', () => {
-  const modifiee = (champs: Partial<DonneesCompetition>): Proposition => ({
-    type: 'CompetitionModifiee',
+describe('modification d’une épreuve (US-027)', () => {
+  const modifiee = (champs: Partial<DonneesEpreuve>): Proposition => ({
+    type: 'EpreuveModifiee',
     donnees: champs,
   });
   const creee = () => projeter([evenement(1)]);
   const enStatut = (statut: 'enCours' | 'terminee' | 'archivee') => {
     const p = creee();
-    return { ...p, competition: { ...p.competition!, statut } };
+    return { ...p, epreuve: { ...p.epreuve!, statut } };
   };
 
-  it('CA-1 : appliquer fusionne une CompetitionModifiee et garde le reste', () => {
-    const { competition, dernierSeq } = projeter([
-      evenement(1),
-      evenement(2, modifiee({ nom: ' Nouveau ', lieu: null })),
-    ]);
+  it('CA-1 : appliquer fusionne une EpreuveModifiee et garde le reste', () => {
+    const { epreuve, dernierSeq } = projeter([evenement(1), evenement(2, modifiee({ nom: ' Nouveau ', lieu: null }))]);
     expect(dernierSeq).toBe(2);
-    expect(competition).toMatchObject({
+    expect(epreuve).toMatchObject({
       nom: 'Nouveau',
       lieu: null,
       arme: 'sabre',
@@ -147,18 +144,18 @@ describe('modification d’une compétition (US-027)', () => {
   });
 
   it('CA-1 : changer le type recalcule les touches de relais de la formule', () => {
-    const { competition } = projeter([evenement(1), evenement(2, modifiee({ typeCompetition: 'equipes3' }))]);
-    expect(competition?.formule.touchesRelais).toBe(45);
-    expect(competition?.formule.touchesPoules).toBe(5);
+    const { epreuve } = projeter([evenement(1), evenement(2, modifiee({ typeEpreuve: 'equipes3' }))]);
+    expect(epreuve?.formule.touchesRelais).toBe(45);
+    expect(epreuve?.formule.touchesPoules).toBe(5);
   });
 
-  it('CA-1 : refuse une modification sans compétition créée', () => {
-    expect(verifierEvenement(projectionVide(), modifiee({ nom: 'x' }))).toBe('COMPETITION_INCONNUE');
+  it('CA-1 : refuse une modification sans épreuve créée', () => {
+    expect(verifierEvenement(projectionVide(), modifiee({ nom: 'x' }))).toBe('EPREUVE_INCONNUE');
   });
 
   it('CA-2 : en cours, arme et type sont figés, les autres champs restent modifiables', () => {
     expect(verifierEvenement(enStatut('enCours'), modifiee({ arme: 'epee' }))).toBe('CHAMP_FIGE');
-    expect(verifierEvenement(enStatut('enCours'), modifiee({ typeCompetition: 'equipes2' }))).toBe('CHAMP_FIGE');
+    expect(verifierEvenement(enStatut('enCours'), modifiee({ typeEpreuve: 'equipes2' }))).toBe('CHAMP_FIGE');
     expect(verifierEvenement(enStatut('enCours'), modifiee({ nom: 'Autre', lieu: 'Ailleurs' }))).toBeNull();
   });
 
@@ -177,11 +174,11 @@ describe('modification d’une compétition (US-027)', () => {
   it('cas limite : terminée, seul le commentaire se modifie ; archivée, tout est refusé', () => {
     expect(verifierEvenement(enStatut('terminee'), modifiee({ commentaire: 'Bravo' }))).toBeNull();
     expect(verifierEvenement(enStatut('terminee'), modifiee({ nom: 'Autre' }))).toBe('CHAMP_FIGE');
-    expect(verifierEvenement(enStatut('archivee'), modifiee({ commentaire: 'Bravo' }))).toBe('COMPETITION_ARCHIVEE');
+    expect(verifierEvenement(enStatut('archivee'), modifiee({ commentaire: 'Bravo' }))).toBe('EPREUVE_ARCHIVEE');
   });
 });
 
-describe('formule d’une compétition (US-028)', () => {
+describe('formule d’une épreuve (US-028)', () => {
   type DonneesFormule = Extract<Proposition, { type: 'FormuleModifiee' }>['donnees'];
   const formuleModifiee = (donneesFormule: DonneesFormule): Proposition => ({
     type: 'FormuleModifiee',
@@ -190,23 +187,23 @@ describe('formule d’une compétition (US-028)', () => {
   const creee = () => projeter([evenement(1)]);
   const enStatut = (statut: 'enCours' | 'terminee' | 'archivee') => {
     const p = creee();
-    return { ...p, competition: { ...p.competition!, statut } };
+    return { ...p, epreuve: { ...p.epreuve!, statut } };
   };
 
-  it('CA-2 : appliquer fusionne une FormuleModifiee et garde le reste de la compétition', () => {
-    const { competition, dernierSeq, anomalie } = projeter([
+  it('CA-2 : appliquer fusionne une FormuleModifiee et garde le reste de l’épreuve', () => {
+    const { epreuve, dernierSeq, anomalie } = projeter([
       evenement(1),
       evenement(2, formuleModifiee({ touchesTableau: 10, matchTroisieme: true })),
     ]);
     expect(anomalie).toBeNull();
     expect(dernierSeq).toBe(2);
-    expect(competition?.formule).toEqual({
+    expect(epreuve?.formule).toEqual({
       touchesPoules: 5,
       touchesTableau: 10,
       touchesRelais: null,
       matchTroisieme: true,
     });
-    expect(competition?.nom).toBe('Challenge Orpi 2027');
+    expect(epreuve?.nom).toBe('Challenge Orpi 2027');
   });
 
   it('CA-2 : refuse des touches hors bornes', () => {
@@ -214,8 +211,8 @@ describe('formule d’une compétition (US-028)', () => {
     expect(verifierEvenement(creee(), formuleModifiee({ touchesTableau: 12 }))).toBe('TOUCHES_TABLEAU_INVALIDES');
   });
 
-  it('CA-2 : refuse une formule sans compétition créée', () => {
-    expect(verifierEvenement(projectionVide(), formuleModifiee({ touchesPoules: 4 }))).toBe('COMPETITION_INCONNUE');
+  it('CA-2 : refuse une formule sans épreuve créée', () => {
+    expect(verifierEvenement(projectionVide(), formuleModifiee({ touchesPoules: 4 }))).toBe('EPREUVE_INCONNUE');
   });
 
   it('CA-2 : une formule qui ne change rien est refusée', () => {
@@ -225,41 +222,41 @@ describe('formule d’une compétition (US-028)', () => {
     );
   });
 
-  it('CA-3 : les touches de relais ne se modifient pas, elles suivent le type de la compétition', () => {
+  it('CA-3 : les touches de relais ne se modifient pas, elles suivent le type de l’épreuve', () => {
     const relais = { touchesRelais: 45 } as unknown as DonneesFormule;
     expect(verifierEvenement(creee(), formuleModifiee(relais))).toBe('CHAMP_FIGE');
-    const { competition } = projeter([
-      evenement(1, creation({ typeCompetition: 'equipes2' })),
+    const { epreuve } = projeter([
+      evenement(1, creation({ typeEpreuve: 'equipes2' })),
       evenement(2, formuleModifiee({ touchesPoules: 4 })),
     ]);
-    expect(competition?.formule).toMatchObject({ touchesRelais: 20, touchesPoules: 4 });
+    expect(epreuve?.formule).toMatchObject({ touchesRelais: 20, touchesPoules: 4 });
   });
 
   it('CA-4 : en cours, la formule peut changer', () => {
     expect(verifierEvenement(enStatut('enCours'), formuleModifiee({ touchesTableau: 10 }))).toBeNull();
   });
 
-  it('CA-5 : le match pour la 3e place s’active tant que la compétition n’est pas terminée', () => {
+  it('CA-5 : le match pour la 3e place s’active tant que l’épreuve n’est pas terminée', () => {
     expect(verifierEvenement(creee(), formuleModifiee({ matchTroisieme: true }))).toBeNull();
     expect(verifierEvenement(enStatut('enCours'), formuleModifiee({ matchTroisieme: true }))).toBeNull();
     expect(verifierEvenement(enStatut('terminee'), formuleModifiee({ matchTroisieme: true }))).toBe('FORMULE_FIGEE');
   });
 
-  it('cas limite : terminée, la formule est figée ; archivée, la compétition est refusée', () => {
+  it('cas limite : terminée, la formule est figée ; archivée, l’épreuve est refusée', () => {
     expect(verifierEvenement(enStatut('terminee'), formuleModifiee({ touchesPoules: 4 }))).toBe('FORMULE_FIGEE');
-    expect(verifierEvenement(enStatut('archivee'), formuleModifiee({ touchesPoules: 4 }))).toBe('COMPETITION_ARCHIVEE');
+    expect(verifierEvenement(enStatut('archivee'), formuleModifiee({ touchesPoules: 4 }))).toBe('EPREUVE_ARCHIVEE');
   });
 
-  it('cas limite : une modification de la compétition garde la formule réglée', () => {
-    const { competition } = projeter([
+  it('cas limite : une modification de l’épreuve garde la formule réglée', () => {
+    const { epreuve } = projeter([
       evenement(1),
       evenement(2, formuleModifiee({ touchesPoules: 8 })),
-      evenement(3, { type: 'CompetitionModifiee', donnees: { nom: 'Autre' } }),
+      evenement(3, { type: 'EpreuveModifiee', donnees: { nom: 'Autre' } }),
     ]);
-    expect(competition?.formule.touchesPoules).toBe(8);
+    expect(epreuve?.formule.touchesPoules).toBe(8);
   });
 
-  it('cas limite : appliquer ignore une formule sans compétition créée', () => {
+  it('cas limite : appliquer ignore une formule sans épreuve créée', () => {
     const vide = projectionVide();
     expect(appliquer(vide, evenement(1, formuleModifiee({ touchesPoules: 4 })))).toBe(vide);
   });
@@ -270,17 +267,17 @@ describe('changement de pilote (US-029)', () => {
   const pilote = (donneesPilote: DonneesPilote): Proposition => ({ type: 'PiloteChange', donnees: donneesPilote });
   const creee = () => projeter([evenement(1)]);
 
-  it('CA-1 : PiloteChange s’applique sans rien changer à la compétition', () => {
+  it('CA-1 : PiloteChange s’applique sans rien changer à l’épreuve', () => {
     const avant = creee();
     const apres = projeter([evenement(1), evenement(2, pilote({ ancienAppareil: 'a1', nouvelAppareil: 'a2' }))]);
     expect(apres.anomalie).toBeNull();
     expect(apres.dernierSeq).toBe(2);
-    expect(apres.competition).toEqual(avant.competition);
+    expect(apres.epreuve).toEqual(avant.epreuve);
   });
 
-  it('CA-1 : refuse un changement sans compétition créée', () => {
+  it('CA-1 : refuse un changement sans épreuve créée', () => {
     expect(verifierEvenement(projectionVide(), pilote({ ancienAppareil: 'a1', nouvelAppareil: 'a2' }))).toBe(
-      'COMPETITION_INCONNUE',
+      'EPREUVE_INCONNUE',
     );
   });
 
@@ -290,16 +287,16 @@ describe('changement de pilote (US-029)', () => {
     expect(verifierEvenement(creee(), pilote({ ancienAppareil: 'a1', nouvelAppareil: 'a1' }))).toBe('PILOTE_INVALIDE');
   });
 
-  it('cas limite : une compétition terminée ou archivée peut changer de pilote', () => {
+  it('cas limite : une épreuve terminée ou archivée peut changer de pilote', () => {
     for (const statut of ['terminee', 'archivee'] as const) {
       const p = creee();
-      const projection = { ...p, competition: { ...p.competition!, statut } };
+      const projection = { ...p, epreuve: { ...p.epreuve!, statut } };
       expect(verifierEvenement(projection, pilote({ ancienAppareil: 'a1', nouvelAppareil: 'a2' }))).toBeNull();
     }
   });
 });
 
-describe('paramètres d’une compétition (US-032)', () => {
+describe('paramètres d’une épreuve (US-032)', () => {
   type DonneesParametres = Extract<Proposition, { type: 'ParametresModifies' }>['donnees'];
   const parametres = (donneesParametres: DonneesParametres): Proposition => ({
     type: 'ParametresModifies',
@@ -308,11 +305,11 @@ describe('paramètres d’une compétition (US-032)', () => {
   const creee = () => projeter([evenement(1)]);
   const enStatut = (statut: 'enCours' | 'terminee' | 'archivee') => {
     const p = creee();
-    return { ...p, competition: { ...p.competition!, statut } };
+    return { ...p, epreuve: { ...p.epreuve!, statut } };
   };
 
-  it('CA-1 : une compétition créée a les paramètres par défaut', () => {
-    expect(creee().competition?.parametres).toEqual({
+  it('CA-1 : une épreuve créée a les paramètres par défaut', () => {
+    expect(creee().epreuve?.parametres).toEqual({
       arbitreSaisitScores: true,
       arbitreDeplace: true,
       tireurSaisitPoule: true,
@@ -323,14 +320,14 @@ describe('paramètres d’une compétition (US-032)', () => {
   });
 
   it('CA-2 et CA-3 : appliquer fusionne les paramètres, la projection porte la valeur en vigueur', () => {
-    const { competition, dernierSeq, anomalie } = projeter([
+    const { epreuve, dernierSeq, anomalie } = projeter([
       evenement(1),
       evenement(2, parametres({ tireurSaisitTableau: false })),
       evenement(3, parametres({ correctionScore: 'personne', prenomInitiale: true })),
     ]);
     expect(anomalie).toBeNull();
     expect(dernierSeq).toBe(3);
-    expect(competition?.parametres).toEqual({
+    expect(epreuve?.parametres).toEqual({
       arbitreSaisitScores: true,
       arbitreDeplace: true,
       tireurSaisitPoule: true,
@@ -338,21 +335,21 @@ describe('paramètres d’une compétition (US-032)', () => {
       correctionScore: 'personne',
       prenomInitiale: true,
     });
-    expect(competition?.nom).toBe('Challenge Orpi 2027');
+    expect(epreuve?.nom).toBe('Challenge Orpi 2027');
   });
 
-  it('CA-3 : modifier la compétition ou sa formule garde les paramètres réglés', () => {
-    const { competition } = projeter([
+  it('CA-3 : modifier l’épreuve ou sa formule garde les paramètres réglés', () => {
+    const { epreuve } = projeter([
       evenement(1),
       evenement(2, parametres({ prenomInitiale: true })),
-      evenement(3, { type: 'CompetitionModifiee', donnees: { nom: 'Autre' } }),
+      evenement(3, { type: 'EpreuveModifiee', donnees: { nom: 'Autre' } }),
       evenement(4, { type: 'FormuleModifiee', donnees: { touchesPoules: 4 } }),
     ]);
-    expect(competition?.parametres.prenomInitiale).toBe(true);
+    expect(epreuve?.parametres.prenomInitiale).toBe(true);
   });
 
-  it('CA-2 : refuse un paramètre sans compétition créée', () => {
-    expect(verifierEvenement(projectionVide(), parametres({ prenomInitiale: true }))).toBe('COMPETITION_INCONNUE');
+  it('CA-2 : refuse un paramètre sans épreuve créée', () => {
+    expect(verifierEvenement(projectionVide(), parametres({ prenomInitiale: true }))).toBe('EPREUVE_INCONNUE');
   });
 
   it('CA-2 : refuse un réglage inconnu et une valeur invalide', () => {
@@ -380,10 +377,10 @@ describe('paramètres d’une compétition (US-032)', () => {
   });
 
   it('cas limite : archivée, les paramètres sont en lecture seule', () => {
-    expect(verifierEvenement(enStatut('archivee'), parametres({ arbitreDeplace: false }))).toBe('COMPETITION_ARCHIVEE');
+    expect(verifierEvenement(enStatut('archivee'), parametres({ arbitreDeplace: false }))).toBe('EPREUVE_ARCHIVEE');
   });
 
-  it('cas limite : appliquer ignore des paramètres sans compétition créée', () => {
+  it('cas limite : appliquer ignore des paramètres sans épreuve créée', () => {
     const vide = projectionVide();
     expect(appliquer(vide, evenement(1, parametres({ prenomInitiale: true })))).toBe(vide);
   });

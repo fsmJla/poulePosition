@@ -1,7 +1,7 @@
 <script lang="ts">
   // Coquille de l'application (US-003) : session restaurée au démarrage et revalidée à chaque retour en ligne
-  // (US-005 CA-5), routage entre pages publiques et réservées. Envoi au serveur du journal des compétitions pilotées
-  // ici, au démarrage, à la connexion et à chaque retour en ligne (US-022 CA-2). Création et page d'une compétition
+  // (US-005 CA-5), routage entre pages publiques et réservées. Envoi au serveur du journal des épreuves pilotées
+  // ici, au démarrage, à la connexion et à chaque retour en ligne (US-022 CA-2). Création et page d'une épreuve
   // (US-025), manifestations du club (US-023).
   import { onMount } from 'svelte';
   import { URL_SERVEUR_LOCAL } from './lib/connexion';
@@ -11,12 +11,12 @@
   import { estLocale, ouvrirStockage, type SessionAppareil } from './lib/stockage';
   import { creerSynchronisation } from './lib/synchronisation';
   import { creerAccueil } from './lib/accueil';
-  import { creerClientEpreuves } from './lib/epreuves';
+  import { creerClientCompetitions } from './lib/competitions';
   import { creerClientManifestations } from './lib/manifestations';
   import { textes } from './lib/textes';
   import Entete from './composants/Entete.svelte';
   import Accueil from './pages/Accueil.svelte';
-  import Competition from './pages/Competition.svelte';
+  import Epreuve from './pages/Epreuve.svelte';
   import Comptes from './pages/Comptes.svelte';
   import Connexion from './pages/Connexion.svelte';
   import MotDePasseOublie from './pages/MotDePasseOublie.svelte';
@@ -24,7 +24,7 @@
   import MotDePasse from './pages/MotDePasse.svelte';
   import Formule from './pages/Formule.svelte';
   import Parametres from './pages/Parametres.svelte';
-  import NouvelleCompetition from './pages/NouvelleCompetition.svelte';
+  import NouvelleEpreuve from './pages/NouvelleEpreuve.svelte';
   import Profil from './pages/Profil.svelte';
   import Reinitialisation from './pages/Reinitialisation.svelte';
   import Organisateur from './pages/Organisateur.svelte';
@@ -33,10 +33,10 @@
   const client = creerClientSession({ urlServeur: urlHttp(urlServeur), stockage: ouvrirStockage() });
 
   let session = $state<SessionAppareil | null>(null);
-  let annonces = $state<{ competitionId: string; texte: string }[]>([]);
+  let annonces = $state<{ epreuveId: string; texte: string }[]>([]);
 
-  function fermerAnnonce(competitionId: string) {
-    annonces = annonces.filter((annonce) => annonce.competitionId !== competitionId);
+  function fermerAnnonce(epreuveId: string) {
+    annonces = annonces.filter((annonce) => annonce.epreuveId !== epreuveId);
   }
   const journal = ouvrirJournal();
   const synchronisation = creerSynchronisation({
@@ -48,14 +48,14 @@
   const manifestations = creerClientManifestations({
     urlServeur: urlHttp(urlServeur),
     jeton: async () => (session && !estLocale(session) ? session.jeton : null),
-    // US-023 CA-4 : les dates d'une manifestation sont confrontées aux compétitions connues de cet appareil.
-    competitions: () => synchronisation.competitionsConnues(),
+    // US-023 CA-4 : les dates d'une manifestation sont confrontées aux épreuves connues de cet appareil.
+    epreuves: () => synchronisation.epreuvesConnues(),
   });
-  const epreuves = creerClientEpreuves({
+  const competitions = creerClientCompetitions({
     urlServeur: urlHttp(urlServeur),
     jeton: async () => (session && !estLocale(session) ? session.jeton : null),
   });
-  const accueil = creerAccueil({ journal, synchronisation, manifestations, epreuves });
+  const accueil = creerAccueil({ journal, synchronisation, manifestations, competitions });
   /** Faux tant que la session gardée n'est pas relue : évite d'afficher une page puis d'en changer. */
   let pret = $state(false);
   let chemin = $state(location.pathname);
@@ -96,9 +96,9 @@
       session = restauree;
       pret = true;
     });
-    const arreterSuppression = synchronisation.surSuppression(({ competitionId, nom, abandonnees }) => {
-      const texte = textes.competitions.suppression.annonce(nom, abandonnees);
-      annonces = [...annonces.filter((annonce) => annonce.competitionId !== competitionId), { competitionId, texte }];
+    const arreterSuppression = synchronisation.surSuppression(({ epreuveId, nom, abandonnees }) => {
+      const texte = textes.epreuves.suppression.annonce(nom, abandonnees);
+      annonces = [...annonces.filter((annonce) => annonce.epreuveId !== epreuveId), { epreuveId, texte }];
     });
     const arreterEnvoi = synchronisation.surveiller();
     return () => {
@@ -157,57 +157,57 @@
     {:else if route.page === 'manifestations'}
       <Manifestations
         client={manifestations}
-        clientEpreuves={epreuves}
+        clientCompetitions={competitions}
         {naviguer}
         administrateur={session.compte.role === 'administrateur'}
-        competitionsConnues={() => synchronisation.competitionsConnues()}
-        apresSuppressionContenu={async () => void (await synchronisation.listerCompetitionsDuClub())}
+        epreuvesConnues={() => synchronisation.epreuvesConnues()}
+        apresSuppressionContenu={async () => void (await synchronisation.listerEpreuvesDuClub())}
       />
-    {:else if route.page === 'nouvelleCompetition'}
-      <NouvelleCompetition
+    {:else if route.page === 'nouvelleEpreuve'}
+      <NouvelleEpreuve
         {session}
         {journal}
         {synchronisation}
         clientManifestations={manifestations}
-        clientEpreuves={epreuves}
+        clientCompetitions={competitions}
         {naviguer}
       />
-    {:else if route.page === 'modifierCompetition' && route.competitionId}
-      {#key route.competitionId}
-        <NouvelleCompetition
+    {:else if route.page === 'modifierEpreuve' && route.epreuveId}
+      {#key route.epreuveId}
+        <NouvelleEpreuve
           {session}
           {journal}
           {synchronisation}
           clientManifestations={manifestations}
-          clientEpreuves={epreuves}
-          competitionId={route.competitionId}
+          clientCompetitions={competitions}
+          epreuveId={route.epreuveId}
           {naviguer}
         />
       {/key}
-    {:else if route.page === 'formuleCompetition' && route.competitionId}
-      {#key route.competitionId}
-        <Formule {session} competitionId={route.competitionId} {journal} {synchronisation} {naviguer} />
+    {:else if route.page === 'formuleEpreuve' && route.epreuveId}
+      {#key route.epreuveId}
+        <Formule {session} epreuveId={route.epreuveId} {journal} {synchronisation} {naviguer} />
       {/key}
-    {:else if route.page === 'parametresCompetition' && route.competitionId}
-      {#key route.competitionId}
-        <Parametres {session} competitionId={route.competitionId} {journal} {synchronisation} {naviguer} />
+    {:else if route.page === 'parametresEpreuve' && route.epreuveId}
+      {#key route.epreuveId}
+        <Parametres {session} epreuveId={route.epreuveId} {journal} {synchronisation} {naviguer} />
       {/key}
-    {:else if route.page === 'competition' && route.competitionId}
-      {#key route.competitionId}
-        <Competition {session} competitionId={route.competitionId} {journal} {synchronisation} {naviguer} />
+    {:else if route.page === 'epreuve' && route.epreuveId}
+      {#key route.epreuveId}
+        <Epreuve {session} epreuveId={route.epreuveId} {journal} {synchronisation} {naviguer} />
       {/key}
     {/if}
   {/if}
 {/if}
 
-<!-- US-039 CA-5 et CA-6 : ce PC vient d'effacer la copie d'une compétition supprimée par un administrateur. -->
+<!-- US-039 CA-5 et CA-6 : ce PC vient d'effacer la copie d'une épreuve supprimée par un administrateur. -->
 {#if annonces.length > 0}
   <div class="annonces">
-    {#each annonces as annonce (annonce.competitionId)}
+    {#each annonces as annonce (annonce.epreuveId)}
       <p role="status">
         {annonce.texte}
-        <button type="button" onclick={() => fermerAnnonce(annonce.competitionId)}
-          >{textes.competitions.suppression.fermer}</button
+        <button type="button" onclick={() => fermerAnnonce(annonce.epreuveId)}
+          >{textes.epreuves.suppression.fermer}</button
         >
       </p>
     {/each}

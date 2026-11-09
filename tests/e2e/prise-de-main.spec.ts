@@ -1,21 +1,21 @@
-// Prise de main (US-029) : un second PC du même club prend la main sur une compétition, l'ancien pilote passe en lecture
+// Prise de main (US-029) : un second PC du même club prend la main sur une épreuve, l'ancien pilote passe en lecture
 // seule, ses modifications hors ligne sont écartées et exportables. Deux contextes de navigateur jouent les deux PC.
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
 
-/** Nom unique, pour reconnaître la compétition de ce test parmi celles du club. */
+/** Nom unique, pour reconnaître l’épreuve de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 
-const MOTIF_PAGE_COMPETITION = /\/competitions\/[0-9a-f-]{36}$/;
+const MOTIF_PAGE_EPREUVE = /\/epreuves\/[0-9a-f-]{36}$/;
 const LIBELLE_PC = /\(appareil [0-9a-f]{4}\)/;
 
-/** Crée une compétition par le formulaire et attend que le serveur l'ait reçue. */
-async function creerCompetition(page: Page, nom: string) {
-  await page.goto('/competitions/nouvelle');
+/** Crée une épreuve par le formulaire et attend que le serveur l'ait reçue. */
+async function creerEpreuve(page: Page, nom: string) {
+  await page.goto('/epreuves/nouvelle');
   await page.getByLabel('Nom', { exact: true }).fill(nom);
   await page.getByLabel('Arme').selectOption('sabre');
-  await page.getByRole('button', { name: 'Créer la compétition' }).click();
-  await expect(page).toHaveURL(MOTIF_PAGE_COMPETITION);
+  await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
+  await expect(page).toHaveURL(MOTIF_PAGE_EPREUVE);
   await expect(page.getByText('Ce PC est le pilote', { exact: true })).toBeVisible();
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
 }
@@ -26,7 +26,7 @@ async function secondPc(browser: Browser, baseURL: string | undefined, adresse: 
   const page = await contexte.newPage();
   await seConnecter(page);
   await page.goto(adresse);
-  await expect(page.getByText('Lecture seule : cette compétition est pilotée par un autre PC')).toBeVisible({
+  await expect(page.getByText('Lecture seule : cette épreuve est pilotée par un autre PC')).toBeVisible({
     timeout: 20_000,
   });
   return { contexte, page };
@@ -35,7 +35,7 @@ async function secondPc(browser: Browser, baseURL: string | undefined, adresse: 
 const prendreLaMain = async (page: Page) => {
   await page.getByRole('button', { name: 'Prendre la main', exact: true }).click();
   await page
-    .getByRole('group', { name: 'Prendre la main sur cette compétition ?' })
+    .getByRole('group', { name: 'Prendre la main sur cette épreuve ?' })
     .getByRole('button', {
       name: 'Prendre la main',
     })
@@ -48,19 +48,19 @@ test('US-029 CA-1 et CA-4 : un autre PC prend la main, après avoir été averti
   baseURL,
 }) => {
   await seConnecter(page);
-  await creerCompetition(page, nomUnique());
+  await creerEpreuve(page, nomUnique());
   const adresse = new URL(page.url()).pathname;
 
   const { contexte, page: autre } = await secondPc(browser, baseURL, adresse);
   try {
     await autre.getByRole('button', { name: 'Prendre la main', exact: true }).click();
-    const confirmation = autre.getByRole('group', { name: 'Prendre la main sur cette compétition ?' });
-    await expect(confirmation.getByText(/est connecté et pilote cette compétition/)).toBeVisible();
+    const confirmation = autre.getByRole('group', { name: 'Prendre la main sur cette épreuve ?' });
+    await expect(confirmation.getByText(/est connecté et pilote cette épreuve/)).toBeVisible();
     await expect(confirmation.getByText(LIBELLE_PC)).toBeVisible();
     await confirmation.getByRole('button', { name: 'Prendre la main' }).click();
 
     await expect(autre.getByText('Ce PC est le pilote', { exact: true })).toBeVisible({ timeout: 20_000 });
-    await expect(autre.getByText('Lecture seule : cette compétition est pilotée par un autre PC')).toHaveCount(0);
+    await expect(autre.getByText('Lecture seule : cette épreuve est pilotée par un autre PC')).toHaveCount(0);
     await expect(autre.getByRole('link', { name: 'Modifier', exact: true })).toBeVisible();
     await expect(autre.getByRole('button', { name: 'Prendre la main', exact: true })).toHaveCount(0);
     await expect(autre.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
@@ -76,7 +76,7 @@ test('US-029 CA-2 : l’ancien pilote en ligne passe en lecture seule et sait qu
 }) => {
   test.setTimeout(120_000);
   await seConnecter(page);
-  await creerCompetition(page, nomUnique());
+  await creerEpreuve(page, nomUnique());
   const adresse = new URL(page.url()).pathname;
 
   const { contexte, page: autre } = await secondPc(browser, baseURL, adresse);
@@ -87,7 +87,7 @@ test('US-029 CA-2 : l’ancien pilote en ligne passe en lecture seule et sait qu
     // Le battement du pilote arrive toutes les 30 s : l'ancien pilote le découvre au suivant.
     await expect(page.getByText(/a pris la main depuis un autre PC/)).toBeVisible({ timeout: 60_000 });
     await expect(page.getByText(LIBELLE_PC)).toBeVisible();
-    await expect(page.getByText('Lecture seule : cette compétition est pilotée par un autre PC')).toBeVisible();
+    await expect(page.getByText('Lecture seule : cette épreuve est pilotée par un autre PC')).toBeVisible();
     await expect(page.getByRole('link', { name: 'Modifier', exact: true })).toHaveCount(0);
   } finally {
     await contexte.close();
@@ -101,7 +101,7 @@ test('US-029 CA-3 : les modifications faites hors ligne par l’ancien pilote so
   baseURL,
 }) => {
   await seConnecter(page);
-  await creerCompetition(page, nomUnique());
+  await creerEpreuve(page, nomUnique());
   const adresse = new URL(page.url()).pathname;
 
   const { contexte, page: autre } = await secondPc(browser, baseURL, adresse);
@@ -134,7 +134,7 @@ test('US-029 CA-3 : les modifications faites hors ligne par l’ancien pilote so
     const contenu = JSON.parse(Buffer.concat(morceaux).toString('utf8')) as {
       evenements: { type: string }[];
     };
-    expect(contenu.evenements.map(({ type }) => type)).toEqual(['CompetitionModifiee']);
+    expect(contenu.evenements.map(({ type }) => type)).toEqual(['EpreuveModifiee']);
   } finally {
     await contexte.close();
   }
@@ -142,7 +142,7 @@ test('US-029 CA-3 : les modifications faites hors ligne par l’ancien pilote so
 
 test('US-029 hors ligne : « Prendre la main » est grisé sans réseau', async ({ page, browser, baseURL }) => {
   await seConnecter(page);
-  await creerCompetition(page, nomUnique());
+  await creerEpreuve(page, nomUnique());
   const adresse = new URL(page.url()).pathname;
 
   const { contexte, page: autre } = await secondPc(browser, baseURL, adresse);

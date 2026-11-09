@@ -24,10 +24,10 @@ describe('textes de la connexion', () => {
     expect(textes.connexion.motifs.COMPTE_MODIFIE).toBe('Votre compte a été modifié : reconnectez-vous');
   });
 
-  it('US-006 CA-1 et CA-3 : le bouton, et l’avertissement qui précise que les compétitions sont conservées', () => {
+  it('US-006 CA-1 et CA-3 : le bouton, et l’avertissement qui précise que les épreuves sont conservées', () => {
     expect(textes.organisateur.oublier.bouton).toBe('Se déconnecter et oublier cet appareil');
     expect(textes.organisateur.oublier.avertissement).toContain(
-      'Les compétitions enregistrées sur cet appareil sont conservées.',
+      'Les épreuves enregistrées sur cet appareil sont conservées.',
     );
   });
 
@@ -96,24 +96,24 @@ describe('textes du menu de compte (US-017)', () => {
   });
 });
 
-describe('textes des compétitions (US-025)', () => {
+describe('textes des épreuves (US-025)', () => {
   it('US-025 CA-4 : la date hors de la manifestation donne ses bornes', () => {
-    expect(textes.competitions.dateHorsManifestation('2027-03-14', '2027-03-15')).toBe(
+    expect(textes.epreuves.dateHorsManifestation('2027-03-14', '2027-03-15')).toBe(
       'La date doit être comprise entre le 14/03 et le 15/03',
     );
   });
 
   it('US-025 CA-5 : le message nomme les deux horaires en cause', () => {
-    expect(textes.competitions.champs.SCRATCH_AVANT_APPEL).toBe('Le scratch doit être après l’appel');
-    expect(textes.competitions.champs.POULES_AVANT_SCRATCH).toBe('Le début des poules doit être après le scratch');
-    expect(textes.competitions.champs.POULES_AVANT_APPEL).toBe('Le début des poules doit être après l’appel');
+    expect(textes.epreuves.champs.SCRATCH_AVANT_APPEL).toBe('Le scratch doit être après l’appel');
+    expect(textes.epreuves.champs.POULES_AVANT_SCRATCH).toBe('Le début des poules doit être après le scratch');
+    expect(textes.epreuves.champs.POULES_AVANT_APPEL).toBe('Le début des poules doit être après l’appel');
   });
 
   it('US-025 : la date et les modifications en attente se lisent en français', () => {
-    expect(textes.competitions.dateLongue('2027-03-13')).toBe('samedi 13 mars 2027');
-    expect(textes.competitions.enAttente(1)).toBe('1 modification en attente d’envoi');
-    expect(textes.competitions.enAttente(3)).toBe('3 modifications en attente d’envoi');
-    expect(textes.competitions.copieDu(new Date(2026, 9, 28, 14, 5).getTime())).toBe('Copie du 28/10 à 14 h 05');
+    expect(textes.epreuves.dateLongue('2027-03-13')).toBe('samedi 13 mars 2027');
+    expect(textes.epreuves.enAttente(1)).toBe('1 modification en attente d’envoi');
+    expect(textes.epreuves.enAttente(3)).toBe('3 modifications en attente d’envoi');
+    expect(textes.epreuves.copieDu(new Date(2026, 9, 28, 14, 5).getTime())).toBe('Copie du 28/10 à 14 h 05');
   });
 });
 
@@ -122,12 +122,12 @@ describe('textes des manifestations (US-023)', () => {
     expect(textes.manifestations.champs.FIN_AVANT_DEBUT).toBe('La date de fin doit suivre la date de début');
   });
 
-  it('US-023 CA-4 : le message cite les compétitions concernées', () => {
+  it('US-023 CA-4 : le message cite les épreuves concernées', () => {
     expect(textes.manifestations.horsDates(['Sabre M13'])).toBe(
-      'Ces dates n’incluent plus la compétition rattachée : Sabre M13',
+      'Ces dates n’incluent plus l’épreuve rattachée : Sabre M13',
     );
     expect(textes.manifestations.horsDates(['Sabre M13', 'Épée M15'])).toBe(
-      'Ces dates n’incluent plus les compétitions rattachées : Sabre M13, Épée M15',
+      'Ces dates n’incluent plus les épreuves rattachées : Sabre M13, Épée M15',
     );
   });
 
@@ -143,34 +143,72 @@ describe('textes des manifestations (US-023)', () => {
   });
 });
 
-describe('textes des épreuves (US-024)', () => {
-  it('CA-4 : « Cette épreuve est au <arme> », avec la bonne préposition', () => {
-    expect(textes.competitions.epreuveAu('sabre')).toBe('Cette épreuve est au sabre');
-    expect(textes.competitions.epreuveAu('epee')).toBe('Cette épreuve est à l’épée');
-    expect(textes.competitions.epreuveAu('fleuret')).toBe('Cette épreuve est au fleuret');
-    expect(textes.competitions.epreuveAu('sabreLaser')).toBe('Cette épreuve est au sabre laser');
+describe('textes des compétitions (US-024)', () => {
+  it('CA-4 : « Cette compétition est au <arme> », avec la bonne préposition', () => {
+    expect(textes.epreuves.competitionAu('sabre')).toBe('Cette compétition est au sabre');
+    expect(textes.epreuves.competitionAu('epee')).toBe('Cette compétition est à l’épée');
+    expect(textes.epreuves.competitionAu('fleuret')).toBe('Cette compétition est au fleuret');
+    expect(textes.epreuves.competitionAu('sabreLaser')).toBe('Cette compétition est au sabre laser');
   });
 
-  it('hors ligne et CA-5 : « Nécessite une connexion internet », et le refus d’une épreuve non vide', () => {
-    expect(textes.epreuves.horsLigne).toBe('Nécessite une connexion internet');
-    expect(textes.epreuves.erreurs.EPREUVE_NON_VIDE).toContain('ne se supprime pas');
+  it('hors ligne et CA-5 : « Nécessite une connexion internet », et le refus d’une compétition non vide', () => {
+    expect(textes.competitions.horsLigne).toBe('Nécessite une connexion internet');
+    expect(textes.competitions.erreurs.COMPETITION_NON_VIDE).toContain('ne se supprime pas');
   });
 });
 
 describe('textes de l’accueil (US-026)', () => {
-  it('CA-3 : le filtre des archives et le nombre de compétitions masquées', () => {
+  it('CA-3 : le filtre des archives et le nombre d’épreuves masquées', () => {
     expect(textes.listeClub.afficherArchives).toBe('Afficher les archives');
-    expect(textes.listeClub.archivesMasquees(1)).toBe('1 compétition archivée masquée');
-    expect(textes.listeClub.archivesMasquees(3)).toBe('3 compétitions archivées masquées');
+    expect(textes.listeClub.archivesMasquees(1)).toBe('1 épreuve archivée masquée');
+    expect(textes.listeClub.archivesMasquees(3)).toBe('3 épreuves archivées masquées');
   });
 
-  it('CA-6 : le message invite à créer une première manifestation ou une première compétition', () => {
+  it('CA-6 : le message invite à créer une première manifestation ou une première épreuve', () => {
     expect(textes.listeClub.vide).toContain('première manifestation');
-    expect(textes.listeClub.vide).toContain('première compétition');
+    expect(textes.listeClub.vide).toContain('première épreuve');
   });
 
-  it('hors ligne : les créations de manifestation et d’épreuve sont grisées avec le message habituel', () => {
+  it('hors ligne : les créations de manifestation et de compétition sont grisées avec le message habituel', () => {
     expect(textes.listeClub.horsLigne).toBe('Nécessite une connexion internet');
     expect(textes.listeClub.jour('2027-03-14')).toBe('14/03/2027');
+  });
+});
+
+describe('vocabulaire : une compétition est composée d’épreuves (US-044)', () => {
+  /** Tous les textes du catalogue, les fonctions étant appelées avec des paramètres d'exemple. */
+  function tousLesTextes(valeur: unknown, vus = new Set<unknown>()): string[] {
+    if (typeof valeur === 'string') return [valeur];
+    if (typeof valeur === 'function') {
+      try {
+        return tousLesTextes((valeur as (...args: unknown[]) => unknown)('X', 'X', 2), vus);
+      } catch {
+        return [];
+      }
+    }
+    if (valeur === null || typeof valeur !== 'object' || vus.has(valeur)) return [];
+    vus.add(valeur);
+    return Object.values(valeur).flatMap((enfant) => tousLesTextes(enfant, vus));
+  }
+
+  it('US-044 CA-2 : l’unité qui se tire s’appelle « épreuve », le regroupement « compétition »', () => {
+    expect(textes.epreuves.nouvelle).toBe('Nouvelle épreuve');
+    expect(textes.competitions.nouvelle).toBe('Nouvelle compétition');
+    expect(textes.epreuves.pilote).toBe('Ce PC est le pilote');
+    expect(textes.competitions.contenu.supprimer('X')).toBe('Supprimer avec son contenu la compétition X');
+    expect(textes.competitions.exempleNom).toBe('Championnats de Nouvelle-Aquitaine de sabre');
+  });
+
+  it('US-044 CA-2 : le slogan garde le sens générique « compétitions d’escrime » (pas de renommage aveugle)', () => {
+    expect(textes.sousTitre).toBe('Gestion de compétitions d’escrime');
+  });
+
+  it('US-044 CA-2 : le catalogue ne garde aucune élision ni aucun accord fautif (« la épreuve », « son compétition »)', () => {
+    const fautes = tousLesTextes(textes).filter((texte) =>
+      /\b[lL]a [éÉ]preuve|\b[lL][’'][cC]ompétition|\b[dD][’'][cC]ompétition|\b[dD]e [éÉ]preuve|\b[sSmMtT]on compétition|\b[sSmMtT]a épreuve/.test(
+        texte,
+      ),
+    );
+    expect(fautes).toEqual([]);
   });
 });

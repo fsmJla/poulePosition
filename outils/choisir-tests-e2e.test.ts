@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { choisirTests, SPECS_DE_BASE, sorties } from './choisir-tests-e2e';
 
-const code = ['app/src/lib/competitions.ts'];
+const code = ['app/src/lib/epreuves.ts'];
 const base = { branches: ['us/US-100-exemple'], fichiersCommit: code, fichiersBranche: code };
 
 describe('choix des tests E2E de la preview (US-037)', () => {
@@ -123,7 +123,7 @@ describe('sorties pour le workflow (US-037)', () => {
     ]);
     const cible = sorties(choisirTests(base));
     expect(cible).toContain('projets=--project=pc');
-    expect(cible).toContain('specs=tests/e2e/connexion.spec.ts tests/e2e/competitions.spec.ts');
+    expect(cible).toContain('specs=tests/e2e/connexion.spec.ts tests/e2e/epreuves.spec.ts');
   });
 
   it('CA-1 : sans test à lancer, le workflow reçoit mode=aucun', () => {

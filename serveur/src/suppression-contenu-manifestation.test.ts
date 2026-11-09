@@ -1,5 +1,5 @@
 // Tests d'intégration de la suppression d'une manifestation avec son contenu (US-042, ADR-0020) : Worker, DO Club et
-// DO Competition dans workerd.
+// DO Epreuve dans workerd.
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { unstable_startWorker } from 'wrangler';
@@ -9,11 +9,11 @@ import {
   preparerChangementMotDePasse,
   preparerCreationCompte,
   preparerDemandeInstallation,
-  type CompetitionIndexee,
+  type EpreuveIndexee,
   type DemandeEnvoi,
-  type Epreuve,
+  type Competition,
   type Manifestation,
-  type ResumeCompetition,
+  type ResumeEpreuve,
   type Session,
 } from '@poule-position/protocole';
 
@@ -71,39 +71,39 @@ async function creerManifestation(): Promise<string> {
   return ((await reponse.json()) as { manifestation: Manifestation }).manifestation.id;
 }
 
-async function creerEpreuve(manifestationId: string): Promise<string> {
-  const reponse = await appeler('POST', '/epreuves', jetonAdmin, {
+async function creerCompetition(manifestationId: string): Promise<string> {
+  const reponse = await appeler('POST', '/competitions', jetonAdmin, {
     manifestationId,
     nom: 'Championnats de sabre',
     arme: 'sabre',
     commentaire: null,
   });
   expect(reponse.status).toBe(201);
-  return ((await reponse.json()) as { epreuve: Epreuve }).epreuve.id;
+  return ((await reponse.json()) as { competition: Competition }).competition.id;
 }
 
-/** Compétition rattachée à la manifestation (et à une épreuve ou non), envoyée par un pilote : elle est dans l'index. */
+/** Épreuve rattachée à la manifestation (et à une compétition ou non), envoyée par un pilote : elle est dans l'index. */
 async function rattacher(
   manifestationId: string,
-  epreuveId: string | null,
-  statut: ResumeCompetition['statut'] = 'preparation',
+  competitionId: string | null,
+  statut: ResumeEpreuve['statut'] = 'preparation',
 ): Promise<string> {
   const id = crypto.randomUUID();
-  const rattachement = { manifestationId, epreuveId };
-  const nom = `Compétition ${id.slice(0, 6)}`;
+  const rattachement = { manifestationId, competitionId };
+  const nom = `Épreuve ${id.slice(0, 6)}`;
   const evenement: Evenement = {
-    competitionId: id,
+    epreuveId: id,
     clubId,
     seq: 1,
     version: 1,
     date: 1_800_000_000_000,
     auteur: ADMIN.email,
     source: 'clavier',
-    type: 'CompetitionCreee',
+    type: 'EpreuveCreee',
     donnees: {
       nom,
       arme: 'sabre',
-      typeCompetition: 'individuelle',
+      typeEpreuve: 'individuelle',
       categorie: null,
       sexe: null,
       date: '2027-03-15',
@@ -128,7 +128,7 @@ async function rattacher(
       rattachement,
     },
   };
-  expect((await appeler('POST', `/competitions/${id}/evenements`, jetonAdmin, lot)).status).toBe(200);
+  expect((await appeler('POST', `/epreuves/${id}/evenements`, jetonAdmin, lot)).status).toBe(200);
   return id;
 }
 
@@ -138,12 +138,12 @@ const supprimerAvecContenu = (manifestationId: string, jeton: string | null = je
 const manifestationsDuClub = async () =>
   ((await (await appeler('GET', '/manifestations', jetonAdmin)).json()) as { manifestations: Manifestation[] })
     .manifestations;
-const epreuvesDuClub = async () =>
-  ((await (await appeler('GET', '/epreuves', jetonAdmin)).json()) as { epreuves: Epreuve[] }).epreuves;
+const competitionsDuClub = async () =>
+  ((await (await appeler('GET', '/competitions', jetonAdmin)).json()) as { competitions: Competition[] }).competitions;
 
-async function index(): Promise<{ competitions: CompetitionIndexee[]; supprimees: string[] }> {
-  return (await (await appeler('GET', '/competitions', jetonAdmin)).json()) as {
-    competitions: CompetitionIndexee[];
+async function index(): Promise<{ epreuves: EpreuveIndexee[]; supprimees: string[] }> {
+  return (await (await appeler('GET', '/epreuves', jetonAdmin)).json()) as {
+    epreuves: EpreuveIndexee[];
     supprimees: string[];
   };
 }
@@ -178,55 +178,55 @@ afterAll(async () => {
 });
 
 describe('suppression d’une manifestation avec son contenu (US-042)', () => {
-  it('US-042 CA-1 : supprime la manifestation, ses épreuves et ses compétitions, rattachées ou non à une épreuve', async () => {
+  it('US-042 CA-1 : supprime la manifestation, ses compétitions et ses épreuves, rattachées ou non à une compétition', async () => {
     const manifestationId = await creerManifestation();
-    const epreuveA = await creerEpreuve(manifestationId);
-    const epreuveB = await creerEpreuve(manifestationId);
+    const competitionA = await creerCompetition(manifestationId);
+    const competitionB = await creerCompetition(manifestationId);
     const dedans = [
-      await rattacher(manifestationId, epreuveA),
-      await rattacher(manifestationId, epreuveB, 'archivee'),
+      await rattacher(manifestationId, competitionA),
+      await rattacher(manifestationId, competitionB, 'archivee'),
       await rattacher(manifestationId, null, 'terminee'),
     ];
     const autreManifestation = await creerManifestation();
-    const autreEpreuve = await creerEpreuve(autreManifestation);
-    const ailleurs = await rattacher(autreManifestation, autreEpreuve);
+    const autreCompetition = await creerCompetition(autreManifestation);
+    const ailleurs = await rattacher(autreManifestation, autreCompetition);
 
     const reponse = await supprimerAvecContenu(manifestationId);
     expect(reponse.status).toBe(200);
     expect(await reponse.json()).toEqual({ ok: true, termine: true, supprimees: 3, restantes: 0 });
 
     expect(identifiants(await manifestationsDuClub())).not.toContain(manifestationId);
-    const epreuves = identifiants(await epreuvesDuClub());
-    expect(epreuves).not.toContain(epreuveA);
-    expect(epreuves).not.toContain(epreuveB);
+    const competitions = identifiants(await competitionsDuClub());
+    expect(competitions).not.toContain(competitionA);
+    expect(competitions).not.toContain(competitionB);
     const apres = await index();
     for (const id of dedans) {
-      expect(identifiants(apres.competitions)).not.toContain(id);
+      expect(identifiants(apres.epreuves)).not.toContain(id);
       expect(apres.supprimees).toContain(id);
     }
-    // Une autre manifestation, son épreuve et sa compétition ne sont pas touchées.
+    // Une autre manifestation, sa compétition et son épreuve ne sont pas touchées.
     expect(identifiants(await manifestationsDuClub())).toContain(autreManifestation);
-    expect(epreuves).toContain(autreEpreuve);
-    expect(identifiants(apres.competitions)).toContain(ailleurs);
+    expect(competitions).toContain(autreCompetition);
+    expect(identifiants(apres.epreuves)).toContain(ailleurs);
   });
 
-  it('US-042 CA-1 : une compétition supprimée répond 410 COMPETITION_SUPPRIMEE (pierre tombale d’US-039)', async () => {
+  it('US-042 CA-1 : une épreuve supprimée répond 410 EPREUVE_SUPPRIMEE (pierre tombale d’US-039)', async () => {
     const manifestationId = await creerManifestation();
-    const competitionId = await rattacher(manifestationId, null);
+    const epreuveId = await rattacher(manifestationId, null);
     await supprimerAvecContenu(manifestationId);
-    expect((await appeler('GET', `/competitions/${competitionId}/evenements`, jetonAdmin)).status).toBe(410);
+    expect((await appeler('GET', `/epreuves/${epreuveId}/evenements`, jetonAdmin)).status).toBe(410);
   });
 
   it('US-042 CA-2 : un organisateur reçoit ACCES_REFUSE, rien n’est supprimé', async () => {
     const manifestationId = await creerManifestation();
-    const epreuveId = await creerEpreuve(manifestationId);
-    const competitionId = await rattacher(manifestationId, epreuveId);
+    const competitionId = await creerCompetition(manifestationId);
+    const epreuveId = await rattacher(manifestationId, competitionId);
     const reponse = await supprimerAvecContenu(manifestationId, jetonOrganisateur);
     expect(reponse.status).toBe(403);
     expect(await reponse.json()).toMatchObject({ ok: false, erreur: 'ACCES_REFUSE' });
     expect(identifiants(await manifestationsDuClub())).toContain(manifestationId);
-    expect(identifiants(await epreuvesDuClub())).toContain(epreuveId);
-    expect(identifiants((await index()).competitions)).toContain(competitionId);
+    expect(identifiants(await competitionsDuClub())).toContain(competitionId);
+    expect(identifiants((await index()).epreuves)).toContain(epreuveId);
   });
 
   it('US-042 CA-2 : sans session, la suppression est refusée', async () => {
@@ -234,20 +234,20 @@ describe('suppression d’une manifestation avec son contenu (US-042)', () => {
     expect((await supprimerAvecContenu(manifestationId, null)).status).toBe(401);
   });
 
-  it('US-042 CA-3 : une compétition en cours bloque tout, les noms sont renvoyés et rien n’est supprimé', async () => {
+  it('US-042 CA-3 : une épreuve en cours bloque tout, les noms sont renvoyés et rien n’est supprimé', async () => {
     const manifestationId = await creerManifestation();
-    const epreuveId = await creerEpreuve(manifestationId);
-    const calme = await rattacher(manifestationId, epreuveId);
+    const competitionId = await creerCompetition(manifestationId);
+    const calme = await rattacher(manifestationId, competitionId);
     const enCours = await rattacher(manifestationId, null, 'enCours');
     const reponse = await supprimerAvecContenu(manifestationId);
     expect(reponse.status).toBe(409);
     const corps = (await reponse.json()) as { ok: false; erreur: string; enCours: string[] };
-    expect(corps).toMatchObject({ ok: false, erreur: 'COMPETITION_EN_COURS' });
+    expect(corps).toMatchObject({ ok: false, erreur: 'EPREUVE_EN_COURS' });
     expect(corps.enCours).toHaveLength(1);
     expect(identifiants(await manifestationsDuClub())).toContain(manifestationId);
-    expect(identifiants(await epreuvesDuClub())).toContain(epreuveId);
+    expect(identifiants(await competitionsDuClub())).toContain(competitionId);
     const apres = await index();
-    expect(identifiants(apres.competitions)).toEqual(expect.arrayContaining([calme, enCours]));
+    expect(identifiants(apres.epreuves)).toEqual(expect.arrayContaining([calme, enCours]));
     expect(apres.supprimees).not.toContain(calme);
   });
 
@@ -260,22 +260,22 @@ describe('suppression d’une manifestation avec son contenu (US-042)', () => {
     expect(identifiants(await manifestationsDuClub())).toContain(manifestationId);
   });
 
-  it('US-042 CA-5 : une manifestation volumineuse se supprime en deux requêtes, elle et ses épreuves partent avec la dernière', async () => {
+  it('US-042 CA-5 : une manifestation volumineuse se supprime en deux requêtes, elle et ses compétitions partent avec la dernière', async () => {
     const manifestationId = await creerManifestation();
-    const epreuveId = await creerEpreuve(manifestationId);
-    for (let i = 0; i < 35; i++) await rattacher(manifestationId, i % 2 === 0 ? epreuveId : null);
+    const competitionId = await creerCompetition(manifestationId);
+    for (let i = 0; i < 35; i++) await rattacher(manifestationId, i % 2 === 0 ? competitionId : null);
 
     const premiere = await supprimerAvecContenu(manifestationId);
     expect(premiere.status).toBe(200);
     expect(await premiere.json()).toEqual({ ok: true, termine: false, supprimees: 30, restantes: 5 });
-    // Tant qu'il reste des compétitions, la manifestation et ses épreuves restent.
+    // Tant qu'il reste des épreuves, la manifestation et ses compétitions restent.
     expect(identifiants(await manifestationsDuClub())).toContain(manifestationId);
-    expect(identifiants(await epreuvesDuClub())).toContain(epreuveId);
+    expect(identifiants(await competitionsDuClub())).toContain(competitionId);
 
     const seconde = await supprimerAvecContenu(manifestationId);
     expect(await seconde.json()).toEqual({ ok: true, termine: true, supprimees: 5, restantes: 0 });
     expect(identifiants(await manifestationsDuClub())).not.toContain(manifestationId);
-    expect(identifiants(await epreuvesDuClub())).not.toContain(epreuveId);
+    expect(identifiants(await competitionsDuClub())).not.toContain(competitionId);
   }, 60_000);
 
   it('US-042 CA-6 : une reprise termine sans recompter ce qui est déjà supprimé', async () => {
@@ -290,13 +290,13 @@ describe('suppression d’une manifestation avec son contenu (US-042)', () => {
     });
   }, 60_000);
 
-  it('US-042 CA-7 : une manifestation vide est supprimée avec ses épreuves vides, rejouée ou inconnue elle donne un succès sans effet', async () => {
+  it('US-042 CA-7 : une manifestation vide est supprimée avec ses compétitions vides, rejouée ou inconnue elle donne un succès sans effet', async () => {
     const manifestationId = await creerManifestation();
-    const epreuveId = await creerEpreuve(manifestationId);
+    const competitionId = await creerCompetition(manifestationId);
     const attendu = { ok: true, termine: true, supprimees: 0, restantes: 0 };
     expect(await (await supprimerAvecContenu(manifestationId)).json()).toEqual(attendu);
     expect(identifiants(await manifestationsDuClub())).not.toContain(manifestationId);
-    expect(identifiants(await epreuvesDuClub())).not.toContain(epreuveId);
+    expect(identifiants(await competitionsDuClub())).not.toContain(competitionId);
     expect(await (await supprimerAvecContenu(manifestationId)).json()).toEqual(attendu);
     expect((await supprimerAvecContenu(crypto.randomUUID())).status).toBe(200);
   });

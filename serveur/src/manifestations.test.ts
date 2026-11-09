@@ -77,29 +77,29 @@ async function lister(jeton = jetonOrganisateur): Promise<Manifestation[]> {
   return ((await reponse.json()) as { manifestations: Manifestation[] }).manifestations;
 }
 
-/** Compétition rattachée à la manifestation, envoyée par un pilote (US-022) : elle apparaît dans l'index du club. */
-async function rattacherCompetition(manifestationId: string) {
-  const competitionId = crypto.randomUUID();
+/** Épreuve rattachée à la manifestation, envoyée par un pilote (US-022) : elle apparaît dans l'index du club. */
+async function rattacherEpreuve(manifestationId: string) {
+  const epreuveId = crypto.randomUUID();
   const evenement: Evenement = {
-    competitionId,
+    epreuveId,
     clubId,
     seq: 1,
     version: 1,
     date: 1_800_000_000_000,
     auteur: ADMIN.email,
     source: 'clavier',
-    type: 'CompetitionCreee',
+    type: 'EpreuveCreee',
     donnees: {
       nom: 'Sabre M13',
       arme: 'sabre',
-      typeCompetition: 'individuelle',
+      typeEpreuve: 'individuelle',
       categorie: null,
       sexe: null,
       date: '2027-03-15',
       horaires: { appel: null, scratch: null, debutPoules: null },
       lieu: null,
       commentaire: null,
-      rattachement: { manifestationId, epreuveId: null },
+      rattachement: { manifestationId, competitionId: null },
     },
   };
   const lot: DemandeEnvoi = {
@@ -114,10 +114,10 @@ async function rattacherCompetition(manifestationId: string) {
       date: '2027-03-15',
       statut: 'preparation',
       publiee: false,
-      rattachement: { manifestationId, epreuveId: null },
+      rattachement: { manifestationId, competitionId: null },
     },
   };
-  expect((await appeler('POST', `/competitions/${competitionId}/evenements`, jetonAdmin, lot)).status).toBe(200);
+  expect((await appeler('POST', `/epreuves/${epreuveId}/evenements`, jetonAdmin, lot)).status).toBe(200);
 }
 
 beforeAll(async () => {
@@ -195,9 +195,9 @@ describe('manifestations du club (US-023)', () => {
     expect((await appeler('DELETE', `/manifestations/${id}`, jetonOrganisateur)).status).toBe(404);
   });
 
-  it('CA-5 : refuse de supprimer une manifestation qui contient une compétition', async () => {
+  it('CA-5 : refuse de supprimer une manifestation qui contient une épreuve', async () => {
     const { id } = await creer();
-    await rattacherCompetition(id);
+    await rattacherEpreuve(id);
     const reponse = await appeler('DELETE', `/manifestations/${id}`, jetonOrganisateur);
     expect(reponse.status).toBe(409);
     expect(await reponse.json()).toEqual({ ok: false, erreur: 'MANIFESTATION_NON_VIDE' });

@@ -1,4 +1,4 @@
-// Journal d'une compétition (ADR-0001, US-021) : l'état est recalculé à partir de la suite ordonnée des événements.
+// Journal d'une épreuve (ADR-0001, US-021) : l'état est recalculé à partir de la suite ordonnée des événements.
 // Les règles sont pures : le stockage du journal et la migration de son format sont faits ailleurs.
 import {
   champsModifiables,
@@ -7,22 +7,22 @@ import {
   modificationFormule,
   modificationParametres,
   CHAMPS_PARAMETRES,
-  normaliserCompetition,
-  validerCompetition,
+  normaliserEpreuve,
+  validerEpreuve,
   parametresParDefaut,
   validerFormule,
   validerParametres,
-  type DonneesCompetition,
-  type ErreurCompetition,
+  type DonneesEpreuve,
+  type ErreurEpreuve,
   type ErreurFormule,
   type ErreurParametres,
   type Formule,
-  type ModificationCompetition,
+  type ModificationEpreuve,
   type ModificationFormule,
   type ModificationParametres,
   type Parametres,
   type Statut,
-} from './competition';
+} from './epreuve';
 
 /** Origine d'un événement : le clavier du PC pilote (les saisies smartphone viendront avec E5). */
 export type Source = 'clavier';
@@ -35,17 +35,17 @@ export interface DonneesPiloteChange {
 
 /** Ce que l'application demande d'enregistrer. */
 export type Proposition =
-  | { type: 'CompetitionCreee'; donnees: DonneesCompetition }
-  | { type: 'CompetitionModifiee'; donnees: ModificationCompetition }
+  | { type: 'EpreuveCreee'; donnees: DonneesEpreuve }
+  | { type: 'EpreuveModifiee'; donnees: ModificationEpreuve }
   | { type: 'FormuleModifiee'; donnees: ModificationFormule }
   | { type: 'PiloteChange'; donnees: DonneesPiloteChange }
   | { type: 'ParametresModifies'; donnees: ModificationParametres };
 
 /** Événement enregistré : la proposition acceptée, avec son en-tête. */
 export type Evenement = {
-  competitionId: string;
+  epreuveId: string;
   clubId: string;
-  /** Numéro de séquence : 1, 2, 3… sans trou pour une compétition. */
+  /** Numéro de séquence : 1, 2, 3… sans trou pour une épreuve. */
   seq: number;
   /** Version du format (`VERSION_JOURNAL` du protocole). */
   version: number;
@@ -56,7 +56,7 @@ export type Evenement = {
   source: Source;
 } & Proposition;
 
-export interface Competition extends DonneesCompetition {
+export interface Epreuve extends DonneesEpreuve {
   id: string;
   clubId: string;
   creeeLe: number;
@@ -81,25 +81,25 @@ export interface AnomalieJournal {
 }
 
 export interface Projection {
-  competition: Competition | null;
+  epreuve: Epreuve | null;
   dernierSeq: number;
   anomalie: AnomalieJournal | null;
 }
 
 export type ErreurEvenement =
-  | ErreurCompetition
+  | ErreurEpreuve
   | ErreurFormule
   | ErreurParametres
   | 'FORMULE_FIGEE'
   | 'PILOTE_INVALIDE'
-  | 'COMPETITION_DEJA_CREEE'
-  | 'COMPETITION_INCONNUE'
-  | 'COMPETITION_ARCHIVEE'
+  | 'EPREUVE_DEJA_CREEE'
+  | 'EPREUVE_INCONNUE'
+  | 'EPREUVE_ARCHIVEE'
   | 'CHAMP_FIGE'
   | 'AUCUNE_MODIFICATION';
 
 export function projectionVide(): Projection {
-  return { competition: null, dernierSeq: 0, anomalie: null };
+  return { epreuve: null, dernierSeq: 0, anomalie: null };
 }
 
 /**
@@ -107,107 +107,107 @@ export function projectionVide(): Projection {
  * qui dépendent de la manifestation (US-025 CA-3 et CA-4) sont vérifiées à la saisie, où elle est connue.
  */
 export function verifierEvenement(projection: Projection, proposition: Proposition): ErreurEvenement | null {
-  const { competition } = projection;
-  if (proposition.type === 'CompetitionCreee') {
-    if (competition) return 'COMPETITION_DEJA_CREEE';
-    return Object.values(validerCompetition(proposition.donnees))[0] ?? null;
+  const { epreuve } = projection;
+  if (proposition.type === 'EpreuveCreee') {
+    if (epreuve) return 'EPREUVE_DEJA_CREEE';
+    return Object.values(validerEpreuve(proposition.donnees))[0] ?? null;
   }
-  if (proposition.type === 'PiloteChange') return verifierPilote(competition, proposition.donnees);
-  if (proposition.type === 'ParametresModifies') return verifierParametres(competition, proposition.donnees);
-  if (proposition.type === 'FormuleModifiee') return verifierFormule(competition, proposition.donnees);
+  if (proposition.type === 'PiloteChange') return verifierPilote(epreuve, proposition.donnees);
+  if (proposition.type === 'ParametresModifies') return verifierParametres(epreuve, proposition.donnees);
+  if (proposition.type === 'FormuleModifiee') return verifierFormule(epreuve, proposition.donnees);
   // US-027 : la modification est validée sur le résultat de la fusion, comme une création.
-  if (!competition) return 'COMPETITION_INCONNUE';
-  if (competition.statut === 'archivee') return 'COMPETITION_ARCHIVEE';
-  const modifiables = champsModifiables(competition.statut);
+  if (!epreuve) return 'EPREUVE_INCONNUE';
+  if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
+  const modifiables = champsModifiables(epreuve.statut);
   const champs = Object.keys(proposition.donnees);
   if (champs.some((champ) => !(modifiables as readonly string[]).includes(champ))) return 'CHAMP_FIGE';
-  const fusion = fusionner(competition, proposition.donnees);
-  if (Object.keys(modification(competition, fusion)).length === 0) return 'AUCUNE_MODIFICATION';
-  return Object.values(validerCompetition(fusion))[0] ?? null;
+  const fusion = fusionner(epreuve, proposition.donnees);
+  if (Object.keys(modification(epreuve, fusion)).length === 0) return 'AUCUNE_MODIFICATION';
+  return Object.values(validerEpreuve(fusion))[0] ?? null;
 }
 
-/** US-029 : prendre la main ne touche pas au contenu, donc reste permis une fois la compétition terminée ou archivée. */
-function verifierPilote(competition: Competition | null, { ancienAppareil, nouvelAppareil }: DonneesPiloteChange) {
-  if (!competition) return 'COMPETITION_INCONNUE';
+/** US-029 : prendre la main ne touche pas au contenu, donc reste permis une fois l’épreuve terminée ou archivée. */
+function verifierPilote(epreuve: Epreuve | null, { ancienAppareil, nouvelAppareil }: DonneesPiloteChange) {
+  if (!epreuve) return 'EPREUVE_INCONNUE';
   if (!ancienAppareil || !nouvelAppareil || ancienAppareil === nouvelAppareil) return 'PILOTE_INVALIDE';
   return null;
 }
 
-/** US-032 : les paramètres se règlent à tout moment, sauf une fois la compétition archivée. */
-function verifierParametres(competition: Competition | null, changes: ModificationParametres) {
-  if (!competition) return 'COMPETITION_INCONNUE';
-  if (competition.statut === 'archivee') return 'COMPETITION_ARCHIVEE';
+/** US-032 : les paramètres se règlent à tout moment, sauf une fois l’épreuve archivée. */
+function verifierParametres(epreuve: Epreuve | null, changes: ModificationParametres) {
+  if (!epreuve) return 'EPREUVE_INCONNUE';
+  if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
   if (Object.keys(changes).some((champ) => !CHAMPS_PARAMETRES.includes(champ))) return 'CHAMP_FIGE';
   const erreur = validerParametres(changes);
   if (erreur) return erreur;
-  const change = modificationParametres(competition.parametres, { ...competition.parametres, ...changes });
+  const change = modificationParametres(epreuve.parametres, { ...epreuve.parametres, ...changes });
   return Object.keys(change).length === 0 ? 'AUCUNE_MODIFICATION' : null;
 }
 
 const CHAMPS_FORMULE: readonly string[] = ['touchesPoules', 'touchesTableau', 'matchTroisieme'];
 
-/** US-028 : la formule se règle jusqu'à la fin de la compétition ; les touches de relais ne se modifient pas. */
-function verifierFormule(competition: Competition | null, changes: ModificationFormule): ErreurEvenement | null {
-  if (!competition) return 'COMPETITION_INCONNUE';
-  if (competition.statut === 'archivee') return 'COMPETITION_ARCHIVEE';
-  if (competition.statut === 'terminee') return 'FORMULE_FIGEE';
+/** US-028 : la formule se règle jusqu'à la fin de l’épreuve ; les touches de relais ne se modifient pas. */
+function verifierFormule(epreuve: Epreuve | null, changes: ModificationFormule): ErreurEvenement | null {
+  if (!epreuve) return 'EPREUVE_INCONNUE';
+  if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
+  if (epreuve.statut === 'terminee') return 'FORMULE_FIGEE';
   if (Object.keys(changes).some((champ) => !CHAMPS_FORMULE.includes(champ))) return 'CHAMP_FIGE';
   const erreur = validerFormule(changes);
   if (erreur) return erreur;
-  const change = modificationFormule(competition.formule, { ...competition.formule, ...changes });
+  const change = modificationFormule(epreuve.formule, { ...epreuve.formule, ...changes });
   return Object.keys(change).length === 0 ? 'AUCUNE_MODIFICATION' : null;
 }
 
-function fusionner(competition: Competition, changes: ModificationCompetition): DonneesCompetition {
-  const { nom, arme, typeCompetition, categorie, sexe, date, horaires, lieu, commentaire, rattachement } = competition;
-  return { nom, arme, typeCompetition, categorie, sexe, date, horaires, lieu, commentaire, rattachement, ...changes };
+function fusionner(epreuve: Epreuve, changes: ModificationEpreuve): DonneesEpreuve {
+  const { nom, arme, typeEpreuve, categorie, sexe, date, horaires, lieu, commentaire, rattachement } = epreuve;
+  return { nom, arme, typeEpreuve, categorie, sexe, date, horaires, lieu, commentaire, rattachement, ...changes };
 }
 
 /** Projection après un événement déjà vérifié. */
 export function appliquer(projection: Projection, evenement: Evenement): Projection {
-  const { competitionId, clubId, date, auteur } = evenement;
+  const { epreuveId, clubId, date, auteur } = evenement;
   if (evenement.type === 'PiloteChange') return { ...projection, dernierSeq: evenement.seq };
   if (evenement.type === 'ParametresModifies') {
-    const { competition } = projection;
-    if (!competition) return projection;
-    const parametres = { ...competition.parametres, ...evenement.donnees };
-    return { ...projection, competition: { ...competition, parametres }, dernierSeq: evenement.seq };
+    const { epreuve } = projection;
+    if (!epreuve) return projection;
+    const parametres = { ...epreuve.parametres, ...evenement.donnees };
+    return { ...projection, epreuve: { ...epreuve, parametres }, dernierSeq: evenement.seq };
   }
   if (evenement.type === 'FormuleModifiee') {
-    const { competition } = projection;
-    if (!competition) return projection;
-    const formule = { ...competition.formule, ...evenement.donnees };
-    return { ...projection, competition: { ...competition, formule }, dernierSeq: evenement.seq };
+    const { epreuve } = projection;
+    if (!epreuve) return projection;
+    const formule = { ...epreuve.formule, ...evenement.donnees };
+    return { ...projection, epreuve: { ...epreuve, formule }, dernierSeq: evenement.seq };
   }
-  if (evenement.type === 'CompetitionModifiee') {
-    const { competition } = projection;
-    if (!competition) return projection;
-    const donnees = normaliserCompetition(fusionner(competition, evenement.donnees));
+  if (evenement.type === 'EpreuveModifiee') {
+    const { epreuve } = projection;
+    if (!epreuve) return projection;
+    const donnees = normaliserEpreuve(fusionner(epreuve, evenement.donnees));
     const formule =
-      donnees.typeCompetition === competition.typeCompetition
-        ? competition.formule
-        : { ...competition.formule, touchesRelais: formuleParDefaut(donnees.typeCompetition).touchesRelais };
-    return { ...projection, competition: { ...competition, ...donnees, formule }, dernierSeq: evenement.seq };
+      donnees.typeEpreuve === epreuve.typeEpreuve
+        ? epreuve.formule
+        : { ...epreuve.formule, touchesRelais: formuleParDefaut(donnees.typeEpreuve).touchesRelais };
+    return { ...projection, epreuve: { ...epreuve, ...donnees, formule }, dernierSeq: evenement.seq };
   }
   const { donnees } = evenement;
   return {
     ...projection,
-    competition: {
-      id: competitionId,
+    epreuve: {
+      id: epreuveId,
       clubId,
-      ...normaliserCompetition(donnees),
+      ...normaliserEpreuve(donnees),
       creeeLe: date,
       creeePar: auteur,
       statut: 'preparation',
       publiee: false,
-      formule: formuleParDefaut(donnees.typeCompetition),
+      formule: formuleParDefaut(donnees.typeEpreuve),
       parametres: parametresParDefaut(),
     },
     dernierSeq: evenement.seq,
   };
 }
 
-/** État de la compétition calculé à partir de son journal, arrêté au dernier événement cohérent (CA-2). */
+/** État de l’épreuve calculé à partir de son journal, arrêté au dernier événement cohérent (CA-2). */
 export function projeter(evenements: readonly Evenement[]): Projection {
   let projection = projectionVide();
   for (const evenement of evenements) {

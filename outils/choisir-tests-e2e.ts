@@ -9,8 +9,8 @@ import { pathToFileURL } from 'node:url';
 /** Branches sur lesquelles tout est testé, sur tous les formats (intégration et production). */
 const BRANCHES_COMPLETES = ['dev', 'main'];
 
-/** Tests toujours lancés sur une branche de travail : connexion et parcours de création d'une compétition. */
-export const SPECS_DE_BASE = ['connexion.spec.ts', 'competitions.spec.ts'];
+/** Tests toujours lancés sur une branche de travail : connexion et parcours de création d'une épreuve. */
+export const SPECS_DE_BASE = ['connexion.spec.ts', 'epreuves.spec.ts'];
 
 export type Mode = 'aucun' | 'cible' | 'complet';
 

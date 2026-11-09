@@ -26,7 +26,7 @@ export type CodeErreur = keyof typeof ERREURS;
 export interface MessageBienvenue {
   v: typeof VERSION_PROTOCOLE;
   type: 'bienvenue';
-  competitionId: string;
+  epreuveId: string;
 }
 
 export interface MessageErreur {
@@ -50,8 +50,8 @@ export type Enveloppe = { v: typeof VERSION_PROTOCOLE; type: string } & Record<s
 export type Analyse<T> = { ok: true } & T;
 export type Refus = { ok: false; erreur: CodeErreur };
 
-export function messageBienvenue(competitionId: string): string {
-  return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'bienvenue', competitionId } satisfies MessageBienvenue);
+export function messageBienvenue(epreuveId: string): string {
+  return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'bienvenue', epreuveId } satisfies MessageBienvenue);
 }
 
 export function messageErreur(code: CodeErreur): string {
@@ -91,8 +91,8 @@ export function analyserMessageServeur(brut: unknown): Analyse<{ message: Messag
   const { contenu } = enveloppe;
   switch (contenu.type) {
     case 'bienvenue':
-      if (typeof contenu.competitionId !== 'string') return { ok: false, erreur: 'MESSAGE_INVALIDE' };
-      return { ok: true, message: { v: VERSION_PROTOCOLE, type: 'bienvenue', competitionId: contenu.competitionId } };
+      if (typeof contenu.epreuveId !== 'string') return { ok: false, erreur: 'MESSAGE_INVALIDE' };
+      return { ok: true, message: { v: VERSION_PROTOCOLE, type: 'bienvenue', epreuveId: contenu.epreuveId } };
     case 'erreur':
       if (!estCodeErreur(contenu.code)) return { ok: false, erreur: 'MESSAGE_INVALIDE' };
       return {
