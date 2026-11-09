@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-044
-- **Branche / PR :** `us/US-045-rattacher-epreuve-a-competition` / —
+- **Branche / PR :** `us/US-045-rattacher-epreuve-a-competition` / [#65](https://github.com/fsmJla/poulePosition/pull/65)
 
 ## Récit
 
@@ -124,3 +124,4 @@ compétition ; la décision de fond (un journal par épreuve, index du club côt
 | 2026-11-08 | Créée (analyse d'impact du changement de modèle) |
 | 2026-11-09 | Plan validé ; implémentation démarrée sur la branche `us/US-045-rattacher-epreuve-a-competition` |
 | 2026-11-09 | Implémentée ; contrôles locaux verts ; passée « En revue » |
+| 2026-11-09 | Recette OK sur https://poule-position-4s0m3jnk3-fsmjlas-projects.vercel.app : CA-1 à CA-7 vérifiés à la main sur PC (formulaire, compétition seule créée puis supprimée, liste, « Épreuves à rattacher », préremplissage) ; hors ligne et smartphone couverts par les E2E de la CI sur la preview (Worker déployé depuis la branche). Déployée en preview et vérifiée ; passée « Terminée » |
