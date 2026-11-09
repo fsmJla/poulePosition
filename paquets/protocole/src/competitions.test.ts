@@ -32,6 +32,14 @@ describe('demandes sur les compétitions (US-024)', () => {
     expect(analyserDemandeCompetition(saisie({ arme: null }))).toMatchObject({ ok: true });
   });
 
+  it('US-045 CA-2 : une compétition se crée seule (manifestation null) ou dans une manifestation', () => {
+    expect(analyserDemandeCompetition(saisie({ manifestationId: null }))).toMatchObject({
+      ok: true,
+      demande: { manifestationId: null },
+    });
+    expect(analyserDemandeCompetition(saisie({ manifestationId: 3 }))).toEqual({ ok: false });
+  });
+
   it('CA-1 et CA-2 : refuse une demande que les règles refusent ou mal formée', () => {
     expect(analyserDemandeCompetition(saisie({ nom: '' }))).toEqual({ ok: false });
     expect(analyserDemandeCompetition(saisie({ manifestationId: '' }))).toEqual({ ok: false });
