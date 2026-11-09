@@ -77,7 +77,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-045](US-045-rattacher-epreuve-a-competition.md) | Rattacher toute épreuve à une compétition | E2 | Terminée | US-044 |
 | [US-046](US-046-point-entree-creer.md) | Un seul point d'entrée « Créer », et l'aide « Comment ça s'organise » | E2 | Prête | US-047, US-048 |
 | [US-047](US-047-assistant-manifestation.md) | Créer une manifestation avec un assistant | E2 | Prête | US-048, US-049 |
-| [US-048](US-048-creer-epreuves-en-lot.md) | Créer les épreuves d'une compétition en lot (grille des épreuves) | E2 | En revue | US-045 |
+| [US-048](US-048-creer-epreuves-en-lot.md) | Créer les épreuves d'une compétition en lot (grille des épreuves) | E2 | Terminée | US-045 |
 | [US-049](US-049-plan-de-la-manifestation.md) | Voir et compléter le plan de la manifestation | E2 | Prête | US-045, US-048 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.

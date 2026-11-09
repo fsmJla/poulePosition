@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-045
-- **Branche / PR :** `us/US-048-creer-epreuves-en-lot` / —
+- **Branche / PR :** `us/US-048-creer-epreuves-en-lot` / [#66](https://github.com/fsmJla/poulePosition/pull/66)
 
 ## Récit
 
@@ -128,3 +128,4 @@ Aucun changement du protocole, du serveur ni du journal : ce sont des `EpreuveCr
 | 2026-11-08 | Créée (maquette d'ergonomie de création) |
 | 2026-11-09 | Plan validé ; implémentation démarrée sur la branche `us/US-048-creer-epreuves-en-lot` |
 | 2026-11-09 | Implémentée ; contrôles locaux verts ; passée « En revue » |
+| 2026-11-09 | Recette OK sur https://poule-position-jfev6f3v4-fsmjlas-projects.vercel.app : CA-1 à CA-7 vérifiés à la main sur PC (grille, catégorie libre, lot de 4 épreuves avec types, appel et jours, cases déjà créées, compétition sans arme) ; les 5 épreuves envoyées au serveur ; données de test supprimées. Hors ligne et smartphone couverts par les E2E de la CI sur la preview. Déployée en preview et vérifiée ; passée « Terminée » |
