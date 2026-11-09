@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-045
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-048-creer-epreuves-en-lot` / —
 
 ## Récit
 
@@ -99,3 +99,4 @@ coupé.
 | Date | Événement |
 |---|---|
 | 2026-11-08 | Créée (maquette d'ergonomie de création) |
+| 2026-11-09 | Plan validé ; implémentation démarrée sur la branche `us/US-048-creer-epreuves-en-lot` |
