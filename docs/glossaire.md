@@ -4,6 +4,10 @@ Vocabulaire à employer **tel quel** dans le code (identifiants en français, sa
 variables : `competition`, `piste`, `poule`), dans les docs et dans l'interface. Si un terme manque, on
 l'ajoute ici avant de l'utiliser.
 
+> **Vocabulaire révisé le 2026-11-08 (ADR-0021, US-044).** La **compétition** est désormais le regroupement et
+> l'**épreuve** l'unité qui se tire, comme dans l'usage de l'escrime. Jusqu'à la livraison d'US-044, le code et les US
+> déjà réalisées emploient encore l'ancien sens : `competition` pour l'épreuve, `epreuve` pour la compétition.
+
 ## Escrime
 
 | Terme | Définition | Dans le code |
@@ -11,12 +15,12 @@ l'ajoute ici avant de l'utiliser.
 | Arme | Sabre, épée, fleuret ou sabre laser. | `arme` : `sabre`, `epee`, `fleuret`, `sabreLaser` |
 | Tireur | Compétiteur. | `tireur` |
 | Équipe | 2 ou 3 tireurs (et un remplaçant éventuel) d'une épreuve par équipes. | `equipe` |
-| Manifestation | Rassemblement organisé par le club sur un ou plusieurs jours (souvent un week-end), qui regroupe des épreuves et des compétitions : nom, dates de début et de fin, lieu. Ce mot est employé dans l'interface comme dans le code ; on évite « évènement », qui se confondrait avec l'événement du journal. | `manifestation` |
-| Épreuve | Ensemble de compétitions d'une manifestation présentées sous un même nom et une même affiche, éventuellement sur plusieurs jours (ex. « Championnats de Nouvelle-Aquitaine de sabre »). Appartient toujours à une manifestation. | `epreuve` |
-| Compétition | Unité qui se déroule (inscriptions, poules, tableau) : nom, arme, type, catégorie, sexe, date, horaires, lieu, formule. Une par arme × catégorie × sexe ; isolée ou rattachée à une manifestation, éventuellement dans une épreuve. | `competition` |
-| Type de compétition | Individuelle, équipes de 2 (relais à 20 touches) ou équipes de 3 (relais à 45 touches). | `typeCompetition` : `individuelle`, `equipes2`, `equipes3` |
+| Manifestation | Rassemblement organisé par le club sur un ou plusieurs jours (souvent un week-end), qui regroupe des compétitions : nom, dates de début et de fin, lieu. Ce mot est employé dans l'interface comme dans le code ; on évite « évènement », qui se confondrait avec l'événement du journal. | `manifestation` |
+| Épreuve | Unité qui se tire (inscriptions, poules, tableau) : nom, arme, type, catégorie, sexe, date, horaires, lieu, formule. Une par arme × catégorie × sexe ; appartient **toujours** à une compétition. Elle a son journal et son pilote. | `epreuve` |
+| Compétition | Ensemble d'épreuves présentées sous un même nom et une même affiche, éventuellement sur plusieurs jours (ex. « Championnats de Nouvelle-Aquitaine de sabre ») ; arme facultative. Dans une manifestation ou seule : un challenge seul est une compétition à une seule épreuve. | `competition` |
+| Type d'épreuve | Individuelle, équipes de 2 (relais à 20 touches) ou équipes de 3 (relais à 45 touches). | `typeEpreuve` : `individuelle`, `equipes2`, `equipes3` |
 | Horaires | Heure d'appel (pointage des tireurs), de scratch (clôture des inscriptions sur place) et de début des poules. | `appel`, `scratch`, `debutPoules` |
-| Statut d'une compétition | En préparation → En cours → Terminée ; Archivée (réversible). | `statut` : `preparation`, `enCours`, `terminee`, `archivee` |
+| Statut d'une épreuve | En préparation → En cours → Terminée ; Archivée (réversible). | `statut` : `preparation`, `enCours`, `terminee`, `archivee` |
 | Match pour la 3e place | Match facultatif entre les perdants des demi-finales ; sans lui, deux 3es ex æquo. | `matchTroisieme` |
 | Formule | Enchaînement des tours (ex. un tour de poules puis un tableau à élimination directe). | `formule` |
 | Tour | Étape de la formule : tour de poules ou tableau. | `tour` |
@@ -35,14 +39,14 @@ l'ajoute ici avant de l'utiliser.
 | Feuille de match | Feuille d'un match de tableau. | `feuilleMatch` |
 | Émargement | Pointage de la présence des tireurs le jour J. | `emargement` |
 | Catégorie | Tranche d'âge (M15, Senior, Vétéran 1…), ou catégorie libre pour un challenge. | `categorie` |
-| Sexe d'une compétition | Hommes, Dames ou Mixte. | `sexe` : `hommes`, `dames`, `mixte` |
+| Sexe d'une épreuve | Hommes, Dames ou Mixte. | `sexe` : `hommes`, `dames`, `mixte` |
 
 ## Application
 
 | Terme | Définition | Dans le code |
 |---|---|---|
-| Pilote | Appareil (le PC de l'organisateur) qui détient la compétition et fait foi. | `pilote` |
-| Journal | Suite ordonnée des événements d'une compétition, source de vérité. | `journal` |
+| Pilote | Appareil (le PC de l'organisateur) qui détient l'épreuve et fait foi. | `pilote` |
+| Journal | Suite ordonnée des événements d'une épreuve, source de vérité. | `journal` |
 | Événement | Fait enregistré dans le journal (`ScoreSaisi`…), avec un numéro de séquence. | `evenement`, `seq` |
 | Projection | État calculé à partir du journal. | `projection` |
 | Vue | Données d'affichage publiées par le pilote pour l'écran ou les spectateurs. | `vue` |
@@ -50,17 +54,20 @@ l'ajoute ici avant de l'utiliser.
 | Accusé | Réponse du pilote à une saisie : acceptée, refusée ou doublon. | `accuse` |
 | Boîte | Saisies stockées par le serveur en attente d'accusé. | `boite` |
 | Jeton QR | Secret de 128 bits contenu dans le lien QR des arbitres ou des tireurs. | `jetonQr` |
-| Publication | Réglage d'une compétition : publiée, elle est visible du public sur la page d'accueil (affiche, dates…) ; non publiée, seuls les organisateurs la voient. Sans rapport avec le réseau : « en ligne / hors ligne » est réservé à l'état du réseau. | `publiee` |
-| Prendre la main | Faire de ce PC le pilote d'une compétition (en ligne) ; l'ancien pilote passe en lecture seule (US-029). | `prendreLaMain`, `PiloteChange` |
-| Suppression définitive | Effacement irréversible d'une compétition sur le serveur et sur les PC, réservé aux administrateurs, interdit pour une compétition en cours (US-039). Distincte de l'archivage. | `supprimee` |
-| Suppression avec contenu | Suppression définitive d'une manifestation ou d'une épreuve non vide, avec toutes ses épreuves et ses compétitions (archivées comprises). Réservée aux administrateurs, demandée explicitement, bloquée par une compétition en cours (US-041, US-042). | `avecContenu` |
-| Pierre tombale | Trace gardée par le serveur d'une compétition supprimée (identifiant et date) : elle empêche son retour par un PC qui en garde une copie et lui fait effacer cette copie. | `pierreTombale` |
-| Archivage | Mise de côté réversible d'une compétition ou d'une manifestation : lecture seule, masqué des listes et de la page publique (US-033). | `archivee` |
+| Publication | Réglage d'une épreuve : publiée, elle est visible du public sur la page d'accueil (affiche, dates…) ; non publiée, seuls les organisateurs la voient. Sans rapport avec le réseau : « en ligne / hors ligne » est réservé à l'état du réseau. | `publiee` |
+| Prendre la main | Faire de ce PC le pilote d'une épreuve (en ligne) ; l'ancien pilote passe en lecture seule (US-029). | `prendreLaMain`, `PiloteChange` |
+| Suppression définitive | Effacement irréversible d'une épreuve sur le serveur et sur les PC, réservé aux administrateurs, interdit pour une épreuve en cours (US-039). Distincte de l'archivage. | `supprimee` |
+| Suppression avec contenu | Suppression définitive d'une manifestation ou d'une compétition non vide, avec toutes ses compétitions et ses épreuves (archivées comprises). Réservée aux administrateurs, demandée explicitement, bloquée par une épreuve en cours (US-041, US-042). | `avecContenu` |
+| Pierre tombale | Trace gardée par le serveur d'une épreuve supprimée (identifiant et date) : elle empêche son retour par un PC qui en garde une copie et lui fait effacer cette copie. | `pierreTombale` |
+| Valeur reprise | Valeur copiée du parent à la création d'une épreuve (lieu et jours de la manifestation, arme de la compétition), modifiable ensuite. L'écran indique « comme la manifestation », « comme la compétition » ou « modifiée ». Ce n'est pas un héritage dynamique : changer le parent ne change pas l'épreuve (décision du 2026-11-08). | `reprise` |
+| Plan de la manifestation | Vue de la manifestation en tableau : une ligne par compétition, une colonne par jour, les épreuves dans les cases (US-049). | `PlanManifestation` |
+| Grille des épreuves | Tableau catégorie × sexe d'une compétition, où l'on coche les épreuves à créer en une fois (US-048). | `GrilleEpreuves` |
+| Archivage | Mise de côté réversible d'une épreuve ou d'une manifestation : lecture seule, masqué des listes et de la page publique (US-033). | `archivee` |
 | Écran | Affichage géant (distant ou fenêtre locale). | `ecran` |
 | Spectateur | Accès public en lecture seule. | `spectateur` |
 | Club | Organisation propriétaire des données (`clubId`). | `club` |
 | Compte | Accès nominatif à l'application (e-mail, nom, rôle, état), pour les administrateurs et les organisateurs. Les arbitres et les tireurs n'en ont pas (accès par QR code). | `compte` |
-| Rôle | Profil d'un compte : administrateur (tout, y compris la gestion des comptes) ou organisateur (compétitions). | `role` : `administrateur`, `organisateur` |
+| Rôle | Profil d'un compte : administrateur (tout, y compris la gestion des comptes) ou organisateur (manifestations, compétitions et épreuves). | `role` : `administrateur`, `organisateur` |
 | Session | Preuve de connexion d'un compte sur un appareil, valable 30 jours et prolongée à chaque usage en ligne. | `session` |
 | Appareil connu | Appareil sur lequel un compte s'est déjà connecté en ligne : il peut s'y reconnecter hors ligne. | `appareilConnu` |
 | Vérificateur local | Empreinte du mot de passe gardée sur un appareil connu pour la connexion hors ligne (ADR-0006). | `verificateurLocal` |

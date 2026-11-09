@@ -87,3 +87,4 @@ Sans objet : la correction ne touche que la CI, pas l'application.
 | 2026-11-04 | Créée et implémentée à la demande de l'utilisateur ; en cours |
 | 2026-11-04 | Droit `checks: read` manquant au workflow (403) : ajouté, avec repli prudent (tests lancés si la lecture échoue) ; CI de la PR : choix `cible` (PC, socle), E2E en 1 min 16 s au lieu de 10 min, tous jobs verts ; mergée dans `dev` |
 | 2026-11-04 | Défaut trouvé sur la PR #52 : un push de 3 commits dont le dernier était de la documentation n'a lancé aucun test ; CA-1 précisé (on regarde les commits précédents) et corrigé |
+| 2026-11-08 | Impactée par US-044 (vocabulaire inversé : la compétition regroupe, l'épreuve se tire) |

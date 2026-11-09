@@ -97,3 +97,4 @@ d'US-022.
 | 2026-10-28 | Créée |
 | 2026-10-28 | Implémentée (journal, projection, migration, verrou d’onglet) ; PR vers `dev` |
 | 2026-10-29 | Recette OK sur https://poule-position-git-us-us-021-journal-lo-d561f8-fsmjlas-projects.vercel.app (Worker de preview déployé depuis la branche ; déployée en preview et vérifiée) : l'application se charge, la base IndexedDB passe en version 3 avec la table `evenements` (clé `[competitionId+seq]`, vide) ; montée depuis une base version 2 vérifiée, données de l'appareil conservées ; Web Locks et `storage.persist` disponibles. US sans interface : CA-1 à CA-6, cas limites et hors ligne couverts par les tests unitaires, verts en CI. Merge dans `dev`. |
+| 2026-11-08 | Impactée par US-044 (vocabulaire inversé : la compétition regroupe, l'épreuve se tire) |

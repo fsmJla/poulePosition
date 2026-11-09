@@ -86,3 +86,4 @@ entre-temps, CA-3 s'applique.
 | 2026-11-03 | Plan validé ; en cours sur `us/US-029-prendre-la-main` |
 | 2026-11-03 | Implémentée (`PiloteChange`, prise de main, présence, modifications écartées, ADR-0017) ; en revue (PR #50) |
 | 2026-11-04 | Recette OK sur https://poule-position-git-us-us-029-prendre-la-main-fsmjlas-projects.vercel.app (deux PC simulés : CA-1 prise de main, CA-2 bascule de l'ancien pilote en 14 s, CA-3 modification hors ligne écartée et exportée, CA-4 avertissement « pilote connecté », CA-5 deux compétitions pilotées, bouton grisé hors ligne) ; déployée en preview et vérifiée ; mergée dans `dev` |
+| 2026-11-08 | Impactée par US-044 (vocabulaire inversé : la compétition regroupe, l'épreuve se tire) |

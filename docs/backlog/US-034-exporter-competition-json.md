@@ -1,35 +1,35 @@
-# US-034 — Exporter une compétition en JSON
+# US-034 — Exporter une épreuve en JSON
 
 - **Epic :** E2 — Compétitions
 - **Fonctionnalité :** F16 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
 - **Statut :** Prête
-- **Dépend de :** US-021
+- **Dépend de :** US-044, US-021
 - **Branche / PR :** —
 
 ## Récit
 
-**En tant qu'**organisateur, **je veux** exporter une compétition dans un fichier, **afin d'**en garder une
+**En tant qu'**organisateur, **je veux** exporter une épreuve dans un fichier, **afin d'**en garder une
 sauvegarde sur le disque et de pouvoir la reprendre sur un autre PC, même sans internet.
 
 ## Critères d'acceptation
 
 **CA-1 — Exporter**
-- **Étant donné** une compétition ouverte (pilotée ou non par ce PC)
+- **Étant donné** une épreuve ouverte (pilotée ou non par ce PC)
 - **Quand** l'organisateur choisit « Exporter »
-- **Alors** un fichier `<nom-de-la-competition>-<AAAA-MM-JJ-HHhMM>.poule.json` est enregistré, contenant la version
-  du format, l'identifiant et le `clubId` de la compétition, et son **journal complet**.
+- **Alors** un fichier `<nom-de-l-epreuve>-<AAAA-MM-JJ-HHhMM>.poule.json` est enregistré, contenant la version
+  du format, l'identifiant et le `clubId` de l'épreuve, et son **journal complet**.
 
 **CA-2 — Fichiers joints inclus**
-- **Étant donné** une compétition avec une affiche ou une feuille de route (y compris héritées)
+- **Étant donné** une épreuve avec une affiche ou une feuille de route (y compris héritées)
 - **Quand** elle est exportée
 - **Alors** les fichiers sont inclus (encodés en base64) pour une reprise complète hors ligne.
 
 **CA-3 — Rattachement décrit**
-- **Étant donné** une compétition rattachée à une épreuve ou à une manifestation
+- **Étant donné** une épreuve rattachée à une compétition ou à une manifestation
 - **Quand** elle est exportée
-- **Alors** le fichier contient aussi le nom, les dates et le lieu de la manifestation et de l'épreuve.
+- **Alors** le fichier contient aussi le nom, les dates et le lieu de la manifestation et de la compétition.
 
 **CA-4 — Enregistrement sur disque**
 - **Étant donné** Chrome ou Edge
@@ -43,7 +43,7 @@ Fonctionne entièrement hors ligne, depuis le journal local et les fichiers gard
 
 ## Cas limites et erreurs
 
-- Fichiers joints non disponibles localement (compétition non pilotée, jamais ouverte en ligne) : l'export se fait
+- Fichiers joints non disponibles localement (épreuve non pilotée, jamais ouverte en ligne) : l'export se fait
   sans eux et le signale.
 - Le fichier contient des données personnelles des tireurs : un rappel l'indique à l'export (ADR-0014).
 
@@ -65,3 +65,4 @@ Fonctionne entièrement hors ligne, depuis le journal local et les fichiers gard
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-11-08 | Amendée : vocabulaire inversé (la compétition regroupe, l'épreuve se tire ; US-044), au niveau de l'épreuve comme avant (décision du 2026-11-08) ; dépend de US-044 |

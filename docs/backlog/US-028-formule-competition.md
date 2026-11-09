@@ -102,3 +102,4 @@ Entièrement disponible hors ligne sur le PC pilote (journal local). Lecture seu
 | 2026-11-03 | Plan validé ; en cours sur `us/US-028-formule-competition` |
 | 2026-11-03 | Implémentée (événement `FormuleModifiee`, page « Formule », historique) ; en revue (PR #49) |
 | 2026-11-03 | Recette OK sur https://poule-position-git-us-us-028-formule-co-b6ea07-fsmjlas-projects.vercel.app (PC : défaut, réglages, historique, bornes, hors ligne puis envoi ; lecture seule sur un autre PC couverte par l'E2E de la preview) ; déployée en preview et vérifiée ; mergée dans `dev` |
+| 2026-11-08 | Impactée par US-044 (vocabulaire inversé : la compétition regroupe, l'épreuve se tire) |

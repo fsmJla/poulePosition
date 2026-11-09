@@ -114,3 +114,4 @@ sans rien lire du serveur. Au retour du réseau, le comportement est celui d'US-
 | 2026-11-04 | Créée (alerte Cloudflare : 90 % du plafond de lignes lues, puis service coupé) |
 | 2026-11-04 | Plan validé ; mesures du tableau de bord ajoutées au constat ; implémentée (cache `ListeEnMemoire`, lecture d'une ligne par identifiant, journal du remplissage) ; en revue |
 | 2026-11-05 | Quota remis à zéro ; Worker déployé depuis la branche ; E2E de la preview verts (14) ; Terminée. À vérifier au tableau de bord Cloudflare : lignes lues du jour restant basses |
+| 2026-11-08 | Impactée par US-044 (vocabulaire inversé : la compétition regroupe, l'épreuve se tire) |

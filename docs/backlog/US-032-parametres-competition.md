@@ -77,3 +77,4 @@ Disponible hors ligne sur le PC pilote (journal local). Lecture seule sur un PC 
 | 2026-11-04 | Plan validé ; en cours sur `us/US-032-parametres-competition` |
 | 2026-11-04 | Implémentée (`ParametresModifies`, page « Paramètres ») ; en revue (PR #53) |
 | 2026-11-04 | Recette OK sur https://poule-position-git-us-us-032-parametres-908032-fsmjlas-projects.vercel.app (CA-1 valeurs par défaut, CA-2 modification qui survit au rechargement, CA-3 mention des réglages à venir, réglage hors ligne envoyé au retour du réseau, lecture seule sur un second PC qui lit la copie à jour) ; déployée en preview et vérifiée ; mergée dans `dev` |
+| 2026-11-08 | Impactée par US-044 (vocabulaire inversé : la compétition regroupe, l'épreuve se tire) |
