@@ -42,7 +42,7 @@ function decompteTexte({ manifestations, competitions, epreuves }: Decompte): st
 export const textes = {
   /** Nom affiché de l'application (US-014) ; le nom technique reste poulePosition. */
   nomApplication: 'Poule Position',
-  sousTitre: 'Gestion d’épreuves d’escrime',
+  sousTitre: 'Gestion de compétitions d’escrime',
   etats: {
     'non-configure': 'Serveur non configuré',
     connexion: 'Connexion au serveur…',

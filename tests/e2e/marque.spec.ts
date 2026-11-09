@@ -13,7 +13,7 @@ test('US-014 CA-1 : l’accueil affiche la bannière, le filet et le sous-titre'
   await expect(titre).toHaveAccessibleName('Poule Position');
   const banniere = titre.getByRole('img', { name: 'Poule Position' });
   await expect.poll(() => chargee(banniere)).toBe(true);
-  await expect(page.getByText('Gestion d’épreuves d’escrime')).toBeVisible();
+  await expect(page.getByText('Gestion de compétitions d’escrime')).toBeVisible();
   await expect(page.getByText('poulePosition', { exact: true })).toHaveCount(0);
 });
 

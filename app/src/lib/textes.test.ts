@@ -199,6 +199,10 @@ describe('vocabulaire : une compétition est composée d’épreuves (US-044)', 
     expect(textes.competitions.exempleNom).toBe('Championnats de Nouvelle-Aquitaine de sabre');
   });
 
+  it('US-044 CA-2 : le slogan garde le sens générique « compétitions d’escrime » (pas de renommage aveugle)', () => {
+    expect(textes.sousTitre).toBe('Gestion de compétitions d’escrime');
+  });
+
   it('US-044 CA-2 : le catalogue ne garde aucune élision ni aucun accord fautif (« la épreuve », « son compétition »)', () => {
     const fautes = tousLesTextes(textes).filter((texte) =>
       /\b[lL]a [éÉ]preuve|\b[lL][’'][cC]ompétition|\b[dD][’'][cC]ompétition|\b[dD]e [éÉ]preuve|\b[sSmMtT]on compétition|\b[sSmMtT]a épreuve/.test(

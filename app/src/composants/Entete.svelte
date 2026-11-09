@@ -1,6 +1,6 @@
 <script lang="ts">
   // Entête des pages réservées (US-014) : bannière « header » qui ramène à l'accueil de l'organisateur, et menu de
-  // compte en haut à droite (US-017 : profil, déconnexions). Les liens de navigation (Épreuves, Résultats)
+  // compte en haut à droite (US-017 : profil, déconnexions). Les liens de navigation (Compétitions, Résultats)
   // viendront avec leurs US. Bandeau « connexion locale » tant que la session ouverte hors ligne n'est pas revalidée
   // (US-005 CA-1). « Se déconnecter et oublier cet appareil » (US-006) se confirme dans un panneau sous l'entête, sans
   // boîte de dialogue du navigateur.

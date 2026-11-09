@@ -1,6 +1,6 @@
 /# poulePosition
 
-Application gratuite d'organisation et de suivi d’épreuves d'escrime : inscriptions, émargement,
+Application gratuite d'organisation et de suivi de compétitions d'escrime : inscriptions, émargement,
 poules, tableau, impressions, saisie des scores par smartphone (QR code), écran géant et suivi par les
 spectateurs. Elle fonctionne **hors ligne** sur le PC de l'organisateur.
 

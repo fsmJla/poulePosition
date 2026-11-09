@@ -21,7 +21,7 @@ test('US-012 CA-1 : sur PC, panneau avec la bannière et le sous-titre, formulai
   await expect(panneau(page)).toBeVisible();
   const banniere = panneau(page).getByRole('img', { name: 'Poule Position' });
   await expect.poll(() => banniere.evaluate((image: HTMLImageElement) => image.currentSrc)).toMatch(/login-dark\.svg$/);
-  await expect(panneau(page).getByText('Gestion d’épreuves d’escrime')).toBeVisible();
+  await expect(panneau(page).getByText('Gestion de compétitions d’escrime')).toBeVisible();
   const gauche = await panneau(page).boundingBox();
   const droite = await formulaire(page).boundingBox();
   expect(droite!.x).toBeGreaterThan(gauche!.x + gauche!.width - 1);
@@ -33,7 +33,7 @@ test('US-012 CA-2 : sur smartphone, la carte seule avec la bannière, sans défi
   await expect(panneau(page)).toBeHidden();
   const carte = page.getByRole('main');
   await expect(carte.getByRole('img', { name: 'Poule Position' })).toBeVisible();
-  await expect(carte.getByText('Gestion d’épreuves d’escrime')).toBeVisible();
+  await expect(carte.getByText('Gestion de compétitions d’escrime')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   for (const element of [
     page.getByLabel('E-mail'),
