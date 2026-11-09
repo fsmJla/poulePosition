@@ -145,6 +145,10 @@ test('US-049 cas limite : une manifestation sans compétition garde ses jours et
   await expect(page.getByRole('heading', { level: 1, name: manifestation })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Ajouter une première compétition' })).toBeEnabled();
   await expect(page.getByText('Aucune épreuve', { exact: true })).toBeVisible();
+
+  // CA-2 : « Modifier la manifestation » ouvre son formulaire sur la page Manifestations.
+  await page.getByRole('button', { name: 'Modifier la manifestation' }).click();
+  await expect(page.getByRole('heading', { name: `Modifier « ${manifestation} »` })).toBeVisible();
 });
 
 test('US-049 hors ligne : le plan reste affiché, on y ajoute une épreuve et on la change de jour, sans créer de compétition', async ({
