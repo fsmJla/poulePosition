@@ -358,3 +358,20 @@ export function requetesInversionVocabulaire(colonnesEpreuves: readonly string[]
   if (!colonnesEpreuves.includes('manifestation_id')) return [];
   return ['epreuves', 'competitions', 'competitions_supprimees'].map((table) => `DROP TABLE IF EXISTS ${table}`);
 }
+
+/** Colonne d'une table SQLite, telle que la décrit `PRAGMA table_info`. */
+export interface ColonneSql {
+  name: string;
+  /** 1 si la colonne est déclarée `NOT NULL`. */
+  notnull: number;
+}
+
+/**
+ * US-045 : une compétition peut être seule, sa colonne `manifestation_id` accepte donc `NULL`. SQLite ne retire pas un
+ * `NOT NULL` : la table de l'ancien schéma, qui n'a que des données de test (la preview est purgée, pas de migration),
+ * est supprimée pour être recréée. Une base déjà au nouveau schéma, ou neuve, n'a rien à faire.
+ */
+export function requetesCompetitionsSeules(colonnesCompetitions: readonly ColonneSql[]): string[] {
+  const exigee = colonnesCompetitions.some(({ name, notnull }) => name === 'manifestation_id' && notnull === 1);
+  return exigee ? ['DROP TABLE IF EXISTS competitions'] : [];
+}

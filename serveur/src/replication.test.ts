@@ -19,7 +19,7 @@ const RESUME: ResumeEpreuve = {
   date: '2027-03-14',
   statut: 'preparation',
   publiee: false,
-  rattachement: null,
+  rattachement: { competitionId: 'c-test' },
 };
 
 const evenement = (seq: number, champs: Partial<Extract<Evenement, { type: 'EpreuveCreee' }>> = {}): Evenement => ({
@@ -41,7 +41,7 @@ const evenement = (seq: number, champs: Partial<Extract<Evenement, { type: 'Epre
     horaires: { appel: null, scratch: null, debutPoules: null },
     lieu: null,
     commentaire: null,
-    rattachement: null,
+    rattachement: { competitionId: 'c-test' },
   },
   ...champs,
 });

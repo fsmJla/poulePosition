@@ -66,9 +66,9 @@ describe('manifestation (US-023)', () => {
     ];
     expect(epreuvesHorsDates('m1', '2027-03-14', '2027-03-14', epreuves, competitions)).toEqual([epreuves[0]]);
     expect(epreuvesHorsDates('m1', '2027-03-14', '2027-03-15', epreuves, competitions)).toEqual([]);
-    expect(
-      epreuvesHorsDates('m1', '2027-03-15', '2027-03-16', epreuves, competitions).map(({ id }) => id),
-    ).toEqual(['c2']);
+    expect(epreuvesHorsDates('m1', '2027-03-15', '2027-03-16', epreuves, competitions).map(({ id }) => id)).toEqual([
+      'c2',
+    ]);
   });
 
   it('CA-5 (US-024, US-045) : une manifestation est vide si aucune compétition ne s’y rattache', () => {

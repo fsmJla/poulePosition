@@ -72,7 +72,7 @@ async function creer(champs: Record<string, unknown> = {}): Promise<Manifestatio
   return ((await reponse.json()) as { manifestation: Manifestation }).manifestation;
 }
 
-const saisieCompetition = (manifestationId: string, champs: Record<string, unknown> = {}) => ({
+const saisieCompetition = (manifestationId: string | null, champs: Record<string, unknown> = {}) => ({
   manifestationId,
   nom: 'Championnats de Nouvelle-Aquitaine de sabre',
   arme: 'sabre',
@@ -80,7 +80,10 @@ const saisieCompetition = (manifestationId: string, champs: Record<string, unkno
   ...champs,
 });
 
-async function creerCompetition(manifestationId: string, champs: Record<string, unknown> = {}): Promise<Competition> {
+async function creerCompetition(
+  manifestationId: string | null,
+  champs: Record<string, unknown> = {},
+): Promise<Competition> {
   const reponse = await appeler('POST', '/competitions', jetonAdmin, saisieCompetition(manifestationId, champs));
   expect(reponse.status).toBe(201);
   return ((await reponse.json()) as { competition: Competition }).competition;
@@ -92,8 +95,8 @@ async function listerCompetitions(jeton = jetonOrganisateur): Promise<Competitio
   return ((await reponse.json()) as { competitions: Competition[] }).competitions;
 }
 
-/** Épreuve rattachée à la manifestation, envoyée par un pilote (US-022) : elle apparaît dans l'index du club. */
-async function rattacherEpreuve(manifestationId: string, competitionId: string | null = null) {
+/** Épreuve rattachée à la compétition, envoyée par un pilote (US-022) : elle apparaît dans l'index du club. */
+async function rattacherEpreuve(competitionId: string): Promise<string> {
   const epreuveId = crypto.randomUUID();
   const evenement: Evenement = {
     epreuveId,
@@ -114,7 +117,7 @@ async function rattacherEpreuve(manifestationId: string, competitionId: string |
       horaires: { appel: null, scratch: null, debutPoules: null },
       lieu: null,
       commentaire: null,
-      rattachement: { manifestationId, competitionId },
+      rattachement: { competitionId },
     },
   };
   const lot: DemandeEnvoi = {
@@ -129,10 +132,11 @@ async function rattacherEpreuve(manifestationId: string, competitionId: string |
       date: '2027-03-15',
       statut: 'preparation',
       publiee: false,
-      rattachement: { manifestationId, competitionId },
+      rattachement: { competitionId },
     },
   };
   expect((await appeler('POST', `/epreuves/${epreuveId}/evenements`, jetonAdmin, lot)).status).toBe(200);
+  return epreuveId;
 }
 
 beforeAll(async () => {
@@ -179,7 +183,14 @@ describe('compétitions du club (US-024)', () => {
     expect(await creerCompetition(manifestationId, { arme: null })).toMatchObject({ arme: null, commentaire: null });
   });
 
-  it('CA-2 : refuse une compétition sans manifestation, ou dans une manifestation inconnue', async () => {
+  it('US-045 CA-2 : une compétition se crée seule (sans manifestation) et se liste', async () => {
+    const seule = await creerCompetition(null, { nom: 'Challenge de printemps' });
+    expect(seule).toMatchObject({ manifestationId: null, nom: 'Challenge de printemps', version: 1 });
+    expect(await listerCompetitions()).toContainEqual(seule);
+    expect((await appeler('DELETE', `/competitions/${seule.id}`, jetonOrganisateur)).status).toBe(200);
+  });
+
+  it('CA-2 : refuse une manifestation vide, ou inconnue', async () => {
     const sans = await appeler('POST', '/competitions', jetonAdmin, saisieCompetition(''));
     expect(sans.status).toBe(400);
     expect(await sans.json()).toEqual({ ok: false, erreur: 'DEMANDE_INVALIDE' });
@@ -222,7 +233,7 @@ describe('compétitions du club (US-024)', () => {
   it('CA-3 : changer l’arme ne touche pas aux épreuves déjà rattachées', async () => {
     const { id: manifestationId } = await creer();
     const { id } = await creerCompetition(manifestationId);
-    await rattacherEpreuve(manifestationId, id);
+    await rattacherEpreuve(id);
     const avant = await (await appeler('GET', '/epreuves', jetonAdmin)).text();
     const reponse = await appeler('PATCH', `/competitions/${id}`, jetonAdmin, {
       nom: 'Épée',
@@ -256,18 +267,60 @@ describe('compétitions du club (US-024)', () => {
   it('CA-5 : refuse de supprimer une compétition qui contient une épreuve', async () => {
     const { id: manifestationId } = await creer();
     const { id } = await creerCompetition(manifestationId);
-    await rattacherEpreuve(manifestationId, id);
+    await rattacherEpreuve(id);
     const reponse = await appeler('DELETE', `/competitions/${id}`, jetonOrganisateur);
     expect(reponse.status).toBe(409);
     expect(await reponse.json()).toEqual({ ok: false, erreur: 'COMPETITION_NON_VIDE' });
     expect((await listerCompetitions()).some((competition) => competition.id === id)).toBe(true);
   });
 
-  it('CA-5 : une épreuve rattachée à la manifestation seule n’empêche pas de supprimer la compétition', async () => {
+  it('US-045 CA-5 : une compétition seule qui contient une épreuve ne se supprime pas vide', async () => {
+    const { id } = await creerCompetition(null);
+    await rattacherEpreuve(id);
+    const reponse = await appeler('DELETE', `/competitions/${id}`, jetonOrganisateur);
+    expect(reponse.status).toBe(409);
+    expect(await reponse.json()).toEqual({ ok: false, erreur: 'COMPETITION_NON_VIDE' });
+  });
+
+  it('US-045 CA-6 : supprimer la dernière épreuve d’une compétition seule supprime aussi la compétition', async () => {
+    const { id } = await creerCompetition(null);
+    const premiere = await rattacherEpreuve(id);
+    const seconde = await rattacherEpreuve(id);
+    expect((await appeler('DELETE', `/epreuves/${premiere}`, jetonAdmin)).status).toBe(200);
+    expect((await listerCompetitions()).some((competition) => competition.id === id)).toBe(true);
+    expect((await appeler('DELETE', `/epreuves/${seconde}`, jetonAdmin)).status).toBe(200);
+    expect((await listerCompetitions()).some((competition) => competition.id === id)).toBe(false);
+  });
+
+  it('US-045 CA-6 : la compétition d’une manifestation reste, vide, quand sa dernière épreuve est supprimée', async () => {
     const { id: manifestationId } = await creer();
     const { id } = await creerCompetition(manifestationId);
-    await rattacherEpreuve(manifestationId);
-    expect((await appeler('DELETE', `/competitions/${id}`, jetonOrganisateur)).status).toBe(200);
+    const epreuveId = await rattacherEpreuve(id);
+    expect((await appeler('DELETE', `/epreuves/${epreuveId}`, jetonAdmin)).status).toBe(200);
+    expect((await listerCompetitions()).some((competition) => competition.id === id)).toBe(true);
+  });
+
+  it('US-045 CA-6 : une compétition seule se supprime avec son contenu', async () => {
+    const { id } = await creerCompetition(null);
+    await rattacherEpreuve(id);
+    await rattacherEpreuve(id);
+    const reponse = await appeler('DELETE', `/competitions/${id}?contenu=1`, jetonAdmin);
+    expect(await reponse.json()).toEqual({ ok: true, termine: true, supprimees: 2, restantes: 0 });
+    expect((await listerCompetitions()).some((competition) => competition.id === id)).toBe(false);
+  });
+
+  it('US-045 CA-7 : une épreuve dont la compétition a disparu est acceptée et reste dans l’index', async () => {
+    const { id } = await creerCompetition(null);
+    const epreuveId = await rattacherEpreuve(id);
+    // La compétition seule disparaît pendant que l'épreuve était créée hors ligne : on la vide d'abord.
+    await appeler('DELETE', `/competitions/${id}?contenu=1`, jetonAdmin);
+    const orpheline = await rattacherEpreuve(id);
+    const index = (await (await appeler('GET', '/epreuves', jetonAdmin)).json()) as {
+      epreuves: { id: string; rattachement: { competitionId: string } | null }[];
+    };
+    expect(index.epreuves.map((ligne) => ligne.id)).not.toContain(epreuveId);
+    expect(index.epreuves.find((ligne) => ligne.id === orpheline)?.rattachement).toEqual({ competitionId: id });
+    expect((await listerCompetitions()).some((competition) => competition.id === id)).toBe(false);
   });
 
   it('US-023 CA-5 : une manifestation qui contient une compétition ne se supprime pas', async () => {

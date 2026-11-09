@@ -46,12 +46,7 @@ const competition = (id: string, manifestationId: string | null) => ({
  */
 const donnees: DonneesListe = {
   manifestations: [manifestation('M1'), manifestation('M2'), manifestation('M3')],
-  competitions: [
-    competition('E1', 'M1'),
-    competition('E2', 'M1'),
-    competition('E3', 'M2'),
-    competition('E4', null),
-  ],
+  competitions: [competition('E1', 'M1'), competition('E2', 'M1'), competition('E3', 'M2'), competition('E4', null)],
   epreuves: [
     epreuve('c1', { competitionId: 'E1' }),
     epreuve('c2', { competitionId: 'E1' }, 'archivee'),

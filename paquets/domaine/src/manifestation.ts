@@ -72,7 +72,9 @@ const estRattachee = (
   competitions: readonly { id: string; manifestationId: string | null }[],
 ) =>
   rattachement !== null &&
-  competitions.some(({ id, manifestationId: parent }) => id === rattachement.competitionId && parent === manifestationId);
+  competitions.some(
+    ({ id, manifestationId: parent }) => id === rattachement.competitionId && parent === manifestationId,
+  );
 
 /** CA-4 : épreuves de la manifestation dont la date ne serait plus comprise entre `debut` et `fin`. */
 export function epreuvesHorsDates<T extends EpreuveRattachee>(
