@@ -16,7 +16,7 @@ const creation = (nom = 'Challenge Orpi 2027'): Proposition => ({
     horaires: { appel: null, scratch: null, debutPoules: null },
     lieu: null,
     commentaire: null,
-    rattachement: null,
+    rattachement: { competitionId: 'c-test' },
   },
 });
 

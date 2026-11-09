@@ -185,8 +185,12 @@
     saisieNom = '';
     messageContenu = null;
     nombreEpreuves = null;
+    // US-045 : les épreuves de la manifestation sont celles de ses compétitions.
+    const siennes = new Set(
+      competitions.filter(({ manifestationId }) => manifestationId === manifestation.id).map(({ id }) => id),
+    );
     nombreEpreuves = (await epreuvesConnues()).filter(
-      ({ rattachement }) => rattachement?.manifestationId === manifestation.id,
+      ({ rattachement }) => rattachement && siennes.has(rattachement.competitionId),
     ).length;
   }
 

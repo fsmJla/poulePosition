@@ -1,7 +1,7 @@
 <script lang="ts">
   // Accueil de l'organisateur (US-003 CA-1, US-026), page réservée : nom et rôle du compte connecté, les actions de
-  // création, et la liste du club : manifestations (repliables) avec leurs compétitions et leurs épreuves, puis les
-  // épreuves isolées. La liste vient du serveur, ou de la dernière copie gardée sur l'appareil et des épreuves
+  // création, et la liste du club : les épreuves à rattacher (US-045 CA-7), puis les manifestations (repliables) avec leurs
+  // compétitions et leurs épreuves, puis les compétitions seules. La liste vient du serveur, ou de la dernière copie gardée sur l'appareil et des épreuves
   // locales (hors ligne) ; la création d'une manifestation ou d'une compétition exige le réseau (US-023, US-024), celle
   // d'une épreuve non (US-025). La gestion des comptes (US-007) reste réservée aux administrateurs, grisée hors ligne.
   // Le profil (US-016) et la déconnexion (US-003 CA-5) sont dans le menu de compte de l'entête (US-017).
@@ -27,7 +27,14 @@
     supprimerSerieMixte,
     type CompteRenduLot,
   } from '../lib/suppression';
-  import { cheminEpreuve, cheminNouvelleCompetition, CHEMIN_NOUVELLE_MANIFESTATION, CHEMINS } from '../lib/routes';
+  import {
+    cheminEpreuve,
+    cheminModificationEpreuve,
+    cheminNouvelleCompetition,
+    CHEMIN_NOUVELLE_COMPETITION_SEULE,
+    CHEMIN_NOUVELLE_MANIFESTATION,
+    CHEMINS,
+  } from '../lib/routes';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
@@ -175,6 +182,8 @@
   <nav class="actions" aria-label={textes.organisateur.actions}>
     <!-- US-025 : la création d'une épreuve fonctionne aussi hors ligne. -->
     <Lien chemin={CHEMINS.nouvelleEpreuve} {naviguer}>{tc.nouvelle}</Lien>
+    <!-- US-045 CA-4 : la compétition seule se crée en ligne, avec sa première épreuve. -->
+    {@render creation(CHEMIN_NOUVELLE_COMPETITION_SEULE, t.nouvelleCompetitionSeule)}
     {@render creation(CHEMIN_NOUVELLE_MANIFESTATION, t.nouvelleManifestation)}
     <!-- US-023 : consultables hors ligne (dernière copie), modifiables en ligne seulement. -->
     <Lien chemin={CHEMINS.manifestations} {naviguer}>{textes.manifestations.entree}</Lien>
@@ -296,6 +305,26 @@
           </div>
         {/if}
 
+        <!-- US-045 CA-7 : une épreuve dont la compétition a disparu est signalée en tête, avec le moyen d'en choisir une autre. -->
+        {#if liste.aRattacher.length > 0}
+          <div class="competition a-rattacher">
+            <h3>{t.aRattacher}</h3>
+            <ul>
+              {#each liste.aRattacher as entree (entree.id)}
+                {@render epreuve(entree)}
+                <li class="vide" role="status">
+                  {t.competitionSupprimee}
+                  <Lien
+                    chemin={cheminModificationEpreuve(entree.id)}
+                    {naviguer}
+                    etiquette={t.choisirCompetition(entree.nom)}>{t.choisirCompetitionBouton}</Lien
+                  >
+                </li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
+
         {#each liste.manifestations as noeud (noeud.manifestation.id)}
           <details class="manifestation" open={manifestationOuverte(noeud.manifestation, aujourdhui)}>
             <summary>
@@ -332,23 +361,29 @@
                   </ul>
                 </div>
               {/each}
-              {#if noeud.epreuves.length > 0}
-                <ul>
-                  {#each noeud.epreuves as entree (entree.id)}{@render epreuve(entree)}{/each}
-                </ul>
-              {/if}
             </div>
           </details>
         {/each}
 
-        {#if liste.isolees.length > 0}
-          <div class="competition">
-            <h3>{t.isolees}</h3>
-            <ul>
-              {#each liste.isolees as entree (entree.id)}{@render epreuve(entree)}{/each}
-            </ul>
-          </div>
-        {/if}
+        <!-- US-045 CA-5 : les compétitions seules, après les manifestations ; une seule épreuve tient sur une ligne. -->
+        {#each liste.competitionsSeules as { competition, epreuves } (competition.id)}
+          {#if epreuves.length === 1 && epreuves[0]}
+            <ul class="seule">{@render epreuve(epreuves[0])}</ul>
+          {:else}
+            <div class="competition">
+              <h3>
+                {@render caseSelection(competition.id, ts.cocherCompetition(competition.nom), ts.contientEnCours)}
+                {competition.nom}
+                {#if competition.arme}<small>{tc.armes[competition.arme]}</small>{/if}
+              </h3>
+              <ul>
+                {#each epreuves as entree (entree.id)}{@render epreuve(entree)}{:else}
+                  <li class="vide">{t.aucuneEpreuve}</li>
+                {/each}
+              </ul>
+            </div>
+          {/if}
+        {/each}
       {/if}
     {/if}
   </section>

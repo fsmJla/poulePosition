@@ -14,7 +14,7 @@ import {
   type Statut,
   type TypeEpreuve,
 } from '@poule-position/domaine';
-import type { ErreurCreation, ErreurModification } from './epreuves';
+import type { ErreurCompetitionSeule, ErreurCreation, ErreurModification } from './epreuves';
 import type { EtatConnexion } from './connexion';
 import type { ErreurCompetitions } from './competitions';
 import type { ErreurManifestations } from './manifestations';
@@ -111,8 +111,14 @@ export const textes = {
     afficherArchives: 'Afficher les archives',
     archivesMasquees: (nombre: number) =>
       nombre > 1 ? `${nombre} épreuves archivées masquées` : `${nombre} épreuve archivée masquée`,
-    vide: 'Le club n’a encore ni manifestation ni épreuve : créez une première manifestation ou une première épreuve.',
-    isolees: 'Épreuves isolées',
+    vide: 'Le club n’a encore ni manifestation, ni compétition, ni épreuve : créez une première manifestation ou une première compétition.',
+    /** US-045 CA-7 : épreuves dont la compétition a été supprimée entre-temps, en tête de la liste. */
+    aRattacher: 'Épreuves à rattacher',
+    competitionSupprimee: 'Sa compétition a été supprimée : choisissez-en une autre',
+    choisirCompetition: (nom: string) => `Choisir une compétition pour l’épreuve ${nom}`,
+    choisirCompetitionBouton: 'Choisir une compétition',
+    /** US-045 CA-4 : une compétition seule (challenge) est créée avec sa première épreuve. */
+    nouvelleCompetitionSeule: 'Nouvelle compétition seule',
     aucuneEpreuve: 'Aucune épreuve',
     lectureSeule: 'Lecture seule',
     jour: (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}`,
@@ -470,11 +476,14 @@ export const textes = {
       const jour = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}`;
       return `La date doit être comprise entre le ${jour(debut)} et le ${jour(fin)}`;
     },
-    rattachement: 'Rattachement',
-    manifestation: 'Manifestation',
+    /** US-045 CA-1 : toute épreuve est dans une compétition, choisie dans la liste du club. */
     competition: 'Compétition',
-    aucuneManifestation: 'Aucune (épreuve isolée)',
-    aucuneCompetition: 'Aucune compétition',
+    choisirCompetition: 'Choisissez la compétition',
+    nouvelleCompetitionSeule: 'Nouvelle compétition seule (en ligne)',
+    nouvelleCompetitionSeuleHorsLigne: 'Nouvelle compétition seule (nécessite une connexion internet)',
+    /** CA-4 : une compétition seule et sa première épreuve portent le même nom. */
+    nomCompetitionSeule: 'Nom de la compétition et de son épreuve',
+    seule: 'seule',
     choisirDate: 'Choisir un jour',
     /** US-024 CA-4 : « Cette compétition est au sabre ». */
     competitionAu: (arme: Arme) =>
@@ -568,7 +577,8 @@ export const textes = {
       POULES_AVANT_APPEL: 'Le début des poules doit être après l’appel',
       LIEU_TROP_LONG: 'Le lieu fait au plus 200 caractères',
       COMMENTAIRE_TROP_LONG: 'Le commentaire fait au plus 2 000 caractères',
-      RATTACHEMENT_INVALIDE: 'Rattachement invalide',
+      RATTACHEMENT_OBLIGATOIRE: 'Choisissez la compétition de cette épreuve',
+      RATTACHEMENT_INVALIDE: 'Cette compétition est inconnue de cet appareil : choisissez-en une autre',
     } satisfies Record<ErreurEpreuve, string>,
     erreurs: {
       ECRITURE_IMPOSSIBLE:
@@ -579,7 +589,10 @@ export const textes = {
       EPREUVE_ARCHIVEE: 'Cette épreuve est archivée : elle n’est plus modifiable',
       CHAMP_FIGE: 'Ce champ ne peut plus être modifié',
       JOURNAL_INCOHERENT: 'Le journal de cette épreuve est incohérent : modification impossible',
-    } satisfies Record<ErreurCreation | ErreurModification, string>,
+      HORS_LIGNE: 'Réseau perdu : la compétition n’a pas été créée, réessayez',
+      SESSION_INVALIDE: 'Session expirée : reconnectez-vous',
+      ERREUR_INATTENDUE: 'Création impossible pour le moment',
+    } satisfies Record<ErreurCreation | ErreurModification | ErreurCompetitionSeule, string>,
   },
   /** US-024 : compétitions, sous chaque manifestation de la page « Manifestations ». */
   competitions: {
@@ -636,7 +649,7 @@ export const textes = {
     champs: {
       NOM_VIDE: 'Le nom est obligatoire',
       NOM_TROP_LONG: 'Le nom fait au plus 100 caractères',
-      MANIFESTATION_OBLIGATOIRE: 'Une compétition appartient toujours à une manifestation',
+      MANIFESTATION_INVALIDE: 'Manifestation invalide',
       ARME_INVALIDE: 'Choisissez une arme de la liste',
       COMMENTAIRE_TROP_LONG: 'Le commentaire fait au plus 2 000 caractères',
     } satisfies Record<ErreurCompetition, string>,

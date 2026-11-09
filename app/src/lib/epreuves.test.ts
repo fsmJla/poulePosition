@@ -6,8 +6,9 @@ import type { Competition, Manifestation } from '@poule-position/protocole';
 import {
   cadreDe,
   confirmationFormule,
-  creerEpreuve,
-  modifierEpreuve,
+  creerCompetitionSeule,
+  creerEpreuve as creerEpreuveBrut,
+  modifierEpreuve as modifierEpreuveBrut,
   modifierFormule,
   modifierParametres,
   rattacher,
@@ -17,12 +18,43 @@ import {
   type SaisieEpreuve,
 } from './epreuves';
 
+/** Compétition seule connue de l'appareil : celle où se créent, par défaut, les épreuves de ces tests. */
+const seule: Competition = {
+  id: 'cs',
+  manifestationId: null,
+  nom: 'Challenge de printemps',
+  arme: null,
+  commentaire: null,
+  version: 1,
+  modifieeLe: 1,
+  modifieePar: 'Orga',
+};
+
 const saisie = (champs: Partial<SaisieEpreuve> = {}): SaisieEpreuve => ({
   ...saisieVide(),
   nom: 'Championnats NA sabre M13',
   arme: 'sabre',
+  competitionId: 'cs',
   ...champs,
 });
+
+type ArgsCreation = Parameters<typeof creerEpreuveBrut>;
+const creerEpreuve = (
+  j: ArgsCreation[0],
+  s: ArgsCreation[1],
+  c: ArgsCreation[2],
+  m: ArgsCreation[3] = [],
+  k: ArgsCreation[4] = [seule],
+) => creerEpreuveBrut(j, s, c, m, k);
+type ArgsModification = Parameters<typeof modifierEpreuveBrut>;
+const modifierEpreuve = (
+  j: ArgsModification[0],
+  id: ArgsModification[1],
+  s: ArgsModification[2],
+  c: ArgsModification[3],
+  m: ArgsModification[4] = [],
+  k: ArgsModification[5] = [seule],
+) => modifierEpreuveBrut(j, id, s, c, m, k);
 
 const nouveauJournal = () => ouvrirJournal(`test-${crypto.randomUUID()}`, async () => true);
 const auteur = { clubId: 'pessac', auteur: 'orga@club.fr', maintenant: () => 1_800_000_000_000 };
@@ -42,7 +74,6 @@ describe('saisie d’une nouvelle épreuve (US-025)', () => {
       debutPoules: '',
       lieu: '',
       commentaire: '',
-      manifestationId: '',
       competitionId: '',
     });
   });
@@ -58,7 +89,7 @@ describe('saisie d’une nouvelle épreuve (US-025)', () => {
       horaires: { appel: null, scratch: null, debutPoules: null },
       lieu: null,
       commentaire: null,
-      rattachement: null,
+      rattachement: { competitionId: 'cs' },
     });
     const complete = saisie({
       categorie: 'autre',
@@ -152,64 +183,51 @@ const competition: Competition = {
   modifieePar: 'Orga',
 };
 
-describe('rattachement d’une nouvelle épreuve (US-025 CA-3 et CA-4, US-024 CA-4)', () => {
-  it('CA-3 (US-025) : sans choix, l’épreuve est isolée', () => {
-    expect(versDonnees(saisie()).rattachement).toBeNull();
-    expect(cadreDe(saisie(), [manifestation], [competition])).toBeNull();
+describe('rattachement d’une nouvelle épreuve (US-045 CA-1 à CA-3, US-024 CA-4)', () => {
+  it('US-045 CA-1 : sans compétition choisie, la création est refusée sous le champ, sans rien écrire', async () => {
+    const journal = nouveauJournal();
+    const resultat = await creerEpreuve(journal, saisie({ competitionId: '' }), auteur);
+    expect(resultat).toEqual({ ok: false, erreurs: { rattachement: 'RATTACHEMENT_OBLIGATOIRE' } });
+    expect(await journal.epreuvesLocales()).toEqual([]);
   });
 
-  it('CA-3 (US-025) : une manifestation seule, ou une compétition de la manifestation, se rattache', () => {
-    expect(versDonnees(saisie({ manifestationId: 'm1' })).rattachement).toEqual({
-      manifestationId: 'm1',
-      competitionId: null,
-    });
-    expect(versDonnees(saisie({ manifestationId: 'm1', competitionId: 'e1' })).rattachement).toEqual({
-      manifestationId: 'm1',
-      competitionId: 'e1',
-    });
+  it('US-045 CA-3 : le rattachement tient en un champ, la compétition', () => {
+    expect(versDonnees(saisie({ competitionId: 'e1' })).rattachement).toEqual({ competitionId: 'e1' });
   });
 
-  it('CA-3 (US-025) : le cadre donne les dates et le lieu de la manifestation et l’arme de la compétition', () => {
-    expect(cadreDe(saisie({ manifestationId: 'm1' }), [manifestation], [competition])).toEqual({
+  it('US-045 CA-3 : le cadre donne les dates et le lieu de la manifestation de la compétition, et son arme', () => {
+    expect(cadreDe(saisie({ competitionId: 'e1' }), [manifestation], [competition])).toEqual({
       manifestation: { debut: '2027-03-14', fin: '2027-03-15', lieu: 'Salle Bellegrave' },
-      competition: null,
-    });
-    expect(cadreDe(saisie({ manifestationId: 'm1', competitionId: 'e1' }), [manifestation], [competition])).toEqual({
-      manifestation: { debut: '2027-03-14', fin: '2027-03-15', lieu: 'Salle Bellegrave' },
-      competition: { arme: 'sabre' },
-    });
-    expect(cadreDe(saisie({ manifestationId: 'inconnue' }), [manifestation], [competition])).toBeNull();
-  });
-
-  it('CA-3 (US-025) : choisir un rattachement préremplit le lieu et l’arme sans écraser une saisie', () => {
-    const choisie = rattacher(saisieVide(), 'm1', 'e1', [manifestation], [competition]);
-    expect(choisie).toMatchObject({
-      manifestationId: 'm1',
-      competitionId: 'e1',
-      lieu: 'Salle Bellegrave',
       arme: 'sabre',
     });
+    expect(cadreDe(saisie(), [manifestation], [seule])).toEqual({ manifestation: null, arme: null });
+    expect(cadreDe(saisie({ competitionId: 'inconnue' }), [manifestation], [competition])).toBeNull();
+    // La manifestation de la compétition est inconnue de l'appareil.
+    expect(cadreDe(saisie({ competitionId: 'e1' }), [], [competition])).toBeNull();
+  });
+
+  it('US-045 CA-3 : choisir une compétition préremplit le lieu et l’arme sans écraser une saisie', () => {
+    const choisie = rattacher(saisieVide(), 'e1', [manifestation], [competition]);
+    expect(choisie).toMatchObject({ competitionId: 'e1', lieu: 'Salle Bellegrave', arme: 'sabre' });
     const saisie2 = { ...saisieVide(), lieu: 'Ailleurs', arme: 'epee' as const };
-    expect(rattacher(saisie2, 'm1', '', [manifestation], [competition])).toMatchObject({
+    expect(rattacher(saisie2, 'cs', [manifestation], [competition, seule])).toMatchObject({
       lieu: 'Ailleurs',
       arme: 'epee',
     });
-    expect(rattacher(saisie2, 'm1', 'e1', [manifestation], [competition])).toMatchObject({ arme: 'sabre' });
+    expect(rattacher(saisie2, 'e1', [manifestation], [competition])).toMatchObject({ arme: 'sabre' });
   });
 
-  it('CA-3 (US-025) : quitter le rattachement ou changer de manifestation retire la compétition et la date', () => {
-    const rattachee = { ...saisieVide(), manifestationId: 'm1', competitionId: 'e1', date: '2027-03-15' };
-    expect(rattacher(rattachee, '', '', [manifestation], [competition])).toMatchObject({
-      manifestationId: '',
-      competitionId: '',
-      date: '',
-    });
+  it('US-045 CA-3 : passer à une compétition d’une autre manifestation efface la date, pas dans la même', () => {
+    const rattachee = { ...saisieVide(), competitionId: 'e1', date: '2027-03-15' };
+    const autre = { ...competition, id: 'e2' };
+    expect(rattacher(rattachee, 'e2', [manifestation], [competition, autre]).date).toBe('2027-03-15');
+    expect(rattacher(rattachee, 'cs', [manifestation], [competition, seule]).date).toBe('');
   });
 
-  it('CA-4 (US-025) : la date doit être comprise entre les dates de la manifestation', async () => {
+  it('US-045 CA-3 : la date doit être comprise entre les dates de la manifestation de la compétition', async () => {
     const dans = await creerEpreuve(
       nouveauJournal(),
-      saisie({ manifestationId: 'm1', date: '2027-03-15' }),
+      saisie({ competitionId: 'e1', date: '2027-03-15' }),
       auteur,
       [manifestation],
       [competition],
@@ -217,20 +235,31 @@ describe('rattachement d’une nouvelle épreuve (US-025 CA-3 et CA-4, US-024 CA
     expect(dans.ok).toBe(true);
     const hors = await creerEpreuve(
       nouveauJournal(),
-      saisie({ manifestationId: 'm1', date: '2027-03-20' }),
+      saisie({ competitionId: 'e1', date: '2027-03-20' }),
       auteur,
       [manifestation],
       [competition],
     );
     expect(hors).toEqual({ ok: false, erreurs: { date: 'DATE_HORS_MANIFESTATION' } });
-    const sans = await creerEpreuve(nouveauJournal(), saisie({ manifestationId: 'm1' }), auteur, [manifestation], []);
+    const sans = await creerEpreuve(
+      nouveauJournal(),
+      saisie({ competitionId: 'e1' }),
+      auteur,
+      [manifestation],
+      [competition],
+    );
     expect(sans).toEqual({ ok: false, erreurs: { date: 'DATE_OBLIGATOIRE' } });
+  });
+
+  it('US-045 CA-3 : une compétition seule laisse la date libre', async () => {
+    expect((await creerEpreuve(nouveauJournal(), saisie({ date: '2030-01-01' }), auteur)).ok).toBe(true);
+    expect((await creerEpreuve(nouveauJournal(), saisie(), auteur)).ok).toBe(true);
   });
 
   it('CA-4 (US-024) : une arme différente de celle de la compétition est refusée', async () => {
     const resultat = await creerEpreuve(
       nouveauJournal(),
-      saisie({ manifestationId: 'm1', competitionId: 'e1', arme: 'epee', date: '2027-03-15' }),
+      saisie({ competitionId: 'e1', arme: 'epee', date: '2027-03-15' }),
       auteur,
       [manifestation],
       [competition],
@@ -242,7 +271,7 @@ describe('rattachement d’une nouvelle épreuve (US-025 CA-3 et CA-4, US-024 CA
     const libre = { ...competition, arme: null };
     const resultat = await creerEpreuve(
       nouveauJournal(),
-      saisie({ manifestationId: 'm1', competitionId: 'e1', arme: 'epee', date: '2027-03-15' }),
+      saisie({ competitionId: 'e1', arme: 'epee', date: '2027-03-15' }),
       auteur,
       [manifestation],
       [libre],
@@ -250,38 +279,108 @@ describe('rattachement d’une nouvelle épreuve (US-025 CA-3 et CA-4, US-024 CA
     expect(resultat.ok).toBe(true);
   });
 
-  it('CA-3 (US-025) : une épreuve rattachée garde son rattachement dans le journal', async () => {
+  it('US-045 CA-3 : une épreuve garde sa compétition dans le journal', async () => {
     const journal = nouveauJournal();
     const resultat = await creerEpreuve(
       journal,
-      saisie({ manifestationId: 'm1', competitionId: 'e1', date: '2027-03-14' }),
+      saisie({ competitionId: 'e1', date: '2027-03-14' }),
       auteur,
       [manifestation],
       [competition],
     );
     const epreuveId = (resultat as { epreuveId: string }).epreuveId;
-    expect(await journal.lire(epreuveId)).toMatchObject({
-      epreuve: { rattachement: { manifestationId: 'm1', competitionId: 'e1' } },
-    });
+    expect(await journal.lire(epreuveId)).toMatchObject({ epreuve: { rattachement: { competitionId: 'e1' } } });
   });
 
-  it('cas limite : une manifestation ou une compétition inconnue de l’appareil est refusée (RATTACHEMENT_INVALIDE)', async () => {
+  it('hors ligne (US-045) : une compétition inconnue de la copie de l’appareil est refusée (RATTACHEMENT_INVALIDE)', async () => {
     const resultat = await creerEpreuve(
       nouveauJournal(),
-      saisie({ manifestationId: 'inconnue', date: '2027-03-15' }),
+      saisie({ competitionId: 'inconnue', date: '2027-03-15' }),
       auteur,
       [manifestation],
       [competition],
     );
     expect(resultat).toEqual({ ok: false, erreurs: { rattachement: 'RATTACHEMENT_INVALIDE' } });
-    const autre = await creerEpreuve(
-      nouveauJournal(),
-      saisie({ manifestationId: 'm1', competitionId: 'inconnue', date: '2027-03-15' }),
+  });
+});
+
+describe('compétition seule et sa première épreuve en une étape (US-045 CA-4)', () => {
+  const clientCompetitions = (
+    creation: unknown = { ok: true, competition: { ...seule, id: 'nouvelle', nom: 'Challenge Orpi' } },
+  ) => ({
+    creer: vi.fn().mockResolvedValue(creation),
+    supprimer: vi.fn().mockResolvedValue({ ok: true }),
+  });
+
+  it('US-045 CA-4 : crée la compétition seule puis l’épreuve, au même nom et à la même arme', async () => {
+    const journal = nouveauJournal();
+    const client = clientCompetitions();
+    const resultat = await creerCompetitionSeule(
+      journal,
+      client,
+      saisie({ nom: 'Challenge Orpi', competitionId: '' }),
       auteur,
-      [manifestation],
-      [competition],
     );
-    expect(autre).toEqual({ ok: false, erreurs: { rattachement: 'RATTACHEMENT_INVALIDE' } });
+    expect(client.creer).toHaveBeenCalledWith(null, { nom: 'Challenge Orpi', arme: 'sabre', commentaire: '' });
+    expect(resultat.ok).toBe(true);
+    const { epreuve } = await journal.lire((resultat as { epreuveId: string }).epreuveId);
+    expect(epreuve).toMatchObject({
+      nom: 'Challenge Orpi',
+      arme: 'sabre',
+      rattachement: { competitionId: 'nouvelle' },
+    });
+  });
+
+  it('US-045 CA-4 : une saisie refusée par les règles de l’épreuve ne crée rien en ligne', async () => {
+    const client = clientCompetitions();
+    const resultat = await creerCompetitionSeule(
+      nouveauJournal(),
+      client,
+      saisie({ nom: '', competitionId: '' }),
+      auteur,
+    );
+    expect(resultat).toEqual({ ok: false, erreurs: { nom: 'NOM_VIDE' } });
+    expect(client.creer).not.toHaveBeenCalled();
+  });
+
+  it('US-045 hors ligne : la compétition seule exige le réseau, rien n’est écrit', async () => {
+    const journal = nouveauJournal();
+    const client = clientCompetitions({ ok: false, erreur: 'HORS_LIGNE' });
+    const resultat = await creerCompetitionSeule(journal, client, saisie({ competitionId: '' }), auteur);
+    expect(resultat).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect(await journal.epreuvesLocales()).toEqual([]);
+  });
+
+  it('US-045 CA-4 : une session refusée ou une erreur inattendue du serveur sont distinguées', async () => {
+    const session = clientCompetitions({ ok: false, erreur: 'SESSION_INVALIDE' });
+    expect(await creerCompetitionSeule(nouveauJournal(), session, saisie({ competitionId: '' }), auteur)).toEqual({
+      ok: false,
+      erreur: 'SESSION_INVALIDE',
+    });
+    const autre = clientCompetitions({ ok: false, erreur: 'ACCES_REFUSE' });
+    expect(await creerCompetitionSeule(nouveauJournal(), autre, saisie({ competitionId: '' }), auteur)).toEqual({
+      ok: false,
+      erreur: 'ERREUR_INATTENDUE',
+    });
+  });
+
+  it('US-045 CA-4 : si l’épreuve ne peut s’écrire, la compétition créée est retirée', async () => {
+    const journal = nouveauJournal();
+    vi.spyOn(journal, 'enregistrer').mockResolvedValue({ erreur: 'ECRITURE_IMPOSSIBLE' });
+    const client = clientCompetitions();
+    const resultat = await creerCompetitionSeule(journal, client, saisie({ competitionId: '' }), auteur);
+    expect(resultat).toEqual({ ok: false, erreur: 'ECRITURE_IMPOSSIBLE' });
+    expect(client.supprimer).toHaveBeenCalledWith('nouvelle');
+  });
+
+  it('cas limite : sans club connu, rien n’est créé en ligne', async () => {
+    const client = clientCompetitions();
+    const resultat = await creerCompetitionSeule(nouveauJournal(), client, saisie({ competitionId: '' }), {
+      ...auteur,
+      clubId: undefined,
+    });
+    expect(resultat).toEqual({ ok: false, erreur: 'CLUB_INCONNU' });
+    expect(client.creer).not.toHaveBeenCalled();
   });
 });
 
@@ -289,7 +388,7 @@ describe('modification d’une épreuve (US-027)', () => {
   const creee = async (
     champs: Partial<SaisieEpreuve> = {},
     manifestations: Manifestation[] = [],
-    competitions: Competition[] = [],
+    competitions: Competition[] = [seule],
   ) => {
     const journal = nouveauJournal();
     const resultat = await creerEpreuve(journal, saisie(champs), auteur, manifestations, competitions);
@@ -306,7 +405,6 @@ describe('modification d’une épreuve (US-027)', () => {
       date: '2027-03-14',
       appel: '08:30',
       lieu: 'Salle Bellegrave',
-      manifestationId: 'm1',
       competitionId: 'e1',
     });
     expect(saisieDe(versDonnees(ouverte))).toEqual(ouverte);
@@ -360,7 +458,7 @@ describe('modification d’une épreuve (US-027)', () => {
 
   it('CA-4 : date hors manifestation et arme différente de la compétition refusées', async () => {
     const { journal, epreuveId } = await creee(
-      { manifestationId: 'm1', competitionId: 'e1', date: '2027-03-14' },
+      { competitionId: 'e1', date: '2027-03-14' },
       [manifestation],
       [competition],
     );
@@ -403,33 +501,39 @@ describe('modification d’une épreuve (US-027)', () => {
     expect(attente.map(({ seq, type }) => [seq, type])).toEqual([[2, 'EpreuveModifiee']]);
   });
 
-  it('hors ligne : se rattacher à une manifestation de la copie est possible, à une inconnue est refusé', async () => {
+  it('US-045 CA-7 et hors ligne : se rattacher à une compétition de la copie est possible, à une inconnue est refusé', async () => {
     const { journal, epreuveId } = await creee();
     const avant = await modifiable(journal, epreuveId);
     const inconnue = await modifierEpreuve(
       journal,
       epreuveId,
-      { ...avant, manifestationId: 'x', date: '2027-03-14' },
+      { ...avant, competitionId: 'x', date: '2027-03-14' },
       auteur,
       [manifestation],
       [competition],
     );
     expect(inconnue).toEqual({ ok: false, erreurs: { rattachement: 'RATTACHEMENT_INVALIDE' } });
+    const vide = await modifierEpreuve(journal, epreuveId, { ...avant, competitionId: '' }, auteur);
+    expect(vide).toEqual({ ok: false, erreurs: { rattachement: 'RATTACHEMENT_OBLIGATOIRE' } });
     const rattachee = await modifierEpreuve(
       journal,
       epreuveId,
-      { ...avant, manifestationId: 'm1', date: '2027-03-14' },
+      { ...avant, competitionId: 'e1', date: '2027-03-14' },
       auteur,
       [manifestation],
       [competition],
     );
     expect(rattachee).toEqual({ ok: true, modifiee: true });
     const { epreuve } = await journal.lire(epreuveId);
-    expect(epreuve?.rattachement).toEqual({ manifestationId: 'm1', competitionId: null });
+    expect(epreuve?.rattachement).toEqual({ competitionId: 'e1' });
   });
 
   it('hors ligne : un rattachement inchangé mais inconnu de la copie n’empêche pas d’enregistrer', async () => {
-    const { journal, epreuveId } = await creee({ manifestationId: 'm1', date: '2027-03-14' }, [manifestation]);
+    const { journal, epreuveId } = await creee(
+      { competitionId: 'e1', date: '2027-03-14' },
+      [manifestation],
+      [competition],
+    );
     const avant = await modifiable(journal, epreuveId);
     const resultat = await modifierEpreuve(journal, epreuveId, { ...avant, nom: 'Autre' }, auteur, [], []);
     expect(resultat).toEqual({ ok: true, modifiee: true });

@@ -164,9 +164,9 @@ describe('textes de l’accueil (US-026)', () => {
     expect(textes.listeClub.archivesMasquees(3)).toBe('3 épreuves archivées masquées');
   });
 
-  it('CA-6 : le message invite à créer une première manifestation ou une première épreuve', () => {
+  it('CA-6 : le message invite à créer une première manifestation ou une première compétition', () => {
     expect(textes.listeClub.vide).toContain('première manifestation');
-    expect(textes.listeClub.vide).toContain('première épreuve');
+    expect(textes.listeClub.vide).toContain('première compétition');
   });
 
   it('hors ligne : les créations de manifestation et de compétition sont grisées avec le message habituel', () => {

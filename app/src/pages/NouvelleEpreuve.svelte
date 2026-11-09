@@ -1,8 +1,9 @@
 <script lang="ts">
   // « Nouvelle épreuve » (US-025), page réservée : l’épreuve est écrite dans le journal local, donc créée
   // aussi hors ligne ; ce PC en devient le pilote et l'envoi au serveur part aussitôt, ou au retour du réseau (US-022).
-  // Le rattachement à une manifestation ou une compétition (US-024) se choisit parmi les dernières listes du club gardées sur
-  // l'appareil : hors ligne, l’épreuve reste créable, isolée ou rattachée à ce que la copie contient.
+  // Toute épreuve est dans une compétition (US-045), choisie parmi les dernières listes du club gardées sur l'appareil :
+  // hors ligne, l’épreuve reste créable dans une compétition que la copie contient. « Nouvelle compétition seule » crée la
+  // compétition (en ligne) et sa première épreuve en une étape.
   // La même page sert à modifier une épreuve (US-027, `epreuveId` donné) : le formulaire est prérempli depuis le
   // journal local et écrit `EpreuveModifiee` ; sur un PC qui n'est pas le pilote, il est en lecture seule.
   import { onMount, untrack } from 'svelte';
@@ -22,11 +23,13 @@
   import {
     cadreDe,
     CATEGORIE_LIBRE,
+    creerCompetitionSeule,
     creerEpreuve,
     modifierEpreuve,
     rattacher,
     saisieDe,
     saisieVide,
+    type ErreurCompetitionSeule,
     type ErreurCreation,
     type ErreurModification,
   } from '../lib/epreuves';
@@ -57,7 +60,7 @@
 
   const saisie = $state(saisieVide());
   let erreurs: ErreursEpreuve = $state({});
-  let erreur: ErreurCreation | ErreurModification | null = $state(null);
+  let erreur: ErreurCreation | ErreurModification | ErreurCompetitionSeule | null = $state(null);
   let enCours = $state(false);
 
   /** US-027 : faux tant que l’épreuve à modifier n'est pas lue. */
@@ -77,14 +80,33 @@
   let manifestations: Manifestation[] = $state([]);
   let competitions: Competition[] = $state([]);
   const cadre = $derived(cadreDe(saisie, manifestations, competitions));
-  const competitionsChoisies = $derived(
-    competitions.filter(({ manifestationId }) => manifestationId === saisie.manifestationId),
+  /** Valeur du choix « Nouvelle compétition seule » (US-045 CA-4), proposé à la création seulement. */
+  const SEULE = '+seule';
+  let seule = $state(false);
+  let enLigne = $state(navigator.onLine);
+  /** Les compétitions du choix, avec la manifestation qui les contient s'il y en a une. */
+  const choix = $derived(
+    competitions
+      .map((competition) => ({
+        competition,
+        manifestation: manifestations.find(({ id }) => id === competition.manifestationId)?.nom ?? null,
+      }))
+      .sort(
+        (a, b) =>
+          (a.manifestation ?? '￿').localeCompare(b.manifestation ?? '￿') ||
+          a.competition.nom.localeCompare(b.competition.nom),
+      ),
   );
 
   /** Listes du club : à jour en ligne, sinon la dernière copie de l'appareil. */
   onMount(() => {
     let liberer: (() => void) | null = null;
     let demonte = false;
+    const surReseau = () => (enLigne = navigator.onLine);
+    window.addEventListener('online', surReseau);
+    window.addEventListener('offline', surReseau);
+    // US-045 CA-4 : « Nouvelle compétition seule » de la liste du club ouvre ce formulaire sur ce choix.
+    if (epreuveId === undefined && navigator.onLine && new URLSearchParams(location.search).has('seule')) seule = true;
     if (epreuveId !== undefined) {
       const identifiant = epreuveId;
       void (async () => {
@@ -110,18 +132,14 @@
     return () => {
       demonte = true;
       liberer?.();
+      window.removeEventListener('online', surReseau);
+      window.removeEventListener('offline', surReseau);
     };
   });
 
-  function choisirManifestation(identifiant: string) {
-    Object.assign(saisie, rattacher($state.snapshot(saisie), identifiant, '', manifestations, competitions));
-  }
-
   function choisirCompetition(identifiant: string) {
-    Object.assign(
-      saisie,
-      rattacher($state.snapshot(saisie), saisie.manifestationId, identifiant, manifestations, competitions),
-    );
+    seule = identifiant === SEULE;
+    Object.assign(saisie, rattacher($state.snapshot(saisie), seule ? '' : identifiant, manifestations, competitions));
   }
 
   async function enregistrer(evenement: SubmitEvent) {
@@ -132,22 +150,24 @@
     try {
       const contexte = { clubId: session.compte.clubId, auteur: session.compte.email };
       const resultat =
-        epreuveId === undefined
-          ? await creerEpreuve(
-              journal,
-              $state.snapshot(saisie),
-              contexte,
-              $state.snapshot(manifestations),
-              $state.snapshot(competitions),
-            )
-          : await modifierEpreuve(
-              journal,
-              epreuveId,
-              $state.snapshot(saisie),
-              contexte,
-              $state.snapshot(manifestations),
-              $state.snapshot(competitions),
-            );
+        epreuveId === undefined && seule
+          ? await creerCompetitionSeule(journal, clientCompetitions, $state.snapshot(saisie), contexte)
+          : epreuveId === undefined
+            ? await creerEpreuve(
+                journal,
+                $state.snapshot(saisie),
+                contexte,
+                $state.snapshot(manifestations),
+                $state.snapshot(competitions),
+              )
+            : await modifierEpreuve(
+                journal,
+                epreuveId,
+                $state.snapshot(saisie),
+                contexte,
+                $state.snapshot(manifestations),
+                $state.snapshot(competitions),
+              );
       if (resultat.ok) {
         const identifiant = 'epreuveId' in resultat ? resultat.epreuveId : epreuveId!;
         // US-022 : envoi après l'écriture ; hors ligne, l’épreuve attend le retour du réseau.
@@ -166,10 +186,10 @@
 
   /** US-025 CA-4 et US-024 CA-4 : les messages qui citent les dates de la manifestation ou l'arme de la compétition. */
   function texteErreur(code: keyof typeof t.champs): string {
-    if (code === 'DATE_HORS_MANIFESTATION' && cadre) {
+    if (code === 'DATE_HORS_MANIFESTATION' && cadre?.manifestation) {
       return t.dateHorsManifestation(cadre.manifestation.debut, cadre.manifestation.fin);
     }
-    if (code === 'ARME_DIFFERENTE_COMPETITION' && cadre?.competition) return t.competitionAu(cadre.competition.arme);
+    if (code === 'ARME_DIFFERENTE_COMPETITION' && cadre?.arme) return t.competitionAu(cadre.arme);
     return t.champs[code];
   }
 
@@ -200,46 +220,33 @@
     {/if}
 
     <form onsubmit={enregistrer} novalidate>
-      <fieldset class="rattachement">
-        <legend>{t.rattachement} <small>({t.facultatif})</small></legend>
-        <div class="ligne">
-          <div class="champ">
-            <label for="manifestation">{t.manifestation}</label>
-            <select
-              id="manifestation"
-              value={saisie.manifestationId}
-              onchange={(evenement) => choisirManifestation(evenement.currentTarget.value)}
-              disabled={inactif('rattachement')}
-              {...invalide('rattachement')}
+      <div class="champ">
+        <label for="competition">{t.competition}</label>
+        <select
+          id="competition"
+          value={seule ? SEULE : saisie.competitionId}
+          onchange={(evenement) => choisirCompetition(evenement.currentTarget.value)}
+          disabled={inactif('rattachement')}
+          {...invalide('rattachement')}
+        >
+          <option value="">{t.choisirCompetition}</option>
+          {#if !modification}
+            <!-- US-045 CA-4 : créer une compétition exige le réseau ; hors ligne, le choix est grisé. -->
+            <option value={SEULE} disabled={!enLigne}
+              >{enLigne ? t.nouvelleCompetitionSeule : t.nouvelleCompetitionSeuleHorsLigne}</option
             >
-              <option value="">{t.aucuneManifestation}</option>
-              {#each manifestations as manifestation (manifestation.id)}
-                <option value={manifestation.id}>{manifestation.nom}</option>
-              {/each}
-            </select>
-            {@render message('rattachement')}
-          </div>
-          {#if saisie.manifestationId}
-            <div class="champ">
-              <label for="competition">{t.competition}</label>
-              <select
-                id="competition"
-                value={saisie.competitionId}
-                onchange={(evenement) => choisirCompetition(evenement.currentTarget.value)}
-                disabled={inactif('rattachement')}
-              >
-                <option value="">{t.aucuneCompetition}</option>
-                {#each competitionsChoisies as competition (competition.id)}
-                  <option value={competition.id}>{competition.nom}</option>
-                {/each}
-              </select>
-            </div>
           {/if}
-        </div>
-      </fieldset>
+          {#each choix as { competition, manifestation } (competition.id)}
+            <option value={competition.id}
+              >{competition.nom}{manifestation ? ` — ${manifestation}` : ` (${t.seule})`}</option
+            >
+          {/each}
+        </select>
+        {@render message('rattachement')}
+      </div>
 
       <div class="champ">
-        <label for="nom">{t.nom}</label>
+        <label for="nom">{seule ? t.nomCompetitionSeule : t.nom}</label>
         <input
           id="nom"
           type="text"
@@ -311,18 +318,18 @@
       <div class="champ">
         <label for="date"
           >{t.date}
-          {#if !cadre}<small>({t.facultatif})</small>{/if}</label
+          {#if !cadre?.manifestation}<small>({t.facultatif})</small>{/if}</label
         >
         <input
           id="date"
           type="date"
-          min={cadre?.manifestation.debut}
-          max={cadre?.manifestation.fin}
+          min={cadre?.manifestation?.debut}
+          max={cadre?.manifestation?.fin}
           bind:value={saisie.date}
           disabled={inactif('date')}
           {...invalide('date')}
         />
-        {#if cadre}
+        {#if cadre?.manifestation}
           <!-- US-025 CA-4 : dans une manifestation, la date est proposée parmi ses jours. -->
           <div class="jours" role="group" aria-label={t.choisirDate}>
             {#each joursDeManifestation(cadre.manifestation.debut, cadre.manifestation.fin) as jour (jour)}

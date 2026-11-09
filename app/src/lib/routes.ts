@@ -40,6 +40,9 @@ export function cheminEpreuve(epreuveId: string): string {
   return `/epreuves/${epreuveId}`;
 }
 
+/** US-045 CA-4 : formulaire « Nouvelle épreuve » ouvert sur le choix « Nouvelle compétition seule ». */
+export const CHEMIN_NOUVELLE_COMPETITION_SEULE = `${CHEMINS.nouvelleEpreuve}?seule`;
+
 /** US-026 CA-5 : adresse de la page Manifestations avec le formulaire de création d'une manifestation ouvert. */
 export const CHEMIN_NOUVELLE_MANIFESTATION = `${CHEMINS.manifestations}?nouvelle`;
 

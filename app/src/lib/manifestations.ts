@@ -168,7 +168,9 @@ export function creerClientManifestations({
       const donnees = versDonnees(saisie);
       const erreurs = validerManifestation(donnees);
       if (Object.keys(erreurs).length > 0) return { ok: false, erreurs };
-      const horsDates = epreuvesHorsDates(depart.id, donnees.debut, donnees.fin, await epreuves());
+      // Les épreuves sont dans les compétitions : celles de la dernière copie des compétitions du club disent lesquelles.
+      const { competitions = [] } = (await base.copieCompetitions.get(LIGNE_UNIQUE)) ?? {};
+      const horsDates = epreuvesHorsDates(depart.id, donnees.debut, donnees.fin, await epreuves(), competitions);
       if (horsDates.length > 0) return { ok: false, erreur: 'EPREUVES_HORS_DATES', epreuves: horsDates };
       return enregistrer('PATCH', `/manifestations/${depart.id}`, { ...donnees, version: depart.version });
     },

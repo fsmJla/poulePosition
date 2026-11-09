@@ -1,8 +1,9 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it, vi } from 'vitest';
 import type { EpreuveRattachee } from '@poule-position/domaine';
-import type { Manifestation } from '@poule-position/protocole';
+import type { Competition, Manifestation } from '@poule-position/protocole';
 import { creerClientManifestations, saisieDe, saisieVide, type SaisieManifestation } from './manifestations';
+import { Base, LIGNE_UNIQUE } from './stockage';
 
 const URL_SERVEUR = 'http://serveur.test';
 const MAINTENANT = 1_900_000_000_000;
@@ -66,7 +67,7 @@ const rattachee = (champs: Partial<EpreuveRattachee> = {}): EpreuveRattachee => 
   id: 'c1',
   nom: 'Sabre M13',
   date: '2027-03-15',
-  rattachement: { manifestationId: 'm1', competitionId: null },
+  rattachement: { competitionId: 'e1' },
   ...champs,
 });
 
@@ -112,10 +113,17 @@ describe('manifestations côté application (US-023)', () => {
     expect(serveur.requetes).toHaveLength(0);
   });
 
-  it('CA-4 : la modification est refusée en citant les épreuves hors des nouvelles dates', async () => {
+  it('CA-4 : la modification est refusée en citant les épreuves de ses compétitions hors des nouvelles dates (US-045)', async () => {
     const serveur = fauxServeur({});
     const epreuves = async () => [rattachee(), rattachee({ id: 'c2', nom: 'Épée M15', date: '2027-03-14' })];
-    const resultat = await client(serveur, { epreuves }).modifier(
+    // Les compétitions du club : celle de ces épreuves est dans la manifestation m1.
+    const nomBase = `test-${crypto.randomUUID()}`;
+    await new Base(nomBase).copieCompetitions.put({
+      cle: LIGNE_UNIQUE,
+      competitions: [{ id: 'e1', manifestationId: 'm1' } as Competition],
+      copieLe: MAINTENANT,
+    });
+    const resultat = await client(serveur, { epreuves, nomBase }).modifier(
       manifestation(),
       saisie({ debut: '2027-03-14', fin: '2027-03-14' }),
     );
