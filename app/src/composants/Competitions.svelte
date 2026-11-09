@@ -3,6 +3,7 @@
   // modification et suppression d'une compétition vide. Ce sont des données du club stockées par le serveur : hors ligne,
   // la liste reste consultable depuis la dernière copie, et les actions sont grisées.
   import { onMount } from 'svelte';
+  import Lien from './Lien.svelte';
   import { ARMES, type ErreursCompetition } from '@poule-position/domaine';
   import type { Competition, Manifestation } from '@poule-position/protocole';
   import {
@@ -12,6 +13,7 @@
     type ErreurCompetitions,
     type SaisieCompetition,
   } from '../lib/competitions';
+  import { cheminGrilleEpreuves } from '../lib/routes';
   import { nomConfirme } from '../lib/suppression';
   import { textes } from '../lib/textes';
 
@@ -31,6 +33,8 @@
     nombreEpreuves?: (competitionId: string) => Promise<number>;
     /** US-041 : appelé après une suppression avec contenu, pour effacer les copies locales des épreuves supprimées. */
     apresSuppressionContenu?: () => Promise<void>;
+    /** US-048 : ouvre la grille des épreuves de la compétition ; sans lui, le lien n'est pas proposé. */
+    naviguer?: (chemin: string) => void;
   }
 
   let {
@@ -43,6 +47,7 @@
     administrateur = false,
     nombreEpreuves = async () => 0,
     apresSuppressionContenu = async () => {},
+    naviguer,
   }: Proprietes = $props();
 
   const t = textes.competitions;
@@ -258,6 +263,14 @@
                   disabled={horsLigne}>{tc.bouton}</button
                 >
                 {#if horsLigne}<small>{tc.horsLigne}</small>{/if}
+              {/if}
+              {#if naviguer}
+                <!-- US-048 : la grille marche hors ligne pour une compétition connue de l'appareil. -->
+                <Lien
+                  chemin={cheminGrilleEpreuves(competition.id)}
+                  {naviguer}
+                  etiquette={textes.epreuves.grille.ajouterA(competition.nom)}>{textes.epreuves.grille.ajouter}</Lien
+                >
               {/if}
               <button
                 type="button"

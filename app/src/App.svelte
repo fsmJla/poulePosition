@@ -24,6 +24,7 @@
   import MotDePasse from './pages/MotDePasse.svelte';
   import Formule from './pages/Formule.svelte';
   import Parametres from './pages/Parametres.svelte';
+  import GrilleEpreuves from './pages/GrilleEpreuves.svelte';
   import NouvelleEpreuve from './pages/NouvelleEpreuve.svelte';
   import Profil from './pages/Profil.svelte';
   import Reinitialisation from './pages/Reinitialisation.svelte';
@@ -172,6 +173,17 @@
         clientCompetitions={competitions}
         {naviguer}
       />
+    {:else if route.page === 'grilleEpreuves' && route.competitionId}
+      {#key route.competitionId}
+        <GrilleEpreuves
+          {session}
+          {journal}
+          {synchronisation}
+          {accueil}
+          competitionId={route.competitionId}
+          {naviguer}
+        />
+      {/key}
     {:else if route.page === 'modifierEpreuve' && route.epreuveId}
       {#key route.epreuveId}
         <NouvelleEpreuve

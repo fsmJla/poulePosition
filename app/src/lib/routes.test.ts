@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   cheminEpreuve,
   cheminFormuleEpreuve,
+  cheminGrilleEpreuves,
   cheminModificationEpreuve,
   cheminParametresEpreuve,
   cheminNouvelleCompetition,
@@ -155,5 +156,17 @@ describe('paramètres d’une épreuve (US-032)', () => {
     expect(resoudreRoute(`/epreuves/${id}/parametres/`, true)).toEqual(route);
     expect(resoudreRoute(`/epreuves/${id}/parametres`, false)).toEqual({ redirection: CHEMINS.connexion });
     expect(resoudreRoute('/epreuves/Pas Un Id/parametres', true)).toEqual({ redirection: '/' });
+  });
+});
+
+describe('grille des épreuves (US-048)', () => {
+  it('CA-1 : « /competitions/<id>/epreuves » est réservée aux comptes connectés et porte l’identifiant de la compétition', () => {
+    const id = '0b6f1c1e-6d1a-4f0a-9a43-2f3c9e5d7b10';
+    const route = { page: 'grilleEpreuves', competitionId: id };
+    expect(cheminGrilleEpreuves(id)).toBe(`/competitions/${id}/epreuves`);
+    expect(resoudreRoute(`/competitions/${id}/epreuves`, true)).toEqual(route);
+    expect(resoudreRoute(`/competitions/${id}/epreuves/`, true)).toEqual(route);
+    expect(resoudreRoute(`/competitions/${id}/epreuves`, false)).toEqual({ redirection: CHEMINS.connexion });
+    expect(resoudreRoute('/competitions/Pas Un Id/epreuves', true)).toEqual({ redirection: '/' });
   });
 });

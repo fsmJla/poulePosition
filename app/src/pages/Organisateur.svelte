@@ -30,6 +30,7 @@
   import {
     cheminEpreuve,
     cheminModificationEpreuve,
+    cheminGrilleEpreuves,
     cheminNouvelleCompetition,
     CHEMIN_NOUVELLE_COMPETITION_SEULE,
     CHEMIN_NOUVELLE_MANIFESTATION,
@@ -359,6 +360,11 @@
                       <li class="vide">{t.aucuneEpreuve}</li>
                     {/each}
                   </ul>
+                  <Lien
+                    chemin={cheminGrilleEpreuves(competition.id)}
+                    {naviguer}
+                    etiquette={tc.grille.ajouterA(competition.nom)}>{tc.grille.ajouter}</Lien
+                  >
                 </div>
               {/each}
             </div>
@@ -381,6 +387,11 @@
                   <li class="vide">{t.aucuneEpreuve}</li>
                 {/each}
               </ul>
+              <Lien
+                chemin={cheminGrilleEpreuves(competition.id)}
+                {naviguer}
+                etiquette={tc.grille.ajouterA(competition.nom)}>{tc.grille.ajouter}</Lien
+              >
             </div>
           {/if}
         {/each}

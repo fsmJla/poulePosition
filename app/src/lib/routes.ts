@@ -16,7 +16,8 @@ export type Page =
   | 'epreuve'
   | 'modifierEpreuve'
   | 'formuleEpreuve'
-  | 'parametresEpreuve';
+  | 'parametresEpreuve'
+  | 'grilleEpreuves';
 
 /** Adresses fixes ; celle d'une épreuve porte son identifiant (`cheminEpreuve`). */
 export const CHEMINS = Object.freeze({
@@ -33,7 +34,10 @@ export const CHEMINS = Object.freeze({
   manifestations: '/manifestations',
   /** US-025 : formulaire de création d'une épreuve. */
   nouvelleEpreuve: '/epreuves/nouvelle',
-} satisfies Record<Exclude<Page, 'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve'>, string>);
+} satisfies Record<
+  Exclude<Page, 'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve' | 'grilleEpreuves'>,
+  string
+>);
 
 /** US-025 : page d'une épreuve. */
 export function cheminEpreuve(epreuveId: string): string {
@@ -74,6 +78,12 @@ export function cheminParametresEpreuve(epreuveId: string): string {
   return `/epreuves/${epreuveId}/parametres`;
 }
 
+/** US-048 : grille des épreuves d'une compétition. */
+export function cheminGrilleEpreuves(competitionId: string): string {
+  return `/competitions/${competitionId}/epreuves`;
+}
+
+const MOTIF_GRILLE = /^\/competitions\/([^/]+)\/epreuves$/;
 const MOTIF_EPREUVE = /^\/epreuves\/([^/]+)$/;
 const MOTIF_MODIFICATION = /^\/epreuves\/([^/]+)\/modifier$/;
 const MOTIF_FORMULE = /^\/epreuves\/([^/]+)\/formule$/;
@@ -91,19 +101,25 @@ const RESERVEES: readonly Page[] = [
   'modifierEpreuve',
   'formuleEpreuve',
   'parametresEpreuve',
+  'grilleEpreuves',
 ];
 
 /** Pages des administrateurs : un organisateur est renvoyé à son accueil (US-007 CA-6). */
 const ADMINISTRATEURS: readonly Page[] = ['comptes'];
 
-export type Route = { page: Page; epreuveId?: string } | { redirection: string };
+export type Route = { page: Page; epreuveId?: string; competitionId?: string } | { redirection: string };
 
 /** Page désignée par une adresse normalisée, avec l'identifiant de l’épreuve s'il y en a un ; null si inconnue. */
-function pageDe(chemin: string): { page: Page; epreuveId?: string } | null {
+function pageDe(chemin: string): { page: Page; epreuveId?: string; competitionId?: string } | null {
   const page = (
-    Object.keys(CHEMINS) as Exclude<Page, 'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve'>[]
+    Object.keys(CHEMINS) as Exclude<
+      Page,
+      'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve' | 'grilleEpreuves'
+    >[]
   ).find((candidate) => CHEMINS[candidate] === chemin);
   if (page) return { page };
+  const grille = MOTIF_GRILLE.exec(chemin)?.[1];
+  if (grille) return MOTIF_IDENTIFIANT.test(grille) ? { page: 'grilleEpreuves', competitionId: grille } : null;
   const modifiee = MOTIF_MODIFICATION.exec(chemin)?.[1];
   if (modifiee) return MOTIF_IDENTIFIANT.test(modifiee) ? { page: 'modifierEpreuve', epreuveId: modifiee } : null;
   const formule = MOTIF_FORMULE.exec(chemin)?.[1];
