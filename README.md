@@ -1,6 +1,6 @@
 /# poulePosition
 
-Application gratuite d'organisation et de suivi de compétitions d'escrime : inscriptions, émargement,
+Application gratuite d'organisation et de suivi d’épreuves d'escrime : inscriptions, émargement,
 poules, tableau, impressions, saisie des scores par smartphone (QR code), écran géant et suivi par les
 spectateurs. Elle fonctionne **hors ligne** sur le PC de l'organisateur.
 
@@ -140,7 +140,7 @@ production qui l'introduit :
 
 Les données gardées sur un appareil (session, reconnexion hors ligne, application installée) dépendent de l'adresse
 du site : sur le nouveau domaine, chacun se connecte une fois **en ligne** avant de pouvoir se reconnecter hors
-ligne, et réinstalle l'application s'il l'avait installée. Éviter de basculer un jour de compétition.
+ligne, et réinstalle l'application s'il l'avait installée. Éviter de basculer un jour d’épreuve.
 
 **Appareil qui reste sur l'ancienne adresse.** Un navigateur qui avait déjà ouvert `poule-position-livid.vercel.app`
 y affiche l'application depuis son cache hors ligne (service worker), sans voir la redirection ; sa mise à jour

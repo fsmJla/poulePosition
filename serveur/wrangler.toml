@@ -4,12 +4,12 @@ name = "poule-position-serveur"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"
 
-# Une instance par compétition (idFromName("competition:<CLUB_ID>:<id>"), ADR-0014) : copie du journal (ADR-0016).
+# Une instance par épreuve (idFromName("epreuve:<CLUB_ID>:<id>"), ADR-0014) : copie du journal (ADR-0016).
 [[durable_objects.bindings]]
-name = "COMPETITIONS"
-class_name = "Competition"
+name = "EPREUVES"
+class_name = "Epreuve"
 
-# Un objet par club (idFromName("club:<CLUB_ID>"), ADR-0014) : comptes (ADR-0006), index des compétitions (ADR-0016).
+# Un objet par club (idFromName("club:<CLUB_ID>"), ADR-0014) : comptes (ADR-0006), index des épreuves (ADR-0016).
 [[durable_objects.bindings]]
 name = "CLUB"
 class_name = "Club"
@@ -22,7 +22,7 @@ class_name = "Limiteur"
 # Plan gratuit : Durable Objects à stockage SQLite uniquement.
 [[migrations]]
 tag = "v1"
-new_sqlite_classes = ["Competition"]
+new_sqlite_classes = ["Epreuve"]
 
 [[migrations]]
 tag = "v2"
@@ -51,8 +51,8 @@ URL_APPLICATION = "https://poule-position.pessac-escrime.fr"
 name = "poule-position-serveur-preview"
 
 [[env.preview.durable_objects.bindings]]
-name = "COMPETITIONS"
-class_name = "Competition"
+name = "EPREUVES"
+class_name = "Epreuve"
 
 [[env.preview.durable_objects.bindings]]
 name = "CLUB"

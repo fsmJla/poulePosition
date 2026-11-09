@@ -1,343 +1,209 @@
-// Création (US-025) et modification (US-027) d'une compétition : le formulaire est converti en données de l'événement `CompetitionCreee`,
-// vérifié par les règles du domaine, puis écrit dans le journal local. Tout fonctionne hors ligne : l'envoi au serveur
-// est fait ensuite par `synchronisation.ts` (US-022).
+// Compétitions du club (US-024, docs/protocole.md §13) : données du club stockées par le serveur, modifiables en ligne
+// seulement. La dernière liste reçue est gardée dans IndexedDB : hors ligne, elle reste consultable avec sa date.
+import { validerCompetition, type Arme, type DonneesCompetition, type ErreursCompetition } from '@poule-position/domaine';
 import {
-  CATEGORIES,
-  champsModifiables,
-  matchsAConfirmer,
-  modification,
-  modificationFormule,
-  modificationParametres,
-  preremplir,
-  validerCompetition,
-  validerFormule,
-  validerParametres,
-  type Arme,
-  type CadreRattachement,
-  type DonneesCompetition,
-  type ErreurFormule,
-  type ErreurParametres,
-  type ErreursCompetition,
-  type Formule,
-  type Parametres,
-  type Statut,
-  type Sexe,
-  type TypeCompetition,
-} from '@poule-position/domaine';
-import type { Epreuve, Manifestation } from '@poule-position/protocole';
-import type { Contexte, ErreurJournal, Journal } from './journal';
-import { textes } from './textes';
-
-/** Valeur du choix de catégorie qui ouvre la saisie libre. */
-export const CATEGORIE_LIBRE = 'autre';
+  analyserReponseCompetition,
+  analyserReponseCompetitions,
+  analyserReponseSuppression,
+  analyserReponseSuppressionContenu,
+  type Competition,
+  type ErreurReponse,
+} from '@poule-position/protocole';
+import { DELAI_REPONSE } from './session';
+import { Base, LIGNE_UNIQUE, type CopieCompetitions } from './stockage';
+import { enchainerSuppressionContenu, type ResultatSuppressionContenu } from './suppression';
 
 /** Champs du formulaire, tels que saisis : un texte vide est un champ non renseigné. */
 export interface SaisieCompetition {
   nom: string;
   arme: Arme | '';
-  typeCompetition: TypeCompetition;
-  /** Catégorie de la liste, `CATEGORIE_LIBRE`, ou vide. */
-  categorie: string;
-  categorieLibre: string;
-  sexe: Sexe | '';
-  date: string;
-  appel: string;
-  scratch: string;
-  debutPoules: string;
-  lieu: string;
   commentaire: string;
-  /** Manifestation choisie (US-024) ; vide pour une compétition isolée. */
-  manifestationId: string;
-  /** Épreuve de cette manifestation ; vide si aucune. */
-  epreuveId: string;
 }
 
-/** CA-1 : formulaire vide ; individuelle par défaut. */
+/** Erreurs affichées avec la liste des compétitions. */
+export type ErreurCompetitions =
+  | 'HORS_LIGNE'
+  | 'SESSION_INVALIDE'
+  | 'MANIFESTATION_INCONNUE'
+  | 'COMPETITION_INCONNUE'
+  | 'COMPETITION_NON_VIDE'
+  | 'ACCES_REFUSE'
+  | 'EPREUVE_EN_COURS'
+  | 'ERREUR_INATTENDUE';
+
+export type ResultatEnregistrementCompetition =
+  | { ok: true; competition: Competition }
+  | { ok: false; erreurs: ErreursCompetition }
+  /** Cas limite : modifiée par quelqu'un d'autre depuis le chargement ; la version courante est jointe. */
+  | { ok: false; erreur: 'MODIFIEE_ENTRE_TEMPS'; competition: Competition }
+  | { ok: false; erreur: ErreurCompetitions };
+
+export interface OptionsCompetitions {
+  /** Adresse HTTP du serveur (voir urlHttp) ; null s'il n'est pas configuré. */
+  urlServeur: string | null;
+  nomBase?: string;
+  /** Jeton de la session en ligne ; null pour une session locale (US-005). */
+  jeton: () => Promise<string | null>;
+  envoyer?: typeof fetch;
+  enLigne?: () => boolean;
+  maintenant?: () => number;
+  delai?: number;
+}
+
+/** CA-1 : formulaire vide. */
 export function saisieVide(): SaisieCompetition {
+  return { nom: '', arme: '', commentaire: '' };
+}
+
+/** CA-3 : formulaire prérempli avec une compétition existante. */
+export function saisieDe({ nom, arme, commentaire }: Competition): SaisieCompetition {
+  return { nom, arme: arme ?? '', commentaire: commentaire ?? '' };
+}
+
+function versDonnees(manifestationId: string, { nom, arme, commentaire }: SaisieCompetition): DonneesCompetition {
   return {
-    nom: '',
-    arme: '',
-    typeCompetition: 'individuelle',
-    categorie: '',
-    categorieLibre: '',
-    sexe: '',
-    date: '',
-    appel: '',
-    scratch: '',
-    debutPoules: '',
-    lieu: '',
-    commentaire: '',
-    manifestationId: '',
-    epreuveId: '',
-  };
-}
-
-const ouNull = <T extends string>(texte: T | ''): T | null => (texte === '' ? null : texte);
-
-/** Données de l'événement `CompetitionCreee`. */
-export function versDonnees(saisie: SaisieCompetition): DonneesCompetition {
-  const categorie = saisie.categorie === CATEGORIE_LIBRE ? saisie.categorieLibre : saisie.categorie;
-  return {
-    nom: saisie.nom,
-    arme: saisie.arme as Arme,
-    typeCompetition: saisie.typeCompetition,
-    categorie: ouNull(categorie),
-    sexe: ouNull(saisie.sexe),
-    date: ouNull(saisie.date),
-    horaires: { appel: ouNull(saisie.appel), scratch: ouNull(saisie.scratch), debutPoules: ouNull(saisie.debutPoules) },
-    lieu: ouNull(saisie.lieu),
-    commentaire: ouNull(saisie.commentaire),
-    rattachement: saisie.manifestationId
-      ? { manifestationId: saisie.manifestationId, epreuveId: ouNull(saisie.epreuveId) }
-      : null,
-  };
-}
-
-/** US-027 CA-1 : le formulaire de modification, rempli avec les données de la compétition. */
-export function saisieDe(donnees: DonneesCompetition): SaisieCompetition {
-  const { categorie } = donnees;
-  const libre = categorie !== null && !(CATEGORIES as readonly string[]).includes(categorie);
-  return {
-    nom: donnees.nom,
-    arme: donnees.arme,
-    typeCompetition: donnees.typeCompetition,
-    categorie: libre ? CATEGORIE_LIBRE : (categorie ?? ''),
-    categorieLibre: libre ? categorie : '',
-    sexe: donnees.sexe ?? '',
-    date: donnees.date ?? '',
-    appel: donnees.horaires.appel ?? '',
-    scratch: donnees.horaires.scratch ?? '',
-    debutPoules: donnees.horaires.debutPoules ?? '',
-    lieu: donnees.lieu ?? '',
-    commentaire: donnees.commentaire ?? '',
-    manifestationId: donnees.rattachement?.manifestationId ?? '',
-    epreuveId: donnees.rattachement?.epreuveId ?? '',
-  };
-}
-
-/**
- * Ce que l'appareil sait du rattachement choisi (dernières copies gardées) ; null pour une compétition isolée, ou si la
- * manifestation, ou l'épreuve de cette manifestation, est inconnue de l'appareil.
- */
-export function cadreDe(
-  { manifestationId, epreuveId }: Pick<SaisieCompetition, 'manifestationId' | 'epreuveId'>,
-  manifestations: readonly Manifestation[],
-  epreuves: readonly Epreuve[],
-): CadreRattachement | null {
-  const manifestation = manifestations.find(({ id }) => id === manifestationId);
-  if (!manifestation) return null;
-  const { debut, fin, lieu } = manifestation;
-  if (epreuveId === '') return { manifestation: { debut, fin, lieu }, epreuve: null };
-  const epreuve = epreuves.find(({ id }) => id === epreuveId);
-  if (!epreuve || epreuve.manifestationId !== manifestationId) return null;
-  return { manifestation: { debut, fin, lieu }, epreuve: epreuve.arme ? { arme: epreuve.arme } : null };
-}
-
-/**
- * US-025 CA-3 : applique le choix de rattachement au formulaire. Le lieu de la manifestation et l'arme de l'épreuve sont
- * proposés sans écraser le lieu saisi ; un autre choix de manifestation efface la date et l'épreuve de l'ancienne.
- */
-export function rattacher(
-  saisie: SaisieCompetition,
-  manifestationId: string,
-  epreuveId: string,
-  manifestations: readonly Manifestation[],
-  epreuves: readonly Epreuve[],
-): SaisieCompetition {
-  const change = manifestationId !== saisie.manifestationId;
-  const suivante = {
-    ...saisie,
     manifestationId,
-    epreuveId: manifestationId ? epreuveId : '',
-    date: change ? '' : saisie.date,
+    nom,
+    arme: arme === '' ? null : arme,
+    commentaire: commentaire === '' ? null : commentaire,
   };
-  const cadre = cadreDe(suivante, manifestations, epreuves);
-  if (!cadre) return suivante;
-  const proposition = preremplir(cadre);
-  return { ...suivante, lieu: suivante.lieu || proposition.lieu || '', arme: proposition.arme ?? suivante.arme };
 }
 
-/**
- * `ECRITURE_IMPOSSIBLE` : IndexedDB en échec (US-021) ; `CLUB_INCONNU` : session ouverte avant US-025, sans club, qu'une
- * reconnexion en ligne fournit.
- */
-export type ErreurCreation = Extract<ErreurJournal, 'ECRITURE_IMPOSSIBLE'> | 'CLUB_INCONNU';
+const SESSION_REFUSEE: readonly ErreurReponse[] = ['SESSION_INVALIDE', 'COMPTE_MODIFIE', 'COMPTE_RETIRE'];
 
-export type ResultatCreation =
-  | { ok: true; competitionId: string }
-  | { ok: false; erreurs: ErreursCompetition }
-  | { ok: false; erreur: ErreurCreation };
-
-/** CA-2 à CA-4 : vérifie la saisie, puis écrit `CompetitionCreee` dans le journal local ; ce PC devient le pilote. */
-export async function creerCompetition(
-  journal: Journal,
-  saisie: SaisieCompetition,
-  { clubId, ...contexte }: Omit<Contexte, 'clubId'> & { clubId: string | undefined },
-  manifestations: readonly Manifestation[] = [],
-  epreuves: readonly Epreuve[] = [],
-): Promise<ResultatCreation> {
-  const donnees = versDonnees(saisie);
-  const cadre = cadreDe(saisie, manifestations, epreuves);
-  const erreurs = validerCompetition(donnees, cadre);
-  // Hors ligne, seule la dernière copie est connue : un rattachement qu'elle ne contient pas est refusé.
-  if (donnees.rattachement && !cadre) erreurs.rattachement = 'RATTACHEMENT_INVALIDE';
-  if (Object.keys(erreurs).length > 0) return { ok: false, erreurs };
-  if (!clubId) return { ok: false, erreur: 'CLUB_INCONNU' };
-  const competitionId = crypto.randomUUID();
-  const resultat = await journal.enregistrer(
-    competitionId,
-    { type: 'CompetitionCreee', donnees },
-    { clubId, ...contexte },
-  );
-  if ('projection' in resultat) return { ok: true, competitionId };
-  // Une compétition neuve n'a ni pilote ailleurs ni journal incohérent : il ne reste que l'échec d'écriture.
-  return { ok: false, erreur: 'ECRITURE_IMPOSSIBLE' };
+function erreurDe(erreur: ErreurReponse): ErreurCompetitions {
+  if (SESSION_REFUSEE.includes(erreur)) return 'SESSION_INVALIDE';
+  const connues = [
+    'MANIFESTATION_INCONNUE',
+    'COMPETITION_INCONNUE',
+    'COMPETITION_NON_VIDE',
+    'ACCES_REFUSE',
+    'EPREUVE_EN_COURS',
+  ] as const;
+  return connues.find((connue) => connue === erreur) ?? 'ERREUR_INATTENDUE';
 }
 
-/**
- * `INTROUVABLE` : compétition inconnue de cet appareil ; `PAS_PILOTE` (CA-3), `COMPETITION_ARCHIVEE`, `CHAMP_FIGE` et
- * `JOURNAL_INCOHERENT` viennent du journal.
- */
-export type ErreurModification =
-  | 'INTROUVABLE'
-  | Extract<
-      ErreurJournal,
-      'PAS_PILOTE' | 'COMPETITION_ARCHIVEE' | 'CHAMP_FIGE' | 'JOURNAL_INCOHERENT' | 'ECRITURE_IMPOSSIBLE'
-    >;
+class Injoignable extends Error {}
 
-export type ResultatModification =
-  | { ok: true; modifiee: boolean }
-  | { ok: false; erreurs: ErreursCompetition }
-  | { ok: false; erreur: ErreurModification };
+export function creerClientCompetitions({
+  urlServeur,
+  nomBase = 'poulePosition',
+  jeton,
+  envoyer = (...args) => fetch(...args),
+  enLigne = () => navigator.onLine,
+  maintenant = () => Date.now(),
+  delai = DELAI_REPONSE,
+}: OptionsCompetitions) {
+  const base = new Base(nomBase);
 
-/**
- * US-027 CA-1, CA-4 et CA-5 : compare la saisie à la compétition, vérifie ce qui change comme à la création, puis écrit
- * `CompetitionModifiee` avec les seuls champs changés ; rien n'est écrit si rien ne change.
- */
-export async function modifierCompetition(
-  journal: Journal,
-  competitionId: string,
-  saisie: SaisieCompetition,
-  { clubId, ...contexte }: Omit<Contexte, 'clubId'> & { clubId?: string | undefined },
-  manifestations: readonly Manifestation[] = [],
-  epreuves: readonly Epreuve[] = [],
-): Promise<ResultatModification> {
-  const { competition } = await journal.lire(competitionId);
-  if (!competition) return { ok: false, erreur: 'INTROUVABLE' };
-  const donnees = versDonnees(saisie);
-  const changes = modification(competition, donnees);
-  if (Object.keys(changes).length === 0) return { ok: true, modifiee: false };
-  if (!champsModifiables(competition.statut).length) return { ok: false, erreur: 'COMPETITION_ARCHIVEE' };
-  // Le cadre ne sert qu'à ce qui change : un rattachement connu de la copie seulement n'empêche pas de modifier le reste.
-  const cadre =
-    'rattachement' in changes || 'date' in changes || 'arme' in changes
-      ? cadreDe(saisie, manifestations, epreuves)
-      : null;
-  const erreurs = validerCompetition(donnees, cadre);
-  if ('rattachement' in changes && donnees.rattachement && !cadre) erreurs.rattachement = 'RATTACHEMENT_INVALIDE';
-  if (Object.keys(erreurs).length > 0) return { ok: false, erreurs };
-  const resultat = await journal.enregistrer(
-    competitionId,
-    { type: 'CompetitionModifiee', donnees: changes },
-    { clubId: clubId ?? competition.clubId, ...contexte },
-  );
-  if ('projection' in resultat) return { ok: true, modifiee: true };
-  const { erreur } = resultat;
-  const connues = ['PAS_PILOTE', 'COMPETITION_ARCHIVEE', 'CHAMP_FIGE', 'JOURNAL_INCOHERENT'] as const;
-  return { ok: false, erreur: connues.find((code) => code === erreur) ?? 'ECRITURE_IMPOSSIBLE' };
+  /** Envoie une requête avec la session et lit sa réponse JSON ; lève Injoignable sans réseau ni session en ligne. */
+  async function requete(methode: string, chemin: string, corps?: unknown): Promise<unknown> {
+    const jetonSession = urlServeur && enLigne() ? await jeton() : null;
+    if (!jetonSession) throw new Injoignable();
+    let reponse: Response;
+    try {
+      reponse = await envoyer(`${urlServeur}${chemin}`, {
+        method: methode,
+        signal: AbortSignal.timeout(delai),
+        headers: {
+          Authorization: `Bearer ${jetonSession}`,
+          ...(corps !== undefined && { 'Content-Type': 'application/json' }),
+        },
+        ...(corps !== undefined && { body: JSON.stringify(corps) }),
+      });
+    } catch {
+      throw new Injoignable();
+    }
+    return reponse.json().catch(() => undefined);
+  }
+
+  async function copie(): Promise<CopieCompetitions | null> {
+    const ligne = await base.copieCompetitions.get(LIGNE_UNIQUE);
+    return ligne ? { competitions: ligne.competitions, copieLe: ligne.copieLe } : null;
+  }
+
+  async function enregistrer(
+    methode: 'POST' | 'PATCH',
+    chemin: string,
+    corps: unknown,
+  ): Promise<ResultatEnregistrementCompetition> {
+    let reponse;
+    try {
+      reponse = analyserReponseCompetition(await requete(methode, chemin, corps));
+    } catch {
+      return { ok: false, erreur: 'HORS_LIGNE' };
+    }
+    if (reponse.ok) return reponse;
+    if (reponse.erreur === 'MODIFIEE_ENTRE_TEMPS' && reponse.competition) {
+      return { ok: false, erreur: 'MODIFIEE_ENTRE_TEMPS', competition: reponse.competition };
+    }
+    return { ok: false, erreur: erreurDe(reponse.erreur) };
+  }
+
+  return {
+    copie,
+
+    /** CA-1 : liste du club, gardée sur l'appareil ; en cas d'échec, la dernière copie est jointe. */
+    async lister(): Promise<
+      { ok: true; competitions: Competition[] } | { ok: false; erreur: ErreurCompetitions; copie: CopieCompetitions | null }
+    > {
+      let reponse;
+      try {
+        reponse = analyserReponseCompetitions(await requete('GET', '/competitions'));
+      } catch {
+        return { ok: false, erreur: 'HORS_LIGNE', copie: await copie() };
+      }
+      if (!reponse.ok) return { ok: false, erreur: erreurDe(reponse.erreur), copie: await copie() };
+      const { competitions } = reponse;
+      await base.copieCompetitions.put({ cle: LIGNE_UNIQUE, competitions, copieLe: maintenant() });
+      return { ok: true, competitions };
+    },
+
+    /** CA-1 et CA-2 : crée une compétition dans une manifestation, après les règles du domaine. */
+    async creer(manifestationId: string, saisie: SaisieCompetition): Promise<ResultatEnregistrementCompetition> {
+      const donnees = versDonnees(manifestationId, saisie);
+      const erreurs = validerCompetition(donnees);
+      if (Object.keys(erreurs).length > 0) return { ok: false, erreurs };
+      return enregistrer('POST', '/competitions', donnees);
+    },
+
+    /** CA-3 : modifie nom, arme et commentaire, à partir de la version chargée ; la manifestation ne change pas. */
+    async modifier(depart: Competition, saisie: SaisieCompetition): Promise<ResultatEnregistrementCompetition> {
+      const { manifestationId, ...donnees } = versDonnees(depart.manifestationId, saisie);
+      const erreurs = validerCompetition({ manifestationId, ...donnees });
+      if (Object.keys(erreurs).length > 0) return { ok: false, erreurs };
+      return enregistrer('PATCH', `/competitions/${depart.id}`, { ...donnees, version: depart.version });
+    },
+
+    /** CA-5 : supprime une compétition vide ; le serveur refuse une compétition non vide. */
+    async supprimer(id: string): Promise<{ ok: true } | { ok: false; erreur: ErreurCompetitions }> {
+      let reponse;
+      try {
+        reponse = analyserReponseSuppression(await requete('DELETE', `/competitions/${id}`));
+      } catch {
+        return { ok: false, erreur: 'HORS_LIGNE' };
+      }
+      return reponse.ok ? reponse : { ok: false, erreur: erreurDe(reponse.erreur) };
+    },
+
+    /**
+     * US-041 : supprime la compétition avec ses épreuves. Le serveur en traite un morceau par requête (CA-5) : on enchaîne
+     * jusqu'à la fin, avec la progression. Si la suite est interrompue, le serveur garde la compétition et ce qui reste, et
+     * relancer la reprend (CA-6).
+     */
+    async supprimerAvecContenu(
+      id: string,
+      surProgression?: (faites: number, total: number) => void,
+    ): Promise<ResultatSuppressionContenu<ErreurCompetitions>> {
+      return enchainerSuppressionContenu(
+        async () => analyserReponseSuppressionContenu(await requete('DELETE', `/competitions/${id}?contenu=1`)),
+        erreurDe,
+        'HORS_LIGNE',
+        'ERREUR_INATTENDUE',
+        surProgression,
+      );
+    },
+  };
 }
 
-/**
- * `INTROUVABLE` : compétition inconnue de cet appareil ; les codes de formule sont les bornes du domaine ;
- * `PAS_PILOTE`, `COMPETITION_ARCHIVEE`, `FORMULE_FIGEE` et `JOURNAL_INCOHERENT` viennent du journal.
- */
-export type ErreurModificationFormule =
-  | 'INTROUVABLE'
-  | ErreurFormule
-  | Extract<
-      ErreurJournal,
-      | 'PAS_PILOTE'
-      | 'COMPETITION_ARCHIVEE'
-      | 'FORMULE_FIGEE'
-      | 'CHAMP_FIGE'
-      | 'JOURNAL_INCOHERENT'
-      | 'ECRITURE_IMPOSSIBLE'
-    >;
-
-export type ResultatModificationFormule =
-  { ok: true; modifiee: boolean } | { ok: false; erreur: ErreurModificationFormule };
-
-/**
- * US-028 CA-2 : compare la saisie à la formule courante, vérifie les bornes, puis écrit `FormuleModifiee` avec les
- * seuls réglages changés ; rien n'est écrit si rien ne change. Les touches de relais de la saisie sont ignorées (CA-3).
- */
-export async function modifierFormule(
-  journal: Journal,
-  competitionId: string,
-  saisie: Formule,
-  { clubId, ...contexte }: Omit<Contexte, 'clubId'> & { clubId?: string | undefined },
-): Promise<ResultatModificationFormule> {
-  const { competition } = await journal.lire(competitionId);
-  if (!competition) return { ok: false, erreur: 'INTROUVABLE' };
-  const changes = modificationFormule(competition.formule, saisie);
-  if (Object.keys(changes).length === 0) return { ok: true, modifiee: false };
-  const invalide = validerFormule(changes);
-  if (invalide) return { ok: false, erreur: invalide };
-  const resultat = await journal.enregistrer(
-    competitionId,
-    { type: 'FormuleModifiee', donnees: changes },
-    { clubId: clubId ?? competition.clubId, ...contexte },
-  );
-  if ('projection' in resultat) return { ok: true, modifiee: true };
-  const { erreur } = resultat;
-  const connues = ['PAS_PILOTE', 'COMPETITION_ARCHIVEE', 'FORMULE_FIGEE', 'CHAMP_FIGE', 'JOURNAL_INCOHERENT'] as const;
-  return { ok: false, erreur: connues.find((code) => code === erreur) ?? 'ECRITURE_IMPOSSIBLE' };
-}
-
-/** US-028 CA-4 : phrase de confirmation avant de changer la formule en cours de compétition, ou null s'il n'y en a pas. */
-export function confirmationFormule(statut: Statut, matchsJoues: number): string | null {
-  const nombre = matchsAConfirmer(statut, matchsJoues);
-  return nombre === null ? null : textes.competitions.formuleConfirmation(nombre);
-}
-
-/**
- * `INTROUVABLE` : compétition inconnue de cet appareil ; `CORRECTION_SCORE_INVALIDE` et `PARAMETRE_INVALIDE` sont les
- * règles du domaine ; `PAS_PILOTE`, `COMPETITION_ARCHIVEE` et `JOURNAL_INCOHERENT` viennent du journal.
- */
-export type ErreurModificationParametres =
-  | 'INTROUVABLE'
-  | ErreurParametres
-  | Extract<
-      ErreurJournal,
-      'PAS_PILOTE' | 'COMPETITION_ARCHIVEE' | 'CHAMP_FIGE' | 'JOURNAL_INCOHERENT' | 'ECRITURE_IMPOSSIBLE'
-    >;
-
-export type ResultatModificationParametres =
-  { ok: true; modifiee: boolean } | { ok: false; erreur: ErreurModificationParametres };
-
-/**
- * US-032 CA-2 : compare la saisie aux paramètres courants, vérifie les valeurs, puis écrit `ParametresModifies` avec
- * les seuls réglages changés ; rien n'est écrit si rien ne change.
- */
-export async function modifierParametres(
-  journal: Journal,
-  competitionId: string,
-  saisie: Parametres,
-  { clubId, ...contexte }: Omit<Contexte, 'clubId'> & { clubId?: string | undefined },
-): Promise<ResultatModificationParametres> {
-  const { competition } = await journal.lire(competitionId);
-  if (!competition) return { ok: false, erreur: 'INTROUVABLE' };
-  const changes = modificationParametres(competition.parametres, saisie);
-  if (Object.keys(changes).length === 0) return { ok: true, modifiee: false };
-  const invalide = validerParametres(changes);
-  if (invalide) return { ok: false, erreur: invalide };
-  const resultat = await journal.enregistrer(
-    competitionId,
-    { type: 'ParametresModifies', donnees: changes },
-    { clubId: clubId ?? competition.clubId, ...contexte },
-  );
-  if ('projection' in resultat) return { ok: true, modifiee: true };
-  const { erreur } = resultat;
-  const connues = ['PAS_PILOTE', 'COMPETITION_ARCHIVEE', 'CHAMP_FIGE', 'JOURNAL_INCOHERENT'] as const;
-  return { ok: false, erreur: connues.find((code) => code === erreur) ?? 'ECRITURE_IMPOSSIBLE' };
-}
+export type ClientCompetitions = ReturnType<typeof creerClientCompetitions>;

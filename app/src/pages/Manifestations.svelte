@@ -3,12 +3,12 @@
   // manifestation vide. Ce sont des données du club stockées par le serveur : hors ligne, la dernière liste reste
   // consultable avec sa date, et les actions sont grisées. La liste sera intégrée à l'accueil par US-026.
   import { onMount } from 'svelte';
-  import type { CompetitionRattachee, ErreursManifestation } from '@poule-position/domaine';
-  import type { Epreuve, Manifestation } from '@poule-position/protocole';
-  import Epreuves from '../composants/Epreuves.svelte';
+  import type { EpreuveRattachee, ErreursManifestation } from '@poule-position/domaine';
+  import type { Competition, Manifestation } from '@poule-position/protocole';
+  import Competitions from '../composants/Competitions.svelte';
   import Lien from '../composants/Lien.svelte';
   import { nomConfirme } from '../lib/suppression';
-  import type { ClientEpreuves } from '../lib/epreuves';
+  import type { ClientCompetitions } from '../lib/competitions';
   import {
     saisieDe,
     saisieVide,
@@ -21,23 +21,23 @@
 
   interface Proprietes {
     client: ClientManifestations;
-    /** US-024 : épreuves, affichées sous leur manifestation. */
-    clientEpreuves: ClientEpreuves;
-    /** US-041 : vrai pour un administrateur (suppression d'une épreuve avec son contenu). */
+    /** US-024 : compétitions, affichées sous leur manifestation. */
+    clientCompetitions: ClientCompetitions;
+    /** US-041 : vrai pour un administrateur (suppression d'une compétition avec son contenu). */
     administrateur?: boolean;
-    /** US-041 : compétitions connues de cet appareil, pour annoncer combien partent avec une épreuve. */
-    competitionsConnues?: () => Promise<CompetitionRattachee[]>;
-    /** US-041 : efface les copies locales des compétitions supprimées (lit l'index du club). */
+    /** US-041 : épreuves connues de cet appareil, pour annoncer combien partent avec une compétition. */
+    epreuvesConnues?: () => Promise<EpreuveRattachee[]>;
+    /** US-041 : efface les copies locales des épreuves supprimées (lit l'index du club). */
     apresSuppressionContenu?: () => Promise<void>;
     naviguer: (chemin: string) => void;
   }
 
   let {
     client,
-    clientEpreuves,
+    clientCompetitions,
     naviguer,
     administrateur = false,
-    competitionsConnues = async () => [],
+    epreuvesConnues = async () => [],
     apresSuppressionContenu = async () => {},
   }: Proprietes = $props();
 
@@ -46,7 +46,7 @@
   let manifestations: Manifestation[] | null = $state(null);
   /** Date de la copie affichée hors ligne ; null pour une liste à jour. */
   let copieLe: number | null = $state(null);
-  let epreuves: Epreuve[] = $state([]);
+  let competitions: Competition[] = $state([]);
   let erreurListe: ErreurManifestations | null = $state(null);
   let horsLigne = $state(!navigator.onLine);
 
@@ -54,7 +54,7 @@
   let edition: Manifestation | 'nouvelle' | null = $state(null);
   let saisie: SaisieManifestation = $state(saisieVide());
   let erreurs: ErreursManifestation = $state({});
-  /** Message global du formulaire (compétitions hors dates, modification concurrente, réseau…). */
+  /** Message global du formulaire (épreuves hors dates, modification concurrente, réseau…). */
   let message: string | null = $state(null);
   /** Vrai si le message annonce une modification concurrente : « Recharger » l'accompagne. */
   let concurrente = $state(false);
@@ -64,14 +64,14 @@
   let aSupprimer: Manifestation | null = $state(null);
   let erreurSuppression: ErreurManifestations | null = $state(null);
 
-  /** US-024 : épreuves du club, ou leur dernière copie gardée sur l'appareil. */
-  async function chargerEpreuves() {
-    const resultat = await clientEpreuves.lister();
-    epreuves = resultat.ok ? resultat.epreuves : (resultat.copie?.epreuves ?? epreuves);
+  /** US-024 : compétitions du club, ou leur dernière copie gardée sur l'appareil. */
+  async function chargerCompetitions() {
+    const resultat = await clientCompetitions.lister();
+    competitions = resultat.ok ? resultat.competitions : (resultat.copie?.competitions ?? competitions);
   }
 
   async function charger() {
-    void chargerEpreuves();
+    void chargerCompetitions();
     const resultat = await client.lister();
     if (resultat.ok) {
       manifestations = resultat.manifestations;
@@ -84,7 +84,7 @@
     erreurListe = resultat.erreur === 'HORS_LIGNE' ? null : resultat.erreur;
   }
 
-  /** US-026 CA-5 : formulaire demandé par l'adresse (« ?nouvelle » ou « ?epreuve=<id> » depuis l'accueil). */
+  /** US-026 CA-5 : formulaire demandé par l'adresse (« ?nouvelle » ou « ?competition=<id> » depuis l'accueil). */
   const ouverture = ouvertureManifestations(location.search);
 
   onMount(() => {
@@ -134,8 +134,8 @@
         erreurs = resultat.erreurs;
       } else {
         erreurs = {};
-        if (resultat.erreur === 'COMPETITIONS_HORS_DATES') {
-          message = t.horsDates(resultat.competitions.map(({ nom }) => nom));
+        if (resultat.erreur === 'EPREUVES_HORS_DATES') {
+          message = t.horsDates(resultat.epreuves.map(({ nom }) => nom));
         } else if (resultat.erreur === 'MODIFIEE_ENTRE_TEMPS') {
           message = t.modifieeEntreTemps(resultat.manifestation.modifieePar);
           concurrente = true;
@@ -175,7 +175,7 @@
   /** US-042 : suppression avec son contenu, réservée aux administrateurs. */
   const tc = t.contenu;
   let contenuASupprimer: Manifestation | null = $state(null);
-  let nombreCompetitions: number | null = $state(null);
+  let nombreEpreuves: number | null = $state(null);
   let saisieNom = $state('');
   let progression: { faites: number; total: number } | null = $state(null);
   let messageContenu: string | null = $state(null);
@@ -184,13 +184,13 @@
     contenuASupprimer = manifestation;
     saisieNom = '';
     messageContenu = null;
-    nombreCompetitions = null;
-    nombreCompetitions = (await competitionsConnues()).filter(
+    nombreEpreuves = null;
+    nombreEpreuves = (await epreuvesConnues()).filter(
       ({ rattachement }) => rattachement?.manifestationId === manifestation.id,
     ).length;
   }
 
-  /** CA-1, CA-5 et CA-6 : supprime la manifestation, ses épreuves et ses compétitions, morceau par morceau. */
+  /** CA-1, CA-5 et CA-6 : supprime la manifestation, ses compétitions et ses épreuves, morceau par morceau. */
   async function supprimerContenu() {
     if (!contenuASupprimer || enCours || !nomConfirme(saisieNom, contenuASupprimer.nom)) return;
     enCours = true;
@@ -201,7 +201,7 @@
       });
       if (resultat.ok) {
         contenuASupprimer = null;
-      } else if (resultat.erreur === 'COMPETITION_EN_COURS' && resultat.enCours) {
+      } else if (resultat.erreur === 'EPREUVE_EN_COURS' && resultat.enCours) {
         messageContenu = tc.enCours(resultat.enCours);
       } else if (resultat.supprimees > 0 && resultat.restantes > 0) {
         messageContenu = tc.interrompue(resultat.restantes);
@@ -318,17 +318,17 @@
             {#if manifestation.lieu}<span>{manifestation.lieu}</span>{/if}
             {#if manifestation.commentaire}<span class="commentaire">{manifestation.commentaire}</span>{/if}
           </div>
-          <Epreuves
+          <Competitions
             {manifestation}
-            client={clientEpreuves}
-            epreuves={epreuves.filter(({ manifestationId }) => manifestationId === manifestation.id)}
+            client={clientCompetitions}
+            competitions={competitions.filter(({ manifestationId }) => manifestationId === manifestation.id)}
             {horsLigne}
-            modifie={chargerEpreuves}
+            modifie={chargerCompetitions}
             {administrateur}
-            nombreCompetitions={async (epreuveId) =>
-              (await competitionsConnues()).filter(({ rattachement }) => rattachement?.epreuveId === epreuveId).length}
+            nombreEpreuves={async (competitionId) =>
+              (await epreuvesConnues()).filter(({ rattachement }) => rattachement?.competitionId === competitionId).length}
             {apresSuppressionContenu}
-            ouvrirAuDepart={ouverture !== null && 'epreuveDe' in ouverture && ouverture.epreuveDe === manifestation.id}
+            ouvrirAuDepart={ouverture !== null && 'competitionDe' in ouverture && ouverture.competitionDe === manifestation.id}
           />
           {#if aSupprimer?.id === manifestation.id}
             <div class="confirmation" role="group" aria-label={t.supprimer(manifestation.nom)}>
@@ -349,8 +349,8 @@
               <span>{tc.titre(manifestation.nom)}</span>
               <span>
                 {tc.combien(
-                  epreuves.filter(({ manifestationId }) => manifestationId === manifestation.id).length,
-                  nombreCompetitions,
+                  competitions.filter(({ manifestationId }) => manifestationId === manifestation.id).length,
+                  nombreEpreuves,
                 )}
               </span>
               <span class="avertissement" role="status">{tc.avertissement}</span>
@@ -411,7 +411,7 @@
     </ul>
   {/if}
 
-  <Lien chemin={CHEMINS.organisateur} {naviguer}>{textes.competitions.retour}</Lien>
+  <Lien chemin={CHEMINS.organisateur} {naviguer}>{textes.epreuves.retour}</Lien>
 </main>
 
 <style>

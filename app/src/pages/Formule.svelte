@@ -1,48 +1,48 @@
 <script lang="ts">
-  // Formule d'une compétition (US-028), page réservée : réglage des touches et du match pour la 3e place, écrit dans le
+  // Formule d'une épreuve (US-028), page réservée : réglage des touches et du match pour la 3e place, écrit dans le
   // journal local (donc aussi hors ligne) et envoyé ensuite ; historique des changements tiré du journal. Sur un PC qui
-  // n'est pas le pilote, ou une fois la compétition terminée ou archivée, la formule est en lecture seule.
+  // n'est pas le pilote, ou une fois l’épreuve terminée ou archivée, la formule est en lecture seule.
   import { onMount } from 'svelte';
   import {
     historiqueFormule,
     TOUCHES_POULES_MAX,
     TOUCHES_POULES_MIN,
     TOUCHES_TABLEAU,
-    type Competition,
+    type Epreuve,
     type EntreeHistoriqueFormule,
     type ModificationFormule,
   } from '@poule-position/domaine';
   import Lien from '../composants/Lien.svelte';
-  import { confirmationFormule, modifierFormule, type ErreurModificationFormule } from '../lib/competitions';
+  import { confirmationFormule, modifierFormule, type ErreurModificationFormule } from '../lib/epreuves';
   import { prendreEcriture, type Journal } from '../lib/journal';
-  import { cheminCompetition } from '../lib/routes';
+  import { cheminEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
     session: SessionAppareil;
-    competitionId: string;
+    epreuveId: string;
     journal: Journal;
     synchronisation: Synchronisation;
     /**
-     * US-028 CA-4 : matchs déjà joués, annoncés avant de changer la formule d'une compétition en cours. Aucun match
+     * US-028 CA-4 : matchs déjà joués, annoncés avant de changer la formule d'une épreuve en cours. Aucun match
      * n'existe tant que les poules et le tableau ne sont pas saisis (E4, E6).
      */
     matchsJoues?: number;
     naviguer: (chemin: string) => void;
   }
 
-  let { session, competitionId, journal, synchronisation, matchsJoues = 0, naviguer }: Proprietes = $props();
+  let { session, epreuveId, journal, synchronisation, matchsJoues = 0, naviguer }: Proprietes = $props();
 
-  const t = textes.competitions;
+  const t = textes.epreuves;
   const tf = t.formulePage;
 
-  let competition = $state<Competition | null>(null);
+  let epreuve = $state<Epreuve | null>(null);
   let historique: EntreeHistoriqueFormule[] = $state([]);
   let chargee = $state(false);
   let pilote = $state(false);
-  /** Faux si un autre onglet détient déjà l'écriture de cette compétition. */
+  /** Faux si un autre onglet détient déjà l'écriture de cette épreuve. */
   let ecriture = $state(true);
   let enAttente = $state(0);
   let enCours = $state(false);
@@ -51,25 +51,25 @@
   let aConfirmer: string | null = $state(null);
 
   const saisie = $state({ touchesPoules: 5, touchesTableau: 15, matchTroisieme: false });
-  const figee = $derived(competition?.statut === 'terminee' || competition?.statut === 'archivee');
+  const figee = $derived(epreuve?.statut === 'terminee' || epreuve?.statut === 'archivee');
   const lectureSeule = $derived(!pilote || !ecriture || figee);
 
   /** Relit le journal ; la saisie n'est remplacée que sur demande, pour ne pas écraser ce que le pilote tape. */
   async function recharger(remettreSaisie = false) {
-    const { competition: lue } = await journal.lire(competitionId);
-    competition = lue;
+    const { epreuve: lue } = await journal.lire(epreuveId);
+    epreuve = lue;
     if (lue && remettreSaisie) Object.assign(saisie, { ...lue.formule });
-    historique = historiqueFormule(await journal.evenements(competitionId));
-    enAttente = pilote ? await synchronisation.enAttente(competitionId) : 0;
+    historique = historiqueFormule(await journal.evenements(epreuveId));
+    enAttente = pilote ? await synchronisation.enAttente(epreuveId) : 0;
   }
 
   onMount(() => {
     let liberer: (() => void) | null = null;
     let demonte = false;
-    const surEnLigne = () => void synchronisation.envoyer(competitionId).then(() => recharger());
+    const surEnLigne = () => void synchronisation.envoyer(epreuveId).then(() => recharger());
     // US-029 CA-2 : un autre PC a pris la main, la formule passe en lecture seule.
-    const arreterPerte = synchronisation.surPerte(({ competitionId: id }) => {
-      if (id !== competitionId) return;
+    const arreterPerte = synchronisation.surPerte(({ epreuveId: id }) => {
+      if (id !== epreuveId) return;
       pilote = false;
       liberer?.();
       void recharger(true);
@@ -77,17 +77,17 @@
 
     void (async () => {
       // Sur un autre PC, la copie du pilote est téléchargée (hors ligne : la dernière copie gardée).
-      await synchronisation.telechargerCopie(competitionId);
-      pilote = (await journal.etat(competitionId))?.pilote ?? false;
+      await synchronisation.telechargerCopie(epreuveId);
+      pilote = (await journal.etat(epreuveId))?.pilote ?? false;
       if (pilote) {
-        liberer = await prendreEcriture(competitionId);
+        liberer = await prendreEcriture(epreuveId);
         if (demonte) liberer?.();
         ecriture = liberer !== null;
         window.addEventListener('online', surEnLigne);
       }
       await recharger(true);
       chargee = true;
-      if (pilote) void synchronisation.envoyer(competitionId).then(() => recharger());
+      if (pilote) void synchronisation.envoyer(epreuveId).then(() => recharger());
     })();
 
     return () => {
@@ -98,11 +98,11 @@
     };
   });
 
-  /** CA-4 : en cours de compétition, le pilote confirme avant que la formule change. */
+  /** CA-4 : en cours d’épreuve, le pilote confirme avant que la formule change. */
   async function enregistrer(evenement: SubmitEvent) {
     evenement.preventDefault();
-    if (enCours || lectureSeule || !competition) return;
-    const confirmation = aConfirmer === null ? confirmationFormule(competition.statut, matchsJoues) : null;
+    if (enCours || lectureSeule || !epreuve) return;
+    const confirmation = aConfirmer === null ? confirmationFormule(epreuve.statut, matchsJoues) : null;
     if (confirmation !== null) {
       aConfirmer = confirmation;
       return;
@@ -112,14 +112,14 @@
     try {
       const resultat = await modifierFormule(
         journal,
-        competitionId,
-        { ...competition.formule, ...$state.snapshot(saisie) },
+        epreuveId,
+        { ...epreuve.formule, ...$state.snapshot(saisie) },
         { clubId: session.compte.clubId, auteur: session.compte.email },
       );
       if (!resultat.ok) erreur = resultat.erreur;
       aConfirmer = null;
       await recharger(true);
-      if (resultat.ok) void synchronisation.envoyer(competitionId).then(() => recharger());
+      if (resultat.ok) void synchronisation.envoyer(epreuveId).then(() => recharger());
     } finally {
       enCours = false;
     }
@@ -143,19 +143,19 @@
 
   {#if !chargee}
     <p role="status">{t.chargement}</p>
-  {:else if !competition}
+  {:else if !epreuve}
     <p class="message" role="alert">{t.introuvable}</p>
   {:else}
-    <h2>{competition.nom}</h2>
+    <h2>{epreuve.nom}</h2>
     <p class="resume">
       {t.formule(
-        competition.formule.touchesPoules,
-        competition.formule.touchesTableau,
-        competition.formule.matchTroisieme,
+        epreuve.formule.touchesPoules,
+        epreuve.formule.touchesTableau,
+        epreuve.formule.matchTroisieme,
       )}
     </p>
-    {#if competition.formule.touchesRelais !== null}
-      <p class="resume">{tf.relaisFixe(competition.formule.touchesRelais)}</p>
+    {#if epreuve.formule.touchesRelais !== null}
+      <p class="resume">{tf.relaisFixe(epreuve.formule.touchesRelais)}</p>
     {/if}
 
     {#if !pilote}
@@ -218,7 +218,7 @@
     </section>
   {/if}
 
-  <Lien chemin={cheminCompetition(competitionId)} {naviguer}>{tf.retour}</Lien>
+  <Lien chemin={cheminEpreuve(epreuveId)} {naviguer}>{tf.retour}</Lien>
 </main>
 
 <style>

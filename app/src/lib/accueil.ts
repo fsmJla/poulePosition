@@ -1,9 +1,9 @@
-// Liste du club pour l'accueil (US-026) : réunit l'index des compétitions, les manifestations et les épreuves du club
-// (à jour en ligne, sinon leurs dernières copies gardées sur l'appareil) et les compétitions de cet appareil. La
+// Liste du club pour l'accueil (US-026) : réunit l'index des épreuves, les manifestations et les compétitions du club
+// (à jour en ligne, sinon leurs dernières copies gardées sur l'appareil) et les épreuves de cet appareil. La
 // construction de l'arborescence, elle, est faite par le domaine (`construireListe`).
-import type { CompetitionListee, EpreuveListee, ManifestationListee, Competition } from '@poule-position/domaine';
-import type { CompetitionIndexee } from '@poule-position/protocole';
-import type { ClientEpreuves } from './epreuves';
+import type { EpreuveListee, CompetitionListee, ManifestationListee, Epreuve } from '@poule-position/domaine';
+import type { EpreuveIndexee } from '@poule-position/protocole';
+import type { ClientCompetitions } from './competitions';
 import type { Journal } from './journal';
 import type { ClientManifestations } from './manifestations';
 import { Base, LIGNE_UNIQUE } from './stockage';
@@ -13,8 +13,8 @@ import type { Synchronisation } from './synchronisation';
 /** Données de la liste, avant leur mise en arborescence. */
 export interface DonneesAccueil {
   manifestations: ManifestationListee[];
-  epreuves: EpreuveListee[];
   competitions: CompetitionListee[];
+  epreuves: EpreuveListee[];
   /** Vrai si l'index du club n'a pas pu être lu : la liste vient des copies gardées sur l'appareil. */
   horsLigne: boolean;
   /** Date de la copie de l'index affichée hors ligne ; null si elle est à jour, ou si l'appareil n'en a aucune. */
@@ -25,7 +25,7 @@ export interface OptionsAccueil {
   journal: Journal;
   synchronisation: Synchronisation;
   manifestations: ClientManifestations;
-  epreuves: ClientEpreuves;
+  competitions: ClientCompetitions;
   nomBase?: string;
   maintenant?: () => number;
 }
@@ -41,17 +41,17 @@ function depuisIndex({
   statut,
   publiee,
   rattachement,
-}: CompetitionIndexee): CompetitionListee {
+}: EpreuveIndexee): EpreuveListee {
   return { id, nom, arme, categorie, sexe, date, statut, publiee, rattachement, pilote: false, nonEnvoyee: false };
 }
 
-/** Entrée de la liste pour une compétition gardée sur cet appareil. */
+/** Entrée de la liste pour une épreuve gardée sur cet appareil. */
 function depuisLocale(
-  { id, nom, arme, categorie, sexe, date, statut, publiee, rattachement }: Competition,
+  { id, nom, arme, categorie, sexe, date, statut, publiee, rattachement }: Epreuve,
   pilote: boolean,
   confirme: number,
-): CompetitionListee {
-  // Cas limite : rien n'est encore parvenu au serveur pour une compétition pilotée ici.
+): EpreuveListee {
+  // Cas limite : rien n'est encore parvenu au serveur pour une épreuve pilotée ici.
   return {
     id,
     nom,
@@ -71,41 +71,41 @@ export function creerAccueil({
   journal,
   synchronisation,
   manifestations,
-  epreuves,
+  competitions,
   nomBase = 'poulePosition',
   maintenant = () => Date.now(),
 }: OptionsAccueil) {
   const base = new Base(nomBase);
 
   /** Index du club : à jour (et gardé sur l'appareil) si le serveur répond, sinon sa dernière copie. */
-  async function index(): Promise<{ competitions: CompetitionIndexee[]; copieLe: number | null; horsLigne: boolean }> {
-    const reponse = await synchronisation.listerCompetitionsDuClub();
+  async function index(): Promise<{ epreuves: EpreuveIndexee[]; copieLe: number | null; horsLigne: boolean }> {
+    const reponse = await synchronisation.listerEpreuvesDuClub();
     if (reponse.ok) {
-      await base.copieIndex.put({ cle: LIGNE_UNIQUE, competitions: reponse.competitions, copieLe: maintenant() });
-      return { competitions: reponse.competitions, copieLe: null, horsLigne: false };
+      await base.copieIndex.put({ cle: LIGNE_UNIQUE, epreuves: reponse.epreuves, copieLe: maintenant() });
+      return { epreuves: reponse.epreuves, copieLe: null, horsLigne: false };
     }
     const copie = await base.copieIndex.get(LIGNE_UNIQUE);
-    return { competitions: copie?.competitions ?? [], copieLe: copie?.copieLe ?? null, horsLigne: true };
+    return { epreuves: copie?.epreuves ?? [], copieLe: copie?.copieLe ?? null, horsLigne: true };
   }
 
-  /** Compétitions de cet appareil : pilotées ici, ou copies téléchargées d'un autre PC. */
-  async function locales(): Promise<CompetitionListee[]> {
-    const entrees: CompetitionListee[] = [];
-    for (const { competitionId, pilote, confirme } of await journal.competitionsLocales()) {
-      const { competition } = await journal.lire(competitionId);
-      if (competition) entrees.push(depuisLocale(competition, pilote, confirme));
+  /** Épreuves de cet appareil : pilotées ici, ou copies téléchargées d'un autre PC. */
+  async function locales(): Promise<EpreuveListee[]> {
+    const entrees: EpreuveListee[] = [];
+    for (const { epreuveId, pilote, confirme } of await journal.epreuvesLocales()) {
+      const { epreuve } = await journal.lire(epreuveId);
+      if (epreuve) entrees.push(depuisLocale(epreuve, pilote, confirme));
     }
     return entrees;
   }
 
   return {
-    /** CA-1 et hors ligne : les données de la liste ; une copie ou une compétition locale remplace une ligne de l'index. */
-    /** US-040 : supprime définitivement une compétition (US-039) ; la liste se recharge à la fin de la série. */
-    supprimer: (competitionId: string) => synchronisation.supprimerCompetition(competitionId),
+    /** CA-1 et hors ligne : les données de la liste ; une copie ou une épreuve locale remplace une ligne de l'index. */
+    /** US-040 : supprime définitivement une épreuve (US-039) ; la liste se recharge à la fin de la série. */
+    supprimer: (epreuveId: string) => synchronisation.supprimerEpreuve(epreuveId),
 
     /**
      * US-043 : les trois suppressions d'une série mixte, chacune par la route de son type (US-039, US-041, US-042). Une
-     * épreuve ou une manifestation part avec son contenu, par morceaux, et le serveur garde ce qui reste si la suite est
+     * compétition ou une manifestation part avec son contenu, par morceaux, et le serveur garde ce qui reste si la suite est
      * interrompue.
      */
     actionsLot: {
@@ -113,34 +113,34 @@ export function creerAccueil({
         const resultat = await manifestations.supprimerAvecContenu(id);
         return resultat.ok ? { ok: true } : { ok: false, erreur: resultat.erreur };
       },
-      epreuve: async (id) => {
-        const resultat = await epreuves.supprimerAvecContenu(id);
+      competition: async (id) => {
+        const resultat = await competitions.supprimerAvecContenu(id);
         return resultat.ok ? { ok: true } : { ok: false, erreur: resultat.erreur };
       },
-      competition: (id) => synchronisation.supprimerCompetition(id),
+      epreuve: (id) => synchronisation.supprimerEpreuve(id),
     } satisfies ActionsLot,
 
     async charger(): Promise<DonneesAccueil> {
-      const [clubs, lesManifestations, lesEpreuves] = await Promise.all([
+      const [clubs, lesManifestations, lesCompetitions] = await Promise.all([
         index(),
         manifestations.lister(),
-        epreuves.lister(),
+        competitions.lister(),
       ]);
-      const competitions = new Map<string, CompetitionListee>();
-      for (const ligne of clubs.competitions) competitions.set(ligne.id, depuisIndex(ligne));
+      const epreuves = new Map<string, EpreuveListee>();
+      for (const ligne of clubs.epreuves) epreuves.set(ligne.id, depuisIndex(ligne));
       for (const locale of await locales()) {
         // Une copie d'un autre PC ne remplace pas la ligne de l'index, plus récente quand le serveur répond.
-        if (locale.pilote || !competitions.has(locale.id)) competitions.set(locale.id, locale);
+        if (locale.pilote || !epreuves.has(locale.id)) epreuves.set(locale.id, locale);
       }
       return {
         manifestations: (lesManifestations.ok
           ? lesManifestations.manifestations
           : (lesManifestations.copie?.manifestations ?? [])
         ).map(({ id, nom, debut, fin, lieu }) => ({ id, nom, debut, fin, lieu })),
-        epreuves: (lesEpreuves.ok ? lesEpreuves.epreuves : (lesEpreuves.copie?.epreuves ?? [])).map(
+        competitions: (lesCompetitions.ok ? lesCompetitions.competitions : (lesCompetitions.copie?.competitions ?? [])).map(
           ({ id, manifestationId, nom, arme }) => ({ id, manifestationId, nom, arme }),
         ),
-        competitions: [...competitions.values()],
+        epreuves: [...epreuves.values()],
         horsLigne: clubs.horsLigne,
         copieLe: clubs.copieLe,
       };

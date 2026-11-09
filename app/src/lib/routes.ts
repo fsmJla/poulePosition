@@ -12,13 +12,13 @@ export type Page =
   | 'comptes'
   | 'profil'
   | 'manifestations'
-  | 'nouvelleCompetition'
-  | 'competition'
-  | 'modifierCompetition'
-  | 'formuleCompetition'
-  | 'parametresCompetition';
+  | 'nouvelleEpreuve'
+  | 'epreuve'
+  | 'modifierEpreuve'
+  | 'formuleEpreuve'
+  | 'parametresEpreuve';
 
-/** Adresses fixes ; celle d'une compétition porte son identifiant (`cheminCompetition`). */
+/** Adresses fixes ; celle d'une épreuve porte son identifiant (`cheminEpreuve`). */
 export const CHEMINS = Object.freeze({
   accueil: '/',
   connexion: '/connexion',
@@ -31,53 +31,53 @@ export const CHEMINS = Object.freeze({
   profil: '/profil',
   /** US-023 : liste, création et modification des manifestations du club. */
   manifestations: '/manifestations',
-  /** US-025 : formulaire de création d'une compétition. */
-  nouvelleCompetition: '/competitions/nouvelle',
+  /** US-025 : formulaire de création d'une épreuve. */
+  nouvelleEpreuve: '/epreuves/nouvelle',
 } satisfies Record<
-  Exclude<Page, 'competition' | 'modifierCompetition' | 'formuleCompetition' | 'parametresCompetition'>,
+  Exclude<Page, 'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve'>,
   string
 >);
 
-/** US-025 : page d'une compétition. */
-export function cheminCompetition(competitionId: string): string {
-  return `/competitions/${competitionId}`;
+/** US-025 : page d'une épreuve. */
+export function cheminEpreuve(epreuveId: string): string {
+  return `/epreuves/${epreuveId}`;
 }
 
 /** US-026 CA-5 : adresse de la page Manifestations avec le formulaire de création d'une manifestation ouvert. */
 export const CHEMIN_NOUVELLE_MANIFESTATION = `${CHEMINS.manifestations}?nouvelle`;
 
-/** US-026 CA-5 : adresse de la page Manifestations avec le formulaire d'une nouvelle épreuve de cette manifestation. */
-export function cheminNouvelleEpreuve(manifestationId: string): string {
-  return `${CHEMINS.manifestations}?epreuve=${manifestationId}`;
+/** US-026 CA-5 : adresse de la page Manifestations avec le formulaire d'une nouvelle compétition de cette manifestation. */
+export function cheminNouvelleCompetition(manifestationId: string): string {
+  return `${CHEMINS.manifestations}?competition=${manifestationId}`;
 }
 
 /** Formulaire que la partie « ?… » de l'adresse demande d'ouvrir sur la page Manifestations ; null si aucun. */
-export function ouvertureManifestations(recherche: string): { nouvelle: true } | { epreuveDe: string } | null {
+export function ouvertureManifestations(recherche: string): { nouvelle: true } | { competitionDe: string } | null {
   const parametres = new URLSearchParams(recherche);
   if (parametres.has('nouvelle')) return { nouvelle: true };
-  const epreuveDe = parametres.get('epreuve');
-  return epreuveDe && MOTIF_IDENTIFIANT.test(epreuveDe) ? { epreuveDe } : null;
+  const competitionDe = parametres.get('competition');
+  return competitionDe && MOTIF_IDENTIFIANT.test(competitionDe) ? { competitionDe } : null;
 }
 
-/** US-027 : formulaire de modification d'une compétition. */
-export function cheminModificationCompetition(competitionId: string): string {
-  return `/competitions/${competitionId}/modifier`;
+/** US-027 : formulaire de modification d'une épreuve. */
+export function cheminModificationEpreuve(epreuveId: string): string {
+  return `/epreuves/${epreuveId}/modifier`;
 }
 
-/** US-028 : formule d'une compétition. */
-export function cheminFormuleCompetition(competitionId: string): string {
-  return `/competitions/${competitionId}/formule`;
+/** US-028 : formule d'une épreuve. */
+export function cheminFormuleEpreuve(epreuveId: string): string {
+  return `/epreuves/${epreuveId}/formule`;
 }
 
-/** US-032 : paramètres d'une compétition. */
-export function cheminParametresCompetition(competitionId: string): string {
-  return `/competitions/${competitionId}/parametres`;
+/** US-032 : paramètres d'une épreuve. */
+export function cheminParametresEpreuve(epreuveId: string): string {
+  return `/epreuves/${epreuveId}/parametres`;
 }
 
-const MOTIF_COMPETITION = /^\/competitions\/([^/]+)$/;
-const MOTIF_MODIFICATION = /^\/competitions\/([^/]+)\/modifier$/;
-const MOTIF_FORMULE = /^\/competitions\/([^/]+)\/formule$/;
-const MOTIF_PARAMETRES = /^\/competitions\/([^/]+)\/parametres$/;
+const MOTIF_EPREUVE = /^\/epreuves\/([^/]+)$/;
+const MOTIF_MODIFICATION = /^\/epreuves\/([^/]+)\/modifier$/;
+const MOTIF_FORMULE = /^\/epreuves\/([^/]+)\/formule$/;
+const MOTIF_PARAMETRES = /^\/epreuves\/([^/]+)\/parametres$/;
 
 /** Pages réservées : un visiteur non connecté est renvoyé à l'écran de connexion (CA-6). */
 const RESERVEES: readonly Page[] = [
@@ -86,38 +86,38 @@ const RESERVEES: readonly Page[] = [
   'comptes',
   'profil',
   'manifestations',
-  'nouvelleCompetition',
-  'competition',
-  'modifierCompetition',
-  'formuleCompetition',
-  'parametresCompetition',
+  'nouvelleEpreuve',
+  'epreuve',
+  'modifierEpreuve',
+  'formuleEpreuve',
+  'parametresEpreuve',
 ];
 
 /** Pages des administrateurs : un organisateur est renvoyé à son accueil (US-007 CA-6). */
 const ADMINISTRATEURS: readonly Page[] = ['comptes'];
 
-export type Route = { page: Page; competitionId?: string } | { redirection: string };
+export type Route = { page: Page; epreuveId?: string } | { redirection: string };
 
-/** Page désignée par une adresse normalisée, avec l'identifiant de la compétition s'il y en a un ; null si inconnue. */
-function pageDe(chemin: string): { page: Page; competitionId?: string } | null {
+/** Page désignée par une adresse normalisée, avec l'identifiant de l’épreuve s'il y en a un ; null si inconnue. */
+function pageDe(chemin: string): { page: Page; epreuveId?: string } | null {
   const page = (
     Object.keys(CHEMINS) as Exclude<
       Page,
-      'competition' | 'modifierCompetition' | 'formuleCompetition' | 'parametresCompetition'
+      'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve'
     >[]
   ).find((candidate) => CHEMINS[candidate] === chemin);
   if (page) return { page };
   const modifiee = MOTIF_MODIFICATION.exec(chemin)?.[1];
   if (modifiee)
-    return MOTIF_IDENTIFIANT.test(modifiee) ? { page: 'modifierCompetition', competitionId: modifiee } : null;
+    return MOTIF_IDENTIFIANT.test(modifiee) ? { page: 'modifierEpreuve', epreuveId: modifiee } : null;
   const formule = MOTIF_FORMULE.exec(chemin)?.[1];
-  if (formule) return MOTIF_IDENTIFIANT.test(formule) ? { page: 'formuleCompetition', competitionId: formule } : null;
+  if (formule) return MOTIF_IDENTIFIANT.test(formule) ? { page: 'formuleEpreuve', epreuveId: formule } : null;
   const parametres = MOTIF_PARAMETRES.exec(chemin)?.[1];
   if (parametres) {
-    return MOTIF_IDENTIFIANT.test(parametres) ? { page: 'parametresCompetition', competitionId: parametres } : null;
+    return MOTIF_IDENTIFIANT.test(parametres) ? { page: 'parametresEpreuve', epreuveId: parametres } : null;
   }
-  const competitionId = MOTIF_COMPETITION.exec(chemin)?.[1];
-  return competitionId && MOTIF_IDENTIFIANT.test(competitionId) ? { page: 'competition', competitionId } : null;
+  const epreuveId = MOTIF_EPREUVE.exec(chemin)?.[1];
+  return epreuveId && MOTIF_IDENTIFIANT.test(epreuveId) ? { page: 'epreuve', epreuveId } : null;
 }
 
 /**

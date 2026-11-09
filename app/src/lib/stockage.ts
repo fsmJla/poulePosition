@@ -1,12 +1,12 @@
 // Stockage local de l'appareil (ADR-0003) : IndexedDB par Dexie. Tables `session` (la session ouverte, une au
 // plus), `appareilConnu` (comptes déjà connectés en ligne sur cet appareil, pour la reconnexion hors ligne) et
-// `essaisLocaux` (frein local de la reconnexion hors ligne, US-005) ; `evenements`, le journal des compétitions, est
+// `essaisLocaux` (frein local de la reconnexion hors ligne, US-005) ; `evenements`, le journal des épreuves, est
 // géré par `journal.ts` (US-021) ; `copieManifestations`, la dernière liste des manifestations, par
 // `manifestations.ts` (US-023).
 import { Dexie, type EntityTable, type Table } from 'dexie';
 import { couleurParDefaut, essaisVides, type CouleurAvatar, type Essais, type Role } from '@poule-position/domaine';
 import type { Evenement } from '@poule-position/domaine';
-import type { CompetitionIndexee, CompteConnecte, Epreuve, Manifestation, Session } from '@poule-position/protocole';
+import type { EpreuveIndexee, CompteConnecte, Competition, Manifestation, Session } from '@poule-position/protocole';
 
 /** Compte déjà connecté en ligne sur cet appareil (ADR-0006) : il pourra s'y reconnecter hors ligne (US-005). */
 export interface AppareilConnu {
@@ -19,7 +19,7 @@ export interface AppareilConnu {
   temporaire: boolean;
   /** Couleur de l'avatar (US-016), pour l'afficher hors ligne. */
   avatar: CouleurAvatar;
-  /** Club du compte (US-025), pour créer une compétition hors ligne ; absent d'un appareil connu avant US-025. */
+  /** Club du compte (US-025), pour créer une épreuve hors ligne ; absent d'un appareil connu avant US-025. */
   clubId?: string;
   /** Date de la première connexion en ligne, en millisecondes. */
   connuDepuis: number;
@@ -64,14 +64,14 @@ type LigneSession = {
 };
 type LigneEssais = Essais & { cle: typeof LIGNE_UNIQUE };
 
-/** Compétition connue de cet appareil (US-022, ADR-0016) : pilotée ici, ou copie téléchargée d'un autre PC. */
-export interface CompetitionLocale {
-  competitionId: string;
+/** Épreuve connue de cet appareil (US-022, ADR-0016) : pilotée ici, ou copie téléchargée d'un autre PC. */
+export interface EpreuveLocale {
+  epreuveId: string;
   /** Vrai si cet appareil est le pilote : lui seul écrit dans le journal. */
   pilote: boolean;
   /** Dernier seq confirmé par le serveur. */
   confirme: number;
-  /** Date du téléchargement de la copie, en millisecondes ; null pour une compétition pilotée ici. */
+  /** Date du téléchargement de la copie, en millisecondes ; null pour une épreuve pilotée ici. */
   copieLe: number | null;
 }
 
@@ -81,7 +81,7 @@ export interface CompetitionLocale {
  */
 export interface Ecart {
   id?: number;
-  competitionId: string;
+  epreuveId: string;
   evenements: Evenement[];
   /** Pilote qui a repris la main, tel que le serveur l'a annoncé. */
   piloteAppareil?: string;
@@ -97,35 +97,35 @@ export interface CopieManifestations {
   copieLe: number;
 }
 
-/** Épreuves du club telles que reçues du serveur, et date de cette copie (US-024). */
-export interface CopieEpreuves {
-  epreuves: Epreuve[];
+/** Compétitions du club telles que reçues du serveur, et date de cette copie (US-024). */
+export interface CopieCompetitions {
+  competitions: Competition[];
   /** Date de la copie, en millisecondes. */
   copieLe: number;
 }
 
-/** Index des compétitions du club tel que reçu du serveur, et date de cette copie (US-026). */
+/** Index des épreuves du club tel que reçu du serveur, et date de cette copie (US-026). */
 export interface CopieIndex {
-  competitions: CompetitionIndexee[];
+  epreuves: EpreuveIndexee[];
   /** Date de la copie, en millisecondes. */
   copieLe: number;
 }
 
-/** Base IndexedDB de l'appareil, partagée par le stockage de session et le journal des compétitions (US-021). */
+/** Base IndexedDB de l'appareil, partagée par le stockage de session et le journal des épreuves (US-021). */
 export class Base extends Dexie {
   session!: EntityTable<LigneSession, 'cle'>;
   appareilConnu!: EntityTable<AppareilConnu, 'email'>;
   essaisLocaux!: EntityTable<LigneEssais, 'cle'>;
-  /** Journal des compétitions, tel qu'écrit (lu par `lireEvenement`, qui le migre). */
+  /** Journal des épreuves, tel qu'écrit (lu par `lireEvenement`, qui le migre). */
   evenements!: Table<Record<string, unknown>, [string, number]>;
   /** Identifiant de l'appareil, tiré une fois (US-022). */
   appareil!: EntityTable<{ cle: typeof LIGNE_UNIQUE; id: string }, 'cle'>;
-  competitionsLocales!: EntityTable<CompetitionLocale, 'competitionId'>;
+  epreuvesLocales!: EntityTable<EpreuveLocale, 'epreuveId'>;
   /** Dernière liste des manifestations du club reçue du serveur, consultable hors ligne (US-023). */
   copieManifestations!: EntityTable<CopieManifestations & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
-  /** Dernière liste des épreuves du club reçue du serveur, consultable hors ligne (US-024). */
-  copieEpreuves!: EntityTable<CopieEpreuves & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
-  /** Dernier index des compétitions du club reçu du serveur, consultable hors ligne (US-026). */
+  /** Dernière liste des compétitions du club reçue du serveur, consultable hors ligne (US-024). */
+  copieCompetitions!: EntityTable<CopieCompetitions & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
+  /** Dernier index des épreuves du club reçu du serveur, consultable hors ligne (US-026). */
   copieIndex!: EntityTable<CopieIndex & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
   /** Modifications écartées après une prise de main par un autre PC (US-029). */
   ecartes!: EntityTable<Ecart, 'id'>;
@@ -138,57 +138,57 @@ export class Base extends Dexie {
       session: 'cle',
       appareilConnu: 'email',
       essaisLocaux: 'cle',
-      evenements: '[competitionId+seq]',
+      evenements: '[epreuveId+seq]',
     });
     this.version(4).stores({
       session: 'cle',
       appareilConnu: 'email',
       essaisLocaux: 'cle',
-      evenements: '[competitionId+seq]',
+      evenements: '[epreuveId+seq]',
       appareil: 'cle',
-      competitionsLocales: 'competitionId',
+      epreuvesLocales: 'epreuveId',
     });
     this.version(5).stores({
       session: 'cle',
       appareilConnu: 'email',
       essaisLocaux: 'cle',
-      evenements: '[competitionId+seq]',
+      evenements: '[epreuveId+seq]',
       appareil: 'cle',
-      competitionsLocales: 'competitionId',
+      epreuvesLocales: 'epreuveId',
       copieManifestations: 'cle',
     });
     this.version(6).stores({
       session: 'cle',
       appareilConnu: 'email',
       essaisLocaux: 'cle',
-      evenements: '[competitionId+seq]',
+      evenements: '[epreuveId+seq]',
       appareil: 'cle',
-      competitionsLocales: 'competitionId',
+      epreuvesLocales: 'epreuveId',
       copieManifestations: 'cle',
-      copieEpreuves: 'cle',
+      copieCompetitions: 'cle',
     });
     this.version(7).stores({
       session: 'cle',
       appareilConnu: 'email',
       essaisLocaux: 'cle',
-      evenements: '[competitionId+seq]',
+      evenements: '[epreuveId+seq]',
       appareil: 'cle',
-      competitionsLocales: 'competitionId',
+      epreuvesLocales: 'epreuveId',
       copieManifestations: 'cle',
-      copieEpreuves: 'cle',
+      copieCompetitions: 'cle',
       copieIndex: 'cle',
     });
     this.version(8).stores({
       session: 'cle',
       appareilConnu: 'email',
       essaisLocaux: 'cle',
-      evenements: '[competitionId+seq]',
+      evenements: '[epreuveId+seq]',
       appareil: 'cle',
-      competitionsLocales: 'competitionId',
+      epreuvesLocales: 'epreuveId',
       copieManifestations: 'cle',
-      copieEpreuves: 'cle',
+      copieCompetitions: 'cle',
       copieIndex: 'cle',
-      ecartes: '++id, competitionId',
+      ecartes: '++id, epreuveId',
     });
   }
 }

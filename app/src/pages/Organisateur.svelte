@@ -1,9 +1,9 @@
 <script lang="ts">
   // Accueil de l'organisateur (US-003 CA-1, US-026), page réservée : nom et rôle du compte connecté, les actions de
-  // création, et la liste du club : manifestations (repliables) avec leurs épreuves et leurs compétitions, puis les
-  // compétitions isolées. La liste vient du serveur, ou de la dernière copie gardée sur l'appareil et des compétitions
-  // locales (hors ligne) ; la création d'une manifestation ou d'une épreuve exige le réseau (US-023, US-024), celle
-  // d'une compétition non (US-025). La gestion des comptes (US-007) reste réservée aux administrateurs, grisée hors ligne.
+  // création, et la liste du club : manifestations (repliables) avec leurs compétitions et leurs épreuves, puis les
+  // épreuves isolées. La liste vient du serveur, ou de la dernière copie gardée sur l'appareil et des épreuves
+  // locales (hors ligne) ; la création d'une manifestation ou d'une compétition exige le réseau (US-023, US-024), celle
+  // d'une épreuve non (US-025). La gestion des comptes (US-007) reste réservée aux administrateurs, grisée hors ligne.
   // Le profil (US-016) et la déconnexion (US-003 CA-5) sont dans le menu de compte de l'entête (US-017).
   import { onMount } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
@@ -14,7 +14,7 @@
     manifestationOuverte,
     planSuppression,
     toutCocherListe,
-    type CompetitionListee,
+    type EpreuveListee,
     type ListeClub,
   } from '@poule-position/domaine';
   import type { SessionAppareil } from '../lib/stockage';
@@ -27,7 +27,7 @@
     supprimerSerieMixte,
     type CompteRenduLot,
   } from '../lib/suppression';
-  import { cheminCompetition, cheminNouvelleEpreuve, CHEMIN_NOUVELLE_MANIFESTATION, CHEMINS } from '../lib/routes';
+  import { cheminEpreuve, cheminNouvelleCompetition, CHEMIN_NOUVELLE_MANIFESTATION, CHEMINS } from '../lib/routes';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
@@ -39,7 +39,7 @@
   let { session, accueil, naviguer }: Proprietes = $props();
 
   const t = textes.listeClub;
-  const tc = textes.competitions;
+  const tc = textes.epreuves;
 
   let horsLigne = $state(!navigator.onLine);
   let donnees: DonneesAccueil | null = $state(null);
@@ -53,7 +53,7 @@
     donnees = await accueil.charger();
   }
 
-  /** US-040 et US-043 : suppression de manifestations, d'épreuves et de compétitions, réservée aux administrateurs. */
+  /** US-040 et US-043 : suppression de manifestations, de compétitions et d’épreuves, réservée aux administrateurs. */
   const ts = t.suppression;
   const administrateur = $derived(session.compte.role === 'administrateur');
   const cochees = new SvelteSet<string>();
@@ -62,15 +62,15 @@
   let progression: { faites: number; total: number } | null = $state(null);
   let compteRendu: CompteRenduLot | null = $state(null);
 
-  /** CA-1 : les éléments qui ne se cochent pas (compétition en cours, ou parent qui en contient une). */
+  /** CA-1 : les éléments qui ne se cochent pas (épreuve en cours, ou parent qui en contient une). */
   const enCours = $derived(donnees ? elementsEnCours(donnees) : new Set<string>());
   /** CA-2 à CA-4 : ce que couvre la sélection, contenu des parents compris, filtre d'archives pris en compte. */
   const analyse = $derived(donnees ? analyserSelection(donnees, cochees, afficherArchives) : null);
   /** CA-5 : les éléments à supprimer, dans l'ordre et sans doublon. */
   const plan = $derived(analyse ? planSuppression(analyse) : []);
-  /** Une sélection de compétitions seules garde les textes d'US-040. */
-  const seulementCompetitions = $derived(
-    !analyse || (analyse.decompte.manifestations === 0 && analyse.decompte.epreuves === 0),
+  /** Une sélection d’épreuves seules garde les textes d'US-040. */
+  const seulementEpreuves = $derived(
+    !analyse || (analyse.decompte.manifestations === 0 && analyse.decompte.competitions === 0),
   );
 
   function basculer(id: string, coche: boolean) {
@@ -137,11 +137,11 @@
   {/if}
 {/snippet}
 
-{#snippet competition(entree: CompetitionListee)}
-  <li class="competition">
+{#snippet epreuve(entree: EpreuveListee)}
+  <li class="epreuve">
     <span class="ligne">
       {@render caseSelection(entree.id, ts.cocher(entree.nom), ts.enCours)}
-      <Lien chemin={cheminCompetition(entree.id)} {naviguer}>{entree.nom}</Lien>
+      <Lien chemin={cheminEpreuve(entree.id)} {naviguer}>{entree.nom}</Lien>
     </span>
     <span class="infos">
       {tc.armes[entree.arme]}
@@ -173,8 +173,8 @@
   <h1>{textes.organisateur.bonjour(session.compte.nom)}</h1>
   <p class="role">{textes.roles[session.compte.role]}</p>
   <nav class="actions" aria-label={textes.organisateur.actions}>
-    <!-- US-025 : la création d'une compétition fonctionne aussi hors ligne. -->
-    <Lien chemin={CHEMINS.nouvelleCompetition} {naviguer}>{tc.nouvelle}</Lien>
+    <!-- US-025 : la création d'une épreuve fonctionne aussi hors ligne. -->
+    <Lien chemin={CHEMINS.nouvelleEpreuve} {naviguer}>{tc.nouvelle}</Lien>
     {@render creation(CHEMIN_NOUVELLE_MANIFESTATION, t.nouvelleManifestation)}
     <!-- US-023 : consultables hors ligne (dernière copie), modifiables en ligne seulement. -->
     <Lien chemin={CHEMINS.manifestations} {naviguer}>{textes.manifestations.entree}</Lien>
@@ -217,8 +217,8 @@
         {#if administrateur && analyse}
           <div class="selection">
             <span role="status"
-              >{seulementCompetitions
-                ? ts.selection(analyse.decompte.competitions)
+              >{seulementEpreuves
+                ? ts.selection(analyse.decompte.epreuves)
                 : ts.selectionMixte(analyse.decompte)}</span
             >
             <button
@@ -241,8 +241,8 @@
 
         <!-- CA-4 : un seul message pour toute la sélection, avec le décompte par type et les éléments cochés directement. -->
         {#if etapeSerie !== 'aucune' && analyse}
-          {@const titre = seulementCompetitions
-            ? ts.titre(analyse.decompte.competitions)
+          {@const titre = seulementEpreuves
+            ? ts.titre(analyse.decompte.epreuves)
             : ts.titreMixte(analyse.decompte)}
           <div class="confirmation" role="group" aria-label={titre}>
             <p>{titre}</p>
@@ -279,13 +279,13 @@
           {@const restantes = compteRendu.restants.map(({ element }) => element)}
           <div class="compte-rendu">
             <p role="status">
-              {supprimes.manifestations === 0 && supprimes.epreuves === 0
-                ? ts.compteRendu(supprimes.competitions)
+              {supprimes.manifestations === 0 && supprimes.competitions === 0
+                ? ts.compteRendu(supprimes.epreuves)
                 : ts.compteRenduMixte(supprimes)}
             </p>
             {#if restantes.length > 0}
               <p role="alert">
-                {restantes.every(({ type }) => type === 'competition')
+                {restantes.every(({ type }) => type === 'epreuve')
                   ? ts.restantes(restantes.length)
                   : ts.restantesMixte(restantes.length)}
               </p>
@@ -318,27 +318,27 @@
             </summary>
             <div class="contenu">
               {@render creation(
-                cheminNouvelleEpreuve(noeud.manifestation.id),
-                t.nouvelleEpreuve,
-                t.nouvelleEpreuveDans(noeud.manifestation.nom),
+                cheminNouvelleCompetition(noeud.manifestation.id),
+                t.nouvelleCompetition,
+                t.nouvelleCompetitionDans(noeud.manifestation.nom),
               )}
-              {#each noeud.epreuves as { epreuve, competitions } (epreuve.id)}
-                <div class="epreuve">
+              {#each noeud.competitions as { competition, epreuves } (competition.id)}
+                <div class="competition">
                   <h3>
-                    {@render caseSelection(epreuve.id, ts.cocherEpreuve(epreuve.nom), ts.contientEnCours)}
-                    {epreuve.nom}
-                    {#if epreuve.arme}<small>{tc.armes[epreuve.arme]}</small>{/if}
+                    {@render caseSelection(competition.id, ts.cocherCompetition(competition.nom), ts.contientEnCours)}
+                    {competition.nom}
+                    {#if competition.arme}<small>{tc.armes[competition.arme]}</small>{/if}
                   </h3>
                   <ul>
-                    {#each competitions as entree (entree.id)}{@render competition(entree)}{:else}
-                      <li class="vide">{t.aucuneCompetition}</li>
+                    {#each epreuves as entree (entree.id)}{@render epreuve(entree)}{:else}
+                      <li class="vide">{t.aucuneEpreuve}</li>
                     {/each}
                   </ul>
                 </div>
               {/each}
-              {#if noeud.competitions.length > 0}
+              {#if noeud.epreuves.length > 0}
                 <ul>
-                  {#each noeud.competitions as entree (entree.id)}{@render competition(entree)}{/each}
+                  {#each noeud.epreuves as entree (entree.id)}{@render epreuve(entree)}{/each}
                 </ul>
               {/if}
             </div>
@@ -346,10 +346,10 @@
         {/each}
 
         {#if liste.isolees.length > 0}
-          <div class="epreuve">
+          <div class="competition">
             <h3>{t.isolees}</h3>
             <ul>
-              {#each liste.isolees as entree (entree.id)}{@render competition(entree)}{/each}
+              {#each liste.isolees as entree (entree.id)}{@render epreuve(entree)}{/each}
             </ul>
           </div>
         {/if}
@@ -449,7 +449,7 @@
     padding: 0 1rem 1rem;
   }
 
-  .epreuve {
+  .competition {
     display: grid;
     gap: 0.4rem;
   }
@@ -462,7 +462,7 @@
     list-style: none;
   }
 
-  .competition {
+  .epreuve {
     display: grid;
     gap: 0.2rem;
     padding: 0.6rem 0.75rem;

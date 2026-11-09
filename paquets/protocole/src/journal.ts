@@ -1,4 +1,4 @@
-// Format du journal d'une compétition (docs/protocole.md, US-021) : enveloppe versionnée des événements, partagée par
+// Format du journal d'une épreuve (docs/protocole.md, US-021) : enveloppe versionnée des événements, partagée par
 // le PC pilote (IndexedDB) et le serveur (réplication, US-022). Un ancien format est migré à la lecture, sans réécrire
 // le journal (ADR-0001).
 import type { Evenement } from '@poule-position/domaine';
@@ -13,7 +13,7 @@ export type Migrations = Readonly<Record<number, (ancien: Record<string, unknown
 /** Aucune migration tant que le format n'a pas changé. */
 export const MIGRATIONS: Migrations = {};
 
-const CHAMPS = ['competitionId', 'clubId', 'seq', 'version', 'date', 'auteur', 'source', 'type', 'donnees'];
+const CHAMPS = ['epreuveId', 'clubId', 'seq', 'version', 'date', 'auteur', 'source', 'type', 'donnees'];
 
 /** Événement lu depuis le stockage ou le réseau, migré vers la version courante ; null s'il est illisible. */
 export function lireEvenement(brut: unknown, migrations: Migrations = MIGRATIONS): Evenement | null {
@@ -26,9 +26,9 @@ export function lireEvenement(brut: unknown, migrations: Migrations = MIGRATIONS
 }
 
 function estEvenement(objet: Record<string, unknown>): objet is Evenement {
-  const { competitionId, clubId, seq, version, date, auteur, source } = objet;
+  const { epreuveId, clubId, seq, version, date, auteur, source } = objet;
   return (
-    [competitionId, clubId, auteur].every((texte) => typeof texte === 'string' && texte !== '') &&
+    [epreuveId, clubId, auteur].every((texte) => typeof texte === 'string' && texte !== '') &&
     Number.isInteger(seq) &&
     (seq as number) >= 1 &&
     version === VERSION_JOURNAL &&
@@ -38,10 +38,10 @@ function estEvenement(objet: Record<string, unknown>): objet is Evenement {
   );
 }
 
-const CHAMPS_COMPETITION = [
+const CHAMPS_EPREUVE = [
   'nom',
   'arme',
-  'typeCompetition',
+  'typeEpreuve',
   'categorie',
   'sexe',
   'date',
@@ -57,7 +57,7 @@ const estTexte = (valeur: unknown) => typeof valeur === 'string';
 const FORMES: Record<string, (valeur: unknown) => boolean> = {
   nom: estTexte,
   arme: estTexte,
-  typeCompetition: estTexte,
+  typeEpreuve: estTexte,
   categorie: estTexteOuNull,
   sexe: estTexteOuNull,
   date: estTexteOuNull,
@@ -90,7 +90,7 @@ const FORMES_PARAMETRES: Record<string, (valeur: unknown) => boolean> = {
 };
 
 /**
- * Forme des données : tous les champs pour `CompetitionCreee` ; pour `CompetitionModifiee` (US-027) et
+ * Forme des données : tous les champs pour `EpreuveCreee` ; pour `EpreuveModifiee` (US-027) et
  * `FormuleModifiee` (US-028), un ou plusieurs champs parmi les leurs, ceux qui ont changé.
  */
 function donneesValides(type: unknown, donnees: unknown): boolean {
@@ -98,11 +98,11 @@ function donneesValides(type: unknown, donnees: unknown): boolean {
     const pilote = aExactementLesChamps(donnees, ['ancienAppareil', 'nouvelAppareil']);
     return pilote !== null && Object.values(pilote).every(estTexte);
   }
-  const modifications = ['CompetitionModifiee', 'FormuleModifiee', 'ParametresModifies'];
-  if (type !== 'CompetitionCreee' && !modifications.includes(type as string)) return false;
+  const modifications = ['EpreuveModifiee', 'FormuleModifiee', 'ParametresModifies'];
+  if (type !== 'EpreuveCreee' && !modifications.includes(type as string)) return false;
   if (donnees === null || typeof donnees !== 'object' || Array.isArray(donnees)) return false;
   const noms = Object.keys(donnees);
-  const attendus = type === 'CompetitionCreee' ? noms.length === CHAMPS_COMPETITION.length : noms.length > 0;
+  const attendus = type === 'EpreuveCreee' ? noms.length === CHAMPS_EPREUVE.length : noms.length > 0;
   const formes =
     type === 'FormuleModifiee' ? FORMES_FORMULE : type === 'ParametresModifies' ? FORMES_PARAMETRES : FORMES;
   return (

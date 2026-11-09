@@ -17,11 +17,11 @@ Scénarios de vérification manuelle (`/recette`) et journal des tests de charge
 ## 2. Tests de charge
 
 > **Jamais lancés automatiquement.** Uniquement à la main, avec l'utilisateur, contre la **preview**, jamais un
-> jour de compétition ni la veille (quotas Cloudflare journaliers partagés avec la production, ADR-0004).
+> jour d’épreuve ni la veille (quotas Cloudflare journaliers partagés avec la production, ADR-0004).
 
 ### Principe
 
-k6 simule des « utilisateurs virtuels » (VU) : chacun ouvre une WebSocket vers une compétition et la garde
+k6 simule des « utilisateurs virtuels » (VU) : chacun ouvre une WebSocket vers une épreuve et la garde
 ouverte en envoyant le ping de maintien. Le scénario monte à `CLIENTS` connexions en 30 s, tient le palier
 `DUREE`, puis redescend. Les **seuils** (`thresholds`) disent si le test réussit : plus de 99 % de vérifications
 réussies, et une connexion établie en moins de 2 s au p95.
@@ -39,4 +39,4 @@ réussies, et une connexion établie en moins de 2 s au p95.
 
 | Date | Scénario | Résultat | Conclusions |
 |---|---|---|---|
-| 2026-10-24 | `pic` : 150 clients sur une même compétition, palier de 2 min, ping toutes les 30 s, reconnexion toutes les 60 s (preview) | ✅ checks 100 % (796 / 796) ; `ws_connecting` p95 = 1,09 s (médiane 107 ms, max 3,6 s) ; 448 sessions, 896 messages reçus, 632 envoyés | Le serveur tient 150 connexions simultanées. Coût ≈ 480 requêtes (≈ 0,5 % du quota journalier), conforme à l'estimation. Les connexions lentes (> 1 s) viennent de la montée en charge (5 connexions TLS par seconde depuis un seul PC). À refaire quand la saisie et la diffusion existeront (délai saisie → écran < 2 s). |
+| 2026-10-24 | `pic` : 150 clients sur une même épreuve, palier de 2 min, ping toutes les 30 s, reconnexion toutes les 60 s (preview) | ✅ checks 100 % (796 / 796) ; `ws_connecting` p95 = 1,09 s (médiane 107 ms, max 3,6 s) ; 448 sessions, 896 messages reçus, 632 envoyés | Le serveur tient 150 connexions simultanées. Coût ≈ 480 requêtes (≈ 0,5 % du quota journalier), conforme à l'estimation. Les connexions lentes (> 1 s) viennent de la montée en charge (5 connexions TLS par seconde depuis un seul PC). À refaire quand la saisie et la diffusion existeront (délai saisie → écran < 2 s). |

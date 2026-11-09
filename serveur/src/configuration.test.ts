@@ -61,10 +61,12 @@ describe('configuration du serveur (US-020)', () => {
   it.each([undefined, 'preview'] as const)(
     'US-044 CA-5 : la classe Competition devient Epreuve par une migration renamed_classes (%s)',
     (env) => {
-      const { migrations, durable_objects } = unstable_readConfig({ config: CONFIG, env }, { hideWarnings: true });
+      const config = unstable_readConfig({ config: CONFIG, env }, { hideWarnings: true });
+      const migrations: { tag: string; renamed_classes?: { from: string; to: string }[] }[] = config.migrations;
+      const liaisons: { class_name: string }[] = config.durable_objects.bindings;
       const renommages = migrations.flatMap((migration) => migration.renamed_classes ?? []);
       expect(renommages).toContainEqual({ from: 'Competition', to: 'Epreuve' });
-      const classes = durable_objects.bindings.map((liaison) => liaison.class_name);
+      const classes = liaisons.map((liaison) => liaison.class_name);
       expect(classes).toContain('Epreuve');
       expect(classes).not.toContain('Competition');
       const tags = migrations.map((migration) => migration.tag);

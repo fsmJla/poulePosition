@@ -17,8 +17,8 @@ import {
   type CodeErreur,
 } from '@poule-position/protocole';
 
-/** Identifiant de compétition ou de manifestation : minuscules, chiffres et tirets, 64 caractères au plus. */
-const MOTIF_COMPETITION = /^[a-z0-9][a-z0-9-]{0,63}$/;
+/** Identifiant d’épreuve ou de manifestation : minuscules, chiffres et tirets, 64 caractères au plus. */
+const MOTIF_EPREUVE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 export type Route =
   | { route: 'accueil' }
@@ -36,14 +36,14 @@ export type Route =
   | { route: 'reinitialisation'; id: string }
   | { route: 'manifestations' }
   | { route: 'manifestation'; id: string }
-  | { route: 'epreuves' }
-  | { route: 'epreuve'; id: string }
   | { route: 'competitions' }
-  | { route: 'competition'; competitionId: string }
-  | { route: 'evenements'; competitionId: string }
-  | { route: 'pilote'; competitionId: string }
-  | { route: 'presence'; competitionId: string }
-  | { route: 'connexion'; competitionId: string };
+  | { route: 'competition'; id: string }
+  | { route: 'epreuves' }
+  | { route: 'epreuve'; epreuveId: string }
+  | { route: 'evenements'; epreuveId: string }
+  | { route: 'pilote'; epreuveId: string }
+  | { route: 'presence'; epreuveId: string }
+  | { route: 'connexion'; epreuveId: string };
 
 /** Analyse le chemin d'une requête entrante ; null si la route n'existe pas. */
 export function analyserChemin(chemin: string): Route | null {
@@ -65,17 +65,17 @@ export function analyserChemin(chemin: string): Route | null {
   if (chemin === '/manifestations') return { route: 'manifestations' };
   const manifestation = /^\/manifestations\/([^/]+)$/.exec(chemin)?.[1];
   if (manifestation)
-    return MOTIF_COMPETITION.test(manifestation) ? { route: 'manifestation', id: manifestation } : null;
-  if (chemin === '/epreuves') return { route: 'epreuves' };
-  const epreuve = /^\/epreuves\/([^/]+)$/.exec(chemin)?.[1];
-  if (epreuve) return MOTIF_COMPETITION.test(epreuve) ? { route: 'epreuve', id: epreuve } : null;
+    return MOTIF_EPREUVE.test(manifestation) ? { route: 'manifestation', id: manifestation } : null;
   if (chemin === '/competitions') return { route: 'competitions' };
-  const seule = /^\/competitions\/([^/]+)$/.exec(chemin)?.[1];
-  if (seule) return MOTIF_COMPETITION.test(seule) ? { route: 'competition', competitionId: seule } : null;
-  const morceaux = /^\/competitions\/([^/]+)\/(connexion|evenements|pilote|presence)$/.exec(chemin);
-  if (!morceaux?.[1] || !MOTIF_COMPETITION.test(morceaux[1])) return null;
+  const competition = /^\/competitions\/([^/]+)$/.exec(chemin)?.[1];
+  if (competition) return MOTIF_EPREUVE.test(competition) ? { route: 'competition', id: competition } : null;
+  if (chemin === '/epreuves') return { route: 'epreuves' };
+  const seule = /^\/epreuves\/([^/]+)$/.exec(chemin)?.[1];
+  if (seule) return MOTIF_EPREUVE.test(seule) ? { route: 'epreuve', epreuveId: seule } : null;
+  const morceaux = /^\/epreuves\/([^/]+)\/(connexion|evenements|pilote|presence)$/.exec(chemin);
+  if (!morceaux?.[1] || !MOTIF_EPREUVE.test(morceaux[1])) return null;
   const route = { connexion: 'connexion', evenements: 'evenements', pilote: 'pilote', presence: 'presence' } as const;
-  return { route: route[morceaux[2] as keyof typeof route], competitionId: morceaux[1] };
+  return { route: route[morceaux[2] as keyof typeof route], epreuveId: morceaux[1] };
 }
 
 /**
@@ -151,9 +151,9 @@ export async function verificateurServeur(cle: string, poivre: string): Promise<
 export const REGLE_INSTALLATION: RegleEssais = { max: 5, fenetre: 60_000, duree: 60_000 };
 
 /**
- * US-041 (ADR-0020) : compétitions supprimées par requête lors d'une suppression avec contenu. Le plan gratuit de
- * Cloudflare limite les sous-requêtes d'une requête à 50 ; chaque compétition coûte un appel au DO `Competition`, et le
- * reste (session, index, épreuve) quelques autres.
+ * US-041 (ADR-0020) : épreuves supprimées par requête lors d'une suppression avec contenu. Le plan gratuit de
+ * Cloudflare limite les sous-requêtes d'une requête à 50 ; chaque épreuve coûte un appel au DO `Epreuve`, et le
+ * reste (session, index, compétition) quelques autres.
  */
 export const LIMITE_SUPPRESSION_CONTENU = 30;
 

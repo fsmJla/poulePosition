@@ -1,19 +1,19 @@
-// Réplication du journal des compétitions (US-022, ADR-0016, docs/protocole.md §11) : le PC pilote envoie au serveur, par
-// lots, les événements qui suivent le dernier seq confirmé ; les autres PC du club listent les compétitions et en
+// Réplication du journal des épreuves (US-022, ADR-0016, docs/protocole.md §11) : le PC pilote envoie au serveur, par
+// lots, les événements qui suivent le dernier seq confirmé ; les autres PC du club listent les épreuves et en
 // téléchargent une copie en lecture seule. Sans réseau, rien n'est perdu : les événements attendent dans IndexedDB et
 // partent au retour de la connexion.
-import type { CompetitionRattachee, Projection } from '@poule-position/domaine';
+import type { EpreuveRattachee, Projection } from '@poule-position/domaine';
 import {
-  analyserReponseCompetitions,
+  analyserReponseEpreuves,
   analyserReponseEnvoi,
   analyserReponseJournal,
   analyserReponsePilote,
   analyserReponsePresence,
   analyserReponsePriseDeMain,
-  analyserReponseSuppressionCompetition,
+  analyserReponseSuppressionEpreuve,
   preparerLots,
   resumeDe,
-  type CompetitionIndexee,
+  type EpreuveIndexee,
   type ErreurReponse,
 } from '@poule-position/protocole';
 import { DELAI_REPONSE } from './session';
@@ -24,15 +24,15 @@ export type EtatEnvoi = 'a-jour' | 'en-attente' | 'session-expiree' | 'pas-pilot
 
 /** US-029 : ce PC n'est plus le pilote ; `ecartes` modifications faites hors ligne n'ont pas été reprises. */
 export interface PerteDeMain {
-  competitionId: string;
+  epreuveId: string;
   piloteAppareil: string;
   piloteNom: string;
   ecartes: number;
 }
 
-/** US-039 : la copie locale d'une compétition supprimée sur le serveur vient d'être effacée. */
+/** US-039 : la copie locale d'une épreuve supprimée sur le serveur vient d'être effacée. */
 export interface SuppressionLocale {
-  competitionId: string;
+  epreuveId: string;
   nom: string;
   /** Événements saisis ici mais pas encore envoyés, abandonnés avec la copie. */
   abandonnees: number;
@@ -44,13 +44,13 @@ export const INTERVALLE_BATTEMENT = 30_000;
 export type ErreurSynchronisation =
   | 'HORS_LIGNE'
   | 'SESSION_INVALIDE'
-  | 'COMPETITION_INCONNUE'
+  | 'EPREUVE_INCONNUE'
   | 'ERREUR_INATTENDUE'
   | 'ACCES_REFUSE'
-  | 'COMPETITION_EN_COURS'
-  | 'COMPETITION_SUPPRIMEE';
+  | 'EPREUVE_EN_COURS'
+  | 'EPREUVE_SUPPRIMEE';
 
-/** Copie d'une compétition : la projection de son journal, et la date du téléchargement (null si pilotée ici). */
+/** Copie d'une épreuve : la projection de son journal, et la date du téléchargement (null si pilotée ici). */
 export interface Copie {
   projection: Projection;
   copieLe: number | null;
@@ -114,60 +114,60 @@ export function creerSynchronisation({
     return jeton();
   }
 
-  async function envoyerMaintenant(competitionId: string): Promise<EtatEnvoi> {
+  async function envoyerMaintenant(epreuveId: string): Promise<EtatEnvoi> {
     for (let tour = 0; tour < TOURS_MAX; tour++) {
-      const evenements = await journal.aEnvoyer(competitionId);
+      const evenements = await journal.aEnvoyer(epreuveId);
       if (evenements.length === 0) return 'a-jour';
       const jetonSession = await jetonEnLigne();
       if (!jetonSession) return 'en-attente';
-      const { competition } = await journal.lire(competitionId);
-      if (!competition) return 'en-attente';
-      const lots = preparerLots(await journal.appareil(), evenements, resumeDe(competition));
+      const { epreuve } = await journal.lire(epreuveId);
+      if (!epreuve) return 'en-attente';
+      const lots = preparerLots(await journal.appareil(), evenements, resumeDe(epreuve));
       for (const lot of lots) {
         let reponse;
         try {
-          reponse = analyserReponseEnvoi(await requete(`/competitions/${competitionId}/evenements`, jetonSession, lot));
+          reponse = analyserReponseEnvoi(await requete(`/epreuves/${epreuveId}/evenements`, jetonSession, lot));
         } catch {
           return 'en-attente';
         }
         if (reponse.ok) {
-          await journal.confirmer(competitionId, reponse.dernierSeq);
+          await journal.confirmer(epreuveId, reponse.dernierSeq);
           continue;
         }
         if (reponse.erreur === 'PAS_PILOTE') {
-          await perdre(competitionId, reponse);
+          await perdre(epreuveId, reponse);
           return 'pas-pilote';
         }
-        if (reponse.erreur === 'COMPETITION_SUPPRIMEE') {
-          await effacerSupprimee(competitionId);
+        if (reponse.erreur === 'EPREUVE_SUPPRIMEE') {
+          await effacerSupprimee(epreuveId);
           return 'supprimee';
         }
         if (SESSION_REFUSEE.includes(reponse.erreur)) return 'session-expiree';
         if (reponse.erreur !== 'SEQ_INATTENDU' || reponse.dernierSeq === undefined) return 'en-attente';
         // Le serveur a un autre dernier seq (accusé perdu, lot renvoyé) : on reprend de là.
-        await journal.confirmer(competitionId, reponse.dernierSeq);
+        await journal.confirmer(epreuveId, reponse.dernierSeq);
         break;
       }
     }
     return 'en-attente';
   }
 
-  /** Un seul envoi à la fois par compétition : un appel pendant un envoi en cours en partage le résultat. */
+  /** Un seul envoi à la fois par épreuve : un appel pendant un envoi en cours en partage le résultat. */
   const envoisEnCours = new Map<string, Promise<EtatEnvoi>>();
 
-  function envoyerCompetition(competitionId: string): Promise<EtatEnvoi> {
-    const enCours = envoisEnCours.get(competitionId);
+  function envoyerEpreuve(epreuveId: string): Promise<EtatEnvoi> {
+    const enCours = envoisEnCours.get(epreuveId);
     if (enCours) return enCours;
-    const envoi = envoyerMaintenant(competitionId).finally(() => envoisEnCours.delete(competitionId));
-    envoisEnCours.set(competitionId, envoi);
+    const envoi = envoyerMaintenant(epreuveId).finally(() => envoisEnCours.delete(epreuveId));
+    envoisEnCours.set(epreuveId, envoi);
     return envoi;
   }
 
-  /** Envoie tout ce qui attend, pour chaque compétition pilotée ici (démarrage, retour du réseau). */
+  /** Envoie tout ce qui attend, pour chaque épreuve pilotée ici (démarrage, retour du réseau). */
   async function envoyerTout(): Promise<void> {
-    const locales = await journal.competitionsLocales();
+    const locales = await journal.epreuvesLocales();
     await Promise.all(
-      locales.filter(({ pilote }) => pilote).map(({ competitionId }) => envoyerCompetition(competitionId)),
+      locales.filter(({ pilote }) => pilote).map(({ epreuveId }) => envoyerEpreuve(epreuveId)),
     );
   }
 
@@ -175,27 +175,27 @@ export function creerSynchronisation({
   const ecouteursSuppression = new Set<(suppression: SuppressionLocale) => void>();
 
   /**
-   * US-039 CA-5 et CA-6 : le serveur dit la compétition supprimée. La copie locale est effacée, avec les saisies pas
+   * US-039 CA-5 et CA-6 : le serveur dit l’épreuve supprimée. La copie locale est effacée, avec les saisies pas
    * encore envoyées (la suppression prime), puis les écouteurs en sont avertis, une seule fois. Sans copie locale, il
    * n'y a rien à effacer ni à annoncer.
    */
-  async function effacerSupprimee(competitionId: string): Promise<void> {
-    if (!(await journal.etat(competitionId))) return;
-    const { competition } = await journal.lire(competitionId);
-    const abandonnees = await journal.supprimerCopie(competitionId);
-    const suppression = { competitionId, nom: competition?.nom ?? '', abandonnees };
+  async function effacerSupprimee(epreuveId: string): Promise<void> {
+    if (!(await journal.etat(epreuveId))) return;
+    const { epreuve } = await journal.lire(epreuveId);
+    const abandonnees = await journal.supprimerCopie(epreuveId);
+    const suppression = { epreuveId, nom: epreuve?.nom ?? '', abandonnees };
     ecouteursSuppression.forEach((ecouteur) => ecouteur(suppression));
   }
 
   /** US-029 : un autre PC a pris la main ; les événements en attente sont écartés et la copie du nouveau pilote la remplace. */
   async function perdre(
-    competitionId: string,
+    epreuveId: string,
     pilote: { piloteAppareil?: string; piloteNom?: string },
   ): Promise<PerteDeMain> {
-    const ecartes = await journal.ecarter(competitionId, pilote, maintenant());
-    await telechargerCopie(competitionId);
+    const ecartes = await journal.ecarter(epreuveId, pilote, maintenant());
+    await telechargerCopie(epreuveId);
     const perte = {
-      competitionId,
+      epreuveId,
       piloteAppareil: pilote.piloteAppareil ?? '',
       piloteNom: pilote.piloteNom ?? '',
       ecartes,
@@ -206,24 +206,24 @@ export function creerSynchronisation({
 
   function erreurDe(erreur: ErreurReponse): ErreurSynchronisation {
     if (SESSION_REFUSEE.includes(erreur)) return 'SESSION_INVALIDE';
-    const connues = ['COMPETITION_INCONNUE', 'ACCES_REFUSE', 'COMPETITION_EN_COURS', 'COMPETITION_SUPPRIMEE'] as const;
+    const connues = ['EPREUVE_INCONNUE', 'ACCES_REFUSE', 'EPREUVE_EN_COURS', 'EPREUVE_SUPPRIMEE'] as const;
     return connues.find((connue) => connue === erreur) ?? 'ERREUR_INATTENDUE';
   }
 
-  async function copieLocale(competitionId: string): Promise<Copie | null> {
-    const etat = await journal.etat(competitionId);
-    return etat ? { projection: await journal.lire(competitionId), copieLe: etat.copieLe } : null;
+  async function copieLocale(epreuveId: string): Promise<Copie | null> {
+    const etat = await journal.etat(epreuveId);
+    return etat ? { projection: await journal.lire(epreuveId), copieLe: etat.copieLe } : null;
   }
 
   /**
-   * US-022 CA-4 : copie à jour d'une compétition pilotée par un autre PC, téléchargée puis projetée localement ; sur
+   * US-022 CA-4 : copie à jour d'une épreuve pilotée par un autre PC, téléchargée puis projetée localement ; sur
    * le PC pilote, son propre journal. En cas d'échec, la dernière copie gardée (avec sa date) est jointe. Si le serveur
    * désigne déjà ce PC comme pilote (prise de main interrompue, US-029), la copie devient le journal du pilote.
    */
   async function telechargerCopie(
-    competitionId: string,
+    epreuveId: string,
   ): Promise<({ ok: true } & Copie) | { ok: false; erreur: ErreurSynchronisation; copie?: Copie }> {
-    const locale = await copieLocale(competitionId);
+    const locale = await copieLocale(epreuveId);
     if (locale && locale.copieLe === null) return { ok: true, ...locale };
     const echec = (erreur: ErreurSynchronisation) => ({
       ok: false as const,
@@ -234,139 +234,139 @@ export function creerSynchronisation({
     if (!jetonSession) return echec(enLigne() && urlServeur ? 'SESSION_INVALIDE' : 'HORS_LIGNE');
     let reponse;
     try {
-      reponse = analyserReponseJournal(await requete(`/competitions/${competitionId}/evenements`, jetonSession));
+      reponse = analyserReponseJournal(await requete(`/epreuves/${epreuveId}/evenements`, jetonSession));
     } catch {
       return echec('HORS_LIGNE');
     }
     if (!reponse.ok) {
-      if (reponse.erreur === 'COMPETITION_SUPPRIMEE') {
-        await effacerSupprimee(competitionId);
-        return { ok: false, erreur: 'COMPETITION_SUPPRIMEE' };
+      if (reponse.erreur === 'EPREUVE_SUPPRIMEE') {
+        await effacerSupprimee(epreuveId);
+        return { ok: false, erreur: 'EPREUVE_SUPPRIMEE' };
       }
       return echec(erreurDe(reponse.erreur));
     }
     if (reponse.piloteAppareil === (await journal.appareil())) {
-      await journal.devenirPilote(competitionId, reponse.evenements);
-      return { ok: true, projection: await journal.lire(competitionId), copieLe: null };
+      await journal.devenirPilote(epreuveId, reponse.evenements);
+      return { ok: true, projection: await journal.lire(epreuveId), copieLe: null };
     }
     const copieLe = maintenant();
-    await journal.remplacerCopie(competitionId, reponse.evenements, copieLe);
-    return { ok: true, projection: await journal.lire(competitionId), copieLe };
+    await journal.remplacerCopie(epreuveId, reponse.evenements, copieLe);
+    return { ok: true, projection: await journal.lire(epreuveId), copieLe };
   }
 
   type Refus = { ok: false; erreur: ErreurSynchronisation };
   const sansReseau = (): Refus => ({ ok: false, erreur: enLigne() && urlServeur ? 'SESSION_INVALIDE' : 'HORS_LIGNE' });
 
   /** US-029 CA-2 : battement du pilote ; s'il n'est plus le pilote, la perte de main est traitée et renvoyée. */
-  async function battre(competitionId: string): Promise<{ ok: true } | Refus | { ok: false; perte: PerteDeMain }> {
+  async function battre(epreuveId: string): Promise<{ ok: true } | Refus | { ok: false; perte: PerteDeMain }> {
     const jetonSession = await jetonEnLigne();
     if (!jetonSession) return sansReseau();
     let reponse;
     try {
       const corps = { appareilId: await journal.appareil() };
-      reponse = analyserReponsePresence(await requete(`/competitions/${competitionId}/presence`, jetonSession, corps));
+      reponse = analyserReponsePresence(await requete(`/epreuves/${epreuveId}/presence`, jetonSession, corps));
     } catch {
       return { ok: false, erreur: 'HORS_LIGNE' };
     }
     if (reponse.ok) return { ok: true };
-    if (reponse.erreur === 'PAS_PILOTE') return { ok: false, perte: await perdre(competitionId, reponse) };
-    if (reponse.erreur === 'COMPETITION_SUPPRIMEE') await effacerSupprimee(competitionId);
+    if (reponse.erreur === 'PAS_PILOTE') return { ok: false, perte: await perdre(epreuveId, reponse) };
+    if (reponse.erreur === 'EPREUVE_SUPPRIMEE') await effacerSupprimee(epreuveId);
     return { ok: false, erreur: erreurDe(reponse.erreur) };
   }
 
-  /** US-029 : une compétition pas encore terminée, pilotée ici, doit battre. */
+  /** US-029 : une épreuve pas encore terminée, pilotée ici, doit battre. */
   async function battreTout(): Promise<void> {
-    const locales = await journal.competitionsLocales();
+    const locales = await journal.epreuvesLocales();
     await Promise.all(
       locales
         .filter(({ pilote }) => pilote)
-        .map(async ({ competitionId }) => {
-          const { competition } = await journal.lire(competitionId);
-          if (competition && competition.statut !== 'terminee' && competition.statut !== 'archivee') {
-            await battre(competitionId);
+        .map(async ({ epreuveId }) => {
+          const { epreuve } = await journal.lire(epreuveId);
+          if (epreuve && epreuve.statut !== 'terminee' && epreuve.statut !== 'archivee') {
+            await battre(epreuveId);
           }
         }),
     );
   }
 
   return {
-    /** US-022 CA-1 / CA-2 : envoie les événements non confirmés de la compétition. */
-    envoyer: envoyerCompetition,
+    /** US-022 CA-1 / CA-2 : envoie les événements non confirmés de l’épreuve. */
+    envoyer: envoyerEpreuve,
 
     envoyerTout,
 
     /** Nombre de modifications en attente d'envoi (indicateur, hors ligne). */
-    async enAttente(competitionId: string): Promise<number> {
-      return (await journal.aEnvoyer(competitionId)).length;
+    async enAttente(epreuveId: string): Promise<number> {
+      return (await journal.aEnvoyer(epreuveId)).length;
     },
 
-    /** Vrai pour une compétition pilotée ici dont rien n'est encore parvenu au serveur (« Pas encore envoyée »). */
-    async jamaisEnvoyee(competitionId: string): Promise<boolean> {
-      const etat = await journal.etat(competitionId);
+    /** Vrai pour une épreuve pilotée ici dont rien n'est encore parvenu au serveur (« Pas encore envoyée »). */
+    async jamaisEnvoyee(epreuveId: string): Promise<boolean> {
+      const etat = await journal.etat(epreuveId);
       return Boolean(etat?.pilote && etat.confirme === 0);
     },
 
-    /** US-022 CA-4 : index des compétitions du club. */
-    async listerCompetitionsDuClub(): Promise<
-      { ok: true; competitions: CompetitionIndexee[] } | { ok: false; erreur: ErreurSynchronisation }
+    /** US-022 CA-4 : index des épreuves du club. */
+    async listerEpreuvesDuClub(): Promise<
+      { ok: true; epreuves: EpreuveIndexee[] } | { ok: false; erreur: ErreurSynchronisation }
     > {
       const jetonSession = await jetonEnLigne();
       if (!jetonSession) return { ok: false, erreur: enLigne() && urlServeur ? 'SESSION_INVALIDE' : 'HORS_LIGNE' };
       try {
-        const reponse = analyserReponseCompetitions(await requete('/competitions', jetonSession));
+        const reponse = analyserReponseEpreuves(await requete('/epreuves', jetonSession));
         if (!reponse.ok) return { ok: false, erreur: erreurDe(reponse.erreur) };
-        // US-039 CA-5 : les copies locales des compétitions supprimées sont effacées, et la liste ne les montre plus.
+        // US-039 CA-5 : les copies locales des épreuves supprimées sont effacées, et la liste ne les montre plus.
         for (const id of reponse.supprimees) await effacerSupprimee(id);
-        return { ok: true, competitions: reponse.competitions.filter(({ id }) => !reponse.supprimees.includes(id)) };
+        return { ok: true, epreuves: reponse.epreuves.filter(({ id }) => !reponse.supprimees.includes(id)) };
       } catch {
         return { ok: false, erreur: 'HORS_LIGNE' };
       }
     },
 
     /**
-     * US-039 CA-1 : supprime définitivement la compétition sur le serveur (administrateur, en ligne), puis efface la
+     * US-039 CA-1 : supprime définitivement l’épreuve sur le serveur (administrateur, en ligne), puis efface la
      * copie de ce PC sans l'annoncer : c'est l'administrateur qui l'a demandé. Hors ligne, rien n'est tenté (CA-8).
      */
-    async supprimerCompetition(
-      competitionId: string,
+    async supprimerEpreuve(
+      epreuveId: string,
     ): Promise<{ ok: true } | { ok: false; erreur: ErreurSynchronisation }> {
       const jetonSession = await jetonEnLigne();
       if (!jetonSession) return sansReseau();
       let reponse;
       try {
-        reponse = analyserReponseSuppressionCompetition(
-          await requete(`/competitions/${competitionId}`, jetonSession, undefined, 'DELETE'),
+        reponse = analyserReponseSuppressionEpreuve(
+          await requete(`/epreuves/${epreuveId}`, jetonSession, undefined, 'DELETE'),
         );
       } catch {
         return { ok: false, erreur: 'HORS_LIGNE' };
       }
       if (!reponse.ok) return { ok: false, erreur: erreurDe(reponse.erreur) };
-      await journal.supprimerCopie(competitionId);
+      await journal.supprimerCopie(epreuveId);
       return { ok: true };
     },
 
-    /** US-039 CA-5 : avertit quand une compétition de cet appareil est effacée parce qu'elle a été supprimée. */
+    /** US-039 CA-5 : avertit quand une épreuve de cet appareil est effacée parce qu'elle a été supprimée. */
     surSuppression(ecouteur: (suppression: SuppressionLocale) => void): () => void {
       ecouteursSuppression.add(ecouteur);
       return () => ecouteursSuppression.delete(ecouteur);
     },
 
     /**
-     * US-023 CA-4 : compétitions du club connues de cet appareil, pour les confronter aux dates d'une manifestation :
-     * l'index du club (s'il est joignable) et les compétitions gardées ici, y compris celles pas encore envoyées, dont
+     * US-023 CA-4 : épreuves du club connues de cet appareil, pour les confronter aux dates d'une manifestation :
+     * l'index du club (s'il est joignable) et les épreuves gardées ici, y compris celles pas encore envoyées, dont
      * la version locale l'emporte.
      */
-    async competitionsConnues(): Promise<CompetitionRattachee[]> {
-      const connues = new Map<string, CompetitionRattachee>();
-      const index = await this.listerCompetitionsDuClub();
+    async epreuvesConnues(): Promise<EpreuveRattachee[]> {
+      const connues = new Map<string, EpreuveRattachee>();
+      const index = await this.listerEpreuvesDuClub();
       if (index.ok) {
-        for (const { id, nom, date, rattachement } of index.competitions)
+        for (const { id, nom, date, rattachement } of index.epreuves)
           connues.set(id, { id, nom, date, rattachement });
       }
-      for (const { competitionId } of await journal.competitionsLocales()) {
-        const { competition } = await journal.lire(competitionId);
-        if (competition) {
-          const { id, nom, date, rattachement } = competition;
+      for (const { epreuveId } of await journal.epreuvesLocales()) {
+        const { epreuve } = await journal.lire(epreuveId);
+        if (epreuve) {
+          const { id, nom, date, rattachement } = epreuve;
           connues.set(id, { id, nom, date, rattachement });
         }
       }
@@ -375,14 +375,14 @@ export function creerSynchronisation({
 
     telechargerCopie,
 
-    /** US-029 CA-4 : qui pilote la compétition, et s'il est connecté. */
+    /** US-029 CA-4 : qui pilote l’épreuve, et s'il est connecté. */
     async pilote(
-      competitionId: string,
+      epreuveId: string,
     ): Promise<{ ok: true; piloteAppareil: string; piloteNom: string; connecte: boolean } | Refus> {
       const jetonSession = await jetonEnLigne();
       if (!jetonSession) return sansReseau();
       try {
-        const reponse = analyserReponsePilote(await requete(`/competitions/${competitionId}/pilote`, jetonSession));
+        const reponse = analyserReponsePilote(await requete(`/epreuves/${epreuveId}/pilote`, jetonSession));
         return reponse.ok ? reponse : { ok: false, erreur: erreurDe(reponse.erreur) };
       } catch {
         return { ok: false, erreur: 'HORS_LIGNE' };
@@ -390,11 +390,11 @@ export function creerSynchronisation({
     },
 
     /**
-     * US-029 CA-1 : prend la main sur la compétition. Le serveur désigne ce PC (il exige que `piloteAttendu` soit encore
+     * US-029 CA-1 : prend la main sur l’épreuve. Le serveur désigne ce PC (il exige que `piloteAttendu` soit encore
      * le pilote en place), le journal complet remplace la copie locale, puis `PiloteChange` est écrit et envoyé.
      */
     async prendreLaMain(
-      competitionId: string,
+      epreuveId: string,
       piloteAttendu: string,
       contexte: Contexte,
     ): Promise<
@@ -407,7 +407,7 @@ export function creerSynchronisation({
       try {
         const corps = { appareilId, piloteAttendu };
         reponse = analyserReponsePriseDeMain(
-          await requete(`/competitions/${competitionId}/pilote`, jetonSession, corps),
+          await requete(`/epreuves/${epreuveId}/pilote`, jetonSession, corps),
         );
       } catch {
         return { ok: false, erreur: 'HORS_LIGNE' };
@@ -421,16 +421,16 @@ export function creerSynchronisation({
           piloteNom: reponse.piloteNom ?? '',
         };
       }
-      await journal.devenirPilote(competitionId, reponse.evenements);
+      await journal.devenirPilote(epreuveId, reponse.evenements);
       if (reponse.ancienAppareil !== appareilId) {
         const ecrit = await journal.enregistrer(
-          competitionId,
+          epreuveId,
           { type: 'PiloteChange', donnees: { ancienAppareil: reponse.ancienAppareil, nouvelAppareil: appareilId } },
           contexte,
         );
         if ('erreur' in ecrit) return { ok: false, erreur: 'ERREUR_INATTENDUE' };
       }
-      await envoyerCompetition(competitionId);
+      await envoyerEpreuve(epreuveId);
       return { ok: true };
     },
 
@@ -446,10 +446,10 @@ export function creerSynchronisation({
 
     /** US-022 CA-2 : envoie ce qui attend maintenant, puis à chaque retour du réseau ; renvoie de quoi arrêter. */
     surveiller(cible: EventTarget = window, intervalle = INTERVALLE_BATTEMENT): () => void {
-      // US-039 CA-5 : lire l'index du club suffit à effacer les copies des compétitions supprimées.
+      // US-039 CA-5 : lire l'index du club suffit à effacer les copies des épreuves supprimées.
       const auRetour = () => {
         void envoyerTout();
-        void this.listerCompetitionsDuClub();
+        void this.listerEpreuvesDuClub();
       };
       cible.addEventListener('online', auRetour);
       auRetour();

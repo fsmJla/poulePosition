@@ -13,7 +13,7 @@ export default defineConfig({
     ],
     coverage: {
       provider: 'v8',
-      // Code exécuté sous Node. Le Worker et ses Durable Objects (index.ts, competition.ts) tournent dans
+      // Code exécuté sous Node. Le Worker et ses Durable Objects (index.ts, epreuve.ts) tournent dans
       // workerd : ils sont couverts par les tests d'intégration du serveur, non mesurés ici.
       include: [
         'paquets/*/src/**/*.ts',

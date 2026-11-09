@@ -1,9 +1,9 @@
 // Manifestations du club (US-023, docs/protocole.md §12) : données du club stockées par le serveur, modifiables en ligne
 // seulement. La dernière liste reçue est gardée dans IndexedDB : hors ligne, elle reste consultable avec sa date.
 import {
-  competitionsHorsDates,
+  epreuvesHorsDates,
   validerManifestation,
-  type CompetitionRattachee,
+  type EpreuveRattachee,
   type DonneesManifestation,
   type ErreursManifestation,
 } from '@poule-position/domaine';
@@ -29,14 +29,14 @@ export type ErreurManifestations =
   | 'MANIFESTATION_INCONNUE'
   | 'MANIFESTATION_NON_VIDE'
   | 'ACCES_REFUSE'
-  | 'COMPETITION_EN_COURS'
+  | 'EPREUVE_EN_COURS'
   | 'ERREUR_INATTENDUE';
 
 export type ResultatEnregistrement =
   | { ok: true; manifestation: Manifestation }
   | { ok: false; erreurs: ErreursManifestation }
-  /** CA-4 : compétitions rattachées que les nouvelles dates n'incluraient plus. */
-  | { ok: false; erreur: 'COMPETITIONS_HORS_DATES'; competitions: CompetitionRattachee[] }
+  /** CA-4 : épreuves rattachées que les nouvelles dates n'incluraient plus. */
+  | { ok: false; erreur: 'EPREUVES_HORS_DATES'; epreuves: EpreuveRattachee[] }
   /** Cas limite : modifiée par quelqu'un d'autre depuis le chargement ; la version courante est jointe. */
   | { ok: false; erreur: 'MODIFIEE_ENTRE_TEMPS'; manifestation: Manifestation }
   | { ok: false; erreur: ErreurManifestations };
@@ -47,8 +47,8 @@ export interface OptionsManifestations {
   nomBase?: string;
   /** Jeton de la session en ligne ; null pour une session locale (US-005). */
   jeton: () => Promise<string | null>;
-  /** CA-4 : compétitions connues (index du club et compétitions de cet appareil). */
-  competitions: () => Promise<CompetitionRattachee[]>;
+  /** CA-4 : épreuves connues (index du club et épreuves de cet appareil). */
+  epreuves: () => Promise<EpreuveRattachee[]>;
   envoyer?: typeof fetch;
   enLigne?: () => boolean;
   maintenant?: () => number;
@@ -73,7 +73,7 @@ const SESSION_REFUSEE: readonly ErreurReponse[] = ['SESSION_INVALIDE', 'COMPTE_M
 
 function erreurDe(erreur: ErreurReponse): ErreurManifestations {
   if (SESSION_REFUSEE.includes(erreur)) return 'SESSION_INVALIDE';
-  const connues = ['MANIFESTATION_INCONNUE', 'MANIFESTATION_NON_VIDE', 'ACCES_REFUSE', 'COMPETITION_EN_COURS'] as const;
+  const connues = ['MANIFESTATION_INCONNUE', 'MANIFESTATION_NON_VIDE', 'ACCES_REFUSE', 'EPREUVE_EN_COURS'] as const;
   return connues.find((connue) => connue === erreur) ?? 'ERREUR_INATTENDUE';
 }
 
@@ -83,7 +83,7 @@ export function creerClientManifestations({
   urlServeur,
   nomBase = 'poulePosition',
   jeton,
-  competitions,
+  epreuves,
   envoyer = (...args) => fetch(...args),
   enLigne = () => navigator.onLine,
   maintenant = () => Date.now(),
@@ -168,8 +168,8 @@ export function creerClientManifestations({
       const donnees = versDonnees(saisie);
       const erreurs = validerManifestation(donnees);
       if (Object.keys(erreurs).length > 0) return { ok: false, erreurs };
-      const horsDates = competitionsHorsDates(depart.id, donnees.debut, donnees.fin, await competitions());
-      if (horsDates.length > 0) return { ok: false, erreur: 'COMPETITIONS_HORS_DATES', competitions: horsDates };
+      const horsDates = epreuvesHorsDates(depart.id, donnees.debut, donnees.fin, await epreuves());
+      if (horsDates.length > 0) return { ok: false, erreur: 'EPREUVES_HORS_DATES', epreuves: horsDates };
       return enregistrer('PATCH', `/manifestations/${depart.id}`, { ...donnees, version: depart.version });
     },
 
@@ -185,7 +185,7 @@ export function creerClientManifestations({
     },
 
     /**
-     * US-042 : supprime la manifestation avec ses épreuves et ses compétitions. Le serveur en traite un morceau par
+     * US-042 : supprime la manifestation avec ses compétitions et ses épreuves. Le serveur en traite un morceau par
      * requête (CA-5) : on enchaîne jusqu'à la fin, avec la progression. Si la suite est interrompue, le serveur garde la
      * manifestation et ce qui reste, et relancer la reprend (CA-6).
      */

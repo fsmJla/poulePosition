@@ -1,64 +1,64 @@
 <script lang="ts">
-  // Épreuves d'une manifestation (US-024), sous la manifestation dans la page « Manifestations » : liste, création,
-  // modification et suppression d'une épreuve vide. Ce sont des données du club stockées par le serveur : hors ligne,
+  // Compétitions d'une manifestation (US-024), sous la manifestation dans la page « Manifestations » : liste, création,
+  // modification et suppression d'une compétition vide. Ce sont des données du club stockées par le serveur : hors ligne,
   // la liste reste consultable depuis la dernière copie, et les actions sont grisées.
   import { onMount } from 'svelte';
-  import { ARMES, type ErreursEpreuve } from '@poule-position/domaine';
-  import type { Epreuve, Manifestation } from '@poule-position/protocole';
-  import { saisieDe, saisieVide, type ClientEpreuves, type ErreurEpreuves, type SaisieEpreuve } from '../lib/epreuves';
+  import { ARMES, type ErreursCompetition } from '@poule-position/domaine';
+  import type { Competition, Manifestation } from '@poule-position/protocole';
+  import { saisieDe, saisieVide, type ClientCompetitions, type ErreurCompetitions, type SaisieCompetition } from '../lib/competitions';
   import { nomConfirme } from '../lib/suppression';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
     manifestation: Manifestation;
-    client: ClientEpreuves;
-    /** Épreuves de cette manifestation. */
-    epreuves: Epreuve[];
+    client: ClientCompetitions;
+    /** Compétitions de cette manifestation. */
+    competitions: Competition[];
     horsLigne: boolean;
-    /** Appelé quand une épreuve a changé : la page recharge la liste. */
+    /** Appelé quand une compétition a changé : la page recharge la liste. */
     modifie: () => Promise<void>;
-    /** US-026 CA-5 : ouvre le formulaire de création dès l'affichage (adresse « ?epreuve=<id> » depuis l'accueil). */
+    /** US-026 CA-5 : ouvre le formulaire de création dès l'affichage (adresse « ?competition=<id> » depuis l'accueil). */
     ouvrirAuDepart?: boolean;
-    /** US-041 : vrai pour un administrateur, seul à pouvoir supprimer une épreuve avec son contenu. */
+    /** US-041 : vrai pour un administrateur, seul à pouvoir supprimer une compétition avec son contenu. */
     administrateur?: boolean;
-    /** US-041 : nombre de compétitions rattachées à l'épreuve, annoncé à la confirmation. */
-    nombreCompetitions?: (epreuveId: string) => Promise<number>;
-    /** US-041 : appelé après une suppression avec contenu, pour effacer les copies locales des compétitions supprimées. */
+    /** US-041 : nombre d’épreuves rattachées à la compétition, annoncé à la confirmation. */
+    nombreEpreuves?: (competitionId: string) => Promise<number>;
+    /** US-041 : appelé après une suppression avec contenu, pour effacer les copies locales des épreuves supprimées. */
     apresSuppressionContenu?: () => Promise<void>;
   }
 
   let {
     manifestation,
     client,
-    epreuves,
+    competitions,
     horsLigne,
     modifie,
     ouvrirAuDepart = false,
     administrateur = false,
-    nombreCompetitions = async () => 0,
+    nombreEpreuves = async () => 0,
     apresSuppressionContenu = async () => {},
   }: Proprietes = $props();
 
-  const t = textes.epreuves;
-  const armes = textes.competitions.armes;
+  const t = textes.competitions;
+  const armes = textes.epreuves.armes;
   /** Identifiant des champs : plusieurs manifestations peuvent afficher leur formulaire. */
-  const idChamp = (champ: string) => `epreuve-${champ}-${manifestation.id}`;
+  const idChamp = (champ: string) => `competition-${champ}-${manifestation.id}`;
 
-  /** Formulaire ouvert : création (`nouvelle`), modification d'une épreuve, ou aucun. */
-  let edition: Epreuve | 'nouvelle' | null = $state(null);
-  let saisie: SaisieEpreuve = $state(saisieVide());
-  let erreurs: ErreursEpreuve = $state({});
+  /** Formulaire ouvert : création (`nouvelle`), modification d'une compétition, ou aucun. */
+  let edition: Competition | 'nouvelle' | null = $state(null);
+  let saisie: SaisieCompetition = $state(saisieVide());
+  let erreurs: ErreursCompetition = $state({});
   /** Message global du formulaire (modification concurrente, réseau, manifestation disparue…). */
   let message: string | null = $state(null);
   /** Vrai si le message annonce une modification concurrente : « Recharger » l'accompagne. */
   let concurrente = $state(false);
   let enCours = $state(false);
 
-  /** Épreuve dont la suppression attend confirmation. */
-  let aSupprimer: Epreuve | null = $state(null);
-  let erreurSuppression: ErreurEpreuves | null = $state(null);
+  /** Compétition dont la suppression attend confirmation. */
+  let aSupprimer: Competition | null = $state(null);
+  let erreurSuppression: ErreurCompetitions | null = $state(null);
 
-  function ouvrir(cible: Epreuve | 'nouvelle') {
+  function ouvrir(cible: Competition | 'nouvelle') {
     edition = cible;
     saisie = cible === 'nouvelle' ? saisieVide() : saisieDe(cible);
     erreurs = {};
@@ -98,7 +98,7 @@
       } else {
         erreurs = {};
         if (resultat.erreur === 'MODIFIEE_ENTRE_TEMPS') {
-          message = t.modifieeEntreTemps(resultat.epreuve.modifieePar);
+          message = t.modifieeEntreTemps(resultat.competition.modifieePar);
           concurrente = true;
         } else {
           message = t.erreurs[resultat.erreur];
@@ -112,7 +112,7 @@
   async function recharger() {
     const ouverte = edition;
     await modifie();
-    const aJour = ouverte !== 'nouvelle' && epreuves.find(({ id }) => id === ouverte?.id);
+    const aJour = ouverte !== 'nouvelle' && competitions.find(({ id }) => id === ouverte?.id);
     if (aJour) ouvrir(aJour);
   }
 
@@ -135,21 +135,21 @@
 
   /** US-041 : suppression avec son contenu, réservée aux administrateurs. */
   const tc = t.contenu;
-  let contenuASupprimer: Epreuve | null = $state(null);
+  let contenuASupprimer: Competition | null = $state(null);
   let nombreContenu: number | null = $state(null);
   let saisieNom = $state('');
   let progression: { faites: number; total: number } | null = $state(null);
   let messageContenu: string | null = $state(null);
 
-  async function demanderContenu(epreuve: Epreuve) {
-    contenuASupprimer = epreuve;
+  async function demanderContenu(competition: Competition) {
+    contenuASupprimer = competition;
     saisieNom = '';
     messageContenu = null;
     nombreContenu = null;
-    nombreContenu = await nombreCompetitions(epreuve.id);
+    nombreContenu = await nombreEpreuves(competition.id);
   }
 
-  /** CA-1, CA-5 et CA-6 : supprime l'épreuve et ses compétitions, morceau par morceau, puis relit les listes. */
+  /** CA-1, CA-5 et CA-6 : supprime la compétition et ses épreuves, morceau par morceau, puis relit les listes. */
   async function supprimerContenu() {
     if (!contenuASupprimer || enCours || !nomConfirme(saisieNom, contenuASupprimer.nom)) return;
     enCours = true;
@@ -160,7 +160,7 @@
       });
       if (resultat.ok) {
         contenuASupprimer = null;
-      } else if (resultat.erreur === 'COMPETITION_EN_COURS' && resultat.enCours) {
+      } else if (resultat.erreur === 'EPREUVE_EN_COURS' && resultat.enCours) {
         messageContenu = tc.enCours(resultat.enCours);
       } else if (resultat.supprimees > 0 && resultat.restantes > 0) {
         messageContenu = tc.interrompue(resultat.restantes);
@@ -176,34 +176,34 @@
   }
 
   /** Attributs d'accessibilité d'un champ, et identifiant de son message d'erreur. */
-  const invalide = (champ: keyof ErreursEpreuve) => ({
+  const invalide = (champ: keyof ErreursCompetition) => ({
     'aria-invalid': erreurs[champ] ? ('true' as const) : undefined,
     'aria-describedby': erreurs[champ] ? idChamp(`erreur-${champ}`) : undefined,
   });
 </script>
 
-{#snippet erreurChamp(champ: keyof ErreursEpreuve)}
+{#snippet erreurChamp(champ: keyof ErreursCompetition)}
   {@const code = erreurs[champ]}
   {#if code}<span class="erreur" id={idChamp(`erreur-${champ}`)}>{t.champs[code]}</span>{/if}
 {/snippet}
 
-<section class="epreuves" aria-label={`${t.titre} de ${manifestation.nom}`}>
+<section class="competitions" aria-label={`${t.titre} de ${manifestation.nom}`}>
   <h3>{t.titre}</h3>
 
-  {#if epreuves.length === 0}
+  {#if competitions.length === 0}
     <p class="vide">{t.aucune}</p>
   {:else}
     <ul>
-      {#each epreuves as epreuve (epreuve.id)}
+      {#each competitions as competition (competition.id)}
         <li>
           <div class="infos">
-            <strong>{epreuve.nom}</strong>
-            {#if epreuve.arme}<span>{armes[epreuve.arme]}</span>{/if}
-            {#if epreuve.commentaire}<span class="commentaire">{epreuve.commentaire}</span>{/if}
+            <strong>{competition.nom}</strong>
+            {#if competition.arme}<span>{armes[competition.arme]}</span>{/if}
+            {#if competition.commentaire}<span class="commentaire">{competition.commentaire}</span>{/if}
           </div>
-          {#if aSupprimer?.id === epreuve.id}
-            <div class="confirmation" role="group" aria-label={t.supprimer(epreuve.nom)}>
-              <span>{t.confirmerSuppression(epreuve.nom)}</span>
+          {#if aSupprimer?.id === competition.id}
+            <div class="confirmation" role="group" aria-label={t.supprimer(competition.nom)}>
+              <span>{t.confirmerSuppression(competition.nom)}</span>
               {#if erreurSuppression}<span class="erreur" role="alert">{t.erreurs[erreurSuppression]}</span>{/if}
               <div class="boutons">
                 <button type="button" class="danger" onclick={supprimer} disabled={enCours || horsLigne}>
@@ -214,10 +214,10 @@
                 </button>
               </div>
             </div>
-          {:else if contenuASupprimer?.id === epreuve.id}
-            <!-- US-041 : suppression avec son contenu, confirmée par le nom de l'épreuve. -->
-            <div class="confirmation" role="group" aria-label={tc.titre(epreuve.nom)}>
-              <span>{tc.titre(epreuve.nom)}</span>
+          {:else if contenuASupprimer?.id === competition.id}
+            <!-- US-041 : suppression avec son contenu, confirmée par le nom de la compétition. -->
+            <div class="confirmation" role="group" aria-label={tc.titre(competition.nom)}>
+              <span>{tc.titre(competition.nom)}</span>
               <span>{tc.combien(nombreContenu)}</span>
               <span class="avertissement" role="status">{tc.avertissement}</span>
               {#if messageContenu}<span class="erreur" role="alert">{messageContenu}</span>{/if}
@@ -225,7 +225,7 @@
                 <span role="status">{tc.progression(progression.faites, progression.total)}</span>
               {:else}
                 <label>
-                  {tc.saisie(epreuve.nom)}
+                  {tc.saisie(competition.nom)}
                   <input type="text" bind:value={saisieNom} autocomplete="off" />
                 </label>
                 <div class="boutons">
@@ -233,7 +233,7 @@
                     type="button"
                     class="danger"
                     onclick={supprimerContenu}
-                    disabled={enCours || horsLigne || !nomConfirme(saisieNom, epreuve.nom)}>{tc.valider}</button
+                    disabled={enCours || horsLigne || !nomConfirme(saisieNom, competition.nom)}>{tc.valider}</button
                   >
                   <button type="button" class="secondaire" onclick={() => (contenuASupprimer = null)} disabled={enCours}
                     >{tc.annuler}</button
@@ -247,8 +247,8 @@
                 <button
                   type="button"
                   class="secondaire"
-                  aria-label={tc.supprimer(epreuve.nom)}
-                  onclick={() => demanderContenu(epreuve)}
+                  aria-label={tc.supprimer(competition.nom)}
+                  onclick={() => demanderContenu(competition)}
                   disabled={horsLigne}>{tc.bouton}</button
                 >
                 {#if horsLigne}<small>{tc.horsLigne}</small>{/if}
@@ -256,16 +256,16 @@
               <button
                 type="button"
                 class="secondaire"
-                aria-label={t.modifier(epreuve.nom)}
-                onclick={() => ouvrir(epreuve)}
+                aria-label={t.modifier(competition.nom)}
+                onclick={() => ouvrir(competition)}
                 disabled={horsLigne}>{t.boutonModifier}</button
               >
               <button
                 type="button"
                 class="secondaire"
-                aria-label={t.supprimer(epreuve.nom)}
+                aria-label={t.supprimer(competition.nom)}
                 onclick={() => {
-                  aSupprimer = epreuve;
+                  aSupprimer = competition;
                   erreurSuppression = null;
                 }}
                 disabled={horsLigne}>{t.boutonSupprimer}</button
@@ -342,7 +342,7 @@
 </section>
 
 <style>
-  .epreuves {
+  .competitions {
     display: grid;
     gap: 0.6rem;
     padding-top: 0.6rem;

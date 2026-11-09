@@ -17,15 +17,15 @@
 
   let { urlServeur, connecte, naviguer }: Proprietes = $props();
 
-  /** Compétition de démonstration, en attendant les vraies compétitions (E2). */
-  const COMPETITION_DEMO = 'demo';
+  /** Épreuve de démonstration, en attendant les vraies épreuves (E2). */
+  const EPREUVE_DEMO = 'demo';
 
   let etat: EtatConnexion = $state('connexion');
 
   onMount(
     () =>
       demarrerConnexion({
-        url: urlConnexion(urlServeur, COMPETITION_DEMO),
+        url: urlConnexion(urlServeur, EPREUVE_DEMO),
         surEtat: (nouvelEtat) => (etat = nouvelEtat),
       }).arreter,
   );

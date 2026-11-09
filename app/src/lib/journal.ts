@@ -1,4 +1,4 @@
-// Journal local des compétitions (ADR-0001, ADR-0003, US-021) : chaque événement est écrit dans IndexedDB avant d'être
+// Journal local des épreuves (ADR-0001, ADR-0003, US-021) : chaque événement est écrit dans IndexedDB avant d'être
 // affiché, et l'état est recalculé à partir du journal. Rien ici ne passe par le réseau : l'envoi au serveur est fait
 // par `synchronisation.ts` (US-022), qui s'appuie sur le curseur d'envoi et les copies tenus ici (ADR-0016).
 import { Dexie } from 'dexie';
@@ -12,7 +12,7 @@ import {
   type Proposition,
 } from '@poule-position/domaine';
 import { lireEvenement, VERSION_JOURNAL } from '@poule-position/protocole';
-import { Base, LIGNE_UNIQUE, type CompetitionLocale, type Ecart } from './stockage';
+import { Base, LIGNE_UNIQUE, type EpreuveLocale, type Ecart } from './stockage';
 
 /** Qui écrit, et à quelle heure (injectable pour les tests). */
 export interface Contexte {
@@ -24,50 +24,50 @@ export interface Contexte {
 
 /**
  * Erreurs d'écriture : règle métier refusée (CA-4), journal déjà incohérent (on n'écrit pas à sa suite), copie d'une
- * compétition pilotée par un autre PC (US-022), ou IndexedDB en échec (quota, navigation privée…).
+ * épreuve pilotée par un autre PC (US-022), ou IndexedDB en échec (quota, navigation privée…).
  */
 export type ErreurJournal = ErreurEvenement | 'JOURNAL_INCOHERENT' | 'PAS_PILOTE' | 'ECRITURE_IMPOSSIBLE';
 
 export type ResultatEcriture = { projection: Projection } | { erreur: ErreurJournal };
 
 export interface Journal {
-  lire(competitionId: string): Promise<Projection>;
-  /** Événements lisibles de la compétition, dans l'ordre des `seq` (jusqu'au premier illisible). */
-  evenements(competitionId: string): Promise<Evenement[]>;
-  enregistrer(competitionId: string, proposition: Proposition, contexte: Contexte): Promise<ResultatEcriture>;
-  /** Ce que cet appareil sait de la compétition (pilote, curseur d'envoi, copie), ou null s'il ne la connaît pas. */
-  etat(competitionId: string): Promise<CompetitionLocale | null>;
-  competitionsLocales(): Promise<CompetitionLocale[]>;
-  /** Événements à envoyer au serveur : ceux qui suivent le dernier seq confirmé, d'une compétition pilotée ici. */
-  aEnvoyer(competitionId: string): Promise<Evenement[]>;
+  lire(epreuveId: string): Promise<Projection>;
+  /** Événements lisibles de l’épreuve, dans l'ordre des `seq` (jusqu'au premier illisible). */
+  evenements(epreuveId: string): Promise<Evenement[]>;
+  enregistrer(epreuveId: string, proposition: Proposition, contexte: Contexte): Promise<ResultatEcriture>;
+  /** Ce que cet appareil sait de l’épreuve (pilote, curseur d'envoi, copie), ou null s'il ne la connaît pas. */
+  etat(epreuveId: string): Promise<EpreuveLocale | null>;
+  epreuvesLocales(): Promise<EpreuveLocale[]>;
+  /** Événements à envoyer au serveur : ceux qui suivent le dernier seq confirmé, d'une épreuve pilotée ici. */
+  aEnvoyer(epreuveId: string): Promise<Evenement[]>;
   /** Dernier seq que le serveur dit avoir (accusé d'un lot, ou décalage) : le prochain envoi reprend de là. */
-  confirmer(competitionId: string, seq: number): Promise<void>;
+  confirmer(epreuveId: string, seq: number): Promise<void>;
   /**
-   * Remplace la copie d'une compétition pilotée par un autre PC par le journal téléchargé ; false si cet appareil en
+   * Remplace la copie d'une épreuve pilotée par un autre PC par le journal téléchargé ; false si cet appareil en
    * est le pilote (son journal fait foi et n'est jamais remplacé).
    */
-  remplacerCopie(competitionId: string, evenements: readonly Evenement[], copieLe: number): Promise<boolean>;
+  remplacerCopie(epreuveId: string, evenements: readonly Evenement[], copieLe: number): Promise<boolean>;
   /**
-   * US-029 CA-1 : ce PC devient le pilote de la compétition : le journal du serveur remplace la copie locale et tout
+   * US-029 CA-1 : ce PC devient le pilote de l’épreuve : le journal du serveur remplace la copie locale et tout
    * ce qu'il contient est considéré comme confirmé.
    */
-  devenirPilote(competitionId: string, evenements: readonly Evenement[]): Promise<void>;
+  devenirPilote(epreuveId: string, evenements: readonly Evenement[]): Promise<void>;
   /**
    * US-029 CA-2 et CA-3 : un autre PC a pris la main. Les événements pas encore envoyés sont mis de côté (jamais
    * perdus), ce PC cesse d'être le pilote et garde une copie à remplacer. Renvoie le nombre d'événements écartés.
    */
   ecarter(
-    competitionId: string,
+    epreuveId: string,
     pilote: { piloteAppareil?: string; piloteNom?: string },
     copieLe: number,
   ): Promise<number>;
   /**
-   * US-039 CA-5 et CA-6 : la compétition a été supprimée sur le serveur. Efface la copie locale (journal, ligne locale,
+   * US-039 CA-5 et CA-6 : l’épreuve a été supprimée sur le serveur. Efface la copie locale (journal, ligne locale,
    * modifications écartées) et renvoie le nombre d'événements pas encore envoyés, abandonnés avec elle.
    */
-  supprimerCopie(competitionId: string): Promise<number>;
-  lireEcartes(competitionId: string): Promise<Ecart[]>;
-  effacerEcartes(competitionId: string): Promise<void>;
+  supprimerCopie(epreuveId: string): Promise<number>;
+  lireEcartes(epreuveId: string): Promise<Ecart[]>;
+  effacerEcartes(epreuveId: string): Promise<void>;
   /** Identifiant de cet appareil, tiré au premier appel puis gardé (ADR-0016). */
   appareil(): Promise<string>;
 }
@@ -79,21 +79,21 @@ export function ouvrirJournal(nom = 'poulePosition', persister: () => Promise<bo
   const base = new Base(nom);
   let persistanceDemandee = false;
 
-  /** Journal d'une compétition, dans l'ordre des `seq`. */
-  const evenementsBruts = (competitionId: string) =>
+  /** Journal d'une épreuve, dans l'ordre des `seq`. */
+  const evenementsBruts = (epreuveId: string) =>
     base.evenements
-      .where('[competitionId+seq]')
-      .between([competitionId, Dexie.minKey], [competitionId, Dexie.maxKey])
+      .where('[epreuveId+seq]')
+      .between([epreuveId, Dexie.minKey], [epreuveId, Dexie.maxKey])
       .toArray();
 
   return {
-    async lire(competitionId) {
-      return projeterBruts(await evenementsBruts(competitionId));
+    async lire(epreuveId) {
+      return projeterBruts(await evenementsBruts(epreuveId));
     },
 
-    async evenements(competitionId) {
+    async evenements(epreuveId) {
       const evenements: Evenement[] = [];
-      for (const brut of await evenementsBruts(competitionId)) {
+      for (const brut of await evenementsBruts(epreuveId)) {
         const evenement = lireEvenement(brut);
         if (!evenement) break;
         evenements.push(evenement);
@@ -101,19 +101,19 @@ export function ouvrirJournal(nom = 'poulePosition', persister: () => Promise<bo
       return evenements;
     },
 
-    async enregistrer(competitionId, proposition, { clubId, auteur, maintenant = Date.now }) {
+    async enregistrer(epreuveId, proposition, { clubId, auteur, maintenant = Date.now }) {
       let resultat: ResultatEcriture;
       try {
         // Lecture, contrôle et écriture dans une même transaction : deux écritures ne peuvent pas prendre le même seq.
-        resultat = await base.transaction('rw', base.evenements, base.competitionsLocales, async () => {
-          const locale = await base.competitionsLocales.get(competitionId);
+        resultat = await base.transaction('rw', base.evenements, base.epreuvesLocales, async () => {
+          const locale = await base.epreuvesLocales.get(epreuveId);
           if (locale && !locale.pilote) return { erreur: 'PAS_PILOTE' as const };
-          const projection = projeterBruts(await evenementsBruts(competitionId));
+          const projection = projeterBruts(await evenementsBruts(epreuveId));
           if (projection.anomalie) return { erreur: 'JOURNAL_INCOHERENT' as const };
           const erreur = verifierEvenement(projection, proposition);
           if (erreur) return { erreur };
           const evenement: Evenement = {
-            competitionId,
+            epreuveId,
             clubId,
             seq: projection.dernierSeq + 1,
             version: VERSION_JOURNAL,
@@ -123,8 +123,8 @@ export function ouvrirJournal(nom = 'poulePosition', persister: () => Promise<bo
             ...proposition,
           };
           await base.evenements.add({ ...evenement });
-          // US-022 : le PC qui crée la compétition en est le pilote ; rien n'est encore confirmé par le serveur.
-          if (!locale) await base.competitionsLocales.add({ competitionId, pilote: true, confirme: 0, copieLe: null });
+          // US-022 : le PC qui crée l’épreuve en est le pilote ; rien n'est encore confirmé par le serveur.
+          if (!locale) await base.epreuvesLocales.add({ epreuveId, pilote: true, confirme: 0, copieLe: null });
           return { projection: appliquer(projection, evenement) };
         });
       } catch {
@@ -137,19 +137,19 @@ export function ouvrirJournal(nom = 'poulePosition', persister: () => Promise<bo
       return resultat;
     },
 
-    async etat(competitionId) {
-      return (await base.competitionsLocales.get(competitionId)) ?? null;
+    async etat(epreuveId) {
+      return (await base.epreuvesLocales.get(epreuveId)) ?? null;
     },
 
-    async competitionsLocales() {
-      return base.competitionsLocales.toArray();
+    async epreuvesLocales() {
+      return base.epreuvesLocales.toArray();
     },
 
-    async aEnvoyer(competitionId) {
-      const locale = await base.competitionsLocales.get(competitionId);
+    async aEnvoyer(epreuveId) {
+      const locale = await base.epreuvesLocales.get(epreuveId);
       if (!locale?.pilote) return [];
       const evenements: Evenement[] = [];
-      for (const brut of await evenementsBruts(competitionId)) {
+      for (const brut of await evenementsBruts(epreuveId)) {
         const evenement = lireEvenement(brut);
         if (!evenement) break;
         if (evenement.seq > locale.confirme) evenements.push(evenement);
@@ -157,81 +157,81 @@ export function ouvrirJournal(nom = 'poulePosition', persister: () => Promise<bo
       return evenements;
     },
 
-    async confirmer(competitionId, seq) {
-      await base.competitionsLocales.update(competitionId, { confirme: seq });
+    async confirmer(epreuveId, seq) {
+      await base.epreuvesLocales.update(epreuveId, { confirme: seq });
     },
 
-    async remplacerCopie(competitionId, evenements, copieLe) {
-      return base.transaction('rw', base.evenements, base.competitionsLocales, async () => {
-        if ((await base.competitionsLocales.get(competitionId))?.pilote) return false;
+    async remplacerCopie(epreuveId, evenements, copieLe) {
+      return base.transaction('rw', base.evenements, base.epreuvesLocales, async () => {
+        if ((await base.epreuvesLocales.get(epreuveId))?.pilote) return false;
         await base.evenements
-          .where('[competitionId+seq]')
-          .between([competitionId, Dexie.minKey], [competitionId, Dexie.maxKey])
+          .where('[epreuveId+seq]')
+          .between([epreuveId, Dexie.minKey], [epreuveId, Dexie.maxKey])
           .delete();
         await base.evenements.bulkAdd(evenements.map((evenement) => ({ ...evenement })));
         const confirme = evenements.at(-1)?.seq ?? 0;
-        await base.competitionsLocales.put({ competitionId, pilote: false, confirme, copieLe });
+        await base.epreuvesLocales.put({ epreuveId, pilote: false, confirme, copieLe });
         return true;
       });
     },
 
-    async devenirPilote(competitionId, evenements) {
-      await base.transaction('rw', base.evenements, base.competitionsLocales, async () => {
+    async devenirPilote(epreuveId, evenements) {
+      await base.transaction('rw', base.evenements, base.epreuvesLocales, async () => {
         await base.evenements
-          .where('[competitionId+seq]')
-          .between([competitionId, Dexie.minKey], [competitionId, Dexie.maxKey])
+          .where('[epreuveId+seq]')
+          .between([epreuveId, Dexie.minKey], [epreuveId, Dexie.maxKey])
           .delete();
         await base.evenements.bulkAdd(evenements.map((evenement) => ({ ...evenement })));
         const confirme = evenements.at(-1)?.seq ?? 0;
-        await base.competitionsLocales.put({ competitionId, pilote: true, confirme, copieLe: null });
+        await base.epreuvesLocales.put({ epreuveId, pilote: true, confirme, copieLe: null });
       });
     },
 
-    async ecarter(competitionId, pilote, copieLe) {
-      return base.transaction('rw', base.evenements, base.competitionsLocales, base.ecartes, async () => {
-        const locale = await base.competitionsLocales.get(competitionId);
+    async ecarter(epreuveId, pilote, copieLe) {
+      return base.transaction('rw', base.evenements, base.epreuvesLocales, base.ecartes, async () => {
+        const locale = await base.epreuvesLocales.get(epreuveId);
         if (!locale?.pilote) return 0;
         const aEcarter: Evenement[] = [];
-        for (const brut of await evenementsBruts(competitionId)) {
+        for (const brut of await evenementsBruts(epreuveId)) {
           const evenement = lireEvenement(brut);
           if (!evenement) break;
           if (evenement.seq > locale.confirme) aEcarter.push(evenement);
         }
         if (aEcarter.length > 0) {
-          await base.ecartes.add({ competitionId, evenements: aEcarter, ...pilote, ecartesLe: copieLe });
+          await base.ecartes.add({ epreuveId, evenements: aEcarter, ...pilote, ecartesLe: copieLe });
         }
-        await base.competitionsLocales.update(competitionId, { pilote: false, copieLe });
+        await base.epreuvesLocales.update(epreuveId, { pilote: false, copieLe });
         return aEcarter.length;
       });
     },
 
-    async supprimerCopie(competitionId) {
-      return base.transaction('rw', base.evenements, base.competitionsLocales, base.ecartes, async () => {
-        const locale = await base.competitionsLocales.get(competitionId);
+    async supprimerCopie(epreuveId) {
+      return base.transaction('rw', base.evenements, base.epreuvesLocales, base.ecartes, async () => {
+        const locale = await base.epreuvesLocales.get(epreuveId);
         let abandonnes = 0;
         if (locale?.pilote) {
-          for (const brut of await evenementsBruts(competitionId)) {
+          for (const brut of await evenementsBruts(epreuveId)) {
             const evenement = lireEvenement(brut);
             if (!evenement) break;
             if (evenement.seq > locale.confirme) abandonnes++;
           }
         }
         await base.evenements
-          .where('[competitionId+seq]')
-          .between([competitionId, Dexie.minKey], [competitionId, Dexie.maxKey])
+          .where('[epreuveId+seq]')
+          .between([epreuveId, Dexie.minKey], [epreuveId, Dexie.maxKey])
           .delete();
-        await base.competitionsLocales.delete(competitionId);
-        await base.ecartes.where('competitionId').equals(competitionId).delete();
+        await base.epreuvesLocales.delete(epreuveId);
+        await base.ecartes.where('epreuveId').equals(epreuveId).delete();
         return abandonnes;
       });
     },
 
-    async lireEcartes(competitionId) {
-      return base.ecartes.where('competitionId').equals(competitionId).toArray();
+    async lireEcartes(epreuveId) {
+      return base.ecartes.where('epreuveId').equals(epreuveId).toArray();
     },
 
-    async effacerEcartes(competitionId) {
-      await base.ecartes.where('competitionId').equals(competitionId).delete();
+    async effacerEcartes(epreuveId) {
+      await base.ecartes.where('epreuveId').equals(epreuveId).delete();
     },
 
     async appareil() {
@@ -262,16 +262,16 @@ function projeterBruts(bruts: readonly unknown[]): Projection {
 }
 
 /**
- * Réserve l'écriture d'une compétition à cet onglet (API Web Locks) : renvoie de quoi la libérer, ou null si un autre
+ * Réserve l'écriture d'une épreuve à cet onglet (API Web Locks) : renvoie de quoi la libérer, ou null si un autre
  * onglet la détient déjà (il reste alors en lecture seule). Sans l'API, l'écriture est accordée.
  */
 export function prendreEcriture(
-  competitionId: string,
+  epreuveId: string,
   verrous: LockManager | null = navigator.locks ?? null,
 ): Promise<(() => void) | null> {
   if (!verrous) return Promise.resolve(() => {});
   return new Promise((resoudre) => {
-    void verrous.request(`competition:${competitionId}`, { ifAvailable: true }, (verrou) => {
+    void verrous.request(`epreuve:${epreuveId}`, { ifAvailable: true }, (verrou) => {
       if (!verrou) {
         resoudre(null);
         return;

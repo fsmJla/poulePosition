@@ -31,11 +31,11 @@ export interface OptionsConnexion {
   creerSocket?: (url: string) => SocketMinimale;
 }
 
-/** Adresse de connexion à une compétition, ou null si l'adresse du serveur est absente ou invalide. */
-export function urlConnexion(urlServeur: string | undefined, competitionId: string): string | null {
+/** Adresse de connexion à une épreuve, ou null si l'adresse du serveur est absente ou invalide. */
+export function urlConnexion(urlServeur: string | undefined, epreuveId: string): string | null {
   const base = urlServeur?.trim().replace(/\/+$/, '');
   if (!base || !/^wss?:\/\//.test(base)) return null;
-  return `${base}/competitions/${encodeURIComponent(competitionId)}/connexion`;
+  return `${base}/epreuves/${encodeURIComponent(epreuveId)}/connexion`;
 }
 
 /** Ouvre la connexion et la maintient jusqu'à `arreter()`. */
