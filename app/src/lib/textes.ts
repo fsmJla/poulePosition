@@ -686,7 +686,7 @@ export const textes = {
             ? 'aucune compétition'
             : competitions > 1
               ? `ses ${competitions} compétitions`
-              : 'son compétition';
+              : 'sa compétition';
         const lesEpreuves =
           epreuves === null
             ? 'ses épreuves'
@@ -694,7 +694,7 @@ export const textes = {
               ? 'aucune épreuve'
               : epreuves > 1
                 ? `ses ${epreuves} épreuves (archivées comprises)`
-                : 'sa épreuve';
+                : 'son épreuve';
         return `Sont supprimées avec elle : ${lesCompetitions} et ${lesEpreuves}.`;
       },
       avertissement:

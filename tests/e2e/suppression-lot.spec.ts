@@ -159,7 +159,7 @@ test('US-043 CA-5 : une compétition et des épreuves cochées sans leur manifes
   await expect(page.getByText('Supprimé : 1 compétition, 1 épreuve')).toBeVisible({ timeout: 60_000 });
   await expect(caseCompetition(page, competition)).toHaveCount(0);
   await expect(page.getByRole('link', { name: isolee, exact: true })).toHaveCount(0);
-  // La manifestation et sa épreuve directe restent (la liste relue replie la manifestation).
+  // La manifestation et son épreuve directe restent (la liste relue replie la manifestation).
   await page.locator('summary').filter({ hasText: manifestation }).click();
   await expect(page.getByRole('link', { name: directe, exact: true })).toBeVisible();
 });

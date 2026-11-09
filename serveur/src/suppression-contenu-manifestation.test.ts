@@ -204,7 +204,7 @@ describe('suppression d’une manifestation avec son contenu (US-042)', () => {
       expect(identifiants(apres.epreuves)).not.toContain(id);
       expect(apres.supprimees).toContain(id);
     }
-    // Une autre manifestation, son compétition et sa épreuve ne sont pas touchées.
+    // Une autre manifestation, sa compétition et son épreuve ne sont pas touchées.
     expect(identifiants(await manifestationsDuClub())).toContain(autreManifestation);
     expect(competitions).toContain(autreCompetition);
     expect(identifiants(apres.epreuves)).toContain(ailleurs);

@@ -129,7 +129,7 @@ async function exposerServeur(page: Page) {
   await page.evaluate((url) => ((window as unknown as { __urlServeur: string }).__urlServeur = url), origine);
 }
 
-test('US-026 CA-1 et CA-2 : manifestation repliable avec son compétition et ses épreuves, triées par date, puis les isolées', async ({
+test('US-026 CA-1 et CA-2 : manifestation repliable avec sa compétition et ses épreuves, triées par date, puis les isolées', async ({
   page,
 }) => {
   const manifestation = nomUnique();

@@ -67,7 +67,7 @@ async function preparer(page: Page) {
   return { manifestation, competition, dansCompetition, directe };
 }
 
-test('US-042 CA-1 et CA-8 : supprimer une manifestation avec son compétition et ses épreuves, après avoir saisi son nom', async ({
+test('US-042 CA-1 et CA-8 : supprimer une manifestation avec sa compétition et ses épreuves, après avoir saisi son nom', async ({
   page,
 }) => {
   test.skip(Boolean(process.env.BASE_URL), AVEC_ADMINISTRATEUR);
@@ -77,7 +77,7 @@ test('US-042 CA-1 et CA-8 : supprimer une manifestation avec son compétition et
   const fenetre = page.getByRole('group', {
     name: `Supprimer définitivement la manifestation « ${manifestation} » avec son contenu ?`,
   });
-  await expect(fenetre.getByText('Sont supprimées avec elle : son compétition et ses 2 épreuves')).toBeVisible({
+  await expect(fenetre.getByText('Sont supprimées avec elle : sa compétition et ses 2 épreuves')).toBeVisible({
     timeout: 20_000,
   });
   const valider = fenetre.getByRole('button', { name: 'Supprimer définitivement', exact: true });
