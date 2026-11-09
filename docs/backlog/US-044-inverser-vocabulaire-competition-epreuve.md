@@ -6,7 +6,7 @@
 - **Type :** technique
 - **Statut :** En revue
 - **Dépend de :** US-043
-- **Branche / PR :** `us/US-044-inverser-vocabulaire-competition-epreuve` (PR : à ouvrir par `/fin-impl-US`)
+- **Branche / PR :** `us/US-044-inverser-vocabulaire-competition-epreuve` · [PR #64](https://github.com/fsmJla/poulePosition/pull/64)
 
 ## Récit
 
