@@ -1,16 +1,16 @@
-# US-035 — Importer une compétition depuis un fichier JSON
+# US-035 — Importer une épreuve depuis un fichier JSON
 
 - **Epic :** E2 — Compétitions
 - **Fonctionnalité :** F16 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
 - **Statut :** Prête
-- **Dépend de :** US-034, US-029
+- **Dépend de :** US-044, US-034, US-029
 - **Branche / PR :** —
 
 ## Récit
 
-**En tant qu'**organisateur, **je veux** importer un fichier exporté (US-034), **afin de** reprendre une compétition
+**En tant qu'**organisateur, **je veux** importer un fichier exporté (US-034), **afin de** reprendre une épreuve
 sur un PC de secours, même sans internet, ou de restaurer une sauvegarde.
 
 ## Critères d'acceptation
@@ -21,13 +21,13 @@ sur un PC de secours, même sans internet, ou de restaurer une sauvegarde.
 - **Alors** le format et le journal sont vérifiés, un résumé s'affiche (nom, date, nombre d'événements, date de
   l'export) et l'organisateur confirme.
 
-**CA-2 — Compétition inconnue de ce PC**
-- **Étant donné** une compétition absente de ce PC
+**CA-2 — Épreuve inconnue de ce PC**
+- **Étant donné** une épreuve absente de ce PC
 - **Quand** l'import est confirmé
-- **Alors** la compétition est créée localement avec son journal et ses fichiers, et ce PC en devient le pilote.
+- **Alors** l'épreuve est créée localement avec son journal et ses fichiers, et ce PC en devient le pilote.
 
-**CA-3 — Reprise hors ligne d'une compétition existante**
-- **Étant donné** une compétition dont ce PC a déjà une copie plus courte
+**CA-3 — Reprise hors ligne d'une épreuve existante**
+- **Étant donné** une épreuve dont ce PC a déjà une copie plus courte
 - **Quand** l'organisateur importe un fichier dont le journal la prolonge
 - **Alors** les événements manquants sont ajoutés.
 
@@ -37,7 +37,7 @@ sur un PC de secours, même sans internet, ou de restaurer une sauvegarde.
 - **Alors** l'import est refusé avec la raison, et rien n'est modifié.
 
 **CA-5 — Retour en ligne**
-- **Étant donné** une compétition importée hors ligne
+- **Étant donné** une épreuve importée hors ligne
 - **Quand** le PC revient en ligne
 - **Alors** l'application exige de « prendre la main » (US-029) avant tout envoi. Si le journal du serveur n'a pas
   avancé depuis le fichier importé, les événements du PC de secours sont envoyés et il devient le pilote.
@@ -45,7 +45,7 @@ sur un PC de secours, même sans internet, ou de restaurer une sauvegarde.
 **CA-6 — Journal du serveur divergent**
 - **Étant donné** un ancien pilote qui a envoyé au serveur des événements que le PC de secours n'a pas
 - **Quand** le PC de secours prend la main au retour en ligne
-- **Alors** il est averti (« La compétition a continué sur un autre PC : n modifications faites ici n'ont pas été
+- **Alors** il est averti (« L'épreuve a continué sur un autre PC : n modifications faites ici n'ont pas été
   reprises »), reprend le journal du serveur, et ses propres événements sont gardés à part, consultables et
   exportables, **sans fusion automatique**.
 
@@ -57,11 +57,11 @@ L'import fonctionne hors ligne : c'est le cas d'usage principal (PC pilote en pa
 
 - Fichier de plus de 50 Mo : refusé.
 - Journaux divergents (le fichier et la copie locale ont des événements différents au même `seq`) : refus, avec
-  proposition d'importer comme une nouvelle compétition (nouvel identifiant).
+  proposition d'importer comme une nouvelle épreuve (nouvel identifiant).
 
 ## Hypothèses
 
-- Import comme copie possible : « Importer comme nouvelle compétition » génère un nouvel identifiant (utile pour
+- Import comme copie possible : « Importer comme nouvelle épreuve » génère un nouvel identifiant (utile pour
   dupliquer).
 
 ## Questions bloquantes
@@ -78,3 +78,4 @@ L'import fonctionne hors ligne : c'est le cas d'usage principal (PC pilote en pa
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-11-08 | Amendée : vocabulaire inversé (la compétition regroupe, l'épreuve se tire ; US-044), au niveau de l'épreuve comme avant (décision du 2026-11-08) ; dépend de US-044 |

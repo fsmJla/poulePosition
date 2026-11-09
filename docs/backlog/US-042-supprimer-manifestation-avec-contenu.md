@@ -99,3 +99,4 @@ Suspendu hors ligne, comme US-023 (les manifestations ne se modifient qu'en lign
 | 2026-11-07 | En cours : plan validé, implémentation |
 | 2026-11-07 | En revue : PR vers `dev`, contrôles locaux verts (lint, typage, tests avec couverture, audit sans vulnérabilité haute) ; E2E locaux : 277 passent, 9 ignorés (preview uniquement) |
 | 2026-11-07 | Recette OK sur https://poule-position-git-us-us-042-supprimer-a1b42d-fsmjlas-projects.vercel.app : CA-1 et CA-8 vérifiés à la main en administrateur (décompte, nom à saisir, suppression effective), CA-2 par l'E2E de la preview ; hors ligne et CA-3 à CA-7 couverts par les tests automatisés uniquement |
+| 2026-11-08 | Impactée par US-044 (vocabulaire inversé) et US-045 (toute épreuve dans une compétition, compétition dans une manifestation ou seule) |

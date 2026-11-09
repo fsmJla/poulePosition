@@ -82,3 +82,4 @@ Changer le rattachement hors ligne propose les manifestations et épreuves de la
 - Changer de manifestation vide la date, comme à la création.
 - Format du journal inchangé (`VERSION_JOURNAL` = 1) : nouveau type d'événement, voir `docs/protocole.md` §10.
 | 2026-11-03 | Recette OK sur https://poule-position-git-us-us-027-modifier-c-8dc604-fsmjlas-projects.vercel.app (PC et smartphone, hors ligne) ; CA-2 vérifié en unitaire seulement ; mergée dans `dev` |
+| 2026-11-08 | Impactée par US-044 (vocabulaire inversé) et US-045 (toute épreuve dans une compétition, compétition dans une manifestation ou seule) |

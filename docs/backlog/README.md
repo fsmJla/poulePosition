@@ -59,12 +59,12 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-027](US-027-modifier-competition.md) | Modifier une compétition | E2 | Terminée | US-025 |
 | [US-028](US-028-formule-competition.md) | Choisir et faire évoluer la formule d'une compétition | E2 | Terminée | US-025 |
 | [US-029](US-029-prendre-la-main.md) | Prendre la main sur une compétition depuis un autre PC | E2 | Terminée | US-022 |
-| [US-030](US-030-affiche-feuille-de-route.md) | Joindre une affiche et une feuille de route | E2 | Prête | US-022, US-023, US-024, US-025 |
-| [US-031](US-031-publier-competition.md) | Publier ou dépublier une compétition | E2 | Prête | US-022, US-026, (US-030) |
+| [US-030](US-030-affiche-feuille-de-route.md) | Joindre une affiche et une feuille de route | E2 | Prête | US-044, US-022, US-023, US-024, US-025 |
+| [US-031](US-031-publier-competition.md) | Publier ou dépublier une épreuve | E2 | Prête | US-044, US-022, US-026, (US-030) |
 | [US-032](US-032-parametres-competition.md) | Régler les paramètres d'une compétition (droits des QR codes, « Prénom N. ») | E2 | Terminée | US-025 |
-| [US-033](US-033-archiver-competition.md) | Archiver ou désarchiver une compétition ou une manifestation | E2 | Prête | US-026 |
-| [US-034](US-034-exporter-competition-json.md) | Exporter une compétition en JSON (P2) | E2 | Prête | US-021 |
-| [US-035](US-035-importer-competition-json.md) | Importer une compétition depuis un fichier JSON (P2) | E2 | Prête | US-034, US-029 |
+| [US-033](US-033-archiver-competition.md) | Archiver ou désarchiver une épreuve ou une manifestation | E2 | Prête | US-044, US-026 |
+| [US-034](US-034-exporter-competition-json.md) | Exporter une épreuve en JSON (P2) | E2 | Prête | US-044, US-021 |
+| [US-035](US-035-importer-competition-json.md) | Importer une épreuve depuis un fichier JSON (P2) | E2 | Prête | US-044, US-034, US-029 |
 | [US-036](US-036-correction-e2e-desactivation-hors-ligne.md) | Corriger le test E2E « désactivation hors ligne » qui échoue sur la preview | E0 | Terminée | US-008 |
 | [US-037](US-037-economiser-minutes-ci.md) | Économiser les minutes de CI sur les E2E de la preview | E0 | Terminée | US-013, US-015 |
 | [US-038](US-038-correction-lectures-index.md) | Corriger les lectures répétées de tout l'index du club (quota Cloudflare) | E2 | Terminée | US-022, US-023, US-024, US-029 |
@@ -73,6 +73,12 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-041](US-041-supprimer-epreuve-avec-contenu.md) | Supprimer une épreuve avec son contenu | E2 | Terminée | US-024, US-039 |
 | [US-042](US-042-supprimer-manifestation-avec-contenu.md) | Supprimer une manifestation avec son contenu | E2 | Terminée | US-023, US-041 |
 | [US-043](US-043-supprimer-par-lot-tous-types.md) | Supprimer par lot des manifestations, des épreuves et des compétitions | E2 | Terminée | US-040, US-041, US-042 |
+| [US-044](US-044-inverser-vocabulaire-competition-epreuve.md) | Inverser le vocabulaire compétition / épreuve (technique) | E2 | Prête | US-043 |
+| [US-045](US-045-rattacher-epreuve-a-competition.md) | Rattacher toute épreuve à une compétition | E2 | Prête | US-044 |
+| [US-046](US-046-point-entree-creer.md) | Un seul point d'entrée « Créer », et l'aide « Comment ça s'organise » | E2 | Prête | US-047, US-048 |
+| [US-047](US-047-assistant-manifestation.md) | Créer une manifestation avec un assistant | E2 | Prête | US-048, US-049 |
+| [US-048](US-048-creer-epreuves-en-lot.md) | Créer les épreuves d'une compétition en lot (grille des épreuves) | E2 | Prête | US-045 |
+| [US-049](US-049-plan-de-la-manifestation.md) | Voir et compléter le plan de la manifestation | E2 | Prête | US-045, US-048 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
@@ -82,4 +88,8 @@ compte ouvre la page de profil) → US-018 (avec son ADR et un essai d'envoi ré
 
 **Ordre conseillé pour E2 :** US-021 → US-022 (avec l'ADR-0016 : index des compétitions, pilote, stockage des
 manifestations et épreuves) → US-025 → US-023 → US-024 → US-026 → US-027 → US-028 → US-029 → US-032 → US-030 →
-US-031 → US-033 → US-034 → US-035 → US-039 → US-040 → US-041 → US-042 → US-043.
+US-031 → US-033 → US-034 → US-035 → US-039 → US-040 → US-041 → US-042 → US-043 → US-044 (seule en cours pendant le renommage) → US-045 →
+US-048 → US-049 → US-047 → US-046, puis US-030 → US-031 → US-033 → US-034 → US-035 avec le nouveau vocabulaire.
+
+> **Vocabulaire révisé le 2026-11-08 :** la compétition regroupe des épreuves, l'épreuve est ce qui se tire (voir le
+> glossaire). Les US terminées gardent l'ancien vocabulaire ; les US à venir emploient le nouveau.
