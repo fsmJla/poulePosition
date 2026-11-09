@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-044
 - **Branche / PR :** `us/US-045-rattacher-epreuve-a-competition` / —
 
@@ -83,6 +83,13 @@ Testé par un E2E réseau coupé (choix limité aux compétitions de la copie, c
 - Une compétition seule n'a pas de dates ni de lieu propres : ce sont ceux de ses épreuves.
 - CA-7 réutilise la modification du rattachement d'US-027 plutôt qu'un écran dédié.
 
+- Date d'une épreuve d'une compétition seule : facultative (validé le 2026-11-09).
+- Le niveau « compétition » est masqué seulement pour une compétition **seule** à une épreuve (validé).
+- CA-4 : la compétition est créée en ligne, puis l'épreuve en local, avec retrait au mieux de la compétition en cas
+  d'échec (pas de transaction entre le serveur et l'appareil ; validé).
+- Aucun changement de `version` des événements ni migration du journal ; le Club migre sa table `competitions`
+  (`manifestation_id` devient facultatif).
+
 ## Questions bloquantes
 
 - Aucune.
@@ -94,9 +101,26 @@ Testé par un E2E réseau coupé (choix limité aux compétitions de la copie, c
   compétition.
 - Impacte les US terminées US-023, US-024, US-025, US-026, US-027, US-041, US-042 et US-043 (ligne de suivi ajoutée).
 
+## Réalisation
+
+| Critère | Tests |
+|---|---|
+| CA-1 | `epreuve.test.ts` (domaine), `validation.test.ts` (protocole), `epreuves.test.ts` (app), E2E `epreuves.spec.ts` « US-045 CA-1 » |
+| CA-2 | `competition.test.ts`, `competitions.test.ts` (serveur), E2E `accueil.spec.ts` « CA-2, CA-4 et CA-5 » |
+| CA-3 | `epreuves.test.ts` (`cadreDe`, `rattacher`, dates), E2E `competitions.spec.ts` |
+| CA-4 | `epreuves.test.ts` (`creerCompetitionSeule`), E2E `epreuves.spec.ts`, `accueil.spec.ts` |
+| CA-5 | `liste.test.ts` (domaine), `accueil.test.ts` (app), E2E `accueil.spec.ts` « CA-1 et CA-2 » |
+| CA-6 | `competitions.test.ts` et `suppression-contenu*.test.ts` (serveur), `selection-suppression.test.ts`, E2E `suppression-lot.spec.ts` |
+| CA-7 | `competitions.test.ts` (serveur), `accueil.test.ts`, E2E `accueil.spec.ts` « US-045 CA-7 » |
+| Hors ligne | `epreuves.test.ts` (`RATTACHEMENT_INVALIDE`), E2E `epreuves.spec.ts` (compétition connue, création grisée) et `accueil.spec.ts` |
+
+Effet sur l'ADR-0016 (rattachement des épreuves) : le rattachement passe de « manifestation et/ou compétition » à la seule
+compétition ; la décision de fond (un journal par épreuve, index du club côté serveur) ne change pas.
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-11-08 | Créée (analyse d'impact du changement de modèle) |
 | 2026-11-09 | Plan validé ; implémentation démarrée sur la branche `us/US-045-rattacher-epreuve-a-competition` |
+| 2026-11-09 | Implémentée ; contrôles locaux verts ; passée « En revue » |

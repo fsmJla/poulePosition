@@ -455,11 +455,11 @@ Le format a été complété par US-025 sans changer de version : rien n'était 
 | `typeEpreuve` | texte | `individuelle`, `equipes2` ou `equipes3` |
 | `categorie` | texte ou `null` | Catégorie FFE (`M7` … `Vétéran 4`) ou texte libre, 30 caractères au plus |
 | `sexe` | texte ou `null` | `hommes`, `dames` ou `mixte` |
-| `date` | texte ou `null` | Jour `AAAA-MM-JJ` ; obligatoire et compris dans la manifestation si l’épreuve y est rattachée |
+| `date` | texte ou `null` | Jour `AAAA-MM-JJ` ; obligatoire et compris dans la manifestation si la compétition de l’épreuve y est rattachée, facultative pour une compétition seule (US-045) |
 | `horaires` | objet | `{ appel, scratch, debutPoules }`, chacun `HH:MM` ou `null` ; dans cet ordre (un horaire absent est sauté) |
 | `lieu` | texte ou `null` | 200 caractères au plus |
 | `commentaire` | texte ou `null` | 2 000 caractères au plus |
-| `rattachement` | objet ou `null` | `null` (isolée) ou `{ manifestationId, competitionId }`, `competitionId` pouvant valoir `null` |
+| `rattachement` | objet | **Obligatoire** : `{ competitionId }` (US-045). La manifestation s'en déduit par la compétition ; `null` et un `competitionId` vide sont refusés (`RATTACHEMENT_OBLIGATOIRE`) |
 
 La projection ajoute le statut (`preparation`), la publication (`false`) et la formule par défaut (US-028). Les règles
 qui dépendent de la manifestation ou de la compétition (dates, arme de la compétition) sont vérifiées à la saisie, où elles
@@ -694,7 +694,7 @@ puis + 1 à chaque modification), `modifieeLe` (millisecondes) et `modifieePar` 
 **Erreurs** : `400 DEMANDE_INVALIDE` (corps mal formé ou refusé par les règles), `404 MANIFESTATION_INCONNUE`,
 `409 MODIFIEE_ENTRE_TEMPS` avec la version courante (`{"ok":false,"erreur":…,"manifestation":{…}}`, l'application
 affiche « Modifié entre-temps par <modifieePar> : rechargez ») et `409 MANIFESTATION_NON_VIDE` : une épreuve de
-l'index du club s'y rattache (`rattachement.manifestationId`), ou si elle contient une compétition (§13), la suppression est
+l'index du club s'y rattache (par une de ses compétitions, `rattachement.competitionId`), ou si elle contient une compétition (§13), la suppression est
 refusée ; une manifestation non vide s'archivera (US-033).
 
 ### Côté application
@@ -722,7 +722,7 @@ rôle. Même CORS qu'au §7.
 
 | Champ | Type | Règles |
 |---|---|---|
-| `manifestationId` | texte | Obligatoire, d'une manifestation existante ; fixé à la création |
+| `manifestationId` | texte ou `null` | D'une manifestation existante, ou `null` pour une compétition seule (US-045) ; fixé à la création |
 | `nom` | texte | Obligatoire, 1 à 100 caractères, espaces autour retirés |
 | `arme` | texte ou `null` | `sabre`, `epee`, `fleuret` ou `sabreLaser` ; `null` : toutes armes |
 | `commentaire` | texte ou `null` | 2 000 caractères au plus |
@@ -733,7 +733,7 @@ rôle. Même CORS qu'au §7.
 | Route | Corps | Réponse |
 |---|---|---|
 | `GET /competitions` | — | `200 {"ok":true,"competitions":[…]}`, regroupées par manifestation |
-| `POST /competitions` | `manifestationId`, `nom`, `arme`, `commentaire` | `201 {"ok":true,"competition":{…}}` |
+| `POST /competitions` | `manifestationId` (ou `null`, compétition seule), `nom`, `arme`, `commentaire` | `201 {"ok":true,"competition":{…}}` |
 | `PATCH /competitions/<id>` | `nom`, `arme`, `commentaire` et `version` ; **pas** de `manifestationId` | `200 {"ok":true,"competition":{…}}` |
 | `DELETE /competitions/<id>` | — | `200 {"ok":true}` (compétition vide) ; avec `?contenu=1`, voir §14 |
 
@@ -741,6 +741,11 @@ rôle. Même CORS qu'au §7.
 `404 MANIFESTATION_INCONNUE` (création), `404 COMPETITION_INCONNUE`, `409 MODIFIEE_ENTRE_TEMPS` avec la version courante
 (`{"ok":false,"erreur":…,"competition":{…}}`) et `409 COMPETITION_NON_VIDE` : une épreuve de l'index du club s'y rattache
 (`rattachement.competitionId`).
+
+**Compétition seule (US-045)** : quand la dernière épreuve d'une compétition sans manifestation est supprimée (§14, une
+ou en série), le serveur supprime aussi la compétition. Une épreuve dont la compétition n'existe plus (supprimée par un
+autre administrateur) reste acceptée et listée : l'application la signale « à rattacher » (CA-7). Au démarrage, le
+Club migre l'ancienne table `competitions` (colonne `manifestation_id` obligatoire) vers la colonne facultative.
 
 ### Côté application
 
@@ -753,12 +758,17 @@ rôle. Même CORS qu'au §7.
   domaine (`validerEpreuve` avec un `CadreRattachement`) qui refuse, à la création d'une épreuve, une arme
   différente de celle de la compétition : « Cette compétition est au sabre ». Changer l'arme d'une compétition ne modifie pas les
   épreuves déjà rattachées.
-- **Rattachement d'une épreuve** (US-025 CA-3 et CA-4) : le formulaire « Nouvelle épreuve » propose « Aucune
-  (épreuve isolée) », une manifestation, puis une compétition de cette manifestation, parmi les dernières listes gardées
-  sur l'appareil (à jour en ligne, sinon la copie). Le lieu de la manifestation et l'arme de la compétition sont proposés ;
-  dans une manifestation, la date est obligatoire, proposée parmi ses jours et refusée hors de ses dates. Hors ligne,
-  un rattachement que la copie ne contient pas est refusé (`RATTACHEMENT_INVALIDE`) ; une épreuve isolée reste
-  toujours possible.
+- **Rattachement d'une épreuve** (US-045, qui remplace US-025 CA-3 et CA-4) : le formulaire « Nouvelle épreuve » propose
+  un seul choix « Compétition » : les compétitions des dernières listes gardées sur l'appareil (à jour en ligne, sinon
+  la copie), nommées « <compétition> — <manifestation> » ou « <compétition> (seule) », plus « Nouvelle compétition seule »
+  (en ligne seulement). Le lieu de la manifestation et l'arme de la compétition sont proposés ; la date est obligatoire,
+  proposée parmi les jours de la manifestation et refusée hors de ses dates, seulement si la compétition y est rattachée.
+  Sans choix : `RATTACHEMENT_OBLIGATOIRE` ; hors ligne, une compétition que la copie ne contient pas est refusée
+  (`RATTACHEMENT_INVALIDE`).
+- **Compétition seule et première épreuve** (US-045 CA-4) : l'application valide l'épreuve, crée la compétition
+  (`POST /competitions`, `manifestationId: null`, même nom et même arme), puis écrit l'épreuve dans le journal local ; si
+  l'écriture échoue, elle retire la compétition (`DELETE`, au mieux). Le niveau « compétition » n'est pas montré tant qu'une
+  compétition seule n'a qu'une épreuve.
 
 ## 14. Suppression définitive d'une épreuve (US-039, ADR-0019)
 

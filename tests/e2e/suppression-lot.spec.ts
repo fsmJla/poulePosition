@@ -149,7 +149,7 @@ test('US-043 CA-5 : une compétition et des épreuves cochées sans leur manifes
   page,
 }) => {
   test.skip(Boolean(process.env.BASE_URL), AVEC_ADMINISTRATEUR);
-  const { manifestation, competition, dansCompetition, directe, isolee } = await preparer(page);
+  const { manifestation, competition, directe, isolee } = await preparer(page);
 
   // Cocher la compétition couvre ses deux épreuves (dansCompetition et directe).
   await caseCompetition(page, competition).check();
