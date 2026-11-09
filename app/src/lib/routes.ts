@@ -17,7 +17,8 @@ export type Page =
   | 'modifierEpreuve'
   | 'formuleEpreuve'
   | 'parametresEpreuve'
-  | 'grilleEpreuves';
+  | 'grilleEpreuves'
+  | 'planManifestation';
 
 /** Adresses fixes ; celle d'une épreuve porte son identifiant (`cheminEpreuve`). */
 export const CHEMINS = Object.freeze({
@@ -35,7 +36,10 @@ export const CHEMINS = Object.freeze({
   /** US-025 : formulaire de création d'une épreuve. */
   nouvelleEpreuve: '/epreuves/nouvelle',
 } satisfies Record<
-  Exclude<Page, 'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve' | 'grilleEpreuves'>,
+  Exclude<
+    Page,
+    'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve' | 'grilleEpreuves' | 'planManifestation'
+  >,
   string
 >);
 
@@ -83,6 +87,19 @@ export function cheminGrilleEpreuves(competitionId: string): string {
   return `/competitions/${competitionId}/epreuves`;
 }
 
+/** US-049 : plan d'une manifestation. */
+export function cheminPlanManifestation(manifestationId: string): string {
+  return `/manifestations/${manifestationId}`;
+}
+
+/** US-049 CA-2 : formulaire « Nouvelle épreuve » avec la compétition et, s'il y en a un, le jour déjà choisis. */
+export function cheminNouvelleEpreuveDans(competitionId: string, jour?: string | null): string {
+  const parametres = new URLSearchParams({ competition: competitionId });
+  if (jour) parametres.set('jour', jour);
+  return `${CHEMINS.nouvelleEpreuve}?${parametres}`;
+}
+
+const MOTIF_PLAN = /^\/manifestations\/([^/]+)$/;
 const MOTIF_GRILLE = /^\/competitions\/([^/]+)\/epreuves$/;
 const MOTIF_EPREUVE = /^\/epreuves\/([^/]+)$/;
 const MOTIF_MODIFICATION = /^\/epreuves\/([^/]+)\/modifier$/;
@@ -102,22 +119,28 @@ const RESERVEES: readonly Page[] = [
   'formuleEpreuve',
   'parametresEpreuve',
   'grilleEpreuves',
+  'planManifestation',
 ];
 
 /** Pages des administrateurs : un organisateur est renvoyé à son accueil (US-007 CA-6). */
 const ADMINISTRATEURS: readonly Page[] = ['comptes'];
 
-export type Route = { page: Page; epreuveId?: string; competitionId?: string } | { redirection: string };
+export type Route =
+  { page: Page; epreuveId?: string; competitionId?: string; manifestationId?: string } | { redirection: string };
 
 /** Page désignée par une adresse normalisée, avec l'identifiant de l’épreuve s'il y en a un ; null si inconnue. */
-function pageDe(chemin: string): { page: Page; epreuveId?: string; competitionId?: string } | null {
+function pageDe(
+  chemin: string,
+): { page: Page; epreuveId?: string; competitionId?: string; manifestationId?: string } | null {
   const page = (
     Object.keys(CHEMINS) as Exclude<
       Page,
-      'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve' | 'grilleEpreuves'
+      'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve' | 'grilleEpreuves' | 'planManifestation'
     >[]
   ).find((candidate) => CHEMINS[candidate] === chemin);
   if (page) return { page };
+  const plan = MOTIF_PLAN.exec(chemin)?.[1];
+  if (plan) return MOTIF_IDENTIFIANT.test(plan) ? { page: 'planManifestation', manifestationId: plan } : null;
   const grille = MOTIF_GRILLE.exec(chemin)?.[1];
   if (grille) return MOTIF_IDENTIFIANT.test(grille) ? { page: 'grilleEpreuves', competitionId: grille } : null;
   const modifiee = MOTIF_MODIFICATION.exec(chemin)?.[1];
@@ -148,4 +171,13 @@ export function resoudreRoute(chemin: string, connecte: boolean, temporaire = fa
   if (connecte && page === 'connexion') return { redirection: CHEMINS.organisateur };
   if (connecte && !administrateur && ADMINISTRATEURS.includes(page)) return { redirection: CHEMINS.organisateur };
   return route;
+}
+
+/** US-049 CA-2 : compétition et jour que l'adresse du formulaire « Nouvelle épreuve » demande de préchoisir. */
+export function preselectionEpreuve(recherche: string): { competitionId: string; jour: string | null } | null {
+  const parametres = new URLSearchParams(recherche);
+  const competitionId = parametres.get('competition');
+  if (!competitionId || !MOTIF_IDENTIFIANT.test(competitionId)) return null;
+  const jour = parametres.get('jour');
+  return { competitionId, jour: jour && /^\d{4}-\d{2}-\d{2}$/.test(jour) ? jour : null };
 }
