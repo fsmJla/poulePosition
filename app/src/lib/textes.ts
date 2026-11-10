@@ -1032,6 +1032,48 @@ export const textes = {
     },
   },
   /** US-030 : affiche et feuille de route d'une manifestation, d'une compétition ou d'une épreuve. */
+  /** US-031 : publier ou dépublier une épreuve. « Publiée / Non publiée » parle de visibilité, jamais du réseau (CA-6). */
+  publication: {
+    titre: 'Publication',
+    publier: 'Publier',
+    depublier: 'Dépublier',
+    enCours: 'Enregistrement…',
+    aidePubliee: 'Cette épreuve est visible du public sur la page d’accueil.',
+    aideNonPubliee: 'Seuls les organisateurs connectés voient cette épreuve.',
+    /** Après « Publier » ou « Dépublier » tant que le serveur n'a pas reçu l'événement. */
+    enAttente: 'Publication en attente d’envoi',
+    lienPublic: 'Page publique de l’épreuve',
+    erreurs: {
+      INTROUVABLE: 'Cette épreuve est introuvable sur cet appareil',
+      PAS_PILOTE: 'Seul le PC pilote peut publier cette épreuve',
+      EPREUVE_ARCHIVEE: 'Une épreuve archivée ne se publie pas',
+      JOURNAL_INCOHERENT: 'Le journal de cette épreuve est incohérent : la publication n’a pas été enregistrée',
+      ECRITURE_IMPOSSIBLE: 'La publication n’a pas pu être enregistrée sur cet appareil',
+    },
+  },
+  /** US-031 : page d'accueil publique et page « direct » d'une épreuve (E9 y ajoutera le suivi en direct). */
+  accueilPublic: {
+    titre: 'Épreuves à venir',
+    chargement: 'Chargement des épreuves…',
+    aucune: 'Aucune épreuve à venir',
+    injoignable: 'Impossible de joindre le serveur : vérifiez votre connexion internet.',
+    erreur: 'Les épreuves n’ont pas pu être chargées. Réessayez dans un instant.',
+    reessayer: 'Réessayer',
+    competitionsSeules: 'Autres compétitions',
+    affiche: (nom: string) => `Affiche : ${nom}`,
+    feuilleDeRoute: 'Feuille de route',
+    voir: 'Voir l’épreuve',
+    jours: (debut: string, fin: string) => {
+      const jour = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}`;
+      return debut === fin ? `le ${jour(debut)}` : `du ${jour(debut)} au ${jour(fin)}`;
+    },
+    direct: {
+      titre: 'Épreuve',
+      chargement: 'Chargement de l’épreuve…',
+      nonPubliee: 'Cette épreuve n’est pas publiée',
+      accueil: 'Voir toutes les épreuves',
+    },
+  },
   fichiers: {
     titre: 'Documents',
     affiche: 'Affiche',

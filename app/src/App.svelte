@@ -14,10 +14,12 @@
   import { creerClientCompetitions } from './lib/competitions';
   import { creerClientManifestations } from './lib/manifestations';
   import { creerClientFichiers } from './lib/fichiers';
+  import { creerClientPublic } from './lib/publication';
   import { textes } from './lib/textes';
   import BarreOutils from './composants/BarreOutils.svelte';
   import Entete from './composants/Entete.svelte';
   import Accueil from './pages/Accueil.svelte';
+  import Direct from './pages/Direct.svelte';
   import Epreuve from './pages/Epreuve.svelte';
   import Comptes from './pages/Comptes.svelte';
   import Connexion from './pages/Connexion.svelte';
@@ -67,6 +69,8 @@
     urlServeur: urlHttp(urlServeur),
     jeton: async () => (session && !estLocale(session) ? session.jeton : null),
   });
+  /** US-031 : page d'accueil publique et lien public d'une épreuve, lus sans session. */
+  const publication = creerClientPublic({ urlServeur: urlHttp(urlServeur) });
   const accueil = creerAccueil({ journal, synchronisation, manifestations, competitions });
   /** Faux tant que la session gardée n'est pas relue : évite d'afficher une page puis d'en changer. */
   let pret = $state(false);
@@ -149,7 +153,10 @@
 {#if pret && 'page' in route}
   {#if route.page === 'accueil'}
     <BarreOutils />
-    <Accueil {urlServeur} connecte={session !== null} {naviguer} />
+    <Accueil client={publication} connecte={session !== null} {naviguer} />
+  {:else if route.page === 'direct' && route.epreuveId}
+    <BarreOutils />
+    <Direct client={publication} epreuveId={route.epreuveId} {naviguer} />
   {:else if route.page === 'connexion'}
     <BarreOutils />
     <Connexion {client} {surConnexion} {naviguer} />

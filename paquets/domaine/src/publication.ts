@@ -45,6 +45,13 @@ export interface DonneesPagePublique {
   epreuves: readonly EpreuveCandidate[];
 }
 
+/** Données déjà filtrées par le serveur : seulement des épreuves publiées. */
+export interface DonneesPubliees {
+  manifestations: readonly ManifestationListee[];
+  competitions: readonly CompetitionListee[];
+  epreuves: readonly EpreuvePublique[];
+}
+
 const comparer = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 /** CA-2 et CA-5 : une épreuve est montrée si elle est publiée et non archivée. */
@@ -72,7 +79,7 @@ function versPublique({
   horaires,
   lieu,
   competitionId,
-}: EpreuveCandidate): EpreuvePublique {
+}: EpreuvePublique): EpreuvePublique {
   return { id, nom, arme, categorie, sexe, date, horaires, lieu, competitionId };
 }
 
@@ -80,9 +87,14 @@ function versPublique({
  * CA-3 : les épreuves publiées regroupées par manifestation puis par compétition. Une manifestation ou une compétition
  * n'apparaît que si elle contient au moins une épreuve publiée ; les épreuves archivées sont exclues (CA-5).
  */
-export function construirePagePublique({ manifestations, competitions, epreuves }: DonneesPagePublique): PagePublique {
+export function construirePagePublique({ epreuves, ...reste }: DonneesPagePublique): PagePublique {
+  return regrouperPagePublique({ ...reste, epreuves: epreuves.filter(estVisibleDuPublic).map(versPublique) });
+}
+
+/** CA-3 : regroupe des épreuves déjà publiées (celles de `GET /public`) par manifestation puis par compétition. */
+export function regrouperPagePublique({ manifestations, competitions, epreuves }: DonneesPubliees): PagePublique {
   const parCompetition = new Map<string, EpreuvePublique[]>();
-  for (const epreuve of epreuves.filter(estVisibleDuPublic)) {
+  for (const epreuve of epreuves) {
     const liste = parCompetition.get(epreuve.competitionId) ?? [];
     liste.push(versPublique(epreuve));
     parCompetition.set(epreuve.competitionId, liste);

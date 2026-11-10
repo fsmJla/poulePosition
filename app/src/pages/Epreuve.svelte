@@ -8,10 +8,17 @@
   import Lien from '../composants/Lien.svelte';
   import type { ClientCompetitions } from '../lib/competitions';
   import type { ClientFichiers } from '../lib/fichiers';
+  import { modifierPublication } from '../lib/epreuves';
   import { prendreEcriture, type Journal } from '../lib/journal';
   import { contenuExport, libellePilote } from '../lib/pilotage';
   import type { Ecart, SessionAppareil } from '../lib/stockage';
-  import { cheminFormuleEpreuve, cheminModificationEpreuve, cheminParametresEpreuve, CHEMINS } from '../lib/routes';
+  import {
+    cheminDirect,
+    cheminFormuleEpreuve,
+    cheminModificationEpreuve,
+    cheminParametresEpreuve,
+    CHEMINS,
+  } from '../lib/routes';
   import { nomConfirme, peutSupprimer } from '../lib/suppression';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -206,6 +213,36 @@
     }
   }
 
+  const tpub = textes.publication;
+  let publicationEnCours = $state(false);
+  let erreurPublication: string | null = $state(null);
+  /** Valeur demandée à la dernière publication, tant que le serveur n'a pas reçu l'événement. */
+  let publicationAttendue: boolean | null = $state(null);
+
+  /** US-031 CA-2 et CA-4 : publie ou dépublie, sans réseau (journal local), puis envoie dès que possible. */
+  async function changerPublication(publiee: boolean) {
+    if (publicationEnCours) return;
+    publicationEnCours = true;
+    erreurPublication = null;
+    try {
+      const resultat = await modifierPublication(journal, epreuveId, publiee, {
+        clubId: session.compte.clubId,
+        auteur: session.compte.email,
+      });
+      if (!resultat.ok) {
+        erreurPublication = tpub.erreurs[resultat.erreur];
+        return;
+      }
+      await charger();
+      publicationAttendue = publiee;
+      void envoyer().then(() => {
+        if (enAttente === 0) publicationAttendue = null;
+      });
+    } finally {
+      publicationEnCours = false;
+    }
+  }
+
   const nombreEcartes = $derived(ecartes.reduce((total, { evenements }) => total + evenements.length, 0));
   const annonceEcart = $derived(
     ecartes[0]?.piloteNom ? libellePilote(ecartes[0].piloteNom, ecartes[0].piloteAppareil ?? '') : null,
@@ -277,6 +314,25 @@
     <Lien chemin={cheminFormuleEpreuve(epreuveId)} {naviguer}>{t.modifierFormule}</Lien>
     <!-- US-032 : paramètres (droits, noms au public), lisibles aussi en lecture seule. -->
     <Lien chemin={cheminParametresEpreuve(epreuveId)} {naviguer}>{t.lienParametres}</Lien>
+    <!-- US-031 : publier ou dépublier à tout moment, depuis le PC pilote (hors ligne comprise). -->
+    <section class="publication" aria-label={tpub.titre}>
+      <p class="discret">{epreuve.publiee ? tpub.aidePubliee : tpub.aideNonPubliee}</p>
+      {#if pilote && ecriture && epreuve.statut !== 'archivee'}
+        <button
+          type="button"
+          class={epreuve.publiee ? 'secondaire' : undefined}
+          onclick={() => changerPublication(!epreuve!.publiee)}
+          disabled={publicationEnCours}>{epreuve.publiee ? tpub.depublier : tpub.publier}</button
+        >
+      {/if}
+      {#if epreuve.publiee}
+        <Lien chemin={cheminDirect(epreuveId)} {naviguer}>{tpub.lienPublic}</Lien>
+      {/if}
+      {#if pilote && publicationAttendue !== null && enAttente > 0}
+        <p class="envoi" role="status">{tpub.enAttente}</p>
+      {/if}
+      {#if erreurPublication}<p class="message" role="alert">{erreurPublication}</p>{/if}
+    </section>
     {#if pilote && enAttente > 0}
       <p class="envoi" role="status">
         {jamaisEnvoyee ? `${t.enAttente(enAttente)} · ${t.pasEncoreEnvoyee}` : t.enAttente(enAttente)}
@@ -494,6 +550,18 @@
 
   small {
     color: var(--texte-discret);
+  }
+
+  .publication {
+    display: grid;
+    justify-items: center;
+    gap: 0.5rem;
+  }
+
+  .discret {
+    margin: 0;
+    color: var(--texte-discret);
+    font-size: 0.9rem;
   }
 
   .avertissement,

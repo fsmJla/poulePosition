@@ -71,6 +71,7 @@ function fauxServeur() {
 
   return {
     envoyer,
+    index,
     journaux,
     lots,
     couper: () => (reseau = false),
@@ -339,5 +340,70 @@ describe('épreuves connues (US-023 CA-4)', () => {
     await journal.enregistrer('c1', creation('Locale'), contexte);
     const epreuves = await synchro(journal, serveur, { enLigne: () => false }).epreuvesConnues();
     expect(epreuves.map(({ id }) => id)).toEqual(['c1']);
+  });
+});
+
+describe('publication d’une épreuve (US-031)', () => {
+  it('CA-2 et hors ligne : une publication faite sans réseau part au retour du réseau, avec le résumé à jour', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    const synchronisation = synchro(journal, serveur);
+    await journal.enregistrer('c1', creation(), contexte);
+    expect(await synchronisation.envoyer('c1')).toBe('a-jour');
+    expect(serveur.index.get('c1')).toMatchObject({ publiee: false });
+
+    serveur.couper();
+    await journal.enregistrer('c1', { type: 'PublicationModifiee', donnees: { publiee: true } }, contexte);
+    expect(await synchronisation.envoyer('c1')).toBe('en-attente');
+    expect(await synchronisation.enAttente('c1')).toBe(1);
+    expect(serveur.index.get('c1')).toMatchObject({ publiee: false });
+
+    serveur.retablir();
+    expect(await synchronisation.envoyer('c1')).toBe('a-jour');
+    expect(serveur.index.get('c1')).toMatchObject({
+      publiee: true,
+      horaires: { appel: null, scratch: null, debutPoules: null },
+      lieu: null,
+    });
+    expect(serveur.journaux.get('c1')?.evenements.map(({ type }) => type)).toEqual([
+      'EpreuveCreee',
+      'PublicationModifiee',
+    ]);
+  });
+
+  it('CA-4 : dépublier envoie aussi l’événement et le résumé non publié', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    const synchronisation = synchro(journal, serveur);
+    await journal.enregistrer('c1', creation(), contexte);
+    await journal.enregistrer('c1', { type: 'PublicationModifiee', donnees: { publiee: true } }, contexte);
+    await synchronisation.envoyer('c1');
+    expect(serveur.index.get('c1')).toMatchObject({ publiee: true });
+    await journal.enregistrer('c1', { type: 'PublicationModifiee', donnees: { publiee: false } }, contexte);
+    await synchronisation.envoyer('c1');
+    expect(serveur.index.get('c1')).toMatchObject({ publiee: false });
+  });
+
+  it('le résumé envoyé porte les horaires et le lieu de l’épreuve (CA-3)', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    const { donnees } = creation() as Extract<Proposition, { type: 'EpreuveCreee' }>;
+    await journal.enregistrer(
+      'c1',
+      {
+        type: 'EpreuveCreee',
+        donnees: {
+          ...donnees,
+          lieu: 'Salle Bellegrave',
+          horaires: { appel: '08:30', scratch: '09:00', debutPoules: null },
+        },
+      },
+      contexte,
+    );
+    await synchro(journal, serveur).envoyer('c1');
+    expect(serveur.index.get('c1')).toMatchObject({
+      lieu: 'Salle Bellegrave',
+      horaires: { appel: '08:30', scratch: '09:00', debutPoules: null },
+    });
   });
 });

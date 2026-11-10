@@ -11,6 +11,7 @@ import {
   modifierEpreuve as modifierEpreuveBrut,
   modifierFormule,
   modifierParametres,
+  modifierPublication,
   rattacher,
   saisieDe,
   saisieDeCopie,
@@ -789,6 +790,74 @@ describe('saisie d’une copie d’épreuve (US-051)', () => {
       scratch: '',
       debutPoules: '',
       commentaire: '',
+    });
+  });
+});
+
+describe('publication d’une épreuve (US-031)', () => {
+  const creee = async () => {
+    const journal = nouveauJournal();
+    const resultat = await creerEpreuve(journal, saisie(), auteur);
+    return { journal, epreuveId: (resultat as { epreuveId: string }).epreuveId };
+  };
+  const publieeDe = async (journal: ReturnType<typeof nouveauJournal>, epreuveId: string) =>
+    (await journal.lire(epreuveId)).epreuve!.publiee;
+
+  it('CA-1 : une épreuve créée n’est pas publiée', async () => {
+    const { journal, epreuveId } = await creee();
+    expect(await publieeDe(journal, epreuveId)).toBe(false);
+  });
+
+  it('CA-2 : publier écrit PublicationModifiee, à envoyer au serveur', async () => {
+    const { journal, epreuveId } = await creee();
+    expect(await modifierPublication(journal, epreuveId, true, auteur)).toEqual({ ok: true, modifiee: true });
+    expect(await publieeDe(journal, epreuveId)).toBe(true);
+    const evenement = (await journal.aEnvoyer(epreuveId)).at(-1);
+    expect(evenement).toMatchObject({ seq: 2, type: 'PublicationModifiee', donnees: { publiee: true } });
+  });
+
+  it('CA-4 : dépublier écrit l’événement inverse', async () => {
+    const { journal, epreuveId } = await creee();
+    await modifierPublication(journal, epreuveId, true, auteur);
+    expect(await modifierPublication(journal, epreuveId, false, auteur)).toEqual({ ok: true, modifiee: true });
+    expect(await publieeDe(journal, epreuveId)).toBe(false);
+    expect((await journal.lire(epreuveId)).dernierSeq).toBe(3);
+  });
+
+  it('une publication déjà telle que demandée n’écrit rien', async () => {
+    const { journal, epreuveId } = await creee();
+    expect(await modifierPublication(journal, epreuveId, false, auteur)).toEqual({ ok: true, modifiee: false });
+    expect((await journal.lire(epreuveId)).dernierSeq).toBe(1);
+  });
+
+  it('CA-2 : un PC non pilote ne peut pas publier (PAS_PILOTE)', async () => {
+    const { journal, epreuveId } = await creee();
+    const copie = nouveauJournal();
+    await copie.remplacerCopie(epreuveId, await journal.aEnvoyer(epreuveId), 1);
+    expect(await modifierPublication(copie, epreuveId, true, auteur)).toEqual({ ok: false, erreur: 'PAS_PILOTE' });
+  });
+
+  it('hors ligne : la publication s’écrit dans le journal local sans réseau et reste à envoyer', async () => {
+    const { journal, epreuveId } = await creee();
+    await journal.confirmer(epreuveId, 1);
+    expect(await journal.aEnvoyer(epreuveId)).toEqual([]);
+    await modifierPublication(journal, epreuveId, true, auteur);
+    const attente = await journal.aEnvoyer(epreuveId);
+    expect(attente.map(({ seq, type }) => [seq, type])).toEqual([[2, 'PublicationModifiee']]);
+  });
+
+  it('cas limites : épreuve inconnue, archivée, échec d’écriture', async () => {
+    const { journal, epreuveId } = await creee();
+    expect(await modifierPublication(journal, 'absente', true, auteur)).toEqual({ ok: false, erreur: 'INTROUVABLE' });
+    vi.spyOn(journal, 'enregistrer').mockResolvedValueOnce({ erreur: 'EPREUVE_ARCHIVEE' });
+    expect(await modifierPublication(journal, epreuveId, true, auteur)).toEqual({
+      ok: false,
+      erreur: 'EPREUVE_ARCHIVEE',
+    });
+    vi.spyOn(journal, 'enregistrer').mockResolvedValueOnce({ erreur: 'ECRITURE_IMPOSSIBLE' });
+    expect(await modifierPublication(journal, epreuveId, true, auteur)).toEqual({
+      ok: false,
+      erreur: 'ECRITURE_IMPOSSIBLE',
     });
   });
 });

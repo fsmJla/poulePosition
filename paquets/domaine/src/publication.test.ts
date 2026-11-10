@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { construirePagePublique, type EpreuveCandidate } from './publication';
+import { construirePagePublique, regrouperPagePublique, type EpreuveCandidate } from './publication';
 import type { CompetitionListee, ManifestationListee } from './liste';
 
 const manifestation = (id: string, debut = '2027-03-14'): ManifestationListee => ({
@@ -132,6 +132,16 @@ describe('page publique (US-031)', () => {
   it('une épreuve dont la compétition est inconnue n’est pas montrée', () => {
     const page = construirePagePublique({ manifestations: [], competitions: [], epreuves: [epreuve('e1', 'c9')] });
     expect(page).toEqual({ manifestations: [], competitionsSeules: [] });
+  });
+
+  it('CA-3 : regrouper des épreuves déjà publiées ne les filtre plus et en retire les champs en trop', () => {
+    const { statut: _statut, publiee: _publiee, ...publiee } = epreuve('e1', 'c1');
+    const page = regrouperPagePublique({
+      manifestations: [manifestation('m1')],
+      competitions: [competition('c1', 'm1')],
+      epreuves: [{ ...publiee, piloteNom: 'Julien' } as typeof publiee],
+    });
+    expect(page.manifestations[0]?.competitions[0]?.epreuves).toEqual([publiee]);
   });
 
   it('cas limite : aucune épreuve publiée donne une page vide', () => {
