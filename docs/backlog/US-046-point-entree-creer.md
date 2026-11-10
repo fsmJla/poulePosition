@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-047, US-048
 - **Branche / PR :** `us/US-046-point-entree-creer` / —
 
@@ -95,3 +95,4 @@ connue de l'appareil (US-045, décision 1a). L'aide est consultable hors ligne. 
 | Date | Événement |
 |---|---|
 | 2026-11-08 | Créée (maquette d'ergonomie de création) |
+| 2026-11-10 | Implémentée sur `us/US-046-point-entree-creer` : choix de « Compléter » et couleur des compétitions dans le domaine (`creer.ts`, `plan.ts`), pages `/creer` et `/creer/aide`, bouton « Créer » à la place des liens de l'accueil, liste aux couleurs du plan. Aucun changement du protocole, du serveur ni du journal. En revue. |
