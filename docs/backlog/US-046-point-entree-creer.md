@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-047, US-048
-- **Branche / PR :** `us/US-046-point-entree-creer` / —
+- **Branche / PR :** `us/US-046-point-entree-creer` / #70
 
 ## Récit
 
@@ -96,3 +96,4 @@ connue de l'appareil (US-045, décision 1a). L'aide est consultable hors ligne. 
 |---|---|
 | 2026-11-08 | Créée (maquette d'ergonomie de création) |
 | 2026-11-10 | Implémentée sur `us/US-046-point-entree-creer` : choix de « Compléter » et couleur des compétitions dans le domaine (`creer.ts`, `plan.ts`), pages `/creer` et `/creer/aide`, bouton « Créer » à la place des liens de l'accueil, liste aux couleurs du plan. Aucun changement du protocole, du serveur ni du journal. En revue. |
+| 2026-11-10 | PR #70, CI verte. Recette OK sur https://poule-position-git-us-us-046-point-entr-c9fba7-fsmjlas-projects.vercel.app : CA-1, CA-2 (assistant, grille, compétition seule, « Compléter » avec 20 résultats sur 166), CA-3 et CA-4 (liste et plan, même bande) vérifiés à la main sur PC, sans création de données ; le hors ligne et la couleur de plusieurs compétitions sont couverts par les E2E. Terminée. |
