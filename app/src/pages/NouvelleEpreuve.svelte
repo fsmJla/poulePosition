@@ -10,8 +10,11 @@
   import {
     ARMES,
     CATEGORIES,
+    type Arme,
     champsModifiables,
     joursDeManifestation,
+    nomDeCopie,
+    nomDejaPris,
     SEXES,
     TYPES_EPREUVE,
     type ChampDonnees,
@@ -28,15 +31,17 @@
     modifierEpreuve,
     rattacher,
     saisieDe,
+    saisieDeCopie,
     saisieVide,
     type ErreurCompetitionSeule,
     type ErreurCreation,
     type ErreurModification,
   } from '../lib/epreuves';
+  import type { Accueil, DonneesAccueil } from '../lib/accueil';
   import type { ClientCompetitions } from '../lib/competitions';
   import { prendreEcriture, type Journal } from '../lib/journal';
   import type { ClientManifestations } from '../lib/manifestations';
-  import { cheminEpreuve, cheminPlanManifestation, CHEMINS, preselectionEpreuve } from '../lib/routes';
+  import { cheminEpreuve, cheminPlanManifestation, CHEMINS, copieEpreuve, preselectionEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -48,13 +53,23 @@
     /** US-024 : listes pour le choix du rattachement. */
     clientManifestations: ClientManifestations;
     clientCompetitions: ClientCompetitions;
+    /** US-051 : épreuves du club, pour nommer une copie et signaler un nom déjà pris. */
+    accueil: Accueil;
     naviguer: (chemin: string) => void;
     /** US-027 : épreuve à modifier ; absent pour une création. */
     epreuveId?: string;
   }
 
-  let { session, journal, synchronisation, clientManifestations, clientCompetitions, naviguer, epreuveId }: Proprietes =
-    $props();
+  let {
+    session,
+    journal,
+    synchronisation,
+    clientManifestations,
+    clientCompetitions,
+    accueil,
+    naviguer,
+    epreuveId,
+  }: Proprietes = $props();
 
   const t = textes.epreuves;
 
@@ -134,6 +149,7 @@
         depart = demande.competitionId;
         choisirCompetition(demande.competitionId);
         if (demande.jour) saisie.date = demande.jour;
+        void preremplirCopie(demande.competitionId);
       }
     })();
     return () => {
@@ -143,6 +159,48 @@
       window.removeEventListener('offline', surReseau);
     };
   });
+
+  /**
+   * US-051 CA-2 à CA-4 : prérempli par la copie d'une épreuve. Connue du journal local, l'originale donne catégorie, sexe,
+   * type et lieu ; sinon seuls l'arme et le jour (déjà posé) sont repris. Horaires et commentaire restent vides.
+   */
+  async function preremplirCopie(competitionId: string) {
+    const demande = copieEpreuve(location.search);
+    if (!demande) return;
+    copie = true;
+    try {
+      donneesClub = await accueil.charger();
+    } catch {
+      donneesClub = null;
+    }
+    const noms = (donneesClub?.epreuves ?? [])
+      .filter(({ rattachement }) => rattachement.competitionId === competitionId)
+      .map(({ nom }) => nom);
+    const { epreuve } = await journal.lire(demande.epreuveId);
+    if (epreuve) {
+      const jour = saisie.date;
+      Object.assign(saisie, saisieDeCopie(epreuve, nomDeCopie(epreuve.nom, noms)), { competitionId });
+      saisie.date = jour || saisie.date;
+      Object.assign(saisie, rattacher($state.snapshot(saisie), competitionId, manifestations, competitions));
+    } else {
+      if (!saisie.arme && (ARMES as readonly string[]).includes(demande.arme ?? '')) saisie.arme = demande.arme as Arme;
+      if (demande.nom) saisie.nom = nomDeCopie(demande.nom, noms);
+    }
+  }
+
+  /** US-051 : vrai quand le formulaire vient de « Dupliquer » ; la copie signale un nom déjà pris avant de se créer. */
+  let copie = $state(false);
+  let donneesClub = $state<DonneesAccueil | null>(null);
+  /** Nom déjà signalé puis confirmé par « Créer quand même » (CA-6). */
+  let nomConfirme = $state<string | null>(null);
+  const nomsDeLaCompetition = $derived(
+    (donneesClub?.epreuves ?? [])
+      .filter(({ rattachement }) => rattachement.competitionId === saisie.competitionId)
+      .map(({ nom }) => nom),
+  );
+  const nomPris = $derived(copie && nomDejaPris(saisie.nom, nomsDeLaCompetition));
+  /** Vrai une fois la validation tentée sur un nom pris : le message et « Créer quand même » s'affichent. */
+  let nomSignale = $state(false);
 
   /** US-049 : compétition préchoisie par le plan ; « Annuler » y revient. */
   let depart = $state<string | null>(null);
@@ -156,9 +214,14 @@
     Object.assign(saisie, rattacher($state.snapshot(saisie), seule ? '' : identifiant, manifestations, competitions));
   }
 
-  async function enregistrer(evenement: SubmitEvent) {
-    evenement.preventDefault();
+  async function enregistrer(evenement?: SubmitEvent) {
+    evenement?.preventDefault();
     if (enCours || lectureSeule) return;
+    // US-051 CA-6 : un nom déjà pris est signalé une fois ; « Créer quand même » valide malgré tout.
+    if (nomPris && nomConfirme !== saisie.nom) {
+      nomSignale = true;
+      return;
+    }
     enCours = true;
     erreur = null;
     try {
@@ -397,6 +460,18 @@
       </div>
 
       {#if erreur}<p class="message" role="alert">{t.erreurs[erreur]}</p>{/if}
+      {#if nomSignale && nomPris && nomConfirme !== saisie.nom}
+        <p class="message" role="alert">{t.nomDejaPris}</p>
+        <button
+          type="button"
+          class="secondaire"
+          disabled={enCours}
+          onclick={() => {
+            nomConfirme = saisie.nom;
+            void enregistrer();
+          }}>{t.creerQuandMeme}</button
+        >
+      {/if}
       {#if !lectureSeule}
         <button type="submit" disabled={enCours}
           >{modification ? (enCours ? t.enregistrement : t.enregistrer) : enCours ? t.enCours : t.creer}</button

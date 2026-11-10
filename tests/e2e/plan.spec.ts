@@ -320,3 +320,112 @@ test('US-050 CA-6 : à trois jours, le choix du jour reste proposé à la place 
   await panneau.getByRole('button', { name: 'Changer de jour', exact: true }).click();
   await expect(panneau).toContainText('Épreuve déplacée au mardi 16 mars 2027');
 });
+
+/** Depuis la page Manifestations : le plan de la manifestation, avec le compte d'épreuves attendu. */
+async function rouvrirLePlan(page: Page, manifestation: string, epreuves: string) {
+  await page.goto('/manifestations');
+  await page.getByRole('link', { name: `Voir le plan de ${manifestation}` }).click();
+  await expect(page.getByText(epreuves, { exact: true })).toBeVisible({ timeout: 20_000 });
+}
+
+test('US-051 CA-1, CA-2, CA-3, CA-4, CA-5 et CA-6 : dupliquer une épreuve depuis le plan, sans horaires, avec un nom de copie et un avertissement si le nom est pris', async ({
+  page,
+}) => {
+  test.setTimeout(150_000);
+  const manifestation = nomUnique();
+  const competition = nomUnique();
+  const epreuve = `${competition} M13`;
+  await seConnecter(page);
+  await ouvrirLePlan(page, manifestation, competition);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await ajouterUneEpreuve(page, competition, SAMEDI, epreuve, {
+    appel: '08:30',
+    scratch: '09:00',
+    debutPoules: '09:30',
+  });
+  await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
+  await rouvrirLePlan(page, manifestation, '1 épreuve');
+
+  // CA-1 : « Dupliquer » est dans le panneau, à côté de « Ouvrir l'épreuve ».
+  await tuile(page, epreuve).click();
+  const panneau = page.getByRole('region', { name: `Détail de l’épreuve ${epreuve}` });
+  await expect(panneau.getByRole('link', { name: 'Ouvrir l’épreuve' })).toBeVisible();
+  await panneau.getByRole('link', { name: 'Dupliquer' }).click();
+
+  // CA-2, CA-3 et CA-4 : formulaire prérempli (compétition, jour), horaires vides, nom « … (copie) ».
+  await expect(page).toHaveURL(/\/epreuves\/nouvelle\?.*copie=/);
+  await expect(page.getByLabel('Nom', { exact: true })).toHaveValue(`${epreuve} (copie)`);
+  await expect(page.getByLabel('Compétition', { exact: true })).not.toHaveValue('');
+  await expect(page.getByRole('button', { name: SAMEDI })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByLabel('Appel', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('Scratch', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('Début des poules', { exact: true })).toHaveValue('');
+
+  // CA-2 : « Annuler » revient au plan sans rien créer.
+  await page.getByRole('link', { name: 'Annuler' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: manifestation })).toBeVisible();
+  await expect(page.getByText('1 épreuve', { exact: true })).toBeVisible();
+
+  // CA-5 : valider crée une épreuve de plus, dans la case de sa compétition et de son jour.
+  await tuile(page, epreuve).click();
+  await panneau.getByRole('link', { name: 'Dupliquer' }).click();
+  await expect(page.getByLabel('Nom', { exact: true })).toHaveValue(`${epreuve} (copie)`);
+  await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
+  await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
+  await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
+  await rouvrirLePlan(page, manifestation, '2 épreuves');
+  await expect(tuile(page, `${epreuve} (copie)`)).toBeVisible();
+
+  // CA-4 : une seconde copie passe à « (copie 2) ».
+  await tuile(page, epreuve).click();
+  await panneau.getByRole('link', { name: 'Dupliquer' }).click();
+  await expect(page.getByLabel('Nom', { exact: true })).toHaveValue(`${epreuve} (copie 2)`);
+
+  // CA-6 : un nom déjà pris est signalé, mais on peut créer quand même.
+  await page.getByLabel('Nom', { exact: true }).fill(epreuve);
+  await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'Une épreuve porte déjà ce nom dans cette compétition' }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/epreuves\/nouvelle/);
+  await page.getByRole('button', { name: 'Créer quand même' }).click();
+  await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
+  await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
+  await rouvrirLePlan(page, manifestation, '3 épreuves');
+});
+
+test('US-051 hors ligne : « Dupliquer » reste possible et la copie s’écrit dans le journal local', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(150_000);
+  const manifestation = nomUnique();
+  const competition = nomUnique();
+  const epreuve = `${competition} M17`;
+  await seConnecter(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await ouvrirLePlan(page, manifestation, competition);
+  await expect(page.getByRole('rowheader', { name: new RegExp(competition) })).toBeVisible();
+
+  await context.setOffline(true);
+  await expect(page.getByText(/^Hors ligne : plan du /)).toBeVisible({ timeout: 20_000 });
+  await ajouterUneEpreuve(page, competition, SAMEDI, epreuve);
+  await page.goBack();
+  await page.goBack();
+  await expect(tuile(page, epreuve)).toBeVisible({ timeout: 20_000 });
+
+  await tuile(page, epreuve).click();
+  await page
+    .getByRole('region', { name: `Détail de l’épreuve ${epreuve}` })
+    .getByRole('link', { name: 'Dupliquer' })
+    .click();
+  await expect(page.getByLabel('Nom', { exact: true })).toHaveValue(`${epreuve} (copie)`);
+  await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
+  await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
+  await page.goBack();
+  await page.goBack();
+  await expect(tuile(page, `${epreuve} (copie)`)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText('Pas encore envoyée')).toHaveCount(2);
+
+  await context.setOffline(false);
+});

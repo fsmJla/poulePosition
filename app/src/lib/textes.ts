@@ -377,6 +377,9 @@ export const textes = {
     enregistrer: 'Enregistrer',
     enregistrement: 'Enregistrement…',
     enCours: 'Création…',
+    /** US-051 CA-6 : avertissement d'une copie dont le nom est déjà pris, et sa validation malgré tout. */
+    nomDejaPris: 'Une épreuve porte déjà ce nom dans cette compétition.',
+    creerQuandMeme: 'Créer quand même',
     annuler: 'Annuler',
     armes: {
       sabre: 'Sabre',
@@ -996,6 +999,8 @@ export const textes = {
     panneau: (nom: string) => `Détail de l’épreuve ${nom}`,
     fermer: 'Fermer',
     ouvrir: 'Ouvrir l’épreuve',
+    /** US-051 CA-1 : copie l'épreuve dans le formulaire « Nouvelle épreuve ». */
+    dupliquer: 'Dupliquer',
     changerDeJour: 'Changer de jour',
     nouveauJour: 'Nouveau jour',
     jourChange: (jour: string) => `Épreuve déplacée au ${jour}`,

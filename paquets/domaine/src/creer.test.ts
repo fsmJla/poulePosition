@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { actionsCompleter, optionsCompleter, rienACompleter, LIMITE_OPTIONS_COMPLETER } from './creer';
+import {
+  actionsCompleter,
+  nomDeCopie,
+  nomDejaPris,
+  optionsCompleter,
+  rienACompleter,
+  LIMITE_OPTIONS_COMPLETER,
+} from './creer';
 import type { CompetitionListee, DonneesListe, ManifestationListee } from './liste';
 import { construireListePlan, couleurDeCompetition, PALETTE_PLAN } from './plan';
 
@@ -140,5 +147,24 @@ describe('couleurDeCompetition (US-046 CA-4)', () => {
 
   it('US-046 CA-4 : une compétition inconnue prend la première couleur', () => {
     expect(couleurDeCompetition([], 'zz')).toBe(0);
+  });
+});
+
+describe('nom d’une copie d’épreuve (US-051)', () => {
+  it('CA-4 : « … (copie) », puis « (copie 2) », « (copie 3) » quand le nom est pris', () => {
+    expect(nomDeCopie('M15 Dames', ['M15 Dames'])).toBe('M15 Dames (copie)');
+    expect(nomDeCopie('M15 Dames', ['M15 Dames', 'M15 Dames (copie)'])).toBe('M15 Dames (copie 2)');
+    expect(nomDeCopie('M15 Dames', ['M15 Dames (copie)', 'M15 Dames (copie 2)'])).toBe('M15 Dames (copie 3)');
+    expect(nomDeCopie(' M15 Dames ', [])).toBe('M15 Dames (copie)');
+  });
+
+  it('CA-4 : la comparaison ignore casse et accents', () => {
+    expect(nomDeCopie('Épée Dames', ['epee dames (COPIE)'])).toBe('Épée Dames (copie 2)');
+  });
+
+  it('CA-6 : un nom déjà pris dans la compétition est signalé', () => {
+    expect(nomDejaPris('M15 Dames', ['M15 Hommes', 'm15 dames'])).toBe(true);
+    expect(nomDejaPris('M15 Mixte', ['M15 Hommes', 'M15 Dames'])).toBe(false);
+    expect(nomDejaPris('   ', ['   '])).toBe(false);
   });
 });

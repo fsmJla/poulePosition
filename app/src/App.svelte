@@ -175,6 +175,7 @@
         {synchronisation}
         clientManifestations={manifestations}
         clientCompetitions={competitions}
+        {accueil}
         {naviguer}
       />
     {:else if route.page === 'grilleEpreuves' && route.competitionId}
@@ -222,6 +223,7 @@
           clientManifestations={manifestations}
           clientCompetitions={competitions}
           epreuveId={route.epreuveId}
+          {accueil}
           {naviguer}
         />
       {/key}

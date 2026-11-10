@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-049, US-050
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-051-dupliquer-epreuve` / —
 
 ## Récit
 
@@ -31,8 +31,9 @@ Le bouton figure dans la maquette mais pas dans les critères d'US-049, qui ne l
 
 - **Étant donné** le panneau d'une épreuve
 - **Quand** l'organisateur clique « Dupliquer »
-- **Alors** le formulaire « Nouvelle épreuve » s'ouvre prérempli avec la compétition, l'arme, le type, la formule, le
-  lieu et le jour de l'épreuve d'origine. Rien n'est créé tant que l'organisateur n'a pas validé, et « Annuler » revient
+- **Alors** le formulaire « Nouvelle épreuve » s'ouvre prérempli avec la compétition, l'arme, la catégorie, le sexe, le
+  type, le lieu et le jour de l'épreuve d'origine. La formule n'est pas copiée : le formulaire n'en a pas, la copie reçoit
+  celle par défaut de son type et se règle comme toute épreuve. Rien n'est créé tant que l'organisateur n'a pas validé, et « Annuler » revient
   au plan sans rien changer.
 
 **CA-3 — Ce qui n'est pas copié**
@@ -111,3 +112,4 @@ résumé, seuls la compétition, l'arme et le jour sont préremplis.
 |---|---|
 | 2026-11-10 | Créée : bouton « Dupliquer » de la maquette absent d'US-049 |
 | 2026-11-10 | Spécifiée : critères d'acceptation écrits avec les quatre réponses validées ; statut « Prête » |
+| 2026-11-10 | Démarrée. CA-2 amendé avec l'accord de l'utilisateur : la formule n'est pas copiée (le formulaire « Nouvelle épreuve » n'en a pas) ; catégorie et sexe le sont |

@@ -22,6 +22,7 @@
   import {
     cheminGrilleEpreuves,
     cheminNouvelleCompetition,
+    cheminDupliquerEpreuve,
     cheminNouvelleEpreuveDans,
     CHEMINS,
     cheminModificationManifestation,
@@ -349,6 +350,7 @@
           {#if message}<p class={message.ok ? 'message ok' : 'message'} role="status">{message.texte}</p>{/if}
           <div class="actions">
             <Lien chemin={cheminEpreuve(tuileChoisie.id)} {naviguer}>{t.ouvrir}</Lien>
+            <Lien chemin={cheminDupliquerEpreuve(tuileChoisie)} {naviguer}>{t.dupliquer}</Lien>
             <button type="button" class="secondaire" onclick={() => (choisie = null)}>{t.fermer}</button>
           </div>
         </section>
