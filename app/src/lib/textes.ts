@@ -8,6 +8,7 @@ import {
   type ErreurManifestation,
   type ErreurNouveauMotDePasse,
   type Decompte,
+  type RaisonRefus,
   type ErreurSaisieCompte,
   type Role,
   type Sexe,
@@ -1029,6 +1030,52 @@ export const textes = {
       /** US-050 CA-5 : le jour d'une épreuve est l'un des jours de la manifestation. */
       jour: 'jour de la manifestation',
     },
+  },
+  /** US-030 : affiche et feuille de route d'une manifestation, d'une compétition ou d'une épreuve. */
+  fichiers: {
+    titre: 'Documents',
+    affiche: 'Affiche',
+    feuilleDeRoute: 'Feuille de route',
+    aucuneAffiche: 'Aucune affiche',
+    aucuneFeuille: 'Aucune feuille de route',
+    chargement: 'Chargement des documents…',
+    joindreAffiche: 'Joindre une affiche',
+    joindreFeuille: 'Joindre une feuille de route',
+    remplacer: 'Remplacer',
+    retirer: 'Retirer',
+    ouvrir: 'Ouvrir la feuille de route',
+    /** CA-4 : le fichier vient d'un niveau au-dessus. */
+    heritee: {
+      competition: 'reprise de la compétition',
+      manifestation: 'reprise de la manifestation',
+    },
+    horsLigne: 'Nécessite une connexion internet',
+    envoiEnCours: 'Envoi en cours…',
+    copieDu: (date: number) => `Documents du ${new Date(date).toLocaleString('fr-FR')}`,
+    /** Les fichiers acceptés, pour le sélecteur de fichier et son aide. */
+    aide: {
+      affiche: 'PNG, JPEG ou WebP, 5 Mo au plus',
+      feuilleDeRoute: 'PDF, 5 Mo au plus',
+    },
+    erreurs: {
+      HORS_LIGNE: 'Nécessite une connexion internet',
+      INTERROMPU: 'Envoi interrompu : réessayez',
+      SESSION_INVALIDE: 'Votre session a expiré : reconnectez-vous',
+      ACCES_REFUSE: 'Vous n’avez pas le droit de joindre des documents',
+      PROPRIETAIRE_INCONNU: 'Cet élément n’est pas encore connu du serveur : réessayez dans un instant',
+      FICHIER_INCONNU: 'Ce document a déjà été retiré',
+      ERREUR_INATTENDUE: 'Une erreur est survenue : réessayez',
+    },
+    /** CA-3 : la raison du refus, dite clairement. */
+    raisons: {
+      VIDE: 'Ce fichier est vide.',
+      TROP_GROS: 'Ce fichier dépasse 5 Mo.',
+      TYPE_REFUSE: 'Ce type de fichier n’est pas accepté : choisissez un PDF, un PNG, un JPEG ou un WebP.',
+      TYPE_INCOMPATIBLE:
+        'Ce type de fichier ne convient pas ici : une affiche est une image, une feuille de route est un PDF.',
+      IMAGE_ANIMEE: 'Les images animées ne sont pas acceptées.',
+      IMAGE_TROP_GRANDE: 'Cette image dépasse 20 millions de pixels : choisissez-en une plus petite.',
+    } satisfies Record<RaisonRefus, string>,
   },
   roles: {
     administrateur: 'Administrateur',

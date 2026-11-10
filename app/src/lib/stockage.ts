@@ -6,7 +6,14 @@
 import { Dexie, type EntityTable, type Table } from 'dexie';
 import { couleurParDefaut, essaisVides, type CouleurAvatar, type Essais, type Role } from '@poule-position/domaine';
 import type { Evenement } from '@poule-position/domaine';
-import type { EpreuveIndexee, CompteConnecte, Competition, Manifestation, Session } from '@poule-position/protocole';
+import type {
+  EpreuveIndexee,
+  CompteConnecte,
+  Competition,
+  FichierJoint,
+  Manifestation,
+  Session,
+} from '@poule-position/protocole';
 
 /** Compte déjà connecté en ligne sur cet appareil (ADR-0006) : il pourra s'y reconnecter hors ligne (US-005). */
 export interface AppareilConnu {
@@ -111,6 +118,20 @@ export interface CopieIndex {
   copieLe: number;
 }
 
+/** Description des fichiers joints du club telle que reçue du serveur, et date de cette copie (US-030). */
+export interface CopieFichiers {
+  fichiers: FichierJoint[];
+  /** Date de la copie, en millisecondes. */
+  copieLe: number;
+}
+
+/** Contenu d'un fichier joint gardé sur l'appareil, pour rester affichable et imprimable hors ligne (US-030 CA-6). */
+export interface ContenuFichier {
+  /** Nom à empreinte du fichier : le même nom est toujours le même contenu. */
+  nom: string;
+  contenu: Blob;
+}
+
 /** Base IndexedDB de l'appareil, partagée par le stockage de session et le journal des épreuves (US-021). */
 export class Base extends Dexie {
   session!: EntityTable<LigneSession, 'cle'>;
@@ -129,6 +150,10 @@ export class Base extends Dexie {
   copieIndex!: EntityTable<CopieIndex & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
   /** Modifications écartées après une prise de main par un autre PC (US-029). */
   ecartes!: EntityTable<Ecart, 'id'>;
+  /** Dernière description des fichiers joints reçue du serveur (US-030). */
+  copieFichiers!: EntityTable<CopieFichiers & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
+  /** Contenu des fichiers joints gardés pour le hors ligne, par nom à empreinte (US-030 CA-6). */
+  contenusFichiers!: EntityTable<ContenuFichier, 'nom'>;
 
   constructor(nom: string) {
     super(nom);
@@ -208,6 +233,11 @@ export class Base extends Dexie {
       copieCompetitions: 'cle',
       copieIndex: 'cle',
       ecartes: '++id, epreuveId',
+    });
+    // Version 11 (US-030) : description et contenu des fichiers joints, gardés pour le hors ligne. Rien d'existant ne bouge.
+    this.version(11).stores({
+      copieFichiers: 'cle',
+      contenusFichiers: 'nom',
     });
   }
 }

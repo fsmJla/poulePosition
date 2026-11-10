@@ -6,9 +6,11 @@
   import type { EpreuveRattachee, ErreursManifestation } from '@poule-position/domaine';
   import type { Competition, Manifestation } from '@poule-position/protocole';
   import Competitions from '../composants/Competitions.svelte';
+  import FichiersJoints from '../composants/FichiersJoints.svelte';
   import Lien from '../composants/Lien.svelte';
   import { nomConfirme } from '../lib/suppression';
   import type { ClientCompetitions } from '../lib/competitions';
+  import type { ClientFichiers } from '../lib/fichiers';
   import {
     saisieDe,
     saisieVide,
@@ -23,6 +25,8 @@
     client: ClientManifestations;
     /** US-024 : compétitions, affichées sous leur manifestation. */
     clientCompetitions: ClientCompetitions;
+    /** US-030 : affiche et feuille de route d'une manifestation et de ses compétitions. */
+    fichiers: ClientFichiers;
     /** US-041 : vrai pour un administrateur (suppression d'une compétition avec son contenu). */
     administrateur?: boolean;
     /** US-041 : épreuves connues de cet appareil, pour annoncer combien partent avec une compétition. */
@@ -35,6 +39,7 @@
   let {
     client,
     clientCompetitions,
+    fichiers,
     naviguer,
     administrateur = false,
     epreuvesConnues = async () => [],
@@ -301,6 +306,10 @@
         {@render erreurChamp('commentaire')}
       </div>
 
+      {#if edition !== 'nouvelle'}
+        <FichiersJoints client={fichiers} chaine={[{ proprietaire: 'manifestation', id: edition.id }]} />
+      {/if}
+
       {#if message}
         <p class="message" role="alert">
           {message}
@@ -341,6 +350,7 @@
           <Competitions
             {manifestation}
             client={clientCompetitions}
+            {fichiers}
             competitions={competitions.filter(({ manifestationId }) => manifestationId === manifestation.id)}
             {horsLigne}
             modifie={chargerCompetitions}
