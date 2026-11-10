@@ -20,6 +20,9 @@ import {
   estVideCompetition,
   type DonneesCompetition,
   type EpreuveASupprimer,
+  type ProprietaireFichier,
+  type SorteFichier,
+  type TypeFichier,
   type DonneesManifestation,
   type CouleurAvatar,
   type Essais,
@@ -30,12 +33,14 @@ import type {
   DemandeModificationCompetition,
   DemandeModificationManifestation,
   Competition,
+  FichierJoint,
   Manifestation,
 } from '@poule-position/protocole';
 import type { Env } from './index';
 import { requetesCompetitionsSeules, requetesInversionVocabulaire, type ColonneSql } from './logique';
 import { ListeEnMemoire, type Lecture } from './liste-en-memoire';
 import { deciderSuppression } from './replication';
+import { StockageFichiers, type ResultatDepot } from './fichiers';
 
 export interface NouveauCompte {
   email: string;
@@ -113,8 +118,12 @@ export class Club extends DurableObject<Env> {
     signalerLecture('competitions'),
   );
 
+  /** US-030 : affiches et feuilles de route des manifestations, compétitions et épreuves. */
+  private readonly fichiers: StockageFichiers;
+
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+    this.fichiers = new StockageFichiers(ctx.storage.sql, signalerLecture('fichiers'));
     ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS comptes (
         id TEXT PRIMARY KEY,
@@ -204,6 +213,40 @@ export class Club extends DurableObject<Env> {
         contenu TEXT NOT NULL,
         version INTEGER NOT NULL
       )`);
+  }
+
+  /** US-030 : description des fichiers joints du club. */
+  async listerFichiers(): Promise<FichierJoint[]> {
+    return this.fichiers.lister();
+  }
+
+  /** L'élément qui porte un fichier existe-t-il ? Une épreuve existe tant qu'elle est dans l'index et non supprimée. */
+  private proprietaireExiste(proprietaire: ProprietaireFichier, id: string): boolean {
+    if (proprietaire === 'manifestation') return this.lireManifestation(id) !== null;
+    if (proprietaire === 'competition') return this.lireCompetition(id) !== null;
+    return !this.estSupprimee(id) && this.lireLigneIndex(id) !== null;
+  }
+
+  /** US-030 CA-1, CA-2, CA-3, CA-5 : joint ou remplace un fichier sur un élément existant. */
+  async deposerFichier(
+    proprietaire: ProprietaireFichier,
+    id: string,
+    sorte: SorteFichier,
+    octets: Uint8Array,
+    auteur: string,
+  ): Promise<ResultatDepot | { ok: false; raison: 'PROPRIETAIRE_INCONNU' }> {
+    if (!this.proprietaireExiste(proprietaire, id)) return { ok: false, raison: 'PROPRIETAIRE_INCONNU' };
+    return this.fichiers.deposer(proprietaire, id, sorte, octets, auteur);
+  }
+
+  /** US-030 CA-5 : retire un fichier ; faux s'il n'y en avait pas. */
+  async retirerFichier(proprietaire: ProprietaireFichier, id: string, sorte: SorteFichier): Promise<boolean> {
+    return this.fichiers.retirer(proprietaire, id, sorte);
+  }
+
+  /** US-030 : contenu d'un fichier par son nom (lecture publique), ou null s'il n'est plus gardé. */
+  async lireFichier(nom: string): Promise<{ type: TypeFichier; octets: ArrayBuffer } | null> {
+    return this.fichiers.lire(nom);
   }
 
   /** US-004 CA-1 / CA-4 : vrai si les connexions à cet e-mail sont refusées. */
@@ -457,6 +500,7 @@ export class Club extends DurableObject<Env> {
     this.ctx.storage.sql.exec('DELETE FROM epreuves WHERE id = ?', epreuveId);
     this.pierresTombales.invalider();
     this.index.modifier((lignes) => lignes.filter(({ id }) => id !== epreuveId));
+    this.fichiers.effacerDe('epreuve', [epreuveId]);
     this.retirerCompetitionsSeulesVides(ligne.rattachement ? [ligne.rattachement.competitionId] : []);
     return { ok: true, aEffacer: true };
   }
@@ -498,6 +542,7 @@ export class Club extends DurableObject<Env> {
     }
     this.pierresTombales.invalider();
     this.index.modifier((lignes) => lignes.filter(({ id }) => !epreuveIds.includes(id)));
+    this.fichiers.effacerDe('epreuve', aEffacer);
     this.retirerCompetitionsSeulesVides([...competitions]);
     return aEffacer;
   }
@@ -512,6 +557,7 @@ export class Club extends DurableObject<Env> {
       if (restantes.has(id) || this.lireCompetition(id)?.manifestationId !== null) continue;
       this.ctx.storage.sql.exec('DELETE FROM competitions WHERE id = ?', id);
       this.listeCompetitions.invalider();
+      this.fichiers.effacerDe('competition', [id]);
     }
   }
 
@@ -639,6 +685,7 @@ export class Club extends DurableObject<Env> {
     if (!estVide(id, await this.listerCompetitions())) return { ok: false, erreur: 'MANIFESTATION_NON_VIDE' };
     this.ctx.storage.sql.exec('DELETE FROM manifestations WHERE id = ?', id);
     this.listeManifestations.invalider();
+    this.fichiers.effacerDe('manifestation', [id]);
     return { ok: true };
   }
 
@@ -667,10 +714,12 @@ export class Club extends DurableObject<Env> {
     if (this.lignesIndex().some(({ rattachement }) => rattachement && competitions.has(rattachement.competitionId))) {
       return { ok: false, erreur: 'MANIFESTATION_NON_VIDE' };
     }
+    this.fichiers.effacerDe('competition', [...competitions]);
     this.ctx.storage.sql.exec('DELETE FROM competitions WHERE manifestation_id = ?', manifestationId);
     this.listeCompetitions.invalider();
     this.ctx.storage.sql.exec('DELETE FROM manifestations WHERE id = ?', manifestationId);
     this.listeManifestations.invalider();
+    this.fichiers.effacerDe('manifestation', [manifestationId]);
     return { ok: true };
   }
 
@@ -757,6 +806,7 @@ export class Club extends DurableObject<Env> {
     if (!estVideCompetition(id, epreuves)) return { ok: false, erreur: 'COMPETITION_NON_VIDE' };
     this.ctx.storage.sql.exec('DELETE FROM competitions WHERE id = ?', id);
     this.listeCompetitions.invalider();
+    this.fichiers.effacerDe('competition', [id]);
     return { ok: true };
   }
 
