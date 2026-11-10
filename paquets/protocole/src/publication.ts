@@ -8,7 +8,7 @@ import {
   type EpreuvePublique,
   type ManifestationListee,
 } from '@poule-position/domaine';
-import { analyserFichierJoint, type FichierJoint } from './fichiers';
+import { analyserFichierPublic, type FichierPublic } from './fichiers';
 import { CODES_ERREUR_SESSION, type CodeErreurSession, type ErreurReponse } from './session';
 import { aExactementLesChamps, estTexteOuNull } from './validation';
 
@@ -20,7 +20,7 @@ export type ReponsePublique =
       competitions: CompetitionListee[];
       epreuves: EpreuvePublique[];
       /** Affiche et feuille de route des manifestations, compétitions et épreuves ci-dessus (US-030). */
-      fichiers: FichierJoint[];
+      fichiers: FichierPublic[];
     }
   | { ok: false; erreur: ErreurReponse };
 
@@ -105,7 +105,7 @@ export function analyserReponsePublique(brut: unknown): ReponsePublique {
   const manifestations = liste(brut.manifestations, analyserManifestationListee);
   const competitions = liste(brut.competitions, analyserCompetitionListee);
   const epreuves = liste(brut.epreuves, analyserEpreuvePublique);
-  const fichiers = liste(brut.fichiers, analyserFichierJoint);
+  const fichiers = liste(brut.fichiers, analyserFichierPublic);
   if (!manifestations || !competitions || !epreuves || !fichiers) return { ok: false, erreur: 'REPONSE_INVALIDE' };
   return { ok: true, manifestations, competitions, epreuves, fichiers };
 }

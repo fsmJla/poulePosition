@@ -18,7 +18,9 @@ import {
   estCouleurAvatar,
   estVide,
   estVideCompetition,
+  estVisibleDuPublic,
   type DonneesCompetition,
+  type EpreuvePublique,
   type EpreuveASupprimer,
   type ProprietaireFichier,
   type SorteFichier,
@@ -35,7 +37,9 @@ import type {
   Competition,
   FichierJoint,
   Manifestation,
+  ReponsePublique,
 } from '@poule-position/protocole';
+import { completerResume } from '@poule-position/protocole';
 import type { Env } from './index';
 import { requetesCompetitionsSeules, requetesInversionVocabulaire, type ColonneSql } from './logique';
 import { ListeEnMemoire, type Lecture } from './liste-en-memoire';
@@ -599,6 +603,56 @@ export class Club extends DurableObject<Env> {
   /** US-022 CA-4 : index des épreuves du club, les plus récemment modifiées d'abord. */
   async listerEpreuves(): Promise<EpreuveIndexee[]> {
     return [...this.lignesIndex()];
+  }
+
+  /**
+   * US-031 CA-2 à CA-5 : épreuves publiées non archivées, avec les seules manifestations et compétitions qui les
+   * contiennent et leurs fichiers joints. Un filtre sur l'index, sans calcul métier : seuls des champs publics sont
+   * copiés (aucun nom de compte, appareil, numéro de séquence ni commentaire).
+   */
+  async lirePublic(): Promise<Extract<ReponsePublique, { ok: true }>> {
+    const epreuves = this.epreuvesPubliques();
+    const competitionsVues = new Set(epreuves.map(({ competitionId }) => competitionId));
+    const competitions = [...this.listeCompetitions.obtenir()]
+      .filter(({ id }) => competitionsVues.has(id))
+      .map(({ id, manifestationId, nom, arme }) => ({ id, manifestationId, nom, arme }));
+    const manifestationsVues = new Set(competitions.map(({ manifestationId }) => manifestationId));
+    const manifestations = [...this.listeManifestations.obtenir()]
+      .filter(({ id }) => manifestationsVues.has(id))
+      .map(({ id, nom, debut, fin, lieu }) => ({ id, nom, debut, fin, lieu }));
+    const proprietaires = new Set([
+      ...epreuves.map(({ id }) => `epreuve:${id}`),
+      ...competitions.map(({ id }) => `competition:${id}`),
+      ...manifestations.map(({ id }) => `manifestation:${id}`),
+    ]);
+    // Le nom du compte qui a joint le fichier reste réservé aux organisateurs.
+    const fichiers = this.fichiers
+      .lister()
+      .filter(({ proprietaire, proprietaireId }) => proprietaires.has(`${proprietaire}:${proprietaireId}`))
+      .map(({ ajoutePar: _ajoutePar, ...fichier }) => fichier);
+    return { ok: true, manifestations, competitions, epreuves, fichiers };
+  }
+
+  /** US-031 CA-4 : l'épreuve si elle est publiée et non archivée, sinon null (une inconnue répond de même). */
+  async lireEpreuvePublique(epreuveId: string): Promise<EpreuvePublique | null> {
+    return this.epreuvesPubliques().find(({ id }) => id === epreuveId) ?? null;
+  }
+
+  private epreuvesPubliques(): EpreuvePublique[] {
+    return this.lignesIndex()
+      .map((ligne) => completerResume(ligne))
+      .filter((ligne) => estVisibleDuPublic(ligne) && ligne.rattachement?.competitionId)
+      .map(({ id, nom, arme, categorie, sexe, date, horaires, lieu, rattachement }) => ({
+        id,
+        nom,
+        arme,
+        categorie,
+        sexe,
+        date,
+        horaires,
+        lieu,
+        competitionId: rattachement.competitionId,
+      }));
   }
 
   /** Lecture synchrone de l'index : aucune autre requête ne s'intercale avant l'écriture qui suit. */

@@ -64,6 +64,8 @@ const resume = (statut: ResumeEpreuve['statut'] = 'preparation'): ResumeEpreuve 
   sexe: null,
   date: '2027-03-14',
   statut,
+  horaires: { appel: null, scratch: null, debutPoules: null },
+  lieu: null,
   publiee: false,
   rattachement: { competitionId: 'c-test' },
 });

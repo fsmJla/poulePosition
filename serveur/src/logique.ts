@@ -51,7 +51,9 @@ export type Route =
   | { route: 'connexion'; epreuveId: string }
   | { route: 'fichiers' }
   | { route: 'fichier'; proprietaire: ProprietaireFichier; id: string; sorte: SorteFichier }
-  | { route: 'fichier-public'; nom: string };
+  | { route: 'fichier-public'; nom: string }
+  | { route: 'public' }
+  | { route: 'epreuve-publique'; epreuveId: string };
 
 /** Analyse le chemin d'une requête entrante ; null si la route n'existe pas. */
 export function analyserChemin(chemin: string): Route | null {
@@ -79,6 +81,9 @@ export function analyserChemin(chemin: string): Route | null {
   if (chemin === '/epreuves') return { route: 'epreuves' };
   const seule = /^\/epreuves\/([^/]+)$/.exec(chemin)?.[1];
   if (seule) return MOTIF_EPREUVE.test(seule) ? { route: 'epreuve', epreuveId: seule } : null;
+  if (chemin === '/public') return { route: 'public' };
+  const publique = /^\/public\/epreuves\/([^/]+)$/.exec(chemin)?.[1];
+  if (publique) return MOTIF_EPREUVE.test(publique) ? { route: 'epreuve-publique', epreuveId: publique } : null;
   if (chemin === '/fichiers') return { route: 'fichiers' };
   const nomFichier = /^\/fichiers\/([^/]+)$/.exec(chemin)?.[1];
   if (nomFichier) return MOTIF_NOM_FICHIER.test(nomFichier) ? { route: 'fichier-public', nom: nomFichier } : null;

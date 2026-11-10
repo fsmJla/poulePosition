@@ -88,6 +88,15 @@ describe('analyserChemin', () => {
     expect(analyserChemin(`/fichiers/../${nom}`)).toBeNull();
   });
 
+  it('US-031 : reconnaît la page publique et la lecture publique d’une épreuve', () => {
+    const id = '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c';
+    expect(analyserChemin('/public')).toEqual({ route: 'public' });
+    expect(analyserChemin(`/public/epreuves/${id}`)).toEqual({ route: 'epreuve-publique', epreuveId: id });
+    expect(analyserChemin('/public/epreuves/Pas Un Id')).toBeNull();
+    expect(analyserChemin('/public/epreuves')).toBeNull();
+    expect(analyserChemin('/public/autre')).toBeNull();
+  });
+
   it('US-039 : reconnaît la route d’une épreuve seule, pour sa suppression', () => {
     const id = '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c';
     expect(analyserChemin(`/epreuves/${id}`)).toEqual({ route: 'epreuve', epreuveId: id });

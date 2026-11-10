@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { analyserFichierPublic } from './fichiers';
 import { analyserEpreuvePublique, analyserReponseEpreuvePublique, analyserReponsePublique } from './publication';
 
 const epreuve = (champs: Record<string, unknown> = {}) => ({
@@ -21,7 +22,6 @@ const fichier = {
   type: 'webp',
   taille: 1200,
   ajouteLe: 1,
-  ajoutePar: 'Orga',
 };
 const reponse = (champs: Record<string, unknown> = {}) => ({
   ok: true,
@@ -54,6 +54,16 @@ describe('page publique (US-031, §16)', () => {
       ok: false,
       erreur: 'REPONSE_INVALIDE',
     });
+  });
+
+  it('CA-5 : refuse un fichier qui porte le nom du compte, et ne laisse passer aucun champ en trop', () => {
+    expect(analyserReponsePublique(reponse({ fichiers: [{ ...fichier, ajoutePar: 'Orga' }] }))).toEqual({
+      ok: false,
+      erreur: 'REPONSE_INVALIDE',
+    });
+    expect(analyserReponsePublique(reponse({ fichiers: [{ ...fichier, enTrop: 1 }] }))).toMatchObject({ ok: false });
+    expect(analyserFichierPublic(null)).toBeNull();
+    expect(analyserFichierPublic(fichier)).toEqual(fichier);
   });
 
   it('refuse une épreuve mal formée', () => {

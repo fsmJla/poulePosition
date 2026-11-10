@@ -131,6 +131,8 @@ async function rattacherEpreuve(competitionId: string): Promise<string> {
       sexe: null,
       date: '2027-03-15',
       statut: 'preparation',
+      horaires: { appel: null, scratch: null, debutPoules: null },
+      lieu: null,
       publiee: false,
       rattachement: { competitionId },
     },

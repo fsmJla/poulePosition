@@ -62,10 +62,10 @@ function erreurDe(erreur: ErreurReponse): ErreurFichiers {
 }
 
 /** Les fichiers à montrer pour une épreuve (CA-4) : le sien, à défaut celui de sa compétition, de sa manifestation. */
-export function fichiersEffectifs(
-  fichiers: readonly FichierJoint[],
+export function fichiersEffectifs<F extends Pick<FichierJoint, 'proprietaire' | 'proprietaireId' | 'sorte'>>(
+  fichiers: readonly F[],
   chaine: readonly { proprietaire: ProprietaireFichier; id: string | null | undefined }[],
-): Record<SorteFichier, FichierJoint | null> {
+): Record<SorteFichier, F | null> {
   const de = (sorte: SorteFichier) =>
     fichierHerite(
       chaine.map(({ proprietaire, id }) =>

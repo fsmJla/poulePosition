@@ -29,6 +29,9 @@ export interface FichierJoint {
   ajoutePar: string;
 }
 
+/** Description publique d'un fichier : sans le nom du compte qui l'a joint (US-031 CA-5). */
+export type FichierPublic = Omit<FichierJoint, 'ajoutePar'>;
+
 export type ReponseFichier =
   { ok: true; fichier: FichierJoint } | { ok: false; erreur: ErreurReponse; raison?: RaisonRefus };
 
@@ -54,6 +57,15 @@ const estUnDe = <T extends string>(valeurs: readonly T[], valeur: unknown): vale
 /** Chemin de l'envoi, du remplacement et du retrait d'un fichier. */
 export function cheminFichier(proprietaire: ProprietaireFichier, id: string, sorte: SorteFichier): string {
   return `/fichiers/${proprietaire}/${encodeURIComponent(id)}/${sorte}`;
+}
+
+/** Un fichier décrit pour le public : exactement les champs de `FichierJoint`, hors `ajoutePar`. */
+export function analyserFichierPublic(brut: unknown): FichierPublic | null {
+  if (brut === null || typeof brut !== 'object' || Array.isArray(brut) || 'ajoutePar' in brut) return null;
+  const fichier = analyserFichierJoint({ ...(brut as Record<string, unknown>), ajoutePar: '' });
+  if (!fichier) return null;
+  const { ajoutePar: _ajoutePar, ...visible } = fichier;
+  return visible;
 }
 
 export function analyserFichierJoint(brut: unknown): FichierJoint | null {
