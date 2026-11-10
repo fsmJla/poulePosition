@@ -79,6 +79,8 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-047](US-047-assistant-manifestation.md) | Créer une manifestation avec un assistant | E2 | Prête | US-048, US-049 |
 | [US-048](US-048-creer-epreuves-en-lot.md) | Créer les épreuves d'une compétition en lot (grille des épreuves) | E2 | Terminée | US-045 |
 | [US-049](US-049-plan-de-la-manifestation.md) | Voir et compléter le plan de la manifestation | E2 | Terminée | US-045, US-048 |
+| [US-050](US-050-aligner-plan-sur-maquette.md) | Aligner le plan de la manifestation sur la maquette | E2 | Prête | US-049 |
+| [US-051](US-051-dupliquer-epreuve.md) | Dupliquer une épreuve depuis le plan | E2 | À spécifier | US-049 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
@@ -89,7 +91,7 @@ compte ouvre la page de profil) → US-018 (avec son ADR et un essai d'envoi ré
 **Ordre conseillé pour E2 :** US-021 → US-022 (avec l'ADR-0016 : index des compétitions, pilote, stockage des
 manifestations et épreuves) → US-025 → US-023 → US-024 → US-026 → US-027 → US-028 → US-029 → US-032 → US-030 →
 US-031 → US-033 → US-034 → US-035 → US-039 → US-040 → US-041 → US-042 → US-043 → US-044 (seule en cours pendant le renommage) → US-045 →
-US-048 → US-049 → US-047 → US-046, puis US-030 → US-031 → US-033 → US-034 → US-035 avec le nouveau vocabulaire.
+US-048 → US-049 → US-047 → US-046, puis US-050 et US-051 (alignement du plan sur la maquette, une fois les autres écrans réalisés), puis US-030 → US-031 → US-033 → US-034 → US-035 avec le nouveau vocabulaire.
 
 > **Vocabulaire révisé le 2026-11-08 :** la compétition regroupe des épreuves, l'épreuve est ce qui se tire (voir le
 > glossaire). Les US terminées gardent l'ancien vocabulaire ; les US à venir emploient le nouveau.
