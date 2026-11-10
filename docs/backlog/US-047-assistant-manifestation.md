@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-048, US-049
-- **Branche / PR :** `us/US-047-assistant-manifestation` / —
+- **Branche / PR :** `us/US-047-assistant-manifestation` / #69
 
 ## Récit
 
@@ -108,3 +108,4 @@ affiche « Réseau perdu : ce qui est déjà créé est gardé » et l'organisat
 |---|---|
 | 2026-11-08 | Créée (maquette d'ergonomie de création) |
 | 2026-11-10 | Implémentée sur `us/US-047-assistant-manifestation` : machine d'état et aperçu dans le domaine (`assistant.ts`), page `/manifestations/nouvelle`, grille d'US-048 intégrée. Aucun changement du protocole, du serveur ni du journal. |
+| 2026-11-10 | PR #69, CI verte. Recette OK sur https://poule-position-git-us-us-047-assistant-0d761a-fsmjlas-projects.vercel.app (CA-1, 2, 3, 5 et 6 vérifiés à la main sur PC ; CA-4 et le hors ligne couverts par les E2E). Données de test supprimées. Terminée. |
