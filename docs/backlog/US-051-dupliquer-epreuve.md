@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-049, US-050
-- **Branche / PR :** `us/US-051-dupliquer-epreuve` / PR vers `dev`
+- **Branche / PR :** `us/US-051-dupliquer-epreuve` / PR #73
 
 ## Récit
 
@@ -127,3 +127,4 @@ résumé, seuls la compétition, l'arme et le jour sont préremplis.
 | 2026-11-10 | Spécifiée : critères d'acceptation écrits avec les quatre réponses validées ; statut « Prête » |
 | 2026-11-10 | Démarrée. CA-2 amendé avec l'accord de l'utilisateur : la formule n'est pas copiée (le formulaire « Nouvelle épreuve » n'en a pas) ; catégorie et sexe le sont |
 | 2026-11-10 | Implémentée : « Dupliquer » dans le panneau, formulaire prérempli, nom de copie, avertissement de nom pris. Lint, typage, 1140 tests unitaires avec couverture, build, audit et 29 E2E locaux (plan, formulaire, modification, créer) verts. En revue |
+| 2026-11-10 | CI verte. Recette OK sur https://poule-position-4flljl970-fsmjlas-projects.vercel.app (CA-1 à CA-6 au format PC ; hors ligne couvert par l'E2E) ; données de test supprimées. Note : le préremplissage de catégorie et de sexe arrive une fraction de seconde après l'ouverture du formulaire. Terminée, mergée dans `dev` |
