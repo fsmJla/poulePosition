@@ -76,6 +76,8 @@ l'ajoute ici avant de l'utiliser.
 | Frein local | Limite des mots de passe faux de la connexion hors ligne, mesurée par l'appareil (US-005). | `essaisLocaux` |
 | Mon profil | Page où l'utilisateur connecté modifie son nom et son avatar, et accède au changement de son mot de passe (US-016). À ne pas confondre avec le rôle, que les exigences (F1) appellent aussi « profil ». | `/profil` |
 | Avatar | Pastille ronde aux initiales du nom, sur une couleur choisie dans une palette de la charte (US-016). | `avatar` |
+| Thème | Apparence de l'application : « Clair », « Sombre » ou « Auto » (suit le système). Le choix est gardé sur l'appareil (US-052). | `theme` |
+| Pastille du serveur | Petite pastille de couleur (verte, orange ou rouge) qui montre l'état de la connexion au serveur, avec son libellé au survol (US-053). | `PastilleServeur`, `EtatConnexion` |
 | Menu de compte | Menu ouvert depuis l'avatar en haut à droite : nom, e-mail, « Éditer le profil » et déconnexions (US-017). | `MenuCompte` |
 | Lien de réinitialisation | Lien envoyé par e-mail depuis `no-reply@pessac-escrime.fr`, à usage unique et valable 1 heure, pour choisir un nouveau mot de passe sans administrateur (US-019). | `/reinitialisation#<jeton>`, `jetonDuFragment` |
 | Blocage (trop d'essais) | Refus des connexions à un e-mail ou depuis une adresse IP après trop d'échecs, mesuré par le serveur (US-004). | `TROP_D_ESSAIS`, `RegleEssais` |
