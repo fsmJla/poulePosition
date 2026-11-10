@@ -26,6 +26,15 @@
   --marque: var(--palette-ardoise);
   /* Texte et boutons posés sur la marque (entête de site, US-014). */
   --sur-marque: #f7f4ef;
+  /* Couleurs des compétitions du plan de la manifestation (US-049), décoratives : le texte garde sa couleur. */
+  --plan-0: #066f6c;
+  --plan-1: #7a5cb0;
+  --plan-2: #b5651d;
+  --plan-3: #2f6fb0;
+  --plan-4: #a63d5a;
+  --plan-5: #4f7d2a;
+  --plan-6: #8a6d00;
+  --plan-7: #5b6770;
   --decor: var(--palette-sable);
   --decor-2: var(--palette-lavande);
   /* Case vide de la grille de poule (icônes du pack, icône animée). */
@@ -70,6 +79,14 @@
     --sur-accent: #0f1716;
     --focus: var(--palette-tiffany);
     --etat-ok: #4cc38a;
+    --plan-0: #0abab5;
+    --plan-1: #b7a6d9;
+    --plan-2: #e0a060;
+    --plan-3: #6ea8e8;
+    --plan-4: #e57a95;
+    --plan-5: #8cc063;
+    --plan-6: #d9bd4a;
+    --plan-7: #9aa7b2;
     --etat-attente: #e3a948;
     --etat-erreur: #f07168;
   }

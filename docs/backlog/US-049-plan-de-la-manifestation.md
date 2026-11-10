@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-045, US-048
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-049-plan-de-la-manifestation` / —
 
 ## Récit
 
@@ -86,8 +86,31 @@ réseau coupé.
   partir des mêmes données que la liste de l'accueil (`construireListe`).
 - Glossaire : « Plan de la manifestation », « Valeur reprise ».
 
+## Hypothèses prises à l'implémentation
+
+- L'heure d'appel d'une tuile vient du journal de l'appareil ; une épreuve d'un autre PC jamais ouverte ici n'affiche pas son appel (le résumé de l'index n'en contient pas). Le panneau le dit.
+- Origines : l'arme est « comme la compétition » si elle est identique, le lieu « comme la manifestation » ; sinon « modifiée ». Le jour, les horaires et le type n'ont pas d'étiquette.
+- Dans une manifestation, la date d'une épreuve est obligatoire (US-025) : « Changer de jour » propose les jours de la manifestation. La colonne « Jour à fixer » accueille les épreuves sans date ou datées hors des jours (cas hérités) ; CA-5 est couvert en unitaire.
+- Couleur d'une compétition : palette fixe de 8 couleurs (`--plan-0` à `--plan-7`), attribuée dans l'ordre alphabétique des compétitions.
+- Le tableau et la liste par jour ne sont pas rendus ensemble : la largeur (48 rem) choisit l'un ou l'autre.
+- « Modifier la manifestation » ouvre la page Manifestations sur son formulaire (`?modifier=<id>`) ; « Annuler » du formulaire d'épreuve ouvert depuis le plan y revient.
+
+## Tests
+
+| Critère | Tests |
+|---|---|
+| CA-1 | `plan.test.ts` (domaine), `routes.test.ts`, `plan.test.ts` (app), E2E `plan.spec.ts` |
+| CA-2 | `routes.test.ts`, E2E `plan.spec.ts` (« + Épreuve », grille, « Modifier la manifestation ») |
+| CA-3 | `plan.test.ts` (domaine : origines), E2E `plan.spec.ts` (panneau) |
+| CA-4 | `plan.test.ts` (domaine et app : `changerJour`), E2E `plan.spec.ts` |
+| CA-5 | `plan.test.ts` (domaine : colonne « Jour à fixer ») |
+| CA-6 | E2E `plan.spec.ts` CA-6 (écran de 390 px) |
+| Hors ligne | E2E `plan.spec.ts` hors ligne (réseau coupé) |
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-11-08 | Créée (maquette d'ergonomie de création) |
+| 2026-11-10 | Implémentée sur `us/US-049-plan-de-la-manifestation` : plan en fonction pure du domaine (`plan.ts`), page `/manifestations/<id>`, changement de jour par `EpreuveModifiee`. Aucun changement du protocole, du serveur ni du journal. |
+| 2026-11-10 | Recette OK sur https://poule-position-git-us-us-049-plan-de-la-47db76-fsmjlas-projects.vercel.app (PC et écran étroit ; hors ligne et CA-5 couverts par les tests). Terminée, mergée dans `dev`. |

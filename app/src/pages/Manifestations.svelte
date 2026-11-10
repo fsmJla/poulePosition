@@ -16,7 +16,7 @@
     type ErreurManifestations,
     type SaisieManifestation,
   } from '../lib/manifestations';
-  import { CHEMINS, ouvertureManifestations } from '../lib/routes';
+  import { CHEMINS, cheminPlanManifestation, ouvertureManifestations } from '../lib/routes';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
@@ -70,6 +70,15 @@
     competitions = resultat.ok ? resultat.competitions : (resultat.copie?.competitions ?? competitions);
   }
 
+  /** US-049 : « Modifier la manifestation » du plan ouvre le formulaire de la manifestation, une fois la liste lue. */
+  let modificationDemandee = true;
+  function ouvrirModificationDemandee() {
+    if (!modificationDemandee || !ouverture || !('modifier' in ouverture)) return;
+    modificationDemandee = false;
+    const cible = manifestations?.find(({ id }) => id === ouverture.modifier);
+    if (cible) ouvrir(cible);
+  }
+
   async function charger() {
     void chargerCompetitions();
     const resultat = await client.lister();
@@ -77,11 +86,13 @@
       manifestations = resultat.manifestations;
       copieLe = null;
       erreurListe = null;
+      ouvrirModificationDemandee();
       return;
     }
     manifestations = resultat.copie?.manifestations ?? manifestations ?? [];
     copieLe = resultat.copie?.copieLe ?? null;
     erreurListe = resultat.erreur === 'HORS_LIGNE' ? null : resultat.erreur;
+    ouvrirModificationDemandee();
   }
 
   /** US-026 CA-5 : formulaire demandé par l'adresse (« ?nouvelle » ou « ?competition=<id> » depuis l'accueil). */
@@ -318,6 +329,11 @@
         <li>
           <div class="infos">
             <strong>{manifestation.nom}</strong>
+            <Lien
+              chemin={cheminPlanManifestation(manifestation.id)}
+              {naviguer}
+              etiquette={textes.plan.lienPour(manifestation.nom)}>{textes.plan.lien}</Lien
+            >
             <span>{t.periode(manifestation.debut, manifestation.fin)}</span>
             {#if manifestation.lieu}<span>{manifestation.lieu}</span>{/if}
             {#if manifestation.commentaire}<span class="commentaire">{manifestation.commentaire}</span>{/if}

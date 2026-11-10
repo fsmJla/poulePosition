@@ -31,6 +31,7 @@
     cheminEpreuve,
     cheminModificationEpreuve,
     cheminGrilleEpreuves,
+    cheminPlanManifestation,
     cheminNouvelleCompetition,
     CHEMIN_NOUVELLE_COMPETITION_SEULE,
     CHEMIN_NOUVELLE_MANIFESTATION,
@@ -343,6 +344,11 @@
               </span>
             </summary>
             <div class="contenu">
+              <Lien
+                chemin={cheminPlanManifestation(noeud.manifestation.id)}
+                {naviguer}
+                etiquette={textes.plan.lienPour(noeud.manifestation.nom)}>{textes.plan.lien}</Lien
+              >
               {@render creation(
                 cheminNouvelleCompetition(noeud.manifestation.id),
                 t.nouvelleCompetition,
