@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-014, US-017
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-052-choisir-le-theme` / PR vers `dev`
 
 ## Récit
 
@@ -106,8 +106,23 @@ l'accueil, la connexion et les pages réservées. Rien n'est envoyé au serveur.
 - Tests : unitaire du module, des contrastes dans les deux thèmes ; E2E Playwright (changer de thème, recharger, hors
   ligne, pages publiques, smartphone).
 
+## Tests
+
+| Critère | Tests |
+|---|---|
+| CA-1 | E2E `theme.spec.ts` « US-052 CA-1 … » |
+| CA-2 | E2E « US-052 CA-2 … » (accueil, connexion, mot de passe oublié, réinitialisation) |
+| CA-3 | `theme.test.ts` (gestionnaire) ; E2E « US-052 CA-3 … » (sans recharger, bannière comprise) |
+| CA-4 | `theme.test.ts` (thème effectif, suivi du système) ; E2E « US-052 CA-4 … » |
+| CA-5 | `theme.test.ts` (lecture, écriture, défaut, onglets) ; E2E « US-052 CA-5 … » (rechargement, thème posé avant tout script) |
+| CA-6 | `couleurs.test.ts` « thème choisi à la main (US-052) » (variables identiques, contrastes) ; E2E « US-052 CA-6 … » |
+| Hors ligne | E2E « US-052 hors ligne … » |
+| Cas limites | `theme.test.ts` (stockage qui lève, valeur inconnue, autre onglet) ; E2E « US-052 cas limite : à 320 px … » |
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-11-10 | Créée : demande d'un sélecteur de thème dans l'entête et partout ; spécifiée avec les réponses de l'utilisateur |
+| 2026-11-10 | Implémentée : sélecteur dans l'entête et sur les pages publiques, thème retenu sur l'appareil, bannière qui suit le thème, thèmes de la charte passés à `data-theme`. Lint, typage, 1151 tests unitaires avec couverture, build, audit et E2E locaux (thème, charte, bannière, accueil, connexion, menu de compte) verts. En revue |
+| 2026-11-10 | Recette OK sur https://poule-position-dq3rabphl-fsmjlas-projects.vercel.app (accueil, connexion, page réservée : trois choix, application immédiate, mémorisation, « Auto » qui suit le système). Cas hors ligne couvert par le test E2E. Terminée |

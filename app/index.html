@@ -10,6 +10,13 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Poule Position</title>
+    <script>
+      // US-052 : thème choisi, posé avant le premier affichage (pas de clignotement). Même clé que lib/theme.ts.
+      try {
+        var theme = localStorage.getItem('poule-position:theme');
+        if (theme === 'clair' || theme === 'sombre') document.documentElement.setAttribute('data-theme', theme);
+      } catch (erreur) {}
+    </script>
   </head>
   <body>
     <div id="app"></div>

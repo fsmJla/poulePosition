@@ -65,8 +65,13 @@
   line-height: 1.5;
 }
 
+/*
+ * Thème (US-052) : « Auto » suit le système (bloc @media) ; « Clair » et « Sombre » posent data-theme sur la racine.
+ * Les variables sombres sont écrites deux fois, sous @media et sous data-theme="sombre" : couleurs.test.ts vérifie qu'elles
+ * sont identiques.
+ */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='clair']) {
     --fond: #0f1716;
     --surface: #172221;
     --surface-2: #1f2d2c;
@@ -90,6 +95,36 @@
     --etat-attente: #e3a948;
     --etat-erreur: #f07168;
   }
+}
+
+:root[data-theme='clair'] {
+  color-scheme: light;
+}
+
+:root[data-theme='sombre'] {
+  color-scheme: dark;
+  --fond: #0f1716;
+  --surface: #172221;
+  --surface-2: #1f2d2c;
+  --texte: #e6eeec;
+  --texte-discret: #9fb0ad;
+  --bordure: #2a3a39;
+  --bordure-champ: #6b7f7c;
+  --accent: #0abab5;
+  --accent-fond: #0abab5;
+  --sur-accent: #0f1716;
+  --focus: var(--palette-tiffany);
+  --etat-ok: #4cc38a;
+  --plan-0: #0abab5;
+  --plan-1: #b7a6d9;
+  --plan-2: #e0a060;
+  --plan-3: #6ea8e8;
+  --plan-4: #e57a95;
+  --plan-5: #8cc063;
+  --plan-6: #d9bd4a;
+  --plan-7: #9aa7b2;
+  --etat-attente: #e3a948;
+  --etat-erreur: #f07168;
 }
 
 body {

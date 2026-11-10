@@ -14,6 +14,7 @@
   import { creerClientCompetitions } from './lib/competitions';
   import { creerClientManifestations } from './lib/manifestations';
   import { textes } from './lib/textes';
+  import BarreOutils from './composants/BarreOutils.svelte';
   import Entete from './composants/Entete.svelte';
   import Accueil from './pages/Accueil.svelte';
   import Epreuve from './pages/Epreuve.svelte';
@@ -141,12 +142,16 @@
 
 {#if pret && 'page' in route}
   {#if route.page === 'accueil'}
+    <BarreOutils />
     <Accueil {urlServeur} connecte={session !== null} {naviguer} />
   {:else if route.page === 'connexion'}
+    <BarreOutils />
     <Connexion {client} {surConnexion} {naviguer} />
   {:else if route.page === 'motDePasseOublie'}
+    <BarreOutils />
     <MotDePasseOublie {client} {naviguer} />
   {:else if route.page === 'reinitialisation'}
+    <BarreOutils />
     <Reinitialisation {client} {surConnexion} {naviguer} />
   {:else if session}
     <!-- Pages réservées : entête commun (US-014). -->

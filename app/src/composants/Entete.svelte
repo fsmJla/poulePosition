@@ -9,6 +9,7 @@
   import { textes } from '../lib/textes';
   import Banniere from './Banniere.svelte';
   import MenuCompte from './MenuCompte.svelte';
+  import SelecteurTheme from './SelecteurTheme.svelte';
 
   interface Proprietes {
     compte: CompteConnecte;
@@ -35,7 +36,10 @@
   <a href={CHEMINS.organisateur} onclick={versAccueil} class="marque">
     <Banniere variante="header" surFondSombre hauteur={32} />
   </a>
-  <MenuCompte {compte} {naviguer} {surDeconnexion} surOubli={() => (aConfirmer = true)} />
+  <div class="outils">
+    <SelecteurTheme surMarque />
+    <MenuCompte {compte} {naviguer} {surDeconnexion} surOubli={() => (aConfirmer = true)} />
+  </div>
 </header>
 {#if aConfirmer}
   <div class="confirmation" id="confirmation-oubli" role="group" aria-labelledby="avertissement-oubli">
@@ -71,6 +75,14 @@
     padding: 0.6rem max(1rem, env(safe-area-inset-left));
     background: var(--marque);
     color: var(--sur-marque);
+  }
+
+  /* Sélecteur de thème (US-052) puis menu de compte, à droite. */
+  .outils {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .marque {
