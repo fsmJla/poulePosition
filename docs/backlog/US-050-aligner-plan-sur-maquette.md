@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-049
-- **Branche / PR :** `us/US-050-aligner-plan-sur-maquette` / PR vers `dev`
+- **Branche / PR :** `us/US-050-aligner-plan-sur-maquette` / PR #71
 
 ## Récit
 
@@ -106,3 +106,4 @@ continuer à passer.
 |---|---|
 | 2026-11-10 | Créée : écart constaté entre le plan d'US-049 et la maquette `Plan.dc.html` |
 | 2026-11-10 | Implémentée : bandeau, bandes teintées, panneau à droite, horaires, bouton de changement de jour. Lint, typage, tests unitaires avec couverture, build et audit verts en local ; E2E laissés à la CI (mémoire du poste insuffisante). En revue |
+| 2026-11-10 | CI verte (22 E2E sur la preview). Recette OK sur https://poule-position-pneu8pqls-fsmjlas-projects.vercel.app (CA-1 à CA-6 au format PC ; format étroit et hors ligne couverts par les E2E) ; données de test supprimées. Terminée, mergée dans `dev` |
