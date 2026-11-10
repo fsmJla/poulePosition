@@ -5,7 +5,9 @@ import {
   cheminGrilleEpreuves,
   cheminModificationEpreuve,
   cheminModificationManifestation,
+  cheminDupliquerEpreuve,
   cheminNouvelleEpreuveDans,
+  copieEpreuve,
   cheminPlanManifestation,
   preselectionEpreuve,
   cheminParametresEpreuve,
@@ -228,5 +230,26 @@ describe('assistant de manifestation (US-047)', () => {
     expect(resoudreRoute('/manifestations/nouvelle', true)).toEqual({ page: 'assistantManifestation' });
     expect(resoudreRoute('/manifestations/nouvelle/', true)).toEqual({ page: 'assistantManifestation' });
     expect(resoudreRoute('/manifestations/nouvelle', false)).toEqual({ redirection: CHEMINS.connexion });
+  });
+});
+
+describe('copie d’une épreuve depuis le plan (US-051)', () => {
+  const id = '0b6f1c1e-6d1a-4c1e-9a55-3f0f6a2d7c11';
+  const competitionId = '7a1e2b3c-4d5e-4f60-8a9b-0c1d2e3f4a5b';
+  const epreuve = { id, nom: 'M15 Dames', arme: 'sabreLaser', date: '2027-03-14', rattachement: { competitionId } };
+
+  it('CA-2 : l’adresse porte la compétition, le jour, l’arme, le nom et l’épreuve copiée', () => {
+    const chemin = cheminDupliquerEpreuve(epreuve);
+    expect(chemin.startsWith('/epreuves/nouvelle?')).toBe(true);
+    const recherche = chemin.slice(chemin.indexOf('?'));
+    expect(preselectionEpreuve(recherche)).toEqual({ competitionId, jour: '2027-03-14' });
+    expect(copieEpreuve(recherche)).toEqual({ epreuveId: id, arme: 'sabreLaser', nom: 'M15 Dames' });
+  });
+
+  it('CA-2 : sans jour, l’adresse n’en porte pas ; une adresse sans copie ou invalide n’en demande aucune', () => {
+    expect(cheminDupliquerEpreuve({ ...epreuve, date: null })).not.toContain('jour=');
+    expect(copieEpreuve(`?competition=${competitionId}`)).toBeNull();
+    expect(copieEpreuve('?copie=pas un id')).toBeNull();
+    expect(copieEpreuve(`?copie=${id}&arme=<x>`)).toEqual({ epreuveId: id, arme: null, nom: '' });
   });
 });

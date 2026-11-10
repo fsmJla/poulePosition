@@ -110,6 +110,11 @@ export function saisieDe(donnees: DonneesEpreuve): SaisieEpreuve {
   };
 }
 
+/** US-051 CA-3 : saisie préremplie par la copie d'une épreuve, sans horaires ni commentaire ; le nom est à donner. */
+export function saisieDeCopie(donnees: DonneesEpreuve, nom: string): SaisieEpreuve {
+  return { ...saisieDe(donnees), nom, appel: '', scratch: '', debutPoules: '', commentaire: '' };
+}
+
 /**
  * Ce que l'appareil sait de la compétition choisie (dernières copies gardées) ; null si elle est inconnue de l'appareil,
  * ou si sa manifestation l'est.

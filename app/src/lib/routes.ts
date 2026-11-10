@@ -116,6 +116,34 @@ export function cheminNouvelleEpreuveDans(competitionId: string, jour?: string |
   return `${CHEMINS.nouvelleEpreuve}?${parametres}`;
 }
 
+/**
+ * US-051 CA-2 : formulaire « Nouvelle épreuve » prérempli par la copie de l'épreuve `epreuveId`. L'adresse porte ce que
+ * le plan sait de toute épreuve (compétition, arme, jour) ; le reste vient du journal local si l'appareil l'a.
+ */
+export function cheminDupliquerEpreuve(epreuve: {
+  id: string;
+  nom: string;
+  arme: string;
+  date: string | null;
+  rattachement: { competitionId: string };
+}): string {
+  const parametres = new URLSearchParams({ competition: epreuve.rattachement.competitionId });
+  if (epreuve.date) parametres.set('jour', epreuve.date);
+  parametres.set('arme', epreuve.arme);
+  parametres.set('nom', epreuve.nom);
+  parametres.set('copie', epreuve.id);
+  return `${CHEMINS.nouvelleEpreuve}?${parametres}`;
+}
+
+/** US-051 : épreuve à copier, arme et nom de l'originale, d'après l'adresse du formulaire ; null s'il n'y a pas de copie. */
+export function copieEpreuve(recherche: string): { epreuveId: string; arme: string | null; nom: string } | null {
+  const parametres = new URLSearchParams(recherche);
+  const epreuveId = parametres.get('copie');
+  if (!epreuveId || !MOTIF_IDENTIFIANT.test(epreuveId)) return null;
+  const arme = parametres.get('arme');
+  return { epreuveId, arme: arme && /^[A-Za-z]+$/.test(arme) ? arme : null, nom: parametres.get('nom') ?? '' };
+}
+
 const MOTIF_PLAN = /^\/manifestations\/([^/]+)$/;
 const MOTIF_GRILLE = /^\/competitions\/([^/]+)\/epreuves$/;
 const MOTIF_EPREUVE = /^\/epreuves\/([^/]+)$/;

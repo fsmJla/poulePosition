@@ -13,6 +13,7 @@ import {
   modifierParametres,
   rattacher,
   saisieDe,
+  saisieDeCopie,
   saisieVide,
   versDonnees,
   type SaisieEpreuve,
@@ -762,6 +763,32 @@ describe('paramètres d’une épreuve (US-032)', () => {
     expect(await modifierParametres(journal, epreuveId, nouveaux, auteur)).toEqual({
       ok: false,
       erreur: 'ECRITURE_IMPOSSIBLE',
+    });
+  });
+});
+
+describe('saisie d’une copie d’épreuve (US-051)', () => {
+  it('CA-3 : la copie garde catégorie, sexe, type, lieu et jour, mais ni horaires ni commentaire', () => {
+    const origine = saisie({
+      nom: 'M15 Dames',
+      categorie: 'M15',
+      sexe: 'dames',
+      date: '2027-03-14',
+      appel: '08:30',
+      scratch: '09:00',
+      debutPoules: '09:30',
+      lieu: 'Salle Bellegrave',
+      commentaire: 'Tableau direct',
+      competitionId: 'e1',
+    });
+    const copie = saisieDeCopie(versDonnees(origine), 'M15 Dames (copie)');
+    expect(copie).toEqual({
+      ...origine,
+      nom: 'M15 Dames (copie)',
+      appel: '',
+      scratch: '',
+      debutPoules: '',
+      commentaire: '',
     });
   });
 });

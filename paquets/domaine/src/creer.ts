@@ -82,3 +82,20 @@ export function actionsCompleter(
       .map(({ id: competitionId, nom }): ActionCompleter => ({ genre: 'epreuves', competitionId, nom })),
   ];
 }
+
+/** US-051 CA-4 : nom proposé à la copie d'une épreuve : « X (copie) », puis « X (copie 2) », « X (copie 3) »… s'il est pris. */
+export function nomDeCopie(nom: string, nomsExistants: readonly string[]): string {
+  const pris = new Set(nomsExistants.map(normaliser));
+  const base = `${nom.trim()} (copie`;
+  if (!pris.has(normaliser(`${base})`))) return `${base})`;
+  for (let numero = 2; ; numero += 1) {
+    const candidat = `${base} ${numero})`;
+    if (!pris.has(normaliser(candidat))) return candidat;
+  }
+}
+
+/** US-051 CA-6 : vrai si une autre épreuve de la compétition porte déjà ce nom (sans tenir compte des accents ni de la casse). */
+export function nomDejaPris(nom: string, nomsExistants: readonly string[]): boolean {
+  const cherche = normaliser(nom);
+  return cherche !== '' && nomsExistants.some((existant) => normaliser(existant) === cherche);
+}
