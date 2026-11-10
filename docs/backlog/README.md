@@ -81,7 +81,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-049](US-049-plan-de-la-manifestation.md) | Voir et compléter le plan de la manifestation | E2 | Terminée | US-045, US-048 |
 | [US-050](US-050-aligner-plan-sur-maquette.md) | Aligner le plan de la manifestation sur la maquette | E2 | Terminée | US-049 |
 | [US-051](US-051-dupliquer-epreuve.md) | Dupliquer une épreuve depuis le plan | E2 | Terminée | US-049, US-050 |
-| [US-052](US-052-choisir-le-theme.md) | Choisir le thème clair, sombre ou automatique | E1 | En revue | US-014, US-017 |
+| [US-052](US-052-choisir-le-theme.md) | Choisir le thème clair, sombre ou automatique | E1 | Terminée | US-014, US-017 |
 | [US-053](US-053-pastille-etat-serveur.md) | Voir l'état du serveur dans l'entête | E1 | Prête | US-001, US-014, US-017 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.

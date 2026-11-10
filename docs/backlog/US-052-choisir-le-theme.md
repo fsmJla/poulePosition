@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-014, US-017
 - **Branche / PR :** `us/US-052-choisir-le-theme` / PR vers `dev`
 
@@ -125,3 +125,4 @@ l'accueil, la connexion et les pages réservées. Rien n'est envoyé au serveur.
 |---|---|
 | 2026-11-10 | Créée : demande d'un sélecteur de thème dans l'entête et partout ; spécifiée avec les réponses de l'utilisateur |
 | 2026-11-10 | Implémentée : sélecteur dans l'entête et sur les pages publiques, thème retenu sur l'appareil, bannière qui suit le thème, thèmes de la charte passés à `data-theme`. Lint, typage, 1151 tests unitaires avec couverture, build, audit et E2E locaux (thème, charte, bannière, accueil, connexion, menu de compte) verts. En revue |
+| 2026-11-10 | Recette OK sur https://poule-position-dq3rabphl-fsmjlas-projects.vercel.app (accueil, connexion, page réservée : trois choix, application immédiate, mémorisation, « Auto » qui suit le système). Cas hors ligne couvert par le test E2E. Terminée |
