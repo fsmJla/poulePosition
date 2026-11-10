@@ -212,3 +212,27 @@ describe('vocabulaire : une compétition est composée d’épreuves (US-044)', 
     expect(fautes).toEqual([]);
   });
 });
+
+describe('textes du plan (US-050)', () => {
+  it('US-050 CA-3 : le compte de compétitions du bandeau, au singulier et au pluriel', () => {
+    expect(textes.plan.competitions(0)).toBe('Aucune compétition');
+    expect(textes.plan.competitions(1)).toBe('1 compétition');
+    expect(textes.plan.competitions(3)).toBe('3 compétitions');
+  });
+
+  it('US-050 CA-4 : les horaires du panneau', () => {
+    expect(textes.plan.horaire.appel('08:30')).toBe('appel 08:30');
+    expect(textes.plan.horaire.scratch('09:00')).toBe('scratch 09:00');
+    expect(textes.plan.horaire.debutPoules('09:30')).toBe('poules 09:30');
+  });
+
+  it('US-050 CA-5 : l’origine du jour', () => {
+    expect(textes.plan.origines.jour).toBe('jour de la manifestation');
+  });
+
+  it('US-050 CA-6 : « Changer de jour : dimanche », avec le nom du jour d’une date', () => {
+    expect(textes.plan.jourSemaine('2027-03-14')).toBe('dimanche');
+    expect(textes.plan.jourSemaine('2027-03-15')).toBe('lundi');
+    expect(textes.plan.changerDeJourVers('lundi')).toBe('Changer de jour : lundi');
+  });
+});

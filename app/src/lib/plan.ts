@@ -8,6 +8,8 @@ import type { Contexte, Journal } from './journal';
 /** Ce que le panneau d'une tuile montre en plus du résumé ; connu seulement des épreuves présentes sur cet appareil. */
 export interface DetailEpreuve {
   appel: string | null;
+  scratch: string | null;
+  debutPoules: string | null;
   lieu: string | null;
   typeEpreuve: TypeEpreuve;
   /** Vrai si la formule diffère de celle par défaut du type (CA-3). */
@@ -25,6 +27,8 @@ export async function detailsDesTuiles(
     if (!epreuve) continue;
     details[epreuveId] = {
       appel: epreuve.horaires.appel,
+      scratch: epreuve.horaires.scratch,
+      debutPoules: epreuve.horaires.debutPoules,
       lieu: epreuve.lieu,
       typeEpreuve: epreuve.typeEpreuve,
       formuleModifiee:
@@ -32,6 +36,17 @@ export async function detailsDesTuiles(
     };
   }
   return details;
+}
+
+/** US-050 CA-4 : les horaires que l'appareil connaît d'une épreuve, dans l'ordre appel, scratch, début des poules ; ceux qui ne sont pas renseignés sont omis. */
+export function horairesConnus(
+  detail: Pick<DetailEpreuve, 'appel' | 'scratch' | 'debutPoules'> | undefined,
+): { champ: 'appel' | 'scratch' | 'debutPoules'; heure: string }[] {
+  if (!detail) return [];
+  return (['appel', 'scratch', 'debutPoules'] as const).flatMap((champ) => {
+    const heure = detail[champ];
+    return heure ? [{ champ, heure }] : [];
+  });
 }
 
 /**
