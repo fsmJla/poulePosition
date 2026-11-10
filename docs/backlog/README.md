@@ -4,7 +4,7 @@ Les US s'écrivent au fil de l'eau (`/debut-spec-US`, `/impact`, `/bug`), une pa
 [`_modele-US.md`](_modele-US.md). La numérotation est globale et continue (`US-001`, `US-002`…) et un numéro
 n'est jamais réutilisé.
 
-Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Terminée` · `Bloquée` (voir `CLAUDE.md`).
+Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Terminée` · `Bloquée` · `Abandonnée` (voir `CLAUDE.md`).
 
 > **Porte d'entrée :** aucune US fonctionnelle ne démarre tant que **US-001** n'est pas `Terminée`.
 
@@ -82,15 +82,14 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-050](US-050-aligner-plan-sur-maquette.md) | Aligner le plan de la manifestation sur la maquette | E2 | Terminée | US-049 |
 | [US-051](US-051-dupliquer-epreuve.md) | Dupliquer une épreuve depuis le plan | E2 | Terminée | US-049, US-050 |
 | [US-052](US-052-choisir-le-theme.md) | Choisir le thème clair, sombre ou automatique | E1 | Terminée | US-014, US-017 |
-| [US-053](US-053-pastille-etat-serveur.md) | Voir l'état du serveur dans l'entête | E1 | Prête | US-001, US-014, US-017 |
+| [US-053](US-053-pastille-etat-serveur.md) | Voir l'état du serveur dans l'entête | E1 | Abandonnée | US-001, US-014, US-017 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
 **Ordre conseillé pour E1 :** US-002 → US-003 → US-010 (le changement de mot de passe est nécessaire dès les
 mots de passe temporaires) → US-007 → US-009 → US-008 → US-005 → US-004 → US-006 → US-016 → US-017 (le menu de
 compte ouvre la page de profil) → US-018 (avec son ADR et un essai d'envoi réel) → US-019.
-Puis, indépendantes de l'ordre de E2 : US-052 (thème) → US-053 (pastille du serveur), qui partagent la petite barre
-des pages sans entête.
+Puis, indépendante de l'ordre de E2 : US-052 (thème). US-053 (pastille du serveur) est abandonnée.
 
 **Ordre conseillé pour E2 :** US-021 → US-022 (avec l'ADR-0016 : index des compétitions, pilote, stockage des
 manifestations et épreuves) → US-025 → US-023 → US-024 → US-026 → US-027 → US-028 → US-029 → US-032 → US-030 →
