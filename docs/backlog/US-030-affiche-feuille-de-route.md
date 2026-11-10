@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-044, US-023, US-024, US-025, US-022
 - **Branche / PR :** `us/US-030-affiche-feuille-de-route` ; PR (a) serveur, domaine, protocole et ADR-0022, PR (b) interface et hors ligne
 
@@ -63,8 +63,16 @@ internet »). Les fichiers des épreuves pilotées par ce PC restent consultable
 ## Hypothèses
 
 - Un seul fichier de chaque sorte par élément (une affiche, une feuille de route).
-- Les fichiers d'une épreuve vont dans son DO `Epreuve` (ADR-0011). Ceux des manifestations et compétitions, qui
-  n'ont pas de DO `Epreuve`, sont stockés de la même manière dans le DO qui les garde (ADR-0016).
+- Tous les fichiers, quel que soit l'élément, vont dans le DO `Club` (ADR-0022, qui complète les ADR-0011 et 0016) : le DO
+  `Epreuve` ne tient que le temps réel. La lecture est publique, par un nom qui est l'empreinte du contenu.
+- Les boutons sont dans le formulaire de modification d'une manifestation et d'une compétition, et sur la page d'une
+  épreuve (hypothèse validée le 2026-11-10). Une compétition seule, sans manifestation, n'a pas encore de formulaire de
+  modification : ses documents se joignent à ses épreuves.
+- La limite de 5 Mo s'applique au fichier choisi, avant la réduction d'une affiche : une photo de plus de 5 Mo est refusée.
+- Une épreuve n'existe sur le serveur qu'à partir du premier lot de son pilote : joindre un fichier à une épreuve toute
+  neuve, pas encore envoyée, répond « réessayez dans un instant » (ADR-0022 §7).
+- L'affichage à l'accueil public et sur l'écran géant (« page, public, écran géant » du CA-4) viendra avec leurs US : cette
+  US fournit la lecture publique et la règle d'héritage.
 
 ## Questions bloquantes
 
@@ -75,6 +83,19 @@ internet »). Les fichiers des épreuves pilotées par ce PC restent consultable
 - ADR-0011 (morceaux de 1 Mo, `Cache-Control: immutable`). Le cas des manifestations et compétitions complète l'ADR-0011 :
   à intégrer dans l'ADR-0016.
 
+## Tests
+
+| Critère | Tests |
+|---|---|
+| CA-1 | `serveur/src/fichiers.test.ts` « CA-1 » (envoi sur les trois sortes d'éléments, lecture sans session) ; `reduction.test.ts` (1 600 px, WebP) ; `fichiers.test.ts` (client : réduction avant envoi, copie locale) ; E2E `fichiers.spec.ts` « US-030 CA-1, CA-2 et CA-5 » (vignette) |
+| CA-2 | serveur « CA-2 » (PDF de 2,5 Mo en trois morceaux, servi tel quel) ; E2E « CA-1, CA-2 et CA-5 » (lien) |
+| CA-3 | domaine `fichiers.test.ts` (`typeReel`, `controlerFichier`, dimensions, image animée) ; serveur « CA-3 » (413 / 415 / 400 avec la raison) ; client (refus avant tout envoi) ; E2E « US-030 CA-3 » (messages, aucun envoi) |
+| CA-4 | domaine `fichierHerite` ; client `fichiersEffectifs` ; E2E « US-030 CA-4 et CA-6 » (compétition puis épreuve reprennent l'affiche de la manifestation) |
+| CA-5 | serveur « CA-5 » (l'ancien nom répond 404, retrait, contenu partagé conservé) ; E2E « CA-1, CA-2 et CA-5 » (remplacer, retirer) |
+| CA-6 | client `garderHorsLigne` et copie locale ; E2E « US-030 CA-4 et CA-6 » (réseau coupé : l'affiche reste affichée) |
+| Hors ligne | client (`HORS_LIGNE`, session locale, `INTERROMPU` sans toucher à l'ancien fichier) ; E2E « CA-4 et CA-6 » (bouton grisé, « Nécessite une connexion internet ») |
+| Cas limites | serveur (élément inconnu, sans session, mot de passe temporaire, méthodes) ; suppression d'une compétition, d'une manifestation ou d'une épreuve : ses fichiers partent avec |
+
 ## Suivi
 
 | Date | Événement |
@@ -82,3 +103,4 @@ internet »). Les fichiers des épreuves pilotées par ce PC restent consultable
 | 2026-10-28 | Créée |
 | 2026-11-08 | Amendée : vocabulaire inversé (la compétition regroupe, l'épreuve se tire ; US-044), au niveau de l'épreuve comme avant (décision du 2026-11-08) ; dépend de US-044 |
 | 2026-11-10 | Démarrée. Plan validé : lecture publique des fichiers par empreinte, deux PR (serveur puis interface), boutons dans les formulaires, ADR-0022. Serveur, domaine et protocole faits (PR a) |
+| 2026-11-10 | Interface faite (PR b) : sélecteurs de fichiers dans les formulaires de manifestation et de compétition et sur la page d'une épreuve, héritage affiché, contenu gardé sur l'appareil pour le hors ligne. Lint, typage, 1226 tests unitaires avec couverture et E2E locaux verts. En revue |
