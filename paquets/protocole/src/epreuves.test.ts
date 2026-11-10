@@ -248,7 +248,9 @@ describe('résumé d’une épreuve pour l’index du club (US-025)', () => {
 
 describe('horaires et lieu du résumé (US-031 CA-3)', () => {
   const sansEnrichissement = (): Record<string, unknown> => {
-    const { horaires: _horaires, lieu: _lieu, ...ancien } = resume();
+    const ancien: Record<string, unknown> = { ...resume() };
+    delete ancien.horaires;
+    delete ancien.lieu;
     return ancien;
   };
 

@@ -64,8 +64,8 @@ export function analyserFichierPublic(brut: unknown): FichierPublic | null {
   if (brut === null || typeof brut !== 'object' || Array.isArray(brut) || 'ajoutePar' in brut) return null;
   const fichier = analyserFichierJoint({ ...(brut as Record<string, unknown>), ajoutePar: '' });
   if (!fichier) return null;
-  const { ajoutePar: _ajoutePar, ...visible } = fichier;
-  return visible;
+  const { proprietaire, proprietaireId, sorte, nom, type, taille, ajouteLe } = fichier;
+  return { proprietaire, proprietaireId, sorte, nom, type, taille, ajouteLe };
 }
 
 export function analyserFichierJoint(brut: unknown): FichierJoint | null {

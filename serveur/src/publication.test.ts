@@ -304,7 +304,9 @@ describe('page publique (US-031)', () => {
   it('cas limite : une épreuve indexée avant US-031 (sans horaires ni lieu) se montre avec des valeurs vides', async () => {
     const competition = await creerCompetition(null, 'Ancienne');
     const epreuveId = crypto.randomUUID();
-    const { horaires: _horaires, lieu: _lieu, ...ancien } = resumeDe(competition.id, { publiee: true });
+    const ancien: Record<string, unknown> = resumeDe(competition.id, { publiee: true });
+    delete ancien.horaires;
+    delete ancien.lieu;
     const creation = evenement(epreuveId, 1, 'EpreuveCreee', donneesEpreuve(competition.id));
     await envoyerLot(epreuveId, 0, [creation], ancien);
     const epreuve = (await lirePublic()).epreuves.find(({ id }) => id === epreuveId);

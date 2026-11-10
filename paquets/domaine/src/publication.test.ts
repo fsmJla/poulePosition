@@ -135,7 +135,8 @@ describe('page publique (US-031)', () => {
   });
 
   it('CA-3 : regrouper des épreuves déjà publiées ne les filtre plus et en retire les champs en trop', () => {
-    const { statut: _statut, publiee: _publiee, ...publiee } = epreuve('e1', 'c1');
+    const { id, nom, arme, categorie, sexe, date, horaires, lieu, competitionId } = epreuve('e1', 'c1');
+    const publiee = { id, nom, arme, categorie, sexe, date, horaires, lieu, competitionId };
     const page = regrouperPagePublique({
       manifestations: [manifestation('m1')],
       competitions: [competition('c1', 'm1')],

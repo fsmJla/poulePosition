@@ -629,7 +629,15 @@ export class Club extends DurableObject<Env> {
     const fichiers = this.fichiers
       .lister()
       .filter(({ proprietaire, proprietaireId }) => proprietaires.has(`${proprietaire}:${proprietaireId}`))
-      .map(({ ajoutePar: _ajoutePar, ...fichier }) => fichier);
+      .map(({ proprietaire, proprietaireId, sorte, nom, type, taille, ajouteLe }) => ({
+        proprietaire,
+        proprietaireId,
+        sorte,
+        nom,
+        type,
+        taille,
+        ajouteLe,
+      }));
     return { ok: true, manifestations, competitions, epreuves, fichiers };
   }
 
