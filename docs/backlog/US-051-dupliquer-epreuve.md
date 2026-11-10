@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-049, US-050
-- **Branche / PR :** `us/US-051-dupliquer-epreuve` / —
+- **Branche / PR :** `us/US-051-dupliquer-epreuve` / PR vers `dev`
 
 ## Récit
 
@@ -83,6 +83,7 @@ résumé, seuls la compétition, l'arme et le jour sont préremplis.
 
 ## Hypothèses
 
+- Hors ligne, la copie d'une épreuve que le journal local ne contient pas ne reprend que la compétition, l'arme, le nom (adresse) et le jour ; le préremplissage complet suppose l'épreuve dans le journal de l'appareil.
 - La copie est une nouvelle épreuve, avec son propre journal et ce PC pour pilote ; elle ne garde aucun lien avec
   l'originale.
 - Les quatre réponses ci-dessus ont été proposées puis validées par l'utilisateur le 2026-11-10 : copie de tout sauf les
@@ -106,6 +107,18 @@ résumé, seuls la compétition, l'arme et le jour sont préremplis.
 - Tests : unitaire du nom de copie (CA-4) ; E2E de `plan.spec.ts` pour CA-1, CA-2, CA-3, CA-5 et CA-6 ; E2E hors ligne
   avec `context.setOffline` et navigation interne.
 
+## Tests
+
+| Critère | Tests |
+|---|---|
+| CA-1 | E2E `plan.spec.ts` « US-051 CA-1, CA-2, CA-3, CA-4, CA-5 et CA-6 … » (bouton à côté de « Ouvrir l'épreuve ») |
+| CA-2 | même E2E (formulaire prérempli, « Annuler » sans rien créer) ; `routes.test.ts` « copie d'une épreuve depuis le plan (US-051) » |
+| CA-3 | même E2E (horaires vides) ; `epreuves.test.ts` « saisie d'une copie d'épreuve (US-051) » |
+| CA-4 | `creer.test.ts` « nom d'une copie d'épreuve (US-051) » ; même E2E (« (copie) » puis « (copie 2) ») |
+| CA-5 | même E2E (copie dans la case, 2 puis 3 épreuves) |
+| CA-6 | `creer.test.ts` (nom déjà pris) ; même E2E (avertissement puis « Créer quand même ») |
+| Hors ligne | E2E `plan.spec.ts` « US-051 hors ligne : … » |
+
 ## Suivi
 
 | Date | Événement |
@@ -113,3 +126,4 @@ résumé, seuls la compétition, l'arme et le jour sont préremplis.
 | 2026-11-10 | Créée : bouton « Dupliquer » de la maquette absent d'US-049 |
 | 2026-11-10 | Spécifiée : critères d'acceptation écrits avec les quatre réponses validées ; statut « Prête » |
 | 2026-11-10 | Démarrée. CA-2 amendé avec l'accord de l'utilisateur : la formule n'est pas copiée (le formulaire « Nouvelle épreuve » n'en a pas) ; catégorie et sexe le sont |
+| 2026-11-10 | Implémentée : « Dupliquer » dans le panneau, formulaire prérempli, nom de copie, avertissement de nom pris. Lint, typage, 1140 tests unitaires avec couverture, build, audit et 29 E2E locaux (plan, formulaire, modification, créer) verts. En revue |
