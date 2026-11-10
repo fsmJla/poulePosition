@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2, F14 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-044, US-022, US-026 ; US-030 pour l'affiche
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-031-publier-competition`
 
 ## Récit
 
@@ -84,3 +84,4 @@ page publique est servie par le serveur : elle n'a pas de mode hors ligne côté
 |---|---|
 | 2026-10-28 | Créée |
 | 2026-11-08 | Amendée : vocabulaire inversé (la compétition regroupe, l'épreuve se tire ; US-044), au niveau de l'épreuve comme avant (décision du 2026-11-08) ; dépend de US-044 |
+| 2026-11-10 | Démarrée. Plan validé : événement `PublicationModifiee`, résumé de l'index enrichi (horaires, lieu), routes publiques `GET /public` et `GET /public/epreuves/<id>`, page minimale `#/direct/<id>`, pas de pastille sur `/` |

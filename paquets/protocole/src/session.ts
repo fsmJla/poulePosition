@@ -49,6 +49,8 @@ export const CODES_ERREUR_SESSION = [
   'FICHIER_REFUSE',
   'FICHIER_INCONNU',
   'PROPRIETAIRE_INCONNU',
+  // Page publique (US-031, §16).
+  'EPREUVE_NON_PUBLIEE',
 ] as const;
 
 export type CodeErreurSession = (typeof CODES_ERREUR_SESSION)[number];

@@ -2,6 +2,7 @@
 export * from './authentification';
 export * from './epreuves';
 export * from './fichiers';
+export * from './publication';
 export * from './comptes';
 export * from './competitions';
 export * from './journal';

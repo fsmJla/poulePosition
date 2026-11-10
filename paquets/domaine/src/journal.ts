@@ -33,13 +33,19 @@ export interface DonneesPiloteChange {
   nouvelAppareil: string;
 }
 
+/** US-031 : publier ou dépublier une épreuve. */
+export interface DonneesPublication {
+  publiee: boolean;
+}
+
 /** Ce que l'application demande d'enregistrer. */
 export type Proposition =
   | { type: 'EpreuveCreee'; donnees: DonneesEpreuve }
   | { type: 'EpreuveModifiee'; donnees: ModificationEpreuve }
   | { type: 'FormuleModifiee'; donnees: ModificationFormule }
   | { type: 'PiloteChange'; donnees: DonneesPiloteChange }
-  | { type: 'ParametresModifies'; donnees: ModificationParametres };
+  | { type: 'ParametresModifies'; donnees: ModificationParametres }
+  | { type: 'PublicationModifiee'; donnees: DonneesPublication };
 
 /** Événement enregistré : la proposition acceptée, avec son en-tête. */
 export type Evenement = {
@@ -115,6 +121,7 @@ export function verifierEvenement(projection: Projection, proposition: Propositi
   if (proposition.type === 'PiloteChange') return verifierPilote(epreuve, proposition.donnees);
   if (proposition.type === 'ParametresModifies') return verifierParametres(epreuve, proposition.donnees);
   if (proposition.type === 'FormuleModifiee') return verifierFormule(epreuve, proposition.donnees);
+  if (proposition.type === 'PublicationModifiee') return verifierPublication(epreuve, proposition.donnees);
   // US-027 : la modification est validée sur le résultat de la fusion, comme une création.
   if (!epreuve) return 'EPREUVE_INCONNUE';
   if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
@@ -142,6 +149,16 @@ function verifierParametres(epreuve: Epreuve | null, changes: ModificationParame
   if (erreur) return erreur;
   const change = modificationParametres(epreuve.parametres, { ...epreuve.parametres, ...changes });
   return Object.keys(change).length === 0 ? 'AUCUNE_MODIFICATION' : null;
+}
+
+/**
+ * US-031 : on publie ou dépublie à tout moment, quel que soit le statut, sauf une fois l'épreuve archivée (elle est déjà
+ * retirée de la page publique). Rien n'est écrit si la valeur ne change pas.
+ */
+function verifierPublication(epreuve: Epreuve | null, { publiee }: DonneesPublication): ErreurEvenement | null {
+  if (!epreuve) return 'EPREUVE_INCONNUE';
+  if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
+  return epreuve.publiee === publiee ? 'AUCUNE_MODIFICATION' : null;
 }
 
 const CHAMPS_FORMULE: readonly string[] = ['touchesPoules', 'touchesTableau', 'matchTroisieme'];
@@ -172,6 +189,11 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
     if (!epreuve) return projection;
     const parametres = { ...epreuve.parametres, ...evenement.donnees };
     return { ...projection, epreuve: { ...epreuve, parametres }, dernierSeq: evenement.seq };
+  }
+  if (evenement.type === 'PublicationModifiee') {
+    const { epreuve } = projection;
+    if (!epreuve) return projection;
+    return { ...projection, epreuve: { ...epreuve, publiee: evenement.donnees.publiee }, dernierSeq: evenement.seq };
   }
   if (evenement.type === 'FormuleModifiee') {
     const { epreuve } = projection;
