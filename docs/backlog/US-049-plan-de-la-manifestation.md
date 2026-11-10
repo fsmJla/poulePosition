@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-045, US-048
 - **Branche / PR :** `us/US-049-plan-de-la-manifestation` / —
 
@@ -113,3 +113,4 @@ réseau coupé.
 |---|---|
 | 2026-11-08 | Créée (maquette d'ergonomie de création) |
 | 2026-11-10 | Implémentée sur `us/US-049-plan-de-la-manifestation` : plan en fonction pure du domaine (`plan.ts`), page `/manifestations/<id>`, changement de jour par `EpreuveModifiee`. Aucun changement du protocole, du serveur ni du journal. |
+| 2026-11-10 | Recette OK sur https://poule-position-git-us-us-049-plan-de-la-47db76-fsmjlas-projects.vercel.app (PC et écran étroit ; hors ligne et CA-5 couverts par les tests). Terminée, mergée dans `dev`. |
