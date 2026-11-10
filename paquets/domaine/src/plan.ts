@@ -43,6 +43,24 @@ export interface Plan {
 
 const comparer = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
+/** Ordre des compétitions d'un même parent, qui attribue les couleurs : alphabétique (français), puis identifiant. */
+const parNomCompetition = (a: CompetitionListee, b: CompetitionListee) =>
+  a.nom.localeCompare(b.nom, 'fr') || comparer(a.id, b.id);
+
+/**
+ * US-046 CA-4 : rang dans la palette d'une compétition, le même dans le plan, la liste et l'assistant. Il se compte parmi
+ * les compétitions de sa manifestation, ou parmi les compétitions seules ; une compétition inconnue prend la première.
+ */
+export function couleurDeCompetition(competitions: readonly CompetitionListee[], competitionId: string): number {
+  const cible = competitions.find(({ id }) => id === competitionId);
+  if (!cible) return 0;
+  const rang = competitions
+    .filter(({ manifestationId }) => manifestationId === cible.manifestationId)
+    .sort(parNomCompetition)
+    .findIndex(({ id }) => id === competitionId);
+  return rang % PALETTE_PLAN;
+}
+
 /** Appel croissant, les épreuves sans appel après, puis nom et identifiant. */
 function parAppel(a: TuilePlan, b: TuilePlan): number {
   if (a.appel !== b.appel) {
@@ -68,7 +86,7 @@ export function construireListePlan(
   const jours = joursDeManifestation(manifestation.debut, manifestation.fin);
   const classees = [...competitions]
     .filter(({ manifestationId: parent }) => parent === manifestationId)
-    .sort((a, b) => a.nom.localeCompare(b.nom, 'fr') || comparer(a.id, b.id));
+    .sort(parNomCompetition);
   const visibles = epreuves.filter(({ statut }) => statut !== 'archivee');
   const lignes: LignePlan[] = classees.map((competition, rang) => ({
     competition,

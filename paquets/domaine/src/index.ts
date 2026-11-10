@@ -16,3 +16,4 @@ export * from './selection-suppression';
 export * from './suppression';
 export * from './plan';
 export * from './assistant';
+export * from './creer';
