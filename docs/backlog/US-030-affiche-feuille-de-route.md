@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-044, US-023, US-024, US-025, US-022
 - **Branche / PR :** `us/US-030-affiche-feuille-de-route` ; PR (a) serveur, domaine, protocole et ADR-0022, PR (b) interface et hors ligne
 
@@ -104,3 +104,4 @@ internet »). Les fichiers des épreuves pilotées par ce PC restent consultable
 | 2026-11-08 | Amendée : vocabulaire inversé (la compétition regroupe, l'épreuve se tire ; US-044), au niveau de l'épreuve comme avant (décision du 2026-11-08) ; dépend de US-044 |
 | 2026-11-10 | Démarrée. Plan validé : lecture publique des fichiers par empreinte, deux PR (serveur puis interface), boutons dans les formulaires, ADR-0022. Serveur, domaine et protocole faits (PR a) |
 | 2026-11-10 | Interface faite (PR b) : sélecteurs de fichiers dans les formulaires de manifestation et de compétition et sur la page d'une épreuve, héritage affiché, contenu gardé sur l'appareil pour le hors ligne. Lint, typage, 1226 tests unitaires avec couverture et E2E locaux verts. En revue |
+| 2026-11-10 | Recette OK sur https://poule-position-hemxepcom-fsmjlas-projects.vercel.app (tous les critères ; le hors ligne est couvert par le test E2E CA-6, non rejoué à la main). Données de test supprimées de la preview. Terminée |
