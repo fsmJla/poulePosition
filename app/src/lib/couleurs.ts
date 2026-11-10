@@ -70,3 +70,20 @@ export function contraste(a: string, b: string): number {
   const [clairs, foncee] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
   return (clairs + 0.05) / (foncee + 0.05);
 }
+
+/** Mélange `part` (de 0 à 1) de `couleur` dans `base`, canal par canal comme `color-mix(in srgb, …)` ; renvoie `#rrggbb`. */
+export function melanger(couleur: string, base: string, part: number): string {
+  const canaux = (hex: string) => {
+    const valeur = hex.replace('#', '');
+    const complet = valeur.length === 3 ? [...valeur].map((c) => c + c).join('') : valeur.slice(0, 6);
+    return [0, 2, 4].map((i) => parseInt(complet.slice(i, i + 2), 16));
+  };
+  const [a, b] = [canaux(couleur), canaux(base)];
+  return `#${a
+    .map((canal, i) =>
+      Math.round(canal * part + (b[i] ?? 0) * (1 - part))
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
+}

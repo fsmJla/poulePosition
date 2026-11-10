@@ -1,7 +1,7 @@
 import css from '../app.css?raw';
 import { describe, expect, it } from 'vitest';
 import { COULEURS_AVATAR, PALETTE_PLAN } from '@poule-position/domaine';
-import { contraste, lireVariables, COUPLES_CHARTE, PALETTE_CALME_RETRO } from './couleurs';
+import { contraste, lireVariables, melanger, COUPLES_CHARTE, PALETTE_CALME_RETRO } from './couleurs';
 
 const { clair, sombre } = lireVariables(css);
 
@@ -83,6 +83,32 @@ describe('couleurs des compétitions (US-046 CA-4)', () => {
       expect(ecarts).toEqual([]);
     },
   );
+});
+
+describe('bandes de compétition du plan (US-050 CA-1)', () => {
+  /** Part de la couleur de la compétition dans le fond (CSS : `color-mix`) et dans la bordure de sa bande. */
+  const PART_FOND = 0.12;
+  const teintes = Array.from({ length: PALETTE_PLAN }, (_, rang) => `--plan-${rang}`);
+
+  it('melanger reprend color-mix : 0 donne la base, 1 la couleur, 0,5 le milieu', () => {
+    expect(melanger('#000000', '#ffffff', 0)).toBe('#ffffff');
+    expect(melanger('#000000', '#ffffff', 1)).toBe('#000000');
+    expect(melanger('#000000', '#ffffff', 0.5)).toBe('#808080');
+  });
+
+  it.each([
+    ['clair', clair],
+    ['sombre', sombre],
+  ])('US-050 CA-1 : le nom d’une compétition garde 4,5:1 sur sa bande teintée, en mode %s', (_mode, variables) => {
+    const ecarts: string[] = [];
+    for (const teinte of teintes) {
+      const couleur = variables[teinte] ?? '';
+      const fond = melanger(couleur, variables['--surface'] ?? '', PART_FOND);
+      const valeur = contraste(couleur, fond);
+      if (valeur < 4.5) ecarts.push(`${teinte} sur sa bande : ${valeur.toFixed(2)} < 4.5`);
+    }
+    expect(ecarts).toEqual([]);
+  });
 });
 
 describe('couleurs d’avatar (US-016)', () => {

@@ -141,3 +141,13 @@ export function originesDe(
 export function peutChangerDeJour({ statut, pilote }: { statut: Statut; pilote: boolean }): boolean {
   return pilote && statut === 'preparation';
 }
+
+/**
+ * US-050 CA-6 : pour une manifestation de deux jours, le jour où déplacer d'un geste une épreuve placée dans l'un d'eux.
+ * Null à trois jours ou plus, ou pour une épreuve sans jour ou hors des jours : le choix du jour reste proposé.
+ */
+export function jourOppose(jours: readonly string[], jour: string | null): string | null {
+  const [premier, second] = jours;
+  if (jours.length !== 2 || premier === undefined || second === undefined || jour === null) return null;
+  return jour === premier ? second : jour === second ? premier : null;
+}

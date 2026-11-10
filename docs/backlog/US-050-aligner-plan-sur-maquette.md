@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-049
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-050-aligner-plan-sur-maquette` / PR #71
 
 ## Récit
 
@@ -73,6 +73,7 @@ continuer à passer.
 - Les écarts de la maquette sont repris tels quels, sauf « Dupliquer », traité à part (US-051).
 - Les couleurs de la maquette (une teinte par compétition) sont reprises dans les variables de la charte
   (`--plan-*`), pas en dur dans les composants.
+- Pour tenir 4,5:1 sur le fond teinté des bandes (CA-1), trois teintes claires sont foncées : `--plan-1`, `--plan-2` et `--plan-3`.
 - Le panneau à droite s'applique à partir de la largeur où le tableau reste lisible (point de bascule à fixer à
   l'implémentation, aujourd'hui 48 rem).
 
@@ -87,8 +88,22 @@ continuer à passer.
   (`DetailEpreuve`).
 - Tests : les E2E de `plan.spec.ts` (US-049) restent la référence et sont adaptés aux nouveaux libellés.
 
+## Tests
+
+| Critère | Tests |
+|---|---|
+| CA-1 | `couleurs.test.ts` « bandes de compétition du plan (US-050 CA-1) » ; E2E `plan.spec.ts` « US-050 CA-1 et CA-3 … » |
+| CA-2 | E2E `plan.spec.ts` « US-050 CA-2, CA-4, CA-5 et CA-6 … » (panneau à droite à 1280 px, sous la liste à 390 px) |
+| CA-3 | E2E `plan.spec.ts` « US-050 CA-1 et CA-3 … » ; `textes.test.ts` « textes du plan (US-050) » |
+| CA-4 | `plan.test.ts` (app) horaires connus ; E2E « US-050 CA-2, CA-4, CA-5 et CA-6 … » |
+| CA-5 | E2E « US-050 CA-2, CA-4, CA-5 et CA-6 … » |
+| CA-6 | `plan.test.ts` (domaine) « changer de jour en un geste (US-050 CA-6) » ; E2E « US-050 CA-6 : à trois jours … » |
+| Hors ligne | E2E d'US-049 de `plan.spec.ts`, adaptés au bouton « Changer de jour : lundi » |
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-11-10 | Créée : écart constaté entre le plan d'US-049 et la maquette `Plan.dc.html` |
+| 2026-11-10 | Implémentée : bandeau, bandes teintées, panneau à droite, horaires, bouton de changement de jour. Lint, typage, tests unitaires avec couverture, build et audit verts en local ; E2E laissés à la CI (mémoire du poste insuffisante). En revue |
+| 2026-11-10 | CI verte (22 E2E sur la preview). Recette OK sur https://poule-position-pneu8pqls-fsmjlas-projects.vercel.app (CA-1 à CA-6 au format PC ; format étroit et hors ligne couverts par les E2E) ; données de test supprimées. Terminée, mergée dans `dev` |

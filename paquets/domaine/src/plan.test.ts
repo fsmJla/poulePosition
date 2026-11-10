@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CompetitionListee, EpreuveListee, ManifestationListee } from './liste';
-import { construireListePlan, originesDe, peutChangerDeJour, PALETTE_PLAN } from './plan';
+import { construireListePlan, jourOppose, originesDe, peutChangerDeJour, PALETTE_PLAN } from './plan';
 
 const manifestation: ManifestationListee = {
   id: 'm1',
@@ -137,5 +137,25 @@ describe('plan de la manifestation (US-049)', () => {
     expect(peutChangerDeJour({ statut: 'enCours', pilote: true })).toBe(false);
     expect(peutChangerDeJour({ statut: 'terminee', pilote: true })).toBe(false);
     expect(peutChangerDeJour({ statut: 'preparation', pilote: false })).toBe(false);
+  });
+});
+
+describe('changer de jour en un geste (US-050 CA-6)', () => {
+  it('US-050 CA-6 : pour deux jours, le jour opposé est celui où l’épreuve n’est pas', () => {
+    const jours = ['2027-03-13', '2027-03-14'];
+    expect(jourOppose(jours, '2027-03-13')).toBe('2027-03-14');
+    expect(jourOppose(jours, '2027-03-14')).toBe('2027-03-13');
+  });
+
+  it('US-050 CA-6 : à trois jours ou plus, ou pour un seul jour, le choix du jour reste proposé', () => {
+    expect(jourOppose(['2027-03-13', '2027-03-14', '2027-03-15'], '2027-03-13')).toBeNull();
+    expect(jourOppose(['2027-03-13'], '2027-03-13')).toBeNull();
+    expect(jourOppose([], null)).toBeNull();
+  });
+
+  it('US-050 CA-6 : une épreuve sans jour, ou hors des jours, a besoin du choix du jour', () => {
+    const jours = ['2027-03-13', '2027-03-14'];
+    expect(jourOppose(jours, null)).toBeNull();
+    expect(jourOppose(jours, '2027-04-01')).toBeNull();
   });
 });

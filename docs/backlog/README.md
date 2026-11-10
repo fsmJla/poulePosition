@@ -79,7 +79,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-047](US-047-assistant-manifestation.md) | Créer une manifestation avec un assistant | E2 | Terminée | US-048, US-049 |
 | [US-048](US-048-creer-epreuves-en-lot.md) | Créer les épreuves d'une compétition en lot (grille des épreuves) | E2 | Terminée | US-045 |
 | [US-049](US-049-plan-de-la-manifestation.md) | Voir et compléter le plan de la manifestation | E2 | Terminée | US-045, US-048 |
-| [US-050](US-050-aligner-plan-sur-maquette.md) | Aligner le plan de la manifestation sur la maquette | E2 | Prête | US-049 |
+| [US-050](US-050-aligner-plan-sur-maquette.md) | Aligner le plan de la manifestation sur la maquette | E2 | Terminée | US-049 |
 | [US-051](US-051-dupliquer-epreuve.md) | Dupliquer une épreuve depuis le plan | E2 | À spécifier | US-049 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.

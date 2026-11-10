@@ -976,6 +976,22 @@ export const textes = {
     lectureSeule: 'Lecture seule',
     nonEnvoyee: 'Pas encore envoyée',
     appel: (heure: string) => `appel ${heure}`,
+    /** US-050 CA-4 : les autres horaires du panneau d'une épreuve. */
+    horaire: {
+      appel: (heure: string) => `appel ${heure}`,
+      scratch: (heure: string) => `scratch ${heure}`,
+      debutPoules: (heure: string) => `poules ${heure}`,
+    },
+    /** US-050 CA-3 : le compte de compétitions du bandeau d'entête. */
+    competitions: (nombre: number) =>
+      nombre === 0 ? 'Aucune compétition' : nombre === 1 ? '1 compétition' : `${nombre} compétitions`,
+    /** US-050 : titre au-dessus du nom de l'épreuve dans le panneau. */
+    epreuveSelectionnee: 'Épreuve sélectionnée',
+    /** US-050 CA-6 : « Changer de jour : dimanche », pour une manifestation de deux jours. */
+    changerDeJourVers: (jour: string) => `Changer de jour : ${jour}`,
+    /** US-050 CA-6 : nom du jour de la semaine d'une date `AAAA-MM-JJ` (« dimanche »). */
+    jourSemaine: (date: string) =>
+      new Intl.DateTimeFormat('fr-FR', { weekday: 'long', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`)),
     tuile: (nom: string) => `Épreuve ${nom}`,
     panneau: (nom: string) => `Détail de l’épreuve ${nom}`,
     fermer: 'Fermer',
@@ -1000,6 +1016,8 @@ export const textes = {
       competition: 'comme la compétition',
       manifestation: 'comme la manifestation',
       modifiee: 'modifiée',
+      /** US-050 CA-5 : le jour d'une épreuve est l'un des jours de la manifestation. */
+      jour: 'jour de la manifestation',
     },
   },
   roles: {
