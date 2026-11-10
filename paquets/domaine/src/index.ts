@@ -17,3 +17,4 @@ export * from './suppression';
 export * from './plan';
 export * from './assistant';
 export * from './creer';
+export * from './fichiers';
