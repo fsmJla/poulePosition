@@ -448,6 +448,7 @@ Aucun autre champ n'est accepté.
 | `FormuleModifiee` | un ou plusieurs réglages de la formule | Modifie la formule de l’épreuve (US-028), seulement ce qui a changé. |
 | `PiloteChange` | `{ ancienAppareil, nouvelAppareil }` | Un autre PC a pris la main (US-029). |
 | `ParametresModifies` | un ou plusieurs paramètres de l’épreuve | Modifie les droits et l'affichage des noms (US-032), seulement ce qui a changé. |
+| `PublicationModifiee` | `{ publiee }` | Publie ou dépublie l’épreuve (US-031). |
 
 **Données de `EpreuveCreee`** (US-025) : exactement ces champs ; un champ facultatif non saisi vaut `null`.
 Le format a été complété par US-025 sans changer de version : rien n'était encore en production.
@@ -541,6 +542,17 @@ Règles du domaine (`verifierEvenement`), dans cet ordre :
 La projection porte `epreuve.parametres`, avec les valeurs par défaut à la création : un journal écrit avant
 US-032 n'a donc pas besoin de migration (`VERSION_JOURNAL` reste à 1).
 
+**Données de `PublicationModifiee`** (US-031) : exactement `{ "publiee": true | false }`. L'auteur et la date sont ceux de
+l'en-tête. La projection met `epreuve.publiee` à la valeur donnée ; une épreuve créée n'est pas publiée. Règles du domaine
+(`verifierEvenement`), dans cet ordre :
+
+- `EPREUVE_INCONNUE` : aucune `EpreuveCreee` avant ;
+- `EPREUVE_ARCHIVEE` : une épreuve archivée ne se publie ni ne se dépublie (elle est déjà retirée de la page publique) ;
+- `AUCUNE_MODIFICATION` : la publication est déjà celle demandée (rien n'est écrit).
+
+On publie ou dépublie à tout moment, quel que soit le statut, sauf archivée. Désarchiver (US-033) ne republie pas : la
+publication reste ce qu'elle était. Le format est inchangé (`VERSION_JOURNAL` reste à 1).
+
 ### Règles d'écriture et de lecture
 
 - Un événement est **écrit avant d'être affiché**. La lecture du journal, le contrôle des règles et l'écriture se
@@ -576,7 +588,7 @@ Corps (16 Ko au plus, `TAILLE_MAX_LOT`) :
 | `appareilId` | Identifiant de l'appareil (minuscules, chiffres, tirets ; un UUID), tiré une fois et gardé dans IndexedDB |
 | `depuis` | Dernier `seq` que le pilote croit confirmé ; le lot commence à `depuis + 1` |
 | `evenements` | Au moins un événement (§10), de `seq` consécutifs |
-| `resume` | Résumé calculé par le pilote pour l'index (`resumeDe`) : `{ nom, arme, categorie, sexe, date, statut, publiee, rattachement }` (US-025), valeurs du §10 |
+| `resume` | Résumé calculé par le pilote pour l'index (`resumeDe`) : `{ nom, arme, categorie, sexe, date, horaires, lieu, statut, publiee, rattachement }` (US-025 ; `horaires` et `lieu` : US-031), valeurs du §10 |
 
 Le DO ajoute le lot si, dans cet ordre :
 
@@ -597,11 +609,15 @@ encore été reçu.
 ### Index du club : `GET /epreuves`
 
 `200 {"ok":true,"epreuves":[…]}`, les plus récemment modifiées d'abord. Chaque ligne : `id`, le résumé du pilote
-(`nom`, `arme`, `categorie`, `sexe`, `date`, `statut`, `publiee`, `rattachement`), `piloteAppareil`, `piloteNom`
+(`nom`, `arme`, `categorie`, `sexe`, `date`, `horaires`, `lieu`, `statut`, `publiee`, `rattachement`), `piloteAppareil`, `piloteNom`
 (nom du compte qui a envoyé le dernier lot), `dernierSeq` et `modifieeLe` (date du dernier événement).
 
 L'application ignore une ligne illisible (format plus ancien, ligne abîmée) et garde les autres (US-023, pour
 US-026).
+
+**Résumé d'avant US-031** : un résumé sans `horaires` ni `lieu` (envoyé avant US-031, ou déjà dans l'index) reste lisible,
+avec des horaires vides (`{ appel: null, scratch: null, debutPoules: null }`) et un lieu `null`, jusqu'au prochain lot du
+pilote, qui apporte les vraies valeurs (`completerResume`, paquet protocole).
 
 ### Prise de main et présence du pilote (US-029, ADR-0017)
 
@@ -875,3 +891,44 @@ définitif (`401` sans session, `403 ACCES_REFUSE` avec un mot de passe temporai
 - **Suppression** : supprimer une manifestation, une compétition ou une épreuve (§12, §13, §14) supprime aussi ses fichiers.
 - **Héritage** (CA-4) : il se calcule dans l'application (`fichierHerite`), pas sur le serveur : une épreuve sans affiche montre
   celle de sa compétition, à défaut celle de sa manifestation. Même règle pour la feuille de route.
+
+## 16. Page publique : épreuves publiées (US-031, ADR-0007)
+
+Deux routes **sans session**, en lecture seule (`GET` ; toute autre méthode répond `405`), avec `Access-Control-Allow-Origin: *`
+et `Cache-Control: no-store` : une dépublication doit se voir tout de suite. Le serveur ne fait qu'un filtre sur l'index du
+club (§11) : il ne calcule rien d'escrime.
+
+### `GET /public`
+
+`200 { "ok": true, "manifestations": […], "competitions": […], "epreuves": […], "fichiers": […] }`, avec seulement ce que le
+public voit :
+
+- **`epreuves`** : les épreuves **publiées et non archivées** (`publiee` vrai et `statut` différent de `archivee`,
+  `estVisibleDuPublic`), chacune réduite à `{ id, nom, arme, categorie, sexe, date, horaires, lieu, competitionId }` ;
+- **`competitions`** : celles qui contiennent au moins une de ces épreuves, réduites à `{ id, manifestationId, nom, arme }` ;
+- **`manifestations`** : celles qui contiennent au moins une de ces compétitions, réduites à `{ id, nom, debut, fin, lieu }` ;
+- **`fichiers`** : l'affiche et la feuille de route de ces épreuves, compétitions et manifestations (§15), **sans**
+  `ajoutePar`. Le contenu se lit par `GET /fichiers/<nom>` (§15).
+
+Rien d'autre n'en sort : ni nom de compte, ni appareil, ni numéro de séquence, ni commentaire, ni donnée de tireur (CA-5).
+L'application regroupe ces lignes par manifestation puis par compétition (`regrouperPagePublique`, domaine) et calcule
+l'héritage des fichiers (`fichiersEffectifs`, §15).
+
+### `GET /public/epreuves/<id>`
+
+`200 { "ok": true, "epreuve": { … } }` (mêmes champs que ci-dessus) si l'épreuve est publiée et non archivée, sinon
+`404 { "ok": false, "erreur": "EPREUVE_NON_PUBLIEE" }`. Une épreuve inconnue répond exactement de même : rien ne permet de
+deviner l'existence d'une épreuve non publiée. L'application affiche alors « Cette épreuve n'est pas publiée ».
+
+### Côté application
+
+- **Adresses** : la page d'accueil `/` est la page publique ; `/direct/<id>` est le lien public d'une épreuve (ADR-0007 le
+  notait `#/direct/<id>` : l'application utilise de vraies adresses). Le suivi en direct (E9) s'y ajoutera ; pour l'instant la
+  page montre l'épreuve elle-même.
+- **Publier / Dépublier** : boutons de la page de l'épreuve, réservés au PC pilote (`modifierPublication`). L'événement
+  `PublicationModifiee` (§10) s'écrit dans le journal local, **hors ligne comprise** ; il part avec le lot suivant (§11), dont
+  le résumé porte la nouvelle valeur de `publiee`. La page publique ne change qu'à la réception du lot : la page de l'épreuve
+  affiche « Publication en attente d'envoi » en attendant.
+- **Visiteur** : pas de mode hors ligne ; sans réseau la page le dit (« Impossible de joindre le serveur… ») et recharge au
+  retour du réseau.
+- **Vocabulaire** : « Publiée / Non publiée » pour la visibilité ; « en ligne / hors ligne » est réservé à l'état du réseau.
