@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  actionsCompleter,
-  optionsCompleter,
-  rienACompleter,
-  LIMITE_OPTIONS_COMPLETER,
-} from './creer';
+import { actionsCompleter, optionsCompleter, rienACompleter, LIMITE_OPTIONS_COMPLETER } from './creer';
 import type { CompetitionListee, DonneesListe, ManifestationListee } from './liste';
 import { construireListePlan, couleurDeCompetition, PALETTE_PLAN } from './plan';
 
@@ -23,10 +18,11 @@ const competition = (id: string, nom: string, manifestationId: string | null): C
   arme: 'sabre',
 });
 
-const donnees = (
-  manifestations: ManifestationListee[] = [],
-  competitions: CompetitionListee[] = [],
-): DonneesListe => ({ manifestations, competitions, epreuves: [] });
+const donnees = (manifestations: ManifestationListee[] = [], competitions: CompetitionListee[] = []): DonneesListe => ({
+  manifestations,
+  competitions,
+  epreuves: [],
+});
 
 describe('rienACompleter (US-046 cas limite)', () => {
   it('US-046 cas limite : un club sans manifestation ni compétition n’a rien à compléter', () => {

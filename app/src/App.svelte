@@ -25,7 +25,9 @@
   import Formule from './pages/Formule.svelte';
   import Parametres from './pages/Parametres.svelte';
   import GrilleEpreuves from './pages/GrilleEpreuves.svelte';
+  import AideOrganisation from './pages/AideOrganisation.svelte';
   import AssistantManifestation from './pages/AssistantManifestation.svelte';
+  import Creer from './pages/Creer.svelte';
   import PlanManifestation from './pages/PlanManifestation.svelte';
   import NouvelleEpreuve from './pages/NouvelleEpreuve.svelte';
   import Profil from './pages/Profil.svelte';
@@ -196,6 +198,10 @@
         clientCompetitions={competitions}
         {naviguer}
       />
+    {:else if route.page === 'creer'}
+      <Creer {accueil} {naviguer} />
+    {:else if route.page === 'aideOrganisation'}
+      <AideOrganisation {naviguer} />
     {:else if route.page === 'planManifestation' && route.manifestationId}
       {#key route.manifestationId}
         <PlanManifestation

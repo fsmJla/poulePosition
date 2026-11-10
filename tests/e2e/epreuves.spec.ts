@@ -3,12 +3,13 @@
 // une épreuve dans cette compétition connue de l'appareil.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { ouvrirNouvelleEpreuve } from './creer';
 
 /** Nom unique, pour reconnaître l’épreuve créée par ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 
 async function ouvrirFormulaire(page: Page) {
-  await page.getByRole('link', { name: 'Nouvelle épreuve' }).click();
+  await ouvrirNouvelleEpreuve(page);
   await expect(page).toHaveURL(/\/epreuves\/nouvelle$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Nouvelle épreuve');
 }

@@ -24,12 +24,7 @@ export type ActionCompleter =
   { genre: 'competition'; manifestationId: string } | { genre: 'epreuves'; competitionId: string; nom: string };
 
 /** Texte comparable : sans accents, sans casse, espaces de bord retirés. */
-const normaliser = (texte: string) =>
-  texte
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .toLowerCase()
-    .trim();
+const normaliser = (texte: string) => texte.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim();
 
 const parNom = (a: { nom: string; id: string }, b: { nom: string; id: string }) =>
   a.nom.localeCompare(b.nom, 'fr') || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
