@@ -813,6 +813,60 @@ export const textes = {
       ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
     } satisfies Record<ErreurManifestations, string>,
   },
+  /** US-047 : assistant de création d'une manifestation, de ses compétitions et de leurs épreuves. */
+  assistant: {
+    titre: 'Nouvelle manifestation',
+    etapes: 'Étapes',
+    etape: {
+      manifestation: { nom: 'Manifestation', aide: 'Nom, jours, lieu' },
+      competitions: { nom: 'Compétitions', aide: 'Une par affiche et par arme' },
+      epreuves: { nom: 'Épreuves', aide: 'Catégories × sexes' },
+      verifier: { nom: 'Vérifier', aide: 'Le plan complet' },
+    },
+    titreEtape: {
+      manifestation: 'La manifestation',
+      competitions: 'Les compétitions du week-end',
+      epreuves: 'Les épreuves de chaque compétition',
+      verifier: 'Vérifier le plan',
+    },
+    aideEtape: {
+      manifestation: 'Le nom, les jours et le lieu : les compétitions et leurs épreuves viennent ensuite.',
+      competitions:
+        'Une compétition regroupe les épreuves présentées sous un même nom et une même arme. Ses épreuves (catégories et sexes) se cochent à l’étape suivante.',
+      epreuves:
+        'Choisissez une compétition, puis cochez ses catégories et ses sexes : les épreuves se créent d’un coup.',
+      verifier: 'Voici le plan de la manifestation, tel qu’on le retrouvera dans la liste.',
+    },
+    precedent: 'Précédent',
+    suivant: (etape: string) => `Suivant : ${etape}`,
+    plusTard: 'Plus tard',
+    terminer: 'Terminer',
+    apercu: 'Aperçu en direct',
+    apercuAide:
+      'L’aperçu se remplit à chaque étape. Il prend la même forme que le plan de la manifestation, qu’on retrouve ensuite.',
+    apercuVide: 'La manifestation apparaît ici dès que vous saisissez son nom.',
+    enSaisie: 'en cours de saisie',
+    competitionSansNom: 'Nouvelle compétition',
+    planVide: 'Le plan se remplira avec les compétitions de la manifestation.',
+    epreuves: (nombre: number) => (nombre === 0 ? '0 épreuve' : nombre === 1 ? '1 épreuve' : `${nombre} épreuves`),
+    nomCompetition: 'Nom de la compétition',
+    arme: 'Arme',
+    plusieursArmes: 'Plusieurs armes',
+    ajouterCompetition: 'Ajouter la compétition',
+    competitionAjoutee: (nom: string) => `Compétition « ${nom} » créée`,
+    aucuneCompetition: 'Aucune compétition pour l’instant : ajoutez-en à l’étape précédente, ou passez cette étape.',
+    competitionsCreees: 'Compétitions créées',
+    choisirCompetition: 'Compétition à compléter',
+    epreuvesDe: (nom: string, nombre: number) =>
+      `${nom} (${nombre === 0 ? 'aucune épreuve' : nombre === 1 ? '1 épreuve' : `${nombre} épreuves`})`,
+    epreuvesCreees: (nombre: number) => (nombre === 1 ? '1 épreuve créée' : `${nombre} épreuves créées`),
+    bilan: (competitions: number, epreuves: number) =>
+      `${competitions === 0 ? 'Aucune compétition' : competitions === 1 ? '1 compétition' : `${competitions} compétitions`}, ${epreuves === 0 ? 'aucune épreuve' : epreuves === 1 ? '1 épreuve' : `${epreuves} épreuves`}`,
+    reseauPerdu: 'Réseau perdu : ce qui est déjà créé est gardé. Reprenez depuis le plan de la manifestation.',
+    horsLigne: 'Nécessite une connexion internet',
+    chargement: 'Chargement…',
+    manifestationCree: (nom: string) => `Manifestation « ${nom} » créée`,
+  },
   /** US-049 : plan d'une manifestation (lignes = compétitions, colonnes = jours). */
   plan: {
     lien: 'Voir le plan',
@@ -836,6 +890,8 @@ export const textes = {
     ajouterEpreuves: (competition: string) => `Ajouter des épreuves à ${competition}`,
     ajouterEpreuvesCourt: 'Ajouter des épreuves',
     plus: '+ Épreuve',
+    /** Titre d'une tuile : la catégorie (ou le nom) et le sexe s'il y en a un. */
+    titreTuile: (categorie: string, sexe: string | null) => (sexe ? `${categorie} · ${sexe}` : categorie),
     plusDans: (competition: string, jour: string) => `Ajouter une épreuve à ${competition}, ${jour}`,
     competitionSansArme: 'Toutes armes',
     colonnes: 'Plan par jour',

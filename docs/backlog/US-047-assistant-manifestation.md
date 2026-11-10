@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-048, US-049
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-047-assistant-manifestation` / #69
 
 ## Récit
 
@@ -80,8 +80,32 @@ affiche « Réseau perdu : ce qui est déjà créé est gardé » et l'organisat
 - Les étapes sont une machine d'état pure dans `paquets/domaine` (étape courante, étapes faites, transitions) ; l'écran
   ne fait qu'afficher.
 
+## Hypothèses prises à l'implémentation
+
+- Les « jours » de l'étape Compétitions de la maquette ne sont pas repris : une compétition n'a pas de jours propres (US-024, US-045), le jour se choisit par épreuve à la grille (US-048). Le modèle ne change pas.
+- « Plusieurs armes » de la maquette est une compétition sans arme.
+- L'entrée est le lien « Nouvelle manifestation » de l'accueil (`/manifestations/nouvelle`). Le bouton de la page Manifestations garde son formulaire, qui sert aussi à modifier. Le futur bouton « Créer » (US-046) reprendra l'entrée.
+- Étape Épreuves : une compétition à la fois, choisie parmi celles qu'on vient de créer ; la grille d'US-048 est intégrée (`integree`, `surCreation`).
+- « Plus tard » remplace « Suivant » tant que rien n'a été créé à l'étape ; « Suivant » apparaît ensuite.
+- À chaque création en ligne, les copies de l'appareil (manifestations, compétitions) sont remises à jour, pour que les étapes Épreuves et Vérifier fonctionnent si le réseau tombe ensuite.
+- Correction au passage dans le plan d'US-049 : le titre d'une tuile affichait « M13· Hommes » (espace perdu par le gabarit) ; il passe par `titreTuile`.
+
+## Tests
+
+| Critère | Tests |
+|---|---|
+| CA-1 | `assistant.test.ts` (domaine), `routes.test.ts`, E2E `assistant.spec.ts` CA-1 |
+| CA-2 | `assistant.test.ts` (aperçu), E2E `assistant.spec.ts` CA-2 |
+| CA-3 | E2E `assistant.spec.ts` CA-1/CA-2/CA-3 et CA-3/CA-5 |
+| CA-4 | `assistant.test.ts`, E2E `assistant.spec.ts` CA-4 |
+| CA-5 | `assistant.test.ts` (bilan), E2E `assistant.spec.ts` CA-3/CA-5 |
+| CA-6 | `assistant.test.ts`, E2E `assistant.spec.ts` CA-6 |
+| Hors ligne | E2E `assistant.spec.ts` hors ligne (réseau coupé en cours d'assistant) ; entrée grisée : `accueil.spec.ts` |
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-11-08 | Créée (maquette d'ergonomie de création) |
+| 2026-11-10 | Implémentée sur `us/US-047-assistant-manifestation` : machine d'état et aperçu dans le domaine (`assistant.ts`), page `/manifestations/nouvelle`, grille d'US-048 intégrée. Aucun changement du protocole, du serveur ni du journal. |
+| 2026-11-10 | PR #69, CI verte. Recette OK sur https://poule-position-git-us-us-047-assistant-0d761a-fsmjlas-projects.vercel.app (CA-1, 2, 3, 5 et 6 vérifiés à la main sur PC ; CA-4 et le hors ligne couverts par les E2E). Données de test supprimées. Terminée. |

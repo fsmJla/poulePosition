@@ -25,6 +25,7 @@
   import Formule from './pages/Formule.svelte';
   import Parametres from './pages/Parametres.svelte';
   import GrilleEpreuves from './pages/GrilleEpreuves.svelte';
+  import AssistantManifestation from './pages/AssistantManifestation.svelte';
   import PlanManifestation from './pages/PlanManifestation.svelte';
   import NouvelleEpreuve from './pages/NouvelleEpreuve.svelte';
   import Profil from './pages/Profil.svelte';
@@ -185,6 +186,16 @@
           {naviguer}
         />
       {/key}
+    {:else if route.page === 'assistantManifestation'}
+      <AssistantManifestation
+        {session}
+        {journal}
+        {synchronisation}
+        {accueil}
+        clientManifestations={manifestations}
+        clientCompetitions={competitions}
+        {naviguer}
+      />
     {:else if route.page === 'planManifestation' && route.manifestationId}
       {#key route.manifestationId}
         <PlanManifestation

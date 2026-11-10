@@ -209,3 +209,12 @@ describe('modification depuis le plan (US-049)', () => {
     expect(ouvertureManifestations('?modifier=pas un id')).toBeNull();
   });
 });
+
+describe('assistant de manifestation (US-047)', () => {
+  it('CA-1 : « /manifestations/nouvelle » ouvre l’assistant, réservé aux comptes connectés', () => {
+    expect(CHEMINS.assistantManifestation).toBe('/manifestations/nouvelle');
+    expect(resoudreRoute('/manifestations/nouvelle', true)).toEqual({ page: 'assistantManifestation' });
+    expect(resoudreRoute('/manifestations/nouvelle/', true)).toEqual({ page: 'assistantManifestation' });
+    expect(resoudreRoute('/manifestations/nouvelle', false)).toEqual({ redirection: CHEMINS.connexion });
+  });
+});

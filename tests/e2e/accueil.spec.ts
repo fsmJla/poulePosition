@@ -239,8 +239,9 @@ test('US-026 CA-5 : les actions de création de l’accueil', async ({ page }) =
   await expect(page.getByRole('link', { name: 'Nouvelle épreuve' })).toBeVisible();
 
   await page.getByRole('link', { name: 'Nouvelle manifestation' }).click();
-  await expect(page).toHaveURL(/\/manifestations\?nouvelle$/);
-  await expect(page.getByRole('heading', { level: 2, name: 'Nouvelle manifestation' })).toBeVisible();
+  // US-047 : le lien de l'accueil ouvre l'assistant de manifestation.
+  await expect(page).toHaveURL(/\/manifestations\/nouvelle$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'La manifestation' })).toBeVisible();
 
   await page.goto('/organisateur');
   const bloc = manifestationDe(page, manifestation);
