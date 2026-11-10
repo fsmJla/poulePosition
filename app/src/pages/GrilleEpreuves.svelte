@@ -43,9 +43,21 @@
     accueil: Accueil;
     competitionId: string;
     naviguer: (chemin: string) => void;
+    /** US-047 : la grille est un morceau de l'assistant (sans titre ni « Annuler ») ; `surCreation` reprend la main à la fin du lot. */
+    integree?: boolean;
+    surCreation?: () => void;
   }
 
-  let { session, journal, synchronisation, accueil, competitionId, naviguer }: Proprietes = $props();
+  let {
+    session,
+    journal,
+    synchronisation,
+    accueil,
+    competitionId,
+    naviguer,
+    integree = false,
+    surCreation,
+  }: Proprietes = $props();
 
   const t = textes.epreuves;
   const tg = t.grille;
@@ -158,7 +170,8 @@
       // US-022 : envoi après l'écriture ; hors ligne, les épreuves attendent le retour du réseau.
       for (const { epreuveId } of rendu.creees) void synchronisation.envoyer(epreuveId);
       if (rendu.manquantes.length === 0 && rendu.sansFormule.length === 0) {
-        naviguer(CHEMINS.organisateur);
+        if (surCreation) surCreation();
+        else naviguer(CHEMINS.organisateur);
         return;
       }
       for (const { cle } of rendu.creees) cochees.delete(cle);
@@ -173,8 +186,8 @@
   const jourCourt = (jour: string) => t.dateLongue(jour);
 </script>
 
-<main>
-  <h1>{tg.titre}</h1>
+<main class:integree>
+  {#if !integree}<h1>{tg.titre}</h1>{/if}
 
   {#if !donnees}
     <p role="status">{tg.chargement}</p>
@@ -359,15 +372,21 @@
         <button type="submit" disabled={enCours || proposition.epreuves.length === 0}>
           {enCours ? tg.creation : tg.creer(proposition.epreuves.length)}
         </button>
-        <a href={CHEMINS.organisateur} onclick={(e) => (e.preventDefault(), naviguer(CHEMINS.organisateur))}
-          >{tg.annuler}</a
-        >
+        {#if !integree}
+          <a href={CHEMINS.organisateur} onclick={(e) => (e.preventDefault(), naviguer(CHEMINS.organisateur))}
+            >{tg.annuler}</a
+          >
+        {/if}
       </div>
     </form>
   {/if}
 </main>
 
 <style>
+  main.integree {
+    padding: 0;
+  }
+
   main {
     display: grid;
     justify-items: center;

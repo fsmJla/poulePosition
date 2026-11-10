@@ -34,7 +34,6 @@
     cheminPlanManifestation,
     cheminNouvelleCompetition,
     CHEMIN_NOUVELLE_COMPETITION_SEULE,
-    CHEMIN_NOUVELLE_MANIFESTATION,
     CHEMINS,
   } from '../lib/routes';
   import { textes } from '../lib/textes';
@@ -186,7 +185,7 @@
     <Lien chemin={CHEMINS.nouvelleEpreuve} {naviguer}>{tc.nouvelle}</Lien>
     <!-- US-045 CA-4 : la compétition seule se crée en ligne, avec sa première épreuve. -->
     {@render creation(CHEMIN_NOUVELLE_COMPETITION_SEULE, t.nouvelleCompetitionSeule)}
-    {@render creation(CHEMIN_NOUVELLE_MANIFESTATION, t.nouvelleManifestation)}
+    {@render creation(CHEMINS.assistantManifestation, t.nouvelleManifestation)}
     <!-- US-023 : consultables hors ligne (dernière copie), modifiables en ligne seulement. -->
     <Lien chemin={CHEMINS.manifestations} {naviguer}>{textes.manifestations.entree}</Lien>
     {#if session.compte.role === 'administrateur'}

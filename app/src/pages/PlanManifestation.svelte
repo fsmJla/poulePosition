@@ -140,10 +140,7 @@
     aria-label={t.tuile(entree.nom)}
     onclick={() => choisir(entree)}
   >
-    <strong
-      >{entree.categorie ?? entree.nom}{#if entree.sexe}
-        · {te.sexes[entree.sexe]}{/if}</strong
-    >
+    <strong>{t.titreTuile(entree.categorie ?? entree.nom, entree.sexe ? te.sexes[entree.sexe] : null)}</strong>
     <span class="detail">
       {#if entree.appel}{t.appel(entree.appel)} ·{/if}
       {te.statuts[entree.statut]}
