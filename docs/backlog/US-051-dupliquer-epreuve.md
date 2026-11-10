@@ -4,8 +4,8 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** À spécifier
-- **Dépend de :** US-049
+- **Statut :** Prête
+- **Dépend de :** US-049, US-050
 - **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
 
 ## Récit
@@ -20,38 +20,94 @@ Le bouton figure dans la maquette mais pas dans les critères d'US-049, qui ne l
 
 ## Critères d'acceptation
 
-À écrire, après réponse aux questions ci-dessous.
+**CA-1 — Le bouton « Dupliquer »**
+
+- **Étant donné** le panneau d'une épreuve du plan
+- **Quand** il s'affiche
+- **Alors** il propose « Dupliquer », à côté de « Ouvrir l'épreuve ». Le bouton est proposé pour toute épreuve visible,
+  y compris celle d'un autre PC (« Lecture seule ») : la copie est une nouvelle épreuve, pilotée par ce PC.
+
+**CA-2 — Un formulaire prérempli, rien de créé**
+
+- **Étant donné** le panneau d'une épreuve
+- **Quand** l'organisateur clique « Dupliquer »
+- **Alors** le formulaire « Nouvelle épreuve » s'ouvre prérempli avec la compétition, l'arme, le type, la formule, le
+  lieu et le jour de l'épreuve d'origine. Rien n'est créé tant que l'organisateur n'a pas validé, et « Annuler » revient
+  au plan sans rien changer.
+
+**CA-3 — Ce qui n'est pas copié**
+
+- **Étant donné** une épreuve qui a des horaires (appel, scratch, début des poules) et un commentaire
+- **Quand** elle est dupliquée
+- **Alors** le formulaire prérempli les laisse vides : l'épreuve voisine n'a presque jamais les mêmes horaires. La copie
+  ne reprend ni les tireurs, ni les poules, ni les résultats, ni le statut : c'est une épreuve « En préparation ».
+
+**CA-4 — Le nom proposé**
+
+- **Étant donné** le formulaire prérempli par « Dupliquer »
+- **Quand** il s'ouvre
+- **Alors** le nom proposé est « <nom de l'originale> (copie) », modifiable. Si ce nom existe déjà dans la compétition,
+  il devient « (copie 2) », « (copie 3) »…
+
+**CA-5 — Une copie indépendante**
+
+- **Étant donné** une copie validée
+- **Quand** elle est créée
+- **Alors** elle a son propre journal et ce PC pour pilote, et apparaît dans la case de sa compétition et de son jour du
+  plan, avec le plan à jour. Elle ne garde aucun lien avec l'originale : modifier l'une ne change pas l'autre.
+
+**CA-6 — Avertir d'un nom déjà pris, sans bloquer**
+
+- **Étant donné** une copie dont le nom est celui d'une autre épreuve de la même compétition
+- **Quand** l'organisateur valide
+- **Alors** un avertissement le signale (« Une épreuve porte déjà ce nom dans cette compétition »), et l'organisateur
+  peut quand même créer l'épreuve. Contrairement à la grille d'US-048, la duplication ne refuse pas les doublons : copier
+  une épreuve pour changer sa catégorie ou son sexe est son usage normal.
 
 ## Comportement hors ligne
 
-À préciser. Hypothèse : comme « + Épreuve », la copie s'écrit dans le journal local et reste possible hors ligne dans
-une compétition connue.
+Comme « + Épreuve » (US-049) : « Dupliquer » reste possible hors ligne, car il ouvre le formulaire « Nouvelle épreuve »
+sur une compétition connue de l'appareil, et la copie s'écrit dans le journal local. Elle part au serveur à la
+reconnexion, comme toute épreuve créée hors ligne. Pour une épreuve d'un autre PC dont l'appareil ne connaît que le
+résumé, seuls la compétition, l'arme et le jour sont préremplis.
 
 ## Cas limites et erreurs
 
-- À préciser (épreuve d'un autre PC en lecture seule, épreuve archivée, case déjà prise par la grille d'US-048).
+- Épreuve d'un autre PC (« Lecture seule ») : la copie est possible, avec ce que l'appareil sait de l'originale (CA-1).
+- Épreuve archivée : elle n'est pas affichée dans le plan, donc elle ne se duplique pas depuis le plan.
+- Épreuve dont la compétition a changé d'arme depuis sa création : la copie reprend l'arme de l'originale, avec son
+  origine « modifiée » dans le panneau.
+- Échec d'enregistrement local : le formulaire reste ouvert avec son message d'erreur, comme pour « Nouvelle épreuve ».
+- Une copie qui garde le nom d'une épreuve de la même compétition : voir CA-6.
 
 ## Hypothèses
 
 - La copie est une nouvelle épreuve, avec son propre journal et ce PC pour pilote ; elle ne garde aucun lien avec
   l'originale.
+- Les quatre réponses ci-dessus ont été proposées puis validées par l'utilisateur le 2026-11-10 : copie de tout sauf les
+  horaires et le commentaire (CA-3), formulaire prérempli et nom « … (copie) » (CA-2 et CA-4), doublon signalé sans
+  blocage (CA-6).
+- Le « doublon » de CA-6 se limite au **nom** identique dans la compétition : le formulaire « Nouvelle épreuve » ne
+  connaît pas de catégorie ni de sexe structurés comme la grille d'US-048, qui les déduit de ses cases.
+- Le préremplissage passe par l'adresse du formulaire (`?competition=…&jour=…`) pour la compétition et le jour ; les
+  autres valeurs (arme, type, formule, lieu) viennent de l'épreuve d'origine, sans nouveau paramètre d'adresse.
 
 ## Questions bloquantes
 
-1. Que copie-t-on : tout (nom, formule, horaires, lieu, commentaire) ou seulement la compétition, l'arme, le type et le
-   jour ?
-2. Quel nom pour la copie : « … (copie) », ou le formulaire de création s'ouvre-t-il prérempli pour que l'organisateur
-   le choisisse ?
-3. La copie s'ouvre-t-elle dans le formulaire « Nouvelle épreuve » (prérempli), ou est-elle créée aussitôt ?
-4. Doit-on empêcher un doublon (même arme, catégorie, sexe dans la compétition), comme la grille d'US-048 ?
+- Aucune.
 
 ## Notes techniques
 
-- À rapprocher de « + Épreuve » (US-049) et de la grille (US-048) : le formulaire « Nouvelle épreuve » sait déjà être
-  prérempli par l'adresse (`?competition=…&jour=…`).
+- Pas d'impact sur le protocole, le serveur ni le journal : la création est la création d'épreuve existante.
+- Le domaine fournit une fonction pure du nom de la copie (« (copie) », « (copie 2) »…) à partir des noms de la
+  compétition, testée en unitaire.
+- À rapprocher de « + Épreuve » (US-049), du formulaire « Nouvelle épreuve » et de la grille (US-048).
+- Tests : unitaire du nom de copie (CA-4) ; E2E de `plan.spec.ts` pour CA-1, CA-2, CA-3, CA-5 et CA-6 ; E2E hors ligne
+  avec `context.setOffline` et navigation interne.
 
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-11-10 | Créée : bouton « Dupliquer » de la maquette absent d'US-049 |
+| 2026-11-10 | Spécifiée : critères d'acceptation écrits avec les quatre réponses validées ; statut « Prête » |
