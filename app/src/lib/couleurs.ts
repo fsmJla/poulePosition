@@ -55,6 +55,15 @@ export function lireVariables(css: string): { clair: Variables; sombre: Variable
   return { clair: resoudre(clair), sombre: resoudre({ ...clair, ...declarations(sombreBloc) }) };
 }
 
+/**
+ * US-052 : variables du thème « Sombre » choisi à la main (`:root[data-theme="sombre"]`), par-dessus le mode clair.
+ * Elles doivent être identiques à celles que `lireVariables` lit sous `@media (prefers-color-scheme: dark)`.
+ */
+export function lireSombreManuel(css: string): Variables {
+  const bloc = /:root\[data-theme=['"]sombre['"]\]\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  return resoudre({ ...lireVariables(css).clair, ...declarations(bloc) });
+}
+
 function luminance(hex: string): number {
   const valeur = hex.replace('#', '');
   const complet = valeur.length === 3 ? [...valeur].map((c) => c + c).join('') : valeur.slice(0, 6);

@@ -43,6 +43,11 @@ export const textes = {
   /** Nom affiché de l'application (US-014) ; le nom technique reste poulePosition. */
   nomApplication: 'Poule Position',
   sousTitre: 'Gestion de compétitions d’escrime',
+  /** US-052 : sélecteur de thème (« Auto » suit le réglage du système). */
+  theme: {
+    libelle: 'Thème',
+    choix: { clair: 'Clair', sombre: 'Sombre', auto: 'Auto' },
+  },
   etats: {
     'non-configure': 'Serveur non configuré',
     connexion: 'Connexion au serveur…',

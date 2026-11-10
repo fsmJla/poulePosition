@@ -1,7 +1,7 @@
 import css from '../app.css?raw';
 import { describe, expect, it } from 'vitest';
 import { COULEURS_AVATAR, PALETTE_PLAN } from '@poule-position/domaine';
-import { contraste, lireVariables, melanger, COUPLES_CHARTE, PALETTE_CALME_RETRO } from './couleurs';
+import { contraste, lireSombreManuel, lireVariables, melanger, COUPLES_CHARTE, PALETTE_CALME_RETRO } from './couleurs';
 
 const { clair, sombre } = lireVariables(css);
 
@@ -122,4 +122,24 @@ describe('couleurs d’avatar (US-016)', () => {
       }
     },
   );
+});
+
+describe('thème choisi à la main (US-052)', () => {
+  it('CA-6 : le thème « Sombre » choisi à la main a exactement les variables du mode sombre du système', () => {
+    expect(lireSombreManuel(css)).toEqual(sombre);
+  });
+
+  it('CA-6 : tous les couples de la charte restent contrastés dans le thème « Sombre » choisi à la main', () => {
+    const manuel = lireSombreManuel(css);
+    for (const { texte, fond, minimum } of COUPLES_CHARTE) {
+      expect(contraste(manuel[texte]!, manuel[fond]!), `${texte} sur ${fond}`).toBeGreaterThanOrEqual(minimum);
+    }
+  });
+
+  it('lit le bloc manuel, ou rien de plus que le mode clair s’il n’y en a pas', () => {
+    const exemple = `:root { --a: #fff; --b: #000; }
+      :root[data-theme='sombre'] { color-scheme: dark; --b: #111; }`;
+    expect(lireSombreManuel(exemple)).toEqual({ '--a': '#fff', '--b': '#111' });
+    expect(lireSombreManuel(':root { --a: #fff; }')).toEqual({ '--a': '#fff' });
+  });
 });
