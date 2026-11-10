@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Abandonnée (le fonctionnement actuel convient, décision du 2026-11-10)
 - **Dépend de :** US-001, US-014, US-017
 - **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
 
@@ -95,3 +95,4 @@ au vert d'elle-même (CA-5).
 | Date | Événement |
 |---|---|
 | 2026-11-10 | Créée : demande de la pastille d'état du serveur dans l'entête ; spécifiée avec les réponses de l'utilisateur |
+| 2026-11-10 | Abandonnée sur décision de l'utilisateur : le fonctionnement actuel (état du serveur sur l'accueil, bandeau « connexion locale » pour la session) est jugé correct. Aucun code écrit |

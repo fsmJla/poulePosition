@@ -88,4 +88,5 @@ Hors de ces modes, ne pas modifier le code applicatif sans demande explicite.
 ## Statuts des US
 
 `À spécifier` → `Prête` → `En cours` → `En revue` (PR ouverte) → `Terminée` (recette OK et mergée dans `dev`).
-Une US peut aussi être `Bloquée`, avec le motif indiqué. Le statut se met à jour à la fois dans le fichier de l'US et dans `docs/backlog/README.md`.
+Une US peut aussi être `Bloquée`, avec le motif indiqué, ou `Abandonnée` : décision de ne pas la réaliser, avec le motif indiqué
+(le fichier de l'US est conservé comme trace et elle sort de l'ordre de réalisation). Le statut se met à jour à la fois dans le fichier de l'US et dans `docs/backlog/README.md`.
