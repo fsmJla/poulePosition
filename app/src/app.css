@@ -26,14 +26,14 @@
   --marque: var(--palette-ardoise);
   /* Texte et boutons posés sur la marque (entête de site, US-014). */
   --sur-marque: #f7f4ef;
-  /* Couleurs des compétitions du plan de la manifestation (US-049), décoratives : le texte garde sa couleur. */
+  /* Couleurs des compétitions du plan de la manifestation (US-049), leur contraste passe 4,5:1 sur le fond et la surface (US-046 CA-4). */
   --plan-0: #066f6c;
   --plan-1: #7a5cb0;
-  --plan-2: #b5651d;
+  --plan-2: #a85a17;
   --plan-3: #2f6fb0;
   --plan-4: #a63d5a;
-  --plan-5: #4f7d2a;
-  --plan-6: #8a6d00;
+  --plan-5: #486f26;
+  --plan-6: #7d6200;
   --plan-7: #5b6770;
   --decor: var(--palette-sable);
   --decor-2: var(--palette-lavande);

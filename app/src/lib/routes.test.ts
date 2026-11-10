@@ -210,6 +210,18 @@ describe('modification depuis le plan (US-049)', () => {
   });
 });
 
+describe('point d’entrée « Créer » (US-046)', () => {
+  it('CA-2 et CA-3 : « /creer » et « /creer/aide » sont des pages réservées aux comptes connectés', () => {
+    expect(CHEMINS.creer).toBe('/creer');
+    expect(CHEMINS.aideOrganisation).toBe('/creer/aide');
+    expect(resoudreRoute('/creer', true)).toEqual({ page: 'creer' });
+    expect(resoudreRoute('/creer/', true)).toEqual({ page: 'creer' });
+    expect(resoudreRoute('/creer/aide', true)).toEqual({ page: 'aideOrganisation' });
+    expect(resoudreRoute('/creer', false)).toEqual({ redirection: CHEMINS.connexion });
+    expect(resoudreRoute('/creer/aide', false)).toEqual({ redirection: CHEMINS.connexion });
+  });
+});
+
 describe('assistant de manifestation (US-047)', () => {
   it('CA-1 : « /manifestations/nouvelle » ouvre l’assistant, réservé aux comptes connectés', () => {
     expect(CHEMINS.assistantManifestation).toBe('/manifestations/nouvelle');

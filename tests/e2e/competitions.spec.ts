@@ -2,6 +2,7 @@
 // (formulaire « Nouvelle épreuve » : US-045 CA-1 et CA-3, US-025 CA-4, US-024 CA-4).
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { ouvrirNouvelleEpreuve } from './creer';
 
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
@@ -124,7 +125,7 @@ test('US-024 CA-3, CA-4 et CA-5 : rattacher une épreuve à une compétition (ar
   await creerCompetition(page, manifestation, competition, 'sabre');
   await page.getByRole('link', { name: "Retour à l'accueil de l'organisateur" }).click();
 
-  await page.getByRole('link', { name: 'Nouvelle épreuve' }).click();
+  await ouvrirNouvelleEpreuve(page);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Nouvelle épreuve');
   // US-045 CA-1 et CA-3 : aucune compétition choisie par défaut ; celle d'une manifestation se nomme avec elle.
   await expect(page.getByLabel('Compétition', { exact: true })).toHaveValue('');
@@ -186,7 +187,7 @@ test('US-024 hors ligne : les compétitions restent consultables, les actions so
 
   // La création d'une épreuve reste possible hors ligne, dans une compétition que la copie contient (US-045).
   await page.getByRole('link', { name: "Retour à l'accueil de l'organisateur" }).click();
-  await page.getByRole('link', { name: 'Nouvelle épreuve' }).click();
+  await ouvrirNouvelleEpreuve(page);
   await expect(page.getByLabel('Compétition', { exact: true }).locator('option', { hasText: competition })).toHaveCount(
     1,
   );
@@ -207,7 +208,7 @@ test('US-024 smartphone : un nom de compétition très long ne fait pas déborde
   expect(await debordement()).toBe(false);
 
   await page.getByRole('link', { name: "Retour à l'accueil de l'organisateur" }).click();
-  await page.getByRole('link', { name: 'Nouvelle épreuve' }).click();
+  await ouvrirNouvelleEpreuve(page);
   await page.getByLabel('Compétition', { exact: true }).selectOption({ label: `${competition} — ${manifestation}` });
   await expect(page.getByLabel('Arme')).toHaveValue('sabre');
   expect(await debordement()).toBe(false);

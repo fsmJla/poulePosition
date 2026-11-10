@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-047, US-048
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-046-point-entree-creer` / #70
 
 ## Récit
 
@@ -61,6 +61,13 @@ connue de l'appareil (US-045, décision 1a). L'aide est consultable hors ligne. 
 
 - L'aide est une page de l'application (traduite par le catalogue), pas un document externe.
 - Les anciens chemins (`/competitions/nouvelle`…) restent valables pour les liens directs et les tests.
+- Les trois liens de l'entête de l'accueil sont remplacés par « Créer » ; le lien « Manifestations » (consulter, modifier)
+  reste. Les liens contextuels de la liste (« Nouvelle compétition dans … », « Ajouter des épreuves ») restent aussi.
+- Le formulaire « Nouvelle épreuve » (`/epreuves/nouvelle`) n'a plus de lien d'entrée direct : on y arrive par
+  « Une compétition seule », ou par la grille et le plan. Les E2E l'ouvrent par son chemin (`creer.ts`).
+- Pour que les contrastes de CA-4 passent 4,5:1, trois teintes claires ont été foncées (`--plan-2`, `--plan-5`, `--plan-6`) :
+  elles changent aussi dans le plan d'US-049.
+- « Compléter » montre au plus 20 choix à la fois (recherche sans accents ni casse, aussi par nom de manifestation).
 
 ## Questions bloquantes
 
@@ -68,11 +75,25 @@ connue de l'appareil (US-045, décision 1a). L'aide est consultable hors ligne. 
 
 ## Notes techniques
 
-- La couleur d'une compétition est attribuée de façon stable (à partir de son identifiant, parmi quelques teintes de
-  la charte) pour être la même dans la liste, le plan et l'assistant.
+- La couleur d'une compétition est son rang alphabétique (français) parmi les compétitions de sa manifestation, ou parmi
+  les compétitions seules, dans la palette de 8 teintes de la charte (`couleurDeCompetition`, domaine). C'est la règle du
+  plan (US-049), reprise pour la liste de l'accueil : elle évite les collisions d'une dérivation depuis l'identifiant.
+
+## Tests
+
+| Critère | Tests |
+|---|---|
+| CA-1 | E2E `creer.spec.ts` CA-1 ; `accueil.spec.ts` US-026 CA-5 |
+| CA-2 | `creer.test.ts` (domaine : choix et actions de « Compléter »), `routes.test.ts`, E2E `creer.spec.ts` CA-2 (trois cartes, assistant, compétition seule, compléter une manifestation, compléter une compétition) |
+| CA-3 | E2E `creer.spec.ts` CA-3 |
+| CA-4 | `couleurs.test.ts` (contrastes 4,5:1 des `--plan-0..7`), `creer.test.ts` (`couleurDeCompetition`), E2E `creer.spec.ts` CA-4 (même couleur dans la liste et le plan) |
+| Hors ligne | E2E `creer.spec.ts` hors ligne (réseau coupé) |
+| Cas limites | `creer.test.ts` (club vide, plus de 800 manifestations), E2E `creer.spec.ts` cas limite (club vide) |
 
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-11-08 | Créée (maquette d'ergonomie de création) |
+| 2026-11-10 | Implémentée sur `us/US-046-point-entree-creer` : choix de « Compléter » et couleur des compétitions dans le domaine (`creer.ts`, `plan.ts`), pages `/creer` et `/creer/aide`, bouton « Créer » à la place des liens de l'accueil, liste aux couleurs du plan. Aucun changement du protocole, du serveur ni du journal. En revue. |
+| 2026-11-10 | PR #70, CI verte. Recette OK sur https://poule-position-git-us-us-046-point-entr-c9fba7-fsmjlas-projects.vercel.app : CA-1, CA-2 (assistant, grille, compétition seule, « Compléter » avec 20 résultats sur 166), CA-3 et CA-4 (liste et plan, même bande) vérifiés à la main sur PC, sans création de données ; le hors ligne et la couleur de plusieurs compétitions sont couverts par les E2E. Terminée. |

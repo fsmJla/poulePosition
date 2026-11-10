@@ -1,6 +1,7 @@
 // Assistant de manifestation (US-047) : créer pas à pas une manifestation, ses compétitions puis leurs épreuves.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { ouvrirDepuisCreer } from './creer';
 
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
@@ -20,7 +21,7 @@ async function remplirManifestation(page: Page, nom: string) {
 async function commencer(page: Page, manifestation: string) {
   await seConnecter(page);
   await page.goto('/organisateur');
-  await page.getByRole('link', { name: 'Nouvelle manifestation' }).click();
+  await ouvrirDepuisCreer(page, 'Créer une manifestation');
   await expect(page.getByRole('heading', { level: 1, name: 'La manifestation' })).toBeVisible();
   await remplirManifestation(page, manifestation);
   await page.getByRole('button', { name: 'Suivant : Compétitions' }).click();
@@ -44,7 +45,7 @@ test('US-047 CA-1, CA-2 et CA-3 : quatre étapes, aperçu en direct, manifestati
   const competition = nomUnique();
   await seConnecter(page);
   await page.goto('/organisateur');
-  await page.getByRole('link', { name: 'Nouvelle manifestation' }).click();
+  await ouvrirDepuisCreer(page, 'Créer une manifestation');
 
   // CA-1 : les quatre étapes, la première en cours.
   const etapes = page.getByRole('list', { name: 'Étapes' });
@@ -166,7 +167,7 @@ test('US-047 cas limite : une étape invalide ne se valide pas, avec le message 
 }) => {
   await seConnecter(page);
   await page.goto('/organisateur');
-  await page.getByRole('link', { name: 'Nouvelle manifestation' }).click();
+  await ouvrirDepuisCreer(page, 'Créer une manifestation');
   await page.getByLabel('Date de début').fill('2027-03-15');
   await page.getByLabel('Date de fin').fill('2027-03-14');
   await page.getByRole('button', { name: 'Suivant : Compétitions' }).click();

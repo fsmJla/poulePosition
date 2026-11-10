@@ -10,6 +10,7 @@
   import {
     analyserSelection,
     construireListe,
+    couleurDeCompetition,
     elementsEnCours,
     manifestationOuverte,
     planSuppression,
@@ -33,7 +34,6 @@
     cheminGrilleEpreuves,
     cheminPlanManifestation,
     cheminNouvelleCompetition,
-    CHEMIN_NOUVELLE_COMPETITION_SEULE,
     CHEMINS,
   } from '../lib/routes';
   import { textes } from '../lib/textes';
@@ -56,6 +56,9 @@
   const aujourdhui = new Date().toLocaleDateString('sv-SE');
 
   const liste: ListeClub | null = $derived(donnees ? construireListe(donnees, { afficherArchives }) : null);
+
+  /** US-046 CA-4 : rang dans la palette de la compétition, le même que dans le plan de sa manifestation. */
+  const couleur = (competitionId: string) => (donnees ? couleurDeCompetition(donnees.competitions, competitionId) : 0);
 
   async function charger() {
     donnees = await accueil.charger();
@@ -181,11 +184,8 @@
   <h1>{textes.organisateur.bonjour(session.compte.nom)}</h1>
   <p class="role">{textes.roles[session.compte.role]}</p>
   <nav class="actions" aria-label={textes.organisateur.actions}>
-    <!-- US-025 : la création d'une épreuve fonctionne aussi hors ligne. -->
-    <Lien chemin={CHEMINS.nouvelleEpreuve} {naviguer}>{tc.nouvelle}</Lien>
-    <!-- US-045 CA-4 : la compétition seule se crée en ligne, avec sa première épreuve. -->
-    {@render creation(CHEMIN_NOUVELLE_COMPETITION_SEULE, t.nouvelleCompetitionSeule)}
-    {@render creation(CHEMINS.assistantManifestation, t.nouvelleManifestation)}
+    <!-- US-046 CA-1 : un seul point d'entrée de création, qui explique les choix ; la page s'affiche aussi hors ligne. -->
+    <Lien chemin={CHEMINS.creer} {naviguer}>{textes.creer.bouton}</Lien>
     <!-- US-023 : consultables hors ligne (dernière copie), modifiables en ligne seulement. -->
     <Lien chemin={CHEMINS.manifestations} {naviguer}>{textes.manifestations.entree}</Lien>
     {#if session.compte.role === 'administrateur'}
@@ -354,7 +354,7 @@
                 t.nouvelleCompetitionDans(noeud.manifestation.nom),
               )}
               {#each noeud.competitions as { competition, epreuves } (competition.id)}
-                <div class="competition">
+                <div class="competition bande" style="--couleur: var(--plan-{couleur(competition.id)})">
                   <h3>
                     {@render caseSelection(competition.id, ts.cocherCompetition(competition.nom), ts.contientEnCours)}
                     {competition.nom}
@@ -379,9 +379,11 @@
         <!-- US-045 CA-5 : les compétitions seules, après les manifestations ; une seule épreuve tient sur une ligne. -->
         {#each liste.competitionsSeules as { competition, epreuves } (competition.id)}
           {#if epreuves.length === 1 && epreuves[0]}
-            <ul class="seule">{@render epreuve(epreuves[0])}</ul>
+            <ul class="seule bande" style="--couleur: var(--plan-{couleur(competition.id)})">
+              {@render epreuve(epreuves[0])}
+            </ul>
           {:else}
-            <div class="competition">
+            <div class="competition bande" style="--couleur: var(--plan-{couleur(competition.id)})">
               <h3>
                 {@render caseSelection(competition.id, ts.cocherCompetition(competition.nom), ts.contientEnCours)}
                 {competition.nom}
@@ -476,10 +478,17 @@
     align-items: center;
   }
 
+  /* US-046 CA-4 : la manifestation est un cadre foncé, comme dans l'aide, le plan et l'assistant. */
   .manifestation {
-    border: 1px solid var(--bordure);
+    border: 1px solid var(--marque);
     border-radius: var(--rayon);
-    background: var(--surface);
+    background: var(--marque);
+    color: var(--sur-marque);
+  }
+
+  .manifestation .infos {
+    color: var(--sur-marque);
+    opacity: 0.85;
   }
 
   summary {
@@ -490,10 +499,20 @@
     cursor: pointer;
   }
 
+  /* Chaque compétition est une bande de la couleur que le plan lui donne. */
+  .bande {
+    padding: 0.5rem 0.75rem;
+    border-left: 0.4rem solid var(--couleur);
+    border-radius: 0.25rem;
+  }
+
   .contenu {
     display: grid;
     gap: 0.8rem;
-    padding: 0 1rem 1rem;
+    padding: 0.8rem 1rem 1rem;
+    border-radius: 0 0 var(--rayon) var(--rayon);
+    background: var(--surface);
+    color: var(--texte);
   }
 
   .competition {

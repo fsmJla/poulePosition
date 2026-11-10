@@ -1,6 +1,6 @@
 import css from '../app.css?raw';
 import { describe, expect, it } from 'vitest';
-import { COULEURS_AVATAR } from '@poule-position/domaine';
+import { COULEURS_AVATAR, PALETTE_PLAN } from '@poule-position/domaine';
 import { contraste, lireVariables, COUPLES_CHARTE, PALETTE_CALME_RETRO } from './couleurs';
 
 const { clair, sombre } = lireVariables(css);
@@ -61,6 +61,28 @@ describe('charte (US-011)', () => {
     expect(sombre['--fond']).not.toBe(clair['--fond']);
     expect(sombre['--texte']).not.toBe(clair['--texte']);
   });
+});
+
+describe('couleurs des compétitions (US-046 CA-4)', () => {
+  const teintes = Array.from({ length: PALETTE_PLAN }, (_, rang) => `--plan-${rang}`);
+
+  it.each([
+    ['clair', clair],
+    ['sombre', sombre],
+  ])(
+    'US-046 CA-4 : chaque teinte du plan est définie et passe 4,5:1 sur le fond et la surface, en mode %s',
+    (_mode, variables) => {
+      const ecarts: string[] = [];
+      for (const teinte of teintes) {
+        expect(variables[teinte], teinte).toMatch(/^#[0-9a-f]{6}$/i);
+        for (const fond of ['--fond', '--surface']) {
+          const valeur = contraste(variables[teinte] ?? '', variables[fond] ?? '');
+          if (valeur < 4.5) ecarts.push(`${teinte} sur ${fond} : ${valeur.toFixed(2)} < 4.5`);
+        }
+      }
+      expect(ecarts).toEqual([]);
+    },
+  );
 });
 
 describe('couleurs d’avatar (US-016)', () => {

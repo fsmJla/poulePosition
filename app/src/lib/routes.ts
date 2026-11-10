@@ -19,7 +19,9 @@ export type Page =
   | 'parametresEpreuve'
   | 'grilleEpreuves'
   | 'planManifestation'
-  | 'assistantManifestation';
+  | 'assistantManifestation'
+  | 'creer'
+  | 'aideOrganisation';
 
 /** Adresses fixes ; celle d'une épreuve porte son identifiant (`cheminEpreuve`). */
 export const CHEMINS = Object.freeze({
@@ -38,6 +40,9 @@ export const CHEMINS = Object.freeze({
   nouvelleEpreuve: '/epreuves/nouvelle',
   /** US-047 : assistant de création d'une manifestation, de ses compétitions et de leurs épreuves. */
   assistantManifestation: '/manifestations/nouvelle',
+  /** US-046 : « Que voulez-vous créer ? », le point d'entrée unique de la création, et l'aide « Comment ça s'organise ». */
+  creer: '/creer',
+  aideOrganisation: '/creer/aide',
 } satisfies Record<
   Exclude<
     Page,
@@ -133,6 +138,8 @@ const RESERVEES: readonly Page[] = [
   'grilleEpreuves',
   'planManifestation',
   'assistantManifestation',
+  'creer',
+  'aideOrganisation',
 ];
 
 /** Pages des administrateurs : un organisateur est renvoyé à son accueil (US-007 CA-6). */

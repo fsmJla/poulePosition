@@ -2,6 +2,7 @@
 // création, liste vide, hors ligne.
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { ouvrirDepuisCreer, ouvrirNouvelleEpreuve } from './creer';
 
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
@@ -236,10 +237,12 @@ test('US-026 CA-5 : les actions de création de l’accueil', async ({ page }) =
   await creerManifestation(page, manifestation);
 
   await page.goto('/organisateur');
-  await expect(page.getByRole('link', { name: 'Nouvelle épreuve' })).toBeVisible();
+  // US-046 CA-1 : un seul bouton « Créer » remplace les liens de création.
+  await expect(page.getByRole('link', { name: 'Créer', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Nouvelle épreuve' })).toHaveCount(0);
 
-  await page.getByRole('link', { name: 'Nouvelle manifestation' }).click();
-  // US-047 : le lien de l'accueil ouvre l'assistant de manifestation.
+  await ouvrirDepuisCreer(page, 'Créer une manifestation');
+  // US-047 : « Une manifestation » ouvre l'assistant de manifestation.
   await expect(page).toHaveURL(/\/manifestations\/nouvelle$/);
   await expect(page.getByRole('heading', { level: 1, name: 'La manifestation' })).toBeVisible();
 
@@ -283,15 +286,12 @@ test('US-026 hors ligne : la liste vient de la copie et des épreuves locales, c
   await expect(page.getByText(/^Hors ligne : liste du /)).toBeVisible({ timeout: 20_000 });
   await expect(epreuveDe(page, locale)).toBeVisible();
   await expect(epreuveDe(page, locale)).toContainText('Ce PC est le pilote');
-  // Création d'une manifestation grisée, création d'une épreuve toujours possible.
-  await expect(page.getByRole('link', { name: 'Nouvelle manifestation' })).toHaveCount(0);
-  await expect(page.getByText('Nouvelle manifestation', { exact: false }).first()).toBeVisible();
-  await expect(page.getByText('Nécessite une connexion internet').first()).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Nouvelle épreuve' })).toBeVisible();
+  // Le bouton « Créer » reste là ; la création d'une manifestation y est grisée (US-046 hors ligne : creer.spec.ts).
+  await expect(page.getByRole('link', { name: 'Créer', exact: true })).toBeVisible();
 
   // Une épreuve créée hors ligne est listée « Pas encore envoyée ».
   const horsLigne = nomUnique();
-  await page.getByRole('link', { name: 'Nouvelle épreuve' }).click();
+  await ouvrirNouvelleEpreuve(page);
   await page.getByLabel('Compétition', { exact: true }).selectOption({ label: `${locale} (seule)` });
   await page.getByLabel('Nom', { exact: true }).fill(horsLigne);
   await page.getByLabel('Arme').selectOption('sabre');
@@ -308,7 +308,7 @@ test('US-045 CA-2, CA-4 et CA-5 : « Nouvelle compétition seule » crée la com
   const nom = nomUnique();
   await seConnecter(page);
   await page.goto('/organisateur');
-  await page.getByRole('link', { name: 'Nouvelle compétition seule' }).click();
+  await ouvrirDepuisCreer(page, 'Créer une compétition seule');
   await expect(page).toHaveURL(/\/epreuves\/nouvelle\?seule$/);
   await expect(page.getByLabel('Compétition', { exact: true })).toHaveValue('+seule');
   await page.getByLabel('Nom de la compétition et de son épreuve').fill(nom);
