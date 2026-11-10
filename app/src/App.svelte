@@ -13,6 +13,7 @@
   import { creerAccueil } from './lib/accueil';
   import { creerClientCompetitions } from './lib/competitions';
   import { creerClientManifestations } from './lib/manifestations';
+  import { creerClientFichiers } from './lib/fichiers';
   import { textes } from './lib/textes';
   import BarreOutils from './composants/BarreOutils.svelte';
   import Entete from './composants/Entete.svelte';
@@ -58,6 +59,11 @@
     epreuves: () => synchronisation.epreuvesConnues(),
   });
   const competitions = creerClientCompetitions({
+    urlServeur: urlHttp(urlServeur),
+    jeton: async () => (session && !estLocale(session) ? session.jeton : null),
+  });
+  /** US-030 : affiches et feuilles de route, jointes en ligne, affichables hors ligne depuis la copie de l'appareil. */
+  const fichiers = creerClientFichiers({
     urlServeur: urlHttp(urlServeur),
     jeton: async () => (session && !estLocale(session) ? session.jeton : null),
   });
@@ -168,6 +174,7 @@
       <Manifestations
         client={manifestations}
         clientCompetitions={competitions}
+        {fichiers}
         {naviguer}
         administrateur={session.compte.role === 'administrateur'}
         epreuvesConnues={() => synchronisation.epreuvesConnues()}
@@ -242,7 +249,15 @@
       {/key}
     {:else if route.page === 'epreuve' && route.epreuveId}
       {#key route.epreuveId}
-        <Epreuve {session} epreuveId={route.epreuveId} {journal} {synchronisation} {naviguer} />
+        <Epreuve
+          {session}
+          epreuveId={route.epreuveId}
+          {journal}
+          {synchronisation}
+          {fichiers}
+          clientCompetitions={competitions}
+          {naviguer}
+        />
       {/key}
     {/if}
   {/if}

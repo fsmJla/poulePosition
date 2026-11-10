@@ -4,7 +4,10 @@
   // comptées (US-022) ; sur un autre PC, c'est une copie en lecture seule, datée.
   import { onMount } from 'svelte';
   import type { Epreuve } from '@poule-position/domaine';
+  import FichiersJoints from '../composants/FichiersJoints.svelte';
   import Lien from '../composants/Lien.svelte';
+  import type { ClientCompetitions } from '../lib/competitions';
+  import type { ClientFichiers } from '../lib/fichiers';
   import { prendreEcriture, type Journal } from '../lib/journal';
   import { contenuExport, libellePilote } from '../lib/pilotage';
   import type { Ecart, SessionAppareil } from '../lib/stockage';
@@ -19,10 +22,14 @@
     epreuveId: string;
     journal: Journal;
     synchronisation: Synchronisation;
+    /** US-030 : affiche et feuille de route de l'épreuve, reprises de sa compétition puis de sa manifestation. */
+    fichiers: ClientFichiers;
+    /** US-030 : retrouve la manifestation de la compétition de l'épreuve, pour l'héritage. */
+    clientCompetitions: ClientCompetitions;
     naviguer: (chemin: string) => void;
   }
 
-  let { session, epreuveId, journal, synchronisation, naviguer }: Proprietes = $props();
+  let { session, epreuveId, journal, synchronisation, fichiers, clientCompetitions, naviguer }: Proprietes = $props();
 
   const t = textes.epreuves;
 
@@ -51,6 +58,14 @@
   /** US-029 CA-2 : celui qui vient de prendre la main, annoncé à l'ancien pilote. */
   let perteLibelle: string | null = $state(null);
   let enLigne = $state(navigator.onLine);
+
+  /** US-030 CA-4 : manifestation de la compétition de l'épreuve (en ligne, ou d'après la dernière copie). */
+  async function trouverManifestation(competitionId: string | undefined) {
+    if (!competitionId) return null;
+    const reponse = await clientCompetitions.lister();
+    const competitions = reponse.ok ? reponse.competitions : (reponse.copie?.competitions ?? []);
+    return competitions.find(({ id }) => id === competitionId)?.manifestationId ?? null;
+  }
 
   let liberer: (() => void) | null = null;
   let demonte = false;
@@ -306,6 +321,19 @@
           : t.relais(epreuve.formule.touchesRelais)}
       </dd>
     </dl>
+
+    <!-- US-030 : affiche et feuille de route, avec l'héritage de la compétition puis de la manifestation (CA-4). -->
+    {#await trouverManifestation(epreuve.rattachement?.competitionId) then manifestationId}
+      <FichiersJoints
+        client={fichiers}
+        chaine={[
+          { proprietaire: 'epreuve', id: epreuveId },
+          { proprietaire: 'competition', id: epreuve.rattachement?.competitionId },
+          { proprietaire: 'manifestation', id: manifestationId },
+        ]}
+        garder
+      />
+    {/await}
 
     <!-- US-039 : suppression définitive, réservée aux administrateurs, en ligne, hors épreuve en cours. -->
     {#if session.compte.role === 'administrateur'}

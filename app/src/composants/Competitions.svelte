@@ -3,6 +3,7 @@
   // modification et suppression d'une compétition vide. Ce sont des données du club stockées par le serveur : hors ligne,
   // la liste reste consultable depuis la dernière copie, et les actions sont grisées.
   import { onMount } from 'svelte';
+  import FichiersJoints from './FichiersJoints.svelte';
   import Lien from './Lien.svelte';
   import { ARMES, type ErreursCompetition } from '@poule-position/domaine';
   import type { Competition, Manifestation } from '@poule-position/protocole';
@@ -13,6 +14,7 @@
     type ErreurCompetitions,
     type SaisieCompetition,
   } from '../lib/competitions';
+  import type { ClientFichiers } from '../lib/fichiers';
   import { cheminGrilleEpreuves } from '../lib/routes';
   import { nomConfirme } from '../lib/suppression';
   import { textes } from '../lib/textes';
@@ -20,6 +22,8 @@
   interface Proprietes {
     manifestation: Manifestation;
     client: ClientCompetitions;
+    /** US-030 : affiche et feuille de route de la compétition, reprises de la manifestation à défaut. */
+    fichiers: ClientFichiers;
     /** Compétitions de cette manifestation. */
     competitions: Competition[];
     horsLigne: boolean;
@@ -40,6 +44,7 @@
   let {
     manifestation,
     client,
+    fichiers,
     competitions,
     horsLigne,
     modifie,
@@ -340,6 +345,16 @@
           {...invalide('commentaire')}></textarea>
         {@render erreurChamp('commentaire')}
       </div>
+
+      {#if edition !== 'nouvelle'}
+        <FichiersJoints
+          client={fichiers}
+          chaine={[
+            { proprietaire: 'competition', id: edition.id },
+            { proprietaire: 'manifestation', id: manifestation.id },
+          ]}
+        />
+      {/if}
 
       {#if message}
         <p class="message" role="alert">
