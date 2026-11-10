@@ -65,6 +65,29 @@ describe('analyserChemin', () => {
     });
   });
 
+  it('US-030 : reconnaît la liste des fichiers, un fichier d’un élément et la lecture publique par nom', () => {
+    const id = '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c';
+    const nom = `${'ab'.repeat(32)}.webp`;
+    expect(analyserChemin('/fichiers')).toEqual({ route: 'fichiers' });
+    expect(analyserChemin(`/fichiers/epreuve/${id}/affiche`)).toEqual({
+      route: 'fichier',
+      proprietaire: 'epreuve',
+      id,
+      sorte: 'affiche',
+    });
+    expect(analyserChemin(`/fichiers/manifestation/${id}/feuilleDeRoute`)).toEqual({
+      route: 'fichier',
+      proprietaire: 'manifestation',
+      id,
+      sorte: 'feuilleDeRoute',
+    });
+    expect(analyserChemin(`/fichiers/${nom}`)).toEqual({ route: 'fichier-public', nom });
+    expect(analyserChemin('/fichiers/club/x/affiche')).toBeNull();
+    expect(analyserChemin(`/fichiers/epreuve/${id}/logo`)).toBeNull();
+    expect(analyserChemin('/fichiers/Pas Un Nom')).toBeNull();
+    expect(analyserChemin(`/fichiers/../${nom}`)).toBeNull();
+  });
+
   it('US-039 : reconnaît la route d’une épreuve seule, pour sa suppression', () => {
     const id = '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c';
     expect(analyserChemin(`/epreuves/${id}`)).toEqual({ route: 'epreuve', epreuveId: id });

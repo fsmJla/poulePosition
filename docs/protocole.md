@@ -15,6 +15,7 @@
 > US-044 (ADR-0021) : vocabulaire inversé. L'**épreuve** est l'unité qui se tire (journal, pilote : `/epreuves/<epreuveId>/…`) ;
 > la **compétition** est le regroupement d'épreuves (`/competitions`, §13). Les anciennes routes de l'unité sous
 > `/competitions/<id>/…` n'existent plus.
+> US-030 (ADR-0022) : fichiers joints, affiche et feuille de route (§15).
 > Les rôles, la synchronisation du journal et les saisies (ADR-0005) viendront avec leurs US.
 
 ## 1. Adresses
@@ -59,7 +60,10 @@
 | `PATCH /manifestations/<id>`, `DELETE /manifestations/<id>` | Modifier ou supprimer une manifestation (§12) |
 | `GET /competitions`, `POST /competitions` | Lister et créer les compétitions du club (§13, US-024) |
 | `PATCH /competitions/<id>`, `DELETE /competitions/<id>` | Modifier ou supprimer une compétition (§13, §14) |
-| `OPTIONS` sur ces routes | Requête CORS préalable (§7) ; méthodes `GET, POST, PATCH, DELETE` |
+| `GET /fichiers` | Description des fichiers joints du club (§15, US-030) |
+| `PUT /fichiers/<élément>/<id>/<sorte>`, `DELETE …` | Joindre, remplacer ou retirer un fichier (§15) |
+| `GET /fichiers/<nom>` | Lire le contenu d'un fichier, **sans session** (§15) |
+| `OPTIONS` sur ces routes | Requête CORS préalable (§7) ; méthodes `GET, POST, PUT, PATCH, DELETE` |
 | WebSocket `/epreuves/<epreuveId>/connexion` | Connexion à une épreuve (§3) |
 | Tout autre chemin | `404` |
 
@@ -833,3 +837,41 @@ tombale (ci-dessus).
 - **Épreuve en cours** : `409 {"ok":false,"erreur":"EPREUVE_EN_COURS","enCours":["<noms>"]}` ; rien n'est supprimé,
   ni dans la compétition ni ailleurs. Le serveur lit le statut du dernier résumé envoyé par le pilote.
 - **Épreuve rattachée entre-temps** : la compétition n'est pas retirée, la réponse a `"termine": false` avec ce qui reste.
+
+## 15. Fichiers joints : affiche et feuille de route (US-030, ADR-0011, ADR-0022)
+
+Une manifestation, une compétition ou une épreuve porte au plus une **affiche** (image) et une **feuille de route** (PDF).
+Le serveur les garde dans le DO `Club`, en morceaux de 1 Mo. Même CORS qu'au §7.
+
+| Route | Corps | Réponse |
+|---|---|---|
+| `GET /fichiers` | — | `200 {"ok":true,"fichiers":[Fichier…]}` : la description de tous les fichiers du club |
+| `PUT /fichiers/<élément>/<id>/<sorte>` | le contenu brut du fichier | `201 {"ok":true,"fichier":Fichier}` ; remplace celui de même sorte |
+| `DELETE /fichiers/<élément>/<id>/<sorte>` | — | `200 {"ok":true}` ; `404 FICHIER_INCONNU` s'il n'y en a pas |
+| `GET /fichiers/<nom>` | — | `200` : le contenu, **sans session** ; `404` si le nom n'est plus gardé |
+
+`<élément>` : `manifestation`, `competition` ou `epreuve`. `<sorte>` : `affiche` ou `feuilleDeRoute`. `<id>` : l'identifiant de l'élément
+(même forme qu'au §1). L'envoi, le remplacement, le retrait et la liste demandent une session d'un compte au mot de passe
+définitif (`401` sans session, `403 ACCES_REFUSE` avec un mot de passe temporaire).
+
+```json
+{ "proprietaire": "competition", "proprietaireId": "<id>", "sorte": "affiche",
+  "nom": "<sha256 en hexadécimal>.webp", "type": "webp", "taille": 123456,
+  "ajouteLe": 1760000000000, "ajoutePar": "<nom du compte>" }
+```
+
+- **Nom** : l'empreinte SHA-256 du contenu et l'extension du type réel (`pdf`, `png`, `jpg`, `webp`). Remplacer un fichier change
+  son nom : l'ancien n'est plus servi (`404`). Joindre deux fois le même contenu ne change rien.
+- **Lecture publique** : `GET /fichiers/<nom>` répond avec le type réel (`Content-Type`), `Content-Disposition: inline`,
+  `Cache-Control: public, max-age=31536000, immutable`, `X-Content-Type-Options: nosniff` et `Access-Control-Allow-Origin: *`.
+- **Contrôles** (les mêmes dans l'application et sur le serveur, `paquets/domaine/src/fichiers.ts`) : 5 Mo au plus (5 242 880
+  octets) ; type réel lu dans les premiers octets, jamais dans l'extension ; une affiche est un PNG, un JPEG ou un WebP, une
+  feuille de route est un PDF ; pas d'image animée ; pas plus de 20 millions de pixels. L'application réduit l'affiche avant
+  l'envoi (WebP, 1 600 px au plus).
+- **Refus** : `{"ok":false,"erreur":"FICHIER_REFUSE","raison":"…"}` avec `413` pour `TROP_GROS`, `400` pour `VIDE`, `415` pour
+  `TYPE_REFUSE`, `TYPE_INCOMPATIBLE`, `IMAGE_ANIMEE` et `IMAGE_TROP_GRANDE`. Le serveur lit le corps jusqu'à 5 Mo au plus et
+  s'arrête au-delà. `404 PROPRIETAIRE_INCONNU` si l'élément n'existe pas : une épreuve existe sur le serveur dès le premier lot
+  de son pilote (§11).
+- **Suppression** : supprimer une manifestation, une compétition ou une épreuve (§12, §13, §14) supprime aussi ses fichiers.
+- **Héritage** (CA-4) : il se calcule dans l'application (`fichierHerite`), pas sur le serveur : une épreuve sans affiche montre
+  celle de sa compétition, à défaut celle de sa manifestation. Même règle pour la feuille de route.

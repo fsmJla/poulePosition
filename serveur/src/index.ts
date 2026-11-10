@@ -33,6 +33,8 @@ import {
   type ReponseCompetition,
   type ReponseSuppressionContenu,
   type ReponseManifestation,
+  type ReponseFichier,
+  type ReponseFichiers,
   type CodeErreurInstallation,
   type CodeErreurSession,
   type CompteResume,
@@ -43,7 +45,10 @@ import {
   couleurParDefaut,
   planifierSuppressionContenu,
   REGLE_ADRESSE,
+  TAILLE_MAX_FICHIER,
+  TYPE_MIME,
   type EpreuveASupprimer,
+  type RaisonRefus,
 } from '@poule-position/domaine';
 import type { Club, CompteStocke } from './club';
 import type { Epreuve } from './epreuve';
@@ -106,6 +111,7 @@ export default {
     if (route.route === 'sante') return Response.json({ ok: true, service: 'poule-position-serveur' });
     if (route.route === 'installation') return installer(requete, env);
     if (route.route === 'essai-email') return essayerEnvoi(requete, env);
+    if (route.route === 'fichier-public') return servirFichier(route.nom, requete, env);
     if (route.route !== 'connexion') return routeSession(route, requete, env, contexte);
 
     if (requete.headers.get('Upgrade') !== 'websocket') return new Response('WebSocket attendu', { status: 426 });
@@ -218,7 +224,9 @@ type RouteSession = Extract<
       | 'manifestations'
       | 'manifestation'
       | 'competitions'
-      | 'competition';
+      | 'competition'
+      | 'fichiers'
+      | 'fichier';
   }
 >;
 
@@ -241,6 +249,8 @@ const METHODES_SESSION = {
   manifestation: ['PATCH', 'DELETE'],
   competitions: ['GET', 'POST'],
   competition: ['PATCH', 'DELETE'],
+  fichiers: ['GET'],
+  fichier: ['PUT', 'DELETE'],
 } as const;
 
 /**
@@ -260,7 +270,7 @@ async function routeSession(
       status: 204,
       headers: {
         ...cors,
-        'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type',
         'Access-Control-Max-Age': '86400',
       },
@@ -351,6 +361,12 @@ async function traiterSession(
     // US-024 : mêmes droits que les manifestations.
     if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
     return gererCompetitions(route, requete, env, club, authentifie.compte);
+  }
+
+  if (route.route === 'fichiers' || route.route === 'fichier') {
+    // US-030 : mêmes droits que les manifestations (administrateur ou organisateur au mot de passe définitif).
+    if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
+    return gererFichiers(route, requete, club, authentifie.compte);
   }
 
   if (route.route === 'comptes' || route.route === 'compte' || route.route === 'reinitialisation') {
@@ -622,6 +638,87 @@ async function gererCompetitions(
   if (resultat.ok) return Response.json(resultat satisfies ReponseCompetition);
   if (resultat.erreur === 'COMPETITION_INCONNUE') return refuserSession(404, resultat.erreur);
   return Response.json(resultat satisfies ReponseCompetition, { status: 409 });
+}
+
+/**
+ * US-030 (ADR-0011, ADR-0022, docs/protocole.md §15) : affiche et feuille de route d'une manifestation, d'une compétition
+ * ou d'une épreuve, gardées dans le DO `Club`. `GET /fichiers` décrit tous les fichiers ; `PUT` joint ou remplace, `DELETE`
+ * retire. Le contenu se lit par `GET /fichiers/<nom>` (public, voir `servirFichier`).
+ */
+async function gererFichiers(
+  route: Extract<RouteSession, { route: 'fichiers' | 'fichier' }>,
+  requete: Request,
+  club: DurableObjectStub<Club>,
+  compte: CompteStocke,
+): Promise<Response> {
+  if (route.route === 'fichiers') {
+    return Response.json({ ok: true, fichiers: await club.listerFichiers() } satisfies ReponseFichiers);
+  }
+  const refuser = (statut: number, erreur: CodeErreurSession, raison?: RaisonRefus) =>
+    Response.json({ ok: false, erreur, ...(raison && { raison }) } satisfies ReponseFichier, { status: statut });
+
+  if (requete.method === 'DELETE') {
+    if (!(await club.retirerFichier(route.proprietaire, route.id, route.sorte))) return refuser(404, 'FICHIER_INCONNU');
+    return Response.json({ ok: true });
+  }
+  // La taille annoncée refuse d'emblée un envoi trop gros, sans le lire ; la lecture elle-même est plafonnée.
+  const annoncee = Number(requete.headers.get('Content-Length'));
+  if (annoncee > TAILLE_MAX_FICHIER) return refuser(413, 'FICHIER_REFUSE', 'TROP_GROS');
+  const octets = await lireOctets(requete, TAILLE_MAX_FICHIER);
+  if (!octets) return refuser(413, 'FICHIER_REFUSE', 'TROP_GROS');
+  const resultat = await club.deposerFichier(route.proprietaire, route.id, route.sorte, octets, compte.nom);
+  if (resultat.ok)
+    return Response.json({ ok: true, fichier: resultat.fichier } satisfies ReponseFichier, { status: 201 });
+  if (resultat.raison === 'PROPRIETAIRE_INCONNU') return refuser(404, 'PROPRIETAIRE_INCONNU');
+  const statut = resultat.raison === 'TROP_GROS' ? 413 : resultat.raison === 'VIDE' ? 400 : 415;
+  return refuser(statut, 'FICHIER_REFUSE', resultat.raison);
+}
+
+/** Corps d'une requête, lu au plus jusqu'à `maximum` octets ; null s'il est plus gros (la lecture s'arrête alors). */
+async function lireOctets(requete: Request, maximum: number): Promise<Uint8Array | null> {
+  if (!requete.body) return new Uint8Array();
+  const lecteur = requete.body.getReader();
+  const morceaux: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await lecteur.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maximum) {
+      await lecteur.cancel();
+      return null;
+    }
+    morceaux.push(value);
+  }
+  const octets = new Uint8Array(total);
+  let position = 0;
+  for (const morceau of morceaux) {
+    octets.set(morceau, position);
+    position += morceau.byteLength;
+  }
+  return octets;
+}
+
+/**
+ * US-030 : `GET /fichiers/<nom>`, public (le public, l'écran géant et les images de page n'ont pas de session). Le nom est
+ * l'empreinte du contenu : il ne se devine pas et ne change jamais de contenu, donc la réponse se garde indéfiniment.
+ */
+async function servirFichier(nom: string, requete: Request, env: Env): Promise<Response> {
+  if (requete.method !== 'GET') {
+    return new Response('Méthode non autorisée', { status: 405, headers: { Allow: 'GET' } });
+  }
+  const club = env.CLUB.get(env.CLUB.idFromName(`club:${env.CLUB_ID}`));
+  const fichier = await club.lireFichier(nom);
+  if (!fichier) return new Response('Introuvable', { status: 404 });
+  return new Response(fichier.octets, {
+    headers: {
+      'Content-Type': TYPE_MIME[fichier.type],
+      'Content-Disposition': 'inline',
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'X-Content-Type-Options': 'nosniff',
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
 }
 
 /** Contenu d'un élément à supprimer : existe-t-il, et quelles épreuves de l'index lui sont rattachées. */

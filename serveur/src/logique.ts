@@ -3,6 +3,11 @@
 // Aucune dépendance à l'environnement Cloudflare (testée sous Node). Protocole : docs/protocole.md.
 import {
   expirationSession,
+  MOTIF_NOM_FICHIER,
+  PROPRIETAIRES_FICHIER,
+  SORTES_FICHIER,
+  type ProprietaireFichier,
+  type SorteFichier,
   sessionExpiree,
   validerEmail,
   ROLES,
@@ -43,7 +48,10 @@ export type Route =
   | { route: 'evenements'; epreuveId: string }
   | { route: 'pilote'; epreuveId: string }
   | { route: 'presence'; epreuveId: string }
-  | { route: 'connexion'; epreuveId: string };
+  | { route: 'connexion'; epreuveId: string }
+  | { route: 'fichiers' }
+  | { route: 'fichier'; proprietaire: ProprietaireFichier; id: string; sorte: SorteFichier }
+  | { route: 'fichier-public'; nom: string };
 
 /** Analyse le chemin d'une requête entrante ; null si la route n'existe pas. */
 export function analyserChemin(chemin: string): Route | null {
@@ -71,6 +79,16 @@ export function analyserChemin(chemin: string): Route | null {
   if (chemin === '/epreuves') return { route: 'epreuves' };
   const seule = /^\/epreuves\/([^/]+)$/.exec(chemin)?.[1];
   if (seule) return MOTIF_EPREUVE.test(seule) ? { route: 'epreuve', epreuveId: seule } : null;
+  if (chemin === '/fichiers') return { route: 'fichiers' };
+  const nomFichier = /^\/fichiers\/([^/]+)$/.exec(chemin)?.[1];
+  if (nomFichier) return MOTIF_NOM_FICHIER.test(nomFichier) ? { route: 'fichier-public', nom: nomFichier } : null;
+  const fichier = /^\/fichiers\/([^/]+)\/([^/]+)\/([^/]+)$/.exec(chemin);
+  if (fichier) {
+    const [, proprietaire = '', id = '', sorte = ''] = fichier;
+    const connu = (PROPRIETAIRES_FICHIER as readonly string[]).includes(proprietaire);
+    if (!connu || !MOTIF_EPREUVE.test(id) || !(SORTES_FICHIER as readonly string[]).includes(sorte)) return null;
+    return { route: 'fichier', proprietaire: proprietaire as ProprietaireFichier, id, sorte: sorte as SorteFichier };
+  }
   const morceaux = /^\/epreuves\/([^/]+)\/(connexion|evenements|pilote|presence)$/.exec(chemin);
   if (!morceaux?.[1] || !MOTIF_EPREUVE.test(morceaux[1])) return null;
   const route = { connexion: 'connexion', evenements: 'evenements', pilote: 'pilote', presence: 'presence' } as const;

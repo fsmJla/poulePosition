@@ -45,6 +45,10 @@ export const CODES_ERREUR_SESSION = [
   // Suppression définitive d'une épreuve (US-039, §14).
   'EPREUVE_EN_COURS',
   'EPREUVE_SUPPRIMEE',
+  // Fichiers joints (US-030, §15).
+  'FICHIER_REFUSE',
+  'FICHIER_INCONNU',
+  'PROPRIETAIRE_INCONNU',
 ] as const;
 
 export type CodeErreurSession = (typeof CODES_ERREUR_SESSION)[number];
