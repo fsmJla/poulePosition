@@ -11,7 +11,7 @@ async function installerHorsLigne(page: Page) {
   await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true);
 }
 
-test('US-001 hors ligne : la page s’affiche après une première visite et indique « serveur injoignable »', async ({
+test('US-001 hors ligne (US-065) : la page s’affiche après une première visite et indique que le serveur est injoignable', async ({
   page,
   context,
 }) => {
@@ -21,7 +21,9 @@ test('US-001 hors ligne : la page s’affiche après une première visite et ind
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName('Poule Position');
-  await expect(page.getByRole('status')).toHaveText('Serveur injoignable');
+  await expect(page.getByRole('alert')).toHaveText(
+    'Impossible de joindre le serveur : vérifiez votre connexion internet.',
+  );
   await context.setOffline(false);
 });
 
