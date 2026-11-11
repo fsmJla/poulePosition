@@ -4,9 +4,9 @@
 - **Fonctionnalité :** transverse (qualité)
 - **Priorité :** P1
 - **Type :** correction
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-001, US-031
-- **Branche / PR :** `us/US-065-correction-e2e-us001` / —
+- **Branche / PR :** `us/US-065-correction-e2e-us001` / [#83](https://github.com/fsmJla/poulePosition/pull/83)
 
 ## Récit
 
@@ -84,3 +84,4 @@ serveur. Aucun comportement hors ligne de l'application ne change.
 | 2026-11-11 | Créée par `/bug` : deux E2E d'US-001 en échec sur `dev` et les previews, CI rouge bloquant la recette d'US-055 |
 | 2026-11-11 | Diagnostic validé ; passée En cours (branche us/US-065-correction-e2e-us001) |
 | 2026-11-11 | Corrigée (page.spec.ts, hors-ligne.spec.ts, table de couverture d'US-001) ; passée En revue, E2E ciblés verts |
+| 2026-11-11 | Recette OK : CI verte sur la PR #83 (« Playwright sur la preview » comprise) ; US terminée, mergée dans dev |
