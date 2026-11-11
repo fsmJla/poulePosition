@@ -118,7 +118,7 @@ export const textes = {
   },
   /** US-026 : liste du club sur l'accueil de l'organisateur. */
   listeClub: {
-    titre: 'Manifestations et épreuves du club',
+    titre: 'Manifestations et compétitions',
     nouvelleManifestation: 'Nouvelle manifestation',
     nouvelleCompetition: 'Nouvelle compétition',
     nouvelleCompetitionDans: (manifestation: string) => `Nouvelle compétition dans ${manifestation}`,
@@ -139,6 +139,31 @@ export const textes = {
     nouvelleCompetitionSeule: 'Nouvelle compétition seule',
     aucuneEpreuve: 'Aucune épreuve',
     lectureSeule: 'Lecture seule',
+    /** US-055 : refonte de l'accueil (carte de manifestation, lignes de compétition et d'épreuve, légende). */
+    aujourdhui: 'Aujourd’hui',
+    plan: 'Plan',
+    plusEpreuves: '+ Épreuves',
+    decompte: (competitions: number, epreuves: number) => {
+      const c =
+        competitions === 0
+          ? 'Aucune compétition'
+          : competitions === 1
+            ? '1 compétition'
+            : `${competitions} compétitions`;
+      const e = epreuves === 0 ? 'aucune épreuve' : epreuves === 1 ? '1 épreuve' : `${epreuves} épreuves`;
+      return `${c}, ${e}`;
+    },
+    nombreEpreuves: (nombre: number) =>
+      nombre === 0 ? 'aucune épreuve' : nombre === 1 ? '1 épreuve' : `${nombre} épreuves`,
+    /** Jour court d'une épreuve : « mer. 11 nov. ». */
+    jourCourt: (date: string) =>
+      new Date(`${date}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }),
+    competitionsDe: (nom: string) => `Compétitions de ${nom}`,
+    epreuvesDe: (nom: string) => `Épreuves de ${nom}`,
+    modifierManifestation: 'Modifier',
+    ajouterCompetition: 'Ajouter une compétition',
+    legende: 'Légende des icônes',
+    aucuneCompetition: 'Aucune compétition',
     jour: (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}`,
     ouvrir: (nom: string) => `Ouvrir l’épreuve ${nom}`,
     /** US-040 : suppression de plusieurs épreuves, réservée aux administrateurs. */
