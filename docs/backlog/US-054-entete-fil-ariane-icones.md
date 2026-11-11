@@ -101,6 +101,23 @@ Testé par un E2E réseau coupé (entête et fil d'Ariane présents sur la page 
   alors que la charte actuelle emploie `--accent-fond` et `--sur-accent`. Cette US applique la maquette aux boutons
   principaux des pages connectées ; les pages publiques ne changent pas.
 
+- **Réalisation (2026-11-11), écarts déclarés avec les planches 1 à 3 :**
+  - La mise en page des pages (contenu centré, pas de navigation par étapes, « ⋯ » à côté du titre au lieu d'être à
+    droite de « Modifier », fil d'Ariane centré comme le contenu) reste celle d'avant : elle change avec US-055 à US-058.
+    CA-9 ne compare que l'entête, le fil d'Ariane et le menu.
+  - Le menu « ⋯ » de la page d'une épreuve est minimal (« Formule », « Paramètres ») ; ses liens restent aussi dans la
+    page jusqu'à US-058. Il sert aussi de preuve de CA-9.
+  - « Créer » et « Comptes » quittent la barre d'actions de l'accueil : ils sont dans l'entête, sur toutes les pages.
+  - Sur un écran étroit, une entrée « Créer » **provisoire** figure dans le menu de compte, faute de bouton flottant
+    avant US-061 (qui la retire) : sans elle, rien ne mènerait à la création depuis un smartphone.
+  - Le fil d'Ariane est posé sur les pages du CA-3 ; « Manifestations », « Nouvelle épreuve », « Modifier l'épreuve »,
+    l'assistant et « Mot de passe » n'en ont pas dans cette US.
+  - Trois icônes s'ajoutent au vocabulaire : Personnes (Comptes), Lune (thème sombre) et Coche (choix en cours).
+  - « À venir » : `--texte-inactif` (`#8d9694`) fait environ 2,7:1 sur le fond clair. C'est un composant inactif
+    (WCAG 1.4.3) ; le test exige 2,5:1, et le libellé « À venir » s'écrira en `--texte-discret` (AA) avec US-058.
+  - Hors ligne, « Comptes » est grisé dans l'entête, avec « Nécessite une connexion internet » lisible par les
+    lecteurs d'écran (US-007).
+
 ## Questions bloquantes
 
 - Aucune.
@@ -110,6 +127,10 @@ Testé par un E2E réseau coupé (entête et fil d'Ariane présents sur la page 
 - Composants à prévoir : `Icone`, `BoutonIcone`, `MenuActions`, `FilAriane` ; `Entete.svelte` est adapté.
 - Aucune couleur en dur (test de garde d'US-011) ; nouveaux textes dans le catalogue `textes`.
 - Pas d'impact sur le protocole, le serveur ni le journal.
+- `accueil.hierarchie()` lit les manifestations et les compétitions du club (copie de l'appareil hors ligne) : deux
+  lectures de plus par ouverture d'une page d'épreuve, sans l'index des épreuves (voir US-038).
+- Les pages connectées sont dans un conteneur `.pages-connectees` (`app.css`) qui rend l'action principale tiffany
+  avec un texte sombre (`--accent-fond` et `--sur-accent` redéfinis) ; les pages publiques ne changent pas.
 - US terminées touchées : US-014 (entête), US-017 (menu de compte), US-046 (bouton « Créer »), US-052 (thème). Leurs
   tests sont adaptés, pas supprimés.
 

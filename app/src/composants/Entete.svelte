@@ -147,7 +147,7 @@
     border-radius: 6px;
     color: var(--sur-marque);
     font-family: var(--police-titre);
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     font-weight: 700;
     letter-spacing: -0.01em;
     text-decoration: none;

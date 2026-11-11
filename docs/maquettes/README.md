@@ -168,6 +168,11 @@ différents de la capture en sont un.
 L'application existante est alignée par les US-054 à US-064 (voir `docs/backlog/README.md`). Tant qu'une US n'est
 pas `Terminée`, l'écran correspondant garde son ancienne disposition.
 
+**Livré par US-054 (entête, fil d'Ariane, icônes, menu « ⋯ ») :** l'entête commun, le fil d'Ariane, le composant d'icône,
+le bouton à icône seule et le menu « ⋯ » sont en place sur les pages connectées. Restent à venir : le champ de recherche
+(US-062), le bouton « Créer » flottant des smartphones (US-061, d'ici là une entrée « Créer » est dans le menu de compte
+étroit), la mise en page des écrans (US-055 à US-058).
+
 ## Règle pour les nouvelles US
 
 Une US qui crée ou modifie un écran :
