@@ -48,7 +48,7 @@ async function rattacherEpreuve(page: Page, manifestation: string, competition: 
 }
 
 const boutonContenu = (page: Page, competition: string) =>
-  page.getByRole('button', { name: `Supprimer avec son contenu la compétition ${competition}` });
+  page.getByRole('button', { name: `Supprimer la compétition ${competition}` });
 
 async function preparer(page: Page) {
   const manifestation = nomUnique();
@@ -71,7 +71,7 @@ test('US-041 CA-1 et CA-8 : supprimer une compétition avec son épreuve, après
 
   await boutonContenu(page, competition).click();
   const fenetre = page.getByRole('group', {
-    name: `Supprimer définitivement la compétition « ${competition} » avec son contenu ?`,
+    name: `Supprimer définitivement la compétition « ${competition} » ?`,
   });
   await expect(fenetre.getByText('L’épreuve de la compétition est supprimée avec elle.')).toBeVisible({
     timeout: 20_000,
@@ -104,13 +104,19 @@ test('US-041 hors ligne : le bouton est grisé, avec « Connexion requise pour s
   await expect(boutonContenu(page, competition)).toBeEnabled();
 });
 
-test('US-041 CA-2 : un organisateur n’a pas le bouton « avec son contenu »', async ({ page }) => {
+test('US-041 CA-2 (US-057 CA-5) : un organisateur voit « Supprimer… » pour une compétition vide, plus dès qu’elle contient une épreuve', async ({
+  page,
+}) => {
   test.skip(!process.env.BASE_URL, 'organisateur réel : preview uniquement (le compte local est un administrateur)');
   const manifestation = nomUnique();
   const competition = nomUnique();
   await seConnecter(page);
   await ouvrirPage(page);
   await creerManifestationEtCompetition(page, manifestation, competition);
-  await expect(page.getByRole('button', { name: `Supprimer la compétition ${competition}` })).toBeVisible();
+  await expect(boutonContenu(page, competition)).toBeVisible({ timeout: 20_000 });
+  await rattacherEpreuve(page, manifestation, competition, nomUnique());
+  await page.goto('/manifestations');
+  await expect(carteCompetition(page, manifestation, competition)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('button', { name: `Modifier la compétition ${competition}` })).toBeVisible();
   await expect(boutonContenu(page, competition)).toHaveCount(0);
 });

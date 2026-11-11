@@ -35,6 +35,11 @@
     administrateur?: boolean;
     /** US-041 : nombre d’épreuves rattachées à la compétition, annoncé à la confirmation. */
     nombreEpreuves?: (competitionId: string) => Promise<number>;
+    /**
+     * US-057 : nombre d'épreuves de chaque compétition (absent : 0), ou null tant qu'il n'est pas connu. Un organisateur
+     * ne voit « Supprimer… » que pour une compétition vide ; un administrateur le voit toujours.
+     */
+    nombres?: Record<string, number> | null;
     /** US-041 : appelé après une suppression avec contenu, pour effacer les copies locales des épreuves supprimées. */
     apresSuppressionContenu?: () => Promise<void>;
     /** US-048 : ouvre la grille des épreuves de la compétition ; sans lui, le lien n'est pas proposé. */
@@ -51,6 +56,7 @@
     ouvrirAuDepart = false,
     administrateur = false,
     nombreEpreuves = async () => 0,
+    nombres = null,
     apresSuppressionContenu = async () => {},
     naviguer,
   }: Proprietes = $props();
@@ -156,15 +162,6 @@
   let saisieNom = $state('');
   let progression: { faites: number; total: number } | null = $state(null);
   let messageContenu: string | null = $state(null);
-
-  /** US-057 : nombre d'épreuves de chaque compétition, pour savoir qui peut la supprimer et quelle confirmation montrer. */
-  let nombres: Record<string, number> = $state({});
-
-  $effect(() => {
-    for (const { id } of competitions) {
-      void nombreEpreuves(id).then((nombre) => (nombres[id] = nombre));
-    }
-  });
 
   /** Une compétition vide se confirme simplement ; sinon, la confirmation annonce son contenu et exige son nom. */
   async function demanderSuppression(competition: Competition) {
@@ -295,7 +292,7 @@
                 disabled={horsLigne}>{t.boutonModifier}</button
               >
               <!-- US-057 : un seul « Supprimer… » ; un organisateur ne le voit que pour une compétition sans épreuve. -->
-              {#if administrateur || nombres[competition.id] === 0}
+              {#if administrateur || (nombres !== null && (nombres[competition.id] ?? 0) === 0)}
                 <button
                   type="button"
                   class="secondaire"

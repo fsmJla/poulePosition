@@ -155,12 +155,21 @@ test('US-024 CA-3, CA-4 et CA-5 : rattacher une épreuve à une compétition (ar
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(epreuve);
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
 
-  // CA-5 : la compétition contient désormais une épreuve, elle ne se supprime pas.
+  // CA-5 (US-057 CA-5) : la compétition contient désormais une épreuve. Un organisateur ne la supprime plus
+  // (« Supprimer… » absent) ; un administrateur passe par la confirmation détaillée, qui exige le nom.
   await page.goto('/manifestations');
-  await page.getByRole('button', { name: `Supprimer la compétition ${competition}` }).click();
-  await page.getByRole('button', { name: 'Supprimer', exact: true }).click();
-  await expect(page.getByText('Cette compétition contient des épreuves')).toBeVisible({ timeout: 20_000 });
-  await expect(carteCompetition(page, manifestation, competition)).toBeVisible();
+  await expect(carteCompetition(page, manifestation, competition)).toBeVisible({ timeout: 20_000 });
+  const supprimer = page.getByRole('button', { name: `Supprimer la compétition ${competition}` });
+  if (process.env.BASE_URL) {
+    await expect(page.getByRole('button', { name: `Modifier la compétition ${competition}` })).toBeVisible();
+    await expect(supprimer).toHaveCount(0);
+  } else {
+    await supprimer.click();
+    const fenetre = page.getByRole('group', { name: `Supprimer définitivement la compétition « ${competition} » ?` });
+    await expect(fenetre.getByLabel(`Saisissez « ${competition} » pour confirmer`)).toBeVisible({ timeout: 20_000 });
+    await fenetre.getByRole('button', { name: 'Annuler' }).click();
+    await expect(carteCompetition(page, manifestation, competition)).toBeVisible();
+  }
 });
 
 test('US-024 hors ligne : les compétitions restent consultables, les actions sont grisées', async ({

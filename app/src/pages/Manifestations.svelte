@@ -196,6 +196,20 @@
   let progression: { faites: number; total: number } | null = $state(null);
   let messageContenu: string | null = $state(null);
 
+  /** US-057 : épreuves de chaque compétition, lues une seule fois par chargement ; inutile pour un administrateur. */
+  let nombresEpreuves: Record<string, number> | null = $state(null);
+
+  $effect(() => {
+    if (administrateur || competitions.length === 0) return;
+    void epreuvesConnues().then((liste) => {
+      const nombres: Record<string, number> = {};
+      for (const { rattachement } of liste) {
+        if (rattachement) nombres[rattachement.competitionId] = (nombres[rattachement.competitionId] ?? 0) + 1;
+      }
+      nombresEpreuves = nombres;
+    });
+  });
+
   const contientDesCompetitions = (manifestationId: string) =>
     competitions.some((competition) => competition.manifestationId === manifestationId);
 
@@ -368,6 +382,7 @@
             {horsLigne}
             modifie={chargerCompetitions}
             {administrateur}
+            nombres={nombresEpreuves}
             nombreEpreuves={async (competitionId) =>
               (await epreuvesConnues()).filter(({ rattachement }) => rattachement?.competitionId === competitionId)
                 .length}

@@ -22,7 +22,13 @@ async function creerEpreuve(page: Page, nom: string) {
 }
 
 const AVEC_ADMINISTRATEUR = 'administrateur réel : local uniquement (le compte de la preview est un organisateur)';
-const supprimerDefinitivement = (page: Page) => page.getByRole('button', { name: 'Supprimer définitivement…' });
+// US-057 : « Supprimer… » est la dernière action du menu « ⋯ » de l'épreuve.
+const menuSupprimer = (page: Page) => page.getByRole('menuitem', { name: /^Supprimer…/ });
+const ouvrirMenu = (page: Page) => page.getByRole('button', { name: /^Autres actions pour / }).click();
+async function lancerSuppression(page: Page) {
+  await ouvrirMenu(page);
+  await menuSupprimer(page).click();
+}
 
 test('US-039 CA-1 et CA-8 : supprimer définitivement une épreuve, après avoir saisi son nom', async ({ page }) => {
   test.skip(Boolean(process.env.BASE_URL), AVEC_ADMINISTRATEUR);
@@ -30,7 +36,7 @@ test('US-039 CA-1 et CA-8 : supprimer définitivement une épreuve, après avoir
   await seConnecter(page);
   await creerEpreuve(page, nom);
 
-  await supprimerDefinitivement(page).click();
+  await lancerSuppression(page);
   const fenetre = page.getByRole('group', { name: 'Supprimer définitivement cette épreuve ?' });
   const valider = fenetre.getByRole('button', { name: 'Supprimer définitivement', exact: true });
   await expect(valider).toBeDisabled();
@@ -55,10 +61,13 @@ test('US-039 hors ligne : le bouton est grisé, avec « Connexion requise pour s
   await creerEpreuve(page, nomUnique());
 
   await context.setOffline(true);
-  await expect(supprimerDefinitivement(page)).toBeDisabled();
-  await expect(page.getByText('Connexion requise pour supprimer')).toBeVisible();
+  await ouvrirMenu(page);
+  await expect(menuSupprimer(page)).toHaveAttribute('aria-disabled', 'true');
+  await expect(page.getByRole('menu').getByText('Connexion requise pour supprimer')).toBeVisible();
+  await page.keyboard.press('Escape');
   await context.setOffline(false);
-  await expect(supprimerDefinitivement(page)).toBeEnabled();
+  await ouvrirMenu(page);
+  await expect(menuSupprimer(page)).not.toHaveAttribute('aria-disabled', 'true');
 });
 
 test('US-039 CA-5 : un autre PC efface sa copie à la synchronisation et l’annonce une fois', async ({
@@ -82,7 +91,7 @@ test('US-039 CA-5 : un autre PC efface sa copie à la synchronisation et l’ann
       timeout: 20_000,
     });
 
-    await supprimerDefinitivement(page).click();
+    await lancerSuppression(page);
     const fenetre = page.getByRole('group', { name: 'Supprimer définitivement cette épreuve ?' });
     await fenetre.getByLabel(`Saisissez « ${nom} » pour confirmer`).fill(nom);
     await fenetre.getByRole('button', { name: 'Supprimer définitivement', exact: true }).click();
@@ -103,5 +112,6 @@ test('US-039 CA-2 : un organisateur n’a pas le bouton de suppression', async (
   await seConnecter(page);
   await creerEpreuve(page, nomUnique());
   await expect(page.getByRole('link', { name: 'Modifier', exact: true })).toBeVisible();
-  await expect(supprimerDefinitivement(page)).toHaveCount(0);
+  await ouvrirMenu(page);
+  await expect(menuSupprimer(page)).toHaveCount(0);
 });

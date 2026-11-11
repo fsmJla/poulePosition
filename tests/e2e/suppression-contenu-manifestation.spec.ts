@@ -49,7 +49,7 @@ async function rattacherEpreuve(page: Page, manifestation: string, competition: 
 }
 
 const boutonContenu = (page: Page, manifestation: string) =>
-  page.getByRole('button', { name: `Supprimer avec son contenu la manifestation ${manifestation}` });
+  page.getByRole('button', { name: `Supprimer ${manifestation}` });
 
 async function preparer(page: Page) {
   const manifestation = nomUnique();
@@ -74,7 +74,7 @@ test('US-042 CA-1 et CA-8 : supprimer une manifestation avec sa compétition et 
 
   await boutonContenu(page, manifestation).click();
   const fenetre = page.getByRole('group', {
-    name: `Supprimer définitivement la manifestation « ${manifestation} » avec son contenu ?`,
+    name: `Supprimer définitivement la manifestation « ${manifestation} » ?`,
   });
   await expect(fenetre.getByText('Sont supprimées avec elle : sa compétition et ses 2 épreuves')).toBeVisible({
     timeout: 20_000,
@@ -108,13 +108,15 @@ test('US-042 hors ligne : le bouton est grisé, avec « Connexion requise pour s
   await expect(boutonContenu(page, manifestation)).toBeEnabled();
 });
 
-test('US-042 CA-2 : un organisateur n’a pas le bouton « avec son contenu »', async ({ page }) => {
+test('US-042 CA-2 (US-057 CA-5) : un organisateur n’a pas « Supprimer… » pour une manifestation qui contient une compétition', async ({
+  page,
+}) => {
   test.skip(!process.env.BASE_URL, 'organisateur réel : preview uniquement (le compte local est un administrateur)');
   const manifestation = nomUnique();
   const competition = nomUnique();
   await seConnecter(page);
   await ouvrirPage(page);
   await creerManifestationEtCompetition(page, manifestation, competition);
-  await expect(page.getByRole('button', { name: `Supprimer ${manifestation}` })).toBeVisible();
+  await expect(page.getByRole('button', { name: `Modifier ${manifestation}` })).toBeVisible();
   await expect(boutonContenu(page, manifestation)).toHaveCount(0);
 });
