@@ -50,7 +50,8 @@ test('US-016 CA-3 et CA-4 : nom et couleur enregistrés, affichés aussitôt', a
   await expect(avatar(page)).toHaveAttribute('data-couleur', 'prune');
 
   await page.getByRole('link', { name: "Retour à l'accueil de l'organisateur" }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Bonjour, Nouveau Nom');
+  await expect(page.getByRole('heading', { level: 1, name: 'Manifestations et compétitions' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Menu du compte de Nouveau Nom' })).toBeVisible();
 });
 
 // La tuile « Mon profil » d'US-016 CA-6 a été remplacée par le menu de compte (US-017 CA-5).

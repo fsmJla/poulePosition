@@ -1,6 +1,7 @@
 // Manifestations du club (US-023) : création, modification, dates, suppression, modification concurrente, hors ligne.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { ouvrirDansLApplication } from './creer';
 
 /** Nom unique, pour reconnaître la manifestation de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
@@ -8,7 +9,7 @@ const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 const carte = (page: Page, nom: string) => page.getByRole('listitem').filter({ hasText: nom });
 
 async function ouvrirPage(page: Page) {
-  await page.getByRole('link', { name: 'Manifestations', exact: true }).click();
+  await ouvrirDansLApplication(page, '/manifestations');
   await expect(page).toHaveURL(/\/manifestations$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Manifestations');
 }

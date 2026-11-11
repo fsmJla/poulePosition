@@ -46,7 +46,7 @@ test('US-019 CA-4 : le lien permet de choisir un nouveau mot de passe, puis conn
   await remplirNouveau(page, 'nouveau-mot-de-passe-e2e');
 
   await expect(page).toHaveURL(/\/organisateur$/, { timeout: 20_000 });
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Bonjour, Compte simulé');
+  await expect(page.getByRole('heading', { level: 1, name: 'Manifestations et compétitions' })).toBeVisible();
   expect(Object.keys(envoye).sort()).toEqual(['cle', 'jeton', 'sel']);
   expect(envoye.jeton).toBe(JETON);
   expect(JSON.stringify(envoye)).not.toContain('nouveau-mot-de-passe-e2e');

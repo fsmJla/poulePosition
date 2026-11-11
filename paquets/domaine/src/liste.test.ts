@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   construireListe,
+  manifestationAujourdhui,
   manifestationOuverte,
   type EpreuveListee,
   type CompetitionListee,
@@ -212,11 +213,19 @@ describe('liste des manifestations, compétitions et épreuves du club (US-026, 
     expect(dates).toEqual([...dates].sort());
   });
 
-  it('cas limite : seule la manifestation en cours aujourd’hui est ouverte par défaut', () => {
+  it('US-055 : une manifestation en cours ou à venir est ouverte par défaut, une manifestation terminée est repliée', () => {
     const m = manifestation();
     expect(manifestationOuverte(m, '2027-03-14')).toBe(true);
     expect(manifestationOuverte(m, '2027-03-15')).toBe(true);
-    expect(manifestationOuverte(m, '2027-03-13')).toBe(false);
+    expect(manifestationOuverte(m, '2027-03-13')).toBe(true);
     expect(manifestationOuverte(m, '2027-03-16')).toBe(false);
+  });
+
+  it('US-055 CA-1 : « Aujourd’hui » seulement pendant la manifestation', () => {
+    const m = manifestation();
+    expect(manifestationAujourdhui(m, '2027-03-14')).toBe(true);
+    expect(manifestationAujourdhui(m, '2027-03-15')).toBe(true);
+    expect(manifestationAujourdhui(m, '2027-03-13')).toBe(false);
+    expect(manifestationAujourdhui(m, '2027-03-16')).toBe(false);
   });
 });

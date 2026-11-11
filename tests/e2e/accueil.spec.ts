@@ -7,8 +7,13 @@ import { ouvrirDepuisCreer, ouvrirNouvelleEpreuve, verifierCreerAccessible } fro
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 
-const manifestationDe = (page: Page, nom: string) => page.locator('details').filter({ hasText: nom });
-const epreuveDe = (zone: Page | Locator, nom: string) => zone.getByRole('listitem').filter({ hasText: nom });
+// US-055 : la manifestation est une carte (article) ; une épreuve est une ligne dont le lien porte son nom complet
+// (la ligne affiche son nom court : « catégorie + sexe »).
+const manifestationDe = (page: Page, nom: string) => page.getByRole('article', { name: nom });
+const epreuveDe = (zone: Page | Locator, nom: string) =>
+  zone
+    .getByRole('listitem')
+    .filter({ has: ('goto' in zone ? zone : zone.page()).getByRole('link', { name: `Ouvrir l’épreuve ${nom}` }) });
 
 async function creerManifestation(page: Page, nom: string) {
   await page.goto('/manifestations');
@@ -163,28 +168,32 @@ test('US-026 CA-1 et CA-2 : manifestation repliable avec sa compétition et ses 
 
   await page.goto('/organisateur');
   const bloc = manifestationDe(page, manifestation);
-  // La manifestation n'a pas lieu aujourd'hui : elle est repliée, et se déplie.
+  // US-055 : une manifestation à venir est dépliée, et sa compétition unique l'est aussi.
   await expect(bloc).toBeVisible({ timeout: 20_000 });
-  await expect(bloc).not.toHaveAttribute('open', '');
   await expect(bloc).toContainText('du 14/03/2027 au 15/03/2027');
   await expect(bloc).toContainText('Salle Bellegrave');
-  await bloc.locator('summary').click();
-  await expect(bloc.getByRole('heading', { level: 3 })).toContainText(competition);
+  const ligneCompetition = bloc.getByRole('button', { name: new RegExp(`^${competition}`) });
+  await expect(ligneCompetition).toHaveAttribute('aria-expanded', 'true');
+  await expect(ligneCompetition).toContainText('Sabre');
   // Triées par date : le 14 avant le 15.
-  const noms = await bloc.getByRole('listitem').locator('a').allInnerTexts();
-  expect(noms).toEqual([tot, tard]);
+  const noms = await bloc
+    .getByRole('list', { name: `Épreuves de ${competition}` })
+    .getByRole('link')
+    .evaluateAll((liens) => liens.map((lien) => lien.getAttribute('aria-label')));
+  expect(noms).toEqual([`Ouvrir l’épreuve ${tot}`, `Ouvrir l’épreuve ${tard}`]);
 
-  // CA-2 : nom, arme, date, statut, publication et pilote.
+  // CA-2 : nom, date, statut, publication et pilote (icônes nommées, US-055 CA-4).
   const ligne = epreuveDe(bloc, tot);
-  await expect(ligne).toContainText('Sabre');
-  await expect(ligne).toContainText('14/03/2027');
+  await expect(ligne).toContainText(/14 mars/);
   await expect(ligne).toContainText('En préparation');
-  await expect(ligne).toContainText('Non publiée');
-  await expect(ligne).toContainText('Ce PC est le pilote');
+  await expect(ligne.getByRole('img', { name: 'Non publiée' })).toBeVisible();
+  await expect(ligne.getByRole('img', { name: 'Ce PC est le pilote' })).toBeVisible();
 
-  // US-045 CA-5 : une compétition seule n'est dans aucune manifestation, et tient sur une ligne avec sa seule épreuve.
+  // US-045 CA-5 (US-055 CA-2) : une compétition seule n'est dans aucune manifestation ; c'est une ligne de compétition,
+  // dépliée, avec sa seule épreuve.
   await expect(epreuveDe(page, isolee)).toBeVisible();
   await expect(manifestationDe(page, isolee)).toHaveCount(0);
+  await expect(page.getByRole('button', { name: new RegExp(`^${isolee}`) })).toHaveAttribute('aria-expanded', 'true');
   await expect(page.getByRole('heading', { name: 'Épreuves isolées' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Épreuves sans compétition' })).toHaveCount(0);
 });
@@ -200,17 +209,17 @@ test('US-026 CA-4 : ouvrir une épreuve pilotée ici (modifiable), ou celle d’
   await injecter(page, distante, 'preparation');
 
   await page.goto('/organisateur');
-  await epreuveDe(page, locale).getByRole('link', { name: locale }).click();
+  await epreuveDe(page, locale).getByRole('link').click();
   await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
   await expect(page.getByText('Ce PC est le pilote', { exact: true })).toBeVisible();
 
   await page.goto('/organisateur');
   const ligne = epreuveDe(page, distante);
-  await expect(ligne).toContainText('Lecture seule', { timeout: 20_000 });
-  await expect(ligne).toContainText('Épée');
-  await expect(ligne).toContainText('Senior');
-  await expect(ligne).toContainText('Dames');
-  await ligne.getByRole('link', { name: distante }).click();
+  await expect(ligne.getByRole('img', { name: 'Lecture seule' })).toBeVisible({ timeout: 20_000 });
+  // US-055 CA-3 : « catégorie + sexe » ; l'arme est sur la ligne de la compétition.
+  await expect(ligne).toContainText('Senior Dames');
+  await expect(page.getByRole('button', { name: new RegExp(`^${distante}`) })).toContainText('Épée');
+  await ligne.getByRole('link').click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(distante, { timeout: 20_000 });
   await expect(page.getByText(/Lecture seule : cette épreuve est pilotée par un autre PC/)).toBeVisible();
 });
@@ -248,8 +257,8 @@ test('US-026 CA-5 : les actions de création de l’accueil', async ({ page }) =
 
   await page.goto('/organisateur');
   const bloc = manifestationDe(page, manifestation);
-  await bloc.locator('summary').click();
-  await bloc.getByRole('link', { name: `Nouvelle compétition dans ${manifestation}` }).click();
+  await bloc.getByRole('button', { name: `Autres actions pour ${manifestation}` }).click();
+  await page.getByRole('menuitem', { name: /^Ajouter une compétition/ }).click();
   await expect(page).toHaveURL(/\/manifestations\?competition=[0-9a-f-]{36}$/);
   await expect(
     page.getByRole('region', { name: `Compétitions de ${manifestation}` }).getByRole('heading', { level: 4 }),
@@ -285,7 +294,7 @@ test('US-026 hors ligne : la liste vient de la copie et des épreuves locales, c
   await context.setOffline(true);
   await expect(page.getByText(/^Hors ligne : liste du /)).toBeVisible({ timeout: 20_000 });
   await expect(epreuveDe(page, locale)).toBeVisible();
-  await expect(epreuveDe(page, locale)).toContainText('Ce PC est le pilote');
+  await expect(epreuveDe(page, locale).getByRole('img', { name: 'Ce PC est le pilote' })).toBeVisible();
   // Le bouton « Créer » reste là ; la création d'une manifestation y est grisée (US-046 hors ligne : creer.spec.ts).
   await verifierCreerAccessible(page);
 
@@ -318,9 +327,9 @@ test('US-045 CA-2, CA-4 et CA-5 : « Nouvelle compétition seule » crée la com
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(nom);
 
   await page.goto('/organisateur');
-  // Une ligne, sans niveau « compétition » tant qu'elle n'a qu'une épreuve.
+  // US-055 CA-2 : une ligne de compétition, dépliée, avec sa seule épreuve.
   await expect(epreuveDe(page, nom)).toHaveCount(1, { timeout: 20_000 });
-  await expect(page.getByRole('heading', { name: nom })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: new RegExp(`^${nom}`) })).toHaveAttribute('aria-expanded', 'true');
 });
 
 test('US-045 CA-7 : une épreuve dont la compétition a disparu est à rattacher, avec le motif', async ({ page }) => {

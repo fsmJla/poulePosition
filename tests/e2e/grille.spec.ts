@@ -89,14 +89,18 @@ test('US-048 CA-1, CA-3, CA-4, CA-5 et CA-6 : cocher, régler, créer le lot et 
   await page.getByRole('button', { name: 'Créer les 3 épreuves' }).click();
   await expect(page).toHaveURL(/\/organisateur$/);
   await deplier(page, manifestation);
-  await expect(page.getByRole('link', { name: `${competition} M13 Hommes`, exact: true })).toBeVisible({
-    timeout: 20_000,
-  });
-  await expect(page.getByRole('link', { name: `${competition} M15 Hommes`, exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: `${competition} Open`, exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${competition} M13 Hommes`, exact: true })).toBeVisible(
+    {
+      timeout: 20_000,
+    },
+  );
+  await expect(
+    page.getByRole('link', { name: `Ouvrir l’épreuve ${competition} M15 Hommes`, exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${competition} Open`, exact: true })).toBeVisible();
 
   // CA-5 : chaque épreuve a son journal, ce PC en est le pilote, avec les réglages communs.
-  await page.getByRole('link', { name: `${competition} M13 Hommes`, exact: true }).click();
+  await page.getByRole('link', { name: `Ouvrir l’épreuve ${competition} M13 Hommes`, exact: true }).click();
   await expect(page.getByText('Ce PC est le pilote', { exact: true })).toBeVisible();
   await expect(page.getByText('Équipes de 2')).toBeVisible();
   await expect(page.getByText('dimanche 14 mars 2027')).toBeVisible();
@@ -147,8 +151,9 @@ test('US-048 CA-7 : une compétition sans arme demande l’arme du lot, pour tou
   await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
   await expect(page).toHaveURL(/\/organisateur$/);
   await deplier(page, manifestation);
-  const ligne = page.getByRole('listitem').filter({ hasText: `${competition} M13 Dames` });
-  await expect(ligne).toContainText('Épée', { timeout: 20_000 });
+  // US-055 : l'arme d'une épreuve n'est plus sur sa ligne ; on l'ouvre pour la lire.
+  await page.getByRole('link', { name: `Ouvrir l’épreuve ${competition} M13 Dames` }).click({ timeout: 20_000 });
+  await expect(page.getByText('Épée').first()).toBeVisible();
 });
 
 test('US-048 cas limite : un nom vide est refusé sur sa ligne et rien n’est créé', async ({ page }) => {
@@ -180,21 +185,20 @@ test('US-048 hors ligne : la grille crée les épreuves d’une compétition con
   const copie = page.waitForResponse((reponse) => /\/competitions$/.test(reponse.url()));
   await page.goto('/organisateur');
   await copie;
-  const bloc = page.locator('details').filter({ hasText: manifestation });
+  const bloc = page.getByRole('article', { name: manifestation });
   await expect(bloc).toBeVisible({ timeout: 20_000 });
 
-  // Le passage hors ligne recharge la liste, qui replie la manifestation : on la déplie ensuite.
   await context.setOffline(true);
   await expect(page.getByText(/^Hors ligne : liste du /)).toBeVisible({ timeout: 20_000 });
-  await bloc.locator('summary').click();
   await bloc.getByRole('link', { name: `Ajouter des épreuves à ${competition}` }).click();
   await expect(page.getByRole('navigation', { name: 'Compétition' })).toContainText(competition);
   await laCase(page, 'M13', 'Hommes').click();
   await laCase(page, 'M13', 'Dames').click();
   await page.getByRole('button', { name: 'Créer les 2 épreuves' }).click();
   await expect(page).toHaveURL(/\/organisateur$/);
-  await bloc.locator('summary').click();
-  const ligne = page.getByRole('listitem').filter({ hasText: `${competition} M13 Hommes` });
+  const ligne = page
+    .getByRole('listitem')
+    .filter({ has: page.getByRole('link', { name: `Ouvrir l’épreuve ${competition} M13 Hommes` }) });
   await expect(ligne).toContainText('Pas encore envoyée', { timeout: 20_000 });
 
   await context.setOffline(false);
@@ -205,7 +209,7 @@ test('US-048 hors ligne : la grille crée les épreuves d’une compétition con
   }).toPass({ timeout: 30_000 });
 });
 
-/** La liste de l'accueil, avec la manifestation dépliée (celle de 2027 est repliée par défaut). */
+/** La liste de l'accueil ; la manifestation de 2027, à venir, est dépliée par défaut (US-055). */
 async function deplier(page: Page, manifestation: string) {
-  await page.locator('summary').filter({ hasText: manifestation }).click();
+  await expect(page.getByRole('article', { name: manifestation })).toBeVisible();
 }

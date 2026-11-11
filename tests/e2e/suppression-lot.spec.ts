@@ -73,11 +73,13 @@ async function preparer(page: Page) {
   return donnees;
 }
 
-/** La liste de l'accueil, avec la manifestation dépliée (celle de 2027 est repliée par défaut). */
+/** La liste de l'accueil ; la manifestation de 2027, à venir, est dépliée par défaut (US-055). */
 async function ouvrirLaListe(page: Page, manifestation: string, isolee: string) {
   await page.goto('/organisateur');
-  await expect(page.getByRole('link', { name: isolee, exact: true })).toBeVisible({ timeout: 20_000 });
-  await page.locator('summary').filter({ hasText: manifestation }).click();
+  await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${isolee}`, exact: true })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(page.getByRole('article', { name: manifestation })).toBeVisible();
 }
 
 test('US-043 CA-1, CA-2 et CA-4 : cocher une manifestation couvre son contenu, et une confirmation unique supprime tout', async ({
@@ -135,14 +137,14 @@ test('US-043 CA-1, CA-2 et CA-4 : cocher une manifestation couvre son contenu, e
 
   // CA-5 et CA-6 : tout est supprimé, avec un compte rendu, et la liste se relit.
   await expect(page.getByText('Supprimé : 1 manifestation, 1 épreuve')).toBeVisible({ timeout: 60_000 });
-  await expect(page.locator('summary').filter({ hasText: manifestation })).toHaveCount(0);
+  await expect(page.getByRole('article', { name: manifestation })).toHaveCount(0);
   for (const nom of [competition, dansCompetition, directe, isolee]) {
-    await expect(page.getByRole('link', { name: nom, exact: true })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${nom}`, exact: true })).toHaveCount(0);
   }
   await expect(caseCompetition(page, competition)).toHaveCount(0);
   await page.reload();
-  await expect(page.getByRole('link', { name: isolee, exact: true })).toHaveCount(0);
-  await expect(page.locator('summary').filter({ hasText: manifestation })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${isolee}`, exact: true })).toHaveCount(0);
+  await expect(page.getByRole('article', { name: manifestation })).toHaveCount(0);
 });
 
 test('US-043 CA-5 : une compétition et des épreuves cochées sans leur manifestation se suppriment sans la toucher', async ({
@@ -162,8 +164,8 @@ test('US-043 CA-5 : une compétition et des épreuves cochées sans leur manifes
 
   await expect(page.getByText(/^Supprimé : 1 compétition/)).toBeVisible({ timeout: 60_000 });
   await expect(caseCompetition(page, competition)).toHaveCount(0);
-  await expect(page.getByRole('link', { name: isolee, exact: true })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: directe, exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${isolee}`, exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${directe}`, exact: true })).toHaveCount(0);
   // La manifestation reste, sans la compétition (la liste relue la replie).
   await expect(caseManifestation(page, manifestation)).toBeVisible();
 });
@@ -190,7 +192,7 @@ test('US-043 CA-7 : un organisateur n’a aucune case ni barre de suppression', 
   await seConnecter(page);
   await creerManifestationEtCompetition(page, manifestation, nomUnique());
   await page.goto('/organisateur');
-  await expect(page.locator('summary').filter({ hasText: manifestation })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('article', { name: manifestation })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole('checkbox', { name: /^Sélectionner/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Supprimer définitivement…' })).toHaveCount(0);
 });

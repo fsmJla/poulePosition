@@ -1,25 +1,32 @@
 <script lang="ts">
-  // Accueil de l'organisateur (US-003 CA-1, US-026), page réservée : nom et rôle du compte connecté, les actions de
-  // création, et la liste du club : les épreuves à rattacher (US-045 CA-7), puis les manifestations (repliables) avec leurs
+  // Accueil de l'organisateur (US-003 CA-1, US-026, US-055), page réservée : la liste du club : les épreuves à rattacher (US-045 CA-7), puis les manifestations (repliables) avec leurs
   // compétitions et leurs épreuves, puis les compétitions seules. La liste vient du serveur, ou de la dernière copie gardée sur l'appareil et des épreuves
   // locales (hors ligne) ; la création d'une manifestation ou d'une compétition exige le réseau (US-023, US-024), celle
   // d'une épreuve non (US-025). La gestion des comptes (US-007) reste réservée aux administrateurs, grisée hors ligne.
   // Le profil (US-016) et la déconnexion (US-003 CA-5) sont dans le menu de compte de l'entête (US-017).
   import { onMount } from 'svelte';
-  import { SvelteSet } from 'svelte/reactivity';
+  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import {
     analyserSelection,
     construireListe,
     couleurDeCompetition,
     elementsEnCours,
+    manifestationAujourdhui,
     manifestationOuverte,
+    nomsCourts,
     planSuppression,
     toutCocherListe,
+    type CompetitionListee,
     type EpreuveListee,
     type ListeClub,
   } from '@poule-position/domaine';
   import type { SessionAppareil } from '../lib/stockage';
+  import Icone from '../composants/Icone.svelte';
+  import IconesEtat from '../composants/IconesEtat.svelte';
+  import LegendeIcones from '../composants/LegendeIcones.svelte';
   import Lien from '../composants/Lien.svelte';
+  import MenuActions, { type ActionMenu } from '../composants/MenuActions.svelte';
+  import { estDeplie, memoriserRepli } from '../lib/repli';
   import type { Accueil, DonneesAccueil } from '../lib/accueil';
   import {
     compterParType,
@@ -32,9 +39,9 @@
     cheminEpreuve,
     cheminModificationEpreuve,
     cheminGrilleEpreuves,
+    cheminModificationManifestation,
     cheminPlanManifestation,
     cheminNouvelleCompetition,
-    CHEMINS,
   } from '../lib/routes';
   import { textes } from '../lib/textes';
 
@@ -59,6 +66,34 @@
 
   /** US-046 CA-4 : rang dans la palette de la compétition, le même que dans le plan de sa manifestation. */
   const couleur = (competitionId: string) => (donnees ? couleurDeCompetition(donnees.competitions, competitionId) : 0);
+
+  /** US-055 CA-2 : pliage des cartes et des lignes, gardé pendant la visite (lib/repli.ts). */
+  const choixRepli = new SvelteMap<string, boolean>();
+  const deplie = (id: string, parDefaut: boolean) => choixRepli.get(id) ?? estDeplie(id, parDefaut);
+  function basculerRepli(id: string, parDefaut: boolean) {
+    const valeur = !deplie(id, parDefaut);
+    choixRepli.set(id, valeur);
+    memoriserRepli(id, valeur);
+  }
+
+  /** US-055 CA-6 : actions secondaires d'une manifestation ; celles qui exigent le réseau restent visibles, grisées. */
+  function actionsManifestation(id: string): ActionMenu[] {
+    const motif = horsLigne ? t.horsLigne : undefined;
+    return [
+      {
+        libelle: t.modifierManifestation,
+        icone: 'crayon',
+        chemin: cheminModificationManifestation(id),
+        indisponible: motif,
+      },
+      { libelle: t.ajouterCompetition, icone: 'plus', chemin: cheminNouvelleCompetition(id), indisponible: motif },
+    ];
+  }
+
+  /** US-055 CA-6 : actions secondaires d'une compétition. */
+  const actionsCompetition = (id: string): ActionMenu[] => [
+    { libelle: tc.grille.ajouter, icone: 'plus', chemin: cheminGrilleEpreuves(id) },
+  ];
 
   async function charger() {
     donnees = await accueil.charger();
@@ -139,6 +174,7 @@
     {@const parent = analyse.verrouillees.get(id)}
     <input
       type="checkbox"
+      class="case"
       checked={parent !== undefined || cochees.has(id)}
       disabled={enCours.has(id) || parent !== undefined || horsLigne || etapeSerie === 'encours'}
       title={parent !== undefined ? ts.avecParent(parent) : enCours.has(id) ? motifEnCours : undefined}
@@ -148,50 +184,81 @@
   {/if}
 {/snippet}
 
-{#snippet epreuve(entree: EpreuveListee)}
+<!-- US-055 CA-3 et CA-4 : la ligne entière est le lien vers l'épreuve ; son nom court, son jour, sa pastille de statut et
+     ses deux icônes d'état. Le nom complet reste le nom accessible du lien. -->
+{#snippet epreuve(entree: EpreuveListee, nomAffiche: string)}
   <li class="epreuve">
-    <span class="ligne">
-      {@render caseSelection(entree.id, ts.cocher(entree.nom), ts.enCours)}
-      <Lien chemin={cheminEpreuve(entree.id)} {naviguer}>{entree.nom}</Lien>
-    </span>
-    <span class="infos">
-      {tc.armes[entree.arme]}
-      {#if entree.categorie}· {entree.categorie}{/if}
-      {#if entree.sexe}· {tc.sexes[entree.sexe]}{/if}
-      {#if entree.date}· {t.jour(entree.date)}{/if}
-    </span>
-    <span class="etiquettes">
-      <span>{tc.statuts[entree.statut]}</span>
-      <span>{entree.publiee ? tc.publiee : tc.nonPubliee}</span>
-      {#if entree.pilote}<span class="pilote">{tc.pilote}</span>{:else}<span>{t.lectureSeule}</span>{/if}
+    {@render caseSelection(entree.id, ts.cocher(entree.nom), ts.enCours)}
+    <a
+      class="ligne-epreuve"
+      href={cheminEpreuve(entree.id)}
+      aria-label={t.ouvrir(entree.nom)}
+      onclick={(evenement) => {
+        if (evenement.button !== 0 || evenement.ctrlKey || evenement.metaKey || evenement.shiftKey) return;
+        evenement.preventDefault();
+        naviguer(cheminEpreuve(entree.id));
+      }}
+    >
+      <span class="nom-epreuve">{nomAffiche}</span>
+      <span class="jour">{entree.date ? t.jourCourt(entree.date) : ''}</span>
+      <span class="pastille {entree.statut}">{tc.statuts[entree.statut]}</span>
+      <IconesEtat publiee={entree.publiee} pilote={entree.pilote} />
       {#if entree.nonEnvoyee}<span class="attente">{tc.pasEncoreEnvoyee}</span>{/if}
-    </span>
+      <span class="chevron"><Icone nom="chevron" taille={18} /></span>
+    </a>
   </li>
 {/snippet}
 
-{#snippet creation(chemin: string, libelle: string, nomAccessible?: string)}
-  {#if horsLigne}
-    <span class="inactive" aria-disabled="true">
-      {libelle}
-      <small>{t.horsLigne}</small>
-    </span>
-  {:else}
-    <Lien {chemin} {naviguer} etiquette={nomAccessible}>{libelle}</Lien>
-  {/if}
+<!-- US-055 CA-2 : la ligne de compétition se déplie d'un clic (bouton étiré sur toute la ligne) ; « + Épreuves » et « ⋯ »
+     restent des commandes à part. -->
+{#snippet ligneCompetition(competition: CompetitionListee, epreuves: EpreuveListee[], parDefaut: boolean)}
+  {@const ouverte = deplie(competition.id, parDefaut)}
+  {@const courts = nomsCourts(epreuves, tc.sexes)}
+  <div class="competition" style="--couleur: var(--plan-{couleur(competition.id)})">
+    <div class="ligne-competition">
+      {@render caseSelection(competition.id, ts.cocherCompetition(competition.nom), ts.contientEnCours)}
+      <button
+        type="button"
+        class="bascule"
+        aria-expanded={ouverte}
+        aria-controls="epreuves-{competition.id}"
+        onclick={() => basculerRepli(competition.id, parDefaut)}
+      >
+        <span class="carre" aria-hidden="true"></span>
+        <span class="nom-competition">{competition.nom}</span>
+        <span class="meta">
+          {competition.arme ? `${tc.armes[competition.arme]} · ` : ''}{t.nombreEpreuves(epreuves.length)}
+        </span>
+      </button>
+      <span class="devant">
+        <Lien chemin={cheminGrilleEpreuves(competition.id)} {naviguer} etiquette={tc.grille.ajouterA(competition.nom)}
+          >{t.plusEpreuves}</Lien
+        >
+      </span>
+      <span class="devant">
+        <MenuActions
+          id="menu-competition-{competition.id}"
+          nom={competition.nom}
+          actions={actionsCompetition(competition.id)}
+          {naviguer}
+        />
+      </span>
+      <span class="chevron" class:ouvert={ouverte}><Icone nom="chevron" taille={18} /></span>
+    </div>
+    {#if ouverte}
+      <ul id="epreuves-{competition.id}" class="epreuves" aria-label={t.epreuvesDe(competition.nom)}>
+        {#each epreuves as entree (entree.id)}{@render epreuve(entree, courts.get(entree.id) ?? entree.nom)}{:else}
+          <li class="vide">{t.aucuneEpreuve}</li>
+        {/each}
+      </ul>
+    {/if}
+  </div>
 {/snippet}
 
 <main>
-  <h1>{textes.organisateur.bonjour(session.compte.nom)}</h1>
-  <p class="role">{textes.roles[session.compte.role]}</p>
-  <nav class="actions" aria-label={textes.organisateur.actions}>
-    <!-- US-054 : « Créer » (US-046) et « Comptes » (US-007) sont dans l'entête commun, sur toutes les pages. -->
-    <!-- US-023 : consultables hors ligne (dernière copie), modifiables en ligne seulement. -->
-    <Lien chemin={CHEMINS.manifestations} {naviguer}>{textes.manifestations.entree}</Lien>
-  </nav>
+  <h1>{t.titre}</h1>
 
-  <section class="liste" aria-labelledby="titre-liste">
-    <h2 id="titre-liste">{t.titre}</h2>
-
+  <section class="liste" aria-label={t.titre}>
     {#if donnees === null || liste === null}
       <p role="status">{t.chargement}</p>
     {:else}
@@ -297,11 +364,11 @@
 
         <!-- US-045 CA-7 : une épreuve dont la compétition a disparu est signalée en tête, avec le moyen d'en choisir une autre. -->
         {#if liste.aRattacher.length > 0}
-          <div class="competition a-rattacher">
-            <h3>{t.aRattacher}</h3>
-            <ul>
+          <div class="a-rattacher">
+            <h2>{t.aRattacher}</h2>
+            <ul class="epreuves">
               {#each liste.aRattacher as entree (entree.id)}
-                {@render epreuve(entree)}
+                {@render epreuve(entree, entree.nom)}
                 <li class="vide" role="status">
                   {t.competitionSupprimee}
                   <Lien
@@ -315,82 +382,74 @@
           </div>
         {/if}
 
+        <!-- US-055 CA-1 : une carte par manifestation ; dépliée si elle est en cours ou à venir (compétitions repliées,
+             sauf s'il n'y en a qu'une). -->
         {#each liste.manifestations as noeud (noeud.manifestation.id)}
-          <details class="manifestation" open={manifestationOuverte(noeud.manifestation, aujourdhui)}>
-            <summary>
-              <span class="ligne">
-                {@render caseSelection(
-                  noeud.manifestation.id,
-                  ts.cocherManifestation(noeud.manifestation.nom),
-                  ts.contientEnCours,
-                )}
-                <strong>{noeud.manifestation.nom}</strong>
-              </span>
-              <span class="infos">
-                {textes.manifestations.periode(noeud.manifestation.debut, noeud.manifestation.fin)}
-                {#if noeud.manifestation.lieu}· {noeud.manifestation.lieu}{/if}
-              </span>
-            </summary>
-            <div class="contenu">
-              <Lien
-                chemin={cheminPlanManifestation(noeud.manifestation.id)}
-                {naviguer}
-                etiquette={textes.plan.lienPour(noeud.manifestation.nom)}>{textes.plan.lien}</Lien
+          {@const manifestation = noeud.manifestation}
+          {@const ouverte = deplie(manifestation.id, manifestationOuverte(manifestation, aujourdhui))}
+          {@const epreuvesTotal = noeud.competitions.reduce((somme, { epreuves }) => somme + epreuves.length, 0)}
+          <article class="carte" aria-label={manifestation.nom}>
+            <header class="entete-carte">
+              {@render caseSelection(manifestation.id, ts.cocherManifestation(manifestation.nom), ts.contientEnCours)}
+              <button
+                type="button"
+                class="bascule-carte"
+                aria-expanded={ouverte}
+                aria-label={t.competitionsDe(manifestation.nom)}
+                onclick={() => basculerRepli(manifestation.id, manifestationOuverte(manifestation, aujourdhui))}
               >
-              {@render creation(
-                cheminNouvelleCompetition(noeud.manifestation.id),
-                t.nouvelleCompetition,
-                t.nouvelleCompetitionDans(noeud.manifestation.nom),
-              )}
-              {#each noeud.competitions as { competition, epreuves } (competition.id)}
-                <div class="competition bande" style="--couleur: var(--plan-{couleur(competition.id)})">
-                  <h3>
-                    {@render caseSelection(competition.id, ts.cocherCompetition(competition.nom), ts.contientEnCours)}
-                    {competition.nom}
-                    {#if competition.arme}<small>{tc.armes[competition.arme]}</small>{/if}
-                  </h3>
-                  <ul>
-                    {#each epreuves as entree (entree.id)}{@render epreuve(entree)}{:else}
-                      <li class="vide">{t.aucuneEpreuve}</li>
-                    {/each}
-                  </ul>
-                  <Lien
-                    chemin={cheminGrilleEpreuves(competition.id)}
-                    {naviguer}
-                    etiquette={tc.grille.ajouterA(competition.nom)}>{tc.grille.ajouter}</Lien
-                  >
-                </div>
-              {/each}
-            </div>
-          </details>
+                <span class="chevron" class:ouvert={ouverte}><Icone nom="chevron" taille={20} /></span>
+              </button>
+              <div class="identite">
+                <p class="titre-carte">
+                  <Lien chemin={cheminPlanManifestation(manifestation.id)} {naviguer}>{manifestation.nom}</Lien>
+                  {#if manifestationAujourdhui(manifestation, aujourdhui)}<span class="etiquette-jour"
+                      >{t.aujourdhui}</span
+                    >{/if}
+                </p>
+                <p class="meta">
+                  {textes.manifestations.periode(manifestation.debut, manifestation.fin)}
+                  {#if manifestation.lieu}· {manifestation.lieu}{/if}
+                  · {t.decompte(noeud.competitions.length, epreuvesTotal)}
+                </p>
+              </div>
+              <span class="bouton-plan">
+                <Lien
+                  chemin={cheminPlanManifestation(manifestation.id)}
+                  {naviguer}
+                  etiquette={textes.plan.lienPour(manifestation.nom)}><Icone nom="grille" taille={18} />{t.plan}</Lien
+                >
+              </span>
+              <MenuActions
+                id="menu-manifestation-{manifestation.id}"
+                nom={manifestation.nom}
+                actions={actionsManifestation(manifestation.id)}
+                {naviguer}
+              />
+            </header>
+            {#if ouverte}
+              <div class="competitions">
+                {#each noeud.competitions as { competition, epreuves } (competition.id)}
+                  {@render ligneCompetition(competition, epreuves, noeud.competitions.length === 1)}
+                {:else}
+                  <p class="vide">{t.aucuneCompetition}</p>
+                {/each}
+              </div>
+            {/if}
+          </article>
         {/each}
 
-        <!-- US-045 CA-5 : les compétitions seules, après les manifestations ; une seule épreuve tient sur une ligne. -->
+        <!-- US-045 CA-5 : les compétitions seules, après les manifestations (dépliées : leurs épreuves se voient d'emblée). -->
         {#each liste.competitionsSeules as { competition, epreuves } (competition.id)}
-          {#if epreuves.length === 1 && epreuves[0]}
-            <ul class="seule bande" style="--couleur: var(--plan-{couleur(competition.id)})">
-              {@render epreuve(epreuves[0])}
-            </ul>
-          {:else}
-            <div class="competition bande" style="--couleur: var(--plan-{couleur(competition.id)})">
-              <h3>
-                {@render caseSelection(competition.id, ts.cocherCompetition(competition.nom), ts.contientEnCours)}
-                {competition.nom}
-                {#if competition.arme}<small>{tc.armes[competition.arme]}</small>{/if}
-              </h3>
-              <ul>
-                {#each epreuves as entree (entree.id)}{@render epreuve(entree)}{:else}
-                  <li class="vide">{t.aucuneEpreuve}</li>
-                {/each}
-              </ul>
-              <Lien
-                chemin={cheminGrilleEpreuves(competition.id)}
-                {naviguer}
-                etiquette={tc.grille.ajouterA(competition.nom)}>{tc.grille.ajouter}</Lien
-              >
-            </div>
-          {/if}
+          <div class="seule">
+            {@render ligneCompetition(competition, epreuves, true)}
+          </div>
         {/each}
+
+        <!-- US-055 CA-5 : légende des quatre icônes, dès qu'il y a une épreuve. -->
+        {#if liste.manifestations.some( ({ competitions }) => competitions.some(({ epreuves }) => epreuves.length > 0) ) || liste.competitionsSeules.some(({ epreuves }) => epreuves.length > 0) || liste.aRattacher.length > 0}
+          <LegendeIcones />
+        {/if}
       {/if}
     {/if}
   </section>
@@ -399,65 +458,40 @@
 <style>
   main {
     display: grid;
-    justify-items: center;
-    gap: 0.75rem;
-    padding: 4rem 1rem;
-    text-align: center;
+    gap: 1rem;
+    width: min(100%, 65rem);
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+    box-sizing: border-box;
   }
 
   h1 {
     margin: 0;
+    font-family: var(--police-titre, inherit);
+    font-size: 1.9rem;
+    line-height: 1.2;
   }
 
-  .role {
-    margin: 0 0 1rem;
-    padding: 0.2rem 0.8rem;
-    border-radius: 999px;
-    background: var(--surface);
-    color: var(--texte-discret);
-  }
-
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem 1.5rem;
-    justify-content: center;
-  }
-
-  /* Entrée grisée hors ligne (US-007, US-026) : visible, mais sans lien. */
-  .inactive {
-    display: grid;
-    color: var(--texte-discret);
-    font-weight: 600;
-  }
-
-  .inactive small {
-    font-weight: 400;
+  h2 {
+    margin: 0 0 0.4rem;
+    font-size: 1rem;
   }
 
   .liste {
     display: grid;
     gap: 0.9rem;
-    width: min(100%, 44rem);
-    margin-top: 1.5rem;
     text-align: left;
   }
 
-  h2 {
-    margin: 0;
-    font-size: 1.2rem;
-    text-align: center;
-  }
-
-  h3 {
-    margin: 0;
-    font-size: 1rem;
-  }
-
   small,
-  .infos {
+  .meta {
+    margin: 0;
     color: var(--texte-discret);
     font-weight: 400;
+  }
+
+  .meta {
+    font-size: 0.9rem;
   }
 
   .filtre {
@@ -467,87 +501,228 @@
     align-items: center;
   }
 
-  /* US-046 CA-4 : la manifestation est un cadre foncé, comme dans l'aide, le plan et l'assistant. */
-  .manifestation {
-    border: 1px solid var(--marque);
+  /* Carte de manifestation (planche 1) : fond de surface, bordure, entête puis lignes de compétition. */
+  .carte {
+    border: 1px solid var(--bordure);
     border-radius: var(--rayon);
-    background: var(--marque);
-    color: var(--sur-marque);
-  }
-
-  .manifestation .infos {
-    color: var(--sur-marque);
-    opacity: 0.85;
-  }
-
-  summary {
-    display: grid;
-    gap: 0.2rem;
-    padding: 0.8rem 1rem;
-    overflow-wrap: anywhere;
-    cursor: pointer;
-  }
-
-  /* Chaque compétition est une bande de la couleur que le plan lui donne. */
-  .bande {
-    padding: 0.5rem 0.75rem;
-    border-left: 0.4rem solid var(--couleur);
-    border-radius: 0.25rem;
-  }
-
-  .contenu {
-    display: grid;
-    gap: 0.8rem;
-    padding: 0.8rem 1rem 1rem;
-    border-radius: 0 0 var(--rayon) var(--rayon);
     background: var(--surface);
+  }
+
+  .entete-carte {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    padding: 0.8rem 1rem;
+  }
+
+  .bascule-carte {
+    display: inline-flex;
+    padding: 0.4rem;
+    background: none;
     color: var(--texte);
   }
 
-  .competition {
-    display: grid;
-    gap: 0.4rem;
+  .identite {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
-  ul {
+  .titre-carte {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin: 0;
+    font-family: var(--police-titre, inherit);
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  .etiquette-jour {
+    padding: 0.1rem 0.55rem;
+    border: 1px solid var(--accent-teinte-bordure);
+    border-radius: 999px;
+    background: var(--accent-teinte);
+    color: var(--texte);
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .titre-carte :global(a),
+  .bouton-plan :global(a),
+  .devant :global(a) {
+    text-decoration: none;
+  }
+
+  .titre-carte :global(a) {
+    color: var(--texte);
+  }
+
+  .bouton-plan :global(a) {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+    color: var(--texte);
+    font-weight: 400;
+  }
+
+  .bouton-plan {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--bordure-champ);
+    border-radius: var(--rayon);
+    background: var(--fond);
+  }
+
+  .competitions {
+    display: grid;
+    gap: 0.6rem;
+    padding: 0 1rem 1rem;
+  }
+
+  /* Ligne de compétition : fond secondaire, carré de la couleur du plan, nom, arme, « + Épreuves », chevron. */
+  .competition {
     display: grid;
     gap: 0.5rem;
+  }
+
+  .ligne-competition {
+    position: relative;
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--rayon);
+    background: var(--surface-2);
+  }
+
+  .bascule {
+    display: flex;
+    flex: 1;
+    gap: 0.6rem;
+    align-items: center;
+    min-width: 0;
+    padding: 0.25rem 0;
+    background: none;
+    color: var(--texte);
+    text-align: left;
+  }
+
+  /* Le bouton couvre toute la ligne ; ce qui doit rester cliquable à part passe devant. */
+  .bascule::after {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--rayon);
+    content: '';
+  }
+
+  .devant,
+  .ligne-competition .case {
+    position: relative;
+    z-index: 1;
+  }
+
+  .carre {
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 4px;
+    background: var(--couleur);
+  }
+
+  .nom-competition {
+    overflow-wrap: anywhere;
+    font-weight: 700;
+  }
+
+  .chevron {
+    display: inline-flex;
+    flex: none;
+    color: var(--texte-discret);
+    pointer-events: none;
+    transition: transform 0.15s;
+  }
+
+  .chevron.ouvert {
+    transform: rotate(90deg);
+  }
+
+  .epreuves {
+    display: grid;
+    gap: 0.35rem;
     margin: 0;
-    padding: 0;
+    padding: 0 0 0 1.25rem;
     list-style: none;
   }
 
   .epreuve {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .ligne-epreuve {
     display: grid;
-    gap: 0.2rem;
-    padding: 0.6rem 0.75rem;
+    flex: 1;
+    grid-template-columns: minmax(0, 1fr) 7rem 7.5rem 3.5rem 1.25rem;
+    gap: 0.75rem;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.3rem 0.75rem;
     border: 1px solid var(--bordure);
     border-radius: var(--rayon);
     background: var(--fond);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .ligne-epreuve:hover {
+    border-color: var(--accent);
+  }
+
+  .nom-epreuve {
     overflow-wrap: anywhere;
-  }
-
-  .etiquettes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-
-  .etiquettes span {
-    padding: 0.1rem 0.55rem;
-    border-radius: 999px;
-    background: var(--surface);
-    color: var(--texte-discret);
-    font-size: 0.8rem;
-  }
-
-  .etiquettes .pilote {
-    color: var(--texte);
+    color: var(--accent);
     font-weight: 600;
   }
 
-  .etiquettes .attente {
+  .jour {
+    color: var(--texte-discret);
+    font-size: 0.9rem;
+  }
+
+  .pastille {
+    justify-self: start;
+    padding: 0.1rem 0.6rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--texte-discret);
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .pastille.preparation {
+    background: var(--etat-attente-fond);
+    color: var(--sur-etat-attente-fond);
+  }
+
+  .pastille.enCours {
+    background: var(--accent-teinte);
+    color: var(--texte);
+  }
+
+  .pastille.terminee {
+    background: var(--etat-ok-fond);
+    color: var(--sur-etat-ok-fond);
+  }
+
+  .attente {
+    padding: 0.1rem 0.55rem;
     border-left: 3px solid var(--etat-attente);
+    background: var(--surface);
+    color: var(--texte-discret);
+    font-size: 0.8rem;
   }
 
   .vide {
@@ -555,10 +730,10 @@
     color: var(--texte-discret);
   }
 
-  .ligne {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
+  .a-rattacher,
+  .seule {
+    display: grid;
+    gap: 0.4rem;
   }
 
   .selection,
@@ -579,7 +754,15 @@
     background: var(--surface);
   }
 
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
   .noms {
+    display: grid;
+    gap: 0.5rem;
     max-height: 10rem;
     overflow-y: auto;
   }
@@ -630,5 +813,24 @@
     padding: 0.6rem 0.75rem;
     border-left: 4px solid var(--etat-attente);
     background: var(--surface);
+  }
+
+  /* Smartphone : l'entête de carte et les lignes d'épreuve passent sur deux lignes. */
+  @media (max-width: 40rem) {
+    .entete-carte {
+      flex-wrap: wrap;
+    }
+
+    .identite {
+      flex-basis: calc(100% - 7rem);
+    }
+
+    .ligne-epreuve {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .epreuves {
+      padding-left: 0;
+    }
   }
 </style>
