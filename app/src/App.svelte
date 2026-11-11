@@ -24,7 +24,7 @@
   import Comptes from './pages/Comptes.svelte';
   import Connexion from './pages/Connexion.svelte';
   import MotDePasseOublie from './pages/MotDePasseOublie.svelte';
-  import Manifestations from './pages/Manifestations.svelte';
+  import Manifestation from './pages/Manifestation.svelte';
   import MotDePasse from './pages/MotDePasse.svelte';
   import Formule from './pages/Formule.svelte';
   import Parametres from './pages/Parametres.svelte';
@@ -32,7 +32,6 @@
   import AideOrganisation from './pages/AideOrganisation.svelte';
   import AssistantManifestation from './pages/AssistantManifestation.svelte';
   import Creer from './pages/Creer.svelte';
-  import PlanManifestation from './pages/PlanManifestation.svelte';
   import NouvelleEpreuve from './pages/NouvelleEpreuve.svelte';
   import Profil from './pages/Profil.svelte';
   import Reinitialisation from './pages/Reinitialisation.svelte';
@@ -74,7 +73,7 @@
   const accueil = creerAccueil({ journal, synchronisation, manifestations, competitions });
   /** Faux tant que la session gardée n'est pas relue : évite d'afficher une page puis d'en changer. */
   let pret = $state(false);
-  let chemin = $state(location.pathname);
+  let chemin = $state(location.pathname + location.search);
 
   const route = $derived(
     resoudreRoute(
@@ -101,7 +100,7 @@
   });
 
   onMount(() => {
-    const surRetour = () => (chemin = location.pathname);
+    const surRetour = () => (chemin = location.pathname + location.search);
     // US-005 CA-5 / CA-6 : de retour en ligne, la session est revalidée sans action (ou fermée, avec son motif).
     const surEnLigne = async () => {
       if (session) session = await client.restaurer();
@@ -184,16 +183,6 @@
         <Profil {client} {session} surChangement={(nouvelle) => (session = nouvelle)} {surSessionPerdue} {naviguer} />
       {:else if route.page === 'comptes'}
         <Comptes {client} {surSessionPerdue} {naviguer} />
-      {:else if route.page === 'manifestations'}
-        <Manifestations
-          client={manifestations}
-          clientCompetitions={competitions}
-          {fichiers}
-          {naviguer}
-          administrateur={session.compte.role === 'administrateur'}
-          epreuvesConnues={() => synchronisation.epreuvesConnues()}
-          apresSuppressionContenu={async () => void (await synchronisation.listerEpreuvesDuClub())}
-        />
       {:else if route.page === 'nouvelleEpreuve'}
         <NouvelleEpreuve
           {session}
@@ -229,14 +218,20 @@
         <Creer {accueil} {naviguer} />
       {:else if route.page === 'aideOrganisation'}
         <AideOrganisation {naviguer} />
-      {:else if route.page === 'planManifestation' && route.manifestationId}
+      {:else if route.page === 'manifestation' && route.manifestationId}
         {#key route.manifestationId}
-          <PlanManifestation
+          <Manifestation
             {session}
             {journal}
             {synchronisation}
             {accueil}
+            clientManifestations={manifestations}
+            clientCompetitions={competitions}
+            {fichiers}
             manifestationId={route.manifestationId}
+            onglet={route.onglet ?? 'competitions'}
+            recherche={chemin.includes('?') ? `?${chemin.split('?')[1]}` : ''}
+            apresSuppressionContenu={async () => void (await synchronisation.listerEpreuvesDuClub())}
             {naviguer}
           />
         {/key}

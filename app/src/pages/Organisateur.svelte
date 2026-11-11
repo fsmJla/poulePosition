@@ -45,6 +45,7 @@
     cheminModificationEpreuve,
     cheminGrilleEpreuves,
     cheminModificationManifestation,
+    cheminManifestation,
     cheminPlanManifestation,
     cheminNouvelleCompetition,
   } from '../lib/routes';
@@ -459,7 +460,7 @@
               </button>
               <div class="identite">
                 <p class="titre-carte">
-                  <Lien chemin={cheminPlanManifestation(manifestation.id)} {naviguer}>{manifestation.nom}</Lien>
+                  <Lien chemin={cheminManifestation(manifestation.id)} {naviguer}>{manifestation.nom}</Lien>
                   {#if manifestationAujourdhui(manifestation, aujourdhui)}<span class="etiquette-jour"
                       >{t.aujourdhui}</span
                     >{/if}

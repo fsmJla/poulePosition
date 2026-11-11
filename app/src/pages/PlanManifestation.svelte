@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Plan de la manifestation (US-049), page réservée : une ligne par compétition, une colonne par jour, des tuiles pour
+  // Plan de la manifestation (US-049), onglet « Plan » de sa page (US-056) : une ligne par compétition, une colonne par jour, des tuiles pour
   // les épreuves. On y complète le plan (ajouter une épreuve dans une case, des épreuves à une compétition) et on déplace une
   // épreuve d'un jour à l'autre. Les données viennent de la liste du club (index, copies, journal local) : hors ligne, le
   // plan reste affiché depuis la copie de l'appareil et seuls l'ajout d'une épreuve et le changement de jour restent possibles
@@ -16,8 +16,6 @@
   } from '@poule-position/domaine';
   import type { Competition, Manifestation } from '@poule-position/protocole';
   import Lien from '../composants/Lien.svelte';
-  import FilAriane from '../composants/FilAriane.svelte';
-  import { filSousAccueil } from '../lib/fil-ariane';
   import type { Accueil, DonneesAccueil } from '../lib/accueil';
   import type { Journal } from '../lib/journal';
   import { changerJour, detailsDesTuiles, horairesConnus, type DetailEpreuve } from '../lib/plan';
@@ -26,8 +24,6 @@
     cheminNouvelleCompetition,
     cheminDupliquerEpreuve,
     cheminNouvelleEpreuveDans,
-    CHEMINS,
-    cheminModificationManifestation,
     cheminEpreuve,
   } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
@@ -184,44 +180,13 @@
   </span>
 {/snippet}
 
-<main>
+<section class="onglet-plan" aria-label={plan ? t.titre(plan.manifestation.nom) : t.chargement}>
   {#if donnees === null}
     <p role="status">{t.chargement}</p>
   {:else if plan === null}
     <p class="message" role="alert">{t.introuvable}</p>
-    <Lien chemin={CHEMINS.manifestations} {naviguer}>{t.retour}</Lien>
   {:else}
-    <FilAriane niveaux={filSousAccueil(plan.manifestation.nom, [], textes.entete.accueil)} {naviguer} />
-    <!-- CA-3 : le bandeau donne le nom, les dates, le lieu, le nombre de compétitions et d'épreuves, et les actions. -->
-    <header class="bandeau">
-      <div class="identite">
-        <h1>{plan.manifestation.nom}</h1>
-        <p class="infos">
-          {textes.manifestations.periode(plan.manifestation.debut, plan.manifestation.fin)}
-          {#if plan.manifestation.lieu}· {plan.manifestation.lieu}{/if}
-          · <span>{t.competitions(plan.lignes.length)}</span>, <span>{t.epreuves(plan.nombreEpreuves)}</span>
-        </p>
-        {#if donnees.horsLigne}<p class="hors-ligne" role="status">{t.horsLigne(donnees.copieLe)}</p>{/if}
-      </div>
-      <div class="actions">
-        <!-- Créer ou modifier une compétition ou une manifestation exige le réseau : grisé hors ligne. -->
-        <button
-          type="button"
-          class="contour"
-          disabled={!enLigne}
-          onclick={() => naviguer(cheminModificationManifestation(plan.manifestation.id))}
-          >{t.modifierManifestation}</button
-        >
-        <button
-          type="button"
-          class="clair"
-          disabled={!enLigne}
-          onclick={() => naviguer(cheminNouvelleCompetition(plan.manifestation.id))}>{t.ajouterCompetition}</button
-        >
-        {#if !enLigne}<small>{t.necessiteInternet}</small>{/if}
-        <Lien chemin={CHEMINS.manifestations} {naviguer}>{t.retour}</Lien>
-      </div>
-    </header>
+    {#if donnees.horsLigne}<p class="hors-ligne" role="status">{t.horsLigne(donnees.copieLe)}</p>{/if}
 
     {#if plan.lignes.length === 0}
       <p class="vide">
@@ -360,55 +325,19 @@
       {/if}
     </div>
   {/if}
-</main>
+</section>
 
 <style>
-  main {
+  .onglet-plan {
     display: grid;
     gap: 1.25rem;
-    padding: 1.5rem 1rem 3rem;
     max-width: 100%;
-  }
-
-  h1 {
-    margin: 0;
   }
 
   .infos,
   .discret,
   small {
     color: var(--texte-discret);
-  }
-
-  .infos {
-    margin: 0;
-  }
-
-  /* CA-3 : le bandeau d'entête de la manifestation, foncé comme le cadre de la liste et de l'assistant. */
-  .bandeau {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 1rem;
-    padding: 1.25rem 1.5rem;
-    border-radius: 1rem;
-    background: var(--marque);
-    color: var(--sur-marque);
-  }
-
-  .identite {
-    display: grid;
-    gap: 0.25rem;
-  }
-
-  .bandeau .infos,
-  .bandeau small {
-    color: var(--sur-marque);
-  }
-
-  .bandeau :global(a) {
-    color: var(--sur-marque);
   }
 
   .hors-ligne {
@@ -441,17 +370,6 @@
     border: 1px solid var(--bordure-champ);
     background: var(--surface);
     color: var(--texte);
-  }
-
-  .bandeau button.contour {
-    border: 1px solid var(--sur-marque);
-    background: transparent;
-    color: var(--sur-marque);
-  }
-
-  .bandeau button.clair {
-    background: var(--sur-marque);
-    color: var(--marque);
   }
 
   button:disabled {

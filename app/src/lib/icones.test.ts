@@ -36,7 +36,8 @@ describe('icônes de la charte (US-054 CA-4)', () => {
   });
 
   it('CA-4 : les icônes ajoutées au-delà du vocabulaire initial figurent dans le tableau du vocabulaire', () => {
-    for (const libelle of ['Personnes', 'Lune', 'Coche']) expect(vocabulaire).toContain(`| ${libelle} |`);
+    for (const libelle of ['Personnes', 'Lune', 'Coche', 'Liste', 'Quatre carrés'])
+      expect(vocabulaire).toContain(`| ${libelle} |`);
   });
 
   it('CA-4 : un tracé ne contient ni couleur en dur, ni script, ni texte (donc ni émoji ni police d’icônes)', () => {

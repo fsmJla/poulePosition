@@ -39,6 +39,9 @@ export const ICONES = {
   croix: '<path d="M6 6l12 12M18 6 6 18" />',
   flecheGauche: '<path d="M19 12H5M11 6l-6 6 6 6" />',
   chevron: '<path d="m9 6 6 6-6 6" />',
+  liste: '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" />',
+  carres:
+    '<rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />',
   coche: '<path d="m5 12.5 4.5 4.5L19 7.5" />',
 } as const;
 

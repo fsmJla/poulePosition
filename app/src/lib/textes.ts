@@ -1026,6 +1026,54 @@ export const textes = {
     ],
     exempleEpreuveSeule: 'Senior · Dames',
   },
+  /** US-056 : page d'une manifestation (onglets Compétitions, Plan, Affiche et feuille de route). */
+  pageManifestation: {
+    chargement: 'Chargement de la manifestation…',
+    introuvable: 'Cette manifestation n’existe plus',
+    retourAccueil: 'Retour à l’accueil',
+    /** Dates de la planche 2 : « 11 et 12 novembre 2026 », « le 11 novembre 2026 », « du 30 novembre au 2 décembre 2026 ». */
+    dates: (debut: string, fin: string) => {
+      const mois = [
+        'janvier',
+        'février',
+        'mars',
+        'avril',
+        'mai',
+        'juin',
+        'juillet',
+        'août',
+        'septembre',
+        'octobre',
+        'novembre',
+        'décembre',
+      ];
+      const [anneeD = '', moisD = '', jourD = ''] = debut.split('-');
+      const [anneeF = '', moisF = '', jourF = ''] = fin.split('-');
+      const jour = (valeur: string) => (valeur === '01' ? '1er' : String(Number(valeur)));
+      const nomMois = (valeur: string) => mois[Number(valeur) - 1] ?? '';
+      if (debut === fin) return `le ${jour(jourD)} ${nomMois(moisD)} ${anneeD}`;
+      if (anneeD === anneeF && moisD === moisF) {
+        const deuxJours = Number(jourF) === Number(jourD) + 1;
+        return `${deuxJours ? `${jour(jourD)} et ${jour(jourF)}` : `du ${jour(jourD)} au ${jour(jourF)}`} ${nomMois(moisD)} ${anneeD}`;
+      }
+      const debutLong =
+        anneeD === anneeF ? `${jour(jourD)} ${nomMois(moisD)}` : `${jour(jourD)} ${nomMois(moisD)} ${anneeD}`;
+      return `du ${debutLong} au ${jour(jourF)} ${nomMois(moisF)} ${anneeF}`;
+    },
+    modifier: 'Modifier',
+    onglets: 'Vues de la manifestation',
+    competitions: 'Compétitions',
+    plan: 'Plan',
+    documents: 'Affiche et feuille de route',
+    nouvelleCompetition: 'Nouvelle compétition',
+    plusEpreuves: '+ Épreuves',
+    necessiteInternet: 'Nécessite une connexion internet',
+    ajouterDesEpreuves: 'Ajouter des épreuves',
+    modifierCompetition: (nom: string) => `Modifier ${nom}`,
+    epreuvesDe: (nom: string) => `Épreuves de ${nom}`,
+    aucuneEpreuve: 'Aucune épreuve',
+    ouvrirEpreuve: (nom: string) => `Ouvrir l’épreuve ${nom}`,
+  },
   /** US-049 : plan d'une manifestation (lignes = compétitions, colonnes = jours). */
   plan: {
     lien: 'Voir le plan',

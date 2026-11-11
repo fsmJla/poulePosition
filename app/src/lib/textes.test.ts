@@ -268,3 +268,19 @@ describe('vocabulaire de la publication (US-031 CA-6)', () => {
     expect(textes.publication.enAttente).toBe('Publication en attente d’envoi');
   });
 });
+
+describe('dates de la page d’une manifestation (US-056 CA-8)', () => {
+  const { dates } = textes.pageManifestation;
+
+  it('CA-8 : « 11 et 12 novembre 2026 » comme sur la planche 2', () => {
+    expect(dates('2026-11-11', '2026-11-12')).toBe('11 et 12 novembre 2026');
+  });
+
+  it('un seul jour, plus de deux jours, deux mois, deux années, premier du mois', () => {
+    expect(dates('2026-11-11', '2026-11-11')).toBe('le 11 novembre 2026');
+    expect(dates('2026-11-11', '2026-11-13')).toBe('du 11 au 13 novembre 2026');
+    expect(dates('2026-11-30', '2026-12-02')).toBe('du 30 novembre au 2 décembre 2026');
+    expect(dates('2026-12-31', '2027-01-01')).toBe('du 31 décembre 2026 au 1er janvier 2027');
+    expect(dates('2027-03-01', '2027-03-02')).toBe('1er et 2 mars 2027');
+  });
+});
