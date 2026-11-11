@@ -52,6 +52,14 @@ Maquette : champ de recherche de l'entête (planches 1 à 4) et loupe de la plan
 - **Quand** on cherche
 - **Alors** ils apparaissent après les autres, avec la mention « Archivée ».
 
+**CA-7 — Conforme à la maquette (champ de l'entête)**
+- **Étant donné** les captures de référence `docs/maquettes/ihm/1-accueil.png` (champ) et `5-smartphone-accueil.png`
+  (loupe)
+- **Quand** un test E2E affiche l'entête à 1360 px puis à 390 px de large
+- **Alors** le champ et la loupe ont la place, la taille et les couleurs des captures (table « De la maquette à la
+  charte ») ; le test joint ses captures au rapport, et la recette les compare aux références. La liste de résultats
+  n'a pas de planche : elle reprend le style du menu « ⋯ » (US-054).
+
 ## Comportement hors ligne
 
 La recherche se fait **sur l'appareil**, dans la liste du club déjà connue (dernière copie de l'index et épreuves
@@ -82,3 +90,4 @@ locales) : elle fonctionne à l'identique hors ligne et n'envoie aucune requête
 | Date | Événement |
 |---|---|
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » ; ajout retenu par l'utilisateur le 2026-11-11 |
+| 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |

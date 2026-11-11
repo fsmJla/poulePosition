@@ -56,6 +56,13 @@ Maquette : filtres de la planche 1 (`docs/maquettes/ihm/Main.dc.html`) et de la 
 - **Quand** on ouvre une épreuve puis qu'on revient à l'accueil
 - **Alors** le même filtre est appliqué ; à une nouvelle visite, « À venir et en cours » est de nouveau choisi.
 
+**CA-8 — Conforme aux planches 1 et 5 (filtres)**
+- **Étant donné** les captures de référence `docs/maquettes/ihm/1-accueil.png` et `5-smartphone-accueil.png`
+- **Quand** un test E2E affiche l'accueil à 1360 px puis à 390 px de large
+- **Alors** les filtres ont la place, la forme en pilule et les couleurs des captures (filtre choisi en `--marque`) ;
+  le test joint ses captures au rapport, et la recette les compare aux références et liste les écarts. Le compteur de
+  CA-6 n'est pas sur la planche : il s'ajoute dans la pilule, après le libellé.
+
 ## Comportement hors ligne
 
 Le filtrage se fait sur l'appareil, sur la copie de la liste : il fonctionne à l'identique hors ligne. Testé par un
@@ -91,3 +98,4 @@ E2E réseau coupé.
 | Date | Événement |
 |---|---|
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » ; ajout retenu par l'utilisateur le 2026-11-11 |
+| 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |

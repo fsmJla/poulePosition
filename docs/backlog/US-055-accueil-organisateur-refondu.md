@@ -65,6 +65,14 @@ la présentation.
 - **Alors** son titre est « Manifestations et compétitions ». Si le club n'a rien, la liste vide d'US-026 CA-6 est
   conservée, avec « Créer » comme seule action.
 
+**CA-8 — Conforme à la planche 1**
+- **Étant donné** la capture de référence `docs/maquettes/ihm/1-accueil.png` et un club portant les données de la planche
+- **Quand** un test E2E affiche l'accueil à 1360 px de large
+- **Alors** la carte de manifestation, les lignes de compétition et les lignes d'épreuve ont la structure, l'ordre,
+  les alignements et les couleurs de la capture (table « De la maquette à la charte »), sans défilement horizontal ;
+  le test joint sa capture au rapport, et la recette la compare à la référence et liste les écarts. Les filtres,
+  l'alerte et « Sélectionner » de la planche sont hors périmètre (US-063, US-060, US-059).
+
 ## Comportement hors ligne
 
 Comme US-026 : la liste vient de la dernière copie de l'appareil, avec « Hors ligne : liste du <date> ». Les épreuves
@@ -104,3 +112,4 @@ motif. Les E2E réseau coupé d'US-026 et d'US-045 sont adaptés à la nouvelle 
 | Date | Événement |
 |---|---|
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » validée le 2026-11-11 |
+| 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |

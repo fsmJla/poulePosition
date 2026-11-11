@@ -57,6 +57,14 @@ Maquette : planche 2 « Page d'une manifestation » (`docs/maquettes/ihm/Manifes
 - **Quand** on choisit « Modifier », « Modifier <compétition> » ou « Nouvelle compétition »
 - **Alors** le formulaire correspondant (US-023, US-045) s'ouvre sur cette page, et son enregistrement y ramène.
 
+**CA-8 — Conforme à la planche 2**
+- **Étant donné** la capture de référence `docs/maquettes/ihm/2-manifestation.png` et une manifestation portant les
+  données de la planche
+- **Quand** un test E2E affiche sa page à 1360 px de large, le menu « ⋯ » de la première compétition ouvert
+- **Alors** le titre, les onglets, les cartes de compétition, le menu et la zone « Nouvelle compétition » ont la
+  structure, l'ordre, les alignements et les couleurs de la capture (table « De la maquette à la charte ») ; le test
+  joint sa capture au rapport, et la recette la compare à la référence et liste les écarts.
+
 ## Comportement hors ligne
 
 La page s'affiche depuis la copie de l'appareil. « Modifier », « Nouvelle compétition » et « Supprimer… » sont grisés
@@ -93,3 +101,4 @@ de l'appareil (US-045, décision 1a) ; le plan suit US-049. Testé par un E2E r�
 | Date | Événement |
 |---|---|
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » validée le 2026-11-11 |
+| 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |

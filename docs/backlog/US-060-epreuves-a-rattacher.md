@@ -49,6 +49,14 @@ La règle « une épreuve dont la compétition a disparu est à rattacher » res
 - **Quand** il choisit « Supprimer… »
 - **Alors** la suppression par lot d'US-059 s'applique.
 
+**CA-6 — Conforme aux planches 1 (alerte) et 4 (liste)**
+- **Étant donné** les captures de référence `docs/maquettes/ihm/1-accueil.png` et `4-selection.png`, et quatre épreuves
+  à rattacher
+- **Quand** un test E2E affiche l'accueil, puis la liste des épreuves à rattacher, à 1360 px de large
+- **Alors** l'alerte et la liste ont la structure, l'ordre, les alignements et les couleurs des captures (table « De la
+  maquette à la charte ») ; le test joint ses captures au rapport, et la recette les compare aux références et liste
+  les écarts.
+
 ## Comportement hors ligne
 
 L'alerte et la liste s'affichent depuis la copie de l'appareil. Le rattachement suit la règle d'US-045 : s'il demande
@@ -81,3 +89,4 @@ connexion internet ». Testé par un E2E réseau coupé.
 | Date | Événement |
 |---|---|
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » ; rattachement par lot retenu le 2026-11-11 |
+| 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |

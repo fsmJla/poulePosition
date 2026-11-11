@@ -48,6 +48,14 @@ Décision de l'utilisateur du 2026-11-11.
 - **Alors** « Supprimer… » est absent pour le non-administrateur ; pour les autres cas il est grisé, avec son motif
   (« Connexion requise pour supprimer », « Une épreuve en cours ne peut pas être supprimée »).
 
+**CA-6 — Conforme à la planche 2 (menu ouvert)**
+- **Étant donné** la capture de référence `docs/maquettes/ihm/2-manifestation.png`
+- **Quand** un test E2E ouvre le menu « ⋯ » d'une compétition non vide
+- **Alors** « Supprimer… » y figure comme sur la capture : dernière action, sous un séparateur, avec la corbeille, en
+  `--etat-erreur`, et son sous-titre qui annonce le contenu ; le test joint sa capture au rapport, et la recette la
+  compare à la référence. La fenêtre de confirmation n'a pas de planche : elle reprend les styles de confirmation
+  existants.
+
 ## Comportement hors ligne
 
 Suspendu hors ligne, comme US-039, US-041 et US-042 : « Supprimer… » est grisé avec « Connexion requise pour
@@ -81,3 +89,4 @@ supprimer ». Testé par un E2E réseau coupé.
 | Date | Événement |
 |---|---|
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » ; fusion validée par l'utilisateur le 2026-11-11 |
+| 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |

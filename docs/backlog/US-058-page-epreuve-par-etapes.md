@@ -65,6 +65,15 @@ Maquette : planche 3 « Page d'une épreuve » (`docs/maquettes/ihm/Epreuve.dc.h
 - **Alors** les actions de modification sont absentes ou grisées avec « Lecture seule : un autre PC est le pilote »,
   comme aujourd'hui.
 
+**CA-8 — Conforme à la planche 3**
+- **Étant donné** la capture de référence `docs/maquettes/ihm/3-epreuve.png` et une épreuve portant les données de la
+  planche
+- **Quand** un test E2E affiche sa page à 1360 px de large
+- **Alors** la navigation par étapes (étapes grisées « À venir » comprises), l'entête de l'épreuve et les cartes du
+  résumé ont la structure, l'ordre, les alignements et les couleurs de la capture (table « De la maquette à la
+  charte ») ; le test joint sa capture au rapport, et la recette la compare à la référence et liste les écarts. Le
+  bandeau « Prochaine étape » est hors périmètre (US-064).
+
 ## Comportement hors ligne
 
 Comme aujourd'hui : une épreuve pilotée par ce PC s'ouvre et se modifie hors ligne (journal local) ; la carte Pilote
@@ -101,3 +110,4 @@ coupé existants de la page d'épreuve sont adaptés.
 | Date | Événement |
 |---|---|
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » ; étapes à venir grisées (décision du 2026-11-11) |
+| 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |

@@ -50,6 +50,12 @@ principe 3 (une action principale par écran).
 - **Alors** il ajoute ses cas à cette règle unique, dans l'ordre du déroulement, avec ses tests ; le bandeau n'est pas
   réécrit.
 
+**CA-7 — Conforme aux planches 3 et 6 (bandeau)**
+- **Étant donné** les captures de référence `docs/maquettes/ihm/3-epreuve.png` et `6-smartphone-epreuve.png`
+- **Quand** un test E2E affiche le résumé d'une épreuve non publiée à 1360 px (PC pilote) puis à 390 px (lecture seule)
+- **Alors** le bandeau a la place, la structure et les couleurs des captures (fond `--marque`, action en tiffany) ; le
+  test joint ses captures au rapport, et la recette les compare aux références et liste les écarts.
+
 ## Comportement hors ligne
 
 Le bandeau se calcule sur l'appareil, à partir de la projection du journal : il s'affiche hors ligne. Si l'action
@@ -81,3 +87,4 @@ réseau coupé.
 | Date | Événement |
 |---|---|
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » ; ajout retenu par l'utilisateur le 2026-11-11 |
+| 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |

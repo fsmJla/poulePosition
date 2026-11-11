@@ -54,6 +54,13 @@ Les règles de la suppression par lot restent celles d'US-043 (parent et contenu
 - **Alors** « Sélectionner » n'est proposé que si une action par lot lui est permise (le rattachement d'US-060) ;
   sinon il est absent.
 
+**CA-7 — Conforme à la planche 4**
+- **Étant donné** la capture de référence `docs/maquettes/ihm/4-selection.png`
+- **Quand** un test E2E affiche l'accueil en mode sélection à 1360 px de large, trois épreuves cochées
+- **Alors** la barre d'actions et les cases ont la structure, l'ordre, les alignements et les couleurs de la capture
+  (table « De la maquette à la charte ») ; le test joint sa capture au rapport, et la recette la compare à la référence
+  et liste les écarts. La liste « à rattacher » de la planche est hors périmètre (US-060).
+
 ## Comportement hors ligne
 
 Hors ligne, « Sélectionner » est grisé avec « Connexion requise pour supprimer », comme US-043. Si le réseau est coupé
@@ -86,3 +93,4 @@ réseau coupé.
 | Date | Événement |
 |---|---|
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » validée le 2026-11-11 |
+| 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |

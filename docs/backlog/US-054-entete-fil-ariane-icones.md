@@ -65,6 +65,18 @@ Cette US ne change la disposition d'aucune liste : elle livre les briques que le
 - **Alors** il garde la marque et le menu de compte ; « Comptes », l'aide et le thème sont dans le menu de compte ;
   aucun défilement horizontal n'apparaît. (Le bouton « Créer » flottant vient avec US-061.)
 
+**CA-8 — Variables de la charte pour la maquette**
+- **Étant donné** la table « De la maquette à la charte » de `docs/maquettes/README.md`
+- **Quand** la charte est complétée
+- **Alors** les variables « à créer » de cette table existent dans `app/src/app.css`, en clair et en sombre, chaque
+  couple texte / fond respecte le contraste AA (`couleurs.test.ts`), et aucun composant n'écrit de couleur en dur.
+
+**CA-9 — Conforme aux planches 1 à 3 (entête, fil d'Ariane, menu « ⋯ »)**
+- **Étant donné** les captures de référence `docs/maquettes/ihm/1-accueil.png`, `2-manifestation.png` et `3-epreuve.png`
+- **Quand** un test E2E affiche la page d'une épreuve à 1360 px de large, menu « ⋯ » ouvert
+- **Alors** l'entête, le fil d'Ariane et le menu ont la structure, l'ordre et les couleurs de la capture (variables de
+  la table) ; le test joint sa capture au rapport, et la recette la compare à la référence et liste les écarts.
+
 ## Comportement hors ligne
 
 L'entête, le fil d'Ariane, les icônes et le menu s'affichent hors ligne (ils sont dans le build). « Créer » reste
@@ -85,6 +97,9 @@ Testé par un E2E réseau coupé (entête et fil d'Ariane présents sur la page 
   clair / sombre / automatique.
 - La bannière illustrée d'US-014 reste sur les pages publiques ; les pages connectées emploient la marque en texte de
   la maquette.
+- Le bouton principal de la maquette est en tiffany avec un texte sombre (`--palette-tiffany` et `--sur-tiffany`),
+  alors que la charte actuelle emploie `--accent-fond` et `--sur-accent`. Cette US applique la maquette aux boutons
+  principaux des pages connectées ; les pages publiques ne changent pas.
 
 ## Questions bloquantes
 
@@ -103,3 +118,4 @@ Testé par un E2E réseau coupé (entête et fil d'Ariane présents sur la page 
 | Date | Événement |
 |---|---|
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » validée le 2026-11-11 |
+| 2026-11-11 | Ajout de CA-8 (variables de la charte pour la maquette) et de CA-9 (conforme aux planches 1 à 3) |

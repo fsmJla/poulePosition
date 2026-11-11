@@ -57,6 +57,15 @@ propre maquette.
 - **Alors** toute cible fait au moins 44 × 44 px et les zones sûres de l'appareil (encoche, barre de geste) sont
   respectées.
 
+**CA-7 — Conforme aux planches 5 et 6**
+- **Étant donné** les captures de référence `docs/maquettes/ihm/5-smartphone-accueil.png` et
+  `6-smartphone-epreuve.png`, et les données des planches
+- **Quand** un test E2E affiche l'accueil puis la page d'une épreuve au format 390 × 844
+- **Alors** les deux écrans ont la structure, l'ordre, les alignements et les couleurs des captures (table « De la
+  maquette à la charte ») ; le test joint ses captures au rapport, et la recette les compare aux références et liste
+  les écarts. Les filtres, l'alerte, la loupe et le bandeau « Prochaine étape » des planches viennent avec leurs US
+  (US-063, US-060, US-062, US-064).
+
 ## Comportement hors ligne
 
 Identique à US-055 et à US-058 : ces écrans s'affichent depuis la copie de l'appareil. Un téléphone est le plus
@@ -89,3 +98,4 @@ par un E2E réseau coupé au format 390 px.
 | Date | Événement |
 |---|---|
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » ; périmètre organisateur confirmé le 2026-11-11 |
+| 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
