@@ -143,3 +143,42 @@ describe('thème choisi à la main (US-052)', () => {
     expect(lireSombreManuel(':root { --a: #fff; }')).toEqual({ '--a': '#fff' });
   });
 });
+
+describe('variables de la maquette de l’IHM (US-054 CA-8)', () => {
+  const VARIABLES = [
+    '--sur-tiffany',
+    '--accent-survol',
+    '--accent-teinte',
+    '--accent-teinte-bordure',
+    '--etat-ok-fond',
+    '--sur-etat-ok-fond',
+    '--etat-attente-fond',
+    '--etat-attente-bordure',
+    '--sur-etat-attente-fond',
+    '--texte-inactif',
+  ];
+
+  it.each([
+    ['clair', clair],
+    ['sombre', sombre],
+  ])('CA-8 : les variables « à créer » de la table de la maquette existent, en mode %s', (_mode, variables) => {
+    for (const nom of VARIABLES) expect(variables[nom], nom).toMatch(/^#[0-9a-f]{6}$/i);
+  });
+
+  it('CA-8 : le mode sombre redéfinit les teintes, pas le texte posé sur tiffany (même fond dans les deux thèmes)', () => {
+    expect(sombre['--accent-teinte']).not.toBe(clair['--accent-teinte']);
+    expect(sombre['--sur-tiffany']).toBe(clair['--sur-tiffany']);
+  });
+
+  it('CA-8 : le texte posé sur le bouton principal tiffany reste AA dans les deux thèmes', () => {
+    for (const variables of [clair, sombre]) {
+      expect(contraste(variables['--sur-tiffany']!, variables['--palette-tiffany']!)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('CA-8 : la bordure d’élément coché reste distincte de son fond teinté', () => {
+    for (const variables of [clair, sombre]) {
+      expect(variables['--accent-teinte-bordure']).not.toBe(variables['--accent-teinte']);
+    }
+  });
+});

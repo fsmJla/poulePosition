@@ -4,9 +4,9 @@
 - **Fonctionnalité :** transverse (exigences §3, F1 et F2)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-014, US-017, US-046, US-052
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-054-entete-fil-ariane-icones` / —
 
 ## Récit
 
@@ -120,3 +120,4 @@ Testé par un E2E réseau coupé (entête et fil d'Ariane présents sur la page 
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » validée le 2026-11-11 |
 | 2026-11-11 | Ajout de CA-8 (variables de la charte pour la maquette) et de CA-9 (conforme aux planches 1 à 3) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
+| 2026-11-11 | Passée à En cours (branche us/US-054-entete-fil-ariane-icones) ; plan validé par l'utilisateur |

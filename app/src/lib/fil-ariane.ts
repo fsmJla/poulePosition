@@ -1,0 +1,42 @@
+// Fil d'Ariane (US-054 CA-3) : « Accueil › manifestation › compétition › épreuve », les niveaux qui existent.
+import type { CompetitionListee, ManifestationListee } from '@poule-position/domaine';
+import { CHEMINS, cheminEpreuve, cheminGrilleEpreuves, cheminPlanManifestation } from './routes';
+
+/** Un niveau du fil : un lien, sauf le dernier (page courante) qui n'a pas de chemin. */
+export interface NiveauFil {
+  libelle: string;
+  chemin?: string;
+}
+
+/** Ce que le fil sait de la hiérarchie du club (copie de l'appareil comprise, hors ligne). */
+export interface HierarchieClub {
+  manifestations: Pick<ManifestationListee, 'id' | 'nom'>[];
+  competitions: Pick<CompetitionListee, 'id' | 'nom' | 'manifestationId'>[];
+}
+
+/**
+ * Fil d'une page d'épreuve. `suite` est la page de l'épreuve en cours (« Formule », « Paramètres ») : l'épreuve devient
+ * alors un lien. Une compétition disparue (US-045 CA-7) ou inconnue de la copie est omise : « Accueil › épreuve ».
+ */
+export function filDeLEpreuve(
+  hierarchie: HierarchieClub | null,
+  epreuve: { id: string; nom: string; rattachement?: { competitionId: string } | null },
+  suite?: string,
+  accueil = 'Accueil',
+): NiveauFil[] {
+  const niveaux: NiveauFil[] = [{ libelle: accueil, chemin: CHEMINS.organisateur }];
+  const competition = hierarchie?.competitions.find(({ id }) => id === epreuve.rattachement?.competitionId);
+  if (competition) {
+    const manifestation = hierarchie?.manifestations.find(({ id }) => id === competition.manifestationId);
+    if (manifestation) niveaux.push({ libelle: manifestation.nom, chemin: cheminPlanManifestation(manifestation.id) });
+    niveaux.push({ libelle: competition.nom, chemin: cheminGrilleEpreuves(competition.id) });
+  }
+  niveaux.push(suite ? { libelle: epreuve.nom, chemin: cheminEpreuve(epreuve.id) } : { libelle: epreuve.nom });
+  if (suite) niveaux.push({ libelle: suite });
+  return niveaux;
+}
+
+/** Fil d'une page située directement sous l'accueil, ou sous un parent : « Accueil › … › page ». */
+export function filSousAccueil(page: string, parents: NiveauFil[] = [], accueil = 'Accueil'): NiveauFil[] {
+  return [{ libelle: accueil, chemin: CHEMINS.organisateur }, ...parents, { libelle: page }];
+}

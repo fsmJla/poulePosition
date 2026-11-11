@@ -99,6 +99,9 @@ pas d'émoji. Une icône garde **le même sens partout**.
 | Croix | Fermer, quitter un mode | Seule |
 | Flèche gauche | Retour (écran étroit) | Seule |
 | Chevron | Déplier, ouvrir | Seule (décorative) |
+| Personnes | Comptes | Avec libellé |
+| Lune | Thème sombre (choix du menu de thème) | Avec libellé |
+| Coche | Choix en cours dans un menu | Seule (décorative) |
 
 Ajouter une icône à ce tableau avant de l'employer dans un écran.
 

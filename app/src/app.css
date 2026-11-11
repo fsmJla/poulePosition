@@ -26,6 +26,18 @@
   --marque: var(--palette-ardoise);
   /* Texte et boutons posés sur la marque (entête de site, US-014). */
   --sur-marque: #f7f4ef;
+  /* Maquette « IHM de l'organisateur » (US-054) : action principale tiffany, teintes d'accent, états et étapes à venir. */
+  --sur-tiffany: #0f1716;
+  --accent-survol: #044e4c;
+  --accent-teinte: #e3f1f0;
+  --accent-teinte-bordure: #b9dcda;
+  --etat-ok-fond: #dcefe5;
+  --sur-etat-ok-fond: #14573a;
+  --etat-attente-fond: #fbf3e2;
+  --etat-attente-bordure: #e6cf9c;
+  --sur-etat-attente-fond: #8a560c;
+  /* Étape ou onglet « À venir » : grisé, composant inactif (hors exigence AA ; 2,5:1 vérifié). */
+  --texte-inactif: #8d9694;
   /* Couleurs des compétitions du plan de la manifestation (US-049), leur contraste passe 4,5:1 sur le fond et la surface (US-046 CA-4). */
   --plan-0: #066f6c;
   --plan-1: #7358a8;
@@ -94,6 +106,15 @@
     --plan-7: #9aa7b2;
     --etat-attente: #e3a948;
     --etat-erreur: #f07168;
+    --accent-survol: #5fd6d2;
+    --accent-teinte: #12302f;
+    --accent-teinte-bordure: #1f4a49;
+    --etat-ok-fond: #14301f;
+    --sur-etat-ok-fond: #8fdcb4;
+    --etat-attente-fond: #33270f;
+    --etat-attente-bordure: #5c4719;
+    --sur-etat-attente-fond: #f0c06a;
+    --texte-inactif: #6f7f7c;
   }
 }
 
@@ -125,6 +146,22 @@
   --plan-7: #9aa7b2;
   --etat-attente: #e3a948;
   --etat-erreur: #f07168;
+  --accent-survol: #5fd6d2;
+  --accent-teinte: #12302f;
+  --accent-teinte-bordure: #1f4a49;
+  --etat-ok-fond: #14301f;
+  --sur-etat-ok-fond: #8fdcb4;
+  --etat-attente-fond: #33270f;
+  --etat-attente-bordure: #5c4719;
+  --sur-etat-attente-fond: #f0c06a;
+  --texte-inactif: #6f7f7c;
+}
+
+/* US-054 : sur les pages connectées, l'action principale est tiffany avec un texte sombre (planches 1 à 3). */
+.pages-connectees {
+  display: contents;
+  --accent-fond: var(--palette-tiffany);
+  --sur-accent: var(--sur-tiffany);
 }
 
 body {
