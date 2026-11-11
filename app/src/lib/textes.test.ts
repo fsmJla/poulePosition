@@ -195,7 +195,7 @@ describe('vocabulaire : une compétition est composée d’épreuves (US-044)', 
     expect(textes.epreuves.nouvelle).toBe('Nouvelle épreuve');
     expect(textes.competitions.nouvelle).toBe('Nouvelle compétition');
     expect(textes.epreuves.pilote).toBe('Ce PC est le pilote');
-    expect(textes.competitions.contenu.supprimer('X')).toBe('Supprimer avec son contenu la compétition X');
+    expect(textes.competitions.supprimer('X')).toBe('Supprimer la compétition X');
     expect(textes.competitions.exempleNom).toBe('Championnats de Nouvelle-Aquitaine de sabre');
   });
 

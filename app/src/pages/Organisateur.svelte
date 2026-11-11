@@ -9,6 +9,8 @@
   import {
     analyserSelection,
     construireListe,
+    contenusASupprimer,
+    disponibiliteSuppression,
     couleurDeCompetition,
     elementsEnCours,
     manifestationAujourdhui,
@@ -17,16 +19,19 @@
     planSuppression,
     toutCocherListe,
     type CompetitionListee,
+    type ContenuASupprimer,
     type EpreuveListee,
     type ListeClub,
   } from '@poule-position/domaine';
   import type { SessionAppareil } from '../lib/stockage';
+  import ConfirmationSuppression from '../composants/ConfirmationSuppression.svelte';
   import Icone from '../composants/Icone.svelte';
   import IconesEtat from '../composants/IconesEtat.svelte';
   import LegendeIcones from '../composants/LegendeIcones.svelte';
   import Lien from '../composants/Lien.svelte';
   import MenuActions, { type ActionMenu } from '../composants/MenuActions.svelte';
   import { estDeplie, memoriserRepli } from '../lib/repli';
+  import { supprimerElement } from '../lib/suppression-unique';
   import type { Accueil, DonneesAccueil } from '../lib/accueil';
   import {
     compterParType,
@@ -76,6 +81,37 @@
     memoriserRepli(id, valeur);
   }
 
+  /** US-057 : le contenu de chaque élément, calculé une fois par chargement (la liste peut compter des centaines de cartes). */
+  const contenus = $derived(donnees ? contenusASupprimer(donnees) : new Map<string, ContenuASupprimer>());
+  const tsu = textes.suppressionUnique;
+  let confirmation: (ContenuASupprimer & { type: 'manifestation' | 'competition' }) | null = $state(null);
+
+  /**
+   * US-057 CA-1 et CA-5 : l'unique action « Supprimer… », dernière du menu, en rouge ; absente sans le droit, grisée avec
+   * son motif hors ligne ou si une épreuve est en cours.
+   */
+  function actionSupprimer(id: string): ActionMenu[] {
+    const contenu = contenus.get(id);
+    if (!contenu || contenu.type === 'epreuve') return [];
+    const disponibilite = disponibiliteSuppression({ role: session.compte.role, enLigne: !horsLigne, contenu });
+    if (disponibilite.etat === 'absent') return [];
+    return [
+      {
+        libelle: tsu.action,
+        icone: 'corbeille',
+        detail: tsu.sousTitre(contenu),
+        destructive: true,
+        surChoix: () => (confirmation = contenu as NonNullable<typeof confirmation>),
+        indisponible:
+          disponibilite.etat === 'indisponible'
+            ? disponibilite.motif === 'HORS_LIGNE'
+              ? tsu.horsLigne
+              : tsu.enCours
+            : undefined,
+      },
+    ];
+  }
+
   /** US-055 CA-6 : actions secondaires d'une manifestation ; celles qui exigent le réseau restent visibles, grisées. */
   function actionsManifestation(id: string): ActionMenu[] {
     const motif = horsLigne ? t.horsLigne : undefined;
@@ -87,13 +123,25 @@
         indisponible: motif,
       },
       { libelle: t.ajouterCompetition, icone: 'plus', chemin: cheminNouvelleCompetition(id), indisponible: motif },
+      ...actionSupprimer(id),
     ];
   }
 
   /** US-055 CA-6 : actions secondaires d'une compétition. */
   const actionsCompetition = (id: string): ActionMenu[] => [
     { libelle: tc.grille.ajouter, icone: 'plus', chemin: cheminGrilleEpreuves(id) },
+    ...actionSupprimer(id),
   ];
+
+  /** US-057 : la fenêtre se ferme ; si l'élément est supprimé, la liste se relit (et les copies locales avec elle). */
+  async function fermerConfirmation(supprime: boolean) {
+    const supprimee = confirmation;
+    confirmation = null;
+    if (supprime && supprimee) {
+      cochees.delete(supprimee.id);
+      await charger();
+    }
+  }
 
   async function charger() {
     donnees = await accueil.charger();
@@ -254,6 +302,15 @@
     {/if}
   </div>
 {/snippet}
+
+{#if confirmation}
+  <ConfirmationSuppression
+    contenu={confirmation}
+    supprimer={(surProgression) =>
+      supprimerElement(confirmation as NonNullable<typeof confirmation>, accueil.actionsSuppression, surProgression)}
+    fermer={fermerConfirmation}
+  />
+{/if}
 
 <main>
   <h1>{t.titre}</h1>

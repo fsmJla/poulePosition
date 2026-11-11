@@ -149,13 +149,33 @@
     }
   }
 
-  /** US-041 : suppression avec son contenu, réservée aux administrateurs. */
+  /** US-041 et US-057 : suppression d'une compétition non vide, avec son contenu, réservée aux administrateurs. */
   const tc = t.contenu;
   let contenuASupprimer: Competition | null = $state(null);
   let nombreContenu: number | null = $state(null);
   let saisieNom = $state('');
   let progression: { faites: number; total: number } | null = $state(null);
   let messageContenu: string | null = $state(null);
+
+  /** US-057 : nombre d'épreuves de chaque compétition, pour savoir qui peut la supprimer et quelle confirmation montrer. */
+  let nombres: Record<string, number> = $state({});
+
+  $effect(() => {
+    for (const { id } of competitions) {
+      void nombreEpreuves(id).then((nombre) => (nombres[id] = nombre));
+    }
+  });
+
+  /** Une compétition vide se confirme simplement ; sinon, la confirmation annonce son contenu et exige son nom. */
+  async function demanderSuppression(competition: Competition) {
+    const nombre = await nombreEpreuves(competition.id);
+    if (nombre === 0) {
+      aSupprimer = competition;
+      erreurSuppression = null;
+    } else {
+      await demanderContenu(competition);
+    }
+  }
 
   async function demanderContenu(competition: Competition) {
     contenuASupprimer = competition;
@@ -259,16 +279,6 @@
             </div>
           {:else}
             <div class="boutons">
-              {#if administrateur}
-                <button
-                  type="button"
-                  class="secondaire"
-                  aria-label={tc.supprimer(competition.nom)}
-                  onclick={() => demanderContenu(competition)}
-                  disabled={horsLigne}>{tc.bouton}</button
-                >
-                {#if horsLigne}<small>{tc.horsLigne}</small>{/if}
-              {/if}
               {#if naviguer}
                 <!-- US-048 : la grille marche hors ligne pour une compétition connue de l'appareil. -->
                 <Lien
@@ -284,16 +294,17 @@
                 onclick={() => ouvrir(competition)}
                 disabled={horsLigne}>{t.boutonModifier}</button
               >
-              <button
-                type="button"
-                class="secondaire"
-                aria-label={t.supprimer(competition.nom)}
-                onclick={() => {
-                  aSupprimer = competition;
-                  erreurSuppression = null;
-                }}
-                disabled={horsLigne}>{t.boutonSupprimer}</button
-              >
+              <!-- US-057 : un seul « Supprimer… » ; un organisateur ne le voit que pour une compétition sans épreuve. -->
+              {#if administrateur || nombres[competition.id] === 0}
+                <button
+                  type="button"
+                  class="secondaire"
+                  aria-label={t.supprimer(competition.nom)}
+                  onclick={() => demanderSuppression(competition)}
+                  disabled={horsLigne}>{t.boutonSupprimer}</button
+                >
+                {#if horsLigne}<small>{tc.horsLigne}</small>{/if}
+              {/if}
             </div>
           {/if}
         </li>

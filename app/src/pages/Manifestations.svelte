@@ -188,13 +188,26 @@
     }
   }
 
-  /** US-042 : suppression avec son contenu, réservée aux administrateurs. */
+  /** US-042 et US-057 : suppression d'une manifestation non vide, avec son contenu, réservée aux administrateurs. */
   const tc = t.contenu;
   let contenuASupprimer: Manifestation | null = $state(null);
   let nombreEpreuves: number | null = $state(null);
   let saisieNom = $state('');
   let progression: { faites: number; total: number } | null = $state(null);
   let messageContenu: string | null = $state(null);
+
+  const contientDesCompetitions = (manifestationId: string) =>
+    competitions.some((competition) => competition.manifestationId === manifestationId);
+
+  /** US-057 : une manifestation vide se confirme simplement ; sinon, la confirmation annonce son contenu et exige son nom. */
+  function demanderSuppression(manifestation: Manifestation) {
+    if (contientDesCompetitions(manifestation.id)) {
+      void demanderContenu(manifestation);
+    } else {
+      aSupprimer = manifestation;
+      erreurSuppression = null;
+    }
+  }
 
   async function demanderContenu(manifestation: Manifestation) {
     contenuASupprimer = manifestation;
@@ -411,16 +424,6 @@
             </div>
           {:else}
             <div class="boutons">
-              {#if administrateur}
-                <button
-                  type="button"
-                  class="secondaire"
-                  aria-label={tc.supprimer(manifestation.nom)}
-                  onclick={() => demanderContenu(manifestation)}
-                  disabled={horsLigne}>{tc.bouton}</button
-                >
-                {#if horsLigne}<small>{tc.horsLigne}</small>{/if}
-              {/if}
               <button
                 type="button"
                 class="secondaire"
@@ -428,16 +431,17 @@
                 onclick={() => ouvrir(manifestation)}
                 disabled={horsLigne}>{t.boutonModifier}</button
               >
-              <button
-                type="button"
-                class="secondaire"
-                aria-label={t.supprimer(manifestation.nom)}
-                onclick={() => {
-                  aSupprimer = manifestation;
-                  erreurSuppression = null;
-                }}
-                disabled={horsLigne}>{t.boutonSupprimer}</button
-              >
+              <!-- US-057 : un seul « Supprimer… » ; un organisateur ne le voit que pour une manifestation sans compétition. -->
+              {#if administrateur || !contientDesCompetitions(manifestation.id)}
+                <button
+                  type="button"
+                  class="secondaire"
+                  aria-label={t.supprimer(manifestation.nom)}
+                  onclick={() => demanderSuppression(manifestation)}
+                  disabled={horsLigne}>{t.boutonSupprimer}</button
+                >
+                {#if horsLigne}<small>{tc.horsLigne}</small>{/if}
+              {/if}
             </div>
           {/if}
         </li>

@@ -716,10 +716,8 @@ export const textes = {
     confirmer: 'Supprimer',
     /** US-041 : suppression avec son contenu, réservée aux administrateurs. */
     contenu: {
-      bouton: 'Supprimer avec son contenu…',
-      supprimer: (nom: string) => `Supprimer avec son contenu la compétition ${nom}`,
       horsLigne: 'Connexion requise pour supprimer',
-      titre: (nom: string) => `Supprimer définitivement la compétition « ${nom} » avec son contenu ?`,
+      titre: (nom: string) => `Supprimer définitivement la compétition « ${nom} » ?`,
       combien: (nombre: number | null) =>
         nombre === null
           ? 'Les épreuves de la compétition sont supprimées avec elle.'
@@ -757,7 +755,7 @@ export const textes = {
       MANIFESTATION_INCONNUE: 'Cette manifestation n’existe plus : rechargez',
       COMPETITION_INCONNUE: 'Cette compétition n’existe plus : rechargez',
       COMPETITION_NON_VIDE: 'Cette compétition contient des épreuves : elle ne se supprime pas',
-      ACCES_REFUSE: 'Seul un administrateur peut supprimer avec son contenu',
+      ACCES_REFUSE: 'Seul un administrateur peut supprimer un élément qui contient des épreuves',
       EPREUVE_EN_COURS: 'Une épreuve en cours empêche la suppression',
       ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
     } satisfies Record<ErreurCompetitions, string>,
@@ -768,7 +766,11 @@ export const textes = {
     horsLigne: 'Connexion requise pour supprimer',
     enCours: 'Une épreuve en cours ne peut pas être supprimée',
     /** Sous-titre de l'action dans le menu « ⋯ » : la portée est visible avant le clic. */
-    sousTitre: (contenu: { type: 'manifestation' | 'competition' | 'epreuve'; competitions: number; epreuves: number }) => {
+    sousTitre: (contenu: {
+      type: 'manifestation' | 'competition' | 'epreuve';
+      competitions: number;
+      epreuves: number;
+    }) => {
       if (contenu.type === 'epreuve') return 'définitivement, après confirmation';
       const epreuves =
         contenu.epreuves === 0 ? null : contenu.epreuves === 1 ? 'son épreuve' : `ses ${contenu.epreuves} épreuves`;
@@ -824,10 +826,8 @@ export const textes = {
     confirmer: 'Supprimer',
     /** US-042 : suppression avec son contenu, réservée aux administrateurs. */
     contenu: {
-      bouton: 'Supprimer avec son contenu…',
-      supprimer: (nom: string) => `Supprimer avec son contenu la manifestation ${nom}`,
       horsLigne: 'Connexion requise pour supprimer',
-      titre: (nom: string) => `Supprimer définitivement la manifestation « ${nom} » avec son contenu ?`,
+      titre: (nom: string) => `Supprimer définitivement la manifestation « ${nom} » ?`,
       combien: (competitions: number, epreuves: number | null) => {
         const lesCompetitions =
           competitions === 0
@@ -889,7 +889,7 @@ export const textes = {
       HORS_LIGNE: 'Réseau perdu : rien n’a changé, réessayez',
       SESSION_INVALIDE: 'Session expirée : reconnectez-vous',
       MANIFESTATION_INCONNUE: 'Cette manifestation n’existe plus : rechargez',
-      ACCES_REFUSE: 'Seul un administrateur peut supprimer avec son contenu',
+      ACCES_REFUSE: 'Seul un administrateur peut supprimer un élément qui contient des épreuves',
       EPREUVE_EN_COURS: 'Une épreuve en cours empêche la suppression',
       MANIFESTATION_NON_VIDE:
         'Cette manifestation contient des épreuves ou des compétitions : elle ne se supprime pas (elle pourra être archivée)',
