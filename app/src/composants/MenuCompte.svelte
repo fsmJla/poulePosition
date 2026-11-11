@@ -119,6 +119,10 @@
       <ul>
         <li><a href={CHEMINS.profil} onclick={versProfil}>{t.menu.editerProfil}</a></li>
         {#if etroit}
+          <!-- Provisoire : le bouton « Créer » flottant des smartphones arrive avec US-061 ; d'ici là, l'entrée est ici. -->
+          <li>
+            <a href={CHEMINS.creer} onclick={versChemin(CHEMINS.creer)}><Icone nom="plus" />{te.creer}</a>
+          </li>
           {#if compte.role === 'administrateur'}
             <li>
               {#if enLigne}

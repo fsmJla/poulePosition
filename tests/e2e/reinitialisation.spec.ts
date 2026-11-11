@@ -1,6 +1,7 @@
 // US-009 : réinitialiser le mot de passe d'un compte. Réponses de /comptes simulées (même raison qu'US-007 : ne pas
 // modifier les comptes réels de la preview) ; la chaîne réelle est couverte par serveur/src/comptes.test.ts.
 import { expect, test, type Page } from '@playwright/test';
+import { ouvrirPageComptes } from './compte';
 import { connecterSimule, simuler } from './simulation';
 
 const ORGA = {
@@ -16,7 +17,7 @@ const ORGA = {
 async function ouvrirComptes(page: Page) {
   await simuler(page, '/comptes', 200, { ok: true, comptes: [ORGA] }, 'GET');
   await connecterSimule(page, 'administrateur');
-  await page.getByRole('link', { name: 'Comptes' }).click();
+  await ouvrirPageComptes(page);
   await expect(page).toHaveURL(/\/comptes$/);
 }
 

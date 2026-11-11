@@ -2,7 +2,7 @@
 // création, liste vide, hors ligne.
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
-import { ouvrirDepuisCreer, ouvrirNouvelleEpreuve } from './creer';
+import { ouvrirDepuisCreer, ouvrirNouvelleEpreuve, verifierCreerAccessible } from './creer';
 
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
@@ -238,7 +238,7 @@ test('US-026 CA-5 : les actions de création de l’accueil', async ({ page }) =
 
   await page.goto('/organisateur');
   // US-046 CA-1 : un seul bouton « Créer » remplace les liens de création.
-  await expect(page.getByRole('link', { name: 'Créer', exact: true })).toBeVisible();
+  await verifierCreerAccessible(page);
   await expect(page.getByRole('link', { name: 'Nouvelle épreuve' })).toHaveCount(0);
 
   await ouvrirDepuisCreer(page, 'Créer une manifestation');
@@ -287,7 +287,7 @@ test('US-026 hors ligne : la liste vient de la copie et des épreuves locales, c
   await expect(epreuveDe(page, locale)).toBeVisible();
   await expect(epreuveDe(page, locale)).toContainText('Ce PC est le pilote');
   // Le bouton « Créer » reste là ; la création d'une manifestation y est grisée (US-046 hors ligne : creer.spec.ts).
-  await expect(page.getByRole('link', { name: 'Créer', exact: true })).toBeVisible();
+  await verifierCreerAccessible(page);
 
   // Une épreuve créée hors ligne est listée « Pas encore envoyée ».
   const horsLigne = nomUnique();

@@ -26,12 +26,16 @@ test('US-014 CA-2 : la bannière suit le mode clair ou sombre de l’appareil', 
   await expect.poll(() => imageAffichee(banniere)).toMatch(/\/brand\/login-dark\.svg$/);
 });
 
-test('US-014 CA-3 : l’entête des pages réservées porte la bannière et « Se déconnecter »', async ({ page }) => {
+test('US-014 CA-3 (US-054 : la marque est en texte) : l’entête des pages réservées porte la marque et « Se déconnecter »', async ({
+  page,
+}) => {
   await seConnecter(page);
   const entete = page.getByRole('banner');
   const lienBanniere = entete.getByRole('link', { name: 'Poule Position' });
   await expect(lienBanniere).toBeVisible();
-  await expect.poll(() => imageAffichee(lienBanniere.getByRole('img'))).toMatch(/\/brand\/header-dark\.svg$/);
+  // US-054 : sur les pages réservées, la marque est le texte « Poule Position » de la maquette, plus la bannière.
+  await expect(lienBanniere).toHaveText('Poule Position');
+  await expect(lienBanniere.getByRole('img')).toHaveCount(0);
   await expect(entete.getByRole('button', { name: /^Menu du compte de / })).toBeVisible();
   await boutonMenuCompte(page).click();
   await expect(page.getByRole('button', { name: 'Se déconnecter', exact: true })).toBeVisible();

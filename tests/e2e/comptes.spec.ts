@@ -3,6 +3,7 @@
 // réelle (serveur, droits, unicité, dernier administrateur) est couverte par serveur/src/comptes.test.ts.
 // La connexion est simulée elle aussi, avec le rôle voulu : le compte E2E réel de la preview est un organisateur.
 import { expect, test, type Page } from '@playwright/test';
+import { ouvrirPageComptes } from './compte';
 import { connecterSimule, simuler } from './simulation';
 
 const ADMIN = {
@@ -28,7 +29,7 @@ const ORGA = {
 async function ouvrirComptes(page: Page) {
   await simuler(page, '/comptes', 200, { ok: true, comptes: [ADMIN, ORGA] }, 'GET');
   await connecterSimule(page, 'administrateur');
-  await page.getByRole('link', { name: 'Comptes' }).click();
+  await ouvrirPageComptes(page);
   await expect(page).toHaveURL(/\/comptes$/);
 }
 
@@ -142,6 +143,8 @@ test('US-007 hors ligne : l’entrée « Comptes » est grisée avec « Nécessi
   page,
   context,
 }) => {
+  // Écran large : « Comptes » est dans l'entête (sur un écran étroit, il est dans le menu de compte).
+  await page.setViewportSize({ width: 1280, height: 800 });
   await connecterSimule(page, 'administrateur');
   await expect(page.getByRole('link', { name: 'Comptes' })).toBeVisible();
   await context.setOffline(true);

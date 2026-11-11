@@ -24,7 +24,7 @@
   // toujours la dernière, en rouge, sous un séparateur ; une action indisponible reste visible, grisée, avec son motif.
   // Le même composant sert au choix du thème (icône soleil, choix coché).
   import { onMount, tick } from 'svelte';
-  import { entreeVisee } from '../lib/menu';
+  import { entreeVisee, ordonnerActions } from '../lib/menu';
   import { textes } from '../lib/textes';
   import BoutonIcone from './BoutonIcone.svelte';
   import Icone from './Icone.svelte';
@@ -59,9 +59,10 @@
   let bouton: HTMLElement | undefined = $state();
   let liste: HTMLElement | undefined = $state();
 
-  /** La destructive passe en dernier, quel que soit l'ordre donné. */
-  const ordonnees = $derived([...actions.filter((a) => !a.destructive), ...actions.filter((a) => a.destructive)]);
-  const separateurAvant = $derived(ordonnees.findIndex((a) => a.destructive));
+  /** La destructive passe en dernier, sous un séparateur (lib/menu.ts). */
+  const rangement = $derived(ordonnerActions(actions));
+  const ordonnees = $derived(rangement.actions);
+  const separateurAvant = $derived(rangement.separateurAvant);
   const choix = $derived(actions.some((a) => a.coche !== undefined));
   const nomBouton = $derived(etiquette ?? t.autresActions(nom));
 
@@ -146,7 +147,7 @@
   {#if ouvert}
     <div class="menu" {id} role="menu" aria-label={nomBouton} bind:this={liste}>
       {#each ordonnees as action, rang (rang)}
-        {#if rang === separateurAvant && rang > 0}<hr />{/if}
+        {#if rang === separateurAvant}<hr />{/if}
         {@const role = choix ? 'menuitemradio' : 'menuitem'}
         {@const motif = action.indisponible ? `${id}-motif-${rang}` : undefined}
         {#if action.chemin && !action.indisponible}
