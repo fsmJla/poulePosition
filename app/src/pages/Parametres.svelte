@@ -6,6 +6,8 @@
   import { onMount } from 'svelte';
   import { CORRECTIONS_SCORE, type Epreuve, type Parametres } from '@poule-position/domaine';
   import Lien from '../composants/Lien.svelte';
+  import FilEpreuve from '../composants/FilEpreuve.svelte';
+  import type { Accueil } from '../lib/accueil';
   import { modifierParametres, type ErreurModificationParametres } from '../lib/epreuves';
   import { prendreEcriture, type Journal } from '../lib/journal';
   import { cheminEpreuve } from '../lib/routes';
@@ -18,10 +20,12 @@
     epreuveId: string;
     journal: Journal;
     synchronisation: Synchronisation;
+    /** US-054 : hiérarchie du club pour le fil d'Ariane. */
+    accueil: Accueil;
     naviguer: (chemin: string) => void;
   }
 
-  let { session, epreuveId, journal, synchronisation, naviguer }: Proprietes = $props();
+  let { session, epreuveId, journal, synchronisation, accueil, naviguer }: Proprietes = $props();
 
   const t = textes.epreuves;
   const tp = t.parametresPage;
@@ -131,6 +135,7 @@
 {/snippet}
 
 <main>
+  {#if epreuve}<FilEpreuve {accueil} {epreuve} suite={tp.titre} {naviguer} />{/if}
   <h1>{tp.titre}</h1>
 
   {#if !chargee}

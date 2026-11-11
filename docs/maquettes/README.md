@@ -99,6 +99,9 @@ pas d'émoji. Une icône garde **le même sens partout**.
 | Croix | Fermer, quitter un mode | Seule |
 | Flèche gauche | Retour (écran étroit) | Seule |
 | Chevron | Déplier, ouvrir | Seule (décorative) |
+| Personnes | Comptes | Avec libellé |
+| Lune | Thème sombre (choix du menu de thème) | Avec libellé |
+| Coche | Choix en cours dans un menu | Seule (décorative) |
 
 Ajouter une icône à ce tableau avant de l'employer dans un écran.
 
@@ -164,6 +167,11 @@ différents de la capture en sont un.
 
 L'application existante est alignée par les US-054 à US-064 (voir `docs/backlog/README.md`). Tant qu'une US n'est
 pas `Terminée`, l'écran correspondant garde son ancienne disposition.
+
+**Livré par US-054 (entête, fil d'Ariane, icônes, menu « ⋯ ») :** l'entête commun, le fil d'Ariane, le composant d'icône,
+le bouton à icône seule et le menu « ⋯ » sont en place sur les pages connectées. Restent à venir : le champ de recherche
+(US-062), le bouton « Créer » flottant des smartphones (US-061, d'ici là une entrée « Créer » est dans le menu de compte
+étroit), la mise en page des écrans (US-055 à US-058).
 
 ## Règle pour les nouvelles US
 

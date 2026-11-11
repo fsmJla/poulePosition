@@ -4,9 +4,9 @@
 - **Fonctionnalité :** transverse (exigences §3, F1 et F2)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-014, US-017, US-046, US-052
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-054-entete-fil-ariane-icones` / —
 
 ## Récit
 
@@ -101,6 +101,23 @@ Testé par un E2E réseau coupé (entête et fil d'Ariane présents sur la page 
   alors que la charte actuelle emploie `--accent-fond` et `--sur-accent`. Cette US applique la maquette aux boutons
   principaux des pages connectées ; les pages publiques ne changent pas.
 
+- **Réalisation (2026-11-11), écarts déclarés avec les planches 1 à 3 :**
+  - La mise en page des pages (contenu centré, pas de navigation par étapes, « ⋯ » à côté du titre au lieu d'être à
+    droite de « Modifier », fil d'Ariane centré comme le contenu) reste celle d'avant : elle change avec US-055 à US-058.
+    CA-9 ne compare que l'entête, le fil d'Ariane et le menu.
+  - Le menu « ⋯ » de la page d'une épreuve est minimal (« Formule », « Paramètres ») ; ses liens restent aussi dans la
+    page jusqu'à US-058. Il sert aussi de preuve de CA-9.
+  - « Créer » et « Comptes » quittent la barre d'actions de l'accueil : ils sont dans l'entête, sur toutes les pages.
+  - Sur un écran étroit, une entrée « Créer » **provisoire** figure dans le menu de compte, faute de bouton flottant
+    avant US-061 (qui la retire) : sans elle, rien ne mènerait à la création depuis un smartphone.
+  - Le fil d'Ariane est posé sur les pages du CA-3 ; « Manifestations », « Nouvelle épreuve », « Modifier l'épreuve »,
+    l'assistant et « Mot de passe » n'en ont pas dans cette US.
+  - Trois icônes s'ajoutent au vocabulaire : Personnes (Comptes), Lune (thème sombre) et Coche (choix en cours).
+  - « À venir » : `--texte-inactif` (`#8d9694`) fait environ 2,7:1 sur le fond clair. C'est un composant inactif
+    (WCAG 1.4.3) ; le test exige 2,5:1, et le libellé « À venir » s'écrira en `--texte-discret` (AA) avec US-058.
+  - Hors ligne, « Comptes » est grisé dans l'entête, avec « Nécessite une connexion internet » lisible par les
+    lecteurs d'écran (US-007).
+
 ## Questions bloquantes
 
 - Aucune.
@@ -110,6 +127,10 @@ Testé par un E2E réseau coupé (entête et fil d'Ariane présents sur la page 
 - Composants à prévoir : `Icone`, `BoutonIcone`, `MenuActions`, `FilAriane` ; `Entete.svelte` est adapté.
 - Aucune couleur en dur (test de garde d'US-011) ; nouveaux textes dans le catalogue `textes`.
 - Pas d'impact sur le protocole, le serveur ni le journal.
+- `accueil.hierarchie()` lit les manifestations et les compétitions du club (copie de l'appareil hors ligne) : deux
+  lectures de plus par ouverture d'une page d'épreuve, sans l'index des épreuves (voir US-038).
+- Les pages connectées sont dans un conteneur `.pages-connectees` (`app.css`) qui rend l'action principale tiffany
+  avec un texte sombre (`--accent-fond` et `--sur-accent` redéfinis) ; les pages publiques ne changent pas.
 - US terminées touchées : US-014 (entête), US-017 (menu de compte), US-046 (bouton « Créer »), US-052 (thème). Leurs
   tests sont adaptés, pas supprimés.
 
@@ -120,3 +141,6 @@ Testé par un E2E réseau coupé (entête et fil d'Ariane présents sur la page 
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » validée le 2026-11-11 |
 | 2026-11-11 | Ajout de CA-8 (variables de la charte pour la maquette) et de CA-9 (conforme aux planches 1 à 3) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
+| 2026-11-11 | Passée à En cours (branche us/US-054-entete-fil-ariane-icones) ; plan validé par l'utilisateur |
+| 2026-11-11 | Implémentée ; lint, typage, couverture (95 %), build, audit et E2E locaux passés, hors 4 tests déjà instables sur dev (US-001 ×2, US-047 et US-029 hors ligne). PR vers dev à ouvrir |
+| 2026-11-11 | Recette OK sur https://poule-position-c33v3isi2-fsmjlas-projects.vercel.app (PR #81) : CA-1, 3 à 9 vérifiés dans le navigateur ; CA-2 et le hors ligne couverts par les E2E (CI verte sur la preview). Écarts avec la planche 3 : ceux déclarés dans les Hypothèses |

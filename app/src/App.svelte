@@ -167,106 +167,115 @@
     <BarreOutils />
     <Reinitialisation {client} {surConnexion} {naviguer} />
   {:else if session}
-    <!-- Pages réservées : entête commun (US-014). -->
-    <Entete compte={session.compte} {surDeconnexion} {surOubli} {naviguer} locale={estLocale(session)} />
-    {#if route.page === 'organisateur'}
-      <Organisateur {session} {accueil} {naviguer} />
-    {:else if route.page === 'motDePasse'}
-      <MotDePasse {client} {session} surChangement={(nouvelle) => (session = nouvelle)} {surSessionPerdue} {naviguer} />
-    {:else if route.page === 'profil'}
-      <Profil {client} {session} surChangement={(nouvelle) => (session = nouvelle)} {surSessionPerdue} {naviguer} />
-    {:else if route.page === 'comptes'}
-      <Comptes {client} {surSessionPerdue} />
-    {:else if route.page === 'manifestations'}
-      <Manifestations
-        client={manifestations}
-        clientCompetitions={competitions}
-        {fichiers}
-        {naviguer}
-        administrateur={session.compte.role === 'administrateur'}
-        epreuvesConnues={() => synchronisation.epreuvesConnues()}
-        apresSuppressionContenu={async () => void (await synchronisation.listerEpreuvesDuClub())}
-      />
-    {:else if route.page === 'nouvelleEpreuve'}
-      <NouvelleEpreuve
-        {session}
-        {journal}
-        {synchronisation}
-        clientManifestations={manifestations}
-        clientCompetitions={competitions}
-        {accueil}
-        {naviguer}
-      />
-    {:else if route.page === 'grilleEpreuves' && route.competitionId}
-      {#key route.competitionId}
-        <GrilleEpreuves
+    <!-- Pages réservées : entête commun (US-014) ; action principale tiffany (US-054, app.css). -->
+    <div class="pages-connectees">
+      <Entete compte={session.compte} {surDeconnexion} {surOubli} {naviguer} locale={estLocale(session)} />
+      {#if route.page === 'organisateur'}
+        <Organisateur {session} {accueil} {naviguer} />
+      {:else if route.page === 'motDePasse'}
+        <MotDePasse
+          {client}
           {session}
-          {journal}
-          {synchronisation}
-          {accueil}
-          competitionId={route.competitionId}
+          surChangement={(nouvelle) => (session = nouvelle)}
+          {surSessionPerdue}
           {naviguer}
         />
-      {/key}
-    {:else if route.page === 'assistantManifestation'}
-      <AssistantManifestation
-        {session}
-        {journal}
-        {synchronisation}
-        {accueil}
-        clientManifestations={manifestations}
-        clientCompetitions={competitions}
-        {naviguer}
-      />
-    {:else if route.page === 'creer'}
-      <Creer {accueil} {naviguer} />
-    {:else if route.page === 'aideOrganisation'}
-      <AideOrganisation {naviguer} />
-    {:else if route.page === 'planManifestation' && route.manifestationId}
-      {#key route.manifestationId}
-        <PlanManifestation
-          {session}
-          {journal}
-          {synchronisation}
-          {accueil}
-          manifestationId={route.manifestationId}
+      {:else if route.page === 'profil'}
+        <Profil {client} {session} surChangement={(nouvelle) => (session = nouvelle)} {surSessionPerdue} {naviguer} />
+      {:else if route.page === 'comptes'}
+        <Comptes {client} {surSessionPerdue} {naviguer} />
+      {:else if route.page === 'manifestations'}
+        <Manifestations
+          client={manifestations}
+          clientCompetitions={competitions}
+          {fichiers}
           {naviguer}
+          administrateur={session.compte.role === 'administrateur'}
+          epreuvesConnues={() => synchronisation.epreuvesConnues()}
+          apresSuppressionContenu={async () => void (await synchronisation.listerEpreuvesDuClub())}
         />
-      {/key}
-    {:else if route.page === 'modifierEpreuve' && route.epreuveId}
-      {#key route.epreuveId}
+      {:else if route.page === 'nouvelleEpreuve'}
         <NouvelleEpreuve
           {session}
           {journal}
           {synchronisation}
           clientManifestations={manifestations}
           clientCompetitions={competitions}
-          epreuveId={route.epreuveId}
           {accueil}
           {naviguer}
         />
-      {/key}
-    {:else if route.page === 'formuleEpreuve' && route.epreuveId}
-      {#key route.epreuveId}
-        <Formule {session} epreuveId={route.epreuveId} {journal} {synchronisation} {naviguer} />
-      {/key}
-    {:else if route.page === 'parametresEpreuve' && route.epreuveId}
-      {#key route.epreuveId}
-        <Parametres {session} epreuveId={route.epreuveId} {journal} {synchronisation} {naviguer} />
-      {/key}
-    {:else if route.page === 'epreuve' && route.epreuveId}
-      {#key route.epreuveId}
-        <Epreuve
+      {:else if route.page === 'grilleEpreuves' && route.competitionId}
+        {#key route.competitionId}
+          <GrilleEpreuves
+            {session}
+            {journal}
+            {synchronisation}
+            {accueil}
+            competitionId={route.competitionId}
+            {naviguer}
+          />
+        {/key}
+      {:else if route.page === 'assistantManifestation'}
+        <AssistantManifestation
           {session}
-          epreuveId={route.epreuveId}
           {journal}
           {synchronisation}
-          {fichiers}
+          {accueil}
+          clientManifestations={manifestations}
           clientCompetitions={competitions}
           {naviguer}
         />
-      {/key}
-    {/if}
+      {:else if route.page === 'creer'}
+        <Creer {accueil} {naviguer} />
+      {:else if route.page === 'aideOrganisation'}
+        <AideOrganisation {naviguer} />
+      {:else if route.page === 'planManifestation' && route.manifestationId}
+        {#key route.manifestationId}
+          <PlanManifestation
+            {session}
+            {journal}
+            {synchronisation}
+            {accueil}
+            manifestationId={route.manifestationId}
+            {naviguer}
+          />
+        {/key}
+      {:else if route.page === 'modifierEpreuve' && route.epreuveId}
+        {#key route.epreuveId}
+          <NouvelleEpreuve
+            {session}
+            {journal}
+            {synchronisation}
+            clientManifestations={manifestations}
+            clientCompetitions={competitions}
+            epreuveId={route.epreuveId}
+            {accueil}
+            {naviguer}
+          />
+        {/key}
+      {:else if route.page === 'formuleEpreuve' && route.epreuveId}
+        {#key route.epreuveId}
+          <Formule {session} epreuveId={route.epreuveId} {journal} {synchronisation} {accueil} {naviguer} />
+        {/key}
+      {:else if route.page === 'parametresEpreuve' && route.epreuveId}
+        {#key route.epreuveId}
+          <Parametres {session} epreuveId={route.epreuveId} {journal} {synchronisation} {accueil} {naviguer} />
+        {/key}
+      {:else if route.page === 'epreuve' && route.epreuveId}
+        {#key route.epreuveId}
+          <Epreuve
+            {session}
+            epreuveId={route.epreuveId}
+            {journal}
+            {synchronisation}
+            {fichiers}
+            clientCompetitions={competitions}
+            {accueil}
+            {naviguer}
+          />
+        {/key}
+      {/if}
+    </div>
   {/if}
 {/if}
 

@@ -51,3 +51,13 @@ export async function choisirDansMenuCompte(
   const options = { name: entree, exact: true };
   await (entree === 'Éditer le profil' ? page.getByRole('link', options) : page.getByRole('button', options)).click();
 }
+
+/** US-054 : ouvre « Comptes » (administrateur) depuis l'entête, ou depuis le menu de compte sur un écran étroit (< 640 px). */
+export async function ouvrirPageComptes(page: Page) {
+  if ((page.viewportSize()?.width ?? 1280) < 640) {
+    await boutonMenuCompte(page).click();
+    await page.locator('#menu-compte').getByRole('link', { name: 'Comptes' }).click();
+  } else {
+    await page.getByRole('banner').getByRole('link', { name: 'Comptes' }).click();
+  }
+}

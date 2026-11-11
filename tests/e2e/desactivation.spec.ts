@@ -1,6 +1,7 @@
 // US-008 : désactiver, réactiver ou supprimer un compte. Réponses de /comptes simulées (même raison qu'US-007 : ne pas
 // modifier les comptes réels de la preview) ; la chaîne réelle est couverte par serveur/src/comptes.test.ts.
 import { expect, test, type Page } from '@playwright/test';
+import { ouvrirPageComptes } from './compte';
 import { connecterSimule, sessionSimulee, simuler } from './simulation';
 
 const ORGA = {
@@ -18,7 +19,7 @@ const MOI = { ...ORGA, id: 'c1', email: sessionSimulee().compte.email, nom: 'Com
 async function ouvrirComptes(page: Page, comptes: unknown[] = [ORGA]) {
   await simuler(page, '/comptes', 200, { ok: true, comptes }, 'GET');
   await connecterSimule(page, 'administrateur');
-  await page.getByRole('link', { name: 'Comptes' }).click();
+  await ouvrirPageComptes(page);
   await expect(page).toHaveURL(/\/comptes$/);
 }
 

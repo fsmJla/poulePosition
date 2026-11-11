@@ -4,6 +4,7 @@
 import type { EpreuveListee, CompetitionListee, ManifestationListee, Epreuve } from '@poule-position/domaine';
 import type { EpreuveIndexee } from '@poule-position/protocole';
 import type { ClientCompetitions } from './competitions';
+import type { HierarchieClub } from './fil-ariane';
 import type { Journal } from './journal';
 import type { ClientManifestations } from './manifestations';
 import { Base, LIGNE_UNIQUE } from './stockage';
@@ -119,6 +120,24 @@ export function creerAccueil({
       },
       epreuve: (id) => synchronisation.supprimerEpreuve(id),
     } satisfies ActionsLot,
+
+    /**
+     * US-054 CA-3 : manifestations et compétitions du club pour le fil d'Ariane d'une page (sans l'index des épreuves) ;
+     * hors ligne, leurs dernières copies gardées sur l'appareil.
+     */
+    async hierarchie(): Promise<HierarchieClub> {
+      const [lesManifestations, lesCompetitions] = await Promise.all([manifestations.lister(), competitions.lister()]);
+      return {
+        manifestations: (lesManifestations.ok
+          ? lesManifestations.manifestations
+          : (lesManifestations.copie?.manifestations ?? [])
+        ).map(({ id, nom }) => ({ id, nom })),
+        competitions: (lesCompetitions.ok
+          ? lesCompetitions.competitions
+          : (lesCompetitions.copie?.competitions ?? [])
+        ).map(({ id, nom, manifestationId }) => ({ id, nom, manifestationId })),
+      };
+    },
 
     async charger(): Promise<DonneesAccueil> {
       const [clubs, lesManifestations, lesCompetitions] = await Promise.all([

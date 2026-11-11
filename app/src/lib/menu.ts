@@ -19,3 +19,21 @@ export function entreeVisee(touche: string, active: number, total: number): numb
       return null;
   }
 }
+
+/** US-054 CA-6 : ce qu'il faut savoir d'une action pour l'ordonner. */
+export interface ActionOrdonnable {
+  destructive?: boolean;
+}
+
+/**
+ * US-054 CA-6 : l'action destructrice passe en dernier, quel que soit l'ordre donné, sous un séparateur (`separateurAvant`
+ * est son rang, ou -1 s'il n'y en a pas ou si elle est seule : un séparateur en tête n'a pas de sens). Une action
+ * indisponible n'est jamais retirée.
+ */
+export function ordonnerActions<T extends ActionOrdonnable>(
+  actions: readonly T[],
+): { actions: T[]; separateurAvant: number } {
+  const ordonnees = [...actions.filter((a) => !a.destructive), ...actions.filter((a) => a.destructive)];
+  const premiere = ordonnees.findIndex((a) => a.destructive);
+  return { actions: ordonnees, separateurAvant: premiere > 0 ? premiere : -1 };
+}

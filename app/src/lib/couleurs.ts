@@ -22,6 +22,18 @@ export const COUPLES_CHARTE: readonly { texte: string; fond: string; minimum: nu
   { texte: '--focus', fond: '--fond', minimum: 3 },
   // Entête de site (US-014) : texte et boutons sur le fond ardoise de la marque.
   { texte: '--sur-marque', fond: '--marque', minimum: 4.5 },
+  // Maquette de l'IHM de l'organisateur (US-054 CA-8).
+  { texte: '--sur-tiffany', fond: '--palette-tiffany', minimum: 4.5 },
+  { texte: '--accent-survol', fond: '--fond', minimum: 4.5 },
+  { texte: '--accent-survol', fond: '--surface', minimum: 4.5 },
+  { texte: '--texte', fond: '--accent-teinte', minimum: 4.5 },
+  { texte: '--accent', fond: '--accent-teinte', minimum: 4.5 },
+  { texte: '--sur-etat-ok-fond', fond: '--etat-ok-fond', minimum: 4.5 },
+  { texte: '--sur-etat-attente-fond', fond: '--etat-attente-fond', minimum: 4.5 },
+  { texte: '--etat-attente', fond: '--etat-attente-fond', minimum: 3 },
+  // Étape « À venir » : composant inactif, exempté de l'AA (WCAG 1.4.3) ; 2,5:1 la garde repérable.
+  { texte: '--texte-inactif', fond: '--fond', minimum: 2.5 },
+  { texte: '--texte-inactif', fond: '--surface', minimum: 2.5 },
 ];
 
 type Variables = Record<string, string>;

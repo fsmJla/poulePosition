@@ -4,7 +4,9 @@
   import { onMount, untrack } from 'svelte';
   import { validerNom, COULEURS_AVATAR, type CouleurAvatar } from '@poule-position/domaine';
   import Avatar from '../composants/Avatar.svelte';
+  import FilAriane from '../composants/FilAriane.svelte';
   import Lien from '../composants/Lien.svelte';
+  import { filSousAccueil } from '../lib/fil-ariane';
   import { CHEMINS } from '../lib/routes';
   import type { ClientSession, ErreurProfil } from '../lib/session';
   import type { SessionAppareil } from '../lib/stockage';
@@ -69,6 +71,7 @@
 </script>
 
 <main>
+  <FilAriane niveaux={filSousAccueil(t.titre, [], textes.entete.accueil)} {naviguer} />
   <h1>{t.titre}</h1>
   <Avatar nom={nom.trim() || session.compte.nom} {couleur} taille={88} libelle={t.avatarDe(session.compte.nom)} />
 

@@ -2,12 +2,11 @@
 // « Comment ça s'organise », le même langage visuel que le plan, et le comportement hors ligne.
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { seConnecter } from './compte';
-import { ouvrirDepuisCreer } from './creer';
+import { ouvrirCreer, ouvrirDepuisCreer, verifierCreerAccessible } from './creer';
 
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 
-const bouton = (page: Page) => page.getByRole('link', { name: 'Créer', exact: true });
 const carte = (page: Page, titre: string) => page.getByRole('region', { name: titre });
 
 /** Crée une compétition seule avec sa première épreuve (US-045 CA-4) et attend sa page. */
@@ -36,7 +35,7 @@ async function creerManifestation(page: Page, nom: string) {
 test('US-046 CA-1 : l’accueil n’a plus qu’un bouton « Créer » à la place des liens de création', async ({ page }) => {
   await seConnecter(page);
   await page.goto('/organisateur');
-  await expect(bouton(page)).toBeVisible();
+  await verifierCreerAccessible(page);
   for (const ancien of ['Nouvelle manifestation', 'Nouvelle compétition seule', 'Nouvelle épreuve']) {
     await expect(page.getByRole('link', { name: ancien })).toHaveCount(0);
   }
@@ -45,7 +44,7 @@ test('US-046 CA-1 : l’accueil n’a plus qu’un bouton « Créer » à la pla
 test('US-046 CA-2 : trois cartes illustrées, et chaque bouton ouvre son parcours', async ({ page }) => {
   await seConnecter(page);
   await page.goto('/organisateur');
-  await bouton(page).click();
+  await ouvrirCreer(page);
   await expect(page).toHaveURL(/\/creer$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Que voulez-vous créer ?' })).toBeVisible();
 
@@ -109,7 +108,8 @@ test('US-046 CA-3 : l’aide « Comment ça s’organise » montre les trois niv
   await expect(page).toHaveURL(/\/creer\/aide$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Comment ça s’organise' })).toBeVisible();
 
-  const niveaux = page.getByRole('list').first();
+  // Le fil d'Ariane (US-054) est aussi une liste : on prend celle des trois niveaux.
+  const niveaux = page.getByRole('main').getByRole('list').filter({ hasText: 'La manifestation' }).first();
   await expect(niveaux).toContainText('La manifestation');
   await expect(niveaux).toContainText('La compétition');
   await expect(niveaux).toContainText('L’épreuve');
@@ -184,7 +184,7 @@ test('US-046 hors ligne : « Créer » s’affiche, ce qui exige internet est gr
 
   await context.setOffline(true);
   await expect(page.getByText(/^Hors ligne : liste du /)).toBeVisible({ timeout: 20_000 });
-  await bouton(page).click();
+  await ouvrirCreer(page);
   await expect(page.getByRole('heading', { level: 1, name: 'Que voulez-vous créer ?' })).toBeVisible();
 
   // « Une manifestation » et « Une compétition seule » sont grisées, sans lien.

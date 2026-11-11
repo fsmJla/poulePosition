@@ -5,15 +5,18 @@
   import { onMount } from 'svelte';
   import { normaliserEmail, validerNouveauCompte, validerNom, ROLES, type Role } from '@poule-position/domaine';
   import type { CompteResume } from '@poule-position/protocole';
+  import FilAriane from '../composants/FilAriane.svelte';
+  import { filSousAccueil } from '../lib/fil-ariane';
   import type { ClientSession, ErreurComptes } from '../lib/session';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
     client: ClientSession;
     surSessionPerdue: () => void;
+    naviguer: (chemin: string) => void;
   }
 
-  let { client, surSessionPerdue }: Proprietes = $props();
+  let { client, surSessionPerdue, naviguer }: Proprietes = $props();
 
   const t = textes.comptes;
   const formatDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
@@ -170,6 +173,7 @@
 </script>
 
 <main>
+  <FilAriane niveaux={filSousAccueil(t.titre, [], textes.entete.accueil)} {naviguer} />
   <h1>{t.titre}</h1>
 
   <section class="carte" aria-labelledby="titre-creation">

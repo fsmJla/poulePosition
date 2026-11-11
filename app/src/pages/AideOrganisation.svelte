@@ -2,7 +2,9 @@
   // « Comment ça s'organise » (US-046 CA-3), page réservée : les trois niveaux emboîtés sur un exemple (un week-end, deux
   // compétitions et leurs épreuves, une compétition seule à côté) et ce que chaque niveau reprend du précédent. Page
   // statique de l'application : elle s'affiche aussi hors ligne. Même langage visuel que la liste et le plan (CA-4).
+  import FilAriane from '../composants/FilAriane.svelte';
   import Lien from '../composants/Lien.svelte';
+  import { filSousAccueil } from '../lib/fil-ariane';
   import { CHEMINS } from '../lib/routes';
   import { textes } from '../lib/textes';
 
@@ -17,6 +19,10 @@
 </script>
 
 <main>
+  <FilAriane
+    niveaux={filSousAccueil(t.titre, [{ libelle: textes.creer.bouton, chemin: CHEMINS.creer }], textes.entete.accueil)}
+    {naviguer}
+  />
   <h1>{t.titre}</h1>
   <p class="intro">{t.intro}</p>
 

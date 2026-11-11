@@ -16,6 +16,8 @@
   } from '@poule-position/domaine';
   import type { Competition, Manifestation } from '@poule-position/protocole';
   import Lien from '../composants/Lien.svelte';
+  import FilAriane from '../composants/FilAriane.svelte';
+  import { filSousAccueil } from '../lib/fil-ariane';
   import type { Accueil, DonneesAccueil } from '../lib/accueil';
   import type { Journal } from '../lib/journal';
   import { changerJour, detailsDesTuiles, horairesConnus, type DetailEpreuve } from '../lib/plan';
@@ -189,6 +191,7 @@
     <p class="message" role="alert">{t.introuvable}</p>
     <Lien chemin={CHEMINS.manifestations} {naviguer}>{t.retour}</Lien>
   {:else}
+    <FilAriane niveaux={filSousAccueil(plan.manifestation.nom, [], textes.entete.accueil)} {naviguer} />
     <!-- CA-3 : le bandeau donne le nom, les dates, le lieu, le nombre de compétitions et d'épreuves, et les actions. -->
     <header class="bandeau">
       <div class="identite">
