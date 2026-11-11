@@ -13,25 +13,50 @@ import {
   preselectionEpreuve,
   cheminParametresEpreuve,
   cheminNouvelleCompetition,
-  CHEMIN_NOUVELLE_MANIFESTATION,
-  ouvertureManifestations,
+  cheminManifestation,
+  cheminDocumentsManifestation,
+  cheminModificationCompetition,
+  ouvertureFormulaire,
   resoudreRoute,
   CHEMINS,
 } from './routes';
 
-describe('actions de création de l’accueil (US-026 CA-5)', () => {
-  it('CA-5 : « /manifestations?nouvelle » et « ?competition=<id> » mènent à la page Manifestations', () => {
-    expect(resoudreRoute(CHEMIN_NOUVELLE_MANIFESTATION, true)).toEqual({ page: 'manifestations' });
-    expect(resoudreRoute(cheminNouvelleCompetition('0b6f1c1e-6d1a'), true)).toEqual({ page: 'manifestations' });
-    expect(resoudreRoute(CHEMIN_NOUVELLE_MANIFESTATION, false)).toEqual({ redirection: CHEMINS.connexion });
+describe('adresses de création de l’accueil (US-026 CA-5, US-056 CA-6)', () => {
+  const id = '0b6f1c1e-6d1a-4f0a-9a43-2f3c9e5d7b10';
+
+  it('US-056 CA-7 : « Nouvelle compétition » et « Modifier » ouvrent leur formulaire sur la page de la manifestation', () => {
+    expect(cheminNouvelleCompetition(id)).toBe(`/manifestations/${id}?competition=nouvelle`);
+    expect(cheminModificationCompetition(id, 'c1')).toBe(`/manifestations/${id}?competition=c1`);
+    expect(cheminModificationManifestation(id)).toBe(`/manifestations/${id}?modifier`);
+    expect(resoudreRoute(cheminNouvelleCompetition(id), true)).toEqual({
+      page: 'manifestation',
+      manifestationId: id,
+      onglet: 'competitions',
+    });
   });
 
-  it('CA-5 : l’adresse indique le formulaire à ouvrir', () => {
-    expect(ouvertureManifestations('?nouvelle')).toEqual({ nouvelle: true });
-    expect(ouvertureManifestations('?competition=0b6f1c1e-6d1a')).toEqual({ competitionDe: '0b6f1c1e-6d1a' });
-    expect(ouvertureManifestations('')).toBeNull();
-    expect(ouvertureManifestations('?competition=Pas Un Id')).toBeNull();
-    expect(ouvertureManifestations('?autre=1')).toBeNull();
+  it('US-056 CA-7 : l’adresse indique le formulaire à ouvrir', () => {
+    expect(ouvertureFormulaire('?modifier')).toEqual({ manifestation: true });
+    expect(ouvertureFormulaire('?competition=nouvelle')).toEqual({ competition: 'nouvelle' });
+    expect(ouvertureFormulaire('?competition=c1')).toEqual({ competition: 'c1' });
+    expect(ouvertureFormulaire('')).toBeNull();
+    expect(ouvertureFormulaire('?competition=Pas Un Id')).toBeNull();
+    expect(ouvertureFormulaire('?autre=1')).toBeNull();
+  });
+
+  it('US-056 CA-6 : l’ancienne page « /manifestations » redirige selon sa partie « ?… »', () => {
+    expect(resoudreRoute('/manifestations', false)).toEqual({ redirection: CHEMINS.connexion });
+    expect(resoudreRoute('/manifestations', true)).toEqual({ redirection: CHEMINS.organisateur });
+    expect(resoudreRoute('/manifestations?nouvelle', true)).toEqual({ redirection: CHEMINS.assistantManifestation });
+    expect(resoudreRoute(`/manifestations?modifier=${id}`, true)).toEqual({
+      redirection: cheminModificationManifestation(id),
+    });
+    expect(resoudreRoute(`/manifestations?competition=${id}`, true)).toEqual({
+      redirection: cheminNouvelleCompetition(id),
+    });
+    expect(resoudreRoute('/manifestations?competition=Pas Un Id', true)).toEqual({
+      redirection: CHEMINS.organisateur,
+    });
   });
 });
 
@@ -122,10 +147,7 @@ describe('épreuves (US-025)', () => {
 });
 
 describe('manifestations (US-023)', () => {
-  it('US-023 CA-1 : la page est réservée aux comptes connectés, quel que soit leur rôle', () => {
-    expect(resoudreRoute('/manifestations', false)).toEqual({ redirection: CHEMINS.connexion });
-    expect(resoudreRoute('/manifestations', true)).toEqual({ page: 'manifestations' });
-    expect(resoudreRoute('/manifestations', true, false, true)).toEqual({ page: 'manifestations' });
+  it('US-023 CA-1 : un compte au mot de passe temporaire ne peut que le changer, même pour l’ancienne page', () => {
     expect(resoudreRoute('/manifestations', true, true)).toEqual({ redirection: CHEMINS.motDePasse });
   });
 });
@@ -190,17 +212,29 @@ describe('lien public vers une épreuve (US-031)', () => {
   });
 });
 
-describe('plan de la manifestation (US-049)', () => {
+describe('page de la manifestation (US-056 CA-5, US-049)', () => {
   const id = '0b6f1c1e-6d1a-4f0a-9a43-2f3c9e5d7b10';
 
-  it('CA-1 : « /manifestations/<id> » est réservée aux comptes connectés et porte l’identifiant de la manifestation', () => {
-    expect(cheminPlanManifestation(id)).toBe(`/manifestations/${id}`);
-    expect(resoudreRoute(`/manifestations/${id}`, true)).toEqual({ page: 'planManifestation', manifestationId: id });
-    expect(resoudreRoute(`/manifestations/${id}/`, true)).toEqual({ page: 'planManifestation', manifestationId: id });
-    expect(resoudreRoute(`/manifestations/${id}`, false)).toEqual({ redirection: CHEMINS.connexion });
+  it('US-056 CA-5 : un onglet, une adresse ; la page est réservée aux comptes connectés', () => {
+    expect(cheminManifestation(id)).toBe(`/manifestations/${id}`);
+    expect(cheminPlanManifestation(id)).toBe(`/manifestations/${id}/plan`);
+    expect(cheminDocumentsManifestation(id)).toBe(`/manifestations/${id}/documents`);
+    for (const [chemin, onglet] of [
+      [cheminManifestation(id), 'competitions'],
+      [cheminPlanManifestation(id), 'plan'],
+      [cheminDocumentsManifestation(id), 'documents'],
+    ] as const) {
+      expect(resoudreRoute(chemin, true)).toEqual({ page: 'manifestation', manifestationId: id, onglet });
+      expect(resoudreRoute(`${chemin}/`, true)).toEqual({ page: 'manifestation', manifestationId: id, onglet });
+      expect(resoudreRoute(chemin, false)).toEqual({ redirection: CHEMINS.connexion });
+    }
     expect(resoudreRoute('/manifestations/Pas Un Id', true)).toEqual({ redirection: '/' });
-    expect(resoudreRoute('/manifestations', true)).toEqual({ page: 'manifestations' });
+    expect(resoudreRoute(`/manifestations/${id}/inconnu`, true)).toEqual({ redirection: '/' });
   });
+});
+
+describe('plan de la manifestation (US-049)', () => {
+  const id = '0b6f1c1e-6d1a-4f0a-9a43-2f3c9e5d7b10';
 
   it('CA-2 : « + Épreuve » ouvre le formulaire avec la compétition et le jour choisis', () => {
     expect(cheminNouvelleEpreuveDans(id, '2027-03-14')).toBe(`/epreuves/nouvelle?competition=${id}&jour=2027-03-14`);
@@ -213,15 +247,6 @@ describe('plan de la manifestation (US-049)', () => {
     expect(preselectionEpreuve(`?competition=${id}&jour=demain`)).toEqual({ competitionId: id, jour: null });
     expect(preselectionEpreuve('?competition=pas un id')).toBeNull();
     expect(preselectionEpreuve('')).toBeNull();
-  });
-});
-
-describe('modification depuis le plan (US-049)', () => {
-  it('CA-2 : « Modifier la manifestation » ouvre la page Manifestations sur le formulaire de cette manifestation', () => {
-    const id = '0b6f1c1e-6d1a-4f0a-9a43-2f3c9e5d7b10';
-    expect(cheminModificationManifestation(id)).toBe(`/manifestations?modifier=${id}`);
-    expect(ouvertureManifestations(`?modifier=${id}`)).toEqual({ modifier: id });
-    expect(ouvertureManifestations('?modifier=pas un id')).toBeNull();
   });
 });
 

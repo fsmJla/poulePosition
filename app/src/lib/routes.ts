@@ -11,14 +11,13 @@ export type Page =
   | 'motDePasse'
   | 'comptes'
   | 'profil'
-  | 'manifestations'
   | 'nouvelleEpreuve'
   | 'epreuve'
   | 'modifierEpreuve'
   | 'formuleEpreuve'
   | 'parametresEpreuve'
   | 'grilleEpreuves'
-  | 'planManifestation'
+  | 'manifestation'
   | 'direct'
   | 'assistantManifestation'
   | 'creer'
@@ -35,8 +34,6 @@ export const CHEMINS = Object.freeze({
   motDePasse: '/mot-de-passe',
   comptes: '/comptes',
   profil: '/profil',
-  /** US-023 : liste, création et modification des manifestations du club. */
-  manifestations: '/manifestations',
   /** US-025 : formulaire de création d'une épreuve. */
   nouvelleEpreuve: '/epreuves/nouvelle',
   /** US-047 : assistant de création d'une manifestation, de ses compétitions et de leurs épreuves. */
@@ -52,7 +49,7 @@ export const CHEMINS = Object.freeze({
     | 'formuleEpreuve'
     | 'parametresEpreuve'
     | 'grilleEpreuves'
-    | 'planManifestation'
+    | 'manifestation'
     | 'direct'
   >,
   string
@@ -71,24 +68,56 @@ export function cheminEpreuve(epreuveId: string): string {
 /** US-045 CA-4 : formulaire « Nouvelle épreuve » ouvert sur le choix « Nouvelle compétition seule ». */
 export const CHEMIN_NOUVELLE_COMPETITION_SEULE = `${CHEMINS.nouvelleEpreuve}?seule`;
 
-/** US-026 CA-5 : adresse de la page Manifestations avec le formulaire de création d'une manifestation ouvert. */
-export const CHEMIN_NOUVELLE_MANIFESTATION = `${CHEMINS.manifestations}?nouvelle`;
+/** US-056 : onglets de la page d'une manifestation, et leur suffixe d'adresse. */
+export type OngletManifestation = 'competitions' | 'plan' | 'documents';
+export const ONGLETS_MANIFESTATION: readonly OngletManifestation[] = ['competitions', 'plan', 'documents'];
 
-/** US-026 CA-5 : adresse de la page Manifestations avec le formulaire d'une nouvelle compétition de cette manifestation. */
-export function cheminNouvelleCompetition(manifestationId: string): string {
-  return `${CHEMINS.manifestations}?competition=${manifestationId}`;
+/** US-056 CA-5 : page d'une manifestation, onglet « Compétitions ». */
+export function cheminManifestation(manifestationId: string): string {
+  return `/manifestations/${manifestationId}`;
 }
 
-/** Formulaire que la partie « ?… » de l'adresse demande d'ouvrir sur la page Manifestations ; null si aucun. */
-export function ouvertureManifestations(
-  recherche: string,
-): { nouvelle: true } | { competitionDe: string } | { modifier: string } | null {
+/** US-056 CA-5 : onglet « Plan » (US-049) ; c'était l'adresse de la page du plan. */
+export function cheminPlanManifestation(manifestationId: string): string {
+  return `/manifestations/${manifestationId}/plan`;
+}
+
+/** US-056 CA-5 : onglet « Affiche et feuille de route » (US-030). */
+export function cheminDocumentsManifestation(manifestationId: string): string {
+  return `/manifestations/${manifestationId}/documents`;
+}
+
+/** US-056 CA-5 : adresse de l'onglet demandé. */
+export function cheminOnglet(manifestationId: string, onglet: OngletManifestation): string {
+  return onglet === 'plan'
+    ? cheminPlanManifestation(manifestationId)
+    : onglet === 'documents'
+      ? cheminDocumentsManifestation(manifestationId)
+      : cheminManifestation(manifestationId);
+}
+
+/** US-056 CA-7 : page de la manifestation avec le formulaire d'une nouvelle compétition ouvert. */
+export function cheminNouvelleCompetition(manifestationId: string): string {
+  return `${cheminManifestation(manifestationId)}?competition=nouvelle`;
+}
+
+/** US-056 CA-7 : page de la manifestation avec le formulaire de modification de cette compétition ouvert. */
+export function cheminModificationCompetition(manifestationId: string, competitionId: string): string {
+  return `${cheminManifestation(manifestationId)}?competition=${competitionId}`;
+}
+
+/** US-056 CA-7 : page de la manifestation avec le formulaire de modification de la manifestation ouvert. */
+export function cheminModificationManifestation(manifestationId: string): string {
+  return `${cheminManifestation(manifestationId)}?modifier`;
+}
+
+/** US-056 CA-7 : formulaire que la partie « ?… » de l'adresse demande d'ouvrir sur la page d'une manifestation ; null si aucun. */
+export function ouvertureFormulaire(recherche: string): { manifestation: true } | { competition: string } | null {
   const parametres = new URLSearchParams(recherche);
-  if (parametres.has('nouvelle')) return { nouvelle: true };
-  const modifier = parametres.get('modifier');
-  if (modifier && MOTIF_IDENTIFIANT.test(modifier)) return { modifier };
-  const competitionDe = parametres.get('competition');
-  return competitionDe && MOTIF_IDENTIFIANT.test(competitionDe) ? { competitionDe } : null;
+  if (parametres.has('modifier')) return { manifestation: true };
+  const competition = parametres.get('competition');
+  if (competition === 'nouvelle') return { competition };
+  return competition && MOTIF_IDENTIFIANT.test(competition) ? { competition } : null;
 }
 
 /** US-027 : formulaire de modification d'une épreuve. */
@@ -109,16 +138,6 @@ export function cheminParametresEpreuve(epreuveId: string): string {
 /** US-048 : grille des épreuves d'une compétition. */
 export function cheminGrilleEpreuves(competitionId: string): string {
   return `/competitions/${competitionId}/epreuves`;
-}
-
-/** US-049 : page Manifestations avec le formulaire de modification de cette manifestation ouvert. */
-export function cheminModificationManifestation(manifestationId: string): string {
-  return `${CHEMINS.manifestations}?modifier=${manifestationId}`;
-}
-
-/** US-049 : plan d'une manifestation. */
-export function cheminPlanManifestation(manifestationId: string): string {
-  return `/manifestations/${manifestationId}`;
 }
 
 /** US-049 CA-2 : formulaire « Nouvelle épreuve » avec la compétition et, s'il y en a un, le jour déjà choisis. */
@@ -157,7 +176,7 @@ export function copieEpreuve(recherche: string): { epreuveId: string; arme: stri
 }
 
 const MOTIF_DIRECT = /^\/direct\/([^/]+)$/;
-const MOTIF_PLAN = /^\/manifestations\/([^/]+)$/;
+const MOTIF_MANIFESTATION = /^\/manifestations\/([^/]+)(?:\/(plan|documents))?$/;
 const MOTIF_GRILLE = /^\/competitions\/([^/]+)\/epreuves$/;
 const MOTIF_EPREUVE = /^\/epreuves\/([^/]+)$/;
 const MOTIF_MODIFICATION = /^\/epreuves\/([^/]+)\/modifier$/;
@@ -170,14 +189,13 @@ const RESERVEES: readonly Page[] = [
   'motDePasse',
   'comptes',
   'profil',
-  'manifestations',
   'nouvelleEpreuve',
   'epreuve',
   'modifierEpreuve',
   'formuleEpreuve',
   'parametresEpreuve',
   'grilleEpreuves',
-  'planManifestation',
+  'manifestation',
   'assistantManifestation',
   'creer',
   'aideOrganisation',
@@ -186,13 +204,37 @@ const RESERVEES: readonly Page[] = [
 /** Pages des administrateurs : un organisateur est renvoyé à son accueil (US-007 CA-6). */
 const ADMINISTRATEURS: readonly Page[] = ['comptes'];
 
+/**
+ * US-056 CA-6 : « /manifestations », la liste d'avant la page d'une manifestation, n'existe plus. Ses adresses « ?… »
+ * mènent au formulaire correspondant ; sans paramètre connu, à l'accueil de l'organisateur.
+ */
+const ANCIENNE_LISTE = '/manifestations';
+
+function redirectionAncienneListe(chemin: string, connecte: boolean, temporaire: boolean): Route {
+  if (!connecte) return { redirection: CHEMINS.connexion };
+  if (temporaire) return { redirection: CHEMINS.motDePasse };
+  const parametres = new URLSearchParams(chemin.split('?')[1] ?? '');
+  if (parametres.has('nouvelle')) return { redirection: CHEMINS.assistantManifestation };
+  const modifier = parametres.get('modifier');
+  if (modifier && MOTIF_IDENTIFIANT.test(modifier)) return { redirection: cheminModificationManifestation(modifier) };
+  const competition = parametres.get('competition');
+  if (competition && MOTIF_IDENTIFIANT.test(competition))
+    return { redirection: cheminNouvelleCompetition(competition) };
+  return { redirection: CHEMINS.organisateur };
+}
+
 export type Route =
-  { page: Page; epreuveId?: string; competitionId?: string; manifestationId?: string } | { redirection: string };
+  | { page: Page; epreuveId?: string; competitionId?: string; manifestationId?: string; onglet?: OngletManifestation }
+  | { redirection: string };
 
 /** Page désignée par une adresse normalisée, avec l'identifiant de l’épreuve s'il y en a un ; null si inconnue. */
-function pageDe(
-  chemin: string,
-): { page: Page; epreuveId?: string; competitionId?: string; manifestationId?: string } | null {
+function pageDe(chemin: string): {
+  page: Page;
+  epreuveId?: string;
+  competitionId?: string;
+  manifestationId?: string;
+  onglet?: OngletManifestation;
+} | null {
   const page = (
     Object.keys(CHEMINS) as Exclude<
       Page,
@@ -201,15 +243,23 @@ function pageDe(
       | 'formuleEpreuve'
       | 'parametresEpreuve'
       | 'grilleEpreuves'
-      | 'planManifestation'
+      | 'manifestation'
       | 'direct'
     >[]
   ).find((candidate) => CHEMINS[candidate] === chemin);
   if (page) return { page };
   const direct = MOTIF_DIRECT.exec(chemin)?.[1];
   if (direct) return MOTIF_IDENTIFIANT.test(direct) ? { page: 'direct', epreuveId: direct } : null;
-  const plan = MOTIF_PLAN.exec(chemin)?.[1];
-  if (plan) return MOTIF_IDENTIFIANT.test(plan) ? { page: 'planManifestation', manifestationId: plan } : null;
+  const manifestation = MOTIF_MANIFESTATION.exec(chemin);
+  if (manifestation?.[1]) {
+    return MOTIF_IDENTIFIANT.test(manifestation[1])
+      ? {
+          page: 'manifestation',
+          manifestationId: manifestation[1],
+          onglet: (manifestation[2] as OngletManifestation | undefined) ?? 'competitions',
+        }
+      : null;
+  }
   const grille = MOTIF_GRILLE.exec(chemin)?.[1];
   if (grille) return MOTIF_IDENTIFIANT.test(grille) ? { page: 'grilleEpreuves', competitionId: grille } : null;
   const modifiee = MOTIF_MODIFICATION.exec(chemin)?.[1];
@@ -232,6 +282,7 @@ export function resoudreRoute(chemin: string, connecte: boolean, temporaire = fa
   // La partie « ?… » d'une adresse ne choisit pas la page (US-026 CA-5).
   const sansRecherche = chemin.split('?')[0] ?? chemin;
   const normalise = sansRecherche.length > 1 ? sansRecherche.replace(/\/+$/, '') : sansRecherche;
+  if (normalise === ANCIENNE_LISTE) return redirectionAncienneListe(chemin, connecte, temporaire);
   const route = pageDe(normalise);
   if (!route) return { redirection: CHEMINS.accueil };
   const { page } = route;

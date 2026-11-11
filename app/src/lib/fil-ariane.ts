@@ -1,6 +1,6 @@
 // Fil d'Ariane (US-054 CA-3) : « Accueil › manifestation › compétition › épreuve », les niveaux qui existent.
 import type { CompetitionListee, ManifestationListee } from '@poule-position/domaine';
-import { CHEMINS, cheminEpreuve, cheminGrilleEpreuves, cheminPlanManifestation } from './routes';
+import { CHEMINS, cheminEpreuve, cheminManifestation } from './routes';
 
 /** Un niveau du fil : un lien, sauf le dernier (page courante) qui n'a pas de chemin. */
 export interface NiveauFil {
@@ -28,8 +28,13 @@ export function filDeLEpreuve(
   const competition = hierarchie?.competitions.find(({ id }) => id === epreuve.rattachement?.competitionId);
   if (competition) {
     const manifestation = hierarchie?.manifestations.find(({ id }) => id === competition.manifestationId);
-    if (manifestation) niveaux.push({ libelle: manifestation.nom, chemin: cheminPlanManifestation(manifestation.id) });
-    niveaux.push({ libelle: competition.nom, chemin: cheminGrilleEpreuves(competition.id) });
+    // US-056 : le niveau « compétition » mène à la page de la manifestation ; une compétition seule n'a pas de page.
+    if (manifestation) niveaux.push({ libelle: manifestation.nom, chemin: cheminManifestation(manifestation.id) });
+    niveaux.push(
+      manifestation
+        ? { libelle: competition.nom, chemin: cheminManifestation(manifestation.id) }
+        : { libelle: competition.nom },
+    );
   }
   niveaux.push(suite ? { libelle: epreuve.nom, chemin: cheminEpreuve(epreuve.id) } : { libelle: epreuve.nom });
   if (suite) niveaux.push({ libelle: suite });
