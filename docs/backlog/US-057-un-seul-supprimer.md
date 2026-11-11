@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-054, US-039, US-041, US-042
 - **Branche / PR :** `us/US-057-un-seul-supprimer` / —
 
@@ -108,3 +108,4 @@ supprimer ». Testé par un E2E réseau coupé.
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
 | 2026-11-11 | Passée à En cours (branche us/US-057-un-seul-supprimer) ; plan validé par l'utilisateur (organisateur : « Supprimer… » pour les objets vides seulement ; confirmation en fenêtre modale sur l'accueil) |
+| 2026-11-11 | Passée à En revue : 412 E2E verts (pc + smartphone), couverture et lint verts ; `npm run audit` signale deepmerge/glob (dépendances, hors périmètre de l'US) |
