@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-054, US-055, US-023, US-049, US-030
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** us/US-056-page-manifestation / —
 
 ## Récit
 
@@ -103,3 +103,4 @@ de l'appareil (US-045, décision 1a) ; le plan suit US-049. Testé par un E2E r�
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » validée le 2026-11-11 |
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
+| 2026-11-12 | Passée à En cours (branche us/US-056-page-manifestation) ; plan validé (suppression par la fenêtre modale d'US-057 ; « ?nouvelle » → assistant ; formulaires dans la page via ?modifier et ?competition) |
