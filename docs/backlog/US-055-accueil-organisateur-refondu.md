@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-054, US-026, US-045
 - **Branche / PR :** `us/US-055-accueil-organisateur-refondu` / —
 
@@ -130,3 +130,4 @@ motif. Les E2E réseau coupé d'US-026 et d'US-045 sont adaptés à la nouvelle 
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
 | 2026-11-11 | Passée à En cours (branche us/US-055-accueil-organisateur-refondu) ; plan validé par l'utilisateur |
+| 2026-11-11 | Implémentée ; passée En revue (contrôles locaux verts, E2E : seuls échouent les 7 tests déjà en échec sur dev) |
