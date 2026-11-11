@@ -29,10 +29,11 @@ describe('navigation au clavier dans le menu de compte (US-017)', () => {
 });
 
 describe('ordonnerActions (US-054 CA-6)', () => {
-  const modifier = { libelle: 'Modifier' };
-  const ajouter = { libelle: 'Ajouter' };
-  const supprimer = { libelle: 'Supprimer…', destructive: true };
-  const grisee = { libelle: 'Publier', indisponible: 'Hors ligne' };
+  type Action = { libelle: string; destructive?: boolean; indisponible?: string };
+  const modifier: Action = { libelle: 'Modifier' };
+  const ajouter: Action = { libelle: 'Ajouter' };
+  const supprimer: Action = { libelle: 'Supprimer…', destructive: true };
+  const grisee: Action = { libelle: 'Publier', indisponible: 'Hors ligne' };
 
   it('CA-6 : l’action destructrice est la dernière, sous un séparateur, même donnée en premier', () => {
     const { actions, separateurAvant } = ordonnerActions([supprimer, modifier, ajouter]);

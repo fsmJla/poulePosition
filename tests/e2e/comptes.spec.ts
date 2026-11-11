@@ -150,7 +150,8 @@ test('US-007 hors ligne : l’entrée « Comptes » est grisée avec « Nécessi
   await context.setOffline(true);
   await expect(page.getByRole('link', { name: 'Comptes' })).toHaveCount(0);
   const entree = page.locator('[aria-disabled="true"]').filter({ hasText: 'Comptes' });
-  await expect(entree).toContainText('Nécessite une connexion internet');
+  // Dans l'entête, le motif est l'infobulle et la description accessible (pas de texte en double sur la page).
+  await expect(entree).toHaveAttribute('title', 'Nécessite une connexion internet');
   await context.setOffline(false);
   await expect(page.getByRole('link', { name: 'Comptes' })).toBeVisible();
 });

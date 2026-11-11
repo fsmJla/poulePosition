@@ -33,7 +33,7 @@ const sansDefilementHorizontal = (page: Page) =>
  * page de l'épreuve ouverte. Le nom de la manifestation est long (cas limite du fil d'Ariane).
  */
 async function creerHierarchie(page: Page) {
-  const manifestation = `${nomUnique()} — grande manifestation dont le nom est volontairement très long`;
+  const manifestation = `${nomUnique()} — grande manifestation au titre volontairement très long`;
   const competition = nomUnique();
   const epreuve = `${competition} M13`;
   await page.goto('/manifestations');

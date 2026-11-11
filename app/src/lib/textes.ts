@@ -60,9 +60,6 @@ export const textes = {
     filAriane: 'Fil d’Ariane',
     accueil: 'Accueil',
     autresActions: (nom: string) => `Autres actions pour ${nom}`,
-    actions: 'Actions',
-    /** Légende d'une action grisée dans un menu : son motif est écrit à côté d'elle. */
-    indisponible: 'Indisponible',
   },
   etats: {
     'non-configure': 'Serveur non configuré',

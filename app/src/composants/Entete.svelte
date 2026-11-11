@@ -79,8 +79,8 @@
             ><Icone nom="personnes" />{te.comptes}</a
           >
         {:else}
-          <span class="navigation inactif" aria-disabled="true"
-            ><Icone nom="personnes" />{te.comptes}<small class="masque">{te.horsLigne}</small></span
+          <span class="navigation inactif" aria-disabled="true" title={te.horsLigne}
+            ><Icone nom="personnes" />{te.comptes}</span
           >
         {/if}
       {/if}
@@ -191,15 +191,6 @@
 
   .inactif {
     opacity: 0.6;
-  }
-
-  .masque {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
 
   .confirmation {
