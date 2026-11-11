@@ -7,6 +7,7 @@
 | [adr/](adr/README.md) | Décisions d'architecture, une par fichier | Claude (`/adr`), validées par l'utilisateur |
 | [backlog/](backlog/README.md) | Epics et user stories, avec statut | Claude (`/debut-spec-US`, `/impact`, `/bug`) |
 | [glossaire.md](glossaire.md) | Vocabulaire métier commun au code et aux docs | Claude et l'utilisateur |
+| [maquettes/](maquettes/README.md) | Maquettes validées de l'interface : planches, principes d'IHM, vocabulaire d'icônes | Claude, validées par l'utilisateur |
 | [reference/](reference/) | Code et docs de référence venus d'autres projets (lecture seule) | — |
 
 Protocole et recette :

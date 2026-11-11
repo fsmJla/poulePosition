@@ -22,12 +22,19 @@ Recette de l'US **$ARGUMENTS** sur sa preview.
 3. **Déroule la recette** dans un navigateur piloté (Playwright MCP ou Claude in Chrome) :
    - format PC, et format smartphone si l'US touche la saisie, l'écran ou les spectateurs ;
    - le comportement hors ligne, en coupant le réseau ;
-   - une capture par étape clé.
+   - une capture par étape clé ;
+   - **conformité à la maquette**, si l'US cite une planche : affiche l'écran à la taille de la planche (1360 px de
+     large, ou 390 × 844), avec des données proches de celles de la planche, prends une capture et **ouvre à côté la
+     capture de référence** `docs/maquettes/ihm/<n>-….png`. Compare zone par zone (entête, titre, navigation, listes
+     ou cartes, actions) : ordre, alignements, hiérarchie des tailles, couleurs, icônes, libellés. Vérifie aussi le
+     thème sombre (lisible, contrastes), qui n'a pas de planche.
 
    Pour une preview protégée, demande à l'utilisateur de se connecter ou d'utiliser le lien de partage Vercel.
    Ne mets jamais le secret de bypass dans une URL partagée.
 4. **Rapporte** le résultat de chaque critère (✅ / ❌), avec les captures et, pour chaque écart, ce qui a été observé
-   et ce qui était attendu. Pour chaque écart, propose `/bug` ou une correction sur la branche de l'US.
+   et ce qui était attendu. Pour la maquette, liste **tous** les écarts visibles avec la planche (un écart de quelques
+   pixels n'en est pas un) ; un écart non prévu dans les Hypothèses de l'US rend le critère « Conforme à la planche » ❌.
+   Pour chaque écart, propose `/bug` ou une correction sur la branche de l'US.
 5. Si tout est ✅ :
    - ajoute une ligne de suivi « recette OK sur <URL> » dans l'US et coche « déployée en preview et vérifiée » ;
    - passe l'US à `Terminée` dans son fichier et dans `docs/backlog/README.md`, puis commite et pousse sur la branche de l'US ;

@@ -17,13 +17,15 @@ Tu passes en **mode spécification**. Sujet proposé par l'utilisateur : $ARGUME
 1. **Prépare la branche** : vérifie que l'arbre de travail est propre (`git status`), puis
    `git switch dev && git pull`, puis `git switch -c spec/<sujet-court>`. Si `dev` n'existe pas, arrête-toi et signale-le.
 2. **Relis** `docs/exigences.md` (la fonctionnalité concernée et §9), `docs/backlog/README.md`, les US
-   existantes de l'Epic, `docs/glossaire.md` et les ADR utiles. Pour les règles d'escrime (formules, classements,
+   existantes de l'Epic, `docs/glossaire.md`, `docs/maquettes/README.md` (si un écran est touché) et les ADR utiles. Pour les règles d'escrime (formules, classements,
    tableaux), appuie-toi sur la documentation d'Engarde et de Belle Poule citée dans les exigences, et cite tes sources.
 3. **Dialogue** : reformule le besoin en quelques lignes, puis pose tes questions groupées, en 4 au plus à la fois.
 4. **Découpe en US fines**, chacune livrable et testable seule, à partir de `docs/backlog/_modele-US.md` :
    - critères d'acceptation numérotés au format *Étant donné / Quand / Alors* ;
    - **comportement hors ligne** toujours renseigné ;
    - cas limites et erreurs ;
+   - **maquette** : toute US qui touche un écran cite sa planche de `docs/maquettes/` et en respecte les principes et
+     les icônes ; un écran sans planche ou un écart se déclare dans les Hypothèses et se fait valider ;
    - US techniques implicites identifiées (protocole, migration du journal…) ;
    - dépendances et ordre proposé ;
    - numérotation continue après la plus grande référence existante.

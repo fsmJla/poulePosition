@@ -12,6 +12,11 @@
 
 **En tant que** <rôle>, **je veux** <action> **afin de** <bénéfice>.
 
+Maquette : <planche et fichier de `docs/maquettes/`, principes concernés>, ou « sans objet » si l'US ne touche aucun
+écran. Une US qui touche un écran respecte les principes et le vocabulaire d'icônes de `docs/maquettes/README.md` ;
+tout écart est déclaré dans les **Hypothèses**. Si l'écran a une planche, le dernier critère est « Conforme à la
+planche N » : il cite la capture de référence (`docs/maquettes/ihm/<n>-….png`), et la recette la compare à l'écran.
+
 ## Critères d'acceptation
 
 Chaque critère est numéroté et couvert par au moins un test, dont le nom contient l'identifiant (`CA-1`…).

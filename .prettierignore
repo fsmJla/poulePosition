@@ -9,3 +9,6 @@ package-lock.json
 coverage/
 playwright-report/
 test-results/
+
+# Sources des maquettes (planches du canevas, non formatées)
+docs/maquettes/

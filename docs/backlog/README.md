@@ -83,6 +83,17 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-051](US-051-dupliquer-epreuve.md) | Dupliquer une épreuve depuis le plan | E2 | Terminée | US-049, US-050 |
 | [US-052](US-052-choisir-le-theme.md) | Choisir le thème clair, sombre ou automatique | E1 | Terminée | US-014, US-017 |
 | [US-053](US-053-pastille-etat-serveur.md) | Voir l'état du serveur dans l'entête | E1 | Abandonnée | US-001, US-014, US-017 |
+| [US-054](US-054-entete-fil-ariane-icones.md) | Poser le socle de la nouvelle IHM : entête, fil d'Ariane, icônes et menu « ⋯ » | E0 | Prête | US-014, US-017, US-046, US-052 |
+| [US-055](US-055-accueil-organisateur-refondu.md) | Refondre l'accueil de l'organisateur | E2 | Prête | US-054, US-026, US-045 |
+| [US-056](US-056-page-manifestation.md) | Donner sa page à chaque manifestation (onglets Compétitions, Plan, Documents) | E2 | Prête | US-054, US-055, US-023, US-049, US-030 |
+| [US-057](US-057-un-seul-supprimer.md) | Fusionner « Supprimer » et « Supprimer avec son contenu… » en une seule action | E2 | Prête | US-054, US-039, US-041, US-042 |
+| [US-058](US-058-page-epreuve-par-etapes.md) | Organiser la page d'une épreuve par étapes | E2 | Prête | US-054, US-028, US-030, US-031, US-032 |
+| [US-059](US-059-mode-selection.md) | Sélectionner plusieurs éléments dans un mode dédié (P2) | E2 | Prête | US-055, US-057, US-043 |
+| [US-060](US-060-epreuves-a-rattacher.md) | Signaler les épreuves à rattacher par une alerte et les rattacher par lot (P2) | E2 | Prête | US-055, US-059, US-045 |
+| [US-061](US-061-organisateur-sur-smartphone.md) | Adapter l'accueil et la page d'une épreuve au smartphone de l'organisateur (P2) | E2 | Prête | US-054, US-055, US-058 |
+| [US-062](US-062-rechercher.md) | Rechercher une manifestation, une compétition ou une épreuve (P2) | E2 | Prête | US-054, US-055 |
+| [US-063](US-063-filtrer-la-liste.md) | Filtrer la liste du club : à venir et en cours, terminées, archivées, toutes (P2) | E2 | Prête | US-055, US-033 |
+| [US-064](US-064-prochaine-etape.md) | Indiquer la prochaine étape d'une épreuve (P2) | E2 | Prête | US-058, US-031 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
@@ -95,6 +106,16 @@ Puis, indépendante de l'ordre de E2 : US-052 (thème). US-053 (pastille du serv
 manifestations et épreuves) → US-025 → US-023 → US-024 → US-026 → US-027 → US-028 → US-029 → US-032 → US-030 →
 US-031 → US-033 → US-034 → US-035 → US-039 → US-040 → US-041 → US-042 → US-043 → US-044 (seule en cours pendant le renommage) → US-045 →
 US-048 → US-049 → US-047 → US-046, puis US-050 et US-051 (alignement du plan sur la maquette, une fois les autres écrans réalisés), puis US-030 → US-031 → US-033 → US-034 → US-035 avec le nouveau vocabulaire.
+
+**Ordre conseillé pour la refonte de l'IHM** (maquette « IHM de l'organisateur », [`docs/maquettes/`](../maquettes/README.md)) :
+US-054 (socle : entête, fil d'Ariane, icônes, menu « ⋯ ») → US-055 → US-057 → US-056 → US-058 → US-064 → US-059 →
+US-060 → US-061 → US-062, puis US-063 une fois US-033 livrée. US-033, US-034 et US-035 placent leurs actions dans
+le menu « ⋯ » de l'épreuve (US-058 CA-6).
+
+> **Maquette de référence (2026-11-11) :** toute US qui touche un écran de l'organisateur cite sa planche et respecte
+> les principes et le vocabulaire d'icônes de [`docs/maquettes/README.md`](../maquettes/README.md) ; un écart se
+> déclare dans les **Hypothèses** de l'US. Les US terminées touchées par la refonte sont listées dans les « Notes
+> techniques » des US-054 à US-064.
 
 > **Vocabulaire révisé le 2026-11-08 :** la compétition regroupe des épreuves, l'épreuve est ce qui se tire (voir le
 > glossaire). Les US terminées gardent l'ancien vocabulaire ; les US à venir emploient le nouveau.

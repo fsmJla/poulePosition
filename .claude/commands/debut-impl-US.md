@@ -20,8 +20,12 @@ et avec des tirets.
 
 ## 3. Plan, à soumettre à l'utilisateur avant d'écrire du code
 
-Relis l'US, les ADR citées, `docs/protocole.md` si le protocole est touché, et le code existant concerné. Présente :
+Relis l'US, les ADR citées, `docs/protocole.md` si le protocole est touché, la planche de `docs/maquettes/` citée par
+l'US (avec les principes et le vocabulaire d'icônes de `docs/maquettes/README.md`) et le code existant concerné.
+**Ouvre la capture de référence de la planche** (`docs/maquettes/ihm/<n>-….png`) : c'est elle qu'il faut reproduire,
+avec les variables de la table « De la maquette à la charte » et jamais une couleur en dur. Présente :
 
+- les **écarts avec la maquette**, s'il y en a, à faire valider avant de coder ;
 - la **correspondance entre critères et tests** : pour chaque `CA-n`, le ou les tests prévus (unitaire ou E2E),
   avec leur nom. Le nom contient `CA-n` ;
 - le test du **comportement hors ligne** ;
@@ -35,7 +39,9 @@ Relis l'US, les ADR citées, `docs/protocole.md` si le protocole est touché, et
 
 - Passe l'US à `En cours` (dans son fichier et dans `docs/backlog/README.md`) et renseigne la branche.
 - Écris les tests d'abord : vérifie qu'ils échouent, puis implémente jusqu'au vert.
-- Respecte `CLAUDE.md` : code en français, logique métier pure dans `paquets/domaine`, rien de payant, hors ligne d'abord.
+- Respecte `CLAUDE.md` : code en français, logique métier pure dans `paquets/domaine`, rien de payant, hors ligne d'abord,
+  écrans conformes à la maquette. Avant de dire qu'un écran est fait, affiche-le à la taille de la planche, prends une
+  capture et compare-la à la capture de référence ; corrige les écarts ou déclare-les.
 - Fais des commits petits et réguliers, au format `$ARGUMENTS : <action à l'impératif>`.
 - N'élargis pas le périmètre. Une idée hors US devient une proposition à noter, pas du code.
 

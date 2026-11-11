@@ -12,6 +12,7 @@ Application d'organisation et de suivi de compétitions d'escrime (poules, table
 | `docs/adr/` | Décisions d'architecture. Une ADR acceptée ne se modifie pas : on la remplace (`/adr`). |
 | `docs/backlog/README.md` | Index des US par Epic, avec statut et dépendances. |
 | `docs/glossaire.md` | Vocabulaire métier : employer exactement ces termes dans le code et les docs. |
+| `docs/maquettes/README.md` | Maquettes validées de l'interface : planches, principes d'IHM, vocabulaire d'icônes. |
 | `docs/reference/relais-wireless-fencing/` | Relais d'origine (lecture seule, ne pas modifier). |
 
 ## Architecture en bref (détails dans les ADR)
@@ -44,6 +45,10 @@ parallèle. **Ne jamais arrêter un processus sans avoir vérifié qu'il apparti
 6. **Tests de charge (k6) : JAMAIS lancés automatiquement**, ni en CI, ni par Claude de sa propre initiative. Ils ne se lancent qu'avec l'utilisateur, via `/test-charge`, contre la preview et jamais contre la production.
 7. **Données personnelles.** Collecter le minimum (ADR-0014). Toute donnée porte un `clubId`. Conservation : 1 an.
 8. **Secrets.** Jamais dans le dépôt. Ils vont dans les secrets Wrangler, les variables Vercel ou les secrets GitHub. `.env.local` n'est pas versionné.
+9. **Maquette.** Tout écran de l'organisateur, nouveau ou modifié, suit `docs/maquettes/README.md` : entête et fil d'Ariane,
+   une action principale par écran, actions secondaires dans le menu « ⋯ », icônes du vocabulaire (jamais d'icône seule sans
+   nom accessible ni infobulle), étapes à venir grisées. L'US cite sa planche ; un écart se déclare dans ses **Hypothèses**
+   et un écran sans planche demande d'abord une maquette validée par l'utilisateur.
 
 ## Git et livraison
 

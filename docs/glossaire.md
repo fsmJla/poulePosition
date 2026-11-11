@@ -64,6 +64,14 @@ l'ajoute ici avant de l'utiliser.
 | Plan de la manifestation | Vue de la manifestation en tableau : une ligne par compétition, une colonne par jour, les épreuves dans les cases (US-049). | `PlanManifestation` |
 | Grille des épreuves | Tableau catégorie × sexe d'une compétition, où l'on coche les épreuves à créer en une fois (US-048). | `GrilleEpreuves` |
 | Archivage | Mise de côté réversible d'une épreuve ou d'une manifestation : lecture seule, masqué des listes et de la page publique (US-033). | `archivee` |
+| Maquette | Planches validées par l'utilisateur qui fixent la disposition des écrans, les principes d'IHM et le vocabulaire d'icônes (`docs/maquettes/`). Toute US qui touche un écran cite sa planche. | — |
+| Fil d'Ariane | Chemin affiché sous l'entête, depuis « Accueil » jusqu'à la page ouverte (manifestation › compétition › épreuve) ; chaque niveau sauf le dernier est un lien (US-054). | `FilAriane` |
+| Menu « ⋯ » | Menu des actions secondaires d'un objet (manifestation, compétition, épreuve), ouvert par le bouton à trois points ; l'action destructrice y est la dernière, en rouge (US-054). | `MenuActions` |
+| Nom court | Nom d'une épreuve réduit à sa catégorie et à son sexe (« M13 Dames »), employé là où la compétition est déjà affichée (US-055). Le nom complet de l'épreuve ne change pas. | `nomCourt` |
+| Étape (d'une épreuve) | Partie de la page d'une épreuve, dans l'ordre du déroulement : Résumé, Inscriptions, Émargement, Poules, Tableau, Impressions, puis Formule et Paramètres. Une étape pas encore livrée est visible, grisée, « À venir » (US-058). À ne pas confondre avec le tour de la formule ni avec les étapes de l'assistant de manifestation. | `etapesEpreuve` |
+| Prochaine étape | Bandeau du résumé d'une épreuve qui indique quoi faire ensuite et propose une seule action (US-064). | `prochaineEtape` |
+| Mode sélection | État de l'accueil où des cases à cocher apparaissent, avec une barre d'actions par lot (supprimer, rattacher) ; on y entre par « Sélectionner » et on en sort par la croix ou Échap (US-059). | `modeSelection` |
+| Épreuve à rattacher | Épreuve dont la compétition a disparu (US-045 CA-7) ; signalée par une alerte sur l'accueil et rangée par « Choisir une compétition » (US-060). | `aRattacher` |
 | Écran | Affichage géant (distant ou fenêtre locale). | `ecran` |
 | Spectateur | Accès public en lecture seule. | `spectateur` |
 | Club | Organisation propriétaire des données (`clubId`). | `club` |
