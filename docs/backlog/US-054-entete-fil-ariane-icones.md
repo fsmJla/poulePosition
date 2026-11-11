@@ -4,7 +4,7 @@
 - **Fonctionnalité :** transverse (exigences §3, F1 et F2)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-014, US-017, US-046, US-052
 - **Branche / PR :** `us/US-054-entete-fil-ariane-icones` / —
 
@@ -143,3 +143,4 @@ Testé par un E2E réseau coupé (entête et fil d'Ariane présents sur la page 
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
 | 2026-11-11 | Passée à En cours (branche us/US-054-entete-fil-ariane-icones) ; plan validé par l'utilisateur |
 | 2026-11-11 | Implémentée ; lint, typage, couverture (95 %), build, audit et E2E locaux passés, hors 4 tests déjà instables sur dev (US-001 ×2, US-047 et US-029 hors ligne). PR vers dev à ouvrir |
+| 2026-11-11 | Recette OK sur https://poule-position-c33v3isi2-fsmjlas-projects.vercel.app (PR #81) : CA-1, 3 à 9 vérifiés dans le navigateur ; CA-2 et le hors ligne couverts par les E2E (CI verte sur la preview). Écarts avec la planche 3 : ceux déclarés dans les Hypothèses |
