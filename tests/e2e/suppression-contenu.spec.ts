@@ -2,6 +2,7 @@
 // avoir saisi son nom. Le compte local est administrateur, celui de la preview un organisateur : seul CA-2 y tourne.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { ouvrirDansLApplication } from './creer';
 
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
@@ -15,7 +16,7 @@ const carteCompetition = (page: Page, manifestation: string, nom: string) =>
   section(page, manifestation).getByRole('listitem').filter({ hasText: nom });
 
 async function ouvrirPage(page: Page) {
-  await page.getByRole('link', { name: 'Manifestations', exact: true }).click();
+  await ouvrirDansLApplication(page, '/manifestations');
   await expect(page).toHaveURL(/\/manifestations$/);
 }
 

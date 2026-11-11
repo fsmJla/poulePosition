@@ -102,7 +102,7 @@ test('US-010 CA-4 : le changement d’un mot de passe temporaire ouvre l’accè
   await expect(page.getByRole('status')).toHaveText('Mot de passe modifié', { timeout: 20_000 });
   await page.getByRole('link', { name: "Accueil de l'organisateur" }).click();
   await expect(page).toHaveURL(/\/organisateur$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Bonjour, Compte simulé');
+  await expect(page.getByRole('heading', { level: 1, name: 'Manifestations et compétitions' })).toBeVisible();
 });
 
 test('US-010 hors ligne : l’écran indique « Nécessite une connexion internet »', async ({ page, context }) => {

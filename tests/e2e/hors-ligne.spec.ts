@@ -72,7 +72,7 @@ test('US-005 CA-1 et CA-5 : reconnexion hors ligne avec le bandeau, puis revalid
   await page.reload();
   await saisir(page, compte.email, compte.motDePasse);
   await expect(page).toHaveURL(/\/organisateur$/, { timeout: 20_000 });
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Bonjour, .+/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Manifestations et compétitions' })).toBeVisible();
   await expect(bandeauLocal(page)).toBeVisible();
 
   await context.setOffline(false);
@@ -122,7 +122,7 @@ test('US-003 hors ligne : une session déjà ouverte reste utilisable sans rése
   await context.setOffline(true);
   await page.reload();
   await expect(page).toHaveURL(/\/organisateur$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Bonjour, .+/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Manifestations et compétitions' })).toBeVisible();
   await context.setOffline(false);
 });
 
