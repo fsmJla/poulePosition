@@ -74,6 +74,22 @@ supprimer ». Testé par un E2E réseau coupé.
   l'interface disparaît.
 - La suppression par lot (US-043) garde sa confirmation unique ; sa présentation est revue par US-059.
 
+### Hypothèses prises pendant l'implémentation
+
+- **Droits (CA-5) :** un administrateur supprime tout ; un organisateur voit « Supprimer… » seulement pour une manifestation
+  sans compétition ou une compétition sans épreuve (il le pouvait déjà : US-023 et US-024 CA-5) ; pour tout le reste, et
+  pour une épreuve, l'action est absente. Validé par l'utilisateur le 2026-11-11.
+- **Où :** le menu « ⋯ » de la carte de manifestation et de la ligne de compétition de l'accueil, et le menu de la page d'une
+  épreuve (le bouton rouge en bas de page disparaît ; sa confirmation avec le nom à saisir est conservée).
+- **Page « Manifestations » (provisoire jusqu'à US-056) :** elle n'a pas de menu « ⋯ » ; ses deux boutons deviennent un seul
+  bouton « Supprimer… », qui ouvre la confirmation simple ou détaillée selon le contenu. Écart déclaré.
+- **Confirmation sur l'accueil :** fenêtre modale (`<dialog>`, Échap ou « Annuler » la ferme). Objet vide : « Supprimer
+  <nom> ? » ; objet non vide : contenu annoncé, noms des épreuves, nom à saisir.
+- **Écart avec la planche 2 :** le menu d'une compétition n'a pas « Modifier » (la modification d'une compétition passe encore
+  par la page « Manifestations », jusqu'à US-056).
+- Une manifestation ou une compétition vide part par la suppression simple ; une non vide, par la suppression avec contenu,
+  morceau par morceau (routes et règles serveur inchangées).
+
 ## Questions bloquantes
 
 - Aucune.
