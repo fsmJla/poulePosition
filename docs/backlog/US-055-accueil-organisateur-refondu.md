@@ -26,7 +26,7 @@ la présentation.
 - **Quand** l'accueil s'affiche
 - **Alors** elle forme une carte : son nom (lien vers sa page), ses dates, son lieu, le nombre de compétitions et
   d'épreuves, un bouton « Plan » et un menu « ⋯ ». Si elle se déroule aujourd'hui, une étiquette « Aujourd'hui »
-  précède son nom.
+  suit son nom (comme sur la planche).
 
 **CA-2 — Compétitions repliables**
 - **Étant donné** une carte de manifestation, ou une compétition seule
@@ -96,6 +96,21 @@ motif. Les E2E réseau coupé d'US-026 et d'US-045 sont adaptés à la nouvelle 
 - Les filtres, l'alerte « à rattacher », le mode sélection et la recherche de la planche 1 sont livrés par US-063,
   US-060, US-059 et US-062. En attendant, les cases de suppression par lot et la section « Épreuves à rattacher »
   actuelles restent en place.
+
+### Hypothèses prises pendant l'implémentation
+
+- Le nom de la manifestation est un lien vers son plan (sa seule page) ; le bouton « Plan » mène au même endroit.
+- Les compétitions seules sont dépliées à l'ouverture ; celles d'une manifestation sont repliées, sauf s'il n'y en a qu'une.
+- Le menu « ⋯ » d'une manifestation propose « Modifier » et « Ajouter une compétition » (grisées hors ligne, avec leur
+  motif) ; celui d'une compétition, « Ajouter des épreuves ». « Supprimer… » y viendra avec US-057 ; les cases de
+  sélection des administrateurs et la section « Épreuves à rattacher » restent en place.
+- « Bonjour, <nom> », le rôle et le lien « Manifestations » de l'accueil disparaissent : le nom est dans le menu du compte de
+  l'entête, et la page « Manifestations » s'ouvre par « Modifier ». Le rôle n'est plus affiché nulle part (à reprendre dans US-061 si besoin).
+- L'arme d'une épreuve n'est plus sur sa ligne (comme la planche) : elle est sur la ligne de sa compétition.
+- Écarts visibles avec la planche : les épreuves restent des lignes bordées (pas un panneau à filets), et la ligne de
+  compétition porte son menu « ⋯ » (CA-6), absent de la planche.
+- Un nom court en double dans une compétition est remplacé par le nom complet des deux épreuves (le type n'est pas dans l'index).
+- Les statuts « Terminée » et « Archivée » ont leur pastille ; « Archivée » reste neutre.
 
 ## Questions bloquantes
 
