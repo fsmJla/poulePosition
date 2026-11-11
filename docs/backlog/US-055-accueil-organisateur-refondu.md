@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-054, US-026, US-045
-- **Branche / PR :** `us/US-055-accueil-organisateur-refondu` / —
+- **Branche / PR :** `us/US-055-accueil-organisateur-refondu` / [#82](https://github.com/fsmJla/poulePosition/pull/82)
 
 ## Récit
 
@@ -131,3 +131,4 @@ motif. Les E2E réseau coupé d'US-026 et d'US-045 sont adaptés à la nouvelle 
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
 | 2026-11-11 | Passée à En cours (branche us/US-055-accueil-organisateur-refondu) ; plan validé par l'utilisateur |
 | 2026-11-11 | Implémentée ; passée En revue (contrôles locaux verts, E2E : seuls échouent les 7 tests déjà en échec sur dev) |
+| 2026-11-11 | Recette OK sur https://poule-position-git-us-us-055-accueil-or-bfc8a1-fsmjlas-projects.vercel.app : CA-1 à CA-8 (PC 1360 px, thèmes clair et sombre, menu « ⋯ », ligne d'épreuve cliquable, état déplié conservé au retour), comparaison à la planche 1 sans écart hors Hypothèses ; hors ligne couvert par les E2E de la preview (CI verte) ; smartphone : pas de débordement (mise en page détaillée : US-061). Mergée dans dev |
