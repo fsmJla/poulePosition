@@ -402,10 +402,10 @@
               </button>
               <div class="identite">
                 <p class="titre-carte">
+                  <Lien chemin={cheminPlanManifestation(manifestation.id)} {naviguer}>{manifestation.nom}</Lien>
                   {#if manifestationAujourdhui(manifestation, aujourdhui)}<span class="etiquette-jour"
                       >{t.aujourdhui}</span
                     >{/if}
-                  <Lien chemin={cheminPlanManifestation(manifestation.id)} {naviguer}>{manifestation.nom}</Lien>
                 </p>
                 <p class="meta">
                   {textes.manifestations.periode(manifestation.debut, manifestation.fin)}
@@ -417,7 +417,7 @@
                 <Lien
                   chemin={cheminPlanManifestation(manifestation.id)}
                   {naviguer}
-                  etiquette={textes.plan.lienPour(manifestation.nom)}>{t.plan}</Lien
+                  etiquette={textes.plan.lienPour(manifestation.nom)}><Icone nom="grille" taille={18} />{t.plan}</Lien
                 >
               </span>
               <MenuActions
@@ -550,6 +550,24 @@
     font-weight: 600;
   }
 
+  .titre-carte :global(a),
+  .bouton-plan :global(a),
+  .devant :global(a) {
+    text-decoration: none;
+  }
+
+  .titre-carte :global(a) {
+    color: var(--texte);
+  }
+
+  .bouton-plan :global(a) {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+    color: var(--texte);
+    font-weight: 400;
+  }
+
   .bouton-plan {
     padding: 0.4rem 0.9rem;
     border: 1px solid var(--bordure-champ);
@@ -647,7 +665,7 @@
   .ligne-epreuve {
     display: grid;
     flex: 1;
-    grid-template-columns: minmax(0, 1fr) 6.5rem auto auto auto;
+    grid-template-columns: minmax(0, 1fr) 7rem 7.5rem 3.5rem 1.25rem;
     gap: 0.75rem;
     align-items: center;
     min-height: 2.75rem;
@@ -675,6 +693,7 @@
   }
 
   .pastille {
+    justify-self: start;
     padding: 0.1rem 0.6rem;
     border-radius: 999px;
     background: var(--surface-2);

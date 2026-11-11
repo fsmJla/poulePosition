@@ -316,5 +316,6 @@ test('US-055 CA-8 : conforme à la planche 1 à 1360 px', async ({ page }, info)
   expect(couleurs.carre).toBe(couleurs.plan0);
   expect(couleurs.lien).toBe(couleurs.accent);
 
-  await info.attach('accueil-1360.png', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
+  const capture = await c.screenshot({ path: process.env.CAPTURE_ACCUEIL });
+  await info.attach('accueil-1360.png', { body: capture, contentType: 'image/png' });
 });
