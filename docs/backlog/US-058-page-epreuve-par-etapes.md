@@ -111,3 +111,4 @@ coupé existants de la page d'épreuve sont adaptés.
 |---|---|
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » ; étapes à venir grisées (décision du 2026-11-11) |
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
+| 2026-11-11 | Hypothèses validées par l'utilisateur |

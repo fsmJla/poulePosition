@@ -119,3 +119,4 @@ Testé par un E2E réseau coupé (entête et fil d'Ariane présents sur la page 
 |---|---|
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » validée le 2026-11-11 |
 | 2026-11-11 | Ajout de CA-8 (variables de la charte pour la maquette) et de CA-9 (conforme aux planches 1 à 3) |
+| 2026-11-11 | Hypothèses validées par l'utilisateur |

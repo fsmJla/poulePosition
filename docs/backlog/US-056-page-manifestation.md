@@ -102,3 +102,4 @@ de l'appareil (US-045, décision 1a) ; le plan suit US-049. Testé par un E2E r�
 |---|---|
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » validée le 2026-11-11 |
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
+| 2026-11-11 | Hypothèses validées par l'utilisateur |

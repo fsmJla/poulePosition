@@ -94,3 +94,4 @@ réseau coupé.
 |---|---|
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » validée le 2026-11-11 |
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
+| 2026-11-11 | Hypothèses validées par l'utilisateur |
