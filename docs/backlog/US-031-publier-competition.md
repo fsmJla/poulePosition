@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2, F14 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-044, US-022, US-026 ; US-030 pour l'affiche
 - **Branche / PR :** `us/US-031-publier-competition`
 
@@ -112,3 +112,4 @@ page publique est servie par le serveur : elle n'a pas de mode hors ligne côté
 | 2026-11-08 | Amendée : vocabulaire inversé (la compétition regroupe, l'épreuve se tire ; US-044), au niveau de l'épreuve comme avant (décision du 2026-11-08) ; dépend de US-044 |
 | 2026-11-10 | Démarrée. Plan validé : événement `PublicationModifiee`, résumé de l'index enrichi (horaires, lieu), routes publiques `GET /public` et `GET /public/epreuves/<id>`, page minimale `#/direct/<id>`, pas de pastille sur `/` |
 | 2026-11-10 | Réalisée : événement `PublicationModifiee`, résumé enrichi, routes publiques, page d'accueil publique, page `/direct/<id>`, boutons de publication. Lint, typage, 1 290 tests unitaires avec couverture, build et E2E locaux verts. En revue |
+| 2026-11-11 | Recette OK sur https://poule-position-git-us-us-031-publier-co-a8a789-fsmjlas-projects.vercel.app (CA-1 à CA-6 : non publiée par défaut, publication, page `/` groupée avec horaires et lieu sans donnée de compte, lien `/direct/<id>`, dépublication ; le hors ligne est couvert par l'E2E, l'extension ne coupant pas le réseau). Déployée en preview et vérifiée. Terminée |
