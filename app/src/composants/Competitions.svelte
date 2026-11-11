@@ -35,6 +35,11 @@
     administrateur?: boolean;
     /** US-041 : nombre d’épreuves rattachées à la compétition, annoncé à la confirmation. */
     nombreEpreuves?: (competitionId: string) => Promise<number>;
+    /**
+     * US-057 : nombre d'épreuves de chaque compétition (absent : 0), ou null tant qu'il n'est pas connu. Un organisateur
+     * ne voit « Supprimer… » que pour une compétition vide ; un administrateur le voit toujours.
+     */
+    nombres?: Record<string, number> | null;
     /** US-041 : appelé après une suppression avec contenu, pour effacer les copies locales des épreuves supprimées. */
     apresSuppressionContenu?: () => Promise<void>;
     /** US-048 : ouvre la grille des épreuves de la compétition ; sans lui, le lien n'est pas proposé. */
@@ -51,6 +56,7 @@
     ouvrirAuDepart = false,
     administrateur = false,
     nombreEpreuves = async () => 0,
+    nombres = null,
     apresSuppressionContenu = async () => {},
     naviguer,
   }: Proprietes = $props();
@@ -149,13 +155,24 @@
     }
   }
 
-  /** US-041 : suppression avec son contenu, réservée aux administrateurs. */
+  /** US-041 et US-057 : suppression d'une compétition non vide, avec son contenu, réservée aux administrateurs. */
   const tc = t.contenu;
   let contenuASupprimer: Competition | null = $state(null);
   let nombreContenu: number | null = $state(null);
   let saisieNom = $state('');
   let progression: { faites: number; total: number } | null = $state(null);
   let messageContenu: string | null = $state(null);
+
+  /** Une compétition vide se confirme simplement ; sinon, la confirmation annonce son contenu et exige son nom. */
+  async function demanderSuppression(competition: Competition) {
+    const nombre = await nombreEpreuves(competition.id);
+    if (nombre === 0) {
+      aSupprimer = competition;
+      erreurSuppression = null;
+    } else {
+      await demanderContenu(competition);
+    }
+  }
 
   async function demanderContenu(competition: Competition) {
     contenuASupprimer = competition;
@@ -259,16 +276,6 @@
             </div>
           {:else}
             <div class="boutons">
-              {#if administrateur}
-                <button
-                  type="button"
-                  class="secondaire"
-                  aria-label={tc.supprimer(competition.nom)}
-                  onclick={() => demanderContenu(competition)}
-                  disabled={horsLigne}>{tc.bouton}</button
-                >
-                {#if horsLigne}<small>{tc.horsLigne}</small>{/if}
-              {/if}
               {#if naviguer}
                 <!-- US-048 : la grille marche hors ligne pour une compétition connue de l'appareil. -->
                 <Lien
@@ -284,16 +291,17 @@
                 onclick={() => ouvrir(competition)}
                 disabled={horsLigne}>{t.boutonModifier}</button
               >
-              <button
-                type="button"
-                class="secondaire"
-                aria-label={t.supprimer(competition.nom)}
-                onclick={() => {
-                  aSupprimer = competition;
-                  erreurSuppression = null;
-                }}
-                disabled={horsLigne}>{t.boutonSupprimer}</button
-              >
+              <!-- US-057 : un seul « Supprimer… » ; un organisateur ne le voit que pour une compétition sans épreuve. -->
+              {#if administrateur || (nombres !== null && (nombres[competition.id] ?? 0) === 0)}
+                <button
+                  type="button"
+                  class="secondaire"
+                  aria-label={t.supprimer(competition.nom)}
+                  onclick={() => demanderSuppression(competition)}
+                  disabled={horsLigne}>{t.boutonSupprimer}</button
+                >
+                {#if horsLigne}<small>{tc.horsLigne}</small>{/if}
+              {/if}
             </div>
           {/if}
         </li>

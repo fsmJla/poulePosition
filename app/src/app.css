@@ -58,6 +58,7 @@
      modes clair et sombre. */
   /* Ombre des cartes flottantes (menu de compte, US-017). */
   --ombre-flottante: 0 8px 24px rgb(0 0 0 / 0.18);
+  --voile: rgb(0 0 0 / 0.45);
   --sur-avatar: #ffffff;
   --avatar-sarcelle: #066f6c;
   --avatar-ardoise: #2f4b4a;

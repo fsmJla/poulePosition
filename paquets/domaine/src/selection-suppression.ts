@@ -1,6 +1,7 @@
 // Sélection pour la suppression par lot (US-043) : l'administrateur coche des manifestations, des compétitions et des
 // épreuves de la liste du club. Règles pures : ce qui se coche, ce que couvre un parent coché, le décompte par type
 // et l'ordre de suppression. L'application s'en sert pour l'écran et pour enchaîner les requêtes.
+import type { Role } from './comptes';
 import type { EpreuveListee, DonneesListe, CompetitionListee, ManifestationListee } from './liste';
 
 export type TypeElement = 'manifestation' | 'competition' | 'epreuve';
@@ -190,4 +191,86 @@ export function elementsEnCours(donnees: DonneesListe): Set<string> {
   const ids = new Set(arbre.enCours);
   for (const { id, statut } of arbre.epreuves.values()) if (statut === 'enCours') ids.add(id);
   return ids;
+}
+
+/** US-057 CA-2 et CA-3 : ce qu'emporte la suppression d'un élément, pour la confirmation et le sous-titre du menu « ⋯ ». */
+export interface ContenuASupprimer extends ElementASupprimer {
+  /** Compétitions emportées (une manifestation seulement). */
+  competitions: number;
+  /** Épreuves emportées, archivées comprises (une manifestation ou une compétition ; 0 pour une épreuve). */
+  epreuves: number;
+  /** Noms des épreuves emportées, dans l'ordre de la liste. */
+  nomsEpreuves: string[];
+  /** CA-2 : rien d'autre que l'élément lui-même (la confirmation simple suffit). Une épreuve n'est jamais « vide ». */
+  vide: boolean;
+  /** CA-5 : l'élément est une épreuve en cours, ou contient une épreuve en cours. */
+  enCours: boolean;
+}
+
+function contenuDepuisArbre(arbre: Arbre, id: string): ContenuASupprimer | null {
+  const epreuve = arbre.epreuves.get(id);
+  if (epreuve)
+    return {
+      type: 'epreuve',
+      id,
+      nom: epreuve.nom,
+      competitions: 0,
+      epreuves: 0,
+      nomsEpreuves: [],
+      vide: false,
+      enCours: epreuve.statut === 'enCours',
+    };
+  const parent = arbre.manifestations.get(id) ?? arbre.competitions.get(id);
+  if (!parent) return null;
+  const { competitions, epreuves } = contenuDe(arbre, id);
+  return {
+    type: arbre.manifestations.has(id) ? 'manifestation' : 'competition',
+    id,
+    nom: parent.nom,
+    competitions: competitions.length,
+    epreuves: epreuves.length,
+    nomsEpreuves: epreuves.map(({ nom }) => nom),
+    vide: competitions.length === 0 && epreuves.length === 0,
+    enCours: arbre.enCours.has(id),
+  };
+}
+
+/** US-057 : le contenu d'un élément de la liste ; null si l'identifiant est inconnu. */
+export function contenuASupprimer(donnees: DonneesListe, id: string): ContenuASupprimer | null {
+  return contenuDepuisArbre(construireArbre(donnees), id);
+}
+
+/** US-057 : le contenu de chaque manifestation, compétition et épreuve, calculé d'un coup (l'arbre n'est construit qu'une fois). */
+export function contenusASupprimer(donnees: DonneesListe): Map<string, ContenuASupprimer> {
+  const arbre = construireArbre(donnees);
+  const ids = [...arbre.manifestations.keys(), ...arbre.competitions.keys(), ...arbre.epreuves.keys()];
+  const contenus = new Map<string, ContenuASupprimer>();
+  for (const id of ids) {
+    const contenu = contenuDepuisArbre(arbre, id);
+    if (contenu) contenus.set(id, contenu);
+  }
+  return contenus;
+}
+
+export type DisponibiliteSuppression =
+  { etat: 'absent' } | { etat: 'indisponible'; motif: 'HORS_LIGNE' | 'EN_COURS' } | { etat: 'disponible' };
+
+/**
+ * US-057 CA-5 : « Supprimer… » est absent pour qui n'y a pas droit, grisé avec son motif quand c'est momentanément
+ * impossible. Un administrateur supprime tout ; un organisateur seulement une manifestation ou une compétition vide
+ * (US-023 et US-024 CA-5). Le serveur refait les mêmes contrôles.
+ */
+export function disponibiliteSuppression({
+  role,
+  enLigne,
+  contenu,
+}: {
+  role: Role;
+  enLigne: boolean;
+  contenu: ContenuASupprimer;
+}): DisponibiliteSuppression {
+  if (role !== 'administrateur' && !(contenu.type !== 'epreuve' && contenu.vide)) return { etat: 'absent' };
+  if (!enLigne) return { etat: 'indisponible', motif: 'HORS_LIGNE' };
+  if (contenu.enCours) return { etat: 'indisponible', motif: 'EN_COURS' };
+  return { etat: 'disponible' };
 }

@@ -195,11 +195,18 @@
 
   /** US-039 : suppression définitive, proposée aux seuls administrateurs. */
   const ts = t.suppression;
+  const tsu = textes.suppressionUnique;
   let etapeSuppression: 'aucune' | 'confirmation' = $state('aucune');
   let saisieNom = $state('');
   let suppressionEnCours = $state(false);
   let erreurSuppression: string | null = $state(null);
   const droitSuppression = $derived(droit());
+
+  /** US-057 : la confirmation s'ouvre sous la page, loin du menu « ⋯ » : on l'amène à l'écran. */
+  $effect(() => {
+    if (etapeSuppression === 'confirmation')
+      document.getElementById('confirmation-suppression')?.scrollIntoView({ block: 'center' });
+  });
 
   function droit() {
     return epreuve ? peutSupprimer(session.compte.role, epreuve.statut) : null;
@@ -272,6 +279,23 @@
         actions={[
           { libelle: t.modifierFormule, icone: 'arbre', chemin: cheminFormuleEpreuve(epreuveId) },
           { libelle: t.lienParametres, icone: 'curseurs', chemin: cheminParametresEpreuve(epreuveId) },
+          // US-057 : l'unique « Supprimer… », dernier du menu ; la confirmation (nom à saisir) s'ouvre sous la page.
+          ...(session.compte.role === 'administrateur'
+            ? [
+                {
+                  libelle: tsu.action,
+                  icone: 'corbeille' as const,
+                  detail: tsu.sousTitre({ type: 'epreuve', competitions: 0, epreuves: 0 }),
+                  destructive: true,
+                  surChoix: () => (etapeSuppression = 'confirmation'),
+                  indisponible: !enLigne
+                    ? tsu.horsLigne
+                    : droitSuppression && !droitSuppression.ok
+                      ? tsu.enCours
+                      : undefined,
+                },
+              ]
+            : []),
         ]}
       />
     </div>
@@ -413,7 +437,7 @@
     <!-- US-039 : suppression définitive, réservée aux administrateurs, en ligne, hors épreuve en cours. -->
     {#if session.compte.role === 'administrateur'}
       {#if etapeSuppression === 'confirmation'}
-        <div class="prise" role="group" aria-label={ts.titre}>
+        <div class="prise" id="confirmation-suppression" role="group" aria-label={ts.titre}>
           <p>{ts.titre}</p>
           <p class="avertissement" role="status">{ts.avertissement}</p>
           <label>
@@ -436,19 +460,6 @@
             >
           </div>
         </div>
-      {:else}
-        <button
-          type="button"
-          class="danger"
-          onclick={() => (etapeSuppression = 'confirmation')}
-          disabled={!enLigne || !droitSuppression?.ok}
-          aria-describedby="suppression-aide">{ts.bouton}</button
-        >
-        {#if !enLigne}
-          <small id="suppression-aide">{ts.horsLigne}</small>
-        {:else if droitSuppression && !droitSuppression.ok}
-          <small id="suppression-aide">{ts.enCours}</small>
-        {/if}
       {/if}
       {#if erreurSuppression}<p class="message" role="alert">{erreurSuppression}</p>{/if}
     {/if}

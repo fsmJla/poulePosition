@@ -9,6 +9,7 @@ import type { Journal } from './journal';
 import type { ClientManifestations } from './manifestations';
 import { Base, LIGNE_UNIQUE } from './stockage';
 import type { ActionsLot } from './suppression';
+import type { ActionsSuppressionUnique } from './suppression-unique';
 import type { Synchronisation } from './synchronisation';
 
 /** Données de la liste, avant leur mise en arborescence. */
@@ -120,6 +121,9 @@ export function creerAccueil({
       },
       epreuve: (id) => synchronisation.supprimerEpreuve(id),
     } satisfies ActionsLot,
+
+    /** US-057 : les routes de « Supprimer… » d'une manifestation ou d'une compétition (vide, ou avec son contenu). */
+    actionsSuppression: { manifestation: manifestations, competition: competitions } satisfies ActionsSuppressionUnique,
 
     /**
      * US-054 CA-3 : manifestations et compétitions du club pour le fil d'Ariane d'une page (sans l'index des épreuves) ;
