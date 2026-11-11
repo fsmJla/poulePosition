@@ -1,15 +1,35 @@
-import { readFileSync } from 'node:fs';
+import vocabulaire from '../../../docs/maquettes/README.md?raw';
 import { describe, expect, it } from 'vitest';
 import { ICONES, NOMS_ICONES } from './icones';
-
-const vocabulaire = readFileSync(new URL('../../../docs/maquettes/README.md', import.meta.url), 'utf8');
 
 describe('icônes de la charte (US-054 CA-4)', () => {
   it('CA-4 : chaque icône du vocabulaire de la maquette a son tracé', () => {
     for (const nom of [
-      'plus', 'loupe', 'crayon', 'troisPoints', 'corbeille', 'oeil', 'oeilBarre', 'ecran', 'cadenas', 'alerte',
-      'calendrier', 'lieu', 'document', 'maison', 'personnePlus', 'listeCochee', 'grille', 'arbre', 'imprimante',
-      'curseurs', 'aide', 'soleil', 'croix', 'flecheGauche', 'chevron',
+      'plus',
+      'loupe',
+      'crayon',
+      'troisPoints',
+      'corbeille',
+      'oeil',
+      'oeilBarre',
+      'ecran',
+      'cadenas',
+      'alerte',
+      'calendrier',
+      'lieu',
+      'document',
+      'maison',
+      'personnePlus',
+      'listeCochee',
+      'grille',
+      'arbre',
+      'imprimante',
+      'curseurs',
+      'aide',
+      'soleil',
+      'croix',
+      'flecheGauche',
+      'chevron',
     ]) {
       expect(NOMS_ICONES, nom).toContain(nom);
     }

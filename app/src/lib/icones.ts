@@ -6,8 +6,10 @@
 export const ICONES = {
   plus: '<path d="M12 5v14M5 12h14" />',
   loupe: '<circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" />',
-  crayon: '<path d="M4 20l1-4.2L16.6 4.2a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.2 19z" /><path d="m14.5 6.3 3.2 3.2" />',
-  troisPoints: '<circle cx="5.5" cy="12" r="1.2" fill="currentColor" /><circle cx="12" cy="12" r="1.2" fill="currentColor" /><circle cx="18.5" cy="12" r="1.2" fill="currentColor" />',
+  crayon:
+    '<path d="M4 20l1-4.2L16.6 4.2a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.2 19z" /><path d="m14.5 6.3 3.2 3.2" />',
+  troisPoints:
+    '<circle cx="5.5" cy="12" r="1.2" fill="currentColor" /><circle cx="12" cy="12" r="1.2" fill="currentColor" /><circle cx="18.5" cy="12" r="1.2" fill="currentColor" />',
   corbeille: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12M9 7V4.5h6V7" />',
   oeil: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" />',
   oeilBarre:
@@ -20,12 +22,16 @@ export const ICONES = {
   document: '<path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" />',
   maison: '<path d="M4 11 12 4l8 7M6 10v10h12V10M10 20v-5h4v5" />',
   personnePlus: '<circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M18 8v6M15 11h6" />',
-  personnes: '<circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M15.5 4.8a3.5 3.5 0 0 1 0 6.4M18 14.3a6.5 6.5 0 0 1 3.5 5.7" />',
+  personnes:
+    '<circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><path d="M15.5 4.8a3.5 3.5 0 0 1 0 6.4M18 14.3a6.5 6.5 0 0 1 3.5 5.7" />',
   listeCochee: '<rect x="5" y="4" width="14" height="17" rx="2" /><path d="m8.8 12.5 2 2 4-4.3M9 3v3h6V3" />',
-  grille: '<rect x="3.5" y="4" width="17" height="16" rx="1.5" /><path d="M3.5 9.5h17M3.5 14.5h17M9.2 4v16M14.8 4v16" />',
+  grille:
+    '<rect x="3.5" y="4" width="17" height="16" rx="1.5" /><path d="M3.5 9.5h17M3.5 14.5h17M9.2 4v16M14.8 4v16" />',
   arbre: '<path d="M3 5h5v5H3M3 14h5v5H3M8 7.5h4V12M8 16.5h4V12M12 12h3M15 12h6M18 9v6" />',
-  imprimante: '<path d="M7 9V4h10v5M7 17H5a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 5 9h14a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 19 17h-2" /><rect x="7" y="14" width="10" height="6" />',
-  curseurs: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9M4 12h3M11 12h9" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="17" r="2" /><circle cx="9" cy="12" r="0.01" />',
+  imprimante:
+    '<path d="M7 9V4h10v5M7 17H5a1.5 1.5 0 0 1-1.5-1.5v-5A1.5 1.5 0 0 1 5 9h14a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 19 17h-2" /><rect x="7" y="14" width="10" height="6" />',
+  curseurs:
+    '<path d="M4 7h9M17 7h3M4 17h3M11 17h9M4 12h3M11 12h9" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="17" r="2" /><circle cx="9" cy="12" r="0.01" />',
   aide: '<circle cx="12" cy="12" r="9" /><path d="M9.3 9.5a2.8 2.8 0 1 1 4 2.5c-.9.5-1.3 1.1-1.3 2M12 17.2v.1" />',
   soleil:
     '<circle cx="12" cy="12" r="4" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4" />',

@@ -38,11 +38,12 @@ describe('fil d’Ariane (US-054 CA-3)', () => {
   });
 
   it('CA-3 : une page sous l’accueil donne Accueil › page, avec d’éventuels parents', () => {
-    expect(filSousAccueil('Comptes')).toEqual([{ libelle: 'Accueil', chemin: '/organisateur' }, { libelle: 'Comptes' }]);
-    expect(filSousAccueil('Comment ça s’organise', [{ libelle: 'Créer', chemin: '/creer' }]).map((n) => n.libelle)).toEqual([
-      'Accueil',
-      'Créer',
-      'Comment ça s’organise',
+    expect(filSousAccueil('Comptes')).toEqual([
+      { libelle: 'Accueil', chemin: '/organisateur' },
+      { libelle: 'Comptes' },
     ]);
+    expect(
+      filSousAccueil('Comment ça s’organise', [{ libelle: 'Créer', chemin: '/creer' }]).map((n) => n.libelle),
+    ).toEqual(['Accueil', 'Créer', 'Comment ça s’organise']);
   });
 });

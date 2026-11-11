@@ -13,6 +13,8 @@
     type ModificationFormule,
   } from '@poule-position/domaine';
   import Lien from '../composants/Lien.svelte';
+  import FilEpreuve from '../composants/FilEpreuve.svelte';
+  import type { Accueil } from '../lib/accueil';
   import { confirmationFormule, modifierFormule, type ErreurModificationFormule } from '../lib/epreuves';
   import { prendreEcriture, type Journal } from '../lib/journal';
   import { cheminEpreuve } from '../lib/routes';
@@ -25,6 +27,8 @@
     epreuveId: string;
     journal: Journal;
     synchronisation: Synchronisation;
+    /** US-054 : hiérarchie du club pour le fil d'Ariane. */
+    accueil: Accueil;
     /**
      * US-028 CA-4 : matchs déjà joués, annoncés avant de changer la formule d'une épreuve en cours. Aucun match
      * n'existe tant que les poules et le tableau ne sont pas saisis (E4, E6).
@@ -33,7 +37,7 @@
     naviguer: (chemin: string) => void;
   }
 
-  let { session, epreuveId, journal, synchronisation, matchsJoues = 0, naviguer }: Proprietes = $props();
+  let { session, epreuveId, journal, synchronisation, accueil, matchsJoues = 0, naviguer }: Proprietes = $props();
 
   const t = textes.epreuves;
   const tf = t.formulePage;
@@ -139,6 +143,7 @@
 </script>
 
 <main>
+  {#if epreuve}<FilEpreuve {accueil} {epreuve} suite={tf.titre} {naviguer} />{/if}
   <h1>{tf.titre}</h1>
 
   {#if !chargee}

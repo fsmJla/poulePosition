@@ -49,6 +49,21 @@ export const textes = {
     libelle: 'Thème',
     choix: { clair: 'Clair', sombre: 'Sombre', auto: 'Auto' },
   },
+  /** US-054 : entête commun des pages connectées, fil d'Ariane et menu « ⋯ » (maquette « IHM de l'organisateur »). */
+  entete: {
+    marque: 'Poule Position',
+    creer: 'Créer',
+    comptes: 'Comptes',
+    aide: 'Comment ça s’organise',
+    theme: 'Thème',
+    horsLigne: 'Nécessite une connexion internet',
+    filAriane: 'Fil d’Ariane',
+    accueil: 'Accueil',
+    autresActions: (nom: string) => `Autres actions pour ${nom}`,
+    actions: 'Actions',
+    /** Légende d'une action grisée dans un menu : son motif est écrit à côté d'elle. */
+    indisponible: 'Indisponible',
+  },
   etats: {
     'non-configure': 'Serveur non configuré',
     connexion: 'Connexion au serveur…',

@@ -7,7 +7,9 @@
   import { entreeVisee } from '../lib/menu';
   import { CHEMINS } from '../lib/routes';
   import { textes } from '../lib/textes';
+  import { CHOIX_THEME, theme, type ChoixTheme } from '../lib/theme';
   import Avatar from './Avatar.svelte';
+  import Icone from './Icone.svelte';
 
   interface Proprietes {
     compte: CompteConnecte;
@@ -15,9 +17,23 @@
     surDeconnexion: () => void;
     /** US-006 : demande la confirmation de l'oubli de l'appareil (panneau sous l'entête). */
     surOubli: () => void;
+    /** US-054 CA-7 : écran étroit, « Comptes », l'aide et le thème quittent l'entête pour ce menu. */
+    etroit?: boolean;
+    enLigne?: boolean;
   }
 
-  let { compte, naviguer, surDeconnexion, surOubli }: Proprietes = $props();
+  let { compte, naviguer, surDeconnexion, surOubli, etroit = false, enLigne = true }: Proprietes = $props();
+  const te = textes.entete;
+  const choixTheme = theme.choix;
+  const iconeTheme = { clair: 'soleil', sombre: 'lune', auto: 'ecran' } as const;
+
+  function versChemin(chemin: string) {
+    return (evenement: MouseEvent) => {
+      if (evenement.button !== 0 || evenement.ctrlKey || evenement.metaKey || evenement.shiftKey) return;
+      evenement.preventDefault();
+      choisir(() => naviguer(chemin));
+    };
+  }
 
   const t = textes.organisateur;
   let ouvert = $state(false);
@@ -102,6 +118,35 @@
       </div>
       <ul>
         <li><a href={CHEMINS.profil} onclick={versProfil}>{t.menu.editerProfil}</a></li>
+        {#if etroit}
+          {#if compte.role === 'administrateur'}
+            <li>
+              {#if enLigne}
+                <a href={CHEMINS.comptes} onclick={versChemin(CHEMINS.comptes)}><Icone nom="personnes" />{te.comptes}</a
+                >
+              {:else}
+                <span class="inactif" aria-disabled="true"
+                  ><Icone nom="personnes" />{te.comptes} <small>{te.horsLigne}</small></span
+                >
+              {/if}
+            </li>
+          {/if}
+          <li>
+            <a href={CHEMINS.aideOrganisation} onclick={versChemin(CHEMINS.aideOrganisation)}
+              ><Icone nom="aide" />{te.aide}</a
+            >
+          </li>
+          <li class="theme" role="group" aria-label={te.theme}>
+            {#each CHOIX_THEME as option (option)}
+              <button
+                type="button"
+                aria-pressed={$choixTheme === option}
+                onclick={() => theme.choisir(option as ChoixTheme)}
+                ><Icone nom={iconeTheme[option]} />{textes.theme.choix[option]}</button
+              >
+            {/each}
+          </li>
+        {/if}
       </ul>
       <hr />
       <ul>
@@ -190,8 +235,11 @@
   }
 
   a,
-  ul button {
-    display: block;
+  ul button,
+  .inactif {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
     box-sizing: border-box;
     width: 100%;
     min-height: 44px;
@@ -203,6 +251,31 @@
     text-align: left;
     text-decoration: none;
     cursor: pointer;
+  }
+
+  .inactif {
+    color: var(--texte-inactif);
+  }
+
+  .inactif small {
+    font-size: 0.8rem;
+  }
+
+  .theme {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .theme button {
+    width: auto;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .theme button[aria-pressed='true'] {
+    background: var(--accent-teinte);
+    color: var(--accent);
+    font-weight: 600;
   }
 
   a:hover,

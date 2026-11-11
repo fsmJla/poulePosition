@@ -28,10 +28,12 @@
     type Sexe,
     type TypeEpreuve,
   } from '@poule-position/domaine';
+  import FilAriane from '../composants/FilAriane.svelte';
   import type { Accueil, DonneesAccueil } from '../lib/accueil';
   import type { Journal } from '../lib/journal';
   import { creerLot, type CompteRenduLot } from '../lib/lot';
-  import { CHEMINS } from '../lib/routes';
+  import { filSousAccueil } from '../lib/fil-ariane';
+  import { CHEMINS, cheminPlanManifestation } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -187,6 +189,16 @@
 </script>
 
 <main class:integree>
+  {#if !integree && donnees && competition}
+    <FilAriane
+      niveaux={filSousAccueil(
+        competition.nom,
+        manifestation ? [{ libelle: manifestation.nom, chemin: cheminPlanManifestation(manifestation.id) }] : [],
+        textes.entete.accueil,
+      )}
+      {naviguer}
+    />
+  {/if}
   {#if !integree}<h1>{tg.titre}</h1>{/if}
 
   {#if !donnees}

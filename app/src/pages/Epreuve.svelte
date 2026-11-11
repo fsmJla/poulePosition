@@ -6,6 +6,9 @@
   import type { Epreuve } from '@poule-position/domaine';
   import FichiersJoints from '../composants/FichiersJoints.svelte';
   import Lien from '../composants/Lien.svelte';
+  import FilEpreuve from '../composants/FilEpreuve.svelte';
+  import MenuActions from '../composants/MenuActions.svelte';
+  import type { Accueil } from '../lib/accueil';
   import type { ClientCompetitions } from '../lib/competitions';
   import type { ClientFichiers } from '../lib/fichiers';
   import { modifierPublication } from '../lib/epreuves';
@@ -33,10 +36,13 @@
     fichiers: ClientFichiers;
     /** US-030 : retrouve la manifestation de la compétition de l'épreuve, pour l'héritage. */
     clientCompetitions: ClientCompetitions;
+    /** US-054 : hiérarchie du club pour le fil d'Ariane. */
+    accueil: Accueil;
     naviguer: (chemin: string) => void;
   }
 
-  let { session, epreuveId, journal, synchronisation, fichiers, clientCompetitions, naviguer }: Proprietes = $props();
+  let { session, epreuveId, journal, synchronisation, fichiers, clientCompetitions, accueil, naviguer }: Proprietes =
+    $props();
 
   const t = textes.epreuves;
 
@@ -255,7 +261,20 @@
   {:else if !epreuve}
     <p class="message" role="alert">{t.introuvable}</p>
   {:else}
-    <h1>{epreuve.nom}</h1>
+    <FilEpreuve {accueil} {epreuve} {naviguer} />
+    <div class="titre-epreuve">
+      <h1>{epreuve.nom}</h1>
+      <!-- US-054 CA-9 : menu « ⋯ » de l'épreuve ; ses liens restent aussi dans la page jusqu'à US-058. -->
+      <MenuActions
+        id="menu-epreuve"
+        nom={epreuve.nom}
+        {naviguer}
+        actions={[
+          { libelle: t.modifierFormule, icone: 'arbre', chemin: cheminFormuleEpreuve(epreuveId) },
+          { libelle: t.lienParametres, icone: 'curseurs', chemin: cheminParametresEpreuve(epreuveId) },
+        ]}
+      />
+    </div>
     <ul class="etiquettes">
       <li>{t.statuts[epreuve.statut]}</li>
       <li>{epreuve.publiee ? t.publiee : t.nonPubliee}</li>
@@ -444,6 +463,17 @@
     justify-items: center;
     gap: 1.25rem;
     padding: 3rem 1rem;
+  }
+
+  .titre-epreuve {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .titre-epreuve h1 {
+    margin: 0;
   }
 
   h1 {

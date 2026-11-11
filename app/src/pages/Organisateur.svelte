@@ -184,20 +184,9 @@
   <h1>{textes.organisateur.bonjour(session.compte.nom)}</h1>
   <p class="role">{textes.roles[session.compte.role]}</p>
   <nav class="actions" aria-label={textes.organisateur.actions}>
-    <!-- US-046 CA-1 : un seul point d'entrée de création, qui explique les choix ; la page s'affiche aussi hors ligne. -->
-    <Lien chemin={CHEMINS.creer} {naviguer}>{textes.creer.bouton}</Lien>
+    <!-- US-054 : « Créer » (US-046) et « Comptes » (US-007) sont dans l'entête commun, sur toutes les pages. -->
     <!-- US-023 : consultables hors ligne (dernière copie), modifiables en ligne seulement. -->
     <Lien chemin={CHEMINS.manifestations} {naviguer}>{textes.manifestations.entree}</Lien>
-    {#if session.compte.role === 'administrateur'}
-      {#if horsLigne}
-        <span class="inactive" aria-disabled="true">
-          {textes.comptes.entree}
-          <small>{textes.comptes.horsLigne}</small>
-        </span>
-      {:else}
-        <Lien chemin={CHEMINS.comptes} {naviguer}>{textes.comptes.entree}</Lien>
-      {/if}
-    {/if}
   </nav>
 
   <section class="liste" aria-labelledby="titre-liste">

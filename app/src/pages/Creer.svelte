@@ -13,7 +13,9 @@
     rienACompleter,
     type ChoixCompleter,
   } from '@poule-position/domaine';
+  import FilAriane from '../composants/FilAriane.svelte';
   import Lien from '../composants/Lien.svelte';
+  import { filSousAccueil } from '../lib/fil-ariane';
   import Niveaux from '../composants/Niveaux.svelte';
   import type { Accueil, DonneesAccueil } from '../lib/accueil';
   import {
@@ -71,6 +73,7 @@
 </script>
 
 <main>
+  <FilAriane niveaux={filSousAccueil(t.bouton, [], textes.entete.accueil)} {naviguer} />
   <h1>{t.titre}</h1>
   <p class="intro">{t.intro}</p>
   <p><Lien chemin={CHEMINS.aideOrganisation} {naviguer}>{t.lienAide}</Lien></p>
