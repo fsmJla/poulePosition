@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-054, US-039, US-041, US-042
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-057-un-seul-supprimer` / —
 
 ## Récit
 
@@ -91,3 +91,4 @@ supprimer ». Testé par un E2E réseau coupé.
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » ; fusion validée par l'utilisateur le 2026-11-11 |
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
+| 2026-11-11 | Passée à En cours (branche us/US-057-un-seul-supprimer) ; plan validé par l'utilisateur (organisateur : « Supprimer… » pour les objets vides seulement ; confirmation en fenêtre modale sur l'accueil) |
