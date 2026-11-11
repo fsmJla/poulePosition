@@ -1,6 +1,6 @@
 // Données de la planche 1 pour les E2E de l'accueil (US-055, US-057) : une manifestation qui se déroule aujourd'hui, trois
 // compétitions (épée avec trois épreuves, sabre avec une, fleuret sans épreuve), créées au serveur.
-import { expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 export const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 export const aujourdhui = () => new Date().toLocaleDateString('sv-SE');
