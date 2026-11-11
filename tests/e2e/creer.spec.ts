@@ -149,10 +149,9 @@ test('US-046 CA-4 : chaque compétition a la même couleur dans la liste de l’
 
   // La liste de l'accueil : une bande par compétition, dans le cadre de la manifestation.
   await page.goto('/organisateur');
-  const bloc = page.locator('details').filter({ hasText: manifestation });
-  await bloc.locator('summary').click();
-  const bandeAlpha = bloc.locator('.competition.bande').filter({ hasText: alpha });
-  const bandeBravo = bloc.locator('.competition.bande').filter({ hasText: bravo });
+  const bloc = page.getByRole('article', { name: manifestation });
+  const bandeAlpha = bloc.locator('.competition').filter({ hasText: alpha });
+  const bandeBravo = bloc.locator('.competition').filter({ hasText: bravo });
   const [listeAlpha, listeBravo] = [await rang(bandeAlpha), await rang(bandeBravo)];
   expect(listeAlpha).toBeDefined();
   expect(listeBravo).toBeDefined();

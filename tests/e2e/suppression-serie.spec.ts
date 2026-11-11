@@ -31,7 +31,9 @@ async function deuxEpreuves(page: Page) {
   await seConnecter(page);
   for (const nom of noms) await creerEpreuve(page, nom);
   await page.goto('/organisateur');
-  await expect(page.getByRole('link', { name: noms[0], exact: true })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${noms[0]}`, exact: true })).toBeVisible({
+    timeout: 20_000,
+  });
   return noms;
 }
 
@@ -69,10 +71,10 @@ test('US-040 CA-3 et CA-4 : une confirmation unique supprime les épreuves coch�
   await valider.click();
 
   await expect(page.getByText('2 épreuves supprimées')).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByRole('link', { name: premiere, exact: true })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: seconde, exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${premiere}`, exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${seconde}`, exact: true })).toHaveCount(0);
   await page.reload();
-  await expect(page.getByRole('link', { name: premiere, exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${premiere}`, exact: true })).toHaveCount(0);
 });
 
 test('US-040 hors ligne : cases et bouton sont grisés, avec « Connexion requise pour supprimer »', async ({
@@ -96,7 +98,7 @@ test('US-040 CA-5 : un organisateur n’a ni case ni barre de suppression', asyn
   await seConnecter(page);
   await creerEpreuve(page, nom);
   await page.goto('/organisateur');
-  await expect(page.getByRole('link', { name: nom, exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${nom}`, exact: true })).toBeVisible();
   await expect(case_(page, nom)).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Supprimer définitivement…' })).toHaveCount(0);
 });
