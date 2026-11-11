@@ -19,6 +19,7 @@ export type Page =
   | 'parametresEpreuve'
   | 'grilleEpreuves'
   | 'planManifestation'
+  | 'direct'
   | 'assistantManifestation'
   | 'creer'
   | 'aideOrganisation';
@@ -46,10 +47,21 @@ export const CHEMINS = Object.freeze({
 } satisfies Record<
   Exclude<
     Page,
-    'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve' | 'grilleEpreuves' | 'planManifestation'
+    | 'epreuve'
+    | 'modifierEpreuve'
+    | 'formuleEpreuve'
+    | 'parametresEpreuve'
+    | 'grilleEpreuves'
+    | 'planManifestation'
+    | 'direct'
   >,
   string
 >);
+
+/** US-031 : lien public vers une épreuve (spectateurs et écran géant, ADR-0007) ; sans connexion. */
+export function cheminDirect(epreuveId: string): string {
+  return `/direct/${epreuveId}`;
+}
 
 /** US-025 : page d'une épreuve. */
 export function cheminEpreuve(epreuveId: string): string {
@@ -144,6 +156,7 @@ export function copieEpreuve(recherche: string): { epreuveId: string; arme: stri
   return { epreuveId, arme: arme && /^[A-Za-z]+$/.test(arme) ? arme : null, nom: parametres.get('nom') ?? '' };
 }
 
+const MOTIF_DIRECT = /^\/direct\/([^/]+)$/;
 const MOTIF_PLAN = /^\/manifestations\/([^/]+)$/;
 const MOTIF_GRILLE = /^\/competitions\/([^/]+)\/epreuves$/;
 const MOTIF_EPREUVE = /^\/epreuves\/([^/]+)$/;
@@ -183,10 +196,18 @@ function pageDe(
   const page = (
     Object.keys(CHEMINS) as Exclude<
       Page,
-      'epreuve' | 'modifierEpreuve' | 'formuleEpreuve' | 'parametresEpreuve' | 'grilleEpreuves' | 'planManifestation'
+      | 'epreuve'
+      | 'modifierEpreuve'
+      | 'formuleEpreuve'
+      | 'parametresEpreuve'
+      | 'grilleEpreuves'
+      | 'planManifestation'
+      | 'direct'
     >[]
   ).find((candidate) => CHEMINS[candidate] === chemin);
   if (page) return { page };
+  const direct = MOTIF_DIRECT.exec(chemin)?.[1];
+  if (direct) return MOTIF_IDENTIFIANT.test(direct) ? { page: 'direct', epreuveId: direct } : null;
   const plan = MOTIF_PLAN.exec(chemin)?.[1];
   if (plan) return MOTIF_IDENTIFIANT.test(plan) ? { page: 'planManifestation', manifestationId: plan } : null;
   const grille = MOTIF_GRILLE.exec(chemin)?.[1];

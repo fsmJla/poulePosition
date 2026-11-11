@@ -40,6 +40,8 @@ const indexee = (champs: Partial<EpreuveIndexee> = {}): EpreuveIndexee => ({
   categorie: 'Senior',
   sexe: 'dames',
   date: '2027-03-15',
+  horaires: { appel: null, scratch: null, debutPoules: null },
+  lieu: null,
   statut: 'enCours',
   publiee: true,
   rattachement: { competitionId: 'e1' },

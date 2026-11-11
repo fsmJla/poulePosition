@@ -35,6 +35,7 @@ import {
   type ReponseManifestation,
   type ReponseFichier,
   type ReponseFichiers,
+  type ReponseEpreuvePublique,
   type CodeErreurInstallation,
   type CodeErreurSession,
   type CompteResume,
@@ -112,6 +113,7 @@ export default {
     if (route.route === 'installation') return installer(requete, env);
     if (route.route === 'essai-email') return essayerEnvoi(requete, env);
     if (route.route === 'fichier-public') return servirFichier(route.nom, requete, env);
+    if (route.route === 'public' || route.route === 'epreuve-publique') return servirPublic(route, requete, env);
     if (route.route !== 'connexion') return routeSession(route, requete, env, contexte);
 
     if (requete.headers.get('Upgrade') !== 'websocket') return new Response('WebSocket attendu', { status: 426 });
@@ -719,6 +721,32 @@ async function servirFichier(nom: string, requete: Request, env: Env): Promise<R
       'Access-Control-Allow-Origin': '*',
     },
   });
+}
+
+/**
+ * US-031 (docs/protocole.md §16) : page d'accueil publique, sans session. `GET /public` donne les épreuves publiées avec
+ * leur manifestation, leur compétition et leurs fichiers ; `GET /public/epreuves/<id>` dit si une épreuve est publiée.
+ * Rien n'est gardé en cache : une dépublication doit se voir tout de suite.
+ */
+async function servirPublic(
+  route: Extract<Route, { route: 'public' | 'epreuve-publique' }>,
+  requete: Request,
+  env: Env,
+): Promise<Response> {
+  const entetes = { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' };
+  if (requete.method !== 'GET') {
+    return new Response('Méthode non autorisée', { status: 405, headers: { Allow: 'GET', ...entetes } });
+  }
+  const club = env.CLUB.get(env.CLUB.idFromName(`club:${env.CLUB_ID}`));
+  if (route.route === 'public') return Response.json(await club.lirePublic(), { headers: entetes });
+  const epreuve = await club.lireEpreuvePublique(route.epreuveId);
+  if (!epreuve) {
+    return Response.json({ ok: false, erreur: 'EPREUVE_NON_PUBLIEE' } satisfies ReponseEpreuvePublique, {
+      status: 404,
+      headers: entetes,
+    });
+  }
+  return Response.json({ ok: true, epreuve } satisfies ReponseEpreuvePublique, { headers: entetes });
 }
 
 /** Contenu d'un élément à supprimer : existe-t-il, et quelles épreuves de l'index lui sont rattachées. */

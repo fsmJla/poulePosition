@@ -220,6 +220,23 @@ describe('événement ParametresModifies (US-032)', () => {
   });
 });
 
+describe('événement PublicationModifiee (US-031)', () => {
+  const publication = (donneesPublication: unknown) =>
+    brut({ seq: 2, type: 'PublicationModifiee', donnees: donneesPublication });
+
+  it('CA-2 et CA-4 : lit la publication et la dépublication', () => {
+    for (const publiee of [true, false]) {
+      expect(lireEvenement(publication({ publiee }))).toEqual(publication({ publiee }));
+    }
+  });
+
+  it('refuse une publication vide, en trop, mal typée ou qui n’est pas un objet', () => {
+    for (const mauvaise of [{}, { publiee: 'oui' }, { publiee: null }, { publiee: true, nom: 'x' }, [], null]) {
+      expect(lireEvenement(publication(mauvaise))).toBeNull();
+    }
+  });
+});
+
 describe('vocabulaire du journal (US-044, ADR-0021)', () => {
   it('US-044 CA-3 : le journal d’une épreuve porte epreuveId et les événements EpreuveCreee et EpreuveModifiee', () => {
     expect(lireEvenement(brut())).toMatchObject({ type: 'EpreuveCreee', epreuveId: 'c1' });

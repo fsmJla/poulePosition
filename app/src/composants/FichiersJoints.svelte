@@ -40,7 +40,7 @@
 
   const proprietaire = $derived(chaine[0]!.proprietaire);
   const id = $derived(chaine[0]!.id ?? '');
-  const effectifs = $derived(fichiersEffectifs(liste ?? [], chaine));
+  const effectifs = $derived(fichiersEffectifs<FichierJoint>(liste ?? [], chaine));
 
   async function preparerAdresses(fichiers: FichierJoint[]) {
     const prochaines: Record<string, string> = {};

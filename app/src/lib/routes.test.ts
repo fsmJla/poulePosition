@@ -8,6 +8,7 @@ import {
   cheminDupliquerEpreuve,
   cheminNouvelleEpreuveDans,
   copieEpreuve,
+  cheminDirect,
   cheminPlanManifestation,
   preselectionEpreuve,
   cheminParametresEpreuve,
@@ -174,6 +175,18 @@ describe('grille des épreuves (US-048)', () => {
     expect(resoudreRoute(`/competitions/${id}/epreuves/`, true)).toEqual(route);
     expect(resoudreRoute(`/competitions/${id}/epreuves`, false)).toEqual({ redirection: CHEMINS.connexion });
     expect(resoudreRoute('/competitions/Pas Un Id/epreuves', true)).toEqual({ redirection: '/' });
+  });
+});
+
+describe('lien public vers une épreuve (US-031)', () => {
+  const id = '0b6f1c1e-6d1a-4f0a-9a43-2f3c9e5d7b10';
+
+  it('CA-4 : « /direct/<id> » est publique, sans connexion, et porte l’identifiant de l’épreuve', () => {
+    expect(cheminDirect(id)).toBe(`/direct/${id}`);
+    expect(resoudreRoute(`/direct/${id}`, false)).toEqual({ page: 'direct', epreuveId: id });
+    expect(resoudreRoute(`/direct/${id}/`, true)).toEqual({ page: 'direct', epreuveId: id });
+    expect(resoudreRoute('/direct/Pas Un Id', false)).toEqual({ redirection: '/' });
+    expect(resoudreRoute('/direct', false)).toEqual({ redirection: '/' });
   });
 });
 

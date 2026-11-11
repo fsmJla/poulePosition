@@ -1,6 +1,14 @@
 // Réplication du journal et index des épreuves du club (US-022, ADR-0016, docs/protocole.md §11) : le pilote
 // envoie ses événements par lots de 16 Ko au plus ; le serveur les ajoute s'ils suivent son dernier seq.
-import { ARMES, SEXES, STATUTS, validerNom, type Epreuve, type Evenement } from '@poule-position/domaine';
+import {
+  ARMES,
+  SEXES,
+  STATUTS,
+  validerNom,
+  type Epreuve,
+  type Evenement,
+  type Horaires,
+} from '@poule-position/domaine';
 import { lireEvenement } from './journal';
 import { CODES_ERREUR_SESSION, type CodeErreurSession, type ErreurReponse } from './session';
 import { aExactementLesChamps, estRattachement, estTexteOuNull } from './validation';
@@ -11,25 +19,53 @@ export const TAILLE_MAX_LOT = 16 * 1024;
 /** Identifiant d'appareil ou d’épreuve : minuscules, chiffres et tirets (un UUID convient). */
 export const MOTIF_IDENTIFIANT = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
-/** Résumé de l’épreuve, calculé et fourni par le pilote (US-022 CA-3, US-025). */
+/** Résumé de l’épreuve, calculé et fourni par le pilote (US-022 CA-3, US-025 ; `horaires` et `lieu` : US-031 CA-3). */
 export type ResumeEpreuve = Pick<
   Epreuve,
-  'nom' | 'arme' | 'categorie' | 'sexe' | 'date' | 'statut' | 'publiee' | 'rattachement'
+  'nom' | 'arme' | 'categorie' | 'sexe' | 'date' | 'horaires' | 'lieu' | 'statut' | 'publiee' | 'rattachement'
 >;
 
-const CHAMPS_RESUME = ['nom', 'arme', 'categorie', 'sexe', 'date', 'statut', 'publiee', 'rattachement'] as const;
+const CHAMPS_RESUME = [
+  'nom',
+  'arme',
+  'categorie',
+  'sexe',
+  'date',
+  'horaires',
+  'lieu',
+  'statut',
+  'publiee',
+  'rattachement',
+] as const;
+
+const SANS_HORAIRES: Horaires = { appel: null, scratch: null, debutPoules: null };
+
+/**
+ * Un résumé d'avant US-031 n'a ni `horaires` ni `lieu` : il reste lisible, avec des valeurs vides jusqu'au prochain lot
+ * du pilote (sinon la ligne de l'index serait ignorée).
+ */
+export function completerResume<T>(brut: T): T {
+  if (brut === null || typeof brut !== 'object' || Array.isArray(brut)) return brut;
+  const objet = brut as Record<string, unknown>;
+  if ('horaires' in objet || 'lieu' in objet) return brut;
+  return { ...objet, horaires: { ...SANS_HORAIRES }, lieu: null } as T;
+}
 
 /** Résumé envoyé avec chaque lot : le serveur le range dans l'index du club sans rien calculer (ADR-0016). */
 export function resumeDe(epreuve: Epreuve): ResumeEpreuve {
-  const { nom, arme, categorie, sexe, date, statut, publiee, rattachement } = epreuve;
-  return { nom, arme, categorie, sexe, date, statut, publiee, rattachement };
+  const { nom, arme, categorie, sexe, date, horaires, lieu, statut, publiee, rattachement } = epreuve;
+  return { nom, arme, categorie, sexe, date, horaires, lieu, statut, publiee, rattachement };
 }
 
 const comprend = (liste: readonly string[], valeur: unknown) => (liste as readonly unknown[]).includes(valeur);
 
 function estResume(objet: Record<string, unknown>): boolean {
-  const { nom, arme, categorie, sexe, date, statut, publiee, rattachement } = objet;
+  const { nom, arme, categorie, sexe, date, horaires, lieu, statut, publiee, rattachement } = objet;
+  const unHoraire = aExactementLesChamps(horaires, ['appel', 'scratch', 'debutPoules']);
   return (
+    unHoraire !== null &&
+    Object.values(unHoraire).every(estTexteOuNull) &&
+    estTexteOuNull(lieu) &&
     typeof nom === 'string' &&
     validerNom(nom) === null &&
     comprend(ARMES, arme) &&
@@ -115,7 +151,7 @@ function erreurDe(brut: unknown): { ok: false; erreur: ErreurReponse } {
 const estEntierPositif = (valeur: unknown): valeur is number => Number.isInteger(valeur) && (valeur as number) >= 0;
 
 function analyserResume(brut: unknown): ResumeEpreuve | null {
-  const resume = aExactementLesChamps(brut, CHAMPS_RESUME);
+  const resume = aExactementLesChamps(completerResume(brut), CHAMPS_RESUME);
   return resume && estResume(resume) ? (resume as unknown as ResumeEpreuve) : null;
 }
 
@@ -231,7 +267,7 @@ export function analyserReponseJournal(brut: unknown): ReponseJournal {
 }
 
 function analyserIndexee(brut: unknown): EpreuveIndexee | null {
-  const objet = aExactementLesChamps(brut, [
+  const objet = aExactementLesChamps(completerResume(brut), [
     ...CHAMPS_RESUME,
     'id',
     'piloteAppareil',

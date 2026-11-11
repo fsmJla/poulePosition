@@ -385,3 +385,54 @@ describe('paramètres d’une épreuve (US-032)', () => {
     expect(appliquer(vide, evenement(1, parametres({ prenomInitiale: true })))).toBe(vide);
   });
 });
+
+describe('publication d’une épreuve (US-031)', () => {
+  const publication = (publiee: boolean): Proposition => ({ type: 'PublicationModifiee', donnees: { publiee } });
+  const creee = () => projeter([evenement(1)]);
+  const enStatut = (statut: 'preparation' | 'enCours' | 'terminee' | 'archivee') => {
+    const p = creee();
+    return { ...p, epreuve: { ...p.epreuve!, statut } };
+  };
+
+  it('CA-1 : une épreuve créée n’est pas publiée', () => {
+    expect(creee().epreuve?.publiee).toBe(false);
+  });
+
+  it('CA-2 : publier, puis dépublier (CA-4), change la publication et fait avancer le journal', () => {
+    const publiee = projeter([evenement(1), evenement(2, publication(true))]);
+    expect(publiee.epreuve?.publiee).toBe(true);
+    expect(publiee.dernierSeq).toBe(2);
+    const depubliee = projeter([evenement(1), evenement(2, publication(true)), evenement(3, publication(false))]);
+    expect(depubliee.epreuve?.publiee).toBe(false);
+    expect(depubliee.anomalie).toBeNull();
+  });
+
+  it('CA-2 : on publie à tout moment, quel que soit le statut', () => {
+    for (const statut of ['preparation', 'enCours', 'terminee'] as const) {
+      expect(verifierEvenement(enStatut(statut), publication(true))).toBeNull();
+    }
+  });
+
+  it('une publication qui ne change rien est refusée', () => {
+    expect(verifierEvenement(creee(), publication(false))).toBe('AUCUNE_MODIFICATION');
+    const publiee = projeter([evenement(1), evenement(2, publication(true))]);
+    expect(verifierEvenement(publiee, publication(true))).toBe('AUCUNE_MODIFICATION');
+  });
+
+  it('cas limite : une épreuve archivée ne se publie ni ne se dépublie', () => {
+    expect(verifierEvenement(enStatut('archivee'), publication(true))).toBe('EPREUVE_ARCHIVEE');
+    expect(verifierEvenement(enStatut('archivee'), publication(false))).toBe('EPREUVE_ARCHIVEE');
+  });
+
+  it('refuse de publier une épreuve inconnue, et appliquer l’ignore', () => {
+    const vide = projectionVide();
+    expect(verifierEvenement(vide, publication(true))).toBe('EPREUVE_INCONNUE');
+    expect(appliquer(vide, evenement(1, publication(true)))).toBe(vide);
+  });
+
+  it('les autres modifications ne changent pas la publication', () => {
+    const publiee = projeter([evenement(1), evenement(2, publication(true))]);
+    const modifiee = appliquer(publiee, evenement(3, { type: 'EpreuveModifiee', donnees: { nom: 'Autre' } }));
+    expect(modifiee.epreuve?.publiee).toBe(true);
+  });
+});

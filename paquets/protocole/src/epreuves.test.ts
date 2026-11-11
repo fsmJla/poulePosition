@@ -12,6 +12,7 @@ import {
   analyserReponsePriseDeMain,
   analyserReponseSuppressionEpreuve,
   preparerLots,
+  completerResume,
   resumeDe,
   TAILLE_MAX_LOT,
   type EpreuveIndexee,
@@ -51,6 +52,8 @@ const resume = (champs: Record<string, unknown> = {}): ResumeEpreuve =>
     categorie: 'M13',
     sexe: 'dames',
     date: '2027-03-14',
+    horaires: { appel: null, scratch: null, debutPoules: null },
+    lieu: 'Salle Bellegrave',
     statut: 'preparation',
     publiee: false,
     rattachement: { competitionId: 'e1' },
@@ -240,6 +243,61 @@ describe('résumé d’une épreuve pour l’index du club (US-025)', () => {
       epreuves: [],
       supprimees: [],
     });
+  });
+});
+
+describe('horaires et lieu du résumé (US-031 CA-3)', () => {
+  const sansEnrichissement = (): Record<string, unknown> => {
+    const ancien: Record<string, unknown> = { ...resume() };
+    delete ancien.horaires;
+    delete ancien.lieu;
+    return ancien;
+  };
+
+  it('US-031 CA-3 : le résumé du pilote porte les horaires et le lieu de l’épreuve', () => {
+    const horaires = { appel: '08:30', scratch: '09:00', debutPoules: '09:30' };
+    const { epreuve } = projeter([
+      { ...evenement(1), type: 'EpreuveCreee' as const, donnees: { ...donnees(), horaires } },
+    ]);
+    expect(resumeDe(epreuve!)).toMatchObject({ horaires, lieu: 'Salle Bellegrave' });
+  });
+
+  it('US-031 CA-3 : refuse des horaires ou un lieu mal formés', () => {
+    for (const champs of [{ horaires: { appel: 8 } }, { horaires: null }, { lieu: 3 }]) {
+      expect(analyserDemandeEnvoi(demande({ resume: resume(champs) }))).toEqual({ ok: false });
+    }
+  });
+
+  it('cas limite : un résumé d’avant US-031 reste lisible, avec des horaires et un lieu vides', () => {
+    const lu = analyserDemandeEnvoi(demande({ resume: sansEnrichissement() }));
+    expect(lu).toMatchObject({
+      ok: true,
+      demande: { resume: { horaires: { appel: null, scratch: null, debutPoules: null }, lieu: null } },
+    });
+    expect(
+      analyserReponseEpreuves({
+        ok: true,
+        epreuves: [
+          {
+            ...sansEnrichissement(),
+            id: 'c1',
+            piloteAppareil: 'a1b2-c3',
+            piloteNom: 'Orga',
+            dernierSeq: 1,
+            modifieeLe: 1,
+          },
+        ],
+      }),
+    ).toMatchObject({
+      ok: true,
+      epreuves: [{ id: 'c1', lieu: null }],
+    });
+  });
+
+  it('completerResume laisse intacts un résumé complet et ce qui n’est pas un objet', () => {
+    expect(completerResume(resume())).toEqual(resume());
+    expect(completerResume(null)).toBeNull();
+    expect(completerResume([1])).toEqual([1]);
   });
 });
 

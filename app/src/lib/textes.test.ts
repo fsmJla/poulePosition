@@ -236,3 +236,35 @@ describe('textes du plan (US-050)', () => {
     expect(textes.plan.changerDeJourVers('lundi')).toBe('Changer de jour : lundi');
   });
 });
+
+describe('vocabulaire de la publication (US-031 CA-6)', () => {
+  const chaines = (valeur: unknown): string[] =>
+    typeof valeur === 'string'
+      ? [valeur]
+      : valeur && typeof valeur === 'object'
+        ? Object.values(valeur).flatMap(chaines)
+        : [];
+
+  it('CA-6 : « Publiée / Non publiée », jamais « en ligne / hors ligne », réservés à l’état du réseau', () => {
+    expect(textes.epreuves.publiee).toBe('Publiée');
+    expect(textes.epreuves.nonPubliee).toBe('Non publiée');
+    expect(textes.publication.publier).toBe('Publier');
+    expect(textes.publication.depublier).toBe('Dépublier');
+    for (const texte of [...chaines(textes.publication), ...chaines(textes.accueilPublic)]) {
+      expect(texte, texte).not.toMatch(/en ligne|hors ligne/i);
+    }
+  });
+
+  it('CA-4 : le message d’une épreuve non publiée est celui de l’US', () => {
+    expect(textes.accueilPublic.direct.nonPubliee).toBe('Cette épreuve n’est pas publiée');
+  });
+
+  it('cas limite : une page publique sans épreuve dit « Aucune épreuve à venir »', () => {
+    expect(textes.accueilPublic.aucune).toBe('Aucune épreuve à venir');
+  });
+
+  it('hors ligne : le visiteur est averti que le serveur est injoignable', () => {
+    expect(textes.accueilPublic.injoignable).toContain('connexion internet');
+    expect(textes.publication.enAttente).toBe('Publication en attente d’envoi');
+  });
+});

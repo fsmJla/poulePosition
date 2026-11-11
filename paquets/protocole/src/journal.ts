@@ -98,6 +98,10 @@ function donneesValides(type: unknown, donnees: unknown): boolean {
     const pilote = aExactementLesChamps(donnees, ['ancienAppareil', 'nouvelAppareil']);
     return pilote !== null && Object.values(pilote).every(estTexte);
   }
+  if (type === 'PublicationModifiee') {
+    const publication = aExactementLesChamps(donnees, ['publiee']);
+    return publication !== null && estBooleen(publication.publiee);
+  }
   const modifications = ['EpreuveModifiee', 'FormuleModifiee', 'ParametresModifies'];
   if (type !== 'EpreuveCreee' && !modifications.includes(type as string)) return false;
   if (donnees === null || typeof donnees !== 'object' || Array.isArray(donnees)) return false;

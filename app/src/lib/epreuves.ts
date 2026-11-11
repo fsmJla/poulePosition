@@ -371,3 +371,37 @@ export async function modifierParametres(
   const connues = ['PAS_PILOTE', 'EPREUVE_ARCHIVEE', 'CHAMP_FIGE', 'JOURNAL_INCOHERENT'] as const;
   return { ok: false, erreur: connues.find((code) => code === erreur) ?? 'ECRITURE_IMPOSSIBLE' };
 }
+
+/**
+ * `INTROUVABLE` : épreuve inconnue de cet appareil ; `PAS_PILOTE`, `EPREUVE_ARCHIVEE` et `JOURNAL_INCOHERENT` viennent du
+ * journal.
+ */
+export type ErreurPublication =
+  | 'INTROUVABLE'
+  | Extract<ErreurJournal, 'PAS_PILOTE' | 'EPREUVE_ARCHIVEE' | 'JOURNAL_INCOHERENT' | 'ECRITURE_IMPOSSIBLE'>;
+
+export type ResultatPublication = { ok: true; modifiee: boolean } | { ok: false; erreur: ErreurPublication };
+
+/**
+ * US-031 CA-2 et CA-4 : publie ou dépublie l'épreuve en écrivant `PublicationModifiee` dans le journal local, à tout moment
+ * et sans réseau ; l'envoi au serveur suit (US-022). Rien n'est écrit si la publication est déjà celle demandée.
+ */
+export async function modifierPublication(
+  journal: Journal,
+  epreuveId: string,
+  publiee: boolean,
+  { clubId, ...contexte }: Omit<Contexte, 'clubId'> & { clubId?: string | undefined },
+): Promise<ResultatPublication> {
+  const { epreuve } = await journal.lire(epreuveId);
+  if (!epreuve) return { ok: false, erreur: 'INTROUVABLE' };
+  if (epreuve.publiee === publiee) return { ok: true, modifiee: false };
+  const resultat = await journal.enregistrer(
+    epreuveId,
+    { type: 'PublicationModifiee', donnees: { publiee } },
+    { clubId: clubId ?? epreuve.clubId, ...contexte },
+  );
+  if ('projection' in resultat) return { ok: true, modifiee: true };
+  const { erreur } = resultat;
+  const connues = ['PAS_PILOTE', 'EPREUVE_ARCHIVEE', 'JOURNAL_INCOHERENT'] as const;
+  return { ok: false, erreur: connues.find((code) => code === erreur) ?? 'ECRITURE_IMPOSSIBLE' };
+}

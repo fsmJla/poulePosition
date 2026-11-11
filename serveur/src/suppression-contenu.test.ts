@@ -119,6 +119,8 @@ async function rattacher(competitionId: string, statut: ResumeEpreuve['statut'] 
       sexe: null,
       date: '2027-03-15',
       statut,
+      horaires: { appel: null, scratch: null, debutPoules: null },
+      lieu: null,
       publiee: false,
       rattachement,
     },

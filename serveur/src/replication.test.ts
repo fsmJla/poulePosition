@@ -18,6 +18,8 @@ const RESUME: ResumeEpreuve = {
   sexe: null,
   date: '2027-03-14',
   statut: 'preparation',
+  horaires: { appel: null, scratch: null, debutPoules: null },
+  lieu: null,
   publiee: false,
   rattachement: { competitionId: 'c-test' },
 };
