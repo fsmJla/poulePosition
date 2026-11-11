@@ -762,6 +762,43 @@ export const textes = {
       ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
     } satisfies Record<ErreurCompetitions, string>,
   },
+  /** US-057 : « Supprimer… » unique d'une manifestation, d'une compétition ou d'une épreuve. */
+  suppressionUnique: {
+    action: 'Supprimer…',
+    horsLigne: 'Connexion requise pour supprimer',
+    enCours: 'Une épreuve en cours ne peut pas être supprimée',
+    /** Sous-titre de l'action dans le menu « ⋯ » : la portée est visible avant le clic. */
+    sousTitre: (contenu: { type: 'manifestation' | 'competition' | 'epreuve'; competitions: number; epreuves: number }) => {
+      if (contenu.type === 'epreuve') return 'définitivement, après confirmation';
+      const epreuves =
+        contenu.epreuves === 0 ? null : contenu.epreuves === 1 ? 'son épreuve' : `ses ${contenu.epreuves} épreuves`;
+      const competitions =
+        contenu.competitions === 0
+          ? null
+          : contenu.competitions === 1
+            ? 'sa compétition'
+            : `ses ${contenu.competitions} compétitions`;
+      const parties = [competitions, epreuves].filter((partie) => partie !== null);
+      return parties.length === 0 ? 'après confirmation' : `avec ${parties.join(' et ')}, après confirmation`;
+    },
+    /** Confirmation simple d'un objet vide (CA-2). */
+    titreVide: (nom: string) => `Supprimer « ${nom} » ?`,
+    /** Confirmation d'un objet non vide (CA-3). */
+    titre: (type: 'manifestation' | 'competition', nom: string) =>
+      `Supprimer définitivement la ${type === 'manifestation' ? 'manifestation' : 'compétition'} « ${nom} » ?`,
+    annonce: (competitions: number, epreuves: number) => {
+      const c = competitions === 0 ? null : competitions === 1 ? '1 compétition' : `${competitions} compétitions`;
+      const e = epreuves === 0 ? null : epreuves === 1 ? '1 épreuve' : `${epreuves} épreuves`;
+      return `Seront aussi supprimées : ${[c, e].filter((partie) => partie !== null).join(' et ')}, archivées comprises.`;
+    },
+    avertissement:
+      'La suppression est définitive : les journaux, les saisies et les fichiers joints sont effacés du serveur et de tous les PC du club.',
+    saisie: (nom: string) => `Saisissez « ${nom} » pour confirmer`,
+    supprimer: 'Supprimer',
+    supprimerDefinitivement: 'Supprimer définitivement',
+    annuler: 'Annuler',
+    progression: (faites: number, total: number) => `Suppression… ${faites} / ${total}`,
+  },
   /** US-023 : page « Manifestations ». */
   manifestations: {
     titre: 'Manifestations',

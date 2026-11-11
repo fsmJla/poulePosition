@@ -207,9 +207,7 @@ export interface ContenuASupprimer extends ElementASupprimer {
   enCours: boolean;
 }
 
-/** US-057 : le contenu d'un élément de la liste ; null si l'identifiant est inconnu. */
-export function contenuASupprimer(donnees: DonneesListe, id: string): ContenuASupprimer | null {
-  const arbre = construireArbre(donnees);
+function contenuDepuisArbre(arbre: Arbre, id: string): ContenuASupprimer | null {
   const epreuve = arbre.epreuves.get(id);
   if (epreuve)
     return {
@@ -235,6 +233,23 @@ export function contenuASupprimer(donnees: DonneesListe, id: string): ContenuASu
     vide: competitions.length === 0 && epreuves.length === 0,
     enCours: arbre.enCours.has(id),
   };
+}
+
+/** US-057 : le contenu d'un élément de la liste ; null si l'identifiant est inconnu. */
+export function contenuASupprimer(donnees: DonneesListe, id: string): ContenuASupprimer | null {
+  return contenuDepuisArbre(construireArbre(donnees), id);
+}
+
+/** US-057 : le contenu de chaque manifestation, compétition et épreuve, calculé d'un coup (l'arbre n'est construit qu'une fois). */
+export function contenusASupprimer(donnees: DonneesListe): Map<string, ContenuASupprimer> {
+  const arbre = construireArbre(donnees);
+  const ids = [...arbre.manifestations.keys(), ...arbre.competitions.keys(), ...arbre.epreuves.keys()];
+  const contenus = new Map<string, ContenuASupprimer>();
+  for (const id of ids) {
+    const contenu = contenuDepuisArbre(arbre, id);
+    if (contenu) contenus.set(id, contenu);
+  }
+  return contenus;
 }
 
 export type DisponibiliteSuppression =

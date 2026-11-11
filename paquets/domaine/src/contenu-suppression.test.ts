@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DonneesListe, EpreuveListee } from './liste';
-import { contenuASupprimer, disponibiliteSuppression } from './selection-suppression';
+import { contenuASupprimer, contenusASupprimer, disponibiliteSuppression } from './selection-suppression';
 
 const epreuve = (
   id: string,
@@ -104,6 +104,12 @@ describe('contenu à supprimer (US-057 CA-2 et CA-3)', () => {
   it('un identifiant inconnu ne donne rien', () => {
     expect(contenuASupprimer(donnees, 'inconnu')).toBeNull();
   });
+});
+
+it('le contenu de tous les éléments se calcule d’un coup, comme un par un', () => {
+  const tous = contenusASupprimer(donnees);
+  expect(tous.size).toBe(4 + 5 + 5);
+  for (const id of ['M1', 'M2', 'c1', 'c4', 'e1', 'e5']) expect(tous.get(id)).toEqual(contenuASupprimer(donnees, id));
 });
 
 describe('disponibilité de « Supprimer… » (US-057 CA-5)', () => {
