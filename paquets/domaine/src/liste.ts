@@ -111,7 +111,15 @@ export function construireListe(
   };
 }
 
-/** Cas limite : seule la manifestation en cours aujourd'hui (`AAAA-MM-JJ`) est ouverte par défaut, les autres sont repliées. */
-export function manifestationOuverte({ debut, fin }: ManifestationListee, aujourdhui: string): boolean {
+/**
+ * US-055 (Hypothèses) : une manifestation en cours ou à venir (`fin` pas encore passée) est dépliée à l'ouverture de la
+ * liste ; une manifestation terminée est repliée. `aujourdhui` est au format `AAAA-MM-JJ`.
+ */
+export function manifestationOuverte({ fin }: ManifestationListee, aujourdhui: string): boolean {
+  return aujourdhui <= fin;
+}
+
+/** US-055 CA-1 : la manifestation se déroule aujourd'hui (étiquette « Aujourd'hui »). */
+export function manifestationAujourdhui({ debut, fin }: ManifestationListee, aujourdhui: string): boolean {
   return debut <= aujourdhui && aujourdhui <= fin;
 }
