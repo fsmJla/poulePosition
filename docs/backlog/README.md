@@ -94,6 +94,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-062](US-062-rechercher.md) | Rechercher une manifestation, une compétition ou une épreuve (P2) | E2 | Prête | US-054, US-055 |
 | [US-063](US-063-filtrer-la-liste.md) | Filtrer la liste du club : à venir et en cours, terminées, archivées, toutes (P2) | E2 | Prête | US-055, US-033 |
 | [US-064](US-064-prochaine-etape.md) | Indiquer la prochaine étape d'une épreuve (P2) | E2 | Prête | US-058, US-031 |
+| [US-065](US-065-correction-e2e-us001-pastille-serveur.md) | Corriger les E2E d'US-001 devenus faux depuis la disparition de la pastille d'état du serveur (correction) | E1 | Terminée | US-001, US-031 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
