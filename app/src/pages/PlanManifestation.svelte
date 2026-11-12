@@ -386,7 +386,7 @@
   }
 
   .zone-plan {
-    flex: 999 1 44rem;
+    flex: 999 1 34rem;
     min-width: 0;
     padding: 1rem;
     border: 1px solid var(--bordure);

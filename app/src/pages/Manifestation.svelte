@@ -286,7 +286,7 @@
     <Lien chemin={CHEMINS.organisateur} {naviguer}>{t.retourAccueil}</Lien>
   {:else}
     <FilAriane niveaux={filSousAccueil(manifestation.nom, [], textes.entete.accueil)} {naviguer} />
-    {#if donnees.horsLigne}
+    {#if donnees.horsLigne && onglet !== 'plan'}
       <p class="avertissement" role="status">
         {donnees.copieLe !== null
           ? textes.manifestations.listeDu(donnees.copieLe)

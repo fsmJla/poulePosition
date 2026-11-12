@@ -1,6 +1,6 @@
 // Données de la planche 1 pour les E2E de l'accueil (US-055, US-057) : une manifestation qui se déroule aujourd'hui, trois
 // compétitions (épée avec trois épreuves, sabre avec une, fleuret sans épreuve), créées au serveur.
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 export const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 export const aujourdhui = () => new Date().toLocaleDateString('sv-SE');
@@ -194,4 +194,79 @@ export async function creerManifestation(
     },
     { manifestation, competitions },
   );
+}
+
+/** US-056 : appelle le serveur du club avec la session de la page (la page doit avoir lu l'adresse du serveur). */
+async function appelerServeur(page: Page, chemin: string, corps: unknown) {
+  if (!(await page.evaluate(() => (window as unknown as { __urlServeur?: string }).__urlServeur))) {
+    await exposerServeur(page);
+  }
+  return page.evaluate(
+    async ({ chemin, corps }) => {
+      const base = await new Promise<IDBDatabase>((ok, ko) => {
+        const ouverture = indexedDB.open('poulePosition');
+        ouverture.onsuccess = () => ok(ouverture.result);
+        ouverture.onerror = () => ko(ouverture.error);
+      });
+      const session = await new Promise<{ jeton: string }>((ok) => {
+        const lecture = base.transaction('session').objectStore('session').get('courante');
+        lecture.onsuccess = () => ok(lecture.result);
+      });
+      base.close();
+      const urlServeur = (window as unknown as { __urlServeur?: string }).__urlServeur;
+      const reponse = await fetch(`${urlServeur}${chemin}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.jeton}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(corps),
+      });
+      if (!reponse.ok) throw new Error(`${chemin} refusé : ${reponse.status}`);
+      return reponse.json();
+    },
+    { chemin, corps },
+  );
+}
+
+/** Identifiants des manifestations créées par `creerManifestationSimple`, par nom. */
+const manifestationsCreees = new Map<string, string>();
+
+/**
+ * US-056 : crée au serveur une manifestation du 14 au 15 mars 2027 (Salle Bellegrave), comme le faisait l'ancienne page
+ * « Manifestations ». Retourne son identifiant ; `ouvrirManifestation` l'ouvre par son nom.
+ */
+export async function creerManifestationSimple(page: Page, nom: string, debut = '2027-03-14', fin = '2027-03-15') {
+  const { manifestation } = await appelerServeur(page, '/manifestations', {
+    nom,
+    debut,
+    fin,
+    lieu: 'Salle Bellegrave',
+    commentaire: null,
+  });
+  manifestationsCreees.set(nom, manifestation.id);
+  return manifestation.id as string;
+}
+
+/** US-056 : ajoute au serveur une compétition à une manifestation créée par `creerManifestationSimple`. */
+export async function ajouterCompetition(
+  page: Page,
+  manifestation: string,
+  nom: string,
+  arme: string | null = 'sabre',
+) {
+  const manifestationId = manifestationsCreees.get(manifestation);
+  if (!manifestationId) throw new Error(`Manifestation inconnue : ${manifestation}`);
+  const { competition } = await appelerServeur(page, '/competitions', {
+    manifestationId,
+    nom,
+    arme,
+    commentaire: null,
+  });
+  return competition.id as string;
+}
+
+/** US-056 : ouvre la page d'une manifestation créée par `creerManifestationSimple` (onglet « plan » ou « documents »). */
+export async function ouvrirManifestation(page: Page, nom: string, onglet: '' | 'plan' | 'documents' = '') {
+  const manifestationId = manifestationsCreees.get(nom);
+  if (!manifestationId) throw new Error(`Manifestation inconnue : ${nom}`);
+  await page.goto(`/manifestations/${manifestationId}${onglet ? `/${onglet}` : ''}`);
+  await expect(page.getByRole('heading', { level: 1, name: nom })).toBeVisible({ timeout: 20_000 });
 }
