@@ -270,7 +270,7 @@
 <!-- US-055 CA-3 et CA-4 : la ligne entière est le lien vers l'épreuve ; son nom court, son jour, sa pastille de statut et
      ses deux icônes d'état. Le nom complet reste le nom accessible du lien. -->
 {#snippet epreuve(entree: EpreuveListee, nomAffiche: string)}
-  <li class="epreuve">
+  <li class="epreuve" class:cochee={cochees.has(entree.id) || analyse?.verrouillees.has(entree.id)}>
     {@render caseSelection(entree.id, ts.cocher(entree.nom), ts.enCours)}
     <a
       class="ligne-epreuve"
@@ -833,6 +833,16 @@
     display: flex;
     gap: 0.5rem;
     align-items: center;
+  }
+
+  .case {
+    accent-color: var(--accent);
+  }
+
+  /* US-059 (planche 4) : une épreuve sélectionnée a le fond teinté. */
+  .epreuve.cochee .ligne-epreuve {
+    background: var(--accent-teinte);
+    border-color: var(--accent-teinte-bordure);
   }
 
   .ligne-epreuve {

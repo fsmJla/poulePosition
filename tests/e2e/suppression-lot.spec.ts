@@ -1,6 +1,6 @@
 // Suppression par lot de manifestations, de compétitions et d’épreuves (US-043) : l'administrateur coche des éléments de
 // tous types dans la liste de l'accueil et les supprime en une confirmation. Le compte local est administrateur, celui de
-// la preview un organisateur : seul CA-7 y tourne. « Tout cocher » n'est pas cliqué ici (il viserait les données des
+// la preview un organisateur : seul CA-7 y tourne. « Tout sélectionner » n'est pas cliqué ici (il viserait les données des
 // autres tests, lancés en parallèle) : il est couvert en unitaire.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
@@ -65,6 +65,8 @@ async function ouvrirLaListe(page: Page, manifestation: string, isolee: string) 
     timeout: 20_000,
   });
   await expect(page.getByRole('article', { name: manifestation })).toBeVisible();
+  // US-059 : les cases n'apparaissent qu'en mode sélection.
+  await page.getByRole('button', { name: 'Sélectionner', exact: true }).click();
 }
 
 test('US-043 CA-1, CA-2 et CA-4 : cocher une manifestation couvre son contenu, et une confirmation unique supprime tout', async ({
@@ -106,7 +108,7 @@ test('US-043 CA-1, CA-2 et CA-4 : cocher une manifestation couvre son contenu, e
   await caseManifestation(page, manifestation).check();
 
   // CA-4 : la confirmation donne le décompte et ne liste que les éléments cochés directement.
-  await page.getByRole('button', { name: 'Supprimer définitivement…' }).click();
+  await page.getByRole('button', { name: 'Supprimer…', exact: true }).click();
   const fenetre = page.getByRole('group', {
     name: 'Supprimer définitivement 1 manifestation, 1 compétition, 3 épreuves ?',
   });
@@ -142,7 +144,7 @@ test('US-043 CA-5 : une compétition et des épreuves cochées sans leur manifes
   await caseCompetition(page, competition).check();
   await caseEpreuve(page, isolee).check();
   await expect(page.getByText('1 compétition, 3 épreuves', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Supprimer définitivement…' }).click();
+  await page.getByRole('button', { name: 'Supprimer…', exact: true }).click();
   const fenetre = page.getByRole('group', { name: 'Supprimer définitivement 1 compétition, 3 épreuves ?' });
   await fenetre.getByLabel('Saisissez SUPPRIMER pour confirmer').fill('SUPPRIMER');
   await fenetre.getByRole('button', { name: 'Supprimer définitivement', exact: true }).click();
@@ -152,7 +154,7 @@ test('US-043 CA-5 : une compétition et des épreuves cochées sans leur manifes
   await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${isolee}`, exact: true })).toHaveCount(0);
   await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${directe}`, exact: true })).toHaveCount(0);
   // La manifestation reste, sans la compétition (la liste relue la replie).
-  await expect(caseManifestation(page, manifestation)).toBeVisible();
+  await expect(page.getByRole('article', { name: manifestation })).toBeVisible();
 });
 
 test('US-043 hors ligne : cases et bouton sont grisés, avec « Connexion requise pour supprimer »', async ({
@@ -165,7 +167,7 @@ test('US-043 hors ligne : cases et bouton sont grisés, avec « Connexion requis
   await context.setOffline(true);
   await expect(caseManifestation(page, manifestation)).toBeDisabled();
   await expect(caseEpreuve(page, isolee)).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Supprimer définitivement…' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Supprimer…', exact: true })).toBeDisabled();
   await expect(page.getByText('Connexion requise pour supprimer')).toBeVisible();
   await context.setOffline(false);
   await expect(caseManifestation(page, manifestation)).toBeEnabled();
@@ -179,5 +181,5 @@ test('US-043 CA-7 : un organisateur n’a aucune case ni barre de suppression', 
   await page.goto('/organisateur');
   await expect(page.getByRole('article', { name: manifestation })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole('checkbox', { name: /^Sélectionner/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Supprimer définitivement…' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Supprimer…', exact: true })).toHaveCount(0);
 });

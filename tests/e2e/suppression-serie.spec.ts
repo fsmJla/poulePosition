@@ -1,6 +1,7 @@
 // Suppression de plusieurs épreuves d'un coup (US-040) : l'administrateur coche des épreuves dans la liste, les
-// supprime en une confirmation, et voit un compte rendu. Les cases à cocher n'existent que pour un administrateur :
-// le compte local l'est, celui de la preview est un organisateur. « Tout cocher » n'est pas cliqué ici (il viserait les
+// supprime en une confirmation, et voit un compte rendu. Les cases à cocher n'existent que pour un administrateur, en mode
+// sélection (US-059) :
+// le compte local l'est, celui de la preview est un organisateur. « Tout sélectionner » n'est pas cliqué ici (il viserait les
 // épreuves des autres tests, lancés en parallèle) : il est couvert en unitaire.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
@@ -25,7 +26,7 @@ async function creerEpreuve(page: Page, nom: string) {
 
 const case_ = (page: Page, nom: string) => page.getByRole('checkbox', { name: `Sélectionner l’épreuve ${nom}` });
 
-/** Deux épreuves créées, puis la liste de l'organisateur. */
+/** Deux épreuves créées, puis la liste de l'organisateur, en mode sélection (US-059 : les cases n'existent que dans ce mode). */
 async function deuxEpreuves(page: Page) {
   const noms = [nomUnique(), nomUnique()] as const;
   await seConnecter(page);
@@ -34,6 +35,7 @@ async function deuxEpreuves(page: Page) {
   await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${noms[0]}`, exact: true })).toBeVisible({
     timeout: 20_000,
   });
+  await page.getByRole('button', { name: 'Sélectionner', exact: true }).click();
   return noms;
 }
 
@@ -45,7 +47,7 @@ test('US-040 CA-1 : cocher des épreuves affiche la barre et leur nombre', async
   await expect(page.getByText('1 épreuve sélectionnée')).toBeVisible();
   await case_(page, seconde).check();
   await expect(page.getByText('2 épreuves sélectionnées')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Supprimer définitivement…' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Supprimer…', exact: true })).toBeEnabled();
   await case_(page, seconde).uncheck();
   await expect(page.getByText('1 épreuve sélectionnée')).toBeVisible();
 });
@@ -58,7 +60,7 @@ test('US-040 CA-3 et CA-4 : une confirmation unique supprime les épreuves coch�
   await case_(page, premiere).check();
   await case_(page, seconde).check();
 
-  await page.getByRole('button', { name: 'Supprimer définitivement…' }).click();
+  await page.getByRole('button', { name: 'Supprimer…', exact: true }).click();
   const fenetre = page.getByRole('group', { name: 'Supprimer définitivement ces 2 épreuves ?' });
   await expect(fenetre.getByText(premiere)).toBeVisible();
   await expect(fenetre.getByText(seconde)).toBeVisible();
@@ -86,7 +88,7 @@ test('US-040 hors ligne : cases et bouton sont grisés, avec « Connexion requis
 
   await context.setOffline(true);
   await expect(case_(page, premiere)).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Supprimer définitivement…' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Supprimer…', exact: true })).toBeDisabled();
   await expect(page.getByText('Connexion requise pour supprimer')).toBeVisible();
   await context.setOffline(false);
   await expect(case_(page, premiere)).toBeEnabled();
@@ -100,5 +102,5 @@ test('US-040 CA-5 : un organisateur n’a ni case ni barre de suppression', asyn
   await page.goto('/organisateur');
   await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${nom}`, exact: true })).toBeVisible();
   await expect(case_(page, nom)).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Supprimer définitivement…' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Supprimer…', exact: true })).toHaveCount(0);
 });
