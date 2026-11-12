@@ -25,6 +25,11 @@ import {
   type TypeEpreuve,
 } from '@poule-position/domaine';
 import type { Competition, Manifestation } from '@poule-position/protocole';
+
+/** Ce que le rattachement lit d'une manifestation et d'une compétition (US-060 : la liste de l'accueil suffit). */
+export type ManifestationConnue = Pick<Manifestation, 'id' | 'debut' | 'fin' | 'lieu'>;
+export type CompetitionConnue = Pick<Competition, 'id' | 'manifestationId' | 'arme'>;
+
 import type { ClientCompetitions } from './competitions';
 import type { Contexte, ErreurJournal, Journal } from './journal';
 import { textes } from './textes';
@@ -121,8 +126,8 @@ export function saisieDeCopie(donnees: DonneesEpreuve, nom: string): SaisieEpreu
  */
 export function cadreDe(
   { competitionId }: Pick<SaisieEpreuve, 'competitionId'>,
-  manifestations: readonly Manifestation[],
-  competitions: readonly Competition[],
+  manifestations: readonly ManifestationConnue[],
+  competitions: readonly CompetitionConnue[],
 ): CadreRattachement | null {
   const competition = competitions.find(({ id }) => id === competitionId);
   if (!competition) return null;
@@ -140,8 +145,8 @@ export function cadreDe(
 export function rattacher(
   saisie: SaisieEpreuve,
   competitionId: string,
-  manifestations: readonly Manifestation[],
-  competitions: readonly Competition[],
+  manifestations: readonly ManifestationConnue[],
+  competitions: readonly CompetitionConnue[],
 ): SaisieEpreuve {
   const manifestationDe = (id: string) => competitions.find((competition) => competition.id === id)?.manifestationId;
   const change = manifestationDe(competitionId) !== manifestationDe(saisie.competitionId);
@@ -166,8 +171,8 @@ export async function creerEpreuve(
   journal: Journal,
   saisie: SaisieEpreuve,
   { clubId, ...contexte }: Omit<Contexte, 'clubId'> & { clubId: string | undefined },
-  manifestations: readonly Manifestation[] = [],
-  competitions: readonly Competition[] = [],
+  manifestations: readonly ManifestationConnue[] = [],
+  competitions: readonly CompetitionConnue[] = [],
 ): Promise<ResultatCreation> {
   const donnees = versDonnees(saisie);
   const cadre = cadreDe(saisie, manifestations, competitions);
@@ -252,8 +257,8 @@ export async function modifierEpreuve(
   epreuveId: string,
   saisie: SaisieEpreuve,
   { clubId, ...contexte }: Omit<Contexte, 'clubId'> & { clubId?: string | undefined },
-  manifestations: readonly Manifestation[] = [],
-  competitions: readonly Competition[] = [],
+  manifestations: readonly ManifestationConnue[] = [],
+  competitions: readonly CompetitionConnue[] = [],
 ): Promise<ResultatModification> {
   const { epreuve } = await journal.lire(epreuveId);
   if (!epreuve) return { ok: false, erreur: 'INTROUVABLE' };

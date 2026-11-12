@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-055, US-059, US-045
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** us/US-060-epreuves-a-rattacher / PR #89
 
 ## Récit
 
@@ -59,9 +59,9 @@ La règle « une épreuve dont la compétition a disparu est à rattacher » res
 
 ## Comportement hors ligne
 
-L'alerte et la liste s'affichent depuis la copie de l'appareil. Le rattachement suit la règle d'US-045 : s'il demande
-une connexion, « Choisir une compétition » et « Rattacher à une compétition » sont grisés avec « Nécessite une
-connexion internet ». Testé par un E2E réseau coupé.
+L'alerte et la liste s'affichent depuis la copie de l'appareil. Le rattachement est une écriture dans le journal local
+du PC pilote (`EpreuveModifiee`), partie au serveur au retour du réseau : il reste possible hors ligne et n'est donc pas
+grisé (écart déclaré avec le texte initial). Testé par un E2E réseau coupé.
 
 ## Cas limites et erreurs
 
@@ -74,6 +74,16 @@ connexion internet ». Testé par un E2E réseau coupé.
 - La liste des épreuves à rattacher s'ouvre sur l'accueil (section dépliée en tête), sans nouvelle adresse.
 - Le rattachement par lot ne propose que les compétitions de même arme quand toutes les épreuves cochées ont la même
   arme ; sinon toutes les compétitions, la cohérence restant vérifiée par la règle d'US-045.
+
+- Hypothèses prises pendant l'implémentation :
+  - le rattachement garde la date et l'arme de l'épreuve ; si la compétition choisie les refuse (date hors manifestation,
+    date manquante, arme différente), l'épreuve reste à rattacher et le compte rendu donne le motif, avec un lien « Modifier
+    l'épreuve » pour la date ;
+  - une épreuve pilotée par un autre PC a son choix grisé, avec « À faire depuis le PC pilote » ;
+  - le mode sélection ouvre d'office la liste ; « Rattacher à une compétition » n'apparaît que si toutes les épreuves
+    cochées sont à rattacher ;
+  - écarts visuels avec les planches : date « 1 juin 2027 » (et non « 1er juin »), icône « Lien » à côté de la liste
+    déroulante de la barre et non dans un bouton, filtres (US-063) et recherche (US-062) hors périmètre.
 
 ## Questions bloquantes
 
@@ -91,3 +101,6 @@ connexion internet ». Testé par un E2E réseau coupé.
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » ; rattachement par lot retenu le 2026-11-11 |
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
+| 2026-11-12 | Plan validé par l’utilisateur ; passée à En cours |
+| 2026-11-12 | Implémentée ; passée à En revue (CA-1 à CA-6 : `tests/e2e/rattachement.spec.ts`, `rattachement-lot.test.ts`, `rattachement.test.ts`) |
+| 2026-11-12 | Recette OK sur https://poule-position-git-us-us-060-epreuves-a-669062-fsmjlas-projects.vercel.app (alerte, liste, mode sélection et barre « Rattacher à une compétition » vérifiés sans rien rattacher sur les données de la preview ; rattachement lui-même couvert par les E2E locaux) |

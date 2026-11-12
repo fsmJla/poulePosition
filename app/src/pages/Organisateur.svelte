@@ -9,6 +9,7 @@
   import {
     analyserSelection,
     construireListe,
+    competitionsProposables,
     contenusASupprimer,
     disponibiliteSuppression,
     couleurDeCompetition,
@@ -18,6 +19,7 @@
     nomsCourts,
     planSuppression,
     toutCocherListe,
+    type Arme,
     type CompetitionListee,
     type ContenuASupprimer,
     type EpreuveListee,
@@ -32,6 +34,7 @@
   import Lien from '../composants/Lien.svelte';
   import MenuActions, { type ActionMenu } from '../composants/MenuActions.svelte';
   import { estDeplie, memoriserRepli } from '../lib/repli';
+  import type { RaisonNonRattachee } from '../lib/rattachement-lot';
   import { supprimerElement } from '../lib/suppression-unique';
   import type { Accueil, DonneesAccueil } from '../lib/accueil';
   import {
@@ -44,6 +47,7 @@
   import {
     cheminEpreuve,
     cheminModificationEpreuve,
+    CHEMIN_NOUVELLE_COMPETITION_SEULE,
     cheminGrilleEpreuves,
     cheminModificationManifestation,
     cheminManifestation,
@@ -200,6 +204,53 @@
     saisieSerie = '';
   }
 
+  /** US-060 : épreuves à rattacher (leur compétition a disparu), liste dépliable et rattachement, une par une ou par lot. */
+  const tr = t.rattachement;
+  let aRattacherOuvert = $state(false);
+  let rattachementEnCours = $state(false);
+  let compteRattachement: {
+    rattachees: number;
+    restantes: { id: string; nom: string; raison: RaisonNonRattachee }[];
+  } | null = $state(null);
+  const idsARattacher = $derived(new Set((liste?.aRattacher ?? []).map(({ id }) => id)));
+  /** CA-4 : le rattachement par lot n'est proposé que si la sélection ne contient que des épreuves à rattacher. */
+  const selectionARattacher = $derived(cochees.size > 0 && [...cochees].every((id) => idsARattacher.has(id)));
+  /** La liste des épreuves à rattacher s'ouvre par « Les rattacher », et d'office en mode sélection (pour les cocher). */
+  const listeARattacherVisible = $derived((liste?.aRattacher.length ?? 0) > 0 && (aRattacherOuvert || modeSelection));
+
+  /** Compétitions proposées pour ces épreuves (arme cohérente quand elles ont toutes la même). */
+  const proposables = (armes: readonly Arme[]) =>
+    donnees
+      ? competitionsProposables(
+          armes.map((arme) => ({ arme })),
+          donnees.competitions,
+          donnees.manifestations,
+        )
+      : [];
+
+  /** CA-3 et CA-4 : rattache les épreuves à la compétition choisie, puis relit la liste ; le compte rendu dit le reste. */
+  async function rattacherA(ids: string[], competitionId: string) {
+    if (!donnees || rattachementEnCours || competitionId === '') return;
+    rattachementEnCours = true;
+    try {
+      const compte = await accueil.rattacher(ids, competitionId, donnees, {
+        clubId: session.compte.clubId,
+        auteur: session.compte.email,
+      });
+      const noms = new Map(donnees.epreuves.map(({ id, nom }) => [id, nom]));
+      compteRattachement = {
+        rattachees: compte.rattachees.length,
+        restantes: compte.restantes.map(({ id, raison }) => ({ id, nom: noms.get(id) ?? id, raison })),
+      };
+      // Ce qui n'a pas pu l'être reste coché, pour relancer ; si tout l'est, le mode sélection se ferme (comme US-059 CA-4).
+      for (const id of compte.rattachees) cochees.delete(id);
+      if (modeSelection && compte.restantes.length === 0) quitterLeMode();
+      await charger();
+    } finally {
+      rattachementEnCours = false;
+    }
+  }
+
   /** Hypothèse : en mode sélection, un clic sur une ligne coche sa case (si elle peut l'être) au lieu d'ouvrir l'élément. */
   function basculerLigne(id: string) {
     if (!analyse || enCours.has(id) || analyse.verrouillees.has(id) || horsLigne || etapeSerie === 'encours') return;
@@ -265,6 +316,61 @@
       onchange={(evenement) => basculer(id, evenement.currentTarget.checked)}
     />
   {/if}
+{/snippet}
+
+<!-- US-060 CA-2 (planche 4) : une épreuve à rattacher : son nom, son arme, sa catégorie, son sexe et sa date, puis le choix de sa
+     compétition. Une épreuve pilotée par un autre PC ne se rattache pas d'ici. -->
+{#snippet ligneARattacher(entree: EpreuveListee)}
+  {@const choix = proposables([entree.arme])}
+  {@const cochee = cochees.has(entree.id)}
+  <li class="ligne-a-rattacher" class:cochee>
+    {@render caseSelection(entree.id, ts.cocher(entree.nom), ts.enCours)}
+    <div class="identite-a-rattacher">
+      <p class="nom-a-rattacher">
+        <a
+          href={cheminEpreuve(entree.id)}
+          aria-label={t.ouvrir(entree.nom)}
+          onclick={(evenement) => {
+            if (evenement.button !== 0 || evenement.ctrlKey || evenement.metaKey || evenement.shiftKey) return;
+            evenement.preventDefault();
+            if (modeSelection) basculerLigne(entree.id);
+            else naviguer(cheminEpreuve(entree.id));
+          }}>{entree.nom}</a
+        >
+      </p>
+      <p class="meta">
+        {[
+          tc.armes[entree.arme],
+          entree.categorie,
+          entree.sexe ? tc.sexes[entree.sexe] : null,
+          entree.date ? tr.jour(entree.date) : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+      </p>
+    </div>
+    {#if choix.length === 0}
+      <Lien chemin={CHEMIN_NOUVELLE_COMPETITION_SEULE} {naviguer}>{tr.creerCompetition}</Lien>
+    {:else}
+      <div class="choix-competition">
+        <select
+          class="selecteur"
+          aria-label={tr.choisirPour(entree.nom)}
+          aria-describedby={entree.pilote ? undefined : `depuis-pilote-${entree.id}`}
+          disabled={!entree.pilote || rattachementEnCours || etapeSerie === 'encours'}
+          onchange={(evenement) => {
+            const valeur = evenement.currentTarget.value;
+            evenement.currentTarget.value = '';
+            void rattacherA([entree.id], valeur);
+          }}
+        >
+          <option value="">{tr.choisir}</option>
+          {#each choix as { id, libelle } (id)}<option value={id}>{libelle}</option>{/each}
+        </select>
+        {#if !entree.pilote}<small id="depuis-pilote-{entree.id}">{tr.depuisLePilote}</small>{/if}
+      </div>
+    {/if}
+  </li>
 {/snippet}
 
 <!-- US-055 CA-3 et CA-4 : la ligne entière est le lien vers l'épreuve ; son nom court, son jour, sa pastille de statut et
@@ -360,6 +466,28 @@
       <button type="button" class="lien" onclick={basculerTout} disabled={horsLigne || etapeSerie === 'encours'}
         >{toutEstSelectionne ? ts.toutDeselectionner : ts.toutSelectionner}</button
       >
+      <!-- US-060 CA-4 : rattacher les épreuves à rattacher cochées, par un choix de compétition. -->
+      {#if selectionARattacher}
+        <label class="rattacher-lot">
+          <Icone nom="lien" taille={18} />
+          <select
+            class="selecteur"
+            aria-label={tr.lot}
+            disabled={rattachementEnCours || etapeSerie !== 'aucune'}
+            onchange={(evenement) => {
+              const valeur = evenement.currentTarget.value;
+              evenement.currentTarget.value = '';
+              void rattacherA([...cochees], valeur);
+            }}
+          >
+            <option value="">{tr.lot}</option>
+            {#each proposables([...cochees]
+                .map((id) => donnees?.epreuves.find((e) => e.id === id)?.arme)
+                .filter((a): a is Arme => a !== undefined)) as { id, libelle } (id)}<option value={id}>{libelle}</option
+              >{/each}
+          </select>
+        </label>
+      {/if}
       <button
         type="button"
         class="danger"
@@ -469,24 +597,61 @@
           </div>
         {/if}
 
-        <!-- US-045 CA-7 : une épreuve dont la compétition a disparu est signalée en tête, avec le moyen d'en choisir une autre. -->
-        {#if liste.aRattacher.length > 0}
-          <div class="a-rattacher">
-            <h2>{t.aRattacher}</h2>
-            <ul class="epreuves">
-              {#each liste.aRattacher as entree (entree.id)}
-                {@render epreuve(entree, entree.nom)}
-                <li class="vide" role="status">
-                  {t.competitionSupprimee}
-                  <Lien
-                    chemin={cheminModificationEpreuve(entree.id)}
-                    {naviguer}
-                    etiquette={t.choisirCompetition(entree.nom)}>{t.choisirCompetitionBouton}</Lien
-                  >
-                </li>
-              {/each}
-            </ul>
+        <!-- US-060 CA-6 (planche 4) : compte rendu d'un rattachement ; ce qui n'a pas pu l'être est listé avec son motif. -->
+        {#if compteRattachement}
+          <div class="compte-rendu">
+            {#if compteRattachement.rattachees > 0}<p role="status">
+                {tr.rattachees(compteRattachement.rattachees)}
+              </p>{/if}
+            {#if compteRattachement.restantes.length > 0}
+              <p role="alert">{tr.nonRattachees(compteRattachement.restantes.length)}</p>
+              <ul>
+                {#each compteRattachement.restantes as { id, nom, raison } (id)}
+                  <li>
+                    {nom} · {tr.raisons[raison]}
+                    {#if raison === 'DATE_HORS_MANIFESTATION' || raison === 'DATE_OBLIGATOIRE'}
+                      <Lien chemin={cheminModificationEpreuve(id)} {naviguer}>{tr.modifier}</Lien>
+                    {/if}
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+            <button type="button" class="secondaire" onclick={() => (compteRattachement = null)}>{tr.fermer}</button>
           </div>
+        {/if}
+
+        <!-- US-060 CA-1 (planche 1) : une alerte d'une ligne annonce les épreuves à rattacher ; leur liste s'ouvre à la demande. -->
+        {#if liste.aRattacher.length > 0}
+          <section class="alerte" aria-label={tr.alerteTitre}>
+            <Icone nom="alerte" taille={22} />
+            <p>
+              <strong>{tr.alerte(liste.aRattacher.length)}</strong>
+              {tr.alerteSuite}
+            </p>
+            <button
+              type="button"
+              class="lien-alerte"
+              aria-expanded={listeARattacherVisible}
+              aria-controls="epreuves-a-rattacher"
+              onclick={() => (aRattacherOuvert = !aRattacherOuvert)}>{tr.lesRattacher}</button
+            >
+          </section>
+        {/if}
+
+        <!-- US-060 CA-2 (planche 4) : la liste, avec l'explication une seule fois en tête puis une ligne par épreuve. -->
+        {#if listeARattacherVisible}
+          <section id="epreuves-a-rattacher" class="a-rattacher" aria-label={tr.titre(liste.aRattacher.length)}>
+            <header>
+              <Icone nom="alerte" taille={22} />
+              <div>
+                <h2>{tr.titre(liste.aRattacher.length)}</h2>
+                <p>{tr.explication}</p>
+              </div>
+            </header>
+            <ul>
+              {#each liste.aRattacher as entree (entree.id)}{@render ligneARattacher(entree)}{/each}
+            </ul>
+          </section>
         {/if}
 
         <!-- US-055 CA-1 : une carte par manifestation ; dépliée si elle est en cours ou à venir (compétitions repliées,
@@ -918,10 +1083,127 @@
     color: var(--texte-discret);
   }
 
-  .a-rattacher,
   .seule {
     display: grid;
     gap: 0.4rem;
+  }
+
+  /* US-060 (planche 1) : alerte d'une ligne, fond et bordure d'attente. */
+  .alerte {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.7rem 1rem;
+    border: 1px solid var(--etat-attente-bordure);
+    border-radius: var(--rayon);
+    background: var(--etat-attente-fond);
+    color: var(--texte);
+  }
+
+  .alerte :global(svg) {
+    flex: none;
+    color: var(--etat-attente);
+  }
+
+  .alerte p {
+    flex: 1;
+    margin: 0;
+  }
+
+  .lien-alerte {
+    padding: 0.25rem 0;
+    background: none;
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: underline;
+  }
+
+  /* US-060 (planche 4) : la liste des épreuves à rattacher, en carte avec un bandeau d'attente en tête. */
+  .a-rattacher {
+    overflow: hidden;
+    border: 1px solid var(--etat-attente-bordure);
+    border-radius: var(--rayon);
+    background: var(--surface);
+  }
+
+  .a-rattacher header {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.9rem 1rem;
+    background: var(--etat-attente-fond);
+  }
+
+  .a-rattacher header :global(svg) {
+    flex: none;
+    margin-top: 0.15rem;
+    color: var(--etat-attente);
+  }
+
+  .a-rattacher header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+  }
+
+  .a-rattacher header p {
+    margin: 0.15rem 0 0;
+  }
+
+  .ligne-a-rattacher {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--bordure);
+  }
+
+  .ligne-a-rattacher.cochee {
+    background: var(--accent-teinte);
+  }
+
+  .identite-a-rattacher {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .identite-a-rattacher p {
+    margin: 0;
+  }
+
+  .nom-a-rattacher {
+    font-weight: 600;
+  }
+
+  .nom-a-rattacher a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .choix-competition {
+    display: grid;
+    gap: 0.2rem;
+  }
+
+  .selecteur {
+    min-width: 14rem;
+    max-width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--bordure-champ);
+    border-radius: var(--rayon);
+    background: var(--surface);
+    color: var(--texte);
+    font: inherit;
+  }
+
+  .selecteur:disabled {
+    opacity: 0.6;
+  }
+
+  .rattacher-lot {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+    color: var(--texte);
   }
 
   .boutons {

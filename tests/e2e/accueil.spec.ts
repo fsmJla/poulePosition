@@ -329,7 +329,9 @@ test('US-045 CA-7 : une épreuve dont la compétition a disparu est à rattacher
   await injecter(page, orpheline, 'preparation', false);
 
   await page.goto('/organisateur');
+  // US-060 : une alerte d'une ligne, puis la liste à la demande, avec le motif dit une seule fois en tête.
+  await page.getByRole('button', { name: 'Les rattacher' }).click({ timeout: 20_000 });
   const zone = page.locator('.a-rattacher');
   await expect(epreuveDe(zone, orpheline)).toBeVisible({ timeout: 20_000 });
-  await expect(zone).toContainText('Sa compétition a été supprimée : choisissez-en une autre');
+  await expect(zone).toContainText('Leur compétition a été supprimée');
 });
