@@ -324,7 +324,16 @@ export async function ajouterEpreuve(page: Page, competitionId: string, nom: str
         },
       },
     ],
-    resume: { nom, arme: 'sabre', categorie: null, sexe: null, date, statut: 'preparation', publiee: false, rattachement },
+    resume: {
+      nom,
+      arme: 'sabre',
+      categorie: null,
+      sexe: null,
+      date,
+      statut: 'preparation',
+      publiee: false,
+      rattachement,
+    },
   });
   return epreuveId;
 }

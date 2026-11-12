@@ -44,7 +44,9 @@ test('US-042 CA-1 et CA-8 : supprimer une manifestation avec sa compétition et 
   const fenetre = page.getByRole('dialog', {
     name: `Supprimer définitivement la manifestation « ${manifestation} » ?`,
   });
-  await expect(fenetre.getByText('Seront aussi supprimées : 1 compétition et 2 épreuves, archivées comprises.')).toBeVisible({
+  await expect(
+    fenetre.getByText('Seront aussi supprimées : 1 compétition et 2 épreuves, archivées comprises.'),
+  ).toBeVisible({
     timeout: 20_000,
   });
   const valider = fenetre.getByRole('button', { name: 'Supprimer définitivement', exact: true });
