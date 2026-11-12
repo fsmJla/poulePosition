@@ -2,63 +2,48 @@
 // (formulaire « Nouvelle épreuve » : US-045 CA-1 et CA-3, US-025 CA-4, US-024 CA-4).
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
-import { ouvrirDansLApplication, ouvrirNouvelleEpreuve } from './creer';
+import { ouvrirNouvelleEpreuve } from './creer';
+import { creerManifestationSimple, ouvrirManifestation } from './planche';
 
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 
-const carteManifestation = (page: Page, nom: string) => page.getByRole('listitem').filter({ hasText: nom }).first();
-/** Compétitions d'une manifestation : la section qui les regroupe. */
-const section = (page: Page, manifestation: string) =>
-  page.getByRole('region', { name: `Compétitions de ${manifestation}` });
-const carteCompetition = (page: Page, manifestation: string, nom: string) =>
-  section(page, manifestation).getByRole('listitem').filter({ hasText: nom });
+/** US-056 : une compétition est une carte de la page de sa manifestation. */
+const carteCompetition = (page: Page, nom: string) => page.getByRole('article', { name: nom });
 
-async function ouvrirPage(page: Page) {
-  await ouvrirDansLApplication(page, '/manifestations');
-  await expect(page).toHaveURL(/\/manifestations$/);
+/** Crée au serveur une manifestation du 14 au 15 mars 2027, puis ouvre sa page. */
+async function ouvrirPage(page: Page, manifestation: string) {
+  await creerManifestationSimple(page, manifestation);
+  await ouvrirManifestation(page, manifestation);
 }
 
-/** Crée une manifestation du 14 au 15 mars 2027 et attend qu'elle soit dans la liste. */
-async function creerManifestation(page: Page, nom: string) {
-  await page.getByRole('button', { name: 'Nouvelle manifestation' }).click();
-  await page.getByLabel('Nom', { exact: true }).fill(nom);
-  await page.getByLabel('Date de début').fill('2027-03-14');
-  await page.getByLabel('Date de fin').fill('2027-03-15');
-  await page.getByLabel('Lieu').fill('Salle Bellegrave');
-  await page.getByRole('button', { name: 'Créer la manifestation' }).click();
-  await expect(carteManifestation(page, nom)).toBeVisible({ timeout: 20_000 });
-}
-
-/** Crée une compétition dans la manifestation et attend qu'elle soit dans sa liste. */
-async function creerCompetition(page: Page, manifestation: string, nom: string, arme = '') {
-  await page.getByRole('button', { name: `Ajouter une compétition à ${manifestation}` }).click();
+/** Crée une compétition par le formulaire de la page de la manifestation, et attend qu'elle soit dans sa liste. */
+async function creerCompetition(page: Page, nom: string, arme = '') {
+  await page.getByRole('button', { name: 'Nouvelle compétition' }).click();
   await page.getByLabel('Nom de la compétition').fill(nom);
   if (arme) await page.getByLabel('Arme').selectOption(arme);
   await page.getByRole('button', { name: 'Créer la compétition' }).click();
-  await expect(carteCompetition(page, manifestation, nom)).toBeVisible({ timeout: 20_000 });
+  await expect(carteCompetition(page, nom)).toBeVisible({ timeout: 20_000 });
 }
 
 test('US-024 CA-1 : créer une compétition l’ajoute sous sa manifestation', async ({ page }) => {
   const manifestation = nomUnique();
   const competition = nomUnique();
   await seConnecter(page);
-  await ouvrirPage(page);
-  await creerManifestation(page, manifestation);
-  await creerCompetition(page, manifestation, competition, 'sabre');
-  await expect(carteCompetition(page, manifestation, competition)).toContainText('Sabre');
+  await ouvrirPage(page, manifestation);
+  await creerCompetition(page, competition, 'sabre');
+  await expect(carteCompetition(page, competition)).toContainText('Sabre');
   // Le commentaire est facultatif ; la compétition est toujours là au rechargement.
   await page.reload();
-  await expect(carteCompetition(page, manifestation, competition)).toBeVisible({ timeout: 20_000 });
+  await expect(carteCompetition(page, competition)).toBeVisible({ timeout: 20_000 });
 });
 
 test('US-024 CA-1 : l’arme est facultative, le nom obligatoire', async ({ page }) => {
   const manifestation = nomUnique();
   const competition = nomUnique();
   await seConnecter(page);
-  await ouvrirPage(page);
-  await creerManifestation(page, manifestation);
-  await page.getByRole('button', { name: `Ajouter une compétition à ${manifestation}` }).click();
+  await ouvrirPage(page, manifestation);
+  await page.getByRole('button', { name: 'Nouvelle compétition' }).click();
   await page.getByRole('button', { name: 'Créer la compétition' }).click();
   await expect(page.getByText('Le nom est obligatoire')).toBeVisible();
   await expect(page.getByLabel('Nom de la compétition')).toHaveAttribute('aria-invalid', 'true');
@@ -71,46 +56,46 @@ test('US-024 CA-1 : l’arme est facultative, le nom obligatoire', async ({ page
   ]);
   await page.getByLabel('Nom de la compétition').fill(competition);
   await page.getByRole('button', { name: 'Créer la compétition' }).click();
-  await expect(carteCompetition(page, manifestation, competition)).toBeVisible({ timeout: 20_000 });
+  await expect(carteCompetition(page, competition)).toBeVisible({ timeout: 20_000 });
 });
 
 test('US-024 CA-2 : une compétition se crée toujours depuis une manifestation', async ({ page }) => {
+  const manifestation = nomUnique();
   await seConnecter(page);
-  await ouvrirPage(page);
-  // Pas de bouton « Nouvelle compétition » en dehors d'une manifestation : seule la section d'une manifestation en offre un.
+  // Pas de bouton « Nouvelle compétition » en dehors de la page d'une manifestation (US-056).
   await expect(page.getByRole('button', { name: 'Nouvelle compétition', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /^Ajouter une compétition à / }).first()).toBeVisible({
-    timeout: 20_000,
-  });
+  await ouvrirPage(page, manifestation);
+  await expect(page.getByRole('button', { name: 'Nouvelle compétition', exact: true })).toBeVisible();
 });
 
 test('US-024 CA-3 : modifier une compétition, visible au rechargement', async ({ page }) => {
   const manifestation = nomUnique();
   const competition = nomUnique();
   await seConnecter(page);
-  await ouvrirPage(page);
-  await creerManifestation(page, manifestation);
-  await creerCompetition(page, manifestation, competition, 'sabre');
-  await page.getByRole('button', { name: `Modifier la compétition ${competition}` }).click();
+  await ouvrirPage(page, manifestation);
+  await creerCompetition(page, competition, 'sabre');
+  await page.getByRole('button', { name: `Modifier ${competition}` }).click();
   await page.getByLabel('Arme').selectOption('epee');
   await page.getByLabel('Commentaire').fill('Qualificative');
   await page.getByRole('button', { name: 'Enregistrer' }).click();
-  await expect(carteCompetition(page, manifestation, competition)).toContainText('Épée', { timeout: 20_000 });
-  await page.reload();
-  await expect(carteCompetition(page, manifestation, competition)).toContainText('Qualificative', { timeout: 20_000 });
+  await expect(carteCompetition(page, competition)).toContainText('Épée', { timeout: 20_000 });
+  await ouvrirManifestation(page, manifestation);
+  await page.getByRole('button', { name: `Modifier ${competition}` }).click();
+  await expect(page.getByLabel('Commentaire')).toHaveValue('Qualificative', { timeout: 20_000 });
 });
 
 test('US-024 CA-5 : supprimer une compétition vide, après confirmation', async ({ page }) => {
   const manifestation = nomUnique();
   const competition = nomUnique();
   await seConnecter(page);
-  await ouvrirPage(page);
-  await creerManifestation(page, manifestation);
-  await creerCompetition(page, manifestation, competition);
-  await page.getByRole('button', { name: `Supprimer la compétition ${competition}` }).click();
-  await expect(page.getByText(`Supprimer définitivement la compétition « ${competition} » ?`)).toBeVisible();
-  await page.getByRole('button', { name: 'Supprimer', exact: true }).click();
-  await expect(carteCompetition(page, manifestation, competition)).toHaveCount(0, { timeout: 20_000 });
+  await ouvrirPage(page, manifestation);
+  await creerCompetition(page, competition);
+  // US-057 : un seul « Supprimer… » (menu « ⋯ »), confirmé dans une fenêtre simple pour une compétition vide.
+  await page.getByRole('button', { name: `Autres actions pour ${competition}` }).click();
+  await page.getByRole('menuitem', { name: /^Supprimer…/ }).click();
+  const fenetre = page.getByRole('dialog', { name: `Supprimer « ${competition} » ?` });
+  await fenetre.getByRole('button', { name: 'Supprimer', exact: true }).click();
+  await expect(carteCompetition(page, competition)).toHaveCount(0, { timeout: 20_000 });
 });
 
 test('US-024 CA-3, CA-4 et CA-5 : rattacher une épreuve à une compétition (arme, date, suppression refusée)', async ({
@@ -120,10 +105,8 @@ test('US-024 CA-3, CA-4 et CA-5 : rattacher une épreuve à une compétition (ar
   const competition = nomUnique();
   const epreuve = nomUnique();
   await seConnecter(page);
-  await ouvrirPage(page);
-  await creerManifestation(page, manifestation);
-  await creerCompetition(page, manifestation, competition, 'sabre');
-  await page.getByRole('link', { name: "Retour à l'accueil de l'organisateur" }).click();
+  await ouvrirPage(page, manifestation);
+  await creerCompetition(page, competition, 'sabre');
 
   await ouvrirNouvelleEpreuve(page);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Nouvelle épreuve');
@@ -157,18 +140,19 @@ test('US-024 CA-3, CA-4 et CA-5 : rattacher une épreuve à une compétition (ar
 
   // CA-5 (US-057 CA-5) : la compétition contient désormais une épreuve. Un organisateur ne la supprime plus
   // (« Supprimer… » absent) ; un administrateur passe par la confirmation détaillée, qui exige le nom.
-  await page.goto('/manifestations');
-  await expect(carteCompetition(page, manifestation, competition)).toBeVisible({ timeout: 20_000 });
-  const supprimer = page.getByRole('button', { name: `Supprimer la compétition ${competition}` });
+  await ouvrirManifestation(page, manifestation);
+  await expect(carteCompetition(page, competition)).toBeVisible({ timeout: 20_000 });
+  await page.getByRole('button', { name: `Autres actions pour ${competition}` }).click();
+  const supprimer = page.getByRole('menuitem', { name: /^Supprimer…/ });
   if (process.env.BASE_URL) {
-    await expect(page.getByRole('button', { name: `Modifier la compétition ${competition}` })).toBeVisible();
+    await expect(page.getByRole('button', { name: `Modifier ${competition}` })).toBeVisible();
     await expect(supprimer).toHaveCount(0);
   } else {
     await supprimer.click();
-    const fenetre = page.getByRole('group', { name: `Supprimer définitivement la compétition « ${competition} » ?` });
+    const fenetre = page.getByRole('dialog', { name: `Supprimer définitivement la compétition « ${competition} » ?` });
     await expect(fenetre.getByLabel(`Saisissez « ${competition} » pour confirmer`)).toBeVisible({ timeout: 20_000 });
     await fenetre.getByRole('button', { name: 'Annuler' }).click();
-    await expect(carteCompetition(page, manifestation, competition)).toBeVisible();
+    await expect(carteCompetition(page, competition)).toBeVisible();
   }
 });
 
@@ -179,23 +163,21 @@ test('US-024 hors ligne : les compétitions restent consultables, les actions so
   const manifestation = nomUnique();
   const competition = nomUnique();
   await seConnecter(page);
-  await ouvrirPage(page);
-  await creerManifestation(page, manifestation);
-  await creerCompetition(page, manifestation, competition, 'fleuret');
-  await page.getByRole('link', { name: "Retour à l'accueil de l'organisateur" }).click();
+  await ouvrirPage(page, manifestation);
+  await creerCompetition(page, competition, 'fleuret');
 
+  // La page reste affichée quand le réseau tombe : « Nouvelle compétition », le crayon et « Supprimer… » se grisent.
   await context.setOffline(true);
-  await ouvrirPage(page);
-  await expect(page.getByText(/^Hors ligne : liste du /)).toBeVisible();
-  await expect(carteCompetition(page, manifestation, competition)).toBeVisible();
-  const ajout = page.getByRole('button', { name: `Ajouter une compétition à ${manifestation}` });
+  await expect(carteCompetition(page, competition)).toBeVisible();
+  const ajout = page.getByRole('button', { name: 'Nouvelle compétition' });
   await expect(ajout).toBeDisabled();
-  await expect(ajout).toContainText('Nécessite une connexion internet');
-  await expect(page.getByRole('button', { name: `Modifier la compétition ${competition}` })).toBeDisabled();
-  await expect(page.getByRole('button', { name: `Supprimer la compétition ${competition}` })).toBeDisabled();
+  await expect(page.getByText('Nécessite une connexion internet').first()).toBeVisible();
+  await expect(page.getByRole('button', { name: `Modifier ${competition}` })).toBeDisabled();
+  await page.getByRole('button', { name: `Autres actions pour ${competition}` }).click();
+  await expect(page.getByRole('menuitem', { name: /^Supprimer…/ })).toHaveAttribute('aria-disabled', 'true');
+  await page.keyboard.press('Escape');
 
   // La création d'une épreuve reste possible hors ligne, dans une compétition que la copie contient (US-045).
-  await page.getByRole('link', { name: "Retour à l'accueil de l'organisateur" }).click();
   await ouvrirNouvelleEpreuve(page);
   await expect(page.getByLabel('Compétition', { exact: true }).locator('option', { hasText: competition })).toHaveCount(
     1,
@@ -209,14 +191,12 @@ test('US-024 smartphone : un nom de compétition très long ne fait pas déborde
   const manifestation = `${nomUnique()} ${'Championnats de Nouvelle-Aquitaine '.repeat(2)}`.trim();
   const competition = `${nomUnique()} ${'Championnats de Nouvelle-Aquitaine de sabre '.repeat(2)}`.trim();
   await seConnecter(page);
-  await ouvrirPage(page);
-  await creerManifestation(page, manifestation);
-  await creerCompetition(page, manifestation, competition, 'sabre');
+  await ouvrirPage(page, manifestation);
+  await creerCompetition(page, competition, 'sabre');
   const debordement = () =>
     page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(await debordement()).toBe(false);
 
-  await page.getByRole('link', { name: "Retour à l'accueil de l'organisateur" }).click();
   await ouvrirNouvelleEpreuve(page);
   await page.getByLabel('Compétition', { exact: true }).selectOption({ label: `${competition} — ${manifestation}` });
   await expect(page.getByLabel('Arme')).toHaveValue('sabre');
