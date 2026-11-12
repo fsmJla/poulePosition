@@ -21,3 +21,4 @@ export * from './creer';
 export * from './fichiers';
 export * from './publication';
 export * from './prochaine-etape';
+export * from './rattachement';
