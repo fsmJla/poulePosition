@@ -5,6 +5,7 @@ import { historiqueFormule, parametresParDefaut } from '@poule-position/domaine'
 import type { Competition, Manifestation } from '@poule-position/protocole';
 import {
   cadreDe,
+  changerArchivage,
   confirmationFormule,
   creerCompetitionSeule,
   creerEpreuve as creerEpreuveBrut,
@@ -856,6 +857,65 @@ describe('publication d’une épreuve (US-031)', () => {
     });
     vi.spyOn(journal, 'enregistrer').mockResolvedValueOnce({ erreur: 'ECRITURE_IMPOSSIBLE' });
     expect(await modifierPublication(journal, epreuveId, true, auteur)).toEqual({
+      ok: false,
+      erreur: 'ECRITURE_IMPOSSIBLE',
+    });
+  });
+});
+
+describe('archivage d’une épreuve (US-033)', () => {
+  const creee = async () => {
+    const journal = nouveauJournal();
+    const resultat = await creerEpreuve(journal, saisie(), auteur);
+    return { journal, epreuveId: (resultat as { epreuveId: string }).epreuveId };
+  };
+  const statutDe = async (journal: ReturnType<typeof nouveauJournal>, epreuveId: string) =>
+    (await journal.lire(epreuveId)).epreuve!.statut;
+
+  it('CA-1 : archiver écrit EpreuveArchivee, à envoyer au serveur', async () => {
+    const { journal, epreuveId } = await creee();
+    expect(await changerArchivage(journal, epreuveId, true, auteur)).toEqual({ ok: true, modifiee: true });
+    expect(await statutDe(journal, epreuveId)).toBe('archivee');
+    expect((await journal.aEnvoyer(epreuveId)).at(-1)).toMatchObject({ seq: 2, type: 'EpreuveArchivee' });
+  });
+
+  it('CA-3 : désarchiver rend le statut d’avant, non publiée', async () => {
+    const { journal, epreuveId } = await creee();
+    await modifierPublication(journal, epreuveId, true, auteur);
+    await changerArchivage(journal, epreuveId, true, auteur);
+    expect(await changerArchivage(journal, epreuveId, false, auteur)).toEqual({ ok: true, modifiee: true });
+    expect((await journal.lire(epreuveId)).epreuve).toMatchObject({ statut: 'preparation', publiee: false });
+  });
+
+  it('un état déjà tel que demandé n’écrit rien', async () => {
+    const { journal, epreuveId } = await creee();
+    expect(await changerArchivage(journal, epreuveId, false, auteur)).toEqual({ ok: true, modifiee: false });
+    await changerArchivage(journal, epreuveId, true, auteur);
+    expect(await changerArchivage(journal, epreuveId, true, auteur)).toEqual({ ok: true, modifiee: false });
+    expect((await journal.lire(epreuveId)).dernierSeq).toBe(2);
+  });
+
+  it('CA-1 : un PC non pilote ne peut pas archiver (PAS_PILOTE)', async () => {
+    const { journal, epreuveId } = await creee();
+    const copie = nouveauJournal();
+    await copie.remplacerCopie(epreuveId, await journal.aEnvoyer(epreuveId), 1);
+    expect(await changerArchivage(copie, epreuveId, true, auteur)).toEqual({ ok: false, erreur: 'PAS_PILOTE' });
+  });
+
+  it('hors ligne : l’archivage s’écrit dans le journal local sans réseau et reste à envoyer', async () => {
+    const { journal, epreuveId } = await creee();
+    await journal.confirmer(epreuveId, 1);
+    await changerArchivage(journal, epreuveId, true, auteur);
+    expect((await journal.aEnvoyer(epreuveId)).map(({ seq, type }) => [seq, type])).toEqual([[2, 'EpreuveArchivee']]);
+  });
+
+  it('CA-2 et cas limites : épreuve inconnue, en cours, échec d’écriture', async () => {
+    const { journal, epreuveId } = await creee();
+    expect(await changerArchivage(journal, 'absente', true, auteur)).toEqual({ ok: false, erreur: 'INTROUVABLE' });
+    vi.spyOn(journal, 'enregistrer').mockResolvedValueOnce({ erreur: 'EPREUVE_EN_COURS' });
+    expect(await changerArchivage(journal, epreuveId, true, auteur)).toEqual({ ok: false, erreur: 'EPREUVE_EN_COURS' });
+    vi.spyOn(journal, 'enregistrer').mockResolvedValueOnce({ erreur: 'ECRITURE_IMPOSSIBLE' });
+    expect(await changerArchivage(journal, epreuveId, true, auteur)).toEqual({
       ok: false,
       erreur: 'ECRITURE_IMPOSSIBLE',
     });

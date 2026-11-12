@@ -1,13 +1,21 @@
 // Liste du club pour l'accueil (US-026) : réunit l'index des épreuves, les manifestations et les compétitions du club
 // (à jour en ligne, sinon leurs dernières copies gardées sur l'appareil) et les épreuves de cet appareil. La
 // construction de l'arborescence, elle, est faite par le domaine (`construireListe`).
-import type { EpreuveListee, CompetitionListee, ManifestationListee, Epreuve } from '@poule-position/domaine';
+import {
+  planifierArchivageManifestation,
+  planifierDesarchivageManifestation,
+  type EpreuveListee,
+  type CompetitionListee,
+  type ManifestationListee,
+  type Epreuve,
+} from '@poule-position/domaine';
 import type { EpreuveIndexee } from '@poule-position/protocole';
 import type { ClientCompetitions } from './competitions';
 import type { HierarchieClub } from './fil-ariane';
 import type { Contexte, Journal } from './journal';
 import { rattacherEpreuves } from './rattachement-lot';
-import type { ClientManifestations } from './manifestations';
+import { changerArchivage, type ErreurArchivage } from './epreuves';
+import type { ClientManifestations, ErreurManifestations } from './manifestations';
 import { Base, LIGNE_UNIQUE } from './stockage';
 import type { ActionsLot } from './suppression';
 import type { ActionsSuppressionUnique } from './suppression-unique';
@@ -69,6 +77,13 @@ function depuisLocale(
     nonEnvoyee: pilote && confirme === 0,
   };
 }
+
+/** US-033 : résultat de l'archivage ou du désarchivage d'une manifestation. */
+export type ResultatArchivageManifestation =
+  | { ok: true; epreuves: number; pilotesAilleurs: string[] }
+  /** CA-4 : une épreuve est « En cours ». CA-5 : une épreuve non archivée est pilotée par un autre PC. */
+  | { ok: false; erreur: 'EPREUVE_EN_COURS' | 'PILOTEE_AILLEURS'; epreuves: string[] }
+  | { ok: false; erreur: ErreurManifestations | ErreurArchivage; epreuves?: undefined };
 
 export function creerAccueil({
   journal,
@@ -145,6 +160,38 @@ export function creerAccueil({
       return compte;
     },
 
+    /**
+     * US-033 CA-4 et CA-5 : archive ou désarchive une manifestation. Les épreuves s'écrivent d'abord dans leur journal
+     * (ce PC doit être le pilote de toutes celles qui ne sont pas archivées), puis le serveur archive la manifestation et
+     * ses compétitions. Si le serveur est injoignable, relancer reprend sans dégât : rien n'est écrit deux fois.
+     */
+    async archiverManifestation(
+      id: string,
+      archiver: boolean,
+      donnees: Pick<DonneesAccueil, 'competitions' | 'epreuves'>,
+      contexte: Omit<Contexte, 'clubId'> & { clubId?: string | undefined },
+    ): Promise<ResultatArchivageManifestation> {
+      let aEcrire: string[];
+      let pilotesAilleurs: string[] = [];
+      if (archiver) {
+        const plan = planifierArchivageManifestation(id, donnees.competitions, donnees.epreuves);
+        if (!plan.ok) return { ok: false, erreur: plan.erreur, epreuves: plan.epreuves };
+        aEcrire = plan.aArchiver;
+      } else {
+        const plan = planifierDesarchivageManifestation(id, donnees.competitions, donnees.epreuves);
+        aEcrire = plan.aDesarchiver;
+        pilotesAilleurs = plan.pilotesAilleurs;
+      }
+      for (const epreuveId of aEcrire) {
+        const resultat = await changerArchivage(journal, epreuveId, archiver, contexte);
+        if (!resultat.ok) return { ok: false, erreur: resultat.erreur };
+      }
+      await Promise.allSettled(aEcrire.map((epreuveId) => synchronisation.envoyer(epreuveId)));
+      const serveur = await manifestations.archiver(id, archiver);
+      if (!serveur.ok) return { ok: false, erreur: serveur.erreur };
+      return { ok: true, epreuves: aEcrire.length, pilotesAilleurs };
+    },
+
     /** US-057 : les routes de « Supprimer… » d'une manifestation ou d'une compétition (vide, ou avec son contenu). */
     actionsSuppression: { manifestation: manifestations, competition: competitions } satisfies ActionsSuppressionUnique,
 
@@ -182,11 +229,24 @@ export function creerAccueil({
         manifestations: (lesManifestations.ok
           ? lesManifestations.manifestations
           : (lesManifestations.copie?.manifestations ?? [])
-        ).map(({ id, nom, debut, fin, lieu }) => ({ id, nom, debut, fin, lieu })),
+        ).map(({ id, nom, debut, fin, lieu, archivee }) => ({
+          id,
+          nom,
+          debut,
+          fin,
+          lieu,
+          archivee: archivee === true,
+        })),
         competitions: (lesCompetitions.ok
           ? lesCompetitions.competitions
           : (lesCompetitions.copie?.competitions ?? [])
-        ).map(({ id, manifestationId, nom, arme }) => ({ id, manifestationId, nom, arme })),
+        ).map(({ id, manifestationId, nom, arme, archivee }) => ({
+          id,
+          manifestationId,
+          nom,
+          arme,
+          archivee: archivee === true,
+        })),
         epreuves: [...epreuves.values()],
         horsLigne: clubs.horsLigne,
         copieLe: clubs.copieLe,

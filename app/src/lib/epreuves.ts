@@ -410,3 +410,48 @@ export async function modifierPublication(
   const connues = ['PAS_PILOTE', 'EPREUVE_ARCHIVEE', 'JOURNAL_INCOHERENT'] as const;
   return { ok: false, erreur: connues.find((code) => code === erreur) ?? 'ECRITURE_IMPOSSIBLE' };
 }
+
+/** `INTROUVABLE` : épreuve inconnue de cet appareil ; les autres codes viennent du journal (US-033). */
+export type ErreurArchivage =
+  | 'INTROUVABLE'
+  | Extract<
+      ErreurJournal,
+      | 'PAS_PILOTE'
+      | 'EPREUVE_EN_COURS'
+      | 'EPREUVE_ARCHIVEE'
+      | 'EPREUVE_NON_ARCHIVEE'
+      | 'JOURNAL_INCOHERENT'
+      | 'ECRITURE_IMPOSSIBLE'
+    >;
+
+export type ResultatArchivage = { ok: true; modifiee: boolean } | { ok: false; erreur: ErreurArchivage };
+
+/**
+ * US-033 CA-1 à CA-3 : archive ou désarchive l'épreuve en écrivant `EpreuveArchivee` ou `EpreuveDesarchivee` dans le journal
+ * local, sans réseau ; l'envoi au serveur suit (US-022). Rien n'est écrit si l'épreuve est déjà dans l'état demandé.
+ */
+export async function changerArchivage(
+  journal: Journal,
+  epreuveId: string,
+  archiver: boolean,
+  { clubId, ...contexte }: Omit<Contexte, 'clubId'> & { clubId?: string | undefined },
+): Promise<ResultatArchivage> {
+  const { epreuve } = await journal.lire(epreuveId);
+  if (!epreuve) return { ok: false, erreur: 'INTROUVABLE' };
+  if ((epreuve.statut === 'archivee') === archiver) return { ok: true, modifiee: false };
+  const resultat = await journal.enregistrer(
+    epreuveId,
+    { type: archiver ? 'EpreuveArchivee' : 'EpreuveDesarchivee', donnees: {} },
+    { clubId: clubId ?? epreuve.clubId, ...contexte },
+  );
+  if ('projection' in resultat) return { ok: true, modifiee: true };
+  const { erreur } = resultat;
+  const connues = [
+    'PAS_PILOTE',
+    'EPREUVE_EN_COURS',
+    'EPREUVE_ARCHIVEE',
+    'EPREUVE_NON_ARCHIVEE',
+    'JOURNAL_INCOHERENT',
+  ] as const;
+  return { ok: false, erreur: connues.find((code) => code === erreur) ?? 'ECRITURE_IMPOSSIBLE' };
+}
