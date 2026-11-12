@@ -201,6 +201,9 @@ du titre), avec une barre d'actions sous l'entête.
 ouvre leur liste (ou le mode sélection, d'office), avec un choix de compétition par ligne, et la barre du mode sélection propose
 « Rattacher à une compétition » pour un lot.
 
+**Livré par US-063 (filtres de la liste) :** sous le titre de l'accueil, quatre filtres en pilules (999 px) : « À venir et en cours » (par défaut),
+« Terminées », « Archivées », « Toutes », chacun avec son nombre d'épreuves ; le filtre choisi est en `--marque`. Ils remplacent la case « Afficher les archives ».
+
 ## Règle pour les nouvelles US
 
 Une US qui crée ou modifie un écran :

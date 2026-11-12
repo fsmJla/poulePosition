@@ -30,7 +30,7 @@
 **CA-3 — Archivées masquées**
 - **Étant donné** des compétitions archivées
 - **Quand** la liste s'affiche
-- **Alors** elles sont masquées par défaut, et un filtre « Afficher les archives » les montre.
+- **Alors** elles sont masquées par défaut, et un filtre « Afficher les archives » les montre. *(Remplacé par US-063 : les filtres « À venir et en cours », « Terminées », « Archivées » et « Toutes ».)*
 
 **CA-4 — Ouvrir**
 - **Étant donné** la liste

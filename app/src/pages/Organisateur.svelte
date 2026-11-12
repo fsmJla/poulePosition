@@ -8,12 +8,15 @@
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
   import {
     analyserSelection,
+    compterParFiltre,
     construireListe,
     competitionsProposables,
     contenusASupprimer,
     disponibiliteSuppression,
     couleurDeCompetition,
     elementsEnCours,
+    filtrerDonnees,
+    FILTRES_LISTE,
     manifestationAujourdhui,
     manifestationOuverte,
     nomsCourts,
@@ -23,6 +26,7 @@
     type CompetitionListee,
     type ContenuASupprimer,
     type EpreuveListee,
+    type FiltreListe,
     type ListeClub,
   } from '@poule-position/domaine';
   import type { SessionAppareil } from '../lib/stockage';
@@ -35,7 +39,7 @@
   import ConfirmationArchivage from '../composants/ConfirmationArchivage.svelte';
   import MenuActions, { type ActionMenu } from '../composants/MenuActions.svelte';
   import { verdictManifestation } from '../lib/archivage';
-  import { estDeplie, memoriserRepli } from '../lib/repli';
+  import { estDeplie, filtreMemorise, memoriserFiltre, memoriserRepli } from '../lib/repli';
   import type { RaisonNonRattachee } from '../lib/rattachement-lot';
   import { supprimerElement } from '../lib/suppression-unique';
   import type { Accueil, DonneesAccueil } from '../lib/accueil';
@@ -72,11 +76,37 @@
 
   let horsLigne = $state(!navigator.onLine);
   let donnees: DonneesAccueil | null = $state(null);
-  let afficherArchives = $state(false);
+  /** US-063 CA-1 et CA-7 : filtre de la liste, « À venir et en cours » à chaque nouvelle visite. */
+  let filtre: FiltreListe = $state((filtreMemorise() as FiltreListe | null) ?? 'avenir');
+  const archivesAffichees = $derived(filtre === 'archivees' || filtre === 'toutes');
+  function choisirFiltre(valeur: FiltreListe) {
+    filtre = valeur;
+    memoriserFiltre(valeur);
+    // La sélection ne garde que ce que le filtre montre encore.
+    if (modeSelection) cochees.clear();
+  }
   /** Jour d'aujourd'hui (`AAAA-MM-JJ`), pour ouvrir la manifestation en cours. */
   const aujourdhui = new Date().toLocaleDateString('sv-SE');
 
-  const liste: ListeClub | null = $derived(donnees ? construireListe(donnees, { afficherArchives }) : null);
+  const liste: ListeClub | null = $derived(
+    donnees ? construireListe(filtrerDonnees(donnees, filtre), { afficherArchives: true }) : null,
+  );
+  const donneesCourantes = () => donnees;
+  /** CA-6 : le club n'a rien du tout (le filtre n'y change rien). */
+  const clubVide = $derived.by(() => {
+    const d = donneesCourantes();
+    return d !== null && d.manifestations.length === 0 && d.competitions.length === 0 && d.epreuves.length === 0;
+  });
+  const comptes = $derived(compterParFiltre(donneesCourantes()?.epreuves ?? []));
+  const filtreSansElement = $derived(
+    liste !== null &&
+      liste.manifestations.length === 0 &&
+      liste.competitionsSeules.length === 0 &&
+      liste.aRattacher.length === 0,
+  );
+  const archivesMasquees = $derived(
+    !archivesAffichees && (donneesCourantes()?.epreuves.some(({ statut }) => statut === 'archivee') ?? false),
+  );
 
   /** US-046 CA-4 : rang dans la palette de la compétition, le même que dans le plan de sa manifestation. */
   const couleur = (competitionId: string) => (donnees ? couleurDeCompetition(donnees.competitions, competitionId) : 0);
@@ -205,6 +235,12 @@
   /** US-040 et US-043 : suppression de manifestations, de compétitions et d’épreuves, réservée aux administrateurs. */
   const ts = t.suppression;
   const administrateur = $derived(session.compte.role === 'administrateur');
+  /** US-063 : identifiants que le filtre montre, pour « Tout sélectionner ». */
+  const elementsVisibles = (d: {
+    manifestations: readonly { id: string }[];
+    competitions: readonly { id: string }[];
+    epreuves: readonly { id: string }[];
+  }) => new Set([...d.manifestations, ...d.competitions, ...d.epreuves].map(({ id }) => id));
   const cochees = new SvelteSet<string>();
   /** US-059 : les cases n'existent que dans le mode sélection, qui ne survit pas à un changement de page. */
   let modeSelection = $state(false);
@@ -216,7 +252,7 @@
   /** CA-1 : les éléments qui ne se cochent pas (épreuve en cours, ou parent qui en contient une). */
   const enCours = $derived(donnees ? elementsEnCours(donnees) : new Set<string>());
   /** CA-2 à CA-4 : ce que couvre la sélection, contenu des parents compris, filtre d'archives pris en compte. */
-  const analyse = $derived(donnees ? analyserSelection(donnees, cochees, afficherArchives) : null);
+  const analyse = $derived(donnees ? analyserSelection(donnees, cochees, archivesAffichees) : null);
   /** CA-5 : les éléments à supprimer, dans l'ordre et sans doublon. */
   const plan = $derived(analyse ? planSuppression(analyse) : []);
   /** Une sélection d’épreuves seules garde les textes d'US-040. */
@@ -230,7 +266,11 @@
   }
 
   /** US-059 : tout ce que la liste montre et qui est supprimable (les archives masquées n'en font pas partie). */
-  const toutSelectionnable = $derived(donnees ? toutCocherListe(donnees, afficherArchives) : new Set<string>());
+  const toutSelectionnable = $derived(
+    donnees
+      ? toutCocherListe(donnees, archivesAffichees, elementsVisibles(filtrerDonnees(donnees, filtre)))
+      : new Set<string>(),
+  );
   const toutEstSelectionne = $derived(
     toutSelectionnable.size > 0 && [...toutSelectionnable].every((id) => cochees.has(id)),
   );
@@ -525,7 +565,7 @@
       <span class="compteur" role="status"
         >{seulementEpreuves ? ts.selection(analyse.decompte.epreuves) : ts.selectionMixte(analyse.decompte)}</span
       >
-      {#if liste && liste.archivesMasquees > 0}<small>{ts.archivesNonSelectionnees}</small>{/if}
+      {#if archivesMasquees}<small>{ts.archivesNonSelectionnees}</small>{/if}
       <button type="button" class="lien" onclick={basculerTout} disabled={horsLigne || etapeSerie === 'encours'}
         >{toutEstSelectionne ? ts.toutDeselectionner : ts.toutSelectionner}</button
       >
@@ -568,7 +608,7 @@
   <div class="titre-ligne">
     <h1>{t.titre}</h1>
     <!-- US-059 CA-1 et CA-6 : réservé aux administrateurs ; hors ligne, grisé avec son motif. -->
-    {#if administrateur && !modeSelection && liste && !liste.vide}
+    {#if administrateur && !modeSelection && liste && !clubVide}
       <button
         type="button"
         class="secondaire"
@@ -590,17 +630,19 @@
         </p>
       {/if}
 
-      {#if liste.vide}
+      {#if clubVide}
         <p class="vide">{t.vide}</p>
       {:else}
         {#if remarqueArchivage}<p class="remarque" role="status">{remarqueArchivage}</p>{/if}
-        <div class="filtre">
-          <label>
-            <input type="checkbox" bind:checked={afficherArchives} />
-            {t.afficherArchives}
-          </label>
-          {#if liste.archivesMasquees > 0}<small>{t.archivesMasquees(liste.archivesMasquees)}</small>{/if}
+        <!-- US-063 CA-1 : quatre filtres exclusifs, en pilules ; le nombre d'épreuves suit le libellé (CA-6). -->
+        <div class="filtres" role="group" aria-label={t.filtres}>
+          {#each FILTRES_LISTE as valeur (valeur)}
+            <button type="button" class="pilule" aria-pressed={filtre === valeur} onclick={() => choisirFiltre(valeur)}
+              >{t.filtre[valeur]}<span class="nombre">{comptes[valeur]}</span></button
+            >
+          {/each}
         </div>
+        {#if filtreSansElement}<p class="vide" role="status">{t.filtreVide[filtre]}</p>{/if}
 
         <!-- CA-4 : un seul message pour toute la sélection, avec le décompte par type et les éléments cochés directement. -->
         {#if etapeSerie !== 'aucune' && analyse}
@@ -911,11 +953,39 @@
     font-size: 0.9rem;
   }
 
-  .filtre {
+  /* US-063 (planches 1 et 5) : filtres en pilules (999 px), le filtre choisi en --marque ; défilement horizontal sur smartphone. */
+  .filtres {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1rem;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+
+  .pilule {
+    display: inline-flex;
+    flex: none;
+    gap: 0.4rem;
     align-items: center;
+    min-height: 44px;
+    padding: 0 1rem;
+    border: 1px solid var(--bordure);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--texte);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .pilule[aria-pressed='true'] {
+    border-color: var(--marque);
+    background: var(--marque);
+    color: var(--sur-marque);
+  }
+
+  .pilule .nombre {
+    font-weight: 400;
+    opacity: 0.8;
   }
 
   /* Carte de manifestation (planche 1) : fond de surface, bordure, entête puis lignes de compétition. */
@@ -1393,18 +1463,6 @@
 
     h1 {
       font-size: 1.5rem;
-    }
-
-    .filtre label {
-      display: inline-flex;
-      gap: 0.5rem;
-      align-items: center;
-      min-height: 44px;
-    }
-
-    .filtre input {
-      width: 1.25rem;
-      height: 1.25rem;
     }
 
     .entete-carte {

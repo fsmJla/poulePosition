@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { estDeplie, memoriserRepli, oublierReplis } from './repli';
+import { estDeplie, filtreMemorise, memoriserFiltre, memoriserRepli, oublierReplis } from './repli';
 
 describe('repli de l’accueil (US-055 CA-2)', () => {
   beforeEach(oublierReplis);
@@ -14,6 +14,14 @@ describe('repli de l’accueil (US-055 CA-2)', () => {
     memoriserRepli('c2', false);
     expect(estDeplie('c1', false)).toBe(true);
     expect(estDeplie('c2', true)).toBe(false);
+  });
+
+  it('US-063 CA-7 : le filtre est gardé pendant la visite, oublié ensuite', () => {
+    expect(filtreMemorise()).toBeNull();
+    memoriserFiltre('terminees');
+    expect(filtreMemorise()).toBe('terminees');
+    oublierReplis();
+    expect(filtreMemorise()).toBeNull();
   });
 
   it('oublier les choix rend les états par défaut', () => {

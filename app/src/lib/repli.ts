@@ -12,7 +12,19 @@ export function memoriserRepli(id: string, deplie: boolean): void {
   etats.set(id, deplie);
 }
 
+let filtre: string | null = null;
+
+/** US-063 CA-7 : le filtre de la liste, gardé le temps de la visite ; null tant que l'organisateur n'en a pas choisi. */
+export function filtreMemorise(): string | null {
+  return filtre;
+}
+
+export function memoriserFiltre(valeur: string): void {
+  filtre = valeur;
+}
+
 /** Oublie tous les choix (changement de compte, tests). */
 export function oublierReplis(): void {
   etats.clear();
+  filtre = null;
 }
