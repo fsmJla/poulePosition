@@ -77,7 +77,8 @@ test('US-025 CA-2 et US-045 CA-4 : créer une compétition seule mène à la pag
 
   await expect(page).toHaveURL(MOTIF_PAGE_EPREUVE);
   // CA-4 : l'épreuve porte le nom de la compétition et s'ouvre directement.
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(nom);
+  // US-058 : le titre est le nom court ; le nom complet reste celui du fil d'Ariane.
+  await expect(page.getByRole('navigation', { name: 'Fil d’Ariane' }).getByText(nom)).toBeVisible();
   await expect(page.getByText('En préparation', { exact: true })).toBeVisible();
   await expect(page.getByText('Non publiée', { exact: true })).toBeVisible();
   await expect(page.getByText('Ce PC est le pilote', { exact: true })).toBeVisible();

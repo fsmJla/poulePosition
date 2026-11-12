@@ -58,27 +58,30 @@
 
 <main>
   <FilAriane {niveaux} {naviguer} />
-  <header>
-    <div class="identite">
-      <div class="titre">
-        <h1>{nomCourt}</h1>
-        <span class="pastille {epreuve.statut}">{t.statuts[epreuve.statut]}</span>
-      </div>
-      <p class="sous-titre">
-        {#if competition}<span class="carre" style="--couleur: var(--plan-{couleur})" aria-hidden="true"></span>{/if}
-        <span
-          >{[competition?.nom, t.armes[epreuve.arme], epreuve.date ? t.dateLongue(epreuve.date) : null]
-            .filter(Boolean)
-            .join(' · ')}</span
-        >
-      </p>
-    </div>
-    {#if actions}<div class="actions">{@render actions()}</div>{/if}
-  </header>
   <div class="corps">
     <NavigationEpreuve epreuveId={epreuve.id} {courante} {naviguer} />
-    <div class="contenu" data-etape={courante} aria-label={tp.etapes[courante]} role="region">
-      {@render children()}
+    <div class="colonne">
+      <header>
+        <div class="identite">
+          <div class="titre">
+            <h1>{nomCourt}</h1>
+            <span class="pastille {epreuve.statut}">{t.statuts[epreuve.statut]}</span>
+          </div>
+          <p class="sous-titre">
+            {#if competition}<span class="carre" style="--couleur: var(--plan-{couleur})" aria-hidden="true"
+              ></span>{/if}
+            <span
+              >{[competition?.nom, t.armes[epreuve.arme], epreuve.date ? t.dateLongue(epreuve.date) : null]
+                .filter(Boolean)
+                .join(' · ')}</span
+            >
+          </p>
+        </div>
+        {#if actions}<div class="actions">{@render actions()}</div>{/if}
+      </header>
+      <div class="contenu" data-etape={courante} aria-label={tp.etapes[courante]} role="region">
+        {@render children()}
+      </div>
     </div>
   </div>
 </main>
@@ -164,6 +167,12 @@
     grid-template-columns: 14.5rem minmax(0, 1fr);
     gap: 1.25rem;
     align-items: start;
+  }
+
+  .colonne {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
   }
 
   .contenu {

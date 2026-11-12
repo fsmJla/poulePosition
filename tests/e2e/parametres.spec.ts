@@ -24,7 +24,7 @@ async function creerEpreuve(page: Page, nom: string) {
 const ouvrirParametres = async (page: Page) => {
   await page.getByRole('link', { name: 'Paramètres', exact: true }).click();
   await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}\/parametres$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Paramètres de l’épreuve');
+  await expect(page.getByRole('heading', { level: 2 })).toHaveText('Paramètres de l’épreuve');
 };
 
 const enregistrer = (page: Page) => page.getByRole('button', { name: 'Enregistrer les paramètres' }).click();

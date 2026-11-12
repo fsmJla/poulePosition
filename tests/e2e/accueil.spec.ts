@@ -209,7 +209,10 @@ test('US-026 CA-4 : ouvrir une épreuve pilotée ici (modifiable), ou celle d’
   await expect(ligne).toContainText('Senior Dames');
   await expect(page.getByRole('button', { name: new RegExp(`^${distante}`) })).toContainText('Épée');
   await ligne.getByRole('link').click();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(distante, { timeout: 20_000 });
+  // US-058 : le titre est le nom court ; le nom complet reste celui du fil d'Ariane.
+  await expect(page.getByRole('navigation', { name: 'Fil d’Ariane' }).getByText(distante)).toBeVisible({
+    timeout: 20_000,
+  });
   await expect(page.getByText(/Lecture seule : cette épreuve est pilotée par un autre PC/)).toBeVisible();
 });
 
@@ -293,7 +296,7 @@ test('US-026 hors ligne : la liste vient de la copie et des épreuves locales, c
   await page.getByLabel('Arme').selectOption('sabre');
   await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
   await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
-  await page.getByRole('link', { name: "Accueil de l'organisateur" }).click();
+  await page.getByRole('navigation', { name: 'Fil d’Ariane' }).getByRole('link', { name: 'Accueil' }).click();
   await expect(epreuveDe(page, horsLigne)).toContainText('Pas encore envoyée', { timeout: 20_000 });
   await context.setOffline(false);
 });
