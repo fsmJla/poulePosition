@@ -203,7 +203,7 @@ test('US-058 hors ligne : la navigation et les cartes s’affichent ; modifier e
   const cartes = page.getByRole('region', { name: 'Résumé' });
   await expect(cartes.getByText('Hors ligne : les modifications seront envoyées au retour du réseau.')).toBeVisible();
   // L'épreuve pilotée ici se publie hors ligne (journal local), et l'envoi attend le retour du réseau.
-  await cartes.getByRole('button', { name: 'Publier' }).click();
+  await cartes.getByRole('region', { name: 'Publication' }).getByRole('button', { name: 'Publier' }).click();
   await expect(cartes.getByText('Publiée', { exact: true })).toBeVisible();
   await expect(cartes.getByText('Publication en attente d’envoi')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Modifier', exact: true })).toBeVisible();
