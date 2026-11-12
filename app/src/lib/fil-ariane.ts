@@ -11,7 +11,8 @@ export interface NiveauFil {
 /** Ce que le fil sait de la hiérarchie du club (copie de l'appareil comprise, hors ligne). */
 export interface HierarchieClub {
   manifestations: Pick<ManifestationListee, 'id' | 'nom'>[];
-  competitions: Pick<CompetitionListee, 'id' | 'nom' | 'manifestationId'>[];
+  /** US-058 : l'arme sert à l'entête de la page d'une épreuve ; le fil seul n'en a pas besoin. */
+  competitions: (Pick<CompetitionListee, 'id' | 'nom' | 'manifestationId'> & Partial<Pick<CompetitionListee, 'arme'>>)[];
 }
 
 /**
