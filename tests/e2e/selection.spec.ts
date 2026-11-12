@@ -37,8 +37,14 @@ test('US-059 CA-1 : hors mode sélection, aucune case ; « Sélectionner » est 
   await expect(barre(page)).toHaveCount(0);
   const titre = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
   const bouton = (await selectionner(page).boundingBox())!;
-  expect(bouton.x).toBeGreaterThan(titre.x);
-  expect(Math.abs(bouton.y + bouton.height / 2 - (titre.y + titre.height / 2))).toBeLessThan(40);
+  // Sur un grand écran, le bouton est à droite du titre, sur la même ligne ; sur un écran étroit, il passe juste dessous.
+  if ((page.viewportSize()?.width ?? 0) >= 900) {
+    expect(bouton.x).toBeGreaterThan(titre.x);
+    expect(Math.abs(bouton.y + bouton.height / 2 - (titre.y + titre.height / 2))).toBeLessThan(40);
+  } else {
+    expect(bouton.y).toBeGreaterThanOrEqual(titre.y);
+    expect(bouton.y).toBeLessThan(titre.y + titre.height + 60);
+  }
 });
 
 test('US-059 CA-2 : le mode affiche les cases et une barre avec croix, compteur annoncé, « Tout sélectionner » et « Supprimer… »', async ({

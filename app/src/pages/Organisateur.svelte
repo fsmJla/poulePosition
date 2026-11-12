@@ -796,6 +796,11 @@
     z-index: 1;
   }
 
+  /* Le menu « ⋯ » ouvert passe au-dessus des commandes des lignes suivantes (même niveau d'empilement sinon). */
+  .devant:focus-within {
+    z-index: 10;
+  }
+
   .carre {
     flex: none;
     width: 1rem;
