@@ -108,6 +108,12 @@ export function motifNonCochable(donnees: DonneesListe, id: string): MotifNonCoc
  */
 export function toutCocherListe(donnees: DonneesListe, afficherArchives: boolean): Set<string> {
   const arbre = construireArbre(donnees);
+  // US-033 : une manifestation ou une compétition archivée, masquée par la liste, n'est pas prise non plus.
+  const masques = new Set(
+    [...donnees.manifestations, ...donnees.competitions]
+      .filter(({ archivee }) => !afficherArchives && archivee === true)
+      .map(({ id }) => id),
+  );
   const cochables = [
     ...arbre.manifestations.keys(),
     ...arbre.competitions.keys(),
@@ -115,7 +121,7 @@ export function toutCocherListe(donnees: DonneesListe, afficherArchives: boolean
       .filter(({ statut }) => afficherArchives || statut !== 'archivee')
       .map(({ id }) => id),
   ];
-  return new Set(cochables.filter((id) => motif(arbre, id) === null));
+  return new Set(cochables.filter((id) => !masques.has(id) && motif(arbre, id) === null));
 }
 
 /**

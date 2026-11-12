@@ -13,7 +13,9 @@
   import type { Accueil } from '../lib/accueil';
   import type { ClientCompetitions } from '../lib/competitions';
   import type { ClientFichiers } from '../lib/fichiers';
-  import { modifierPublication } from '../lib/epreuves';
+  import { changerArchivage, modifierPublication } from '../lib/epreuves';
+  import { verdictEpreuve } from '../lib/archivage';
+  import ConfirmationArchivage from '../composants/ConfirmationArchivage.svelte';
   import { prendreEcriture, type Journal } from '../lib/journal';
   import { contenuExport, libellePilote } from '../lib/pilotage';
   import type { Ecart, SessionAppareil } from '../lib/stockage';
@@ -229,6 +231,27 @@
     }
   }
 
+  /** US-033 : archiver ou désarchiver, sans réseau (journal local), sur le PC pilote ; la confirmation est une fenêtre. */
+  const ta = textes.archivage;
+  let confirmationArchivage = $state(false);
+  const archivee = $derived(estArchivee());
+
+  function estArchivee() {
+    return epreuve?.statut === 'archivee';
+  }
+
+  async function validerArchivage() {
+    const resultat = await changerArchivage(journal, epreuveId, !archivee, {
+      clubId: session.compte.clubId,
+      auteur: session.compte.email,
+    });
+    if (resultat.ok) {
+      await charger();
+      void envoyer();
+    }
+    return verdictEpreuve(resultat);
+  }
+
   const tpub = textes.publication;
   let publicationEnCours = $state(false);
   let erreurPublication: string | null = $state(null);
@@ -329,6 +352,14 @@
                   },
                 ]
               : []),
+            // US-033 : archiver (ou désarchiver) ; seul le PC pilote écrit dans le journal, et pas pendant l'épreuve.
+            {
+              libelle: archivee ? ta.desarchiver : ta.archiver,
+              detail: archivee ? ta.detailDesarchiverEpreuve : ta.detailArchiverEpreuve,
+              surChoix: () => (confirmationArchivage = true),
+              indisponible:
+                !pilote || !ecriture ? ta.pasPilote : epreuve.statut === 'enCours' ? ta.epreuveEnCours : undefined,
+            },
             // US-057 : l'unique « Supprimer… », dernier du menu ; la confirmation (nom à saisir) s'ouvre sous la page.
             ...(session.compte.role === 'administrateur'
               ? [
@@ -512,6 +543,17 @@
         />
       {/await}
     </div>
+
+    <!-- US-033 : confirmation de l'archivage ou du désarchivage. -->
+    {#if confirmationArchivage}
+      <ConfirmationArchivage
+        titre={archivee ? ta.titreDesarchiverEpreuve(epreuve.nom) : ta.titreArchiverEpreuve(epreuve.nom)}
+        detail={archivee ? ta.detailDesarchiverEpreuve : ta.detailArchiverEpreuve}
+        action={archivee ? ta.desarchiver : ta.archiver}
+        valider={validerArchivage}
+        fermer={() => (confirmationArchivage = false)}
+      />
+    {/if}
 
     <!-- US-039 : suppression définitive, réservée aux administrateurs, en ligne, hors épreuve en cours. -->
     {#if session.compte.role === 'administrateur'}

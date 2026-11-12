@@ -62,6 +62,52 @@ export const textes = {
     accueil: 'Accueil',
     autresActions: (nom: string) => `Autres actions pour ${nom}`,
   },
+  /** US-033 : archiver et désarchiver une épreuve ou une manifestation. */
+  archivage: {
+    archiver: 'Archiver',
+    desarchiver: 'Désarchiver',
+    annuler: 'Annuler',
+    enCours: 'En cours…',
+    detailArchiverEpreuve:
+      'L’épreuve passe en lecture seule, disparaît de la liste (« Afficher les archives » la montre) et de la page publique.',
+    detailArchiverManifestation:
+      'La manifestation, ses compétitions et toutes ses épreuves passent en lecture seule et disparaissent de la liste.',
+    detailDesarchiverEpreuve: 'L’épreuve retrouve le statut qu’elle avait avant son archivage, non publiée.',
+    detailDesarchiverManifestation:
+      'La manifestation, ses compétitions et ses épreuves redeviennent modifiables, les épreuves non publiées.',
+    titreArchiverEpreuve: (nom: string) => `Archiver l’épreuve « ${nom} » ?`,
+    titreDesarchiverEpreuve: (nom: string) => `Désarchiver l’épreuve « ${nom} » ?`,
+    titreArchiverManifestation: (nom: string) => `Archiver la manifestation « ${nom} » ?`,
+    titreDesarchiverManifestation: (nom: string) => `Désarchiver la manifestation « ${nom} » ?`,
+    // Motifs d'indisponibilité, écrits sous l'action grisée du menu « ⋯ ».
+    epreuveEnCours: 'Une épreuve en cours ne peut pas être archivée',
+    pasPilote: 'Seul le PC pilote de l’épreuve peut l’archiver ou la désarchiver',
+    horsLigne: 'Nécessite internet',
+    erreurs: {
+      epreuveEnCours: (noms: readonly string[]) =>
+        noms.length > 1
+          ? 'Des épreuves en cours ne peuvent pas être archivées :'
+          : 'Une épreuve en cours ne peut pas être archivée :',
+      piloteesAilleurs: (noms: readonly string[]) =>
+        `Prenez la main sur ${noms.join(', ')} ou archivez-les depuis leur PC`,
+      PILOTEE_AILLEURS: 'Une épreuve de la manifestation est pilotée par un autre PC',
+      INTROUVABLE: 'Épreuve introuvable sur cet appareil',
+      PAS_PILOTE: 'Seul le PC pilote de l’épreuve peut l’archiver ou la désarchiver',
+      EPREUVE_EN_COURS: 'Une épreuve en cours ne peut pas être archivée',
+      EPREUVE_ARCHIVEE: 'Cette épreuve est déjà archivée',
+      EPREUVE_NON_ARCHIVEE: 'Cette épreuve n’est pas archivée',
+      JOURNAL_INCOHERENT: 'Le journal de cette épreuve est incohérent : rien n’a été écrit',
+      ECRITURE_IMPOSSIBLE: 'Écriture impossible sur cet appareil',
+      HORS_LIGNE: 'Archiver une manifestation nécessite internet : réessayez une fois la connexion revenue',
+      SESSION_INVALIDE: 'Votre session a expiré : reconnectez-vous',
+      MANIFESTATION_INCONNUE: 'Manifestation introuvable : elle a peut-être été supprimée',
+      MANIFESTATION_NON_VIDE: 'Manifestation non vide',
+      ACCES_REFUSE: 'Accès refusé',
+      ERREUR_INATTENDUE: 'Une erreur est survenue : réessayez',
+    },
+    desarchiveePar: (noms: readonly string[]) =>
+      `Ces épreuves restent archivées : leur PC pilote doit les désarchiver. ${noms.join(', ')}`,
+  },
   /** US-062 : recherche de l'entête. */
   recherche: {
     placeholder: 'Rechercher une épreuve, une compétition…',

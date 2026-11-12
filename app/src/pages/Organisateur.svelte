@@ -32,7 +32,9 @@
   import IconesEtat from '../composants/IconesEtat.svelte';
   import LegendeIcones from '../composants/LegendeIcones.svelte';
   import Lien from '../composants/Lien.svelte';
+  import ConfirmationArchivage from '../composants/ConfirmationArchivage.svelte';
   import MenuActions, { type ActionMenu } from '../composants/MenuActions.svelte';
+  import { verdictManifestation } from '../lib/archivage';
   import { estDeplie, memoriserRepli } from '../lib/repli';
   import type { RaisonNonRattachee } from '../lib/rattachement-lot';
   import { supprimerElement } from '../lib/suppression-unique';
@@ -130,7 +132,41 @@
   }
 
   /** US-055 CA-6 : actions secondaires d'une manifestation ; celles qui exigent le réseau restent visibles, grisées. */
-  function actionsManifestation(id: string): ActionMenu[] {
+  /** US-033 : archiver ou désarchiver une manifestation (et ses compétitions, et ses épreuves) ; la confirmation est une fenêtre. */
+  const ta = textes.archivage;
+  let archivageDemande: { id: string; nom: string; archiver: boolean } | null = $state(null);
+  /** Remarque après un désarchivage : des épreuves restent archivées, leur PC pilote doit les rendre. */
+  let remarqueArchivage: string | null = $state(null);
+
+  async function validerArchivage() {
+    const demande = archivageDemande;
+    if (!demande || !donnees) return { ok: false as const, message: ta.erreurs.ERREUR_INATTENDUE };
+    const verdict = verdictManifestation(
+      await accueil.archiverManifestation(demande.id, demande.archiver, donnees, {
+        clubId: session.compte.clubId,
+        auteur: session.compte.email,
+      }),
+    );
+    if (verdict.ok) await charger();
+    return verdict;
+  }
+
+  function fermerArchivage(_fait: boolean, remarque?: string) {
+    archivageDemande = null;
+    remarqueArchivage = remarque ?? null;
+  }
+
+  /** US-033 : l'action « Archiver » ou « Désarchiver » d'une manifestation ; grisée hors ligne (le serveur la stocke). */
+  function actionArchiver(id: string, nom: string, archivee: boolean, motifHorsLigne: string | undefined): ActionMenu {
+    return {
+      libelle: archivee ? ta.desarchiver : ta.archiver,
+      detail: archivee ? ta.detailDesarchiverManifestation : ta.detailArchiverManifestation,
+      surChoix: () => (archivageDemande = { id, nom, archiver: !archivee }),
+      indisponible: motifHorsLigne === undefined ? undefined : ta.horsLigne,
+    };
+  }
+
+  function actionsManifestation(id: string, nom: string, archivee: boolean): ActionMenu[] {
     const motif = horsLigne ? t.horsLigne : undefined;
     return [
       {
@@ -140,6 +176,7 @@
         indisponible: motif,
       },
       { libelle: t.ajouterCompetition, icone: 'plus', chemin: cheminNouvelleCompetition(id), indisponible: motif },
+      actionArchiver(id, nom, archivee, motif),
       ...actionSupprimer(id),
     ];
   }
@@ -458,6 +495,18 @@
   </div>
 {/snippet}
 
+{#if archivageDemande}
+  <ConfirmationArchivage
+    titre={archivageDemande.archiver
+      ? ta.titreArchiverManifestation(archivageDemande.nom)
+      : ta.titreDesarchiverManifestation(archivageDemande.nom)}
+    detail={archivageDemande.archiver ? ta.detailArchiverManifestation : ta.detailDesarchiverManifestation}
+    action={archivageDemande.archiver ? ta.archiver : ta.desarchiver}
+    valider={validerArchivage}
+    fermer={fermerArchivage}
+  />
+{/if}
+
 {#if confirmation}
   <ConfirmationSuppression
     contenu={confirmation}
@@ -543,6 +592,7 @@
       {#if liste.vide}
         <p class="vide">{t.vide}</p>
       {:else}
+        {#if remarqueArchivage}<p class="remarque" role="status">{remarqueArchivage}</p>{/if}
         <div class="filtre">
           <label>
             <input type="checkbox" bind:checked={afficherArchives} />
@@ -694,6 +744,7 @@
                   {:else}
                     <Lien chemin={cheminManifestation(manifestation.id)} {naviguer}>{manifestation.nom}</Lien>
                   {/if}
+                  {#if manifestation.archivee}<span class="etiquette-archivee">{tc.statuts.archivee}</span>{/if}
                   {#if manifestationAujourdhui(manifestation, aujourdhui)}<span class="etiquette-jour"
                       >{t.aujourdhui}</span
                     >{/if}
@@ -715,7 +766,7 @@
               <MenuActions
                 id="menu-manifestation-{manifestation.id}"
                 nom={manifestation.nom}
-                actions={actionsManifestation(manifestation.id)}
+                actions={actionsManifestation(manifestation.id, manifestation.nom, manifestation.archivee === true)}
                 {naviguer}
               />
             </header>
@@ -1103,6 +1154,22 @@
     background: var(--surface);
     color: var(--texte-discret);
     font-size: 0.8rem;
+  }
+
+  .remarque {
+    margin: 0;
+    padding: 0.6rem 0.75rem;
+    border-left: 4px solid var(--etat-attente);
+    background: var(--surface);
+  }
+
+  .etiquette-archivee {
+    padding: 0.1rem 0.6rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--texte-discret);
+    font-size: 0.8rem;
+    font-weight: 600;
   }
 
   .vide {
