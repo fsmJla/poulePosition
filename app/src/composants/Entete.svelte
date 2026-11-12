@@ -1,12 +1,13 @@
 <script lang="ts">
   // Entête des pages réservées (US-014, US-054, planches 1 à 3) : la marque (retour à l'accueil de l'organisateur), puis
-  // « Créer », « Comptes » (administrateurs), l'aide, le thème et le menu de compte (US-017). Le champ de recherche
-  // viendra avec US-062. Sur un écran étroit (CA-7), il ne reste que la marque et le menu de compte, qui reçoit
+  // « Créer », « Comptes » (administrateurs), l'aide, le thème et le menu de compte (US-017). La recherche (US-062)
+  // suit la marque ; sur un écran étroit, une loupe l'ouvre en pleine largeur. Sur un écran étroit (CA-7), il ne reste que la marque et le menu de compte, qui reçoit
   // « Comptes », l'aide et le thème. Bandeau « connexion locale » tant que la session ouverte hors ligne n'est pas
   // revalidée (US-005 CA-1). « Se déconnecter et oublier cet appareil » (US-006) se confirme dans un panneau sous
   // l'entête, sans boîte de dialogue du navigateur.
   import { onMount } from 'svelte';
   import type { CompteConnecte } from '@poule-position/protocole';
+  import type { Accueil } from '../lib/accueil';
   import { CHEMINS } from '../lib/routes';
   import { CHOIX_THEME, theme, type ChoixTheme } from '../lib/theme';
   import { textes } from '../lib/textes';
@@ -14,16 +15,19 @@
   import Icone from './Icone.svelte';
   import MenuActions, { type ActionMenu } from './MenuActions.svelte';
   import MenuCompte from './MenuCompte.svelte';
+  import RechercheEntete from './RechercheEntete.svelte';
 
   interface Proprietes {
     compte: CompteConnecte;
     surDeconnexion: () => void;
     surOubli: () => void;
     naviguer: (chemin: string) => void;
+    /** US-062 : liste du club, lue au premier usage du champ de recherche. */
+    accueil: Accueil;
     locale?: boolean;
   }
 
-  let { compte, surDeconnexion, surOubli, naviguer, locale = false }: Proprietes = $props();
+  let { compte, surDeconnexion, surOubli, naviguer, accueil, locale = false }: Proprietes = $props();
 
   const t = textes.organisateur.oublier;
   const te = textes.entete;
@@ -69,7 +73,9 @@
 
 <header>
   <a href={CHEMINS.organisateur} onclick={vers(CHEMINS.organisateur)} class="marque">{te.marque}</a>
+  {#if !etroit}<RechercheEntete {accueil} {naviguer} {etroit} />{/if}
   <div class="outils">
+    {#if etroit}<RechercheEntete {accueil} {naviguer} {etroit} />{/if}
     {#if !etroit}
       <!-- « Créer » reste actif hors ligne : la page /creer grise elle-même ce qui demande une connexion (US-046). -->
       <a class="creer" href={CHEMINS.creer} onclick={vers(CHEMINS.creer)}><Icone nom="plus" />{te.creer}</a>
@@ -124,6 +130,8 @@
 
   /* Marque à gauche, outils à droite : une seule ligne, smartphone compris (US-017). Marges de la planche : 8 × 24 px. */
   header {
+    position: relative;
+    z-index: 40;
     display: flex;
     align-items: center;
     justify-content: space-between;
