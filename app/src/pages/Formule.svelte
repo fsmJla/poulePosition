@@ -12,12 +12,10 @@
     type EntreeHistoriqueFormule,
     type ModificationFormule,
   } from '@poule-position/domaine';
-  import Lien from '../composants/Lien.svelte';
-  import FilEpreuve from '../composants/FilEpreuve.svelte';
+  import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
   import type { Accueil } from '../lib/accueil';
   import { confirmationFormule, modifierFormule, type ErreurModificationFormule } from '../lib/epreuves';
   import { prendreEcriture, type Journal } from '../lib/journal';
-  import { cheminEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -142,16 +140,14 @@
       .join(' · ');
 </script>
 
-<main>
-  {#if epreuve}<FilEpreuve {accueil} {epreuve} suite={tf.titre} {naviguer} />{/if}
-  <h1>{tf.titre}</h1>
+{#snippet etape()}
+  <h2 class="titre-etape">{tf.titre}</h2>
 
   {#if !chargee}
     <p role="status">{t.chargement}</p>
   {:else if !epreuve}
     <p class="message" role="alert">{t.introuvable}</p>
   {:else}
-    <h2>{epreuve.nom}</h2>
     <p class="resume">
       {t.formule(epreuve.formule.touchesPoules, epreuve.formule.touchesTableau, epreuve.formule.matchTroisieme)}
     </p>
@@ -218,9 +214,15 @@
       {/if}
     </section>
   {/if}
+{/snippet}
 
-  <Lien chemin={cheminEpreuve(epreuveId)} {naviguer}>{tf.retour}</Lien>
-</main>
+{#if epreuve}
+  <GabaritEpreuve {accueil} {epreuve} courante="formule" suite={tf.titre} {naviguer}>
+    <div class="etape">{@render etape()}</div>
+  </GabaritEpreuve>
+{:else}
+  <main>{@render etape()}</main>
+{/if}
 
 <style>
   main {
@@ -230,14 +232,16 @@
     padding: 3rem 1rem;
   }
 
-  h1,
-  h2 {
-    margin: 0;
-    text-align: center;
+  .etape {
+    display: grid;
+    justify-items: center;
+    gap: 1.25rem;
   }
 
   h2 {
+    margin: 0;
     font-size: 1.15rem;
+    text-align: center;
   }
 
   form,

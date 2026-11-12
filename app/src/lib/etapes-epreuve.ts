@@ -5,14 +5,7 @@ import type { NomIcone } from './icones';
 import { cheminEpreuve, cheminFormuleEpreuve, cheminParametresEpreuve } from './routes';
 
 export type IdEtapeEpreuve =
-  | 'resume'
-  | 'inscriptions'
-  | 'emargement'
-  | 'poules'
-  | 'tableau'
-  | 'impressions'
-  | 'formule'
-  | 'parametres';
+  'resume' | 'inscriptions' | 'emargement' | 'poules' | 'tableau' | 'impressions' | 'formule' | 'parametres';
 
 export interface EtapeEpreuve {
   id: IdEtapeEpreuve;

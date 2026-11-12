@@ -21,7 +21,6 @@
     cheminDupliquerEpreuve,
     cheminFormuleEpreuve,
     cheminModificationEpreuve,
-    cheminParametresEpreuve,
     CHEMINS,
   } from '../lib/routes';
   import { nomConfirme, peutSupprimer } from '../lib/suppression';

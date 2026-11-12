@@ -5,12 +5,10 @@
   // la saisie smartphone (E5) et l'affichage public (E9) les appliqueront.
   import { onMount } from 'svelte';
   import { CORRECTIONS_SCORE, type Epreuve, type Parametres } from '@poule-position/domaine';
-  import Lien from '../composants/Lien.svelte';
-  import FilEpreuve from '../composants/FilEpreuve.svelte';
+  import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
   import type { Accueil } from '../lib/accueil';
   import { modifierParametres, type ErreurModificationParametres } from '../lib/epreuves';
   import { prendreEcriture, type Journal } from '../lib/journal';
-  import { cheminEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -134,17 +132,14 @@
   {/each}
 {/snippet}
 
-<main>
-  {#if epreuve}<FilEpreuve {accueil} {epreuve} suite={tp.titre} {naviguer} />{/if}
-  <h1>{tp.titre}</h1>
+{#snippet etape()}
+  <h2 class="titre-etape">{tp.titre}</h2>
 
   {#if !chargee}
     <p role="status">{t.chargement}</p>
   {:else if !epreuve}
     <p class="message" role="alert">{t.introuvable}</p>
   {:else}
-    <h2>{epreuve.nom}</h2>
-
     {#if !pilote}
       <p class="avertissement" role="status">{t.lectureSeule}</p>
     {:else if !ecriture}
@@ -189,9 +184,15 @@
       {/if}
     </form>
   {/if}
+{/snippet}
 
-  <Lien chemin={cheminEpreuve(epreuveId)} {naviguer}>{tp.retour}</Lien>
-</main>
+{#if epreuve}
+  <GabaritEpreuve {accueil} {epreuve} courante="parametres" suite={tp.titre} {naviguer}>
+    <div class="etape">{@render etape()}</div>
+  </GabaritEpreuve>
+{:else}
+  <main>{@render etape()}</main>
+{/if}
 
 <style>
   main {
@@ -201,14 +202,16 @@
     padding: 3rem 1rem;
   }
 
-  h1,
-  h2 {
-    margin: 0;
-    text-align: center;
+  .etape {
+    display: grid;
+    justify-items: center;
+    gap: 1.25rem;
   }
 
   h2 {
+    margin: 0;
     font-size: 1.15rem;
+    text-align: center;
   }
 
   form {
