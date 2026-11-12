@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-054, US-028, US-030, US-031, US-032
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** us/US-058-page-epreuve-par-etapes / —
 
 ## Récit
 
@@ -112,3 +112,4 @@ coupé existants de la page d'épreuve sont adaptés.
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » ; étapes à venir grisées (décision du 2026-11-11) |
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
+| 2026-11-12 | Passée à En cours (branche us/US-058-page-epreuve-par-etapes) ; plan validé (écarts : « Modifier » et « ⋯ » seulement sur le Résumé, titre en nom court, « — » pour un champ vide) |
