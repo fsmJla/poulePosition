@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-054, US-055
 - **Branche / PR :** us/US-062-recherche / —
 
@@ -76,6 +76,9 @@ locales) : elle fonctionne à l'identique hors ligne et n'envoie aucune requête
 - La recherche ne porte pas sur les tireurs ni sur les comptes ; elle sera étendue aux inscrits avec E3.
 - Le filtrage est une fonction pure du domaine (normalisation, mots, classement des résultats).
 - Aucune donnée de recherche n'est conservée ni envoyée au serveur.
+- La liste du club est lue une fois, au premier focus du champ (`accueil.charger()`) ; elle n'est pas relue ensuite, tant que la page reste ouverte.
+- Une compétition rattachée à une manifestation ouvre la page de cette manifestation ; une compétition seule ouvre l'accueil, dépliée (événement `poule:deplier`).
+- Sur écran étroit, la barre de recherche recouvre l'entête (marque et compte masqués) jusqu'à sa fermeture ; la liste de résultats suit le style du menu « ⋯ ».
 
 ## Questions bloquantes
 
@@ -93,3 +96,4 @@ locales) : elle fonctionne à l'identique hors ligne et n'envoie aucune requête
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
 | 2026-11-12 | Plan validé par l’utilisateur ; passée à En cours |
+| 2026-11-12 | Implémentée (domaine `recherche.ts`, composant `RechercheEntete`) ; passée à En revue |
