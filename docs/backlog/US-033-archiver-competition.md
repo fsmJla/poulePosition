@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-044, US-026
-- **Branche / PR :** —
+- **Branche / PR :** us/US-033-archiver / —
 
 ## Récit
 
@@ -78,4 +78,5 @@ exige le réseau (bouton grisé), car la manifestation est stockée sur le serve
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-11-12 | Plan validé par l’utilisateur ; passée à En cours |
 | 2026-11-08 | Amendée : vocabulaire inversé (la compétition regroupe, l'épreuve se tire ; US-044), au niveau de l'épreuve comme avant (décision du 2026-11-08) ; dépend de US-044 |

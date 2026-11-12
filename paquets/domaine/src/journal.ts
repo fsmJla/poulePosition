@@ -38,6 +38,9 @@ export interface DonneesPublication {
   publiee: boolean;
 }
 
+/** US-033 : archiver et désarchiver n'ont pas de données ; le statut d'avant est gardé par la projection. */
+export type DonneesArchivage = Record<string, never>;
+
 /** Ce que l'application demande d'enregistrer. */
 export type Proposition =
   | { type: 'EpreuveCreee'; donnees: DonneesEpreuve }
@@ -45,7 +48,9 @@ export type Proposition =
   | { type: 'FormuleModifiee'; donnees: ModificationFormule }
   | { type: 'PiloteChange'; donnees: DonneesPiloteChange }
   | { type: 'ParametresModifies'; donnees: ModificationParametres }
-  | { type: 'PublicationModifiee'; donnees: DonneesPublication };
+  | { type: 'PublicationModifiee'; donnees: DonneesPublication }
+  | { type: 'EpreuveArchivee'; donnees: DonneesArchivage }
+  | { type: 'EpreuveDesarchivee'; donnees: DonneesArchivage };
 
 /** Événement enregistré : la proposition acceptée, avec son en-tête. */
 export type Evenement = {
@@ -69,6 +74,8 @@ export interface Epreuve extends DonneesEpreuve {
   creeePar: string;
   /** US-025 CA-2 : « En préparation » à la création. */
   statut: Statut;
+  /** US-033 CA-3 : statut qu'avait l'épreuve avant son archivage, rendu par `EpreuveDesarchivee` ; null si elle n'est pas archivée. */
+  avantArchivage: Statut | null;
   /** US-025 CA-2 : non publiée à la création (US-031). */
   publiee: boolean;
   /** US-025 CA-2 : formule par défaut à la création (US-028). */
@@ -101,6 +108,8 @@ export type ErreurEvenement =
   | 'EPREUVE_DEJA_CREEE'
   | 'EPREUVE_INCONNUE'
   | 'EPREUVE_ARCHIVEE'
+  | 'EPREUVE_EN_COURS'
+  | 'EPREUVE_NON_ARCHIVEE'
   | 'CHAMP_FIGE'
   | 'AUCUNE_MODIFICATION';
 
@@ -122,6 +131,8 @@ export function verifierEvenement(projection: Projection, proposition: Propositi
   if (proposition.type === 'ParametresModifies') return verifierParametres(epreuve, proposition.donnees);
   if (proposition.type === 'FormuleModifiee') return verifierFormule(epreuve, proposition.donnees);
   if (proposition.type === 'PublicationModifiee') return verifierPublication(epreuve, proposition.donnees);
+  if (proposition.type === 'EpreuveArchivee') return verifierArchivage(epreuve);
+  if (proposition.type === 'EpreuveDesarchivee') return verifierDesarchivage(epreuve);
   // US-027 : la modification est validée sur le résultat de la fusion, comme une création.
   if (!epreuve) return 'EPREUVE_INCONNUE';
   if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
@@ -161,6 +172,19 @@ function verifierPublication(epreuve: Epreuve | null, { publiee }: DonneesPublic
   return epreuve.publiee === publiee ? 'AUCUNE_MODIFICATION' : null;
 }
 
+/** US-033 CA-1 et CA-2 : on archive tant que l'épreuve n'est ni en cours ni déjà archivée. */
+function verifierArchivage(epreuve: Epreuve | null): ErreurEvenement | null {
+  if (!epreuve) return 'EPREUVE_INCONNUE';
+  if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
+  return epreuve.statut === 'enCours' ? 'EPREUVE_EN_COURS' : null;
+}
+
+/** US-033 CA-3 : on ne désarchive qu'une épreuve archivée. */
+function verifierDesarchivage(epreuve: Epreuve | null): ErreurEvenement | null {
+  if (!epreuve) return 'EPREUVE_INCONNUE';
+  return epreuve.statut === 'archivee' ? null : 'EPREUVE_NON_ARCHIVEE';
+}
+
 const CHAMPS_FORMULE: readonly string[] = ['touchesPoules', 'touchesTableau', 'matchTroisieme'];
 
 /** US-028 : la formule se règle jusqu'à la fin de l’épreuve ; les touches de relais ne se modifient pas. */
@@ -195,6 +219,24 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
     if (!epreuve) return projection;
     return { ...projection, epreuve: { ...epreuve, publiee: evenement.donnees.publiee }, dernierSeq: evenement.seq };
   }
+  if (evenement.type === 'EpreuveArchivee') {
+    const { epreuve } = projection;
+    if (!epreuve) return projection;
+    const archivee: Epreuve = { ...epreuve, statut: 'archivee', avantArchivage: epreuve.statut };
+    return { ...projection, epreuve: archivee, dernierSeq: evenement.seq };
+  }
+  if (evenement.type === 'EpreuveDesarchivee') {
+    const { epreuve } = projection;
+    if (!epreuve) return projection;
+    // CA-3 : le statut d'avant l'archivage, non publiée (elle a quitté la page publique en étant archivée).
+    const rendue: Epreuve = {
+      ...epreuve,
+      statut: epreuve.avantArchivage ?? 'preparation',
+      avantArchivage: null,
+      publiee: false,
+    };
+    return { ...projection, epreuve: rendue, dernierSeq: evenement.seq };
+  }
   if (evenement.type === 'FormuleModifiee') {
     const { epreuve } = projection;
     if (!epreuve) return projection;
@@ -221,6 +263,7 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
       creeeLe: date,
       creeePar: auteur,
       statut: 'preparation',
+      avantArchivage: null,
       publiee: false,
       formule: formuleParDefaut(donnees.typeEpreuve),
       parametres: parametresParDefaut(),

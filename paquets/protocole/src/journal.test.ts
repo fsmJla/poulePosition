@@ -253,3 +253,21 @@ describe('vocabulaire du journal (US-044, ADR-0021)', () => {
     expect(lireEvenement({ ...sansIdentifiant, competitionId: 'c1' })).toBeNull();
   });
 });
+
+describe('événements EpreuveArchivee et EpreuveDesarchivee (US-033)', () => {
+  const archivage = (type: string, donneesArchivage: unknown) => brut({ seq: 2, type, donnees: donneesArchivage });
+
+  it('CA-1 et CA-3 : lit l’archivage et le désarchivage, sans donnée', () => {
+    for (const type of ['EpreuveArchivee', 'EpreuveDesarchivee']) {
+      expect(lireEvenement(archivage(type, {}))).toEqual(archivage(type, {}));
+    }
+  });
+
+  it('refuse un archivage qui porte des données ou dont les données ne sont pas un objet', () => {
+    for (const type of ['EpreuveArchivee', 'EpreuveDesarchivee']) {
+      for (const donneesInvalides of [{ archivee: true }, null, [], 'x']) {
+        expect(lireEvenement(archivage(type, donneesInvalides))).toBeNull();
+      }
+    }
+  });
+});

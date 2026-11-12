@@ -229,3 +229,29 @@ describe('liste des manifestations, compétitions et épreuves du club (US-026, 
     expect(manifestationAujourdhui(m, '2027-03-16')).toBe(false);
   });
 });
+
+describe('manifestation et compétition archivées (US-033)', () => {
+  const donnees = {
+    manifestations: [manifestation({ archivee: true }), manifestation({ id: 'm2', nom: 'Autre', archivee: false })],
+    competitions: [
+      competition({ archivee: true }),
+      competition({ id: 'e2', manifestationId: 'm2', nom: 'Vivante' }),
+      competition({ id: 'e3', manifestationId: null, nom: 'Seule archivée', archivee: true }),
+    ],
+    epreuves: [epreuve({ statut: 'archivee' }), epreuve({ id: 'c2', rattachement: { competitionId: 'e2' } })],
+  };
+
+  it('CA-1 : une manifestation ou une compétition archivée est masquée par défaut, avec ses épreuves', () => {
+    const liste = construireListe(donnees, { afficherArchives: false });
+    expect(liste.manifestations.map(({ manifestation: { id } }) => id)).toEqual(['m2']);
+    expect(liste.manifestations[0]?.competitions.map(({ competition: { id } }) => id)).toEqual(['e2']);
+    expect(liste.competitionsSeules).toEqual([]);
+    expect(liste.archivesMasquees).toBe(1);
+  });
+
+  it('CA-1 : « Afficher les archives » les montre', () => {
+    const liste = construireListe(donnees, { afficherArchives: true });
+    expect(liste.manifestations).toHaveLength(2);
+    expect(liste.competitionsSeules).toHaveLength(1);
+  });
+});

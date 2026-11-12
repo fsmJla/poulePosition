@@ -13,6 +13,8 @@ export interface Competition extends DonneesCompetition {
   modifieeLe: number;
   /** Nom du compte qui l'a créée ou modifiée en dernier. */
   modifieePar: string;
+  /** US-033 : archivée avec sa manifestation ; absent tant qu'elle ne l'a jamais été. */
+  archivee?: boolean;
 }
 
 /** Corps de `PATCH /competitions/<id>` : nom, arme, commentaire et version ; la manifestation ne change pas. */
@@ -64,9 +66,11 @@ export function analyserDemandeModificationCompetition(
   return { ok: true, demande: { nom, arme, commentaire, version: objet.version } };
 }
 
-function analyserCompetition(brut: unknown): Competition | null {
-  const objet = aExactementLesChamps(brut, [...CHAMPS, 'id', 'version', 'modifieeLe', 'modifieePar']);
-  if (!objet || !estDonnees(objet)) return null;
+export function analyserCompetition(brut: unknown): Competition | null {
+  const base = [...CHAMPS, 'id', 'version', 'modifieeLe', 'modifieePar'];
+  const avecArchivage = estObjet(brut) && 'archivee' in brut;
+  const objet = aExactementLesChamps(brut, avecArchivage ? [...base, 'archivee'] : base);
+  if (!objet || !estDonnees(objet) || (avecArchivage && typeof objet.archivee !== 'boolean')) return null;
   const { id, version, modifieeLe, modifieePar } = objet;
   if (typeof id !== 'string' || !estVersion(version) || typeof modifieeLe !== 'number') return null;
   return typeof modifieePar === 'string' ? (objet as unknown as Competition) : null;

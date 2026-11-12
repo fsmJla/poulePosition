@@ -57,6 +57,14 @@ describe('analyserChemin', () => {
     expect(analyserChemin('/manifestations/m1/autre')).toBeNull();
   });
 
+  it('US-033 : reconnaît l’archivage d’une manifestation', () => {
+    expect(analyserChemin('/manifestations/0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c/archivage')).toEqual({
+      route: 'archivage-manifestation',
+      id: '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c',
+    });
+    expect(analyserChemin('/manifestations/Pas Un Id/archivage')).toBeNull();
+  });
+
   it('US-022 : reconnaît l’index des épreuves et le journal d’une épreuve', () => {
     expect(analyserChemin('/epreuves')).toEqual({ route: 'epreuves' });
     expect(analyserChemin('/epreuves/0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c/evenements')).toEqual({

@@ -62,7 +62,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-030](US-030-affiche-feuille-de-route.md) | Joindre une affiche et une feuille de route | E2 | Terminée | US-044, US-022, US-023, US-024, US-025 |
 | [US-031](US-031-publier-competition.md) | Publier ou dépublier une épreuve | E2 | Terminée | US-044, US-022, US-026, (US-030) |
 | [US-032](US-032-parametres-competition.md) | Régler les paramètres d'une compétition (droits des QR codes, « Prénom N. ») | E2 | Terminée | US-025 |
-| [US-033](US-033-archiver-competition.md) | Archiver ou désarchiver une épreuve ou une manifestation | E2 | Prête | US-044, US-026 |
+| [US-033](US-033-archiver-competition.md) | Archiver ou désarchiver une épreuve ou une manifestation | E2 | En cours | US-044, US-026 |
 | [US-034](US-034-exporter-competition-json.md) | Exporter une épreuve en JSON (P2) | E2 | Prête | US-044, US-021 |
 | [US-035](US-035-importer-competition-json.md) | Importer une épreuve depuis un fichier JSON (P2) | E2 | Prête | US-044, US-034, US-029 |
 | [US-036](US-036-correction-e2e-desactivation-hors-ligne.md) | Corriger le test E2E « désactivation hors ligne » qui échoue sur la preview | E0 | Terminée | US-008 |
