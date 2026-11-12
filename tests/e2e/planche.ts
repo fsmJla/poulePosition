@@ -270,3 +270,10 @@ export async function ouvrirManifestation(page: Page, nom: string, onglet: '' | 
   await page.goto(`/manifestations/${manifestationId}${onglet ? `/${onglet}` : ''}`);
   await expect(page.getByRole('heading', { level: 1, name: nom })).toBeVisible({ timeout: 20_000 });
 }
+
+/** US-056 : identifiant au serveur d'une manifestation créée par `creerManifestationSimple`. */
+export function idManifestation(nom: string): string {
+  const id = manifestationsCreees.get(nom);
+  if (!id) throw new Error(`Manifestation inconnue : ${nom}`);
+  return id;
+}
