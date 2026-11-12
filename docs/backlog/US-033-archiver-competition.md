@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-044, US-026
 - **Branche / PR :** us/US-033-archiver / —
 
@@ -86,4 +86,5 @@ exige le réseau (bouton grisé), car la manifestation est stockée sur le serve
 | 2026-10-28 | Créée |
 | 2026-11-12 | Plan validé par l’utilisateur ; passée à En cours |
 | 2026-11-12 | Implémentée : événements `EpreuveArchivee` et `EpreuveDesarchivee`, route `POST /manifestations/<id>/archivage`, indicateur `archivee` des manifestations et compétitions, actions du menu « ⋯ » ; passée à En revue |
+| 2026-11-12 | Recette OK sur https://poule-position-git-us-us-033-archiver-fsmjlas-projects.vercel.app (menu et confirmation vérifiés à la main ; refus, hors ligne et aller-retour couverts par les E2E verts sur cette preview) ; passée à Terminée |
 | 2026-11-08 | Amendée : vocabulaire inversé (la compétition regroupe, l'épreuve se tire ; US-044), au niveau de l'épreuve comme avant (décision du 2026-11-08) ; dépend de US-044 |
