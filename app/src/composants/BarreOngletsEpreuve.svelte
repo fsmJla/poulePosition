@@ -184,7 +184,7 @@
     border: 1px solid var(--bordure);
     border-radius: var(--rayon);
     background: var(--surface);
-    box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--texte) 25%, transparent);
   }
 
   .menu a,

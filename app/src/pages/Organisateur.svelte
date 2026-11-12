@@ -1494,7 +1494,7 @@
       padding: 0 1.4rem;
       border-radius: 999px;
       background: var(--palette-tiffany);
-      box-shadow: 0 4px 14px rgb(0 0 0 / 0.25);
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--texte) 25%, transparent);
       color: var(--sur-tiffany);
       font-size: 1.1rem;
       font-weight: 600;
