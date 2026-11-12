@@ -2,31 +2,20 @@
 // et sur son lien public sans connexion, puis la dépublier.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter, ETAT_PREVIEW } from './compte';
+import { ajouterCompetition, creerManifestationSimple, ouvrirManifestation } from './planche';
 
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 
-/** Crée une manifestation du 14 au 15 mars 2027. */
+/** Crée au serveur une manifestation du 14 au 15 mars 2027. */
 async function creerManifestation(page: Page, nom: string) {
-  await page.goto('/manifestations');
-  await page.getByRole('button', { name: 'Nouvelle manifestation' }).click();
-  await page.getByLabel('Nom', { exact: true }).fill(nom);
-  await page.getByLabel('Date de début').fill('2027-03-14');
-  await page.getByLabel('Date de fin').fill('2027-03-15');
-  await page.getByRole('button', { name: 'Créer la manifestation' }).click();
-  await expect(page.getByRole('listitem').filter({ hasText: nom }).first()).toBeVisible({ timeout: 20_000 });
+  await creerManifestationSimple(page, nom);
 }
 
 /** Ajoute une compétition à la manifestation, puis une épreuve à cette compétition ; ouvre la page de l'épreuve. */
 async function creerEpreuve(page: Page, manifestation: string, competition: string, epreuve: string) {
-  await page.getByRole('button', { name: `Ajouter une compétition à ${manifestation}` }).click();
-  await page.getByLabel('Nom de la compétition').fill(competition);
-  await page.getByLabel('Arme').selectOption('sabre');
-  await page.getByRole('button', { name: 'Créer la compétition' }).click();
-  await expect(
-    page.getByRole('region', { name: `Compétitions de ${manifestation}` }).getByText(competition),
-  ).toBeVisible({ timeout: 20_000 });
-  await page.getByRole('link', { name: `Voir le plan de ${manifestation}` }).click();
+  await ajouterCompetition(page, manifestation, competition);
+  await ouvrirManifestation(page, manifestation, 'plan');
   await page.getByRole('button', { name: `Ajouter une épreuve à ${competition}, dimanche 14 mars 2027` }).click();
   await expect(page.getByLabel('Compétition', { exact: true })).not.toHaveValue('');
   await page.getByLabel('Nom', { exact: true }).fill(epreuve);
