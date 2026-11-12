@@ -10,6 +10,11 @@ export interface Planche {
   competitionEpee: string;
   competitionSabre: string;
   competitionVide: string;
+  /** US-056 : identifiants au serveur, pour ouvrir la page de la manifestation. */
+  manifestationId: string;
+  competitionEpeeId: string;
+  competitionSabreId: string;
+  competitionVideId: string;
 }
 
 /**
@@ -34,7 +39,7 @@ export async function peupler(page: Page): Promise<Planche> {
     competitionSabre: `Sabre ${suffixe}`,
     competitionVide: `Fleuret ${suffixe}`,
   };
-  await page.evaluate(
+  const ids = await page.evaluate(
     async ({ noms, jour }) => {
       const base = await new Promise<IDBDatabase>((ok, ko) => {
         const ouverture = indexedDB.open('poulePosition');
@@ -69,7 +74,7 @@ export async function peupler(page: Page): Promise<Planche> {
           .competition.id as string;
       const epee = await competition(noms.competitionEpee, 'epee');
       const sabre = await competition(noms.competitionSabre, 'sabre');
-      await competition(noms.competitionVide, 'fleuret');
+      const fleuret = await competition(noms.competitionVide, 'fleuret');
 
       const epreuve = async (
         competitionId: string,
@@ -116,8 +121,77 @@ export async function peupler(page: Page): Promise<Planche> {
       await epreuve(epee, 'epee', `${noms.competitionEpee} M7 Mixte`, 'M7', 'mixte', 'enCours', true);
       await epreuve(epee, 'epee', `${noms.competitionEpee} Senior Hommes`, 'Senior', 'hommes', 'terminee', true);
       await epreuve(sabre, 'sabre', `${noms.competitionSabre} Sans catégorie`, '', 'dames', 'preparation', false);
+      return {
+        manifestationId: manifestation.id as string,
+        competitionEpeeId: epee,
+        competitionSabreId: sabre,
+        competitionVideId: fleuret,
+      };
     },
     { noms, jour: aujourdhui() },
   );
-  return noms;
+  return { ...noms, ...ids };
+}
+
+/** US-056 : une manifestation et ses compétitions créées au serveur, sans passer par l'interface. */
+export interface ManifestationCreee {
+  manifestationId: string;
+  competitionIds: string[];
+}
+
+/**
+ * Crée au serveur une manifestation (`debut` → `fin`, `AAAA-MM-JJ`) et ses compétitions. La page doit être connectée ;
+ * elle est amenée sur l'accueil pour lire l'adresse du serveur.
+ */
+export async function creerManifestation(
+  page: Page,
+  manifestation: { nom: string; debut: string; fin: string; lieu?: string | null },
+  competitions: { nom: string; arme: string | null }[] = [],
+): Promise<ManifestationCreee> {
+  await exposerServeur(page);
+  return page.evaluate(
+    async ({ manifestation, competitions }) => {
+      const base = await new Promise<IDBDatabase>((ok, ko) => {
+        const ouverture = indexedDB.open('poulePosition');
+        ouverture.onsuccess = () => ok(ouverture.result);
+        ouverture.onerror = () => ko(ouverture.error);
+      });
+      const session = await new Promise<{ jeton: string }>((ok) => {
+        const lecture = base.transaction('session').objectStore('session').get('courante');
+        lecture.onsuccess = () => ok(lecture.result);
+      });
+      base.close();
+      const urlServeur = (window as unknown as { __urlServeur?: string }).__urlServeur;
+      const appeler = async (chemin: string, corps: unknown) => {
+        const reponse = await fetch(`${urlServeur}${chemin}`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session.jeton}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(corps),
+        });
+        if (!reponse.ok) throw new Error(`${chemin} refusé : ${reponse.status}`);
+        return reponse.json();
+      };
+      const cree = (
+        await appeler('/manifestations', {
+          nom: manifestation.nom,
+          debut: manifestation.debut,
+          fin: manifestation.fin,
+          lieu: manifestation.lieu ?? null,
+          commentaire: null,
+        })
+      ).manifestation;
+      const competitionIds: string[] = [];
+      for (const { nom, arme } of competitions) {
+        const { competition } = await appeler('/competitions', {
+          manifestationId: cree.id,
+          nom,
+          arme,
+          commentaire: null,
+        });
+        competitionIds.push(competition.id);
+      }
+      return { manifestationId: cree.id as string, competitionIds };
+    },
+    { manifestation, competitions },
+  );
 }

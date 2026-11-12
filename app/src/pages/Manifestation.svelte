@@ -370,10 +370,15 @@
   main {
     display: grid;
     gap: 1rem;
-    width: min(100%, 65rem);
+    width: min(100% - 2rem, 65rem);
     margin: 0 auto;
-    padding: 2rem 1rem 4rem;
+    padding: 1.25rem 0 4rem;
     box-sizing: border-box;
+  }
+
+  /* Planche 2 : le titre suit le fil d'Ariane de près. */
+  main :global(.fil) {
+    margin-bottom: 0.25rem;
   }
 
   h1 {
