@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-055, US-057, US-043
-- **Branche / PR :** us/US-059-mode-selection / —
+- **Branche / PR :** us/US-059-mode-selection / PR #88
 
 ## Récit
 
@@ -116,6 +116,7 @@ réseau coupé.
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
 | 2026-11-12 | Plan validé par l’utilisateur ; passée à En cours |
 | 2026-11-12 | Implémentée ; passée à En revue |
+| 2026-11-12 | PR #88 : CI verte ; recette OK sur https://poule-position-git-us-us-059-mode-selection-fsmjlas-projects.vercel.app (entrée et sortie du mode, barre en thème sombre, case bloquée d’une épreuve en cours, « Supprimer… » grisé sans sélection ; cocher un parent, supprimer, croix, CA-6 et hors ligne couverts par les E2E, le compte de recette étant administrateur et la suppression non lancée) ; passée à Terminée |
 
 ### Correspondance critères → tests
 
