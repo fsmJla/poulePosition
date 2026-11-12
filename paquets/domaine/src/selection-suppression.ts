@@ -106,7 +106,12 @@ export function motifNonCochable(donnees: DonneesListe, id: string): MotifNonCoc
  * CA-3 : « Tout cocher » prend tout ce que la liste montre et qui est supprimable. Les épreuves archivées ne sont
  * prises que si la liste les affiche ; leurs parents cochés les emportent de toute façon, et la confirmation le dit.
  */
-export function toutCocherListe(donnees: DonneesListe, afficherArchives: boolean): Set<string> {
+export function toutCocherListe(
+  donnees: DonneesListe,
+  afficherArchives: boolean,
+  /** US-063 : identifiants montrés par le filtre de la liste ; absent, tout est montré. */
+  visibles?: ReadonlySet<string>,
+): Set<string> {
   const arbre = construireArbre(donnees);
   // US-033 : une manifestation ou une compétition archivée, masquée par la liste, n'est pas prise non plus.
   const masques = new Set(
@@ -121,7 +126,9 @@ export function toutCocherListe(donnees: DonneesListe, afficherArchives: boolean
       .filter(({ statut }) => afficherArchives || statut !== 'archivee')
       .map(({ id }) => id),
   ];
-  return new Set(cochables.filter((id) => !masques.has(id) && motif(arbre, id) === null));
+  return new Set(
+    cochables.filter((id) => !masques.has(id) && (!visibles || visibles.has(id)) && motif(arbre, id) === null),
+  );
 }
 
 /**

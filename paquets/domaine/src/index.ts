@@ -24,3 +24,4 @@ export * from './prochaine-etape';
 export * from './rattachement';
 export * from './recherche';
 export * from './archivage';
+export * from './filtres-liste';

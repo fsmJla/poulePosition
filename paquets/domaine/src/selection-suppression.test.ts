@@ -117,6 +117,11 @@ describe('sélection pour la suppression par lot (US-043)', () => {
     expect(avecArchives.has('E4')).toBe(true);
   });
 
+  it('US-063 : « tout cocher » se limite aux éléments que le filtre montre', () => {
+    const tout = toutCocherListe(donnees, true, new Set(['M1', 'c1']));
+    expect([...tout].sort()).toEqual(['M1', 'c1']);
+  });
+
   it('US-043 CA-3 : une épreuve en cours et ses parents ne sont jamais cochés par « tout cocher »', () => {
     const tout = toutCocherListe(donnees, true);
     for (const id of ['c5', 'E3', 'M2']) expect(tout.has(id)).toBe(false);
