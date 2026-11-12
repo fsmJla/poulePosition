@@ -134,7 +134,8 @@ test('US-057 CA-5 : un organisateur ne voit « Supprimer… » que pour un objet
   test.skip(!process.env.BASE_URL, 'organisateur réel : preview uniquement (le compte local est un administrateur)');
   const planche = await ouvrirAccueil(page);
   await menuDe(page, planche.manifestation).click();
-  await expect(page.getByRole('menu').getByRole('menuitem')).toHaveCount(2);
+  // Modifier, Ajouter une compétition, Archiver (US-033) : pas de « Supprimer… » pour un organisateur.
+  await expect(page.getByRole('menu').getByRole('menuitem')).toHaveCount(3);
   await expect(supprimer(page)).toHaveCount(0);
   await page.keyboard.press('Escape');
   await carte(page, planche)
