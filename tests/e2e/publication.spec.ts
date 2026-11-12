@@ -50,7 +50,9 @@ test('US-031 CA-1 à CA-5 : publier, voir l’épreuve sur la page publique et s
     await expect(visiteur.getByRole('status').filter({ hasText: 'Chargement' })).toHaveCount(0, { timeout: 20_000 });
     return (await visiteur.getByText(nom, { exact: true }).count()) > 0;
   };
-  const publier = page.getByRole('button', { name: 'Publier', exact: true });
+  const publier = page
+    .getByRole('region', { name: 'Publication' })
+    .getByRole('button', { name: 'Publier', exact: true });
   const depublier = page.getByRole('button', { name: 'Dépublier', exact: true });
 
   // CA-1 : non publiée par défaut ; ni la page publique ni le lien public ne la montrent.

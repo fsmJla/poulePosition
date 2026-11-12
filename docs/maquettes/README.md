@@ -176,8 +176,10 @@ le bouton à icône seule et le menu « ⋯ » sont en place sur les pages conne
 étroit), la mise en page des écrans (US-055 à US-058).
 
 **Livré par US-058 (page d'une épreuve par étapes) :** la navigation latérale (étapes à venir grisées, liste unique dans
-`app/src/lib/etapes-epreuve.ts`), l'entête de l'épreuve et le Résumé en cartes. Reste à venir : le bandeau « Prochaine
-étape » (US-064).
+`app/src/lib/etapes-epreuve.ts`), l'entête de l'épreuve et le Résumé en cartes.
+
+**Livré par US-064 (prochaine étape) :** le bandeau « Prochaine étape » du Résumé, dont la règle est
+`paquets/domaine/src/prochaine-etape.ts` ; chaque Epic qui livre une étape y ajoute son cas.
 
 ## Règle pour les nouvelles US
 

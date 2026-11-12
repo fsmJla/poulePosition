@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-058, US-031
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** us/US-064-prochaine-etape / PR #87
 
 ## Récit
 
@@ -73,6 +73,22 @@ réseau coupé.
   tard, inscrits, poules, tableau) qui renvoie un identifiant d'étape ; les textes viennent du catalogue.
 - Joindre une affiche n'est pas une « prochaine étape » : c'est facultatif.
 
+### Hypothèses prises pendant l'implémentation
+
+- La règle `prochaineEtape({ statut, publiee })` (`paquets/domaine/src/prochaine-etape.ts`) renvoie `'publier'`, `'partager'` ou
+  `null`. Le pilote n'en est pas un paramètre : il ne change pas l'étape, seulement l'affichage (sans bouton, avec « À faire
+  depuis le PC pilote »). Une épreuve en cours est traitée comme une épreuve en préparation.
+- Carte Publication : son bouton Publier / Dépublier est conservé (la planche n'en montre pas) : il faut un endroit pour
+  dépublier, et il sert aux E2E d'US-031. Tant que l'épreuve n'est pas publiée, deux boutons « Publier » coexistent.
+- « Copier le lien » copie l'adresse absolue de la page publique (`origin` + `/direct/<id>`) et affiche « Lien copié » ; si le
+  presse-papiers est refusé, un message l'explique.
+- « Publier » n'est pas grisé hors ligne : US-031 publie dans le journal local et envoie au retour du réseau, donc l'action
+  fonctionne sans internet (écart avec la section hors ligne d'origine, qui supposait une connexion).
+- Le cas « l'action échoue » réutilise le message d'erreur d'US-031 sous le bandeau ; il n'a pas de test E2E propre (aucun
+  moyen de faire échouer l'écriture du journal local), le message étant celui de la carte Publication déjà testée.
+- CA-5 et CA-6 sont couverts par la règle du domaine : aucun écran n'archive ni ne termine encore une épreuve (US-033).
+- Mise en page smartphone autour du bandeau (barre d'étapes en bas, entête) : US-061 ; le bandeau lui-même suit la planche 6.
+
 ## Questions bloquantes
 
 - Aucune.
@@ -89,3 +105,18 @@ réseau coupé.
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » ; ajout retenu par l'utilisateur le 2026-11-11 |
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
+| 2026-11-12 | Plan validé par l’utilisateur ; passée à En cours |
+| 2026-11-12 | Implémentée ; passée à En revue |
+| 2026-11-12 | PR #87 : CI verte ; recette OK sur https://poule-position-git-us-us-064-prochaine-etape-fsmjlas-projects.vercel.app (bandeau en lecture seule, planche 3, thèmes clair et sombre ; Publier, Copier le lien, 390 px et hors ligne couverts par les E2E de la CI, le compte de recette n’étant pas pilote) ; passée à Terminée |
+
+### Correspondance critères → tests
+
+| Critère | Tests |
+|---|---|
+| CA-1 | `paquets/domaine/src/prochaine-etape.test.ts` ; `tests/e2e/prochaine-etape.spec.ts` (« US-064 CA-1 et CA-2 ») |
+| CA-2 | `prochaine-etape.test.ts` ; `prochaine-etape.spec.ts` (« US-064 CA-1 et CA-2 ») |
+| CA-3 | `prochaine-etape.test.ts` ; `prochaine-etape.spec.ts` (« US-064 CA-3 ») |
+| CA-4 | `prochaine-etape.spec.ts` (« US-064 CA-4 ») |
+| CA-5, CA-6 | `prochaine-etape.test.ts` (« US-064 CA-5 », « US-064 CA-1 : une seule étape ») |
+| CA-7 | `prochaine-etape.spec.ts` (« US-064 CA-7 : … planche 3 », « … planche 6 », captures jointes au rapport) |
+| Hors ligne | `prochaine-etape.spec.ts` (« US-064 hors ligne ») |
