@@ -179,6 +179,11 @@ le bouton à icône seule et le menu « ⋯ » sont en place sur les pages conne
 **Livré par US-058 (page d'une épreuve par étapes) :** la navigation latérale (étapes à venir grisées, liste unique dans
 `app/src/lib/etapes-epreuve.ts`), l'entête de l'épreuve et le Résumé en cartes.
 
+**Livré par US-061 (smartphone de l'organisateur, planches 5 et 6) :** sous 40 rem (640 px), l'accueil tient sur une colonne
+(lignes d'épreuve compactes : nom court, statut en texte, icônes d'état, chevron) avec un bouton « Créer » flottant, et la page
+d'une épreuve a un entête compact (flèche de retour vers le niveau supérieur du fil, nom court, compétition et arme, « ⋯ »)
+et une barre d'onglets fixe en bas (Résumé, Inscrits, Poules, Tableau, Plus). Toute cible y fait au moins 44 × 44 px.
+
 **Livré par US-064 (prochaine étape) :** le bandeau « Prochaine étape » du Résumé, dont la règle est
 `paquets/domaine/src/prochaine-etape.ts` ; chaque Epic qui livre une étape y ajoute son cas.
 

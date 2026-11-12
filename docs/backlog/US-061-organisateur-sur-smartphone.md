@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-054, US-055, US-058
-- **Branche / PR :** us/US-061-organisateur-sur-smartphone / —
+- **Branche / PR :** us/US-061-organisateur-sur-smartphone / PR à ouvrir
 
 ## Récit
 
@@ -84,6 +84,18 @@ par un E2E réseau coupé au format 390 px.
 - La page d'une manifestation (US-056) et le mode sélection (US-059) s'adaptent à l'écran étroit dans leurs propres
   US ; cette US ne couvre que les planches 5 et 6.
 
+- Hypothèses prises pendant l'implémentation :
+  - point de bascule unique à **40 rem (640 px)**, celui où l'entête perd déjà « Créer » ; entre 40 et 52 rem, la disposition
+    empilée d'US-058 reste (navigation en liste défilante) ;
+  - libellé court « Inscrits » dans la barre d'onglets seulement (« Inscriptions » ailleurs) ;
+  - clavier virtuel : la barre d'onglets est masquée tant qu'un champ a le focus (non testable en E2E) ;
+  - écarts avec les planches : « + Épreuves » et « ⋯ » restent sur la ligne de compétition (icône « + » seule) au lieu
+    d'être absents ; le bouton « Plan » devient une icône seule ; le statut de l'épreuve est dans le bandeau d'entête ;
+    l'état du pilote est la carte « Pilote » en tête du Résumé plutôt qu'une ligne ; les filtres, la loupe et l'alerte
+    cliquable des planches viennent avec US-063, US-062 et US-060 ;
+  - les E2E d'US-026, US-025, US-028, US-032, US-048, US-056 et US-058 qui lisent le fil d'Ariane ou la navigation latérale
+    s'exécutent à 1100 px de large, y compris dans le projet « smartphone » (leur disposition large reste testée).
+
 ## Questions bloquantes
 
 - Aucune.
@@ -101,3 +113,4 @@ par un E2E réseau coupé au format 390 px.
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
 | 2026-11-12 | Plan validé par l’utilisateur (libellé court « Inscrits », bascule à 40 rem) ; passée à En cours |
+| 2026-11-12 | Implémentée ; passée à En revue (CA-1 à CA-7 et cas limites : `tests/e2e/smartphone-organisateur.spec.ts`) |
