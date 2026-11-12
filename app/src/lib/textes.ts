@@ -173,9 +173,16 @@ export const textes = {
       enCours: 'Une épreuve en cours ne peut pas être supprimée',
       selection: (nombre: number) =>
         nombre > 1 ? `${nombre} épreuves sélectionnées` : `${nombre} épreuve sélectionnée`,
-      toutCocher: 'Tout cocher',
-      toutDecocher: 'Tout décocher',
-      bouton: 'Supprimer définitivement…',
+      /** US-059 : mode sélection de l'accueil, barre d'actions de la planche 4. */
+      selectionner: 'Sélectionner',
+      barre: 'Mode sélection',
+      quitter: 'Quitter le mode sélection',
+      toutSelectionner: 'Tout sélectionner',
+      toutDeselectionner: 'Tout désélectionner',
+      bouton: 'Supprimer…',
+      aide: 'Cocher une manifestation ou une compétition sélectionne aussi tout son contenu. La suppression demande toujours une confirmation qui détaille ce qui sera supprimé.',
+      /** Cas limite : la sélection ne prend que ce que la liste affiche. */
+      archivesNonSelectionnees: 'Les archives masquées ne sont pas sélectionnées',
       horsLigne: 'Connexion requise pour supprimer',
       titre: (nombre: number) =>
         nombre > 1 ? `Supprimer définitivement ces ${nombre} épreuves ?` : 'Supprimer définitivement cette épreuve ?',
