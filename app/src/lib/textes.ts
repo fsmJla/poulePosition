@@ -17,6 +17,7 @@ import {
 } from '@poule-position/domaine';
 import type { ErreurCompetitionSeule, ErreurCreation, ErreurModification } from './epreuves';
 import type { EtatConnexion } from './connexion';
+import type { IdEtapeEpreuve } from './etapes-epreuve';
 import type { ErreurCompetitions } from './competitions';
 import type { ErreurManifestations } from './manifestations';
 import type { ErreurLot } from './suppression';
@@ -1025,6 +1026,39 @@ export const textes = {
       { nom: 'Épée', epreuves: ['M17 · Hommes'] },
     ],
     exempleEpreuveSeule: 'Senior · Dames',
+  },
+  /** US-058 : page d'une épreuve par étapes (navigation latérale, entête, cartes du Résumé). */
+  pageEpreuve: {
+    navigation: 'Étapes de l’épreuve',
+    aVenir: 'À venir',
+    etapes: {
+      resume: 'Résumé',
+      inscriptions: 'Inscriptions',
+      emargement: 'Émargement',
+      poules: 'Poules',
+      tableau: 'Tableau',
+      impressions: 'Impressions',
+      formule: 'Formule',
+      parametres: 'Paramètres',
+    } satisfies Record<IdEtapeEpreuve, string>,
+    /** Titre des cartes du Résumé. */
+    cartes: {
+      pilote: 'Pilote',
+      publication: 'Publication',
+      informations: 'Informations',
+      formule: 'Formule',
+      documents: 'Affiche et feuille de route',
+    },
+    /** Libellés de la carte Informations (la planche abrège « Début des poules » en « Début »). */
+    informations: { lieu: 'Lieu', appel: 'Appel', scratch: 'Scratch', debut: 'Début' },
+    vide: '—',
+    piloteEnvoye: 'Toutes les modifications sont envoyées au serveur.',
+    piloteHorsLigne: 'Hors ligne : les modifications seront envoyées au retour du réseau.',
+    modifierInformations: 'Modifier les informations',
+    modifierFormule: 'Modifier la formule',
+    menuEpreuve: 'Autres actions',
+    dupliquer: 'Dupliquer',
+    dupliquerDetail: 'Une nouvelle épreuve préremplie, dans la même compétition',
   },
   /** US-056 : page d'une manifestation (onglets Compétitions, Plan, Affiche et feuille de route). */
   pageManifestation: {
