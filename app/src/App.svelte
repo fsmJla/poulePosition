@@ -168,7 +168,7 @@
   {:else if session}
     <!-- Pages réservées : entête commun (US-014) ; action principale tiffany (US-054, app.css). -->
     <div class="pages-connectees">
-      <Entete compte={session.compte} {surDeconnexion} {surOubli} {naviguer} locale={estLocale(session)} />
+      <Entete compte={session.compte} {surDeconnexion} {surOubli} {naviguer} {accueil} locale={estLocale(session)} />
       {#if route.page === 'organisateur'}
         <Organisateur {session} {accueil} {naviguer} />
       {:else if route.page === 'motDePasse'}

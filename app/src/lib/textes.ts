@@ -62,6 +62,17 @@ export const textes = {
     accueil: 'Accueil',
     autresActions: (nom: string) => `Autres actions pour ${nom}`,
   },
+  /** US-062 : recherche de l'entête. */
+  recherche: {
+    placeholder: 'Rechercher une épreuve, une compétition…',
+    ouvrir: 'Rechercher',
+    fermer: 'Fermer la recherche',
+    resultats: 'Résultats de la recherche',
+    chargement: 'Chargement de la liste…',
+    aucunResultat: (saisie: string) => `Aucun résultat pour « ${saisie} »`,
+    archivee: 'Archivée',
+    groupes: { manifestation: 'Manifestations', competition: 'Compétitions', epreuve: 'Épreuves' },
+  },
   etats: {
     'non-configure': 'Serveur non configuré',
     connexion: 'Connexion au serveur…',

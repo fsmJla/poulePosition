@@ -172,8 +172,7 @@ L'application existante est alignée par les US-054 à US-064 (voir `docs/backlo
 pas `Terminée`, l'écran correspondant garde son ancienne disposition.
 
 **Livré par US-054 (entête, fil d'Ariane, icônes, menu « ⋯ ») :** l'entête commun, le fil d'Ariane, le composant d'icône,
-le bouton à icône seule et le menu « ⋯ » sont en place sur les pages connectées. Restent à venir : le champ de recherche
-(US-062), le bouton « Créer » flottant des smartphones (US-061, d'ici là une entrée « Créer » est dans le menu de compte
+le bouton à icône seule et le menu « ⋯ » sont en place sur les pages connectées. Restent à venir : le bouton « Créer » flottant des smartphones (US-061, d'ici là une entrée « Créer » est dans le menu de compte
 étroit), la mise en page des écrans (US-055 à US-058).
 
 **Livré par US-058 (page d'une épreuve par étapes) :** la navigation latérale (étapes à venir grisées, liste unique dans
@@ -183,6 +182,9 @@ le bouton à icône seule et le menu « ⋯ » sont en place sur les pages conne
 (lignes d'épreuve compactes : nom court, statut en texte, icônes d'état, chevron) avec un bouton « Créer » flottant, et la page
 d'une épreuve a un entête compact (flèche de retour vers le niveau supérieur du fil, nom court, compétition et arme, « ⋯ »)
 et une barre d'onglets fixe en bas (Résumé, Inscrits, Poules, Tableau, Plus). Toute cible y fait au moins 44 × 44 px.
+
+**Livré par US-062 (recherche) :** le champ de recherche de l'entête (après la marque, sur écran large) et la loupe des smartphones, qui ouvre la barre
+en pleine largeur ; résultats groupés (manifestations, compétitions, épreuves), au clavier (combobox), sur l'appareil, sans requête.
 
 **Livré par US-064 (prochaine étape) :** le bandeau « Prochaine étape » du Résumé, dont la règle est
 `paquets/domaine/src/prochaine-etape.ts` ; chaque Epic qui livre une étape y ajoute son cas.

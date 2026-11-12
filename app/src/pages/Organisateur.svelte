@@ -88,6 +88,16 @@
     memoriserRepli(id, valeur);
   }
 
+  /** US-062 : la recherche demande de déplier une compétition seule, même quand la page est déjà affichée. */
+  onMount(() => {
+    const surDeplier = (evenement: Event) => {
+      const { id } = (evenement as CustomEvent<{ id: string }>).detail;
+      choixRepli.set(id, true);
+    };
+    window.addEventListener('poule:deplier', surDeplier);
+    return () => window.removeEventListener('poule:deplier', surDeplier);
+  });
+
   /** US-057 : le contenu de chaque élément, calculé une fois par chargement (la liste peut compter des centaines de cartes). */
   const contenus = $derived(donnees ? contenusASupprimer(donnees) : new Map<string, ContenuASupprimer>());
   const tsu = textes.suppressionUnique;

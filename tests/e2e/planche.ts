@@ -281,7 +281,21 @@ export function idManifestation(nom: string): string {
 /**
  * US-056 : ajoute au serveur une épreuve à une compétition, comme le ferait son PC pilote (US-022). `date` : `AAAA-MM-JJ`.
  */
-export async function ajouterEpreuve(page: Page, competitionId: string, nom: string, date = '2027-03-15') {
+/** Particularités d'une épreuve créée au serveur (par défaut : sabre, sans catégorie ni sexe, en préparation). */
+interface OptionsEpreuve {
+  statut?: string;
+  arme?: string;
+  categorie?: string | null;
+  sexe?: string | null;
+}
+
+export async function ajouterEpreuve(
+  page: Page,
+  competitionId: string,
+  nom: string,
+  date = '2027-03-15',
+  { statut = 'preparation', arme = 'sabre', categorie = null, sexe = null }: OptionsEpreuve = {},
+) {
   const epreuveId = crypto.randomUUID();
   const compte = await page.evaluate(async () => {
     const base = await new Promise<IDBDatabase>((ok, ko) => {
@@ -312,10 +326,10 @@ export async function ajouterEpreuve(page: Page, competitionId: string, nom: str
         type: 'EpreuveCreee',
         donnees: {
           nom,
-          arme: 'sabre',
+          arme,
           typeEpreuve: 'individuelle',
-          categorie: null,
-          sexe: null,
+          categorie,
+          sexe,
           date,
           horaires: { appel: null, scratch: null, debutPoules: null },
           lieu: null,
@@ -326,11 +340,11 @@ export async function ajouterEpreuve(page: Page, competitionId: string, nom: str
     ],
     resume: {
       nom,
-      arme: 'sabre',
-      categorie: null,
-      sexe: null,
+      arme,
+      categorie,
+      sexe,
       date,
-      statut: 'preparation',
+      statut,
       publiee: false,
       rattachement,
     },
