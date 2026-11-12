@@ -43,6 +43,7 @@ export const ICONES = {
   carres:
     '<rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />',
   coche: '<path d="m5 12.5 4.5 4.5L19 7.5" />',
+  lien: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />',
 } as const;
 
 export type NomIcone = keyof typeof ICONES;

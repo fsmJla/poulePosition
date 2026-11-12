@@ -104,6 +104,7 @@ pas d'émoji. Une icône garde **le même sens partout**.
 | Coche | Choix en cours dans un menu | Seule (décorative) |
 | Liste | Onglet « Compétitions » de la page d'une manifestation | Avec libellé |
 | Quatre carrés | Onglet « Plan » de la page d'une manifestation | Avec libellé |
+| Lien | « Rattacher à une compétition » (barre du mode sélection) | Avec libellé |
 
 Ajouter une icône à ce tableau avant de l'employer dans un écran.
 

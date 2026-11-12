@@ -133,9 +133,6 @@ export const textes = {
     vide: 'Le club n’a encore ni manifestation, ni compétition, ni épreuve : créez une première manifestation ou une première compétition.',
     /** US-045 CA-7 : épreuves dont la compétition a été supprimée entre-temps, en tête de la liste. */
     aRattacher: 'Épreuves à rattacher',
-    competitionSupprimee: 'Sa compétition a été supprimée : choisissez-en une autre',
-    choisirCompetition: (nom: string) => `Choisir une compétition pour l’épreuve ${nom}`,
-    choisirCompetitionBouton: 'Choisir une compétition',
     /** US-045 CA-4 : une compétition seule (challenge) est créée avec sa première épreuve. */
     nouvelleCompetitionSeule: 'Nouvelle compétition seule',
     aucuneEpreuve: 'Aucune épreuve',
@@ -167,6 +164,37 @@ export const textes = {
     aucuneCompetition: 'Aucune compétition',
     jour: (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}`,
     ouvrir: (nom: string) => `Ouvrir l’épreuve ${nom}`,
+    /** US-060 : épreuves à rattacher (leur compétition a disparu), alerte, liste et rattachement par lot. */
+    rattachement: {
+      alerte: (nombre: number) => (nombre > 1 ? `${nombre} épreuves à rattacher.` : '1 épreuve à rattacher.'),
+      alerteSuite: 'Leur compétition a été supprimée.',
+      alerteTitre: 'Épreuves à rattacher',
+      lesRattacher: 'Les rattacher',
+      titre: (nombre: number) => (nombre > 1 ? `${nombre} épreuves à rattacher` : '1 épreuve à rattacher'),
+      explication: 'Leur compétition a été supprimée. Choisissez une compétition pour chacune, ou supprimez-les.',
+      choisir: 'Choisir une compétition',
+      choisirPour: (nom: string) => `Choisir une compétition pour ${nom}`,
+      lot: 'Rattacher à une compétition',
+      creerCompetition: 'Créer une compétition seule',
+      depuisLePilote: 'À faire depuis le PC pilote',
+      jour: (date: string) =>
+        new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`)),
+      rattachees: (nombre: number) => (nombre > 1 ? `${nombre} épreuves rattachées` : `${nombre} épreuve rattachée`),
+      nonRattachees: (nombre: number) =>
+        nombre > 1 ? `${nombre} épreuves n’ont pas été rattachées` : `${nombre} épreuve n’a pas été rattachée`,
+      modifier: 'Modifier l’épreuve',
+      fermer: 'Fermer',
+      raisons: {
+        INTROUVABLE: 'Inconnue de cet appareil : à faire depuis le PC pilote',
+        PAS_PILOTE: 'Pilotée par un autre PC : à faire depuis le PC pilote',
+        EPREUVE_ARCHIVEE: 'Épreuve archivée',
+        ARME_DIFFERENTE_COMPETITION: 'Arme différente de celle de la compétition',
+        DATE_HORS_MANIFESTATION: 'Date hors de la manifestation : modifiez l’épreuve',
+        DATE_OBLIGATOIRE: 'Date manquante : la manifestation exige une date',
+        RATTACHEMENT_INVALIDE: 'Compétition inconnue de cet appareil',
+        ECRITURE_IMPOSSIBLE: 'Écriture impossible sur cet appareil',
+      },
+    },
     /** US-040 : suppression de plusieurs épreuves, réservée aux administrateurs. */
     suppression: {
       cocher: (nom: string) => `Sélectionner l’épreuve ${nom}`,

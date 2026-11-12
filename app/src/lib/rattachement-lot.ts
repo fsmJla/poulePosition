@@ -2,13 +2,8 @@
 // écritures d'US-027 (`EpreuveModifiee` avec le seul rattachement). Tout se passe sur cet appareil, dans le journal du
 // PC pilote : aucune connexion n'est nécessaire. Une épreuve qui ne peut pas l'être n'empêche pas les suivantes ; le
 // compte rendu dit laquelle et pourquoi.
-import {
-  modifierEpreuve,
-  saisieDe,
-  type CompetitionConnue,
-  type ErreursEpreuve,
-  type ManifestationConnue,
-} from './epreuves';
+import type { ErreursEpreuve } from '@poule-position/domaine';
+import { modifierEpreuve, saisieDe, type CompetitionConnue, type ManifestationConnue } from './epreuves';
 import type { Contexte, Journal } from './journal';
 
 /** Pourquoi une épreuve n'a pas été rattachée. */

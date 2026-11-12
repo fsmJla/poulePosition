@@ -5,7 +5,8 @@ import type { EpreuveListee, CompetitionListee, ManifestationListee, Epreuve } f
 import type { EpreuveIndexee } from '@poule-position/protocole';
 import type { ClientCompetitions } from './competitions';
 import type { HierarchieClub } from './fil-ariane';
-import type { Journal } from './journal';
+import type { Contexte, Journal } from './journal';
+import { rattacherEpreuves } from './rattachement-lot';
 import type { ClientManifestations } from './manifestations';
 import { Base, LIGNE_UNIQUE } from './stockage';
 import type { ActionsLot } from './suppression';
@@ -121,6 +122,28 @@ export function creerAccueil({
       },
       epreuve: (id) => synchronisation.supprimerEpreuve(id),
     } satisfies ActionsLot,
+
+    /**
+     * US-060 : rattache des épreuves à une compétition (journal local, sans réseau), puis envoie ce qui peut l'être ;
+     * sans réseau, l'envoi attend son retour.
+     */
+    async rattacher(
+      epreuveIds: readonly string[],
+      competitionId: string,
+      donnees: Pick<DonneesAccueil, 'manifestations' | 'competitions'>,
+      contexte: Omit<Contexte, 'clubId'> & { clubId?: string | undefined },
+    ) {
+      const compte = await rattacherEpreuves(
+        journal,
+        epreuveIds,
+        competitionId,
+        contexte,
+        donnees.manifestations,
+        donnees.competitions,
+      );
+      await Promise.allSettled(compte.rattachees.map((id) => synchronisation.envoyer(id)));
+      return compte;
+    },
 
     /** US-057 : les routes de « Supprimer… » d'une manifestation ou d'une compétition (vide, ou avec son contenu). */
     actionsSuppression: { manifestation: manifestations, competition: competitions } satisfies ActionsSuppressionUnique,
