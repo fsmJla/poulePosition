@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-054, US-055, US-023, US-049, US-030
 - **Branche / PR :** us/US-056-page-manifestation / —
 
@@ -122,3 +122,18 @@ de l'appareil (US-045, décision 1a) ; le plan suit US-049. Testé par un E2E r�
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
 | 2026-11-12 | Passée à En cours (branche us/US-056-page-manifestation) ; plan validé (suppression par la fenêtre modale d'US-057 ; « ?nouvelle » → assistant ; formulaires dans la page via ?modifier et ?competition) |
+| 2026-11-12 | Implémentée ; passée à En revue (PR vers `dev`). Lint, typage, 1335 tests unitaires avec couverture, build et E2E `pc` / `smartphone` verts en local (échecs connus et sans lien : `lancement.spec.ts` US-001 CA-1 ; débordement à 320 px de l'accueil quand le club local contient beaucoup de données) |
+
+### Correspondance critères → tests
+
+| Critère | Tests |
+|---|---|
+| CA-1 à CA-8, hors ligne, cas limites | `tests/e2e/manifestation.spec.ts` (un test par critère, dont la capture comparée à la planche 2 pour CA-8) |
+| Adresses, redirections de l'ancienne page | `app/src/lib/routes.test.ts`, `tests/e2e/manifestation.spec.ts` (CA-6) |
+| Fil d'Ariane | `app/src/lib/fil-ariane.test.ts`, `tests/e2e/entete.spec.ts` |
+| Textes, icônes | `app/src/lib/textes.test.ts`, `app/src/lib/icones.test.ts` |
+| Parcours existants sur la nouvelle page | `manifestations`, `competitions`, `fichiers`, `grille`, `plan`, `publication`, `suppression-lot`, `suppression-contenu(-manifestation)`, `accueil(-refonte)`, `assistant`, `creer` (`.spec.ts`) |
+
+### Hypothèses complémentaires
+
+- Le bandeau sombre du plan (US-050 CA-3) est remplacé par l'entête de la page ; la zone du plan passe de 44 rem à 34 rem de base pour que le panneau latéral reste à côté du tableau dans la colonne de 65 rem.
