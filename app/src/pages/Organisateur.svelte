@@ -53,6 +53,7 @@
     cheminManifestation,
     cheminPlanManifestation,
     cheminNouvelleCompetition,
+    CHEMINS,
   } from '../lib/routes';
   import { textes } from '../lib/textes';
 
@@ -422,7 +423,9 @@
       </button>
       <span class="devant">
         <Lien chemin={cheminGrilleEpreuves(competition.id)} {naviguer} etiquette={tc.grille.ajouterA(competition.nom)}
-          >{t.plusEpreuves}</Lien
+          ><span class="texte-large">{t.plusEpreuves}</span><span class="icone-etroit" aria-hidden="true"
+            ><Icone nom="plus" taille={20} /></span
+          ></Lien
         >
       </span>
       <span class="devant">
@@ -695,7 +698,8 @@
                 <Lien
                   chemin={cheminPlanManifestation(manifestation.id)}
                   {naviguer}
-                  etiquette={textes.plan.lienPour(manifestation.nom)}><Icone nom="grille" taille={18} />{t.plan}</Lien
+                  etiquette={textes.plan.lienPour(manifestation.nom)}
+                  ><Icone nom="grille" taille={18} /><span class="texte-large">{t.plan}</span></Lien
                 >
               </span>
               <MenuActions
@@ -723,6 +727,19 @@
             {@render ligneCompetition(competition, epreuves, true)}
           </div>
         {/each}
+
+        <!-- US-061 CA-2 : sur smartphone, « Créer » flotte en bas à droite (l'entête n'a plus que la marque et le compte). -->
+        {#if !modeSelection}
+          <a
+            class="creer-flottant"
+            href={CHEMINS.creer}
+            onclick={(e) => {
+              if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
+              e.preventDefault();
+              naviguer(CHEMINS.creer);
+            }}><Icone nom="plus" taille={20} />{textes.entete.creer}</a
+          >
+        {/if}
 
         <!-- US-059 CA-3 : rappel de la règle des parents, tant que le mode est ouvert. -->
         {#if administrateur && modeSelection}<p class="aide-selection">{ts.aide}</p>{/if}
@@ -1284,22 +1301,204 @@
     background: var(--surface);
   }
 
-  /* Smartphone : l'entête de carte et les lignes d'épreuve passent sur deux lignes. */
-  @media (max-width: 40rem) {
+  .icone-etroit,
+  .creer-flottant {
+    display: none;
+  }
+
+  /* Smartphone (US-061, planche 5, sous 40 rem comme l'entête) : une colonne, lignes compactes, cibles de 44 px, et « Créer »
+     flottant en bas à droite, au-dessus des zones sûres de l'appareil. */
+  @media (max-width: 39.99rem) {
+    main {
+      padding: 1rem max(1rem, env(safe-area-inset-left)) calc(6.5rem + env(safe-area-inset-bottom));
+    }
+
+    h1 {
+      font-size: 1.5rem;
+    }
+
+    .filtre label {
+      display: inline-flex;
+      gap: 0.5rem;
+      align-items: center;
+      min-height: 44px;
+    }
+
+    .filtre input {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
     .entete-carte {
       flex-wrap: wrap;
+      gap: 0.25rem 0.5rem;
+      padding: 0.75rem;
+    }
+
+    .bascule-carte {
+      min-width: 44px;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
     }
 
     .identite {
-      flex-basis: calc(100% - 7rem);
+      flex-basis: 8rem;
     }
 
-    .ligne-epreuve {
-      grid-template-columns: minmax(0, 1fr) auto;
+    .titre-carte {
+      font-size: 1.15rem;
+    }
+
+    .bouton-plan {
+      padding: 0;
+    }
+
+    .texte-large {
+      display: none;
+    }
+
+    .icone-etroit {
+      display: inline-flex;
+    }
+
+    .competitions {
+      padding: 0 0 0.5rem;
+    }
+
+    .ligne-competition {
+      gap: 0.25rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 0;
+    }
+
+    .bascule {
+      min-height: 44px;
+    }
+
+    .nom-competition {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .competitions {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .competition {
+      grid-template-columns: minmax(0, 1fr);
+      min-width: 0;
+    }
+
+    .bascule .meta {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .titre-ligne :global(button),
+    .titre-carte :global(a),
+    .bouton-plan :global(a) {
+      display: inline-flex;
+      min-width: 44px;
+      min-height: 44px;
+      box-sizing: border-box;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .devant :global(a) {
+      display: inline-flex;
+      min-width: 44px;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
     }
 
     .epreuves {
-      padding-left: 0;
+      gap: 0;
+      padding: 0;
+    }
+
+    .epreuve {
+      gap: 0;
+      border-top: 1px solid var(--bordure);
+    }
+
+    .epreuve :global(.case) {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    /* La ligne d'épreuve : nom court et statut en texte à gauche, icônes d'état et chevron à droite. */
+    .ligne-epreuve {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-areas:
+        'nom etat chevron'
+        'statut etat chevron';
+      gap: 0 0.5rem;
+      min-height: 3.5rem;
+      padding: 0.5rem 1rem;
+      border: 0;
+      border-radius: 0;
+      background: var(--surface);
+    }
+
+    .nom-epreuve {
+      grid-area: nom;
+      color: var(--texte);
+    }
+
+    .jour {
+      display: none;
+    }
+
+    .pastille {
+      grid-area: statut;
+      padding: 0;
+      background: none;
+      color: var(--texte-discret);
+      font-size: 0.9rem;
+    }
+
+    .pastille.preparation,
+    .pastille.enCours,
+    .pastille.terminee {
+      background: none;
+      color: var(--texte-discret);
+    }
+
+    .ligne-epreuve :global(.icones) {
+      grid-area: etat;
+    }
+
+    .ligne-epreuve .chevron {
+      grid-area: chevron;
+    }
+
+    .attente {
+      grid-column: 1 / -1;
+    }
+
+    .creer-flottant {
+      position: fixed;
+      right: max(1rem, env(safe-area-inset-right));
+      bottom: calc(1rem + env(safe-area-inset-bottom));
+      z-index: 20;
+      display: inline-flex;
+      gap: 0.5rem;
+      align-items: center;
+      min-height: 3.5rem;
+      padding: 0 1.4rem;
+      border-radius: 999px;
+      background: var(--palette-tiffany);
+      box-shadow: 0 4px 14px rgb(0 0 0 / 0.25);
+      color: var(--sur-tiffany);
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-decoration: none;
     }
   }
 </style>
