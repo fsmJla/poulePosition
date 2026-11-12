@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-054, US-055
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** us/US-062-recherche / —
 
 ## Récit
 
@@ -92,3 +92,4 @@ locales) : elle fonctionne à l'identique hors ligne et n'envoie aucune requête
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » ; ajout retenu par l'utilisateur le 2026-11-11 |
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
+| 2026-11-12 | Plan validé par l’utilisateur ; passée à En cours |
