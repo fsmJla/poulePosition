@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-058, US-031
-- **Branche / PR :** us/US-064-prochaine-etape / —
+- **Branche / PR :** us/US-064-prochaine-etape / PR #87
 
 ## Récit
 
@@ -107,6 +107,7 @@ réseau coupé.
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
 | 2026-11-12 | Plan validé par l’utilisateur ; passée à En cours |
 | 2026-11-12 | Implémentée ; passée à En revue |
+| 2026-11-12 | PR #87 : CI verte ; recette OK sur https://poule-position-git-us-us-064-prochaine-etape-fsmjlas-projects.vercel.app (bandeau en lecture seule, planche 3, thèmes clair et sombre ; Publier, Copier le lien, 390 px et hors ligne couverts par les E2E de la CI, le compte de recette n’étant pas pilote) ; passée à Terminée |
 
 ### Correspondance critères → tests
 
