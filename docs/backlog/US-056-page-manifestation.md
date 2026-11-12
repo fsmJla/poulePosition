@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-054, US-055, US-023, US-049, US-030
 - **Branche / PR :** us/US-056-page-manifestation / —
 
@@ -137,3 +137,4 @@ de l'appareil (US-045, décision 1a) ; le plan suit US-049. Testé par un E2E r�
 ### Hypothèses complémentaires
 
 - Le bandeau sombre du plan (US-050 CA-3) est remplacé par l'entête de la page ; la zone du plan passe de 44 rem à 34 rem de base pour que le panneau latéral reste à côté du tableau dans la colonne de 65 rem.
+| 2026-11-12 | Recette OK sur https://poule-position-git-us-us-056-page-manif-0127e1-fsmjlas-projects.vercel.app (CA-1 à CA-8, thème sombre ; hors ligne et smartphone couverts par les E2E) ; mergée dans `dev` |
