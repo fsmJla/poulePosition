@@ -4,7 +4,7 @@ import type { CompetitionListee, EpreuveListee, ManifestationListee } from './li
 import { normaliserPourRechercher, rechercher, type LibellesRecherche } from './recherche';
 
 const LIBELLES: LibellesRecherche = {
-  armes: { epee: 'Épée', fleuret: 'Fleuret', sabre: 'Sabre' } satisfies Record<Arme, string>,
+  armes: { epee: 'Épée', fleuret: 'Fleuret', sabre: 'Sabre', sabreLaser: 'Sabre laser' } satisfies Record<Arme, string>,
   sexes: { hommes: 'Hommes', dames: 'Dames', mixte: 'Mixte' } satisfies Record<Sexe, string>,
 };
 
