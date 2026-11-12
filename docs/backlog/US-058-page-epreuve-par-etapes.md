@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-054, US-028, US-030, US-031, US-032
 - **Branche / PR :** us/US-058-page-epreuve-par-etapes / —
 
@@ -131,6 +131,7 @@ coupé existants de la page d'épreuve sont adaptés.
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
 | 2026-11-12 | Passée à En cours (branche us/US-058-page-epreuve-par-etapes) ; plan validé (écarts : « Modifier » et « ⋯ » seulement sur le Résumé, titre en nom court, « — » pour un champ vide) |
 | 2026-11-12 | Implémentée ; passée à En revue. Lint, typage, 1339 tests unitaires avec couverture, build et E2E `pc` / `smartphone` verts en local (échecs connus et sans lien : `lancement.spec.ts` US-001 CA-1 ; débordement à 320 px de l'accueil quand le club local a beaucoup de données) |
+| 2026-11-12 | PR #86 : CI verte (correctif de typage du snippet des actions) ; recette OK sur https://poule-position-git-us-us-058-page-epreu-61d876-fsmjlas-projects.vercel.app (CA-1 à CA-8, thèmes clair et sombre ; hors ligne couvert par l’E2E) ; passée à Terminée |
 
 ### Correspondance critères → tests
 

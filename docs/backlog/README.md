@@ -87,7 +87,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-055](US-055-accueil-organisateur-refondu.md) | Refondre l'accueil de l'organisateur | E2 | Terminée | US-054, US-026, US-045 |
 | [US-056](US-056-page-manifestation.md) | Donner sa page à chaque manifestation (onglets Compétitions, Plan, Documents) | E2 | Terminée | US-054, US-055, US-023, US-049, US-030 |
 | [US-057](US-057-un-seul-supprimer.md) | Fusionner « Supprimer » et « Supprimer avec son contenu… » en une seule action | E2 | Terminée | US-054, US-039, US-041, US-042 |
-| [US-058](US-058-page-epreuve-par-etapes.md) | Organiser la page d'une épreuve par étapes | E2 | En revue | US-054, US-028, US-030, US-031, US-032 |
+| [US-058](US-058-page-epreuve-par-etapes.md) | Organiser la page d'une épreuve par étapes | E2 | Terminée | US-054, US-028, US-030, US-031, US-032 |
 | [US-059](US-059-mode-selection.md) | Sélectionner plusieurs éléments dans un mode dédié (P2) | E2 | Prête | US-055, US-057, US-043 |
 | [US-060](US-060-epreuves-a-rattacher.md) | Signaler les épreuves à rattacher par une alerte et les rattacher par lot (P2) | E2 | Prête | US-055, US-059, US-045 |
 | [US-061](US-061-organisateur-sur-smartphone.md) | Adapter l'accueil et la page d'une épreuve au smartphone de l'organisateur (P2) | E2 | Prête | US-054, US-055, US-058 |
