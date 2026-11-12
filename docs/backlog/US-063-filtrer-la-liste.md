@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-055, US-033
-- **Branche / PR :** `us/US-063-filtrer-la-liste-du-club` / PR à ouvrir
+- **Branche / PR :** `us/US-063-filtrer-la-liste-du-club` / PR #93
 
 ## Récit
 
@@ -105,3 +105,4 @@ E2E réseau coupé.
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
 | 2026-11-13 | Implémentation : `paquets/domaine/src/filtres-liste.ts`, pilules de l'accueil, remplacement de « Afficher les archives » ; tests unitaires et E2E (`tests/e2e/filtres-liste.spec.ts`) |
+| 2026-11-13 | Recette OK sur https://poule-position-a1p3bj27e-fsmjlas-projects.vercel.app (Worker de preview déployé depuis la branche ; déployée en preview et vérifiée) : CA-1 (quatre pilules exclusives, `aria-pressed`, défaut « À venir et en cours ») ; CA-2 à CA-5 (filtres Terminées 153, Archivées 19, Toutes 1128, la manifestation et l’alerte « à rattacher » restent) ; CA-6 (compteurs 956 + 153 + 19 = 1128) ; CA-7 (filtre gardé au retour d’une épreuve, remis par défaut après rechargement) ; smartphone 390 px (rangée défilante, pas de débordement de la page) ; hors ligne couvert par l’E2E. Aucune donnée de la preview modifiée. Merge dans `dev`. |
