@@ -3,10 +3,11 @@
   // le PC pilote, l'écriture est réservée à un seul onglet (US-021) et les modifications en attente d'envoi sont
   // comptées (US-022) ; sur un autre PC, c'est une copie en lecture seule, datée.
   import { onMount } from 'svelte';
-  import type { Epreuve } from '@poule-position/domaine';
+  import { prochaineEtape, type Epreuve } from '@poule-position/domaine';
   import FichiersJoints from '../composants/FichiersJoints.svelte';
   import Lien from '../composants/Lien.svelte';
   import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
+  import BandeauProchaineEtape from '../composants/BandeauProchaineEtape.svelte';
   import Icone from '../composants/Icone.svelte';
   import MenuActions from '../composants/MenuActions.svelte';
   import type { Accueil } from '../lib/accueil';
@@ -258,6 +259,24 @@
     }
   }
 
+  /** US-064 : la règle du domaine choisit l'étape ; le bandeau ne s'affiche que s'il y en a une. */
+  const etapeSuivante = $derived(etapeDe());
+
+  function etapeDe() {
+    return epreuve ? prochaineEtape({ statut: epreuve.statut, publiee: epreuve.publiee }) : null;
+  }
+  let retourCopie: { ok: boolean; message: string } | null = $state(null);
+
+  /** CA-3 : copie l'adresse publique de l'épreuve ; sans presse-papiers, le motif s'affiche. */
+  async function copierLien() {
+    try {
+      await navigator.clipboard.writeText(location.origin + cheminDirect(epreuveId));
+      retourCopie = { ok: true, message: tpe.prochaineEtape.lienCopie };
+    } catch {
+      retourCopie = { ok: false, message: tpe.prochaineEtape.copieImpossible };
+    }
+  }
+
   /** Clic sur un lien de l'entête ou d'une carte : navigation interne, sauf Ctrl, Maj ou clic milieu. */
   function suivre(evenement: MouseEvent, chemin: string) {
     if (evenement.button !== 0 || evenement.ctrlKey || evenement.metaKey || evenement.shiftKey) return;
@@ -331,6 +350,17 @@
         />
       {/if}
     {/snippet}
+    {#if etapeSuivante}
+      <BandeauProchaineEtape
+        etape={etapeSuivante}
+        peutAgir={pilote && ecriture}
+        enCours={publicationEnCours}
+        surPublier={() => changerPublication(true)}
+        surCopier={copierLien}
+        {retourCopie}
+        erreur={erreurPublication}
+      />
+    {/if}
     <div class="cartes">
       <!-- US-029 : pilote, mains prises par un autre PC, modifications écartées et prise de main. -->
       <section class="carte" aria-label={tpe.cartes.pilote}>

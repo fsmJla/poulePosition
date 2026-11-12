@@ -20,3 +20,4 @@ export * from './assistant';
 export * from './creer';
 export * from './fichiers';
 export * from './publication';
+export * from './prochaine-etape';

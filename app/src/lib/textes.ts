@@ -1029,6 +1029,19 @@ export const textes = {
   },
   /** US-058 : page d'une épreuve par étapes (navigation latérale, entête, cartes du Résumé). */
   pageEpreuve: {
+    /** US-064 : bandeau « Prochaine étape » du résumé. Chaque étape livrée par un Epic ajoute sa phrase et son bouton. */
+    prochaineEtape: {
+      titre: 'Prochaine étape',
+      phrases: {
+        publier: 'Publier l’épreuve pour ouvrir le suivi en direct',
+        partager: 'Partager le lien public',
+      },
+      boutons: { publier: 'Publier', copier: 'Copier le lien' },
+      /** Lecture seule : l'étape est annoncée sans bouton (CA-4). */
+      depuisLePilote: 'À faire depuis le PC pilote.',
+      lienCopie: 'Lien copié',
+      copieImpossible: 'Le lien n’a pas pu être copié : sélectionnez-le depuis la page publique de l’épreuve.',
+    },
     navigation: 'Étapes de l’épreuve',
     aVenir: 'À venir',
     etapes: {
