@@ -277,3 +277,54 @@ export function idManifestation(nom: string): string {
   if (!id) throw new Error(`Manifestation inconnue : ${nom}`);
   return id;
 }
+
+/**
+ * US-056 : ajoute au serveur une épreuve à une compétition, comme le ferait son PC pilote (US-022). `date` : `AAAA-MM-JJ`.
+ */
+export async function ajouterEpreuve(page: Page, competitionId: string, nom: string, date = '2027-03-15') {
+  const epreuveId = crypto.randomUUID();
+  const compte = await page.evaluate(async () => {
+    const base = await new Promise<IDBDatabase>((ok, ko) => {
+      const ouverture = indexedDB.open('poulePosition');
+      ouverture.onsuccess = () => ok(ouverture.result);
+      ouverture.onerror = () => ko(ouverture.error);
+    });
+    const courante = await new Promise<{ compte: { clubId: string; email: string } }>((ok) => {
+      const lecture = base.transaction('session').objectStore('session').get('courante');
+      lecture.onsuccess = () => ok(lecture.result);
+    });
+    base.close();
+    return courante.compte;
+  });
+  const rattachement = { competitionId };
+  await appelerServeur(page, `/epreuves/${epreuveId}/evenements`, {
+    appareilId: crypto.randomUUID(),
+    depuis: 0,
+    evenements: [
+      {
+        epreuveId,
+        clubId: compte.clubId,
+        seq: 1,
+        version: 1,
+        date: Date.now(),
+        auteur: compte.email,
+        source: 'clavier',
+        type: 'EpreuveCreee',
+        donnees: {
+          nom,
+          arme: 'sabre',
+          typeEpreuve: 'individuelle',
+          categorie: null,
+          sexe: null,
+          date,
+          horaires: { appel: null, scratch: null, debutPoules: null },
+          lieu: null,
+          commentaire: null,
+          rattachement,
+        },
+      },
+    ],
+    resume: { nom, arme: 'sabre', categorie: null, sexe: null, date, statut: 'preparation', publiee: false, rattachement },
+  });
+  return epreuveId;
+}
