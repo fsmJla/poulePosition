@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-054, US-028, US-030, US-031, US-032
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** us/US-058-page-epreuve-par-etapes / —
 
 ## Récit
 
@@ -95,6 +95,23 @@ coupé existants de la page d'épreuve sont adaptés.
 - Le bandeau « Prochaine étape » de la planche 3 est livré par US-064.
 - Le compteur à côté d'une étape (nombre d'inscrits…) viendra avec l'Epic de l'étape.
 
+### Hypothèses prises pendant l'implémentation
+
+- La liste des étapes est `app/src/lib/etapes-epreuve.ts` : livrer une étape, c'est lui donner `livree: true` et son adresse.
+- Formule et Paramètres s'insèrent dans le gabarit (fil, titre, statut, navigation) ; « Modifier » et « ⋯ » restent sur le
+  Résumé. Leur titre de page devient un titre de niveau 2 (le titre de niveau 1 est le nom de l'épreuve).
+- Le titre est le nom court (« M13 Dames ») ; une épreuve sans catégorie ou sans sexe garde son nom complet. Le fil
+  d'Ariane garde le nom complet.
+- Carte Informations : un champ non renseigné s'affiche « — » ; le type (s'il n'est pas individuel) et le commentaire
+  s'ajoutent aux quatre lignes de la planche.
+- Carte Affiche et feuille de route : le bloc « Documents » d'US-030 (Affiche, Feuille de route, héritage) est repris tel
+  quel ; la ligne unique « Aucun document joint · + Joindre » de la planche n'est pas reproduite (écart déclaré).
+- Menu « ⋯ » : « Dupliquer » (épreuve rattachée à une compétition) puis, pour un administrateur, « Supprimer… » ; les
+  liens Formule et Paramètres quittent le menu et la page, la navigation les porte. Le lien « Retour à l'accueil » de la
+  page disparaît au profit du fil d'Ariane (il reste sur le message d'épreuve introuvable).
+- Le fil d'Ariane tronque un nom de compétition long (comportement d'US-054) ; la planche l'affiche en entier.
+- Hors périmètre, comme prévu : bandeau « Prochaine étape » (US-064), champ de recherche de l'entête (US-062).
+
 ## Questions bloquantes
 
 - Aucune.
@@ -112,3 +129,20 @@ coupé existants de la page d'épreuve sont adaptés.
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » ; étapes à venir grisées (décision du 2026-11-11) |
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
+| 2026-11-12 | Passée à En cours (branche us/US-058-page-epreuve-par-etapes) ; plan validé (écarts : « Modifier » et « ⋯ » seulement sur le Résumé, titre en nom court, « — » pour un champ vide) |
+| 2026-11-12 | Implémentée ; passée à En revue. Lint, typage, 1339 tests unitaires avec couverture, build et E2E `pc` / `smartphone` verts en local (échecs connus et sans lien : `lancement.spec.ts` US-001 CA-1 ; débordement à 320 px de l'accueil quand le club local a beaucoup de données) |
+| 2026-11-12 | PR #86 : CI verte (correctif de typage du snippet des actions) ; recette OK sur https://poule-position-git-us-us-058-page-epreu-61d876-fsmjlas-projects.vercel.app (CA-1 à CA-8, thèmes clair et sombre ; hors ligne couvert par l’E2E) ; passée à Terminée |
+
+### Correspondance critères → tests
+
+| Critère | Tests |
+|---|---|
+| CA-1, CA-2 | `app/src/lib/etapes-epreuve.test.ts` ; `tests/e2e/epreuve-etapes.spec.ts` (« US-058 CA-1 », « US-058 CA-2 ») |
+| CA-3 | `epreuve-etapes.spec.ts` (« US-058 CA-3 ») ; `entete.spec.ts` (fil d'Ariane de l'épreuve) |
+| CA-4 | `epreuve-etapes.spec.ts` (« US-058 CA-4 ») ; `publication.spec.ts`, `prise-de-main.spec.ts`, `fichiers.spec.ts`, `modification.spec.ts` |
+| CA-5 | `epreuve-etapes.spec.ts` (« US-058 CA-5 ») ; `formule.spec.ts`, `parametres.spec.ts` |
+| CA-6 | `epreuve-etapes.spec.ts` (« US-058 CA-6 ») ; `suppression-unique.spec.ts`, `entete.spec.ts` (menu « ⋯ ») |
+| CA-7 | `epreuve-etapes.spec.ts` (« US-058 CA-7 ») ; `prise-de-main.spec.ts` |
+| CA-8 | `epreuve-etapes.spec.ts` (« US-058 CA-8 », capture `3-epreuve-etapes.png` jointe au rapport) |
+| Hors ligne | `epreuve-etapes.spec.ts` (« US-058 hors ligne ») ; `epreuves.spec.ts`, `publication.spec.ts`, `prise-de-main.spec.ts`, `formule.spec.ts`, `parametres.spec.ts` |
+| Cas limites | `epreuve-etapes.spec.ts` (épreuve inconnue, écran étroit) |

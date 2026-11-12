@@ -139,7 +139,7 @@ export function creerAccueil({
         competitions: (lesCompetitions.ok
           ? lesCompetitions.competitions
           : (lesCompetitions.copie?.competitions ?? [])
-        ).map(({ id, nom, manifestationId }) => ({ id, nom, manifestationId })),
+        ).map(({ id, nom, manifestationId, arme }) => ({ id, nom, manifestationId, arme })),
       };
     },
 

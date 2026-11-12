@@ -6,7 +6,8 @@
   import type { Epreuve } from '@poule-position/domaine';
   import FichiersJoints from '../composants/FichiersJoints.svelte';
   import Lien from '../composants/Lien.svelte';
-  import FilEpreuve from '../composants/FilEpreuve.svelte';
+  import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
+  import Icone from '../composants/Icone.svelte';
   import MenuActions from '../composants/MenuActions.svelte';
   import type { Accueil } from '../lib/accueil';
   import type { ClientCompetitions } from '../lib/competitions';
@@ -17,9 +18,9 @@
   import type { Ecart, SessionAppareil } from '../lib/stockage';
   import {
     cheminDirect,
+    cheminDupliquerEpreuve,
     cheminFormuleEpreuve,
     cheminModificationEpreuve,
-    cheminParametresEpreuve,
     CHEMINS,
   } from '../lib/routes';
   import { nomConfirme, peutSupprimer } from '../lib/suppression';
@@ -45,6 +46,7 @@
     $props();
 
   const t = textes.epreuves;
+  const tpe = textes.pageEpreuve;
 
   let epreuve: Epreuve | null = $state(null);
   let chargee = $state(false);
@@ -256,188 +258,235 @@
     }
   }
 
+  /** Clic sur un lien de l'entête ou d'une carte : navigation interne, sauf Ctrl, Maj ou clic milieu. */
+  function suivre(evenement: MouseEvent, chemin: string) {
+    if (evenement.button !== 0 || evenement.ctrlKey || evenement.metaKey || evenement.shiftKey) return;
+    evenement.preventDefault();
+    naviguer(chemin);
+  }
+
   const nombreEcartes = $derived(ecartes.reduce((total, { evenements }) => total + evenements.length, 0));
   const annonceEcart = $derived(
     ecartes[0]?.piloteNom ? libellePilote(ecartes[0].piloteNom, ecartes[0].piloteAppareil ?? '') : null,
   );
 </script>
 
-<main>
-  {#if !chargee}
+{#if !chargee}
+  <main>
     <p role="status">{t.chargement}</p>
-  {:else if !epreuve}
+  </main>
+{:else if !epreuve}
+  <main>
     <p class="message" role="alert">{t.introuvable}</p>
-  {:else}
-    <FilEpreuve {accueil} {epreuve} {naviguer} />
-    <div class="titre-epreuve">
-      <h1>{epreuve.nom}</h1>
-      <!-- US-054 CA-9 : menu « ⋯ » de l'épreuve ; ses liens restent aussi dans la page jusqu'à US-058. -->
-      <MenuActions
-        id="menu-epreuve"
-        nom={epreuve.nom}
-        {naviguer}
-        actions={[
-          { libelle: t.modifierFormule, icone: 'arbre', chemin: cheminFormuleEpreuve(epreuveId) },
-          { libelle: t.lienParametres, icone: 'curseurs', chemin: cheminParametresEpreuve(epreuveId) },
-          // US-057 : l'unique « Supprimer… », dernier du menu ; la confirmation (nom à saisir) s'ouvre sous la page.
-          ...(session.compte.role === 'administrateur'
-            ? [
-                {
-                  libelle: tsu.action,
-                  icone: 'corbeille' as const,
-                  detail: tsu.sousTitre({ type: 'epreuve', competitions: 0, epreuves: 0 }),
-                  destructive: true,
-                  surChoix: () => (etapeSuppression = 'confirmation'),
-                  indisponible: !enLigne
-                    ? tsu.horsLigne
-                    : droitSuppression && !droitSuppression.ok
-                      ? tsu.enCours
-                      : undefined,
-                },
-              ]
-            : []),
-        ]}
-      />
-    </div>
-    <ul class="etiquettes">
-      <li>{t.statuts[epreuve.statut]}</li>
-      <li>{epreuve.publiee ? t.publiee : t.nonPubliee}</li>
-      {#if pilote}<li class="pilote">{t.pilote}</li>{/if}
-    </ul>
-
-    {#if !pilote}
-      <p class="avertissement" role="status">
-        {t.lectureSeule}{#if copieLe !== null}<br />{t.copieDu(copieLe)}{/if}
-      </p>
-    {:else if !ecriture}
-      <p class="avertissement" role="status">{t.autreOnglet}</p>
-    {/if}
-    <!-- US-029 : mains prises par un autre PC, modifications écartées et prise de main. -->
-    {#if perteLibelle ?? annonceEcart}
-      <p class="avertissement" role="status">{tp.perte(perteLibelle ?? annonceEcart ?? '')}</p>
-    {/if}
-    {#if nombreEcartes > 0}
-      <p class="avertissement" role="alert">{tp.ecartes(nombreEcartes)}</p>
-      <div class="actions">
-        <button type="button" onclick={exporter}>{tp.exporter}</button>
-        <button type="button" class="secondaire" onclick={comprendre}>{tp.compris}</button>
-      </div>
-    {/if}
-    {#if !pilote}
-      {#if etapePrise === 'confirmation' && piloteEnPlace}
-        <div class="prise" role="group" aria-label={tp.confirmer}>
-          <p>{tp.confirmer}</p>
-          <p class="avertissement" role="status">
-            {piloteEnPlace.connecte
-              ? tp.piloteConnecte(piloteEnPlace.libelle)
-              : tp.piloteHorsLigne(piloteEnPlace.libelle)}
-          </p>
-          <div class="actions">
-            <button type="button" onclick={confirmerPrise} disabled={priseEnCours || !enLigne}>{tp.valider}</button>
-            <button type="button" class="secondaire" onclick={() => (etapePrise = 'aucune')}>{tp.annuler}</button>
-          </div>
-        </div>
-      {:else}
-        <button
-          type="button"
-          onclick={demanderPrise}
-          disabled={!enLigne || etapePrise === 'recherche'}
-          aria-describedby={enLigne ? undefined : 'prise-hors-ligne'}
-          >{etapePrise === 'recherche' ? tp.chargement : tp.bouton}</button
-        >
-        {#if !enLigne}<small id="prise-hors-ligne">{tp.horsLigne}</small>{/if}
-      {/if}
-      {#if erreurPrise}<p class="message" role="alert">{erreurPrise}</p>{/if}
-    {/if}
-    <!-- US-027 CA-3 : seul le PC pilote modifie ; ailleurs l’épreuve reste en lecture seule. -->
-    {#if pilote && ecriture && epreuve.statut !== 'archivee'}
-      <Lien chemin={cheminModificationEpreuve(epreuveId)} {naviguer}>{t.modifier}</Lien>
-    {/if}
-    <!-- US-028 : la formule se règle sur une page à part, lisible aussi en lecture seule. -->
-    <Lien chemin={cheminFormuleEpreuve(epreuveId)} {naviguer}>{t.modifierFormule}</Lien>
-    <!-- US-032 : paramètres (droits, noms au public), lisibles aussi en lecture seule. -->
-    <Lien chemin={cheminParametresEpreuve(epreuveId)} {naviguer}>{t.lienParametres}</Lien>
-    <!-- US-031 : publier ou dépublier à tout moment, depuis le PC pilote (hors ligne comprise). -->
-    <section class="publication" aria-label={tpub.titre}>
-      <p class="discret">{epreuve.publiee ? tpub.aidePubliee : tpub.aideNonPubliee}</p>
-      {#if pilote && ecriture && epreuve.statut !== 'archivee'}
-        <button
-          type="button"
-          class={epreuve.publiee ? 'secondaire' : undefined}
-          onclick={() => changerPublication(!epreuve!.publiee)}
-          disabled={publicationEnCours}>{epreuve.publiee ? tpub.depublier : tpub.publier}</button
-        >
-      {/if}
-      {#if epreuve.publiee}
-        <Lien chemin={cheminDirect(epreuveId)} {naviguer}>{tpub.lienPublic}</Lien>
-      {/if}
-      {#if pilote && publicationAttendue !== null && enAttente > 0}
-        <p class="envoi" role="status">{tpub.enAttente}</p>
-      {/if}
-      {#if erreurPublication}<p class="message" role="alert">{erreurPublication}</p>{/if}
-    </section>
-    {#if pilote && enAttente > 0}
-      <p class="envoi" role="status">
-        {jamaisEnvoyee ? `${t.enAttente(enAttente)} · ${t.pasEncoreEnvoyee}` : t.enAttente(enAttente)}
-      </p>
-    {/if}
-
-    <dl>
-      <dt>{t.arme}</dt>
-      <dd>{t.armes[epreuve.arme]}</dd>
-      <dt>{t.type}</dt>
-      <dd>{t.types[epreuve.typeEpreuve]}</dd>
-      {#if epreuve.categorie}
-        <dt>{t.categorie}</dt>
-        <dd>{epreuve.categorie}</dd>
-      {/if}
-      {#if epreuve.sexe}
-        <dt>{t.sexe}</dt>
-        <dd>{t.sexes[epreuve.sexe]}</dd>
-      {/if}
-      {#if epreuve.date}
-        <dt>{t.date}</dt>
-        <dd>{t.dateLongue(epreuve.date)}</dd>
-      {/if}
-      {#each ['appel', 'scratch', 'debutPoules'] as const as champ (champ)}
-        {#if epreuve.horaires[champ]}
-          <dt>{t[champ]}</dt>
-          <dd>{epreuve.horaires[champ]}</dd>
+    <Lien chemin={CHEMINS.organisateur} {naviguer}>{t.retour}</Lien>
+  </main>
+{:else}
+  <GabaritEpreuve {accueil} {epreuve} courante="resume" {naviguer}>
+    {#snippet actions()}
+      {#if epreuve}
+        <!-- US-027 CA-3 : seul le PC pilote modifie ; ailleurs l’épreuve reste en lecture seule. -->
+        {#if pilote && ecriture && epreuve.statut !== 'archivee'}
+          <a
+            class="bouton-contour"
+            href={cheminModificationEpreuve(epreuveId)}
+            onclick={(e) => suivre(e, cheminModificationEpreuve(epreuveId))}
+          >
+            <Icone nom="crayon" />{t.modifier}
+          </a>
         {/if}
-      {/each}
-      {#if epreuve.lieu}
-        <dt>{t.lieu}</dt>
-        <dd>{epreuve.lieu}</dd>
+        <!-- US-058 CA-6 : actions secondaires de l'épreuve ; Archiver (US-033) et Exporter (US-034) s'y ajouteront. -->
+        <MenuActions
+          id="menu-epreuve"
+          nom={epreuve.nom}
+          {naviguer}
+          actions={[
+            ...(epreuve.rattachement
+              ? [
+                  {
+                    libelle: tpe.dupliquer,
+                    icone: 'plus' as const,
+                    detail: tpe.dupliquerDetail,
+                    chemin: cheminDupliquerEpreuve({ ...epreuve, rattachement: epreuve.rattachement }),
+                  },
+                ]
+              : []),
+            // US-057 : l'unique « Supprimer… », dernier du menu ; la confirmation (nom à saisir) s'ouvre sous la page.
+            ...(session.compte.role === 'administrateur'
+              ? [
+                  {
+                    libelle: tsu.action,
+                    icone: 'corbeille' as const,
+                    detail: tsu.sousTitre({ type: 'epreuve', competitions: 0, epreuves: 0 }),
+                    destructive: true,
+                    surChoix: () => (etapeSuppression = 'confirmation'),
+                    indisponible: !enLigne
+                      ? tsu.horsLigne
+                      : droitSuppression && !droitSuppression.ok
+                        ? tsu.enCours
+                        : undefined,
+                  },
+                ]
+              : []),
+          ]}
+        />
       {/if}
-      {#if epreuve.commentaire}
-        <dt>{t.commentaire}</dt>
-        <dd class="commentaire">{epreuve.commentaire}</dd>
-      {/if}
-      <dt>{t.formuleTitre}</dt>
-      <dd>
-        {epreuve.formule.touchesRelais === null
-          ? t.formule(epreuve.formule.touchesPoules, epreuve.formule.touchesTableau, epreuve.formule.matchTroisieme)
-          : t.relais(epreuve.formule.touchesRelais)}
-      </dd>
-    </dl>
+    {/snippet}
+    <div class="cartes">
+      <!-- US-029 : pilote, mains prises par un autre PC, modifications écartées et prise de main. -->
+      <section class="carte" aria-label={tpe.cartes.pilote}>
+        <h2><Icone nom="ecran" />{tpe.cartes.pilote}</h2>
+        {#if pilote}
+          <p class="etat-pilote"><span class="pastille-ok" aria-hidden="true"></span>{t.pilote}</p>
+          <p class="discret">{enLigne ? tpe.piloteEnvoye : tpe.piloteHorsLigne}</p>
+        {:else}
+          <p class="avertissement" role="status">
+            {t.lectureSeule}{#if copieLe !== null}<br />{t.copieDu(copieLe)}{/if}
+          </p>
+        {/if}
+        {#if pilote && !ecriture}
+          <p class="avertissement" role="status">{t.autreOnglet}</p>
+        {/if}
+        {#if perteLibelle ?? annonceEcart}
+          <p class="avertissement" role="status">{tp.perte(perteLibelle ?? annonceEcart ?? '')}</p>
+        {/if}
+        {#if nombreEcartes > 0}
+          <p class="avertissement" role="alert">{tp.ecartes(nombreEcartes)}</p>
+          <div class="actions">
+            <button type="button" onclick={exporter}>{tp.exporter}</button>
+            <button type="button" class="secondaire" onclick={comprendre}>{tp.compris}</button>
+          </div>
+        {/if}
+        {#if pilote && enAttente > 0}
+          <p class="envoi" role="status">
+            {jamaisEnvoyee ? `${t.enAttente(enAttente)} · ${t.pasEncoreEnvoyee}` : t.enAttente(enAttente)}
+          </p>
+        {/if}
+        {#if !pilote}
+          {#if etapePrise === 'confirmation' && piloteEnPlace}
+            <div class="prise" role="group" aria-label={tp.confirmer}>
+              <p>{tp.confirmer}</p>
+              <p class="avertissement" role="status">
+                {piloteEnPlace.connecte
+                  ? tp.piloteConnecte(piloteEnPlace.libelle)
+                  : tp.piloteHorsLigne(piloteEnPlace.libelle)}
+              </p>
+              <div class="actions">
+                <button type="button" onclick={confirmerPrise} disabled={priseEnCours || !enLigne}>{tp.valider}</button>
+                <button type="button" class="secondaire" onclick={() => (etapePrise = 'aucune')}>{tp.annuler}</button>
+              </div>
+            </div>
+          {:else}
+            <div class="actions">
+              <button
+                type="button"
+                onclick={demanderPrise}
+                disabled={!enLigne || etapePrise === 'recherche'}
+                aria-describedby={enLigne ? undefined : 'prise-hors-ligne'}
+                >{etapePrise === 'recherche' ? tp.chargement : tp.bouton}</button
+              >
+            </div>
+            {#if !enLigne}<small id="prise-hors-ligne">{tp.horsLigne}</small>{/if}
+          {/if}
+          {#if erreurPrise}<p class="message" role="alert">{erreurPrise}</p>{/if}
+        {/if}
+      </section>
+
+      <!-- US-031 : publier ou dépublier à tout moment, depuis le PC pilote (hors ligne comprise). -->
+      <section class="carte publication" aria-label={tpub.titre}>
+        <h2><Icone nom={epreuve.publiee ? 'oeil' : 'oeilBarre'} />{tpub.titre}</h2>
+        <p class="etat">{epreuve.publiee ? t.publiee : t.nonPubliee}</p>
+        <p class="discret">{epreuve.publiee ? tpub.aidePubliee : tpub.aideNonPubliee}</p>
+        {#if pilote && ecriture && epreuve.statut !== 'archivee'}
+          <div class="actions">
+            <button
+              type="button"
+              class={epreuve.publiee ? 'secondaire' : undefined}
+              onclick={() => changerPublication(!epreuve!.publiee)}
+              disabled={publicationEnCours}>{epreuve.publiee ? tpub.depublier : tpub.publier}</button
+            >
+          </div>
+        {/if}
+        {#if epreuve.publiee}
+          <Lien chemin={cheminDirect(epreuveId)} {naviguer}>{tpub.lienPublic}</Lien>
+        {/if}
+        {#if pilote && publicationAttendue !== null && enAttente > 0}
+          <p class="envoi" role="status">{tpub.enAttente}</p>
+        {/if}
+        {#if erreurPublication}<p class="message" role="alert">{erreurPublication}</p>{/if}
+      </section>
+
+      <section class="carte" aria-label={tpe.cartes.informations}>
+        <h2>
+          <Icone nom="calendrier" />{tpe.cartes.informations}
+          {#if pilote && ecriture && epreuve.statut !== 'archivee'}
+            <a
+              class="crayon"
+              href={cheminModificationEpreuve(epreuveId)}
+              aria-label={tpe.modifierInformations}
+              title={tpe.modifierInformations}
+              onclick={(e) => suivre(e, cheminModificationEpreuve(epreuveId))}><Icone nom="crayon" /></a
+            >
+          {/if}
+        </h2>
+        <dl>
+          <dt>{tpe.informations.lieu}</dt>
+          <dd>{epreuve.lieu || tpe.vide}</dd>
+          <dt>{tpe.informations.appel}</dt>
+          <dd>{epreuve.horaires.appel || tpe.vide}</dd>
+          <dt>{tpe.informations.scratch}</dt>
+          <dd>{epreuve.horaires.scratch || tpe.vide}</dd>
+          <dt>{tpe.informations.debut}</dt>
+          <dd>{epreuve.horaires.debutPoules || tpe.vide}</dd>
+          {#if epreuve.typeEpreuve !== 'individuelle'}
+            <dt>{t.type}</dt>
+            <dd>{t.types[epreuve.typeEpreuve]}</dd>
+          {/if}
+          {#if epreuve.commentaire}
+            <dt>{t.commentaire}</dt>
+            <dd class="commentaire">{epreuve.commentaire}</dd>
+          {/if}
+        </dl>
+      </section>
+
+      <!-- US-028 : la formule se règle sur son étape, lisible aussi en lecture seule. -->
+      <section class="carte" aria-label={tpe.cartes.formule}>
+        <h2>
+          <Icone nom="arbre" />{tpe.cartes.formule}
+          <a
+            class="crayon"
+            href={cheminFormuleEpreuve(epreuveId)}
+            aria-label={tpe.modifierFormule}
+            title={tpe.modifierFormule}
+            onclick={(e) => suivre(e, cheminFormuleEpreuve(epreuveId))}><Icone nom="crayon" /></a
+          >
+        </h2>
+        <p>
+          {epreuve.formule.touchesRelais === null
+            ? t.formule(epreuve.formule.touchesPoules, epreuve.formule.touchesTableau, epreuve.formule.matchTroisieme)
+            : t.relais(epreuve.formule.touchesRelais)}
+        </p>
+      </section>
+    </div>
 
     <!-- US-030 : affiche et feuille de route, avec l'héritage de la compétition puis de la manifestation (CA-4). -->
-    {#await trouverManifestation(epreuve.rattachement?.competitionId) then manifestationId}
-      <FichiersJoints
-        client={fichiers}
-        chaine={[
-          { proprietaire: 'epreuve', id: epreuveId },
-          { proprietaire: 'competition', id: epreuve.rattachement?.competitionId },
-          { proprietaire: 'manifestation', id: manifestationId },
-        ]}
-        garder
-      />
-    {/await}
+    <div class="carte large">
+      {#await trouverManifestation(epreuve.rattachement?.competitionId) then manifestationId}
+        <FichiersJoints
+          client={fichiers}
+          chaine={[
+            { proprietaire: 'epreuve', id: epreuveId },
+            { proprietaire: 'competition', id: epreuve.rattachement?.competitionId },
+            { proprietaire: 'manifestation', id: manifestationId },
+          ]}
+          garder
+        />
+      {/await}
+    </div>
 
     <!-- US-039 : suppression définitive, réservée aux administrateurs, en ligne, hors épreuve en cours. -->
     {#if session.compte.role === 'administrateur'}
       {#if etapeSuppression === 'confirmation'}
-        <div class="prise" id="confirmation-suppression" role="group" aria-label={ts.titre}>
+        <div class="prise carte" id="confirmation-suppression" role="group" aria-label={ts.titre}>
           <p>{ts.titre}</p>
           <p class="avertissement" role="status">{ts.avertissement}</p>
           <label>
@@ -463,10 +512,8 @@
       {/if}
       {#if erreurSuppression}<p class="message" role="alert">{erreurSuppression}</p>{/if}
     {/if}
-  {/if}
-
-  <Lien chemin={CHEMINS.organisateur} {naviguer}>{t.retour}</Lien>
-</main>
+  </GabaritEpreuve>
+{/if}
 
 <style>
   main {
@@ -476,54 +523,81 @@
     padding: 3rem 1rem;
   }
 
-  .titre-epreuve {
+  .cartes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .carte {
+    display: grid;
+    gap: 0.6rem;
+    align-content: start;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--bordure);
+    border-radius: 14px;
+    background: var(--surface);
+  }
+
+  .carte.large {
+    padding: 0.5rem 1.25rem;
+  }
+
+  .carte h2 {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
+    gap: 0.6rem;
+    margin: 0;
+    font-size: 1rem;
   }
 
-  .titre-epreuve h1 {
+  .carte p {
     margin: 0;
   }
 
-  h1 {
-    margin: 0;
-    text-align: center;
+  .crayon {
+    display: inline-grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    margin-left: auto;
+    border-radius: 8px;
+    color: var(--texte);
   }
 
-  .etiquettes {
+  .crayon:hover {
+    background: var(--surface-2);
+  }
+
+  .etat-pilote {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    align-items: center;
     gap: 0.5rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
+    color: var(--etat-ok);
+    font-weight: 600;
   }
 
-  .etiquettes li {
-    padding: 0.2rem 0.8rem;
-    border-radius: 999px;
-    background: var(--surface);
-    color: var(--texte-discret);
+  .pastille-ok {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--etat-ok);
   }
 
-  .etiquettes .pilote {
-    background: var(--accent-fond);
-    color: var(--sur-accent);
+  .etat {
+    font-weight: 600;
   }
 
   dl {
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 0.4rem 1.25rem;
-    width: min(100%, 32rem);
     margin: 0;
   }
 
   dt {
-    font-weight: 600;
+    color: var(--texte-discret);
   }
 
   dd {
@@ -538,14 +612,26 @@
   .prise {
     display: grid;
     gap: 0.75rem;
-    width: min(100%, 32rem);
   }
 
   .actions {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
     gap: 0.5rem;
+  }
+
+  .bouton-contour {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 1px solid var(--bordure-champ);
+    border-radius: var(--rayon);
+    background: var(--surface);
+    color: var(--texte);
+    font-weight: 500;
+    text-decoration: none;
   }
 
   button {
@@ -593,14 +679,7 @@
     color: var(--texte-discret);
   }
 
-  .publication {
-    display: grid;
-    justify-items: center;
-    gap: 0.5rem;
-  }
-
   .discret {
-    margin: 0;
     color: var(--texte-discret);
     font-size: 0.9rem;
   }
@@ -608,9 +687,8 @@
   .avertissement,
   .envoi,
   .message {
-    margin: 0;
     padding: 0.6rem 0.75rem;
-    background: var(--surface);
+    background: var(--surface-2);
   }
 
   .avertissement,

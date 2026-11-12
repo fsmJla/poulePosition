@@ -25,7 +25,7 @@ async function creerEpreuve(page: Page, nom: string) {
 const ouvrirFormule = async (page: Page) => {
   await page.getByRole('link', { name: 'Formule', exact: true }).click();
   await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}\/formule$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Formule de l’épreuve');
+  await expect(page.getByRole('heading', { level: 2, name: 'Formule de l’épreuve' })).toBeVisible();
 };
 
 const enregistrer = (page: Page) => page.getByRole('button', { name: 'Enregistrer la formule' }).click();

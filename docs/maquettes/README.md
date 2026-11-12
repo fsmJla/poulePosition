@@ -175,6 +175,10 @@ le bouton à icône seule et le menu « ⋯ » sont en place sur les pages conne
 (US-062), le bouton « Créer » flottant des smartphones (US-061, d'ici là une entrée « Créer » est dans le menu de compte
 étroit), la mise en page des écrans (US-055 à US-058).
 
+**Livré par US-058 (page d'une épreuve par étapes) :** la navigation latérale (étapes à venir grisées, liste unique dans
+`app/src/lib/etapes-epreuve.ts`), l'entête de l'épreuve et le Résumé en cartes. Reste à venir : le bandeau « Prochaine
+étape » (US-064).
+
 ## Règle pour les nouvelles US
 
 Une US qui crée ou modifie un écran :
