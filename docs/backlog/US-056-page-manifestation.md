@@ -86,6 +86,24 @@ de l'appareil (US-045, décision 1a) ; le plan suit US-049. Testé par un E2E r�
 - Dans le fil d'Ariane d'une épreuve, le niveau « compétition » mène à la page de la manifestation, onglet
   « Compétitions ».
 
+### Hypothèses prises pendant l'implémentation
+
+- Suppression : « Supprimer… » du menu de la manifestation et de ses compétitions ouvre la fenêtre modale d'US-057 ;
+  après la suppression d'une manifestation, on revient à l'accueil. Les droits d'US-057 ne changent pas.
+- Formulaires : « Modifier » ouvre `/manifestations/<id>?modifier`, « Nouvelle compétition » ouvre
+  `?competition=nouvelle`, « Modifier <compétition> » ouvre `?competition=<id>` ; l'enregistrement revient à
+  `/manifestations/<id>`. Les documents d'une compétition restent dans son formulaire (US-030) ; ceux de la
+  manifestation sont dans l'onglet « Affiche et feuille de route ».
+- Création d'une manifestation : le formulaire de l'ancienne page « Manifestations » disparaît ; `/manifestations?nouvelle`
+  mène à l'assistant de création (`/manifestations/nouvelle`, US-047). Les adresses `?modifier=<id>` et `?competition=<id>`
+  de l'ancienne page mènent au formulaire correspondant de la page de la manifestation.
+- Deux icônes s'ajoutent au vocabulaire de la maquette, celles des onglets de la planche 2 : « Liste » (Compétitions) et
+  « Quatre carrés » (Plan).
+- Les dates suivent la planche 2 (« 11 et 12 novembre 2026 ») et non le format « du 11/11/2026 au 12/11/2026 » de l'accueil.
+- Le champ de recherche de l'entête de la planche 2 n'est pas livré par cette US (entête commun, US-054).
+- Le fil d'Ariane d'une épreuve a ses niveaux « manifestation » et « compétition » qui mènent tous deux à la page de la
+  manifestation (hypothèse validée) ; le lien vers la grille des épreuves d'une compétition est « + Épreuves ».
+
 ## Questions bloquantes
 
 - Aucune.
