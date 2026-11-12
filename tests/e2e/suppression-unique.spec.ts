@@ -28,7 +28,7 @@ test('US-057 CA-1 : une seule action « Supprimer… », la dernière du menu d�
 
   await menuDe(page, planche.manifestation).click();
   let entrees = page.getByRole('menu').getByRole('menuitem');
-  await expect(entrees).toHaveCount(3);
+  await expect(entrees).toHaveCount(4);
   await expect(entrees.last()).toContainText('Supprimer…');
   await page.keyboard.press('Escape');
 

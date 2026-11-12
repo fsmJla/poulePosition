@@ -355,6 +355,7 @@
             // US-033 : archiver (ou désarchiver) ; seul le PC pilote écrit dans le journal, et pas pendant l'épreuve.
             {
               libelle: archivee ? ta.desarchiver : ta.archiver,
+              icone: 'archive' as const,
               detail: archivee ? ta.detailDesarchiverEpreuve : ta.detailArchiverEpreuve,
               surChoix: () => (confirmationArchivage = true),
               indisponible:

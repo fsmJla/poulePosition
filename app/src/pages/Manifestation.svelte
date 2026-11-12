@@ -185,6 +185,7 @@
   function actionArchiver(id: string, nom: string, archivee: boolean, motifHorsLigne: string | undefined): ActionMenu {
     return {
       libelle: archivee ? ta.desarchiver : ta.archiver,
+      icone: 'archive',
       detail: archivee ? ta.detailDesarchiverManifestation : ta.detailArchiverManifestation,
       surChoix: () => (archivageDemande = { id, nom, archiver: !archivee }),
       indisponible: motifHorsLigne === undefined ? undefined : ta.horsLigne,
