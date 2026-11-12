@@ -2,6 +2,7 @@
 import zlib from 'node:zlib';
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { creerManifestationSimple, ouvrirManifestation } from './planche';
 
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
@@ -42,19 +43,13 @@ const documents = (page: Page) => page.getByRole('region', { name: 'Documents' }
 const sorte = (page: Page, nom: 'affiche' | 'feuilleDeRoute') => documents(page).locator(`[data-sorte="${nom}"]`);
 const champ = (page: Page, nom: 'affiche' | 'feuilleDeRoute') => sorte(page, nom).locator('input[type="file"]');
 
-/** Crée une manifestation du 14 au 15 mars 2027, puis ouvre son formulaire de modification (où se trouvent les documents). */
+/** Crée au serveur une manifestation du 14 au 15 mars 2027 (US-056 : ses documents sont dans l'onglet « Affiche et feuille de route »). */
 async function creerManifestation(page: Page, nom: string) {
-  await page.goto('/manifestations');
-  await page.getByRole('button', { name: 'Nouvelle manifestation' }).click();
-  await page.getByLabel('Nom', { exact: true }).fill(nom);
-  await page.getByLabel('Date de début').fill('2027-03-14');
-  await page.getByLabel('Date de fin').fill('2027-03-15');
-  await page.getByRole('button', { name: 'Créer la manifestation' }).click();
-  await expect(page.getByRole('listitem').filter({ hasText: nom }).first()).toBeVisible({ timeout: 20_000 });
+  await creerManifestationSimple(page, nom);
 }
 
 async function ouvrirLesDocuments(page: Page, nom: string) {
-  await page.getByRole('button', { name: `Modifier ${nom}`, exact: true }).click();
+  await ouvrirManifestation(page, nom, 'documents');
   await expect(documents(page)).toBeVisible();
   await expect(sorte(page, 'affiche')).toBeVisible({ timeout: 20_000 });
 }
@@ -157,21 +152,19 @@ test('US-030 CA-4 et CA-6 : une épreuve montre l’affiche de sa manifestation,
   await expect(sorte(page, 'affiche').getByRole('img', { name: 'Affiche' })).toBeVisible({ timeout: 20_000 });
 
   // Une compétition sans affiche, dans cette manifestation : son formulaire montre celle de la manifestation (CA-4).
-  await page.getByRole('button', { name: 'Annuler' }).click();
-  await page.getByRole('button', { name: `Ajouter une compétition à ${manifestation}` }).click();
+  await ouvrirManifestation(page, manifestation);
+  await page.getByRole('button', { name: 'Nouvelle compétition' }).click();
   await page.getByLabel('Nom de la compétition').fill(competition);
   await page.getByLabel('Arme').selectOption('sabre');
   await page.getByRole('button', { name: 'Créer la compétition' }).click();
-  await expect(
-    page.getByRole('region', { name: `Compétitions de ${manifestation}` }).getByText(competition),
-  ).toBeVisible({ timeout: 20_000 });
-  await page.getByRole('button', { name: `Modifier la compétition ${competition}`, exact: true }).click();
+  await expect(page.getByRole('article', { name: competition })).toBeVisible({ timeout: 20_000 });
+  await page.getByRole('button', { name: `Modifier ${competition}`, exact: true }).click();
   await expect(sorte(page, 'affiche').getByRole('img', { name: 'Affiche' })).toBeVisible({ timeout: 20_000 });
   await expect(sorte(page, 'affiche').getByText('reprise de la manifestation')).toBeVisible();
   await page.getByRole('button', { name: 'Annuler' }).click();
 
   // Une épreuve de cette compétition : même affiche (CA-4), gardée sur l'appareil pour le hors ligne (CA-6).
-  await page.getByRole('link', { name: `Voir le plan de ${manifestation}` }).click();
+  await ouvrirManifestation(page, manifestation, 'plan');
   await page.getByRole('button', { name: `Ajouter une épreuve à ${competition}, dimanche 14 mars 2027` }).click();
   await expect(page.getByLabel('Compétition', { exact: true })).not.toHaveValue('');
   await page.getByLabel('Nom', { exact: true }).fill(`${competition} M13`);
