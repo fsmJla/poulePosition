@@ -1,33 +1,24 @@
 // Grille des épreuves (US-048) : créer d'un coup les épreuves d'une compétition en cochant catégories et sexes.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { ajouterCompetition, creerManifestationSimple, ouvrirManifestation } from './planche';
 
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 
+/** US-056 : la manifestation et sa compétition sont créées au serveur, puis la page de la manifestation est ouverte. */
 async function creerManifestation(page: Page, nom: string) {
-  await page.goto('/manifestations');
-  await page.getByRole('button', { name: 'Nouvelle manifestation' }).click();
-  await page.getByLabel('Nom', { exact: true }).fill(nom);
-  await page.getByLabel('Date de début').fill('2027-03-14');
-  await page.getByLabel('Date de fin').fill('2027-03-15');
-  await page.getByLabel('Lieu').fill('Salle Bellegrave');
-  await page.getByRole('button', { name: 'Créer la manifestation' }).click();
-  await expect(page.getByRole('listitem').filter({ hasText: nom }).first()).toBeVisible({ timeout: 20_000 });
+  await creerManifestationSimple(page, nom);
 }
 
-/** Une compétition dans la manifestation, au sabre ou sans arme. */
+/** Une compétition dans la manifestation, au sabre ou sans arme ; la page de la manifestation s'ouvre dessus. */
 async function creerCompetition(page: Page, manifestation: string, nom: string, arme: 'sabre' | '' = 'sabre') {
-  await page.getByRole('button', { name: `Ajouter une compétition à ${manifestation}` }).click();
-  await page.getByLabel('Nom de la compétition').fill(nom);
-  if (arme) await page.getByLabel('Arme').selectOption(arme);
-  await page.getByRole('button', { name: 'Créer la compétition' }).click();
-  await expect(page.getByRole('region', { name: `Compétitions de ${manifestation}` }).getByText(nom)).toBeVisible({
-    timeout: 20_000,
-  });
+  await ajouterCompetition(page, manifestation, nom, arme || null);
+  await ouvrirManifestation(page, manifestation);
+  await expect(page.getByRole('article', { name: nom })).toBeVisible({ timeout: 20_000 });
 }
 
-/** Ouvre la grille depuis la carte de la compétition (page Manifestations). */
+/** Ouvre la grille depuis la carte de la compétition (page de la manifestation). */
 async function ouvrirLaGrille(page: Page, competition: string) {
   await page.getByRole('link', { name: `Ajouter des épreuves à ${competition}` }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Ajouter des épreuves' })).toBeVisible();
@@ -125,7 +116,7 @@ test('US-048 CA-2 : une case déjà créée est marquée et ne se coche pas', as
   await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
 
-  await page.goto('/manifestations');
+  await ouvrirManifestation(page, manifestation);
   await ouvrirLaGrille(page, competition);
   const prise = laCase(page, 'M15', 'Dames');
   await expect(prise).toBeDisabled();

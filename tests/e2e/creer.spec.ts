@@ -82,7 +82,7 @@ test('US-046 CA-2 : « Compléter » retrouve une manifestation et propose d’y
   await completer.getByLabel('Rechercher une manifestation ou une compétition').fill(manifestation.toLowerCase());
   await completer.getByRole('button', { name: `Choisir ${manifestation}` }).click({ timeout: 20_000 });
   await completer.getByRole('link', { name: `Nouvelle compétition dans ${manifestation}` }).click();
-  await expect(page).toHaveURL(/\/manifestations\?competition=[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(/\/manifestations\/[0-9a-f-]{36}\?competition=nouvelle$/);
 });
 
 test('US-046 CA-2 : « Compléter » retrouve une compétition et ouvre la grille pour y ajouter des épreuves', async ({

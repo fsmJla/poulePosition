@@ -102,6 +102,8 @@ pas d'émoji. Une icône garde **le même sens partout**.
 | Personnes | Comptes | Avec libellé |
 | Lune | Thème sombre (choix du menu de thème) | Avec libellé |
 | Coche | Choix en cours dans un menu | Seule (décorative) |
+| Liste | Onglet « Compétitions » de la page d'une manifestation | Avec libellé |
+| Quatre carrés | Onglet « Plan » de la page d'une manifestation | Avec libellé |
 
 Ajouter une icône à ce tableau avant de l'employer dans un écran.
 

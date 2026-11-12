@@ -4,6 +4,7 @@
 // autres tests, lancés en parallèle) : il est couvert en unitaire.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { ajouterCompetition, creerManifestationSimple } from './planche';
 
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
@@ -16,26 +17,10 @@ const caseCompetition = (page: Page, nom: string) =>
   page.getByRole('checkbox', { name: `Sélectionner la compétition ${nom}` });
 const caseEpreuve = (page: Page, nom: string) => page.getByRole('checkbox', { name: `Sélectionner l’épreuve ${nom}` });
 
-/** Crée une manifestation du 14 au 15 mars 2027 et une compétition au sabre, et attend qu'elles soient dans la liste. */
+/** Crée au serveur une manifestation du 14 au 15 mars 2027 et une compétition au sabre. */
 async function creerManifestationEtCompetition(page: Page, manifestation: string, competition: string) {
-  await page.goto('/manifestations');
-  await page.getByRole('button', { name: 'Nouvelle manifestation' }).click();
-  await page.getByLabel('Nom', { exact: true }).fill(manifestation);
-  await page.getByLabel('Date de début').fill('2027-03-14');
-  await page.getByLabel('Date de fin').fill('2027-03-15');
-  await page.getByLabel('Lieu').fill('Salle Bellegrave');
-  await page.getByRole('button', { name: 'Créer la manifestation' }).click();
-  await expect(page.getByRole('listitem').filter({ hasText: manifestation }).first()).toBeVisible({ timeout: 20_000 });
-  await page.getByRole('button', { name: `Ajouter une compétition à ${manifestation}` }).click();
-  await page.getByLabel('Nom de la compétition').fill(competition);
-  await page.getByLabel('Arme').selectOption('sabre');
-  await page.getByRole('button', { name: 'Créer la compétition' }).click();
-  await expect(
-    page
-      .getByRole('region', { name: `Compétitions de ${manifestation}` })
-      .getByRole('listitem')
-      .filter({ hasText: competition }),
-  ).toBeVisible({ timeout: 20_000 });
+  await creerManifestationSimple(page, manifestation);
+  await ajouterCompetition(page, manifestation, competition);
 }
 
 /** Crée, par le formulaire, une épreuve dans la compétition de la manifestation, ou une compétition seule avec son épreuve. */

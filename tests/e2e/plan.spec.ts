@@ -1,6 +1,7 @@
 // Plan de la manifestation (US-049, US-050) : une ligne par compétition, une colonne par jour, des tuiles pour les épreuves.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { ajouterCompetition, creerManifestationSimple, ouvrirManifestation } from './planche';
 
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
@@ -8,25 +9,11 @@ const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 const SAMEDI = 'dimanche 14 mars 2027';
 const LUNDI = 'lundi 15 mars 2027';
 
-/** Une manifestation du 14 mars 2027 au jour `fin` (le 15 par défaut) avec une compétition au sabre, puis son plan ouvert depuis la page Manifestations. */
+/** Une manifestation du 14 mars 2027 au jour `fin` (le 15 par défaut) avec une compétition au sabre, créées au serveur, puis son onglet « Plan » ouvert. */
 async function ouvrirLePlan(page: Page, manifestation: string, competition: string, fin = '2027-03-15') {
-  await page.goto('/manifestations');
-  await page.getByRole('button', { name: 'Nouvelle manifestation' }).click();
-  await page.getByLabel('Nom', { exact: true }).fill(manifestation);
-  await page.getByLabel('Date de début').fill('2027-03-14');
-  await page.getByLabel('Date de fin').fill(fin);
-  await page.getByLabel('Lieu').fill('Salle Bellegrave');
-  await page.getByRole('button', { name: 'Créer la manifestation' }).click();
-  await expect(page.getByRole('listitem').filter({ hasText: manifestation }).first()).toBeVisible({ timeout: 20_000 });
-  await page.getByRole('button', { name: `Ajouter une compétition à ${manifestation}` }).click();
-  await page.getByLabel('Nom de la compétition').fill(competition);
-  await page.getByLabel('Arme').selectOption('sabre');
-  await page.getByRole('button', { name: 'Créer la compétition' }).click();
-  await expect(
-    page.getByRole('region', { name: `Compétitions de ${manifestation}` }).getByText(competition),
-  ).toBeVisible({ timeout: 20_000 });
-  await page.getByRole('link', { name: `Voir le plan de ${manifestation}` }).click();
-  await expect(page.getByRole('heading', { level: 1, name: manifestation })).toBeVisible();
+  await creerManifestationSimple(page, manifestation, '2027-03-14', fin);
+  await ajouterCompetition(page, manifestation, competition);
+  await ouvrirManifestation(page, manifestation, 'plan');
 }
 
 /** « + Épreuve » d'une case : le formulaire s'ouvre avec la compétition et le jour ; on donne un nom et on crée. */
@@ -64,7 +51,7 @@ test('US-049 CA-1, CA-2, CA-3 et CA-4 : lire le plan, y ajouter une épreuve, vo
   await page.setViewportSize({ width: 1280, height: 900 });
 
   // CA-1 : l'entête, une colonne par jour, une ligne par compétition.
-  await expect(page.getByText('Aucune épreuve', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Épreuve / })).toHaveCount(0);
   await expect(page.getByText('Salle Bellegrave').first()).toBeVisible();
   await expect(page.getByRole('columnheader', { name: SAMEDI })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: LUNDI })).toBeVisible();
@@ -80,10 +67,8 @@ test('US-049 CA-1, CA-2, CA-3 et CA-4 : lire le plan, y ajouter une épreuve, vo
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
 
   // CA-1 : la tuile est dans la case du dimanche et l'entête compte une épreuve.
-  await page.goto('/manifestations');
-  await page.getByRole('link', { name: `Voir le plan de ${manifestation}` }).click();
-  await expect(page.getByText('1 épreuve', { exact: true })).toBeVisible({ timeout: 20_000 });
-  await expect(tuile(page, epreuve)).toBeVisible();
+  await ouvrirManifestation(page, manifestation, 'plan');
+  await expect(tuile(page, epreuve)).toBeVisible({ timeout: 20_000 });
 
   // CA-3 : le panneau montre les valeurs reprises avec leur origine.
   await tuile(page, epreuve).click();
@@ -126,8 +111,7 @@ test('US-049 CA-6 : sur un écran étroit, un bloc par jour sans débordement ho
   await ouvrirLePlan(page, manifestation, competition);
   await ajouterUneEpreuve(page, competition, SAMEDI, `${competition} M15`);
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
-  await page.goto('/manifestations');
-  await page.getByRole('link', { name: `Voir le plan de ${manifestation}` }).click();
+  await ouvrirManifestation(page, manifestation, 'plan');
 
   await expect(page.getByRole('heading', { level: 2, name: SAMEDI })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole('heading', { level: 2, name: LUNDI })).toBeVisible();
@@ -145,21 +129,14 @@ test('US-049 cas limite : une manifestation sans compétition garde ses jours et
   const manifestation = nomUnique();
   await seConnecter(page);
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto('/manifestations');
-  await page.getByRole('button', { name: 'Nouvelle manifestation' }).click();
-  await page.getByLabel('Nom', { exact: true }).fill(manifestation);
-  await page.getByLabel('Date de début').fill('2027-03-14');
-  await page.getByLabel('Date de fin').fill('2027-03-15');
-  await page.getByRole('button', { name: 'Créer la manifestation' }).click();
-  await expect(page.getByRole('listitem').filter({ hasText: manifestation }).first()).toBeVisible({ timeout: 20_000 });
-  await page.getByRole('link', { name: `Voir le plan de ${manifestation}` }).click();
-
+  await creerManifestationSimple(page, manifestation);
+  await ouvrirManifestation(page, manifestation, 'plan');
   await expect(page.getByRole('heading', { level: 1, name: manifestation })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Ajouter une première compétition' })).toBeEnabled();
-  await expect(page.getByText('Aucune épreuve', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Épreuve / })).toHaveCount(0);
 
-  // CA-2 : « Modifier la manifestation » ouvre son formulaire sur la page Manifestations.
-  await page.getByRole('button', { name: 'Modifier la manifestation' }).click();
+  // US-056 CA-7 : « Modifier » ouvre le formulaire de la manifestation sur sa page.
+  await page.getByRole('button', { name: 'Modifier', exact: true }).click();
   await expect(page.getByRole('heading', { name: `Modifier « ${manifestation} »` })).toBeVisible();
 });
 
@@ -179,9 +156,8 @@ test('US-049 hors ligne : le plan reste affiché, on y ajoute une épreuve et on
 
   await context.setOffline(true);
   await expect(page.getByText(/^Hors ligne : plan du /)).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByRole('button', { name: 'Ajouter une compétition' })).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Modifier la manifestation' })).toBeDisabled();
-  await expect(page.getByText('Nécessite une connexion internet')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Modifier', exact: true })).toBeDisabled();
+  await expect(page.getByText('Nécessite une connexion internet').first()).toBeVisible();
 
   // « + Épreuve » écrit dans le journal local de cet appareil.
   await ajouterUneEpreuve(page, competition, SAMEDI, epreuve);
@@ -211,7 +187,7 @@ const couleurDe = (page: Page, variable: string) =>
     return couleur;
   }, variable);
 
-test('US-050 CA-1 et CA-3 : un bandeau foncé donne le compte de compétitions et d’épreuves, et chaque compétition est une bande teintée', async ({
+test('US-050 CA-1 : chaque compétition est une bande teintée (le bandeau d’entête est remplacé par la page de la manifestation, US-056 CA-1)', async ({
   page,
 }) => {
   test.setTimeout(90_000);
@@ -220,18 +196,6 @@ test('US-050 CA-1 et CA-3 : un bandeau foncé donne le compte de compétitions e
   await seConnecter(page);
   await page.setViewportSize({ width: 1280, height: 900 });
   await ouvrirLePlan(page, manifestation, competition);
-
-  // CA-3 : le bandeau, de la couleur de la marque, avec le nom, le lieu, les comptes et les deux actions.
-  const bandeau = page.locator('header.bandeau');
-  await expect(bandeau).toContainText(manifestation);
-  await expect(bandeau).toContainText('Salle Bellegrave');
-  await expect(bandeau).toContainText('1 compétition');
-  await expect(bandeau).toContainText('Aucune épreuve');
-  await expect(bandeau.getByRole('button', { name: 'Modifier la manifestation' })).toBeVisible();
-  await expect(bandeau.getByRole('button', { name: 'Ajouter une compétition' })).toBeVisible();
-  expect(await bandeau.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(
-    await couleurDe(page, '--marque'),
-  );
 
   // CA-1 : la ligne est une bande au fond teinté, et le nom prend la couleur de la compétition.
   const ligne = page.getByRole('row').filter({ hasText: competition });
@@ -259,8 +223,7 @@ test('US-050 CA-2, CA-4, CA-5 et CA-6 : le panneau est à côté du tableau avec
     debutPoules: '09:30',
   });
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
-  await page.goto('/manifestations');
-  await page.getByRole('link', { name: `Voir le plan de ${manifestation}` }).click();
+  await ouvrirManifestation(page, manifestation, 'plan');
   await expect(tuile(page, epreuve)).toBeVisible({ timeout: 20_000 });
 
   // CA-2 : la tuile choisie est mise en évidence et le panneau s'ouvre à droite du tableau.
@@ -307,8 +270,7 @@ test('US-050 CA-6 : à trois jours, le choix du jour reste proposé à la place 
   await ouvrirLePlan(page, manifestation, competition, '2027-03-16');
   await ajouterUneEpreuve(page, competition, SAMEDI, epreuve);
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
-  await page.goto('/manifestations');
-  await page.getByRole('link', { name: `Voir le plan de ${manifestation}` }).click();
+  await ouvrirManifestation(page, manifestation, 'plan');
   await expect(tuile(page, epreuve)).toBeVisible({ timeout: 20_000 });
 
   await tuile(page, epreuve).click();
@@ -321,11 +283,10 @@ test('US-050 CA-6 : à trois jours, le choix du jour reste proposé à la place 
   await expect(panneau).toContainText('Épreuve déplacée au mardi 16 mars 2027');
 });
 
-/** Depuis la page Manifestations : le plan de la manifestation, avec le compte d'épreuves attendu. */
-async function rouvrirLePlan(page: Page, manifestation: string, epreuves: string) {
-  await page.goto('/manifestations');
-  await page.getByRole('link', { name: `Voir le plan de ${manifestation}` }).click();
-  await expect(page.getByText(epreuves, { exact: true })).toBeVisible({ timeout: 20_000 });
+/** L'onglet « Plan » de la manifestation, avec le nombre de tuiles d'épreuve attendu. */
+async function rouvrirLePlan(page: Page, manifestation: string, epreuves: number) {
+  await ouvrirManifestation(page, manifestation, 'plan');
+  await expect(page.getByRole('button', { name: /^Épreuve / })).toHaveCount(epreuves, { timeout: 20_000 });
 }
 
 test('US-051 CA-1, CA-2, CA-3, CA-4, CA-5 et CA-6 : dupliquer une épreuve depuis le plan, sans horaires, avec un nom de copie et un avertissement si le nom est pris', async ({
@@ -344,7 +305,7 @@ test('US-051 CA-1, CA-2, CA-3, CA-4, CA-5 et CA-6 : dupliquer une épreuve depui
     debutPoules: '09:30',
   });
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
-  await rouvrirLePlan(page, manifestation, '1 épreuve');
+  await rouvrirLePlan(page, manifestation, 1);
 
   // CA-1 : « Dupliquer » est dans le panneau, à côté de « Ouvrir l'épreuve ».
   await tuile(page, epreuve).click();
@@ -364,7 +325,7 @@ test('US-051 CA-1, CA-2, CA-3, CA-4, CA-5 et CA-6 : dupliquer une épreuve depui
   // CA-2 : « Annuler » revient au plan sans rien créer.
   await page.getByRole('link', { name: 'Annuler' }).click();
   await expect(page.getByRole('heading', { level: 1, name: manifestation })).toBeVisible();
-  await expect(page.getByText('1 épreuve', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Épreuve / })).toHaveCount(1);
 
   // CA-5 : valider crée une épreuve de plus, dans la case de sa compétition et de son jour.
   await tuile(page, epreuve).click();
@@ -373,7 +334,7 @@ test('US-051 CA-1, CA-2, CA-3, CA-4, CA-5 et CA-6 : dupliquer une épreuve depui
   await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
   await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
-  await rouvrirLePlan(page, manifestation, '2 épreuves');
+  await rouvrirLePlan(page, manifestation, 2);
   await expect(tuile(page, `${epreuve} (copie)`)).toBeVisible();
 
   // CA-4 : une seconde copie passe à « (copie 2) ».
@@ -391,7 +352,7 @@ test('US-051 CA-1, CA-2, CA-3, CA-4, CA-5 et CA-6 : dupliquer une épreuve depui
   await page.getByRole('button', { name: 'Créer quand même' }).click();
   await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
-  await rouvrirLePlan(page, manifestation, '3 épreuves');
+  await rouvrirLePlan(page, manifestation, 3);
 });
 
 test('US-051 hors ligne : « Dupliquer » reste possible et la copie s’écrit dans le journal local', async ({

@@ -4,6 +4,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { boutonMenuCompte, seConnecter } from './compte';
 import { ouvrirDansLApplication } from './creer';
+import { ajouterCompetition, creerManifestationSimple, ouvrirManifestation } from './planche';
 import { connecterSimule, simuler } from './simulation';
 
 const LARGE = { width: 1360, height: 1000 };
@@ -36,23 +37,9 @@ async function creerHierarchie(page: Page) {
   const manifestation = `${nomUnique()} — grande manifestation au titre volontairement très long`;
   const competition = nomUnique();
   const epreuve = `${competition} M13`;
-  await page.goto('/manifestations');
-  await page.getByRole('button', { name: 'Nouvelle manifestation' }).click();
-  await page.getByLabel('Nom', { exact: true }).fill(manifestation);
-  await page.getByLabel('Date de début').fill('2027-03-14');
-  await page.getByLabel('Date de fin').fill('2027-03-15');
-  await page.getByLabel('Lieu').fill('Salle Bellegrave');
-  await page.getByRole('button', { name: 'Créer la manifestation' }).click();
-  await expect(page.getByRole('listitem').filter({ hasText: manifestation }).first()).toBeVisible({ timeout: 20_000 });
-  await page.getByRole('button', { name: `Ajouter une compétition à ${manifestation}` }).click();
-  await page.getByLabel('Nom de la compétition').fill(competition);
-  await page.getByLabel('Arme').selectOption('sabre');
-  await page.getByRole('button', { name: 'Créer la compétition' }).click();
-  await expect(
-    page.getByRole('region', { name: `Compétitions de ${manifestation}` }).getByText(competition),
-  ).toBeVisible({ timeout: 20_000 });
-  await page.getByRole('link', { name: `Voir le plan de ${manifestation}` }).click();
-  await expect(page.getByRole('heading', { level: 1, name: manifestation })).toBeVisible();
+  await creerManifestationSimple(page, manifestation);
+  await ajouterCompetition(page, manifestation, competition);
+  await ouvrirManifestation(page, manifestation, 'plan');
   await page
     .getByRole('button', { name: new RegExp(`^Ajouter une épreuve à ${competition}`) })
     .first()
@@ -131,12 +118,15 @@ test('US-054 CA-3 : le fil d’Ariane d’une épreuve va de l’accueil à l’
     await expect(fil(page).getByRole('link', { name: epreuve })).toHaveAttribute('href', chemin);
   }
 
-  // Grille des épreuves de la compétition, via le niveau « compétition » du fil d'Ariane de l'épreuve.
+  // US-056 : le niveau « compétition » mène, comme « manifestation », à la page de la manifestation.
   await ouvrirDansLApplication(page, chemin);
+  await expect(fil(page).getByRole('link', { name: competition })).toHaveAttribute(
+    'href',
+    /^\/manifestations\/[0-9a-f-]{36}$/,
+  );
   await fil(page).getByRole('link', { name: competition }).click();
-  await expect(page).toHaveURL(/\/competitions\/[0-9a-f-]{36}\/epreuves$/);
-  await expect(fil(page).locator('[aria-current="page"]')).toHaveText(competition);
-  await expect(fil(page).getByRole('link', { name: manifestation })).toBeVisible();
+  await expect(page).toHaveURL(/\/manifestations\/[0-9a-f-]{36}$/);
+  await ouvrirDansLApplication(page, chemin);
 
   // Plan de la manifestation : Accueil › manifestation.
   await fil(page).getByRole('link', { name: manifestation }).click();
@@ -364,8 +354,10 @@ test('US-054 CA-9 : la page d’une épreuve, menu « ⋯ » ouvert, est conform
 
   // Menu « ⋯ » : carte blanche (--surface), actions dans l'ordre, icônes au trait, aucun défilement horizontal.
   expect(await fondDe(menu)).toBe(await couleurDe(page, 'var(--surface)'));
-  expect(await menu.getByRole('menuitem').allInnerTexts()).toEqual(['Formule', 'Paramètres']);
-  expect(await menu.locator('svg[data-icone]').count()).toBe(2);
+  // US-057 : un administrateur (le compte local) a « Supprimer… » en dernier ; un organisateur (la preview), non.
+  const actions = (await menu.getByRole('menuitem').allInnerTexts()).map((texte) => texte.split('\n')[0]);
+  expect(actions).toEqual(process.env.BASE_URL ? ['Formule', 'Paramètres'] : ['Formule', 'Paramètres', 'Supprimer…']);
+  expect(await menu.locator('svg[data-icone]').count()).toBe(actions.length);
   expect(await sansDefilementHorizontal(page)).toBe(true);
 
   await testInfo.attach('3-epreuve-menu-ouvert.png', {

@@ -33,7 +33,7 @@
   import type { Journal } from '../lib/journal';
   import { creerLot, type CompteRenduLot } from '../lib/lot';
   import { filSousAccueil } from '../lib/fil-ariane';
-  import { CHEMINS, cheminPlanManifestation } from '../lib/routes';
+  import { CHEMINS, cheminManifestation } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -193,7 +193,7 @@
     <FilAriane
       niveaux={filSousAccueil(
         competition.nom,
-        manifestation ? [{ libelle: manifestation.nom, chemin: cheminPlanManifestation(manifestation.id) }] : [],
+        manifestation ? [{ libelle: manifestation.nom, chemin: cheminManifestation(manifestation.id) }] : [],
         textes.entete.accueil,
       )}
       {naviguer}

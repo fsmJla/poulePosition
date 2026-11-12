@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-054, US-055, US-023, US-049, US-030
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** us/US-056-page-manifestation / —
 
 ## Récit
 
@@ -86,6 +86,24 @@ de l'appareil (US-045, décision 1a) ; le plan suit US-049. Testé par un E2E r�
 - Dans le fil d'Ariane d'une épreuve, le niveau « compétition » mène à la page de la manifestation, onglet
   « Compétitions ».
 
+### Hypothèses prises pendant l'implémentation
+
+- Suppression : « Supprimer… » du menu de la manifestation et de ses compétitions ouvre la fenêtre modale d'US-057 ;
+  après la suppression d'une manifestation, on revient à l'accueil. Les droits d'US-057 ne changent pas.
+- Formulaires : « Modifier » ouvre `/manifestations/<id>?modifier`, « Nouvelle compétition » ouvre
+  `?competition=nouvelle`, « Modifier <compétition> » ouvre `?competition=<id>` ; l'enregistrement revient à
+  `/manifestations/<id>`. Les documents d'une compétition restent dans son formulaire (US-030) ; ceux de la
+  manifestation sont dans l'onglet « Affiche et feuille de route ».
+- Création d'une manifestation : le formulaire de l'ancienne page « Manifestations » disparaît ; `/manifestations?nouvelle`
+  mène à l'assistant de création (`/manifestations/nouvelle`, US-047). Les adresses `?modifier=<id>` et `?competition=<id>`
+  de l'ancienne page mènent au formulaire correspondant de la page de la manifestation.
+- Deux icônes s'ajoutent au vocabulaire de la maquette, celles des onglets de la planche 2 : « Liste » (Compétitions) et
+  « Quatre carrés » (Plan).
+- Les dates suivent la planche 2 (« 11 et 12 novembre 2026 ») et non le format « du 11/11/2026 au 12/11/2026 » de l'accueil.
+- Le champ de recherche de l'entête de la planche 2 n'est pas livré par cette US (entête commun, US-054).
+- Le fil d'Ariane d'une épreuve a ses niveaux « manifestation » et « compétition » qui mènent tous deux à la page de la
+  manifestation (hypothèse validée) ; le lien vers la grille des épreuves d'une compétition est « + Épreuves ».
+
 ## Questions bloquantes
 
 - Aucune.
@@ -103,3 +121,20 @@ de l'appareil (US-045, décision 1a) ; le plan suit US-049. Testé par un E2E r�
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » validée le 2026-11-11 |
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
+| 2026-11-12 | Passée à En cours (branche us/US-056-page-manifestation) ; plan validé (suppression par la fenêtre modale d'US-057 ; « ?nouvelle » → assistant ; formulaires dans la page via ?modifier et ?competition) |
+| 2026-11-12 | Implémentée ; passée à En revue (PR vers `dev`). Lint, typage, 1335 tests unitaires avec couverture, build et E2E `pc` / `smartphone` verts en local (échecs connus et sans lien : `lancement.spec.ts` US-001 CA-1 ; débordement à 320 px de l'accueil quand le club local contient beaucoup de données) |
+
+### Correspondance critères → tests
+
+| Critère | Tests |
+|---|---|
+| CA-1 à CA-8, hors ligne, cas limites | `tests/e2e/manifestation.spec.ts` (un test par critère, dont la capture comparée à la planche 2 pour CA-8) |
+| Adresses, redirections de l'ancienne page | `app/src/lib/routes.test.ts`, `tests/e2e/manifestation.spec.ts` (CA-6) |
+| Fil d'Ariane | `app/src/lib/fil-ariane.test.ts`, `tests/e2e/entete.spec.ts` |
+| Textes, icônes | `app/src/lib/textes.test.ts`, `app/src/lib/icones.test.ts` |
+| Parcours existants sur la nouvelle page | `manifestations`, `competitions`, `fichiers`, `grille`, `plan`, `publication`, `suppression-lot`, `suppression-contenu(-manifestation)`, `accueil(-refonte)`, `assistant`, `creer` (`.spec.ts`) |
+
+### Hypothèses complémentaires
+
+- Le bandeau sombre du plan (US-050 CA-3) est remplacé par l'entête de la page ; la zone du plan passe de 44 rem à 34 rem de base pour que le panneau latéral reste à côté du tableau dans la colonne de 65 rem.
+| 2026-11-12 | Recette OK sur https://poule-position-git-us-us-056-page-manif-0127e1-fsmjlas-projects.vercel.app (CA-1 à CA-8, thème sombre ; hors ligne et smartphone couverts par les E2E) ; mergée dans `dev` |

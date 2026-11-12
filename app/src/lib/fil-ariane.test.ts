@@ -11,18 +11,22 @@ const hierarchie: HierarchieClub = {
 const epreuve = { id: 'e1', nom: 'M13 Dames', rattachement: { competitionId: 'c1' } };
 
 describe('fil d’Ariane (US-054 CA-3)', () => {
-  it('CA-3 : une épreuve dans une manifestation donne Accueil › manifestation › compétition › épreuve', () => {
+  it('CA-3 (US-056) : une épreuve dans une manifestation donne Accueil › manifestation › compétition › épreuve', () => {
     expect(filDeLEpreuve(hierarchie, epreuve)).toEqual([
       { libelle: 'Accueil', chemin: '/organisateur' },
       { libelle: 'Grand Week end du SPUC', chemin: '/manifestations/m1' },
-      { libelle: 'Championnats de Nouvelle Aquitaine', chemin: '/competitions/c1/epreuves' },
+      { libelle: 'Championnats de Nouvelle Aquitaine', chemin: '/manifestations/m1' },
       { libelle: 'M13 Dames' },
     ]);
   });
 
-  it('CA-3 : une compétition seule n’a pas de niveau manifestation', () => {
+  it('CA-3 (US-056) : une compétition seule n’a pas de niveau manifestation, et n’est pas un lien', () => {
     const fil = filDeLEpreuve(hierarchie, { ...epreuve, rattachement: { competitionId: 'c2' } });
-    expect(fil.map(({ libelle }) => libelle)).toEqual(['Accueil', 'Challenge seul', 'M13 Dames']);
+    expect(fil).toEqual([
+      { libelle: 'Accueil', chemin: '/organisateur' },
+      { libelle: 'Challenge seul' },
+      { libelle: 'M13 Dames' },
+    ]);
   });
 
   it('CA-3 : une page de l’épreuve (formule, paramètres) lie l’épreuve et finit par la page courante', () => {

@@ -3,6 +3,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
 import { ouvrirDepuisCreer, ouvrirNouvelleEpreuve, verifierCreerAccessible } from './creer';
+import { ajouterCompetition, creerManifestationSimple, idManifestation } from './planche';
 
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
@@ -15,25 +16,13 @@ const epreuveDe = (zone: Page | Locator, nom: string) =>
     .getByRole('listitem')
     .filter({ has: ('goto' in zone ? zone : zone.page()).getByRole('link', { name: `Ouvrir l’épreuve ${nom}` }) });
 
+/** US-056 : la manifestation et sa compétition sont créées au serveur (l'ancienne page « Manifestations » n'existe plus). */
 async function creerManifestation(page: Page, nom: string) {
-  await page.goto('/manifestations');
-  await page.getByRole('button', { name: 'Nouvelle manifestation' }).click();
-  await page.getByLabel('Nom', { exact: true }).fill(nom);
-  await page.getByLabel('Date de début').fill('2027-03-14');
-  await page.getByLabel('Date de fin').fill('2027-03-15');
-  await page.getByLabel('Lieu').fill('Salle Bellegrave');
-  await page.getByRole('button', { name: 'Créer la manifestation' }).click();
-  await expect(page.getByRole('listitem').filter({ hasText: nom }).first()).toBeVisible({ timeout: 20_000 });
+  await creerManifestationSimple(page, nom);
 }
 
 async function creerCompetition(page: Page, manifestation: string, nom: string) {
-  await page.getByRole('button', { name: `Ajouter une compétition à ${manifestation}` }).click();
-  await page.getByLabel('Nom de la compétition').fill(nom);
-  await page.getByLabel('Arme').selectOption('sabre');
-  await page.getByRole('button', { name: 'Créer la compétition' }).click();
-  await expect(page.getByRole('region', { name: `Compétitions de ${manifestation}` }).getByText(nom)).toBeVisible({
-    timeout: 20_000,
-  });
+  await ajouterCompetition(page, manifestation, nom);
 }
 
 /**
@@ -259,10 +248,8 @@ test('US-026 CA-5 : les actions de création de l’accueil', async ({ page }) =
   const bloc = manifestationDe(page, manifestation);
   await bloc.getByRole('button', { name: `Autres actions pour ${manifestation}` }).click();
   await page.getByRole('menuitem', { name: /^Ajouter une compétition/ }).click();
-  await expect(page).toHaveURL(/\/manifestations\?competition=[0-9a-f-]{36}$/);
-  await expect(
-    page.getByRole('region', { name: `Compétitions de ${manifestation}` }).getByRole('heading', { level: 4 }),
-  ).toHaveText('Nouvelle compétition');
+  await expect(page).toHaveURL(new RegExp(`/manifestations/${idManifestation(manifestation)}\\?competition=nouvelle$`));
+  await expect(page.getByRole('heading', { level: 2, name: 'Nouvelle compétition' })).toBeVisible();
 });
 
 test('US-026 CA-6 : un club sans manifestation ni épreuve invite à en créer une', async ({ page }) => {

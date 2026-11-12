@@ -77,10 +77,10 @@ test('US-047 CA-1, CA-2 et CA-3 : quatre étapes, aperçu en direct, manifestati
   await expect(apercu(page)).not.toContainText('en cours de saisie');
 
   // CA-3 : quitter l'assistant ne perd rien, la manifestation et sa compétition sont dans la liste.
-  await page.goto('/manifestations');
-  const carte = page.getByRole('listitem').filter({ hasText: manifestation }).first();
+  await page.goto('/organisateur');
+  const carte = page.getByRole('article', { name: manifestation });
   await expect(carte).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByRole('region', { name: `Compétitions de ${manifestation}` })).toContainText(competition);
+  await expect(carte).toContainText(competition);
 });
 
 test('US-047 CA-3, CA-5 : les épreuves cochées à l’étape 3 se créent, l’étape Vérifier montre le plan et « Terminer » l’ouvre', async ({
@@ -109,7 +109,7 @@ test('US-047 CA-3, CA-5 : les épreuves cochées à l’étape 3 se créent, l�
   await expect(tableau).toContainText('M15 · Dames');
 
   await page.getByRole('button', { name: 'Terminer' }).click();
-  await expect(page).toHaveURL(/\/manifestations\/[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(/\/manifestations\/[0-9a-f-]{36}\/plan$/);
   await expect(page.getByRole('heading', { level: 1, name: manifestation })).toBeVisible();
 });
 
@@ -129,9 +129,10 @@ test('US-047 CA-4 : « Plus tard » passe les étapes sans rien créer, une mani
   await expect(page.getByText('Le plan se remplira')).toBeVisible();
 
   await page.getByRole('button', { name: 'Terminer' }).click();
-  await expect(page).toHaveURL(/\/manifestations\/[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(/\/manifestations\/[0-9a-f-]{36}\/plan$/);
   await expect(page.getByRole('heading', { level: 1, name: manifestation })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Ajouter une première compétition' })).toBeVisible();
+  await page.getByRole('tab', { name: 'Compétitions' }).click();
+  await expect(page.getByRole('button', { name: 'Nouvelle compétition' })).toBeVisible();
 });
 
 test('US-047 CA-6 : « Précédent » revoit l’étape avec ce qui est créé, modifiable', async ({ page }) => {
