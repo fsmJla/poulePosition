@@ -30,6 +30,8 @@ const laCase = (page: Page, categorie: string, sexe: string) =>
 test('US-048 CA-1, CA-3, CA-4, CA-5 et CA-6 : cocher, régler, créer le lot et retrouver les épreuves dans la liste', async ({
   page,
 }) => {
+  // US-061 : sous 40 rem, la page d'une épreuve a une flèche de retour et une barre d'onglets au lieu du fil et de la navigation.
+  await page.setViewportSize({ width: 1100, height: 900 });
   const manifestation = nomUnique();
   const competition = nomUnique();
   await seConnecter(page);

@@ -227,6 +227,8 @@ test('US-056 cas limite : une manifestation sans compétition ne montre que « N
 test('US-056 cas limite : le fil d’une épreuve mène à la page de la manifestation ; une compétition seule n’est pas un lien', async ({
   page,
 }) => {
+  // US-061 : sous 40 rem, la page d'une épreuve a une flèche de retour et une barre d'onglets au lieu du fil et de la navigation.
+  await page.setViewportSize({ width: 1100, height: 900 });
   const planche = await ouvrirPage(page);
   await carte(page, planche.competitionEpee).getByRole('link', { name: 'M13 Dames' }).click();
   await expect(page).toHaveURL(new RegExp(`/epreuves/${ID}$`));

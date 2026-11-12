@@ -5,6 +5,10 @@ import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
 import { ajouterCompetition, ajouterEpreuve, creerManifestationSimple } from './planche';
 
+// US-061 : sous 40 rem, la page d'une épreuve a sa barre d'onglets et son entête compact (smartphone-organisateur.spec.ts).
+// Ces tests vérifient la disposition à navigation latérale, y compris dans le projet « smartphone ».
+test.use({ viewport: { width: 1100, height: 900 } });
+
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 const MOTIF_PAGE_EPREUVE = /\/epreuves\/[0-9a-f-]{36}$/;
 
@@ -229,15 +233,14 @@ test('US-058 cas limite : écran étroit, la navigation passe au-dessus du conte
   page,
 }) => {
   await creerEpreuvePilote(page);
-  await page.setViewportSize({ width: 390, height: 844 });
+  // Entre 40 et 52 rem (tablette en portrait) : sous 40 rem, c'est la barre d'onglets du bas (US-061).
+  await page.setViewportSize({ width: 700, height: 844 });
   const nav = navigation(page);
   await expect(nav).toBeVisible();
   const navBoite = (await nav.boundingBox())!;
   const contenu = (await page.getByRole('region', { name: 'Résumé' }).boundingBox())!;
   expect(navBoite.y + navBoite.height).toBeLessThanOrEqual(contenu.y + 1);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(
-    true,
-  );
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= 700)).toBe(true);
 });
 
 test('US-058 CA-8 : conforme à la planche 3 (navigation, entête, cartes du Résumé)', async ({ page }, testInfo) => {

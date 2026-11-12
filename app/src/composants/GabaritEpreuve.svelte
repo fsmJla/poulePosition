@@ -88,9 +88,9 @@
             {#if competition}<span class="carre" style="--couleur: var(--plan-{couleur})" aria-hidden="true"
               ></span>{/if}
             <span
-              >{[competition?.nom, t.armes[epreuve.arme], epreuve.date ? t.dateLongue(epreuve.date) : null]
-                .filter(Boolean)
-                .join(' · ')}</span
+              >{[competition?.nom, t.armes[epreuve.arme]].filter(Boolean).join(' · ')}{#if epreuve.date}<span
+                  class="date-large">{` · ${t.dateLongue(epreuve.date)}`}</span
+                >{/if}</span
             >
           </p>
         </div>
@@ -283,6 +283,11 @@
 
     .actions {
       flex: none;
+    }
+
+    /* Planche 6 : « compétition · arme » seulement ; la date est dans le Résumé. */
+    .date-large {
+      display: none;
     }
 
     .contenu {

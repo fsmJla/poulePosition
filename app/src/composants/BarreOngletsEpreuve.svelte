@@ -150,8 +150,13 @@
     width: 100%;
     min-height: 56px;
     padding: 6px 4px;
+    border: 0;
     border-top: 3px solid transparent;
+    border-radius: 0;
     background: none;
+    box-shadow: none;
+    font-family: inherit;
+    cursor: pointer;
     color: var(--texte-discret);
     font-size: 0.8rem;
     font-weight: 500;
