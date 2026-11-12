@@ -183,7 +183,11 @@ le bouton à icône seule et le menu « ⋯ » sont en place sur les pages conne
 `paquets/domaine/src/prochaine-etape.ts` ; chaque Epic qui livre une étape y ajoute son cas.
 
 **Livré par US-059 (mode sélection) :** sur l'accueil, les cases n'existent que dans le mode sélection (bouton « Sélectionner »
-du titre), avec une barre d'actions sous l'entête. Reste à venir : le rattachement par lot et l'alerte « à rattacher » (US-060).
+du titre), avec une barre d'actions sous l'entête.
+
+**Livré par US-060 (épreuves à rattacher) :** une alerte d'une ligne annonce les épreuves dont la compétition a disparu ; « Les rattacher »
+ouvre leur liste (ou le mode sélection, d'office), avec un choix de compétition par ligne, et la barre du mode sélection propose
+« Rattacher à une compétition » pour un lot.
 
 ## Règle pour les nouvelles US
 
