@@ -56,6 +56,8 @@ interface Reseau {
   index?: EpreuveIndexee[] | 'hors-ligne';
   manifestations?: Manifestation[] | 'hors-ligne';
   competitions?: Competition[] | 'hors-ligne';
+  /** US-033 : réponse de la route d'archivage ; absent, elle réussit. */
+  archivage?: 'hors-ligne';
 }
 
 const copies = new Map<string, { manifestations?: Manifestation[]; competitions?: Competition[] }>();
@@ -63,7 +65,13 @@ const copies = new Map<string, { manifestations?: Manifestation[]; competitions?
 /** Un accueil sur une base neuve ; `reseau` décrit ce que le serveur répond. */
 function accueil(reseau: Reseau, nomBase = `test-${crypto.randomUUID()}`) {
   const journal = ouvrirJournal(nomBase, async () => true);
+  const envois: string[] = [];
+  const archivages: [string, boolean][] = [];
   const synchronisation = {
+    envoyer: async (id: string) => {
+      envois.push(id);
+      return { ok: true as const };
+    },
     listerEpreuvesDuClub: async () =>
       reseau.index === undefined || reseau.index === 'hors-ligne'
         ? { ok: false as const, erreur: 'HORS_LIGNE' as const }
@@ -81,6 +89,11 @@ function accueil(reseau: Reseau, nomBase = `test-${crypto.randomUUID()}`) {
       gardees.manifestations = reseau.manifestations;
       return { ok: true as const, manifestations: reseau.manifestations };
     },
+    archiver: async (id: string, archivee: boolean) => {
+      if (reseau.archivage === 'hors-ligne') return { ok: false as const, erreur: 'HORS_LIGNE' as const };
+      archivages.push([id, archivee]);
+      return { ok: true as const, manifestation: { ...manifestation, id, archivee }, competitions: [] };
+    },
   } as unknown as ClientManifestations;
   const competitions = {
     lister: async () => {
@@ -96,6 +109,8 @@ function accueil(reseau: Reseau, nomBase = `test-${crypto.randomUUID()}`) {
   return {
     journal,
     nomBase,
+    envois,
+    archivages,
     ...creerAccueil({ journal, synchronisation, manifestations, competitions, nomBase, maintenant: () => MAINTENANT }),
   };
 }
@@ -214,5 +229,96 @@ describe('chargement de la liste du club (US-026)', () => {
     const a = accueil({});
     await a.journal.remplacerCopie('copie-1', [], MAINTENANT);
     expect((await a.charger()).epreuves).toEqual([]);
+  });
+});
+
+describe('archivage d’une manifestation (US-033)', () => {
+  /** Deux épreuves de la manifestation m1 pilotées ici, une troisième d'une autre compétition. */
+  async function avecDeuxEpreuves(reseau: Reseau = {}) {
+    const a = accueil(reseau);
+    const ids: string[] = [];
+    for (const nom of ['Sabre M13', 'Sabre M15']) {
+      const creation = await creerEpreuve(a.journal, saisie({ nom }), auteur, [manifestation], [competition]);
+      ids.push((creation as { epreuveId: string }).epreuveId);
+    }
+    const donnees = { competitions: [competition], epreuves: (await a.charger()).epreuves };
+    return { a, ids, donnees };
+  }
+  const statutDe = async (a: ReturnType<typeof accueil>, id: string) => (await a.journal.lire(id)).epreuve?.statut;
+
+  it('CA-4 : archiver écrit l’archivage de chaque épreuve dans son journal, les envoie, puis archive côté serveur', async () => {
+    const { a, ids, donnees } = await avecDeuxEpreuves();
+    const resultat = await a.archiverManifestation('m1', true, donnees, auteur);
+    expect(resultat).toEqual({ ok: true, epreuves: 2, pilotesAilleurs: [] });
+    for (const id of ids) expect(await statutDe(a, id)).toBe('archivee');
+    expect(a.envois.sort()).toEqual([...ids].sort());
+    expect(a.archivages).toEqual([['m1', true]]);
+  });
+
+  it('CA-4 : désarchiver rend leur statut aux épreuves archivées et désarchive côté serveur', async () => {
+    const { a, ids, donnees } = await avecDeuxEpreuves();
+    await a.archiverManifestation('m1', true, donnees, auteur);
+    const apres = { competitions: [competition], epreuves: (await a.charger()).epreuves };
+    const resultat = await a.archiverManifestation('m1', false, apres, auteur);
+    expect(resultat).toEqual({ ok: true, epreuves: 2, pilotesAilleurs: [] });
+    for (const id of ids) expect(await statutDe(a, id)).toBe('preparation');
+    expect(a.archivages.at(-1)).toEqual(['m1', false]);
+  });
+
+  it('CA-5 : une épreuve non archivée pilotée ailleurs refuse l’archivage, sans rien écrire', async () => {
+    const { a, ids, donnees } = await avecDeuxEpreuves();
+    const ailleurs = { ...donnees.epreuves[0]!, id: 'x', nom: 'Épée dames', pilote: false };
+    const resultat = await a.archiverManifestation(
+      'm1',
+      true,
+      { ...donnees, epreuves: [...donnees.epreuves, ailleurs] },
+      auteur,
+    );
+    expect(resultat).toEqual({ ok: false, erreur: 'PILOTEE_AILLEURS', epreuves: ['Épée dames'] });
+    for (const id of ids) expect(await statutDe(a, id)).toBe('preparation');
+    expect(a.archivages).toEqual([]);
+  });
+
+  it('CA-4 : une épreuve en cours refuse l’archivage', async () => {
+    const { a, donnees } = await avecDeuxEpreuves();
+    const enCours = donnees.epreuves.map((epreuve, rang) =>
+      rang === 0 ? { ...epreuve, statut: 'enCours' as const } : epreuve,
+    );
+    const resultat = await a.archiverManifestation('m1', true, { ...donnees, epreuves: enCours }, auteur);
+    expect(resultat).toMatchObject({ ok: false, erreur: 'EPREUVE_EN_COURS' });
+    expect(a.archivages).toEqual([]);
+  });
+
+  it('hors ligne : le serveur injoignable est signalé ; les épreuves déjà archivées le restent, et relancer reprend', async () => {
+    const { a, ids, donnees } = await avecDeuxEpreuves({ archivage: 'hors-ligne' });
+    expect(await a.archiverManifestation('m1', true, donnees, auteur)).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    for (const id of ids) expect(await statutDe(a, id)).toBe('archivee');
+    const apres = { competitions: [competition], epreuves: (await a.charger()).epreuves };
+    // Rien n'est écrit deux fois : le plan ne contient plus d'épreuve à archiver.
+    expect(await a.archiverManifestation('m1', true, apres, auteur)).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect((await a.journal.lire(ids[0]!)).dernierSeq).toBe(2);
+  });
+
+  it('CA-4 : le désarchivage signale les épreuves archivées depuis un autre PC', async () => {
+    const { a, donnees } = await avecDeuxEpreuves();
+    const ailleurs = {
+      ...donnees.epreuves[0]!,
+      id: 'x',
+      nom: 'Épée dames',
+      pilote: false,
+      statut: 'archivee' as const,
+    };
+    const resultat = await a.archiverManifestation('m1', false, { ...donnees, epreuves: [ailleurs] }, auteur);
+    expect(resultat).toEqual({ ok: true, epreuves: 0, pilotesAilleurs: ['Épée dames'] });
+  });
+
+  it('CA-1 : la liste porte l’archivage des manifestations et des compétitions', async () => {
+    const archivee = { ...manifestation, archivee: true };
+    const a = accueil({ manifestations: [archivee], competitions: [{ ...competition, archivee: true }] });
+    const donnees = await a.charger();
+    expect(donnees.manifestations[0]?.archivee).toBe(true);
+    expect(donnees.competitions[0]?.archivee).toBe(true);
+    const autre = accueil({ manifestations: [manifestation], competitions: [competition] });
+    expect((await autre.charger()).manifestations[0]?.archivee).toBe(false);
   });
 });

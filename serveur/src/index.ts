@@ -21,6 +21,7 @@ import {
   analyserDemandeCompetition,
   analyserDemandeManifestation,
   analyserDemandeModificationCompetition,
+  analyserDemandeArchivageManifestation,
   analyserDemandeModificationManifestation,
   TAILLE_MAX_LOT,
   type ReponseEpreuves,
@@ -32,6 +33,7 @@ import {
   type ReponsePriseDeMain,
   type ReponseCompetition,
   type ReponseSuppressionContenu,
+  type ReponseArchivageManifestation,
   type ReponseManifestation,
   type ReponseFichier,
   type ReponseFichiers,
@@ -225,6 +227,7 @@ type RouteSession = Extract<
       | 'presence'
       | 'manifestations'
       | 'manifestation'
+      | 'archivage-manifestation'
       | 'competitions'
       | 'competition'
       | 'fichiers'
@@ -249,6 +252,7 @@ const METHODES_SESSION = {
   presence: ['POST'],
   manifestations: ['GET', 'POST'],
   manifestation: ['PATCH', 'DELETE'],
+  'archivage-manifestation': ['POST'],
   competitions: ['GET', 'POST'],
   competition: ['PATCH', 'DELETE'],
   fichiers: ['GET'],
@@ -353,7 +357,11 @@ async function traiterSession(
     return gererEpreuves(route, requete, env, club, authentifie.compte);
   }
 
-  if (route.route === 'manifestations' || route.route === 'manifestation') {
+  if (
+    route.route === 'manifestations' ||
+    route.route === 'manifestation' ||
+    route.route === 'archivage-manifestation'
+  ) {
     // US-023 : tout compte du club au mot de passe définitif (administrateur ou organisateur).
     if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
     return gererManifestations(route, requete, env, club, authentifie.compte);
@@ -572,12 +580,20 @@ async function gererComptes(
  * doit partir de la version courante ; une manifestation ne se supprime que vide.
  */
 async function gererManifestations(
-  route: Extract<RouteSession, { route: 'manifestations' | 'manifestation' }>,
+  route: Extract<RouteSession, { route: 'manifestations' | 'manifestation' | 'archivage-manifestation' }>,
   requete: Request,
   env: Env,
   club: DurableObjectStub<Club>,
   compte: CompteStocke,
 ): Promise<Response> {
+  // US-033 : archiver ou désarchiver une manifestation et ses compétitions, d'un seul geste (tout organisateur).
+  if (route.route === 'archivage-manifestation') {
+    const demande = analyserDemandeArchivageManifestation(await lireJson(requete));
+    if (!demande.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
+    const resultat = await club.archiverManifestation(route.id, demande.demande.archivee, compte.nom);
+    if (!resultat.ok) return refuserSession(404, resultat.erreur);
+    return Response.json(resultat satisfies ReponseArchivageManifestation);
+  }
   if (route.route === 'manifestations' && requete.method === 'GET') {
     return Response.json({ ok: true, manifestations: await club.listerManifestations() });
   }

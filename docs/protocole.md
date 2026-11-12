@@ -58,6 +58,7 @@
 | `POST /epreuves/<epreuveId>/evenements` | Envoyer un lot d'événements du PC pilote (§11) |
 | `GET /manifestations`, `POST /manifestations` | Lister et créer les manifestations du club (§12, US-023) |
 | `PATCH /manifestations/<id>`, `DELETE /manifestations/<id>` | Modifier ou supprimer une manifestation (§12) |
+| `POST /manifestations/<id>/archivage` | Archiver ou désarchiver une manifestation et ses compétitions (§12, US-033) |
 | `GET /competitions`, `POST /competitions` | Lister et créer les compétitions du club (§13, US-024) |
 | `PATCH /competitions/<id>`, `DELETE /competitions/<id>` | Modifier ou supprimer une compétition (§13, §14) |
 | `GET /fichiers` | Description des fichiers joints du club (§15, US-030) |
@@ -449,6 +450,8 @@ Aucun autre champ n'est accepté.
 | `PiloteChange` | `{ ancienAppareil, nouvelAppareil }` | Un autre PC a pris la main (US-029). |
 | `ParametresModifies` | un ou plusieurs paramètres de l’épreuve | Modifie les droits et l'affichage des noms (US-032), seulement ce qui a changé. |
 | `PublicationModifiee` | `{ publiee }` | Publie ou dépublie l’épreuve (US-031). |
+| `EpreuveArchivee` | `{}` | Archive l’épreuve (US-033) : statut « Archivée », lecture seule. |
+| `EpreuveDesarchivee` | `{}` | Désarchive l’épreuve (US-033) : elle retrouve son statut d’avant, non publiée. |
 
 **Données de `EpreuveCreee`** (US-025) : exactement ces champs ; un champ facultatif non saisi vaut `null`.
 Le format a été complété par US-025 sans changer de version : rien n'était encore en production.
@@ -550,8 +553,20 @@ l'en-tête. La projection met `epreuve.publiee` à la valeur donnée ; une épre
 - `EPREUVE_ARCHIVEE` : une épreuve archivée ne se publie ni ne se dépublie (elle est déjà retirée de la page publique) ;
 - `AUCUNE_MODIFICATION` : la publication est déjà celle demandée (rien n'est écrit).
 
-On publie ou dépublie à tout moment, quel que soit le statut, sauf archivée. Désarchiver (US-033) ne republie pas : la
-publication reste ce qu'elle était. Le format est inchangé (`VERSION_JOURNAL` reste à 1).
+On publie ou dépublie à tout moment, quel que soit le statut, sauf archivée. Désarchiver (US-033) la rend non publiée.
+Le format est inchangé (`VERSION_JOURNAL` reste à 1).
+
+**Données de `EpreuveArchivee` et `EpreuveDesarchivee`** (US-033) : exactement `{}` (aucun champ). La projection porte
+`epreuve.avantArchivage` (le statut d'avant l'archivage, ou `null`) : `EpreuveArchivee` passe le statut à `archivee` et
+le garde dans `avantArchivage` ; `EpreuveDesarchivee` rend ce statut, remet `publiee` à `false` et `avantArchivage` à
+`null`. Règles du domaine (`verifierEvenement`) :
+
+- `EPREUVE_INCONNUE` : aucune `EpreuveCreee` avant ;
+- `EPREUVE_ARCHIVEE` (archiver) : l'épreuve est déjà archivée ;
+- `EPREUVE_EN_COURS` (archiver) : une épreuve « En cours » ne s'archive pas ;
+- `EPREUVE_NON_ARCHIVEE` (désarchiver) : l'épreuve n'est pas archivée.
+
+Le format est inchangé (`VERSION_JOURNAL` reste à 1) : un journal écrit avant US-033 n'a pas besoin de migration.
 
 ### Règles d'écriture et de lecture
 
@@ -715,7 +730,21 @@ puis + 1 à chaque modification), `modifieeLe` (millisecondes) et `modifieePar` 
 `409 MODIFIEE_ENTRE_TEMPS` avec la version courante (`{"ok":false,"erreur":…,"manifestation":{…}}`, l'application
 affiche « Modifié entre-temps par <modifieePar> : rechargez ») et `409 MANIFESTATION_NON_VIDE` : une épreuve de
 l'index du club s'y rattache (par une de ses compétitions, `rattachement.competitionId`), ou si elle contient une compétition (§13), la suppression est
-refusée ; une manifestation non vide s'archivera (US-033).
+refusée ; une manifestation non vide s'archive (US-033, ci-dessous).
+
+### Archiver une manifestation : `POST /manifestations/<id>/archivage` (US-033)
+
+Corps exact : `{"archivee": true | false}`. Le serveur archive (ou désarchive) la manifestation **et toutes ses compétitions**
+en une seule écriture : chacune porte `archivee`, voit sa `version` augmenter et sa `modifieePar` mise à jour. Les
+modifications ordinaires (`PATCH`) conservent l'indicateur. Tout compte du club au mot de passe définitif peut le faire
+(administrateur ou organisateur).
+
+- `200 {"ok":true,"manifestation":{…},"competitions":[…]}` : la manifestation et ses compétitions, telles qu'elles sont désormais ;
+- `400 DEMANDE_INVALIDE`, `404 MANIFESTATION_INCONNUE`, `405` pour toute autre méthode que `POST`.
+
+`archivee` est absent d'une manifestation ou d'une compétition qui ne l'a jamais été. Le serveur ne décide rien pour les
+épreuves : l'application écrit d'abord `EpreuveArchivee` dans le journal de chacune (ce PC doit toutes les piloter, sauf
+les archivées, ADR-0001), puis appelle cette route. Hors ligne, l'archivage d'une manifestation est refusé.
 
 ### Côté application
 

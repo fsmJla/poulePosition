@@ -41,6 +41,7 @@ describe('journal d’une épreuve (ADR-0001)', () => {
         creeeLe: 1_800_000_000_001,
         creeePar: 'orga@club.fr',
         statut: 'preparation',
+        avantArchivage: null,
         publiee: false,
         formule: { touchesPoules: 5, touchesTableau: 15, touchesRelais: null, matchTroisieme: false },
         parametres: parametresParDefaut(),
@@ -434,5 +435,67 @@ describe('publication d’une épreuve (US-031)', () => {
     const publiee = projeter([evenement(1), evenement(2, publication(true))]);
     const modifiee = appliquer(publiee, evenement(3, { type: 'EpreuveModifiee', donnees: { nom: 'Autre' } }));
     expect(modifiee.epreuve?.publiee).toBe(true);
+  });
+});
+
+describe('archivage d’une épreuve (US-033)', () => {
+  const archivage: Proposition = { type: 'EpreuveArchivee', donnees: {} };
+  const desarchivage: Proposition = { type: 'EpreuveDesarchivee', donnees: {} };
+  const publication: Proposition = { type: 'PublicationModifiee', donnees: { publiee: true } };
+  const creee = () => projeter([evenement(1)]);
+  const enStatut = (statut: 'preparation' | 'enCours' | 'terminee' | 'archivee') => {
+    const p = creee();
+    return { ...p, epreuve: { ...p.epreuve!, statut } };
+  };
+
+  it('CA-1 : archiver passe l’épreuve au statut « Archivée » et fait avancer le journal', () => {
+    const archivee = projeter([evenement(1), evenement(2, archivage)]);
+    expect(archivee.epreuve?.statut).toBe('archivee');
+    expect(archivee.epreuve?.avantArchivage).toBe('preparation');
+    expect(archivee.dernierSeq).toBe(2);
+    expect(archivee.anomalie).toBeNull();
+  });
+
+  it('CA-1 : une épreuve archivée est en lecture seule (modification, publication, déjà archivée)', () => {
+    const archivee = projeter([evenement(1), evenement(2, archivage)]);
+    expect(verifierEvenement(archivee, publication)).toBe('EPREUVE_ARCHIVEE');
+    expect(verifierEvenement(archivee, { type: 'EpreuveModifiee', donnees: { nom: 'Autre' } })).toBe(
+      'EPREUVE_ARCHIVEE',
+    );
+    expect(verifierEvenement(archivee, archivage)).toBe('EPREUVE_ARCHIVEE');
+  });
+
+  it('CA-2 : une épreuve en cours ne s’archive pas', () => {
+    expect(verifierEvenement(enStatut('enCours'), archivage)).toBe('EPREUVE_EN_COURS');
+    expect(verifierEvenement(enStatut('terminee'), archivage)).toBeNull();
+    expect(verifierEvenement(enStatut('preparation'), archivage)).toBeNull();
+  });
+
+  it('CA-3 : désarchiver rend le statut d’avant l’archivage, non publiée', () => {
+    const terminee = enStatut('terminee');
+    const archivee = appliquer(terminee, evenement(2, archivage));
+    expect(archivee.epreuve?.avantArchivage).toBe('terminee');
+    const rendue = appliquer(archivee, evenement(3, desarchivage));
+    expect(rendue.epreuve).toMatchObject({ statut: 'terminee', avantArchivage: null, publiee: false });
+    const publiee = appliquer(creee(), evenement(2, publication));
+    const roundTrip = appliquer(appliquer(publiee, evenement(3, archivage)), evenement(4, desarchivage));
+    expect(roundTrip.epreuve).toMatchObject({ statut: 'preparation', publiee: false });
+  });
+
+  it('CA-3 : on ne désarchive qu’une épreuve archivée', () => {
+    expect(verifierEvenement(creee(), desarchivage)).toBe('EPREUVE_NON_ARCHIVEE');
+    expect(verifierEvenement(enStatut('archivee'), desarchivage)).toBeNull();
+  });
+
+  it('une épreuve inconnue ne s’archive ni ne se désarchive', () => {
+    expect(verifierEvenement(projectionVide(), archivage)).toBe('EPREUVE_INCONNUE');
+    expect(verifierEvenement(projectionVide(), desarchivage)).toBe('EPREUVE_INCONNUE');
+    expect(appliquer(projectionVide(), evenement(1, archivage)).epreuve).toBeNull();
+    expect(appliquer(projectionVide(), evenement(1, desarchivage)).epreuve).toBeNull();
+  });
+
+  it('une archive sans statut mémorisé (journal incomplet) revient en préparation', () => {
+    const p = enStatut('archivee');
+    expect(appliquer(p, evenement(2, desarchivage)).epreuve?.statut).toBe('preparation');
   });
 });

@@ -15,6 +15,7 @@
     type EpreuveListee,
   } from '@poule-position/domaine';
   import type { Competition, Manifestation } from '@poule-position/protocole';
+  import ConfirmationArchivage from '../composants/ConfirmationArchivage.svelte';
   import ConfirmationSuppression from '../composants/ConfirmationSuppression.svelte';
   import FichiersJoints from '../composants/FichiersJoints.svelte';
   import FilAriane from '../composants/FilAriane.svelte';
@@ -26,6 +27,7 @@
   import Onglets, { type Onglet } from '../composants/Onglets.svelte';
   import PlanManifestation from './PlanManifestation.svelte';
   import type { Accueil, DonneesAccueil } from '../lib/accueil';
+  import { verdictManifestation } from '../lib/archivage';
   import type { ClientCompetitions } from '../lib/competitions';
   import { filSousAccueil } from '../lib/fil-ariane';
   import type { ClientFichiers } from '../lib/fichiers';
@@ -94,7 +96,13 @@
   let versionFormulaire = $state(0);
   let confirmation: (ContenuASupprimer & { type: 'manifestation' | 'competition' }) | null = $state(null);
 
-  const liste = $derived(donnees ? construireListe(donnees, { afficherArchives: false }) : null);
+  /** US-033 : la page d'une manifestation archivée reste ouverte, avec ses épreuves archivées. */
+  const archivee = $derived(estArchivee());
+
+  function estArchivee() {
+    return donnees?.manifestations.find(({ id }) => id === manifestationId)?.archivee === true;
+  }
+  const liste = $derived(donnees ? construireListe(donnees, { afficherArchives: archivee }) : null);
   const noeud = $derived(
     liste?.manifestations.find(({ manifestation }) => manifestation.id === manifestationId) ?? null,
   );
@@ -149,6 +157,41 @@
 
   const motifHorsLigne = $derived(horsLigne ? t.necessiteInternet : undefined);
 
+  /** US-033 : archiver ou désarchiver une manifestation (et ses compétitions, et ses épreuves) ; la confirmation est une fenêtre. */
+  const ta = textes.archivage;
+  let archivageDemande: { id: string; nom: string; archiver: boolean } | null = $state(null);
+  /** Remarque après un désarchivage : des épreuves restent archivées, leur PC pilote doit les rendre. */
+  let remarqueArchivage: string | null = $state(null);
+
+  async function validerArchivage() {
+    const demande = archivageDemande;
+    if (!demande || !donnees) return { ok: false as const, message: ta.erreurs.ERREUR_INATTENDUE };
+    const verdict = verdictManifestation(
+      await accueil.archiverManifestation(demande.id, demande.archiver, donnees, {
+        clubId: session.compte.clubId,
+        auteur: session.compte.email,
+      }),
+    );
+    if (verdict.ok) await charger();
+    return verdict;
+  }
+
+  function fermerArchivage(_fait: boolean, remarque?: string) {
+    archivageDemande = null;
+    remarqueArchivage = remarque ?? null;
+  }
+
+  /** US-033 : l'action « Archiver » ou « Désarchiver » d'une manifestation ; grisée hors ligne (le serveur la stocke). */
+  function actionArchiver(id: string, nom: string, archivee: boolean, motifHorsLigne: string | undefined): ActionMenu {
+    return {
+      libelle: archivee ? ta.desarchiver : ta.archiver,
+      icone: 'archive',
+      detail: archivee ? ta.detailDesarchiverManifestation : ta.detailArchiverManifestation,
+      surChoix: () => (archivageDemande = { id, nom, archiver: !archivee }),
+      indisponible: motifHorsLigne === undefined ? undefined : ta.horsLigne,
+    };
+  }
+
   /**
    * US-057 : l'unique « Supprimer… », dernier du menu, en rouge ; absent sans le droit, grisé hors ligne ou si une épreuve
    * est en cours.
@@ -182,6 +225,7 @@
       chemin: cheminNouvelleCompetition(manifestationId),
       indisponible: motifHorsLigne,
     },
+    actionArchiver(manifestationId, manifestation?.nom ?? '', archivee, motifHorsLigne),
     ...actionSupprimer(manifestationId),
   ];
 
@@ -278,6 +322,18 @@
   />
 {/if}
 
+{#if archivageDemande}
+  <ConfirmationArchivage
+    titre={archivageDemande.archiver
+      ? ta.titreArchiverManifestation(archivageDemande.nom)
+      : ta.titreDesarchiverManifestation(archivageDemande.nom)}
+    detail={archivageDemande.archiver ? ta.detailArchiverManifestation : ta.detailDesarchiverManifestation}
+    action={archivageDemande.archiver ? ta.archiver : ta.desarchiver}
+    valider={validerArchivage}
+    fermer={fermerArchivage}
+  />
+{/if}
+
 <main>
   {#if donnees === null}
     <p role="status">{t.chargement}</p>
@@ -296,7 +352,9 @@
 
     <header class="bandeau">
       <div class="identite">
-        <h1>{manifestation.nom}</h1>
+        <h1>
+          {manifestation.nom}{#if archivee}<span class="etiquette-archivee">{te.statuts.archivee}</span>{/if}
+        </h1>
         <p class="infos">
           <span class="info"
             ><Icone nom="calendrier" taille={18} />{t.dates(manifestation.debut, manifestation.fin)}</span
@@ -317,6 +375,7 @@
       </div>
     </header>
     {#if horsLigne}<small class="hors-ligne">{t.necessiteInternet}</small>{/if}
+    {#if remarqueArchivage}<p class="remarque" role="status">{remarqueArchivage}</p>{/if}
 
     {#key versionFormulaire}
       {#if formulaire && 'manifestation' in formulaire && manifestationComplete}
@@ -447,6 +506,25 @@
 
   .hors-ligne {
     color: var(--texte-discret);
+  }
+
+  .remarque {
+    margin: 0;
+    padding: 0.6rem 0.75rem;
+    border-left: 4px solid var(--etat-attente);
+    background: var(--surface);
+  }
+
+  .etiquette-archivee {
+    margin-left: 0.6rem;
+    padding: 0.1rem 0.6rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--texte-discret);
+    font-family: var(--police-texte, inherit);
+    font-size: 0.85rem;
+    font-weight: 600;
+    vertical-align: middle;
   }
 
   .panneau {

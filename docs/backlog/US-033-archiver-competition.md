@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-044, US-026
-- **Branche / PR :** —
+- **Branche / PR :** us/US-033-archiver / —
 
 ## Récit
 
@@ -63,6 +63,12 @@ exige le réseau (bouton grisé), car la manifestation est stockée sur le serve
 
 - Le statut « Archivée » s'ajoute aux statuts « En préparation », « En cours », « Terminée ».
 - La purge à 1 an court depuis la clôture de l'épreuve (ADR-0014), qu'elle soit archivée ou non.
+- Aucune planche ne montre l'archivage : « Archiver » / « Désarchiver » sont des entrées du menu « ⋯ » (épreuve, manifestation, ligne de l'accueil), avec l'icône « Archive » ajoutée au vocabulaire, et la confirmation est une fenêtre modale comme celle de la suppression.
+- Une manifestation archivée garde sa page ouverte (étiquette « Archivée ») ; ses actions de modification restent permises. Elle disparaît de la liste par défaut, comme ses compétitions et ses épreuves, et « Afficher les archives » la remontre.
+- « Tout cocher » de la sélection n'inclut pas une manifestation ou une compétition archivée que la liste masque.
+- L'archivage d'une manifestation écrit d'abord les journaux des épreuves, puis appelle le serveur : s'il est injoignable, les épreuves restent archivées et relancer reprend sans rien réécrire. Désarchiver suit l'ordre inverse.
+- Désarchiver une manifestation désarchive aussi les épreuves qu'on avait archivées une à une ; celles dont un autre PC est le pilote restent archivées, l'application nomme celles-là.
+- « En cours » ne se provoque pas encore par l'interface (E5) : CA-2 est couvert par les tests unitaires du journal, de l'orchestration et des messages.
 
 ## Questions bloquantes
 
@@ -78,4 +84,7 @@ exige le réseau (bouton grisé), car la manifestation est stockée sur le serve
 | Date | Événement |
 |---|---|
 | 2026-10-28 | Créée |
+| 2026-11-12 | Plan validé par l’utilisateur ; passée à En cours |
+| 2026-11-12 | Implémentée : événements `EpreuveArchivee` et `EpreuveDesarchivee`, route `POST /manifestations/<id>/archivage`, indicateur `archivee` des manifestations et compétitions, actions du menu « ⋯ » ; passée à En revue |
+| 2026-11-12 | Recette OK sur https://poule-position-git-us-us-033-archiver-fsmjlas-projects.vercel.app (menu et confirmation vérifiés à la main ; refus, hors ligne et aller-retour couverts par les E2E verts sur cette preview) ; passée à Terminée |
 | 2026-11-08 | Amendée : vocabulaire inversé (la compétition regroupe, l'épreuve se tire ; US-044), au niveau de l'épreuve comme avant (décision du 2026-11-08) ; dépend de US-044 |

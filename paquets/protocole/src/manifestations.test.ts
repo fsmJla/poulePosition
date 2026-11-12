@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  analyserDemandeArchivageManifestation,
   analyserDemandeManifestation,
   analyserDemandeModificationManifestation,
+  analyserReponseArchivageManifestation,
   analyserReponseManifestation,
   analyserReponseManifestations,
   type Manifestation,
@@ -82,5 +84,66 @@ describe('réponses du serveur (US-023)', () => {
       ok: false,
       erreur: 'MANIFESTATION_NON_VIDE',
     });
+  });
+});
+
+describe('archivage d’une manifestation (US-033)', () => {
+  const competition = {
+    id: '1c7e2f3a-0b1d-4e5f-8a9b-0c1d2e3f4a5b',
+    manifestationId: manifestation.id,
+    nom: 'Sabre',
+    arme: 'sabre',
+    commentaire: null,
+    version: 2,
+    modifieeLe: 1_800_000_000_000,
+    modifieePar: 'Orga',
+    archivee: true,
+  };
+
+  it('CA-4 : lit la demande d’archivage ou de désarchivage, rien d’autre', () => {
+    expect(analyserDemandeArchivageManifestation({ archivee: true })).toEqual({
+      ok: true,
+      demande: { archivee: true },
+    });
+    expect(analyserDemandeArchivageManifestation({ archivee: false })).toEqual({
+      ok: true,
+      demande: { archivee: false },
+    });
+    for (const brut of [{}, { archivee: 'oui' }, { archivee: true, autre: 1 }, null, []]) {
+      expect(analyserDemandeArchivageManifestation(brut)).toEqual({ ok: false });
+    }
+  });
+
+  it('CA-4 : une manifestation archivée est lue avec son indicateur, un indicateur mal typé est refusé', () => {
+    expect(analyserReponseManifestation({ ok: true, manifestation: { ...manifestation, archivee: true } })).toEqual({
+      ok: true,
+      manifestation: { ...manifestation, archivee: true },
+    });
+    expect(analyserReponseManifestation({ ok: true, manifestation: { ...manifestation, archivee: 'oui' } })).toEqual({
+      ok: false,
+      erreur: 'REPONSE_INVALIDE',
+    });
+  });
+
+  it('CA-4 : lit la réponse de l’archivage (manifestation et compétitions), ou son refus', () => {
+    const archivee = { ...manifestation, archivee: true };
+    expect(
+      analyserReponseArchivageManifestation({ ok: true, manifestation: archivee, competitions: [competition] }),
+    ).toEqual({
+      ok: true,
+      manifestation: archivee,
+      competitions: [competition],
+    });
+    expect(analyserReponseArchivageManifestation({ ok: false, erreur: 'MANIFESTATION_INCONNUE' })).toEqual({
+      ok: false,
+      erreur: 'MANIFESTATION_INCONNUE',
+    });
+    for (const brut of [
+      { ok: true, manifestation: archivee },
+      { ok: true, manifestation: archivee, competitions: [{ ...competition, archivee: 3 }] },
+      { ok: true, manifestation: { nom: 1 }, competitions: [] },
+    ]) {
+      expect(analyserReponseArchivageManifestation(brut)).toEqual({ ok: false, erreur: 'REPONSE_INVALIDE' });
+    }
   });
 });

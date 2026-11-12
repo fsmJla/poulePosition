@@ -41,6 +41,7 @@ export type Route =
   | { route: 'reinitialisation'; id: string }
   | { route: 'manifestations' }
   | { route: 'manifestation'; id: string }
+  | { route: 'archivage-manifestation'; id: string }
   | { route: 'competitions' }
   | { route: 'competition'; id: string }
   | { route: 'epreuves' }
@@ -75,6 +76,8 @@ export function analyserChemin(chemin: string): Route | null {
   if (chemin === '/manifestations') return { route: 'manifestations' };
   const manifestation = /^\/manifestations\/([^/]+)$/.exec(chemin)?.[1];
   if (manifestation) return MOTIF_EPREUVE.test(manifestation) ? { route: 'manifestation', id: manifestation } : null;
+  const archivage = /^\/manifestations\/([^/]+)\/archivage$/.exec(chemin)?.[1];
+  if (archivage) return MOTIF_EPREUVE.test(archivage) ? { route: 'archivage-manifestation', id: archivage } : null;
   if (chemin === '/competitions') return { route: 'competitions' };
   const competition = /^\/competitions\/([^/]+)$/.exec(chemin)?.[1];
   if (competition) return MOTIF_EPREUVE.test(competition) ? { route: 'competition', id: competition } : null;

@@ -10,6 +10,8 @@ export interface ManifestationListee {
   debut: string;
   fin: string;
   lieu: string | null;
+  /** US-033 : archivée avec ses compétitions et ses épreuves ; absent vaut faux. */
+  archivee?: boolean;
 }
 
 export interface CompetitionListee {
@@ -18,6 +20,8 @@ export interface CompetitionListee {
   manifestationId: string | null;
   nom: string;
   arme: Arme | null;
+  /** US-033 : archivée avec sa manifestation ; absent vaut faux. */
+  archivee?: boolean;
 }
 
 /** Une épreuve de la liste : son résumé, si ce PC en est le pilote, et si le serveur l'a déjà reçue. */
@@ -84,13 +88,16 @@ export function construireListe(
 ): ListeClub {
   const visibles = epreuves.filter(({ statut }) => afficherArchives || statut !== 'archivee');
   const noeuds = new Map<string, NoeudManifestation>(
-    [...manifestations]
+    manifestations
+      .filter(({ archivee }) => afficherArchives || !archivee)
       .sort((a, b) => comparer(a.debut, b.debut) || comparer(a.nom, b.nom) || comparer(a.id, b.id))
       .map((manifestation) => [manifestation.id, { manifestation, competitions: [] }]),
   );
   const noeudsCompetitions = new Map<string, NoeudCompetition>();
   const competitionsSeules: NoeudCompetition[] = [];
-  for (const competition of [...competitions].sort((a, b) => comparer(a.nom, b.nom) || comparer(a.id, b.id))) {
+  for (const competition of competitions
+    .filter(({ archivee }) => afficherArchives || !archivee)
+    .sort((a, b) => comparer(a.nom, b.nom) || comparer(a.id, b.id))) {
     const noeud = { competition, epreuves: [] };
     // Une compétition dont la manifestation est inconnue de cet appareil reste visible : au premier niveau.
     const parent = competition.manifestationId === null ? undefined : noeuds.get(competition.manifestationId);

@@ -102,6 +102,21 @@ describe('sélection pour la suppression par lot (US-043)', () => {
     expect(toutCocherListe(donnees, true).has('c2')).toBe(true);
   });
 
+  it('US-033 CA-1 : « tout cocher » ne prend pas une manifestation ou une compétition archivée que la liste masque', () => {
+    const archivees: DonneesListe = {
+      ...donnees,
+      manifestations: donnees.manifestations.map((m) => (m.id === 'M3' ? { ...m, archivee: true } : m)),
+      competitions: donnees.competitions.map((c) => (c.id === 'E4' ? { ...c, archivee: true } : c)),
+    };
+    const sansArchives = toutCocherListe(archivees, false);
+    expect(sansArchives.has('M3')).toBe(false);
+    expect(sansArchives.has('E4')).toBe(false);
+    expect(sansArchives.has('M1')).toBe(true);
+    const avecArchives = toutCocherListe(archivees, true);
+    expect(avecArchives.has('M3')).toBe(true);
+    expect(avecArchives.has('E4')).toBe(true);
+  });
+
   it('US-043 CA-3 : une épreuve en cours et ses parents ne sont jamais cochés par « tout cocher »', () => {
     const tout = toutCocherListe(donnees, true);
     for (const id of ['c5', 'E3', 'M2']) expect(tout.has(id)).toBe(false);

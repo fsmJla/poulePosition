@@ -249,3 +249,90 @@ describe('manifestations du club (US-023)', () => {
     expect((await appeler('PUT', '/manifestations', jetonAdmin, saisie())).status).toBe(405);
   });
 });
+
+describe('archivage d’une manifestation (US-033)', () => {
+  async function competitionDe(manifestationId: string, nom = 'Sabre') {
+    const reponse = await appeler('POST', '/competitions', jetonAdmin, {
+      manifestationId,
+      nom,
+      arme: 'sabre',
+      commentaire: null,
+    });
+    expect(reponse.status).toBe(201);
+    return ((await reponse.json()) as { competition: { id: string } }).competition.id;
+  }
+  const archiver = (id: string, archivee: boolean, jeton = jetonOrganisateur) =>
+    appeler('POST', `/manifestations/${id}/archivage`, jeton, { archivee });
+  type Competition = { id: string; archivee?: boolean; version: number };
+  async function competitions(): Promise<Competition[]> {
+    const reponse = await appeler('GET', '/competitions', jetonOrganisateur);
+    return ((await reponse.json()) as { competitions: Competition[] }).competitions;
+  }
+
+  it('CA-4 : archiver la manifestation archive ses compétitions, pas celles des autres ; désarchiver rend le tout', async () => {
+    const { id } = await creer({ nom: 'À archiver' });
+    const autre = await creer({ nom: 'Autre' });
+    const [c1, c2, c3] = [await competitionDe(id), await competitionDe(id, 'Épée'), await competitionDe(autre.id)];
+
+    const reponse = await archiver(id, true);
+    expect(reponse.status).toBe(200);
+    const corps = (await reponse.json()) as { manifestation: Manifestation; competitions: Competition[] };
+    expect(corps.manifestation).toMatchObject({ id, archivee: true, version: 2, modifieePar: 'Orga' });
+    expect(corps.competitions.map(({ id: cid }) => cid).sort()).toEqual([c1, c2].sort());
+    expect(corps.competitions.every(({ archivee }) => archivee === true)).toBe(true);
+    expect((await lister()).find((m) => m.id === id)?.archivee).toBe(true);
+    const apres = await competitions();
+    expect(apres.find((c) => c.id === c1)?.archivee).toBe(true);
+    expect(apres.find((c) => c.id === c3)?.archivee).toBeUndefined();
+    expect((await lister()).find((m) => m.id === autre.id)?.archivee).toBeUndefined();
+
+    expect((await archiver(id, false)).status).toBe(200);
+    expect((await lister()).find((m) => m.id === id)?.archivee).toBe(false);
+    expect((await competitions()).find((c) => c.id === c2)?.archivee).toBe(false);
+  });
+
+  it('CA-6 : un organisateur non administrateur archive et désarchive', async () => {
+    const { id } = await creer();
+    expect((await archiver(id, true, jetonOrganisateur)).status).toBe(200);
+    expect((await archiver(id, false, jetonOrganisateur)).status).toBe(200);
+  });
+
+  it('CA-4 : modifier la manifestation ou une compétition archivée garde l’archivage', async () => {
+    const { id } = await creer();
+    const competitionId = await competitionDe(id);
+    await archiver(id, true);
+    const modification = await appeler('PATCH', `/manifestations/${id}`, jetonAdmin, {
+      ...saisie({ lieu: 'Ailleurs' }),
+      version: 2,
+    });
+    expect(modification.status).toBe(200);
+    expect(((await modification.json()) as { manifestation: Manifestation }).manifestation).toMatchObject({
+      lieu: 'Ailleurs',
+      archivee: true,
+    });
+    const courante = (await competitions()).find((c) => c.id === competitionId)!;
+    const patch = await appeler('PATCH', `/competitions/${competitionId}`, jetonAdmin, {
+      nom: 'Renommée',
+      arme: 'sabre',
+      commentaire: null,
+      version: courante.version,
+    });
+    expect(patch.status).toBe(200);
+    expect((await competitions()).find((c) => c.id === competitionId)?.archivee).toBe(true);
+  });
+
+  it('cas limites : manifestation inconnue (404), corps invalide (400), session obligatoire, méthode POST seulement', async () => {
+    const inconnue = await archiver(crypto.randomUUID(), true);
+    expect(inconnue.status).toBe(404);
+    expect(await inconnue.json()).toEqual({ ok: false, erreur: 'MANIFESTATION_INCONNUE' });
+    const { id } = await creer();
+    for (const corps of [{}, { archivee: 'oui' }, { archivee: true, autre: 1 }]) {
+      const refus = await appeler('POST', `/manifestations/${id}/archivage`, jetonAdmin, corps);
+      expect(refus.status).toBe(400);
+    }
+    expect((await appeler('POST', `/manifestations/${id}/archivage`, null, { archivee: true })).status).toBe(401);
+    expect((await appeler('GET', `/manifestations/${id}/archivage`, jetonAdmin)).status).toBe(405);
+    const temporaire = await organisateur('temporaire-archivage@club.fr');
+    expect((await archiver(id, true, temporaire.jeton)).status).toBe(403);
+  });
+});

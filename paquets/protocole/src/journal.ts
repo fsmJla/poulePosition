@@ -98,6 +98,7 @@ function donneesValides(type: unknown, donnees: unknown): boolean {
     const pilote = aExactementLesChamps(donnees, ['ancienAppareil', 'nouvelAppareil']);
     return pilote !== null && Object.values(pilote).every(estTexte);
   }
+  if (type === 'EpreuveArchivee' || type === 'EpreuveDesarchivee') return aExactementLesChamps(donnees, []) !== null;
   if (type === 'PublicationModifiee') {
     const publication = aExactementLesChamps(donnees, ['publiee']);
     return publication !== null && estBooleen(publication.publiee);

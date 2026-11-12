@@ -187,3 +187,66 @@ describe('manifestations côté application (US-023)', () => {
     expect(serveur.requetes).toHaveLength(1);
   });
 });
+
+describe('archivage côté application (US-033)', () => {
+  const competition: Competition = {
+    id: 'c1',
+    manifestationId: 'm1',
+    nom: 'Sabre',
+    arme: 'sabre',
+    commentaire: null,
+    version: 2,
+    modifieeLe: 1,
+    modifieePar: 'Orga',
+    archivee: true,
+  };
+
+  it('CA-4 : archive la manifestation et ses compétitions par une seule requête', async () => {
+    const serveur = fauxServeur({
+      'POST /manifestations/m1/archivage': {
+        statut: 200,
+        corps: { ok: true, manifestation: manifestation({ archivee: true }), competitions: [competition] },
+      },
+    });
+    const resultat = await client(serveur).archiver('m1', true);
+    expect(resultat).toEqual({
+      ok: true,
+      manifestation: manifestation({ archivee: true }),
+      competitions: [competition],
+    });
+    expect(serveur.requetes.map(({ route, corps }) => [route, corps])).toEqual([
+      ['POST /manifestations/m1/archivage', { archivee: true }],
+    ]);
+  });
+
+  it('CA-4 : désarchiver envoie archivee: false', async () => {
+    const serveur = fauxServeur({
+      'POST /manifestations/m1/archivage': {
+        statut: 200,
+        corps: { ok: true, manifestation: manifestation({ archivee: false }), competitions: [] },
+      },
+    });
+    expect((await client(serveur).archiver('m1', false)).ok).toBe(true);
+    expect(serveur.requetes[0]?.corps).toEqual({ archivee: false });
+  });
+
+  it('hors ligne : sans réseau, l’archivage est refusé (HORS_LIGNE), sans requête', async () => {
+    const serveur = fauxServeur({});
+    expect(await client(serveur, { enLigne: () => false }).archiver('m1', true)).toEqual({
+      ok: false,
+      erreur: 'HORS_LIGNE',
+    });
+    expect(serveur.requetes).toEqual([]);
+    const coupe = fauxServeur({ 'POST /manifestations/m1/archivage': 'reseau' });
+    expect(await client(coupe).archiver('m1', true)).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+  });
+
+  it('cas limites : manifestation inconnue, réponse illisible', async () => {
+    const inconnue = fauxServeur({
+      'POST /manifestations/m1/archivage': { statut: 404, corps: { ok: false, erreur: 'MANIFESTATION_INCONNUE' } },
+    });
+    expect(await client(inconnue).archiver('m1', true)).toEqual({ ok: false, erreur: 'MANIFESTATION_INCONNUE' });
+    const illisible = fauxServeur({ 'POST /manifestations/m1/archivage': { statut: 200, corps: { ok: true } } });
+    expect(await client(illisible).archiver('m1', true)).toEqual({ ok: false, erreur: 'ERREUR_INATTENDUE' });
+  });
+});

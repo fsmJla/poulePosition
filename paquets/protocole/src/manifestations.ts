@@ -1,6 +1,7 @@
 // Manifestations du club (US-023, ADR-0016, docs/protocole.md §12) : stockées par le serveur dans le DO `Club`, avec un
 // numéro de version qui refuse l'écrasement d'une modification concurrente. Elles ne se modifient qu'en ligne.
 import { normaliserManifestation, validerManifestation, type DonneesManifestation } from '@poule-position/domaine';
+import { analyserCompetition, type Competition } from './competitions';
 import { CODES_ERREUR_SESSION, type CodeErreurSession, type ErreurReponse } from './session';
 import { aExactementLesChamps, estTexteOuNull } from './validation';
 
@@ -13,6 +14,8 @@ export interface Manifestation extends DonneesManifestation {
   modifieeLe: number;
   /** Nom du compte qui l'a créée ou modifiée en dernier. */
   modifieePar: string;
+  /** US-033 : archivée (avec ses compétitions) ; absent tant qu'elle ne l'a jamais été. */
+  archivee?: boolean;
 }
 
 /** Corps de `PATCH /manifestations/<id>` : tous les champs, et la version sur laquelle la modification s'appuie. */
@@ -22,6 +25,15 @@ export type ReponseManifestation =
   { ok: true; manifestation: Manifestation } | { ok: false; erreur: ErreurReponse; manifestation?: Manifestation };
 
 const CHAMPS = ['nom', 'debut', 'fin', 'lieu', 'commentaire'] as const;
+
+/** Corps de `POST /manifestations/<id>/archivage` (US-033) : archive ou désarchive la manifestation et ses compétitions. */
+export interface DemandeArchivageManifestation {
+  archivee: boolean;
+}
+
+/** Réponse de l'archivage : la manifestation et ses compétitions, telles qu'elles sont désormais. */
+export type ReponseArchivageManifestation =
+  { ok: true; manifestation: Manifestation; competitions: Competition[] } | { ok: false; erreur: ErreurReponse };
 
 function estObjet(brut: unknown): brut is Record<string, unknown> {
   return brut !== null && typeof brut === 'object' && !Array.isArray(brut);
@@ -64,9 +76,31 @@ export function analyserDemandeModificationManifestation(
   return { ok: true, demande: { ...donnees, version: objet.version } };
 }
 
+/** Corps de `POST /manifestations/<id>/archivage`. */
+export function analyserDemandeArchivageManifestation(
+  brut: unknown,
+): { ok: true; demande: DemandeArchivageManifestation } | { ok: false } {
+  const objet = aExactementLesChamps(brut, ['archivee']);
+  return objet && typeof objet.archivee === 'boolean'
+    ? { ok: true, demande: { archivee: objet.archivee } }
+    : { ok: false };
+}
+
+export function analyserReponseArchivageManifestation(brut: unknown): ReponseArchivageManifestation {
+  if (!estObjet(brut) || brut.ok !== true) return erreurDe(brut);
+  const manifestation = analyserManifestation(brut.manifestation);
+  const competitions = Array.isArray(brut.competitions) ? brut.competitions.map(analyserCompetition) : null;
+  if (!manifestation || !competitions || competitions.some((competition) => competition === null)) {
+    return { ok: false, erreur: 'REPONSE_INVALIDE' };
+  }
+  return { ok: true, manifestation, competitions: competitions as Competition[] };
+}
+
 function analyserManifestation(brut: unknown): Manifestation | null {
-  const objet = aExactementLesChamps(brut, [...CHAMPS, 'id', 'version', 'modifieeLe', 'modifieePar']);
-  if (!objet || !estDonnees(objet)) return null;
+  const base = [...CHAMPS, 'id', 'version', 'modifieeLe', 'modifieePar'];
+  const avecArchivage = estObjet(brut) && 'archivee' in brut;
+  const objet = aExactementLesChamps(brut, avecArchivage ? [...base, 'archivee'] : base);
+  if (!objet || !estDonnees(objet) || (avecArchivage && typeof objet.archivee !== 'boolean')) return null;
   const { id, version, modifieeLe, modifieePar } = objet;
   if (typeof id !== 'string' || !estVersion(version) || typeof modifieeLe !== 'number') return null;
   return typeof modifieePar === 'string' ? (objet as unknown as Manifestation) : null;

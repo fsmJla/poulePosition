@@ -8,12 +8,14 @@ import {
   type ErreursManifestation,
 } from '@poule-position/domaine';
 import {
+  analyserReponseArchivageManifestation,
   analyserReponseCompetitions,
   analyserReponseManifestation,
   analyserReponseManifestations,
   analyserReponseSuppression,
   analyserReponseSuppressionContenu,
   type ErreurReponse,
+  type Competition,
   type Manifestation,
 } from '@poule-position/protocole';
 import { DELAI_REPONSE } from './session';
@@ -186,6 +188,28 @@ export function creerClientManifestations({
       const horsDates = epreuvesHorsDates(depart.id, donnees.debut, donnees.fin, await epreuves(), competitions);
       if (horsDates.length > 0) return { ok: false, erreur: 'EPREUVES_HORS_DATES', epreuves: horsDates };
       return enregistrer('PATCH', `/manifestations/${depart.id}`, { ...donnees, version: depart.version });
+    },
+
+    /**
+     * US-033 CA-4 : archive ou désarchive la manifestation et ses compétitions, en une seule requête. Les épreuves
+     * s'archivent ailleurs, dans le journal de leur pilote. Exige le réseau.
+     */
+    async archiver(
+      id: string,
+      archivee: boolean,
+    ): Promise<
+      | { ok: true; manifestation: Manifestation; competitions: Competition[] }
+      | { ok: false; erreur: ErreurManifestations }
+    > {
+      let reponse;
+      try {
+        reponse = analyserReponseArchivageManifestation(
+          await requete('POST', `/manifestations/${id}/archivage`, { archivee }),
+        );
+      } catch {
+        return { ok: false, erreur: 'HORS_LIGNE' };
+      }
+      return reponse.ok ? reponse : { ok: false, erreur: erreurDe(reponse.erreur) };
     },
 
     /** CA-5 : supprime une manifestation vide ; le serveur refuse une manifestation non vide. */

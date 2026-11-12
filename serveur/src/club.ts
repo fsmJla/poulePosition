@@ -724,7 +724,16 @@ export class Club extends DurableObject<Env> {
     const courante = this.lireManifestation(id);
     if (!courante) return { ok: false, erreur: 'MANIFESTATION_INCONNUE' };
     if (courante.version !== version) return { ok: false, erreur: 'MODIFIEE_ENTRE_TEMPS', manifestation: courante };
-    const manifestation = { id, ...donnees, version: version + 1, modifieeLe: Date.now(), modifieePar: auteur };
+    // US-033 : l'archivage ne se perd pas à la modification des champs.
+    const archivage = courante.archivee === undefined ? {} : { archivee: courante.archivee };
+    const manifestation = {
+      id,
+      ...donnees,
+      ...archivage,
+      version: version + 1,
+      modifieeLe: Date.now(),
+      modifieePar: auteur,
+    };
     this.ctx.storage.sql.exec(
       'UPDATE manifestations SET contenu = ?, version = ?, debut = ? WHERE id = ?',
       JSON.stringify(manifestation),
@@ -734,6 +743,58 @@ export class Club extends DurableObject<Env> {
     );
     this.listeManifestations.invalider();
     return { ok: true, manifestation };
+  }
+
+  /**
+   * US-033 CA-4 : archive ou désarchive la manifestation et toutes ses compétitions, en une seule écriture. Les épreuves
+   * s'archivent dans leur journal, sur le PC pilote (ADR-0001) : le serveur ne décide rien à leur place.
+   */
+  async archiverManifestation(
+    id: string,
+    archivee: boolean,
+    auteur: string,
+  ): Promise<
+    | { ok: true; manifestation: Manifestation; competitions: Competition[] }
+    | { ok: false; erreur: 'MANIFESTATION_INCONNUE' }
+  > {
+    const courante = this.lireManifestation(id);
+    if (!courante) return { ok: false, erreur: 'MANIFESTATION_INCONNUE' };
+    const maintenant = Date.now();
+    const manifestation: Manifestation = {
+      ...courante,
+      archivee,
+      version: courante.version + 1,
+      modifieeLe: maintenant,
+      modifieePar: auteur,
+    };
+    const competitions = (await this.listerCompetitions())
+      .filter(({ manifestationId }) => manifestationId === id)
+      .map((competition) => ({
+        ...competition,
+        archivee,
+        version: competition.version + 1,
+        modifieeLe: maintenant,
+        modifieePar: auteur,
+      }));
+    this.ctx.storage.transactionSync(() => {
+      this.ctx.storage.sql.exec(
+        'UPDATE manifestations SET contenu = ?, version = ? WHERE id = ?',
+        JSON.stringify(manifestation),
+        manifestation.version,
+        id,
+      );
+      for (const competition of competitions) {
+        this.ctx.storage.sql.exec(
+          'UPDATE competitions SET contenu = ?, version = ? WHERE id = ?',
+          JSON.stringify(competition),
+          competition.version,
+          competition.id,
+        );
+      }
+    });
+    this.listeManifestations.invalider();
+    this.listeCompetitions.invalider();
+    return { ok: true, manifestation, competitions };
   }
 
   /**
@@ -841,10 +902,12 @@ export class Club extends DurableObject<Env> {
     const courante = this.lireCompetition(id);
     if (!courante) return { ok: false, erreur: 'COMPETITION_INCONNUE' };
     if (courante.version !== version) return { ok: false, erreur: 'MODIFIEE_ENTRE_TEMPS', competition: courante };
+    const archivage = courante.archivee === undefined ? {} : { archivee: courante.archivee };
     const competition = {
       id,
       manifestationId: courante.manifestationId,
       ...donnees,
+      ...archivage,
       version: version + 1,
       modifieeLe: Date.now(),
       modifieePar: auteur,
