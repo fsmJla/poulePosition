@@ -22,3 +22,4 @@ export * from './fichiers';
 export * from './publication';
 export * from './prochaine-etape';
 export * from './rattachement';
+export * from './recherche';
