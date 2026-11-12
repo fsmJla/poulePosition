@@ -190,6 +190,8 @@ test('US-026 CA-1 et CA-2 : manifestation repliable avec sa compétition et ses 
 test('US-026 CA-4 : ouvrir une épreuve pilotée ici (modifiable), ou celle d’un autre PC (lecture seule)', async ({
   page,
 }) => {
+  // US-061 : sous 40 rem, le fil d'Ariane de l'épreuve laisse place à la flèche de retour ; ce test lit le fil.
+  await page.setViewportSize({ width: 1100, height: 900 });
   const locale = nomUnique();
   const distante = nomUnique();
   await seConnecter(page);
@@ -272,6 +274,8 @@ test('US-026 hors ligne : la liste vient de la copie et des épreuves locales, c
   page,
   context,
 }) => {
+  // US-061 : sous 40 rem, le fil d'Ariane de l'épreuve laisse place à la flèche de retour ; ce test lit le fil.
+  await page.setViewportSize({ width: 1100, height: 900 });
   const locale = nomUnique();
   await seConnecter(page);
   await creerEpreuve(page, locale);

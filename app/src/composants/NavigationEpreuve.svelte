@@ -117,7 +117,8 @@
     background: var(--bordure);
   }
 
-  /* Écran étroit : la navigation passe au-dessus du contenu, en liste défilante (la barre d'onglets est US-061). */
+  /* Écran étroit : la navigation passe au-dessus du contenu, en liste défilante ; sous 40 rem, la barre d'onglets du bas
+     (BarreOngletsEpreuve, US-061) la remplace. */
   @media (max-width: 52rem) {
     nav {
       border-radius: var(--rayon);
@@ -138,6 +139,12 @@
       width: 1px;
       height: auto;
       margin: 0.5rem 0.25rem;
+    }
+  }
+
+  @media (max-width: 39.99rem) {
+    nav {
+      display: none;
     }
   }
 </style>

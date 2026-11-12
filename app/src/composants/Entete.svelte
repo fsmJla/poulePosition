@@ -143,6 +143,8 @@
 
   .marque {
     display: flex;
+    align-items: center;
+    min-height: 44px;
     min-width: 0;
     border-radius: 6px;
     color: var(--sur-marque);

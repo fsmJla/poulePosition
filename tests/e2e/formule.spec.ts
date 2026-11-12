@@ -4,6 +4,10 @@ import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
 
 /** Nom unique, pour reconnaître l’épreuve de ce test parmi celles du club. */
+// US-061 : sous 40 rem, la page d'une épreuve a une barre d'onglets en bas (smartphone-organisateur.spec.ts) ; ce fichier
+// teste les réglages depuis la navigation latérale.
+test.use({ viewport: { width: 1100, height: 900 } });
+
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 
 const MOTIF_PAGE_EPREUVE = /\/epreuves\/[0-9a-f-]{36}$/;

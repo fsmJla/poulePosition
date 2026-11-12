@@ -729,4 +729,17 @@
   .message {
     border-left: 4px solid var(--etat-erreur);
   }
+
+  /* Smartphone (US-061 CA-6) : toute commande de la page fait au moins 44 × 44 px. */
+  @media (max-width: 39.99rem) {
+    button,
+    .bouton-contour {
+      min-height: 44px;
+    }
+
+    .crayon {
+      width: 44px;
+      height: 44px;
+    }
+  }
 </style>

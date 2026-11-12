@@ -60,6 +60,8 @@ test('US-045 CA-1 : sans compétition choisie, la création est impossible et le
 test('US-025 CA-2 et US-045 CA-4 : créer une compétition seule mène à la page de son épreuve, en préparation, non publiée, pilotée par ce PC', async ({
   page,
 }) => {
+  // US-061 : sous 40 rem, la page d'une épreuve a une flèche de retour et une barre d'onglets au lieu du fil et de la navigation.
+  await page.setViewportSize({ width: 1100, height: 900 });
   const nom = nomUnique();
   await seConnecter(page);
   await ouvrirFormulaire(page);
