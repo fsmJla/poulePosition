@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-055, US-033
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-063-filtrer-la-liste-du-club` / PR à ouvrir
 
 ## Récit
 
@@ -80,6 +80,10 @@ E2E réseau coupé.
 - Le classement se fait par le **statut** des épreuves (glossaire), pas par la date : une épreuve passée restée « En
   préparation » demeure sous « À venir et en cours ».
 - Le classement est une fonction pure du domaine.
+- Écarts avec la planche (déclarés) : le nombre d'épreuves est dans la pilule après le libellé (CA-6), absent des planches ; sur smartphone la rangée
+  défile horizontalement (la planche 5 coupe à « Archivées ») pour que « Toutes » reste atteignable ; le bouton « Sélectionner » garde sa place d'US-059.
+- Cas limites retenus : une épreuve à rattacher non archivée reste visible sous chaque filtre ; « Tout sélectionner » ne prend que les éléments montrés par le filtre
+  (la suppression d'un parent coché emporte tout son contenu, comme avant, et la confirmation le dit) ; le filtre est gardé en mémoire le temps de la visite (`lib/repli.ts`).
 - Tant qu'US-033 n'est pas livrée, cette US ne démarre pas (dépendance), pour ne pas livrer un filtre « Archivées »
   incomplet.
 
@@ -100,3 +104,4 @@ E2E réseau coupé.
 | 2026-11-11 | Créée d'après la maquette « IHM de l'organisateur » ; ajout retenu par l'utilisateur le 2026-11-11 |
 | 2026-11-11 | Ajout du critère « Conforme à la planche » (capture de référence, comparaison en recette) |
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
+| 2026-11-13 | Implémentation : `paquets/domaine/src/filtres-liste.ts`, pilules de l'accueil, remplacement de « Afficher les archives » ; tests unitaires et E2E (`tests/e2e/filtres-liste.spec.ts`) |

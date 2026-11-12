@@ -13,6 +13,8 @@ async function ouvrirAccueil(page: Page) {
   const planche = await peupler(page);
   await page.goto('/organisateur');
   await expect(carte(page, planche)).toBeVisible({ timeout: 20_000 });
+  // US-063 : les décomptes de la planche comptent toutes les épreuves, terminées comprises.
+  await page.getByRole('button', { name: /^Toutes/ }).click();
   return planche;
 }
 

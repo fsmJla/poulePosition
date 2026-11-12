@@ -218,19 +218,19 @@ test('US-026 CA-4 : ouvrir une épreuve pilotée ici (modifiable), ou celle d’
   await expect(page.getByText(/Lecture seule : cette épreuve est pilotée par un autre PC/)).toBeVisible();
 });
 
-test('US-026 CA-3 : une épreuve archivée est masquée, « Afficher les archives » la montre', async ({ page }) => {
+test('US-026 CA-3 : une épreuve archivée est masquée, le filtre « Archivées » (US-063) la montre', async ({ page }) => {
   const archivee = nomUnique();
   await seConnecter(page);
   await exposerServeur(page);
   await injecter(page, archivee, 'archivee');
 
   await page.goto('/organisateur');
-  await expect(page.getByText(/épreuves? archivées? masquées?/)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('button', { name: /^Archivées/ })).toBeVisible({ timeout: 20_000 });
   await expect(epreuveDe(page, archivee)).toHaveCount(0);
-  await page.getByLabel('Afficher les archives').check();
+  await page.getByRole('button', { name: /^Archivées/ }).click();
   await expect(epreuveDe(page, archivee)).toBeVisible();
   await expect(epreuveDe(page, archivee)).toContainText('Archivée');
-  await page.getByLabel('Afficher les archives').uncheck();
+  await page.getByRole('button', { name: /^À venir et en cours/ }).click();
   await expect(epreuveDe(page, archivee)).toHaveCount(0);
 });
 
