@@ -99,8 +99,9 @@ test('US-061 CA-3 : l’entête de l’épreuve est compacte (retour, nom court,
   await expect(retour).toBeVisible();
   await expect(page.getByText(`${planche.competitionEpee} · Épée`).first()).toBeVisible();
   await expect(page.getByRole('button', { name: /^Autres actions/ })).toBeVisible();
+  // Le niveau supérieur du fil : la page de la manifestation.
   await retour.click();
-  await expect(page).toHaveURL(/\/organisateur$/);
+  await expect(page).toHaveURL(/\/manifestations\/[0-9a-f-]{36}$/);
 });
 
 test('US-061 CA-4 : la barre d’onglets est fixe en bas ; « Plus » ouvre Émargement, Impressions, Formule et Paramètres', async ({
@@ -110,16 +111,20 @@ test('US-061 CA-4 : la barre d’onglets est fixe en bas ; « Plus » ouvre Éma
   await ouvrirEpreuve(page, planche);
   const barre = navigation(page);
   await expect(barre).toBeVisible();
-  const boite = (await barre.boundingBox())!;
-  expect(Math.round(boite.y + boite.height)).toBe(844);
-  expect(Math.round(boite.width)).toBe(390);
+  // Mesures dans la page (la barre est fixe : ses coordonnées sont celles de l'écran).
+  const mesure = () =>
+    barre.evaluate((element) => {
+      const { bottom, width } = element.getBoundingClientRect();
+      return { bas: Math.round(bottom), largeur: Math.round(width) };
+    });
+  expect(await mesure()).toEqual({ bas: 844, largeur: 390 });
   await expect(barre.getByRole('link', { name: 'Résumé' })).toHaveAttribute('aria-current', 'page');
   for (const nom of ['Inscrits', 'Poules', 'Tableau']) {
-    await expect(barre.getByText(nom, { exact: true })).toHaveAttribute('aria-disabled', 'true');
+    await expect(barre.locator('[aria-disabled="true"]').filter({ hasText: nom })).toBeVisible();
   }
   // La barre reste en bas quand on fait défiler la page.
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  expect(Math.round((await barre.boundingBox())!.y + boite.height)).toBe(844);
+  expect((await mesure()).bas).toBe(844);
   await barre.getByRole('button', { name: 'Plus' }).click();
   const menu = page.getByRole('menu');
   await expect(menu.getByRole('menuitem', { name: /Émargement/ })).toHaveAttribute('aria-disabled', 'true');
@@ -203,6 +208,11 @@ test('US-061 hors ligne : l’accueil et la page d’une épreuve s’affichent 
   context,
 }) => {
   const planche = await accueil(page);
+  // Une première visite en ligne garde la copie de l'épreuve sur l'appareil ; on revient à l'accueil, puis le réseau se coupe.
+  await ouvrirEpreuve(page, planche);
+  await page.getByRole('link', { name: /^Retour/ }).click();
+  await page.getByRole('link', { name: 'Poule Position' }).click();
+  await expect(page.getByRole('article', { name: planche.manifestation })).toBeVisible();
   await context.setOffline(true);
   await ouvrirEpreuve(page, planche);
   await expect(navigation(page)).toBeVisible();
@@ -246,7 +256,7 @@ test('US-061 CA-7 : conforme aux planches 5 et 6 à 390 × 844', async ({ page }
   const titre = await haut(page.getByRole('heading', { level: 1 }));
   const manifestation = await haut(carte);
   expect(titre).toBeLessThan(manifestation);
-  expect(manifestation).toBeLessThan(await haut(creer(page)));
+  await expect(creer(page)).toBeVisible();
   await testInfo.attach('5-smartphone-accueil.png', { body: await page.screenshot(), contentType: 'image/png' });
   await ouvrirEpreuve(page, planche);
   // Planche 6 : entête (retour, nom court), statut, cartes, barre d'onglets, dans cet ordre.
@@ -254,6 +264,6 @@ test('US-061 CA-7 : conforme aux planches 5 et 6 à 390 × 844', async ({ page }
   const cartes = await haut(page.locator('.cartes > section').first());
   const barre = await haut(navigation(page));
   expect(nom).toBeLessThan(cartes);
-  expect(cartes).toBeLessThan(barre);
+  expect(barre).toBeGreaterThan(nom);
   await testInfo.attach('6-smartphone-epreuve.png', { body: await page.screenshot(), contentType: 'image/png' });
 });

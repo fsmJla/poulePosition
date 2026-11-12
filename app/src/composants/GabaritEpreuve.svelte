@@ -8,7 +8,9 @@
   import type { IdEtapeEpreuve } from '../lib/etapes-epreuve';
   import { filDeLEpreuve, type HierarchieClub } from '../lib/fil-ariane';
   import { textes } from '../lib/textes';
+  import BarreOngletsEpreuve from './BarreOngletsEpreuve.svelte';
   import FilAriane from './FilAriane.svelte';
+  import Icone from './Icone.svelte';
   import NavigationEpreuve from './NavigationEpreuve.svelte';
 
   interface Proprietes {
@@ -28,6 +30,7 @@
 
   const t = textes.epreuves;
   const tp = textes.pageEpreuve;
+  const tb = tp.barre;
 
   let hierarchie = $state<HierarchieClub | null>(null);
   onMount(() => {
@@ -38,6 +41,9 @@
   });
 
   const niveaux = $derived(filDeLEpreuve(hierarchie, epreuve, suite, textes.entete.accueil));
+  /** US-061 CA-3 : sur smartphone, la flèche de retour mène au niveau supérieur du fil d'Ariane. */
+  const parent = $derived(niveaux.filter((niveau) => niveau.chemin).at(-1));
+  const CHEMIN_ACCUEIL = '/organisateur';
   const competition = $derived(hierarchie?.competitions.find(({ id }) => id === epreuve.rattachement?.competitionId));
   const couleur = $derived(
     hierarchie && competition
@@ -62,6 +68,17 @@
     <NavigationEpreuve epreuveId={epreuve.id} {courante} {naviguer} />
     <div class="colonne">
       <header>
+        <!-- US-061 CA-3 : flèche de retour, visible seulement sur smartphone (le fil d'Ariane y est masqué). -->
+        <a
+          class="retour"
+          href={parent?.chemin ?? CHEMIN_ACCUEIL}
+          aria-label={tb.retour(parent?.libelle ?? textes.entete.accueil)}
+          onclick={(evenement) => {
+            if (evenement.button !== 0 || evenement.ctrlKey || evenement.metaKey || evenement.shiftKey) return;
+            evenement.preventDefault();
+            naviguer(parent?.chemin ?? CHEMIN_ACCUEIL);
+          }}><Icone nom="flecheGauche" taille={24} /></a
+        >
         <div class="identite">
           <div class="titre">
             <h1>{nomCourt}</h1>
@@ -85,6 +102,7 @@
     </div>
   </div>
 </main>
+<BarreOngletsEpreuve epreuveId={epreuve.id} {courante} {naviguer} />
 
 <style>
   main {
@@ -171,6 +189,7 @@
 
   .colonne {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
     min-width: 0;
   }
@@ -181,6 +200,10 @@
     min-width: 0;
   }
 
+  .retour {
+    display: none;
+  }
+
   @media (max-width: 52rem) {
     .corps {
       grid-template-columns: minmax(0, 1fr);
@@ -188,6 +211,82 @@
 
     header {
       flex-direction: column;
+    }
+  }
+
+  /* Smartphone (US-061, planche 6, sous 40 rem) : l'entête devient un bandeau de la couleur de la marque (retour, nom court,
+     compétition et arme, actions), sans fil d'Ariane ; la barre d'onglets du bas remplace la navigation. */
+  @media (max-width: 39.99rem) {
+    main {
+      width: 100%;
+      gap: 0;
+      padding: 0 0 calc(5.5rem + env(safe-area-inset-bottom));
+    }
+
+    main :global(.fil) {
+      display: none;
+    }
+
+    .corps,
+    .colonne {
+      gap: 0;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem max(0.75rem, env(safe-area-inset-right)) 0.5rem max(0.25rem, env(safe-area-inset-left));
+      background: var(--marque);
+      color: var(--sur-marque);
+    }
+
+    .retour {
+      display: inline-flex;
+      flex: none;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      color: var(--sur-marque);
+    }
+
+    .identite {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .titre {
+      flex-wrap: nowrap;
+      gap: 0.5rem;
+    }
+
+    h1 {
+      overflow: hidden;
+      font-size: 1.25rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sous-titre {
+      flex-wrap: nowrap;
+      margin: 0.15rem 0 0;
+      overflow: hidden;
+      color: var(--sur-marque);
+      font-size: 0.85rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .actions {
+      flex: none;
+    }
+
+    .contenu {
+      padding: 1rem max(1rem, env(safe-area-inset-right)) 0 max(1rem, env(safe-area-inset-left));
     }
   }
 </style>

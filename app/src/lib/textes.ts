@@ -1079,6 +1079,8 @@ export const textes = {
     },
     navigation: 'Étapes de l’épreuve',
     aVenir: 'À venir',
+    /** US-061 : barre d'onglets du smartphone (libellé court d'« Inscriptions », onglet « Plus »). */
+    barre: { inscriptions: 'Inscrits', plus: 'Plus', retour: (niveau: string) => `Retour à ${niveau}` },
     etapes: {
       resume: 'Résumé',
       inscriptions: 'Inscriptions',
