@@ -259,12 +259,14 @@
       min-width: 0;
     }
 
+    /* La pastille de statut passe sous le nom quand il manque de place : le nom n'est tronqué que s'il dépasse la ligne. */
     .titre {
-      flex-wrap: nowrap;
-      gap: 0.5rem;
+      flex-wrap: wrap;
+      gap: 0.15rem 0.5rem;
     }
 
     h1 {
+      max-width: 100%;
       overflow: hidden;
       font-size: 1.25rem;
       text-overflow: ellipsis;

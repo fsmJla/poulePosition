@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-054, US-055, US-058
-- **Branche / PR :** us/US-061-organisateur-sur-smartphone / PR à ouvrir
+- **Branche / PR :** us/US-061-organisateur-sur-smartphone / PR #90
 
 ## Récit
 
@@ -114,3 +114,4 @@ par un E2E réseau coupé au format 390 px.
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
 | 2026-11-12 | Plan validé par l’utilisateur (libellé court « Inscrits », bascule à 40 rem) ; passée à En cours |
 | 2026-11-12 | Implémentée ; passée à En revue (CA-1 à CA-7 et cas limites : `tests/e2e/smartphone-organisateur.spec.ts`) |
+| 2026-11-12 | Recette OK sur https://poule-position-git-us-us-061-organisate-5dda74-fsmjlas-projects.vercel.app (écran de 390 × 844 simulé par une iframe, le navigateur de recette ne descendant pas à cette largeur : accueil, « Créer » flottant, entête compact, barre d'onglets, menu « Plus », cartes empilées, cibles de 44 px, thème sombre ; la pastille de statut passe sous le nom long) |
