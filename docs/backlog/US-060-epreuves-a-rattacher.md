@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-055, US-059, US-045
-- **Branche / PR :** us/US-060-epreuves-a-rattacher / PR à ouvrir
+- **Branche / PR :** us/US-060-epreuves-a-rattacher / PR #89
 
 ## Récit
 
@@ -103,3 +103,4 @@ grisé (écart déclaré avec le texte initial). Testé par un E2E réseau coup�
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
 | 2026-11-12 | Plan validé par l’utilisateur ; passée à En cours |
 | 2026-11-12 | Implémentée ; passée à En revue (CA-1 à CA-6 : `tests/e2e/rattachement.spec.ts`, `rattachement-lot.test.ts`, `rattachement.test.ts`) |
+| 2026-11-12 | Recette OK sur https://poule-position-git-us-us-060-epreuves-a-669062-fsmjlas-projects.vercel.app (alerte, liste, mode sélection et barre « Rattacher à une compétition » vérifiés sans rien rattacher sur les données de la preview ; rattachement lui-même couvert par les E2E locaux) |
