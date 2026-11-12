@@ -92,11 +92,14 @@ test('US-058 CA-3 : l’entête montre le fil, le nom court, le statut, la comp�
   await expect(page.getByText(`${competition} · Sabre · mercredi 11 novembre 2026`)).toBeVisible();
   // Le carré de couleur de la compétition précède son nom.
   await expect(page.locator('.sous-titre .carre')).toBeVisible();
-  const titre = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
-  const modifier = (await page.getByRole('link', { name: 'Modifier', exact: true }).boundingBox())!;
-  const menu = (await page.getByRole('button', { name: `Autres actions pour ${epreuve}` }).boundingBox())!;
-  expect(modifier.x).toBeGreaterThan(titre.x + titre.width);
-  expect(menu.x).toBeGreaterThan(modifier.x);
+  // Sur grand écran, « Modifier » et « ⋯ » sont à droite du titre ; sur écran étroit, l'entête passe sur deux lignes.
+  if ((page.viewportSize()?.width ?? 0) >= 900) {
+    const titre = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
+    const modifier = (await page.getByRole('link', { name: 'Modifier', exact: true }).boundingBox())!;
+    const menu = (await page.getByRole('button', { name: `Autres actions pour ${epreuve}` }).boundingBox())!;
+    expect(modifier.x).toBeGreaterThan(titre.x + titre.width);
+    expect(menu.x).toBeGreaterThan(modifier.x);
+  }
 });
 
 test('US-058 CA-4 : le Résumé présente les cartes Pilote, Publication, Informations, Formule, Affiche et feuille de route', async ({
