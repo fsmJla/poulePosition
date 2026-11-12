@@ -271,56 +271,6 @@
   );
 </script>
 
-{#snippet actionsEntete()}
-  {#if epreuve}
-    <!-- US-027 CA-3 : seul le PC pilote modifie ; ailleurs l’épreuve reste en lecture seule. -->
-    {#if pilote && ecriture && epreuve.statut !== 'archivee'}
-      <a
-        class="bouton-contour"
-        href={cheminModificationEpreuve(epreuveId)}
-        onclick={(e) => suivre(e, cheminModificationEpreuve(epreuveId))}
-      >
-        <Icone nom="crayon" />{t.modifier}
-      </a>
-    {/if}
-    <!-- US-058 CA-6 : actions secondaires de l'épreuve ; Archiver (US-033) et Exporter (US-034) s'y ajouteront. -->
-    <MenuActions
-      id="menu-epreuve"
-      nom={epreuve.nom}
-      {naviguer}
-      actions={[
-        ...(epreuve.rattachement
-          ? [
-              {
-                libelle: tpe.dupliquer,
-                icone: 'plus' as const,
-                detail: tpe.dupliquerDetail,
-                chemin: cheminDupliquerEpreuve({ ...epreuve, rattachement: epreuve.rattachement }),
-              },
-            ]
-          : []),
-        // US-057 : l'unique « Supprimer… », dernier du menu ; la confirmation (nom à saisir) s'ouvre sous la page.
-        ...(session.compte.role === 'administrateur'
-          ? [
-              {
-                libelle: tsu.action,
-                icone: 'corbeille' as const,
-                detail: tsu.sousTitre({ type: 'epreuve', competitions: 0, epreuves: 0 }),
-                destructive: true,
-                surChoix: () => (etapeSuppression = 'confirmation'),
-                indisponible: !enLigne
-                  ? tsu.horsLigne
-                  : droitSuppression && !droitSuppression.ok
-                    ? tsu.enCours
-                    : undefined,
-              },
-            ]
-          : []),
-      ]}
-    />
-  {/if}
-{/snippet}
-
 {#if !chargee}
   <main>
     <p role="status">{t.chargement}</p>
@@ -331,7 +281,56 @@
     <Lien chemin={CHEMINS.organisateur} {naviguer}>{t.retour}</Lien>
   </main>
 {:else}
-  <GabaritEpreuve {accueil} {epreuve} courante="resume" {naviguer} actions={actionsEntete}>
+  <GabaritEpreuve {accueil} {epreuve} courante="resume" {naviguer}>
+    {#snippet actions()}
+      {#if epreuve}
+        <!-- US-027 CA-3 : seul le PC pilote modifie ; ailleurs l’épreuve reste en lecture seule. -->
+        {#if pilote && ecriture && epreuve.statut !== 'archivee'}
+          <a
+            class="bouton-contour"
+            href={cheminModificationEpreuve(epreuveId)}
+            onclick={(e) => suivre(e, cheminModificationEpreuve(epreuveId))}
+          >
+            <Icone nom="crayon" />{t.modifier}
+          </a>
+        {/if}
+        <!-- US-058 CA-6 : actions secondaires de l'épreuve ; Archiver (US-033) et Exporter (US-034) s'y ajouteront. -->
+        <MenuActions
+          id="menu-epreuve"
+          nom={epreuve.nom}
+          {naviguer}
+          actions={[
+            ...(epreuve.rattachement
+              ? [
+                  {
+                    libelle: tpe.dupliquer,
+                    icone: 'plus' as const,
+                    detail: tpe.dupliquerDetail,
+                    chemin: cheminDupliquerEpreuve({ ...epreuve, rattachement: epreuve.rattachement }),
+                  },
+                ]
+              : []),
+            // US-057 : l'unique « Supprimer… », dernier du menu ; la confirmation (nom à saisir) s'ouvre sous la page.
+            ...(session.compte.role === 'administrateur'
+              ? [
+                  {
+                    libelle: tsu.action,
+                    icone: 'corbeille' as const,
+                    detail: tsu.sousTitre({ type: 'epreuve', competitions: 0, epreuves: 0 }),
+                    destructive: true,
+                    surChoix: () => (etapeSuppression = 'confirmation'),
+                    indisponible: !enLigne
+                      ? tsu.horsLigne
+                      : droitSuppression && !droitSuppression.ok
+                        ? tsu.enCours
+                        : undefined,
+                  },
+                ]
+              : []),
+          ]}
+        />
+      {/if}
+    {/snippet}
     <div class="cartes">
       <!-- US-029 : pilote, mains prises par un autre PC, modifications écartées et prise de main. -->
       <section class="carte" aria-label={tpe.cartes.pilote}>
