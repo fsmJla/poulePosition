@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-054, US-055
 - **Branche / PR :** us/US-062-recherche / —
 
@@ -97,3 +97,4 @@ locales) : elle fonctionne à l'identique hors ligne et n'envoie aucune requête
 | 2026-11-11 | Hypothèses validées par l'utilisateur |
 | 2026-11-12 | Plan validé par l’utilisateur ; passée à En cours |
 | 2026-11-12 | Implémentée (domaine `recherche.ts`, composant `RechercheEntete`) ; passée à En revue |
+| 2026-11-12 | Recette OK sur https://poule-position-git-us-us-062-recherche-fsmjlas-projects.vercel.app (champ à 1360 px, loupe et barre à 390 px, clavier, aucun résultat) ; passée à Terminée |
