@@ -34,7 +34,7 @@ test('US-055 CA-1 : la manifestation forme une carte avec dates, lieu, décompte
   await expect(c.getByRole('link', { name: `Voir le plan de ${planche.manifestation}` })).toHaveText('Plan');
   await expect(c.getByRole('button', { name: `Autres actions pour ${planche.manifestation}` })).toBeVisible();
   await c.getByRole('link', { name: `Voir le plan de ${planche.manifestation}` }).click();
-  await expect(page).toHaveURL(/\/manifestations\/[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(/\/manifestations\/[0-9a-f-]{36}\/plan$/);
 });
 
 test('US-055 CA-2 : les compétitions sont des lignes repliables, état conservé pendant la visite', async ({ page }) => {
