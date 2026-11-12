@@ -65,12 +65,12 @@
         <span class="pastille {epreuve.statut}">{t.statuts[epreuve.statut]}</span>
       </div>
       <p class="sous-titre">
-        {#if competition}
-          <span class="carre" style="--couleur: var(--plan-{couleur})" aria-hidden="true"></span>
-          {competition.nom} ·
-        {/if}
-        {t.armes[epreuve.arme]}{#if epreuve.date}
-          · {t.dateLongue(epreuve.date)}{/if}
+        {#if competition}<span class="carre" style="--couleur: var(--plan-{couleur})" aria-hidden="true"></span>{/if}
+        <span
+          >{[competition?.nom, t.armes[epreuve.arme], epreuve.date ? t.dateLongue(epreuve.date) : null]
+            .filter(Boolean)
+            .join(' · ')}</span
+        >
       </p>
     </div>
     {#if actions}<div class="actions">{@render actions()}</div>{/if}
