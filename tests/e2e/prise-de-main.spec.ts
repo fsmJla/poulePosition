@@ -150,7 +150,9 @@ test('US-029 hors ligne : « Prendre la main » est grisé sans réseau', async 
   try {
     await contexte.setOffline(true);
     await expect(autre.getByRole('button', { name: 'Prendre la main', exact: true })).toBeDisabled();
-    await expect(autre.getByText('Nécessite une connexion internet')).toBeVisible();
+    await expect(
+      autre.getByRole('region', { name: 'Pilote' }).getByText('Nécessite une connexion internet'),
+    ).toBeVisible();
     await contexte.setOffline(false);
     await expect(autre.getByRole('button', { name: 'Prendre la main', exact: true })).toBeEnabled();
   } finally {

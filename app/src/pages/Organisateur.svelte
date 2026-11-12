@@ -25,6 +25,7 @@
   } from '@poule-position/domaine';
   import type { SessionAppareil } from '../lib/stockage';
   import ConfirmationSuppression from '../composants/ConfirmationSuppression.svelte';
+  import BoutonIcone from '../composants/BoutonIcone.svelte';
   import Icone from '../composants/Icone.svelte';
   import IconesEtat from '../composants/IconesEtat.svelte';
   import LegendeIcones from '../composants/LegendeIcones.svelte';
@@ -152,6 +153,8 @@
   const ts = t.suppression;
   const administrateur = $derived(session.compte.role === 'administrateur');
   const cochees = new SvelteSet<string>();
+  /** US-059 : les cases n'existent que dans le mode sélection, qui ne survit pas à un changement de page. */
+  let modeSelection = $state(false);
   let etapeSerie: 'aucune' | 'confirmation' | 'encours' = $state('aucune');
   let saisieSerie = $state('');
   let progression: { faites: number; total: number } | null = $state(null);
@@ -173,11 +176,34 @@
     else cochees.delete(id);
   }
 
-  /** CA-3 : « Tout cocher » prend ce que la liste montre et qui est supprimable ; si une sélection existe, elle se vide. */
+  /** US-059 : tout ce que la liste montre et qui est supprimable (les archives masquées n'en font pas partie). */
+  const toutSelectionnable = $derived(donnees ? toutCocherListe(donnees, afficherArchives) : new Set<string>());
+  const toutEstSelectionne = $derived(
+    toutSelectionnable.size > 0 && [...toutSelectionnable].every((id) => cochees.has(id)),
+  );
+
+  /** « Tout sélectionner » prend ce que la liste montre et qui est supprimable ; quand tout l'est déjà, il vide la sélection. */
   function basculerTout() {
-    const nouvelle = cochees.size > 0 || !donnees ? new Set<string>() : toutCocherListe(donnees, afficherArchives);
+    const nouvelle = toutEstSelectionne ? new Set<string>() : toutSelectionnable;
     cochees.clear();
     for (const id of nouvelle) cochees.add(id);
+  }
+
+  /** US-059 CA-1 : « Sélectionner » ouvre le mode ; CA-5 : la croix et Échap le ferment et abandonnent la sélection. */
+  function entrerDansLeMode() {
+    modeSelection = true;
+  }
+  function quitterLeMode() {
+    modeSelection = false;
+    cochees.clear();
+    etapeSerie = 'aucune';
+    saisieSerie = '';
+  }
+
+  /** Hypothèse : en mode sélection, un clic sur une ligne coche sa case (si elle peut l'être) au lieu d'ouvrir l'élément. */
+  function basculerLigne(id: string) {
+    if (!analyse || enCours.has(id) || analyse.verrouillees.has(id) || horsLigne || etapeSerie === 'encours') return;
+    basculer(id, !cochees.has(id));
   }
 
   /** CA-4 à CA-6 : supprime le plan élément par élément, puis relit la liste une seule fois. */
@@ -193,9 +219,10 @@
       (faites, total) => (progression = { faites, total }),
     );
     compteRendu = compte;
-    // CA-6 : ce qui n'a pas été supprimé reste coché, pour relancer.
+    // CA-6 : ce qui n'a pas été supprimé reste coché, pour relancer. US-059 CA-4 : si tout l'est, le mode se ferme.
     cochees.clear();
     for (const { element } of compte.restants) cochees.add(element.id);
+    if (compte.restants.length === 0) modeSelection = false;
     progression = null;
     saisieSerie = '';
     etapeSerie = 'aucune';
@@ -207,19 +234,26 @@
       horsLigne = !navigator.onLine;
       void charger();
     };
+    // US-059 CA-5 : Échap quitte le mode (sauf si un menu ou une fenêtre l'a déjà pris, ou pendant une série).
+    const surTouche = (evenement: KeyboardEvent) => {
+      if (evenement.key !== 'Escape' || evenement.defaultPrevented) return;
+      if (modeSelection && etapeSerie !== 'encours' && !confirmation) quitterLeMode();
+    };
     window.addEventListener('online', surReseau);
     window.addEventListener('offline', surReseau);
+    window.addEventListener('keydown', surTouche);
     void charger();
     return () => {
       window.removeEventListener('online', surReseau);
       window.removeEventListener('offline', surReseau);
+      window.removeEventListener('keydown', surTouche);
     };
   });
 </script>
 
 {#snippet caseSelection(id: string, libelle: string, motifEnCours: string)}
-  <!-- CA-1 : une case par élément, sauf pour un organisateur (CA-7) ; CA-2 : couverte par un parent coché, elle est cochée et verrouillée. -->
-  {#if administrateur && analyse}
+  <!-- US-059 CA-2 : une case par élément, seulement en mode sélection et pour un administrateur ; US-043 CA-2 : couverte par un parent coché, elle est cochée et verrouillée. -->
+  {#if administrateur && modeSelection && analyse}
     {@const parent = analyse.verrouillees.get(id)}
     <input
       type="checkbox"
@@ -236,7 +270,7 @@
 <!-- US-055 CA-3 et CA-4 : la ligne entière est le lien vers l'épreuve ; son nom court, son jour, sa pastille de statut et
      ses deux icônes d'état. Le nom complet reste le nom accessible du lien. -->
 {#snippet epreuve(entree: EpreuveListee, nomAffiche: string)}
-  <li class="epreuve">
+  <li class="epreuve" class:cochee={cochees.has(entree.id) || analyse?.verrouillees.has(entree.id)}>
     {@render caseSelection(entree.id, ts.cocher(entree.nom), ts.enCours)}
     <a
       class="ligne-epreuve"
@@ -245,7 +279,8 @@
       onclick={(evenement) => {
         if (evenement.button !== 0 || evenement.ctrlKey || evenement.metaKey || evenement.shiftKey) return;
         evenement.preventDefault();
-        naviguer(cheminEpreuve(entree.id));
+        if (modeSelection) basculerLigne(entree.id);
+        else naviguer(cheminEpreuve(entree.id));
       }}
     >
       <span class="nom-epreuve">{nomAffiche}</span>
@@ -271,7 +306,7 @@
         class="bascule"
         aria-expanded={ouverte}
         aria-controls="epreuves-{competition.id}"
-        onclick={() => basculerRepli(competition.id, parDefaut)}
+        onclick={() => (modeSelection ? basculerLigne(competition.id) : basculerRepli(competition.id, parDefaut))}
       >
         <span class="carre" aria-hidden="true"></span>
         <span class="nom-competition">{competition.nom}</span>
@@ -313,8 +348,46 @@
   />
 {/if}
 
+<!-- US-059 CA-2 : barre d'actions du mode sélection, sous l'entête (planche 4). -->
+{#if administrateur && modeSelection && analyse}
+  <div class="barre" role="toolbar" aria-label={ts.barre}>
+    <div class="barre-interieur">
+      <BoutonIcone icone="croix" nom={ts.quitter} onclick={quitterLeMode} />
+      <span class="compteur" role="status"
+        >{seulementEpreuves ? ts.selection(analyse.decompte.epreuves) : ts.selectionMixte(analyse.decompte)}</span
+      >
+      {#if liste && liste.archivesMasquees > 0}<small>{ts.archivesNonSelectionnees}</small>{/if}
+      <button type="button" class="lien" onclick={basculerTout} disabled={horsLigne || etapeSerie === 'encours'}
+        >{toutEstSelectionne ? ts.toutDeselectionner : ts.toutSelectionner}</button
+      >
+      <button
+        type="button"
+        class="danger"
+        onclick={() => (etapeSerie = 'confirmation')}
+        disabled={horsLigne || plan.length === 0 || etapeSerie !== 'aucune'}
+        aria-describedby={horsLigne ? 'suppression-serie-aide' : undefined}
+        ><Icone nom="corbeille" taille={18} />{ts.bouton}</button
+      >
+      {#if horsLigne}<small id="suppression-serie-aide">{ts.horsLigne}</small>{/if}
+    </div>
+  </div>
+{/if}
+
 <main>
-  <h1>{t.titre}</h1>
+  <div class="titre-ligne">
+    <h1>{t.titre}</h1>
+    <!-- US-059 CA-1 et CA-6 : réservé aux administrateurs ; hors ligne, grisé avec son motif. -->
+    {#if administrateur && !modeSelection && liste && !liste.vide}
+      <button
+        type="button"
+        class="secondaire"
+        onclick={entrerDansLeMode}
+        disabled={horsLigne}
+        aria-describedby={horsLigne ? 'selection-aide' : undefined}>{ts.selectionner}</button
+      >
+      {#if horsLigne}<small id="selection-aide">{ts.horsLigne}</small>{/if}
+    {/if}
+  </div>
 
   <section class="liste" aria-label={t.titre}>
     {#if donnees === null || liste === null}
@@ -336,30 +409,6 @@
           </label>
           {#if liste.archivesMasquees > 0}<small>{t.archivesMasquees(liste.archivesMasquees)}</small>{/if}
         </div>
-
-        <!-- US-040 et US-043 : sélection et suppression par lot, réservées aux administrateurs. -->
-        {#if administrateur && analyse}
-          <div class="selection">
-            <span role="status"
-              >{seulementEpreuves ? ts.selection(analyse.decompte.epreuves) : ts.selectionMixte(analyse.decompte)}</span
-            >
-            <button
-              type="button"
-              class="secondaire"
-              onclick={basculerTout}
-              disabled={horsLigne || etapeSerie === 'encours'}
-              >{cochees.size > 0 ? ts.toutDecocher : ts.toutCocher}</button
-            >
-            <button
-              type="button"
-              class="danger"
-              onclick={() => (etapeSerie = 'confirmation')}
-              disabled={horsLigne || plan.length === 0 || etapeSerie !== 'aucune'}
-              aria-describedby={horsLigne ? 'suppression-serie-aide' : undefined}>{ts.bouton}</button
-            >
-            {#if horsLigne}<small id="suppression-serie-aide">{ts.horsLigne}</small>{/if}
-          </div>
-        {/if}
 
         <!-- CA-4 : un seul message pour toute la sélection, avec le décompte par type et les éléments cochés directement. -->
         {#if etapeSerie !== 'aucune' && analyse}
@@ -460,7 +509,13 @@
               </button>
               <div class="identite">
                 <p class="titre-carte">
-                  <Lien chemin={cheminManifestation(manifestation.id)} {naviguer}>{manifestation.nom}</Lien>
+                  {#if modeSelection && administrateur}
+                    <button type="button" class="nom-selectionnable" onclick={() => basculerLigne(manifestation.id)}
+                      >{manifestation.nom}</button
+                    >
+                  {:else}
+                    <Lien chemin={cheminManifestation(manifestation.id)} {naviguer}>{manifestation.nom}</Lien>
+                  {/if}
                   {#if manifestationAujourdhui(manifestation, aujourdhui)}<span class="etiquette-jour"
                       >{t.aujourdhui}</span
                     >{/if}
@@ -504,6 +559,9 @@
           </div>
         {/each}
 
+        <!-- US-059 CA-3 : rappel de la règle des parents, tant que le mode est ouvert. -->
+        {#if administrateur && modeSelection}<p class="aide-selection">{ts.aide}</p>{/if}
+
         <!-- US-055 CA-5 : légende des quatre icônes, dès qu'il y a une épreuve. -->
         {#if liste.manifestations.some( ({ competitions }) => competitions.some(({ epreuves }) => epreuves.length > 0) ) || liste.competitionsSeules.some(({ epreuves }) => epreuves.length > 0) || liste.aRattacher.length > 0}
           <LegendeIcones />
@@ -528,6 +586,63 @@
     font-family: var(--police-titre, inherit);
     font-size: 1.9rem;
     line-height: 1.2;
+  }
+
+  .titre-ligne {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* US-059 (planche 4) : barre pleine largeur sous l'entête, fond teinté ; la croix et le compteur à gauche, les actions à droite. */
+  .barre {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    border-bottom: 1px solid var(--accent-teinte-bordure);
+    background: var(--accent-teinte);
+  }
+
+  .barre-interieur {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: center;
+    padding: 0.6rem 1.5rem;
+  }
+
+  .compteur {
+    font-weight: 600;
+  }
+
+  .barre-interieur .lien {
+    margin-left: auto;
+    padding: 0.5rem 0.25rem;
+    background: none;
+    color: var(--accent);
+  }
+
+  button.danger {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+
+  .nom-selectionnable {
+    padding: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .aide-selection {
+    margin: 0;
+    color: var(--texte-discret);
+    font-size: 0.95rem;
   }
 
   h2 {
@@ -681,6 +796,11 @@
     z-index: 1;
   }
 
+  /* Le menu « ⋯ » ouvert passe au-dessus des commandes des lignes suivantes (même niveau d'empilement sinon). */
+  .devant:focus-within {
+    z-index: 10;
+  }
+
   .carre {
     flex: none;
     width: 1rem;
@@ -718,6 +838,16 @@
     display: flex;
     gap: 0.5rem;
     align-items: center;
+  }
+
+  .case {
+    accent-color: var(--accent);
+  }
+
+  /* US-059 (planche 4) : une épreuve sélectionnée a le fond teinté. */
+  .epreuve.cochee .ligne-epreuve {
+    background: var(--accent-teinte);
+    border-color: var(--accent-teinte-bordure);
   }
 
   .ligne-epreuve {
@@ -794,7 +924,6 @@
     gap: 0.4rem;
   }
 
-  .selection,
   .boutons {
     display: flex;
     flex-wrap: wrap;
