@@ -70,6 +70,8 @@ l'ajoute ici avant de l'utiliser.
 | Nom court | Nom d'une épreuve réduit à sa catégorie et à son sexe (« M13 Dames »), employé là où la compétition est déjà affichée (US-055). Le nom complet de l'épreuve ne change pas. | `nomCourt` |
 | Étape (d'une épreuve) | Partie de la page d'une épreuve, dans l'ordre du déroulement : Résumé, Inscriptions, Émargement, Poules, Tableau, Impressions, puis Formule et Paramètres. Une étape pas encore livrée est visible, grisée, « À venir » (US-058). À ne pas confondre avec le tour de la formule ni avec les étapes de l'assistant de manifestation. | `etapesEpreuve` |
 | Prochaine étape | Bandeau du résumé d'une épreuve qui indique quoi faire ensuite et propose une seule action (US-064). | `prochaineEtape` |
+| Plan du lieu | Petite carte OpenStreetMap centrée sur l’adresse du lieu, dans le récapitulatif d’une manifestation ; absente hors ligne et sans adresse choisie (US-071). | `planDuLieu` |
+| Aperçu de document | Vignette de l’affiche ou de la feuille de route, qui s’ouvre en grand dans une fenêtre modale moyenne (US-072, US-073). | `apercuDocument` |
 | Mode sélection | État de l'accueil où des cases à cocher apparaissent, avec une barre d'actions par lot (supprimer, rattacher) ; on y entre par « Sélectionner » et on en sort par la croix ou Échap (US-059). | `modeSelection` |
 | Épreuve à rattacher | Épreuve dont la compétition a disparu (US-045 CA-7) ; signalée par une alerte sur l'accueil et rangée par « Choisir une compétition » (US-060). | `aRattacher` |
 | Écran | Affichage géant (distant ou fenêtre locale). | `ecran` |

@@ -95,6 +95,15 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-063](US-063-filtrer-la-liste.md) | Filtrer la liste du club : à venir et en cours, terminées, archivées, toutes (P2) | E2 | Terminée | US-055, US-033 |
 | [US-064](US-064-prochaine-etape.md) | Indiquer la prochaine étape d'une épreuve (P2) | E2 | Terminée | US-058, US-031 |
 | [US-065](US-065-correction-e2e-us001-pastille-serveur.md) | Corriger les E2E d'US-001 devenus faux depuis la disparition de la pastille d'état du serveur (correction) | E1 | Terminée | US-001, US-031 |
+| [US-066](US-066-correction-creer-flottant-club-vide.md) | Afficher le bouton « Créer » flottant même quand le club est vide (correction) | E2 | Prête | US-061 |
+| [US-067](US-067-theme-trois-icones-visibles.md) | Afficher en permanence les trois icônes de thème sur PC (P2) | E1 | Prête | US-052, US-054 |
+| [US-068](US-068-correction-alignement-plan-verifier.md) | Aligner les lignes du plan de l'étape « Vérifier » (correction) (P2) | E2 | Prête | US-047, US-050 |
+| [US-069](US-069-horaires-par-defaut-et-quarts-d-heure.md) | Proposer 9 h 00 par défaut et des minutes par quart d'heure pour les horaires (P2) | E2 | Prête | US-025, US-027, US-048 |
+| [US-070](US-070-rechercher-adresse-du-lieu.md) | Choisir le lieu d'une manifestation par une recherche d'adresse (P2, ADR à écrire d'abord) | E2 | Prête | US-023, US-047 |
+| [US-071](US-071-plan-du-lieu-dans-recapitulatif.md) | Afficher un plan du lieu dans le récapitulatif de la manifestation (P2) | E2 | Prête | US-070, US-047, US-056 |
+| [US-072](US-072-apercu-affiche-feuille-de-route.md) | Voir un aperçu de l'affiche et de la feuille de route sur la page Documents (P2) | E2 | Prête | US-030, US-056 |
+| [US-073](US-073-indiquer-documents-sur-la-ligne.md) | Indiquer sur la ligne qu'il y a une affiche ou une feuille de route, et l'ouvrir en aperçu (P2) | E2 | Prête | US-072, US-055, US-056 |
+| [US-074](US-074-correction-annuler-en-bouton.md) | Afficher « Annuler » comme un bouton dans les formulaires (correction) (P2) | E2 | Prête | US-024, US-027, US-048, US-054 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
@@ -112,6 +121,10 @@ US-048 → US-049 → US-047 → US-046, puis US-050 et US-051 (alignement du pl
 US-054 (socle : entête, fil d'Ariane, icônes, menu « ⋯ ») → US-055 → US-057 → US-056 → US-058 → US-064 → US-059 →
 US-060 → US-061 → US-062, puis US-063 une fois US-033 livrée. US-033, US-034 et US-035 placent leurs actions dans
 le menu « ⋯ » de l'épreuve (US-058 CA-6).
+
+**Retours de recette du 2026-11-13 (« Brain Dump »), ordre conseillé :** les corrections d'abord et indépendantes
+(US-066, US-074, US-068), puis US-067 et US-069 ; l'adresse et le plan en suite (**ADR de l'API Adresse et de Leaflet
+d'abord**, via `/adr`) : US-070 → US-071 ; les documents : US-072 → US-073.
 
 > **Maquette de référence (2026-11-11) :** toute US qui touche un écran de l'organisateur cite sa planche et respecte
 > les principes et le vocabulaire d'icônes de [`docs/maquettes/README.md`](../maquettes/README.md) ; un écart se
