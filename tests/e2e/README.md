@@ -21,6 +21,13 @@ Le quota Cloudflare du plan gratuit est partagé avec la production : tout ne se
   suppression par morceaux. Pour étiqueter un test, ajouter ` @reel` à la fin de son titre. Un test de garde
   (`outils/impact-e2e.test.ts`) vérifie le plafond et que chaque domaine en a au moins un.
 
+### Où tournent les deux niveaux (US-076)
+
+- `.github/workflows/e2e-interface.yml` : sur le runner GitHub, contre le serveur local, avec `--grep-invert @reel`.
+  Pull request : format PC, tests liés aux fichiers modifiés ; push sur `dev` ou `main` : tout, PC et smartphone.
+- En local (sans `BASE_URL`), Chromium ne résout plus `*.workers.dev`, `*.vercel.app` ni le domaine de production
+  (`playwright.config.ts`) : un test d'interface qui appellerait Cloudflare échoue au lieu d'user le quota.
+
 ### Lancer seulement ce qui est lié à vos modifications
 
 ```
