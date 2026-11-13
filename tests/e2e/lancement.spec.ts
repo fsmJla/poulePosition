@@ -32,7 +32,8 @@ test('US-001 CA-1 : npm run dev démarre l’app et le serveur local', async ({ 
 
     await page.goto('http://localhost:5280');
     await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName('Poule Position');
-    await expect(page.getByRole('status')).toHaveText('Serveur connecté');
+    // L'accueil n'affiche plus l'état de connexion : le serveur répond (sondé plus haut), et la page ne le dit pas injoignable.
+    await expect(page.getByText('Serveur injoignable')).toHaveCount(0);
   } finally {
     arreter(dev);
   }
