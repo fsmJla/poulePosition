@@ -103,7 +103,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-071](US-071-plan-du-lieu-dans-recapitulatif.md) | Afficher un plan du lieu dans le récapitulatif de la manifestation (P2) | E2 | Prête | US-070, US-047, US-056 |
 | [US-072](US-072-apercu-affiche-feuille-de-route.md) | Voir un aperçu de l'affiche et de la feuille de route sur la page Documents (P2) | E2 | Prête | US-030, US-056 |
 | [US-073](US-073-indiquer-documents-sur-la-ligne.md) | Indiquer sur la ligne qu'il y a une affiche ou une feuille de route, et l'ouvrir en aperçu (P2) | E2 | Prête | US-072, US-055, US-056 |
-| [US-074](US-074-correction-annuler-en-bouton.md) | Afficher « Annuler » comme un bouton dans les formulaires (correction) (P2) | E2 | Prête | US-024, US-027, US-048, US-054 |
+| [US-074](US-074-correction-annuler-en-bouton.md) | Afficher « Annuler » comme un bouton dans les formulaires (correction) (P2) | E2 | En cours | US-024, US-027, US-048, US-054 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 

@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** correction
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-024, US-027, US-048, US-054
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-074-annuler-en-bouton`
 
 ## Récit
 
@@ -73,3 +73,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (modification de compétition) |
+| 2026-11-13 | Implémentation démarrée (plan validé) |

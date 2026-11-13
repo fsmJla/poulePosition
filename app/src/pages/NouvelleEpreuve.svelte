@@ -22,7 +22,6 @@
     type Statut,
   } from '@poule-position/domaine';
   import type { Competition, Manifestation } from '@poule-position/protocole';
-  import Lien from '../composants/Lien.svelte';
   import {
     cadreDe,
     CATEGORIE_LIBRE,
@@ -285,6 +284,16 @@
 <main>
   <h1>{modification ? t.titreModification : t.titreNouvelle}</h1>
 
+  {#snippet boutonAnnuler()}
+    <button
+      type="button"
+      class="secondaire"
+      disabled={enCours}
+      onclick={() => naviguer(epreuveId === undefined ? (retour ?? CHEMINS.organisateur) : cheminEpreuve(epreuveId))}
+      >{t.annuler}</button
+    >
+  {/snippet}
+
   {#if !chargee}
     <p role="status">{t.chargement}</p>
   {:else if introuvable}
@@ -472,17 +481,19 @@
           }}>{t.creerQuandMeme}</button
         >
       {/if}
-      {#if !lectureSeule}
-        <button type="submit" disabled={enCours}
-          >{modification ? (enCours ? t.enregistrement : t.enregistrer) : enCours ? t.enCours : t.creer}</button
-        >
-      {/if}
+      <!-- US-074 : « Annuler » est un bouton neutre, à côté du bouton principal comme dans les autres formulaires. -->
+      <div class="boutons">
+        {#if !lectureSeule}
+          <button type="submit" disabled={enCours}
+            >{modification ? (enCours ? t.enregistrement : t.enregistrer) : enCours ? t.enCours : t.creer}</button
+          >
+        {/if}
+        {@render boutonAnnuler()}
+      </div>
     </form>
   {/if}
 
-  <Lien chemin={epreuveId === undefined ? (retour ?? CHEMINS.organisateur) : cheminEpreuve(epreuveId)} {naviguer}
-    >{t.annuler}</Lien
-  >
+  {#if !chargee || introuvable}{@render boutonAnnuler()}{/if}
 </main>
 
 <style>
@@ -592,6 +603,23 @@
     font: inherit;
     font-weight: 600;
     cursor: pointer;
+  }
+
+  .boutons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .boutons button {
+    flex: 1 1 auto;
+    min-height: 2.75rem;
+  }
+
+  button.secondaire {
+    border: 1px solid var(--bordure-champ);
+    background: var(--surface);
+    color: var(--texte);
   }
 
   button:disabled {

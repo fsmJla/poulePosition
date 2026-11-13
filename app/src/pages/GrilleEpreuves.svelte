@@ -205,8 +205,7 @@
     <p role="status">{tg.chargement}</p>
   {:else if !competition || !contexte || !proposition}
     <p class="message" role="alert">{tg.introuvable}</p>
-    <a href={CHEMINS.organisateur} onclick={(e) => (e.preventDefault(), naviguer(CHEMINS.organisateur))}>{tg.annuler}</a
-    >
+    <button type="button" class="secondaire" onclick={() => naviguer(CHEMINS.organisateur)}>{tg.annuler}</button>
   {:else}
     <!-- CA-1 : le fil d'Ariane rappelle la manifestation (si elle existe) et la compétition, avec son arme. -->
     <nav class="ariane" aria-label={tg.ariane}>
@@ -385,8 +384,8 @@
           {enCours ? tg.creation : tg.creer(proposition.epreuves.length)}
         </button>
         {#if !integree}
-          <a href={CHEMINS.organisateur} onclick={(e) => (e.preventDefault(), naviguer(CHEMINS.organisateur))}
-            >{tg.annuler}</a
+          <button type="button" class="secondaire" disabled={enCours} onclick={() => naviguer(CHEMINS.organisateur)}
+            >{tg.annuler}</button
           >
         {/if}
       </div>
@@ -603,6 +602,7 @@
 
   button.secondaire {
     padding: 0.5rem 0.8rem;
+    min-height: 2.75rem;
     border: 1px solid var(--bordure-champ);
     background: var(--surface);
     color: var(--texte);
