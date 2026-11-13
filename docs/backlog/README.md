@@ -95,7 +95,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-063](US-063-filtrer-la-liste.md) | Filtrer la liste du club : à venir et en cours, terminées, archivées, toutes (P2) | E2 | Terminée | US-055, US-033 |
 | [US-064](US-064-prochaine-etape.md) | Indiquer la prochaine étape d'une épreuve (P2) | E2 | Terminée | US-058, US-031 |
 | [US-065](US-065-correction-e2e-us001-pastille-serveur.md) | Corriger les E2E d'US-001 devenus faux depuis la disparition de la pastille d'état du serveur (correction) | E1 | Terminée | US-001, US-031 |
-| [US-066](US-066-correction-creer-flottant-club-vide.md) | Afficher le bouton « Créer » flottant même quand le club est vide (correction) | E2 | En cours | US-061 |
+| [US-066](US-066-correction-creer-flottant-club-vide.md) | Afficher le bouton « Créer » flottant même quand le club est vide (correction) | E2 | En revue | US-061 |
 | [US-067](US-067-theme-trois-icones-visibles.md) | Afficher en permanence les trois icônes de thème sur PC (P2) | E1 | Prête | US-052, US-054 |
 | [US-068](US-068-correction-alignement-plan-verifier.md) | Aligner les lignes du plan de l'étape « Vérifier » (correction) (P2) | E2 | Prête | US-047, US-050 |
 | [US-069](US-069-horaires-par-defaut-et-quarts-d-heure.md) | Proposer 9 h 00 par défaut et des minutes par quart d'heure pour les horaires (P2) | E2 | Prête | US-025, US-027, US-048 |
