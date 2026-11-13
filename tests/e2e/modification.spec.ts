@@ -119,7 +119,7 @@ test('US-027 CA-5 : enregistrer sans rien changer n’ajoute aucune modification
   await context.setOffline(false);
 });
 
-test('US-027 hors ligne : modifier réseau coupé, puis envoyer au retour du réseau', async ({ page, context }) => {
+test('US-027 hors ligne : modifier réseau coupé, puis envoyer au retour du réseau @reel', async ({ page, context }) => {
   const nouveauNom = nomUnique();
   await seConnecter(page);
   await creerEpreuve(page, nomUnique());

@@ -25,7 +25,7 @@ async function ouvrirComptes(page: Page, comptes: unknown[] = [ORGA]) {
 
 const ligne = (page: Page, nom: string) => page.getByRole('row').filter({ hasText: nom });
 
-test('US-008 CA-1 : désactivation confirmée, le compte apparaît désactivé', async ({ page }) => {
+test('US-008 CA-1 : désactivation confirmée, le compte apparaît désactivé @reel', async ({ page }) => {
   await ouvrirComptes(page);
   let envoye: unknown = null;
   await simuler(page, '/comptes/c2', 200, { ok: true, compte: { ...ORGA, actif: false } }, 'PATCH', (corps) => {
@@ -87,7 +87,7 @@ test('US-008 CA-4 : le refus du dernier administrateur est affiché', async ({ p
   await expect(ligne(page, 'Compte simulé')).toContainText('Actif');
 });
 
-test('US-008 : un administrateur qui se désactive est déconnecté aussitôt', async ({ page }) => {
+test('US-008 : un administrateur qui se désactive est déconnecté aussitôt @reel', async ({ page }) => {
   await ouvrirComptes(page, [MOI, ORGA]);
   await simuler(page, '/comptes/c1', 200, { ok: true, compte: { ...MOI, actif: false } }, 'PATCH');
   await page.getByRole('button', { name: 'Désactiver Compte simulé' }).click();

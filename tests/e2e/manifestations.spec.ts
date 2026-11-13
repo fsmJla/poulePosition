@@ -159,7 +159,10 @@ test('US-023 CA-5 : supprimer une manifestation vide, après confirmation', asyn
   await expect(page.getByText(nom)).toHaveCount(0);
 });
 
-test('US-023 cas limite : une modification partie d’une version dépassée est refusée', async ({ page, context }) => {
+test('US-023 cas limite : une modification partie d’une version dépassée est refusée @reel', async ({
+  page,
+  context,
+}) => {
   const nom = nomUnique();
   await preparer(page, nom);
   const autre = await context.newPage();

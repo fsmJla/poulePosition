@@ -4,9 +4,9 @@
 - **Fonctionnalité :** transverse (qualité et CI, ADR-0012, ADR-0023)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-037
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-075-reel-et-impact`
 
 ## Récit
 
@@ -74,3 +74,4 @@ Aucune. Non bloquant : quelle limite Cloudflare est à environ 90 % ? La répons
 | Date | Événement |
 |---|---|
 | 2026-11-13 | Créée : plan à deux niveaux (ADR-0023) après un quota Cloudflare à environ 90 % |
+| 2026-11-13 | Implémentation démarrée (plan validé) |

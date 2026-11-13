@@ -24,7 +24,7 @@ async function creerEpreuve(page: Page, manifestation: string, competition: stri
   return page.url().split('/').at(-1)!;
 }
 
-test('US-031 CA-1 à CA-5 : publier, voir l’épreuve sur la page publique et son lien public sans connexion, puis la dépublier', async ({
+test('US-031 CA-1 à CA-5 : publier, voir l’épreuve sur la page publique et son lien public sans connexion, puis la dépublier @reel', async ({
   page,
   context,
   browser,
@@ -96,7 +96,7 @@ test('US-031 CA-1 à CA-5 : publier, voir l’épreuve sur la page publique et s
   await visiteurContexte.close();
 });
 
-test('US-031 cas limite : un lien public inconnu répond « Cette épreuve n’est pas publiée »', async ({
+test('US-031 cas limite : un lien public inconnu répond « Cette épreuve n’est pas publiée » @reel', async ({
   browser,
   baseURL,
 }) => {

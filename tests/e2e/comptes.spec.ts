@@ -47,7 +47,7 @@ test('US-007 CA-1 : l’administrateur voit la liste des comptes', async ({ page
   await expect(ligne(page, 'Bruno Petit')).toContainText('mot de passe temporaire');
 });
 
-test('US-007 CA-2 : le mot de passe temporaire s’affiche une seule fois, avec « Copier »', async ({
+test('US-007 CA-2 : le mot de passe temporaire s’affiche une seule fois, avec « Copier » @reel', async ({
   page,
   context,
 }) => {
