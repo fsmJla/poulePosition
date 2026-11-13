@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** correction
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-061
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-066-bouton-creer-flottant-club-vide`
 
 ## Récit
 
@@ -71,3 +71,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (smartphone) |
+| 2026-11-13 | Implémentation démarrée (plan validé) |
