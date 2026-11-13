@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** correction
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-061
 - **Branche / PR :** `us/US-066-bouton-creer-flottant-club-vide`
 
@@ -84,3 +84,4 @@ Aucune.
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (smartphone) |
 | 2026-11-13 | Implémentation démarrée (plan validé) |
 | 2026-11-13 | Implémentée : le bouton flottant est rendu hors de la branche « liste non vide » de `Organisateur.svelte`. Lint, typage, couverture unitaire, build, audit et E2E ciblés (US-066, US-061, US-026 CA-6) verts. **La suite E2E complète n'a pas tourné en local** (arrêtée faute de mémoire de la machine) ; elle tournera sur `dev`. En revue |
+| 2026-11-13 | Recette OK sur https://poule-position-owd3bq2xz-fsmjlas-projects.vercel.app (Chrome connecté ; écran de 390 × 844 simulé par une iframe de même origine, le navigateur ne descendant pas à cette largeur) : CA-1 (club vide simulé en interceptant les listes : « Créer » en bas à droite, icône et libellé, clic vers /creer, sans défilement horizontal) ; CA-2 (filtre « Archivées » : bouton présent ; mode sélection : bouton masqué) ; CA-3 (1 918 px : bouton flottant masqué, « Créer » dans l’entête) ; CA-4 (position identique à la planche 5 ; thème sombre lisible ; écarts de la liste remplie avec la planche relevant d’US-055, US-059 et US-063, hors périmètre). Hors ligne et 320 px couverts par les E2E de la CI sur la preview (verte), non rejoués à la main. Déployée en preview et vérifiée ; passée « Terminée » |
