@@ -267,3 +267,61 @@ test('US-061 CA-7 : conforme aux planches 5 et 6 à 390 × 844', async ({ page }
   expect(barre).toBeGreaterThan(nom);
   await testInfo.attach('6-smartphone-epreuve.png', { body: await page.screenshot(), contentType: 'image/png' });
 });
+
+// US-066 : « Créer » flotte aussi quand le club est vide (il disparaissait avec la liste).
+/** Club sans manifestation, compétition ni épreuve : les listes du serveur sont interceptées. */
+async function clubVide(page: Page) {
+  await seConnecter(page);
+  const vide = (corps: object) => async (route: import('@playwright/test').Route) => {
+    if (route.request().resourceType() !== 'fetch') return route.continue();
+    return route.fulfill({ json: corps, headers: { 'access-control-allow-origin': '*' } });
+  };
+  await page.route('**/epreuves', vide({ ok: true, epreuves: [] }));
+  await page.route('**/manifestations', vide({ ok: true, manifestations: [] }));
+  await page.route('**/competitions', vide({ ok: true, competitions: [] }));
+  await page.goto('/organisateur');
+  await expect(page.getByText(/première manifestation ou une première compétition/)).toBeVisible({ timeout: 20_000 });
+}
+
+test('US-066 CA-1 et CA-4 : club vide, « Créer » flotte en bas à droite et mène à /creer', async ({ page }, info) => {
+  await clubVide(page);
+  const bouton = creer(page);
+  await expect(bouton).toBeVisible();
+  await expect(bouton.locator('svg[data-icone]')).toBeVisible();
+  const boite = (await bouton.boundingBox())!;
+  expect(boite.x + boite.width).toBeGreaterThan(390 - 40);
+  expect(boite.y + boite.height).toBeGreaterThan(844 - 100);
+  expect(await sansDefilementHorizontal(page)).toBe(true);
+  await info.attach('accueil-vide-390x844', { body: await page.screenshot(), contentType: 'image/png' });
+  await bouton.click();
+  await expect(page).toHaveURL(/\/creer$/);
+});
+
+test('US-066 CA-2 : « Créer » reste présent avec un filtre vide, et disparaît dans le mode sélection', async ({
+  page,
+}) => {
+  const planche = await accueil(page);
+  await page.getByRole('button', { name: /^Archivées/ }).click();
+  await expect(page.getByRole('article', { name: planche.manifestation })).toHaveCount(0);
+  await expect(creer(page)).toBeVisible();
+  await page.getByRole('button', { name: /^À venir et en cours/ }).click();
+  await expect(page.getByRole('article', { name: planche.manifestation })).toBeVisible();
+  await page.getByRole('button', { name: 'Sélectionner' }).click();
+  await expect(creer(page)).toBeHidden();
+});
+
+test('US-066 cas limite : à 320 px, le bouton ne masque pas le texte du club vide', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await clubVide(page);
+  const bouton = (await creer(page).boundingBox())!;
+  const texte = (await page.getByText(/première manifestation ou une première compétition/).boundingBox())!;
+  expect(texte.y + texte.height).toBeLessThanOrEqual(bouton.y);
+});
+
+test('US-066 hors ligne : club vide, « Créer » reste visible et mène à /creer', async ({ page, context }) => {
+  await clubVide(page);
+  await context.setOffline(true);
+  await expect(creer(page)).toBeVisible();
+  await creer(page).click();
+  await expect(page).toHaveURL(/\/creer$/);
+});

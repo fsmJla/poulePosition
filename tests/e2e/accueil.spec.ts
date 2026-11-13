@@ -339,3 +339,21 @@ test('US-045 CA-7 : une épreuve dont la compétition a disparu est à rattacher
   await expect(epreuveDe(zone, orpheline)).toBeVisible({ timeout: 20_000 });
   await expect(zone).toContainText('Leur compétition a été supprimée');
 });
+
+test('US-066 CA-3 : sur écran large, un club vide n’a aucun bouton « Créer » flottant (il est dans l’entête)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await seConnecter(page);
+  const vide = (corps: object) => async (route: import('@playwright/test').Route) => {
+    if (route.request().resourceType() !== 'fetch') return route.continue();
+    return route.fulfill({ json: corps, headers: { 'access-control-allow-origin': '*' } });
+  };
+  await page.route('**/epreuves', vide({ ok: true, epreuves: [] }));
+  await page.route('**/manifestations', vide({ ok: true, manifestations: [] }));
+  await page.route('**/competitions', vide({ ok: true, competitions: [] }));
+  await page.goto('/organisateur');
+  await expect(page.getByText(/première manifestation ou une première compétition/)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('banner').getByRole('link', { name: 'Créer', exact: true })).toBeVisible();
+  await expect(page.locator('main .creer-flottant')).toBeHidden();
+});

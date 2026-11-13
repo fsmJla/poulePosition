@@ -832,19 +832,6 @@
           </div>
         {/each}
 
-        <!-- US-061 CA-2 : sur smartphone, « Créer » flotte en bas à droite (l'entête n'a plus que la marque et le compte). -->
-        {#if !modeSelection}
-          <a
-            class="creer-flottant"
-            href={CHEMINS.creer}
-            onclick={(e) => {
-              if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
-              e.preventDefault();
-              naviguer(CHEMINS.creer);
-            }}><Icone nom="plus" taille={20} />{textes.entete.creer}</a
-          >
-        {/if}
-
         <!-- US-059 CA-3 : rappel de la règle des parents, tant que le mode est ouvert. -->
         {#if administrateur && modeSelection}<p class="aide-selection">{ts.aide}</p>{/if}
 
@@ -855,6 +842,19 @@
       {/if}
     {/if}
   </section>
+
+  <!-- US-061 CA-2, US-066 : sur smartphone, « Créer » flotte en bas à droite (l'entête n'a plus que la marque et le compte), quel que soit le contenu de la liste, y compris un club vide. -->
+  {#if !modeSelection}
+    <a
+      class="creer-flottant"
+      href={CHEMINS.creer}
+      onclick={(e) => {
+        if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        e.preventDefault();
+        naviguer(CHEMINS.creer);
+      }}><Icone nom="plus" taille={20} />{textes.entete.creer}</a
+    >
+  {/if}
 </main>
 
 <style>

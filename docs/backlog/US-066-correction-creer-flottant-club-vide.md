@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P1
 - **Type :** correction
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-061
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-066-bouton-creer-flottant-club-vide`
 
 ## Récit
 
@@ -54,8 +54,8 @@ reprend au retour du réseau.
 ## Hypothèses
 
 - L'accueil vide n'a pas de planche : il garde son texte actuel et gagne seulement le bouton flottant de la planche 5.
-- Cause probable (à confirmer par le test) : le bouton est rendu dans la seule branche « liste non vide » de
-  `app/src/pages/Organisateur.svelte`.
+- Cause confirmée par le test : le bouton était rendu dans la seule branche « liste non vide » de
+  `app/src/pages/Organisateur.svelte`. Il est maintenant visible aussi pendant le chargement de la liste (sans conséquence).
 
 ## Questions bloquantes
 
@@ -66,8 +66,22 @@ Aucune.
 - Sortir le bouton de la branche « liste non vide » ; test E2E à 390 px sur un club vide d'abord (rouge), puis correction.
 - Touche US-061 (CA-2 : « l'accueil sur un écran étroit » supposait une liste).
 
+## Couverture des critères
+
+| Critère | Test |
+|---|---|
+| CA-1 | E2E `smartphone-organisateur.spec.ts` « US-066 CA-1 et CA-4 : club vide… » |
+| CA-2 | E2E « US-066 CA-2 : « Créer » reste présent avec un filtre vide… » |
+| CA-3 | E2E `accueil.spec.ts` « US-066 CA-3 : sur écran large… » |
+| CA-4 | E2E « US-066 CA-1 et CA-4 » (capture 390 × 844 jointe) ; la liste remplie reste couverte par « US-061 CA-7 » |
+| Cas limites | E2E « US-066 cas limite : à 320 px… » |
+| Hors ligne | E2E « US-066 hors ligne : club vide… » |
+
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (smartphone) |
+| 2026-11-13 | Implémentation démarrée (plan validé) |
+| 2026-11-13 | Implémentée : le bouton flottant est rendu hors de la branche « liste non vide » de `Organisateur.svelte`. Lint, typage, couverture unitaire, build, audit et E2E ciblés (US-066, US-061, US-026 CA-6) verts. **La suite E2E complète n'a pas tourné en local** (arrêtée faute de mémoire de la machine) ; elle tournera sur `dev`. En revue |
+| 2026-11-13 | Recette OK sur https://poule-position-owd3bq2xz-fsmjlas-projects.vercel.app (Chrome connecté ; écran de 390 × 844 simulé par une iframe de même origine, le navigateur ne descendant pas à cette largeur) : CA-1 (club vide simulé en interceptant les listes : « Créer » en bas à droite, icône et libellé, clic vers /creer, sans défilement horizontal) ; CA-2 (filtre « Archivées » : bouton présent ; mode sélection : bouton masqué) ; CA-3 (1 918 px : bouton flottant masqué, « Créer » dans l’entête) ; CA-4 (position identique à la planche 5 ; thème sombre lisible ; écarts de la liste remplie avec la planche relevant d’US-055, US-059 et US-063, hors périmètre). Hors ligne et 320 px couverts par les E2E de la CI sur la preview (verte), non rejoués à la main. Déployée en preview et vérifiée ; passée « Terminée » |
