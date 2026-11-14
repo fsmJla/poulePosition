@@ -56,6 +56,7 @@
     "plan",
     "assistant",
     "competitions",
+    "plan-alignement",
     "fichiers"
   ],
   "app/src/pages/Epreuve.svelte": [
@@ -186,7 +187,7 @@
   ],
   "app/src/composants/ConfirmationArchivage.svelte": ["archivage"],
   "app/src/composants/FilAriane.svelte": ["epreuve-etapes", "plan", "manifestation", "smartphone-organisateur"],
-  "app/src/composants/PlanLecture.svelte": ["plan", "manifestation"],
+  "app/src/composants/PlanLecture.svelte": ["plan", "manifestation", "assistant", "plan-alignement"],
   "app/src/composants/GabaritEpreuve.svelte": ["epreuve-etapes", "prochaine-etape", "smartphone-organisateur"],
   "app/src/composants/NavigationEpreuve.svelte": ["epreuve-etapes", "prochaine-etape", "smartphone-organisateur"],
   "app/src/composants/BarreOngletsEpreuve.svelte": ["epreuve-etapes", "prochaine-etape", "smartphone-organisateur"],

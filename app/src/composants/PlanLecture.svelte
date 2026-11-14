@@ -31,8 +31,10 @@
         {#each plan.lignes as ligne (ligne.competition.id)}
           <tr>
             <th scope="row" class="competition">
-              <span class="couleur" style="--couleur: var(--plan-{ligne.couleur})" aria-hidden="true"></span>
-              {ligne.competition.nom}
+              <div class="entree">
+                <span class="couleur" style="--couleur: var(--plan-{ligne.couleur})" aria-hidden="true"></span>
+                {ligne.competition.nom}
+              </div>
             </th>
             {#each ligne.cases as tuiles, indice (indice)}
               <td>
@@ -72,7 +74,9 @@
     text-transform: capitalize;
   }
 
-  .competition {
+  /* La cellule reste une cellule de tableau (sinon son trait de séparation est plus court et décalé, US-068) : la mise en
+     ligne du liseré et du nom se fait dans un bloc interne. */
+  .entree {
     display: flex;
     align-items: center;
     gap: 0.5rem;
