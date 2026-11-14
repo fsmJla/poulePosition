@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** correction
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-047, US-050
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-068-aligner-plan-verifier`
 
 ## Récit
 
@@ -71,3 +71,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (manifestation) |
+| 2026-11-14 | Implémentée : cause = `display: flex` sur la cellule `th.competition` de `PlanLecture.svelte` (la cellule n'était plus une cellule de tableau) ; le liseré et le nom passent dans un bloc interne `.entree`, comme dans `PlanManifestation.svelte` (déjà correct, CA-3). Tests : `tests/e2e/plan-alignement.spec.ts` (CA-1 et CA-2 en rouge avant correction, puis verts ; CA-3, CA-4, cas limite). En revue |
