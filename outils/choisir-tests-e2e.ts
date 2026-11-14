@@ -1,26 +1,26 @@
-// Choix des tests E2E à lancer contre une preview (US-037, ADR-0018) : la CI gratuite de GitHub est limitée en minutes,
-// et les E2E complets, sur deux formats, en prennent une dizaine. Le workflow `e2e-preview.yml` appelle ce script, qui
-// ne dépend de rien d'autre que de Node (pas d'installation) :
+// Choix des tests E2E à lancer contre une preview (US-037, ADR-0018, puis US-077, ADR-0023). Le quota gratuit de
+// Cloudflare est partagé avec la production : la preview ne rejoue que les tests « réel » (étiquetés `@reel`), et
+// seulement quand le code serveur, le domaine, le protocole ou un test lancé contre le vrai serveur change. Le niveau
+// « interface » tourne en local sur le runner (US-076, `e2e-interface.yml`). Le workflow `e2e-preview.yml` appelle ce
+// script, qui ne dépend de rien d'autre que de Node (pas d'installation) :
 //   node outils/choisir-tests-e2e.ts      (variables : GH_TOKEN, SHA, GITHUB_REPOSITORY, GITHUB_OUTPUT)
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-/** Branches sur lesquelles tout est testé, sur tous les formats (intégration et production). */
+/** Branches d'intégration et de production. `main` ajoute le format smartphone. */
 const BRANCHES_COMPLETES = ['dev', 'main'];
 
-/** Tests toujours lancés sur une branche de travail : connexion et parcours de création d'une épreuve. */
-export const SPECS_DE_BASE = ['connexion.spec.ts', 'epreuves.spec.ts'];
-
-export type Mode = 'aucun' | 'cible' | 'complet';
+export type Mode = 'aucun' | 'reel';
 
 export interface Choix {
   /** Le commit n'est plus la tête d'aucune branche : une version plus récente sera testée. */
   depasse: boolean;
   /** Branche qui sert à annuler le run précédent de la même branche. */
   branche: string;
+  /** `reel` : lancer `--grep @reel` (le workflow l'ajoute). */
   mode: Mode;
-  /** Tests à lancer (chemins), vide en mode complet (tous). */
+  /** Fichiers de test à lancer (chemins), vide : tous les tests `@reel`. */
   specs: string[];
   /** Formats Playwright (projets) à lancer. */
   formats: ('pc' | 'smartphone')[];
@@ -39,46 +39,55 @@ export interface Entree {
   fichiersCommit: string[];
   /**
    * Commits de la branche avant celui-ci, du plus récent au plus ancien. Seuls ceux qui précèdent le premier commit testé
-   * ou non documentaire comptent : la liste peut s'arrêter là.
+   * comptent : la liste peut s'arrêter là.
    */
   precedents?: Precedent[];
-  /** Fichiers ajoutés ou modifiés par la branche depuis `dev`. */
-  fichiersBranche: string[];
 }
 
 const estDocumentation = (fichier: string) => fichier.startsWith('docs/') || fichier.endsWith('.md');
 const estTest = (fichier: string) => /^tests\/e2e\/[^/]+\.spec\.ts$/.test(fichier);
+/** Code que seul le vrai serveur exerce, ou aide des tests qui s'y connectent : tous les tests `@reel` sont relancés. */
+const estCodeReel = (fichier: string) =>
+  /^(serveur|paquets\/domaine|paquets\/protocole)\//.test(fichier) ||
+  (/^tests\/e2e\/[^/]+\.ts$/.test(fichier) && !estTest(fichier)) ||
+  fichier === 'playwright.config.ts' ||
+  fichier === '.github/workflows/e2e-preview.yml' ||
+  fichier === 'outils/choisir-tests-e2e.ts';
 
-/**
- * Vrai si rien de non testé ne s'est ajouté : le commit ne change que de la documentation et les commits qui le
- * précèdent, jusqu'au premier déjà testé, aussi. Un push de plusieurs commits ne déploie que le dernier : un commit de
- * documentation placé après du code encore jamais testé ne doit donc pas dispenser de le tester.
- */
-function documentationSeulement(fichiersCommit: string[], precedents: Precedent[]): boolean {
-  if (fichiersCommit.length === 0 || !fichiersCommit.every(estDocumentation)) return false;
-  for (const { fichiers, teste } of precedents) {
-    if (teste) return true;
-    if (fichiers.length === 0 || !fichiers.every(estDocumentation)) return false;
+/** Fichiers qu'aucun E2E déjà réussi n'a couverts : ceux du commit, et des commits précédents jusqu'au premier testé. */
+function fichiersAVerifier(fichiersCommit: string[], precedents: Precedent[]): string[] {
+  const fichiers = [...fichiersCommit];
+  for (const precedent of precedents) {
+    if (precedent.teste) break;
+    fichiers.push(...precedent.fichiers);
   }
-  return true;
+  return fichiers;
 }
 
 /**
- * CA-1 : un commit qui ne change que de la documentation, sur du code déjà testé, ne lance rien. CA-2 : un commit dépassé non plus. CA-3 et CA-4 :
- * `dev` et `main` lancent tout sur les deux formats ; une branche de travail lance le format PC, avec les tests E2E
- * qu'elle a modifiés et un socle de base. Les régressions sur les autres tests apparaissent au merge dans `dev`.
+ * CA-1 : rien à lancer si les fichiers à vérifier ne touchent ni le code serveur, domaine ou protocole, ni un test. CA-2 :
+ * sinon `@reel` sur le format PC (tous les tests réels pour du code, les seuls tests modifiés si ce ne sont que des tests).
+ * CA-3 : `dev` lance `@reel` sur le format PC dès qu'un fichier non documentaire change. CA-4 : `main` ajoute le smartphone.
  */
-export function choisirTests({ branches, fichiersCommit, fichiersBranche, precedents = [] }: Entree): Choix {
+export function choisirTests({ branches, fichiersCommit, precedents = [] }: Entree): Choix {
   const branche = branches.find((nom) => BRANCHES_COMPLETES.includes(nom)) ?? branches[0] ?? '';
   const aucun = (depasse: boolean): Choix => ({ depasse, branche, mode: 'aucun', specs: [], formats: [] });
   if (branches.length === 0) return aucun(true);
-  if (documentationSeulement(fichiersCommit, precedents)) return aucun(false);
+
+  const fichiers = fichiersAVerifier(fichiersCommit, precedents);
+  if (fichiers.length > 0 && fichiers.every(estDocumentation)) return aucun(false);
+
   if (BRANCHES_COMPLETES.includes(branche)) {
-    return { depasse: false, branche, mode: 'complet', specs: [], formats: ['pc', 'smartphone'] };
+    const formats: Choix['formats'] = branche === 'main' ? ['pc', 'smartphone'] : ['pc'];
+    return { depasse: false, branche, mode: 'reel', specs: [], formats };
   }
-  const modifies = fichiersBranche.filter(estTest);
-  const specs = [...new Set([...modifies, ...SPECS_DE_BASE.map((spec) => `tests/e2e/${spec}`)])];
-  return { depasse: false, branche, mode: 'cible', specs, formats: ['pc'] };
+
+  if (fichiers.length === 0 || fichiers.some(estCodeReel)) {
+    return { depasse: false, branche, mode: 'reel', specs: [], formats: ['pc'] };
+  }
+  const tests = [...new Set(fichiers.filter(estTest))];
+  if (tests.length === 0) return aucun(false);
+  return { depasse: false, branche, mode: 'reel', specs: tests, formats: ['pc'] };
 }
 
 /** Résultat d'une requête `gh api` : une ligne par élément du filtre `jq`. */
@@ -119,10 +128,6 @@ export function lireEntree(depot: string, sha: string): Entree {
     branches: lignesGh(`repos/${depot}/commits/${sha}/branches-where-head`, '.[].name'),
     fichiersCommit: lignesGh(`repos/${depot}/commits/${sha}`, '.files[]?.filename'),
     precedents: precedentsOuPrudence(depot, sha),
-    fichiersBranche: lignesGh(
-      `repos/${depot}/compare/dev...${sha}`,
-      '.files[]? | select(.status != "removed") | .filename',
-    ),
   };
 }
 

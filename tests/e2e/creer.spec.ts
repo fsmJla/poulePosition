@@ -167,7 +167,7 @@ test('US-046 CA-4 : chaque compétition a la même couleur dans la liste de l’
   expect(await rang(planBravo)).toBe(listeBravo);
 });
 
-test('US-046 hors ligne : « Créer » s’affiche, ce qui exige internet est grisé, l’ajout d’épreuves et l’aide restent possibles', async ({
+test('US-046 hors ligne : « Créer » s’affiche, ce qui exige internet est grisé, l’ajout d’épreuves et l’aide restent possibles @reel', async ({
   page,
   context,
 }) => {

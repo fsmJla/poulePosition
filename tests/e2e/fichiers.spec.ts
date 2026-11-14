@@ -64,7 +64,7 @@ async function joindre(page: Page, nom: 'affiche' | 'feuilleDeRoute', fichier: R
   return { ...decrit, serveur: new URL(reponse.url()).origin };
 }
 
-test('US-030 CA-1, CA-2 et CA-5 : joindre une affiche et une feuille de route, les remplacer, les retirer', async ({
+test('US-030 CA-1, CA-2 et CA-5 : joindre une affiche et une feuille de route, les remplacer, les retirer @reel', async ({
   page,
 }) => {
   test.setTimeout(90_000);
@@ -108,7 +108,7 @@ test('US-030 CA-1, CA-2 et CA-5 : joindre une affiche et une feuille de route, l
   await expect(sorte(page, 'feuilleDeRoute').getByText('Aucune feuille de route')).toBeVisible({ timeout: 20_000 });
 });
 
-test('US-030 CA-3 : un fichier trop gros ou d’un type refusé est refusé avec la raison, sans rien envoyer', async ({
+test('US-030 CA-3 : un fichier trop gros ou d’un type refusé est refusé avec la raison, sans rien envoyer @reel', async ({
   page,
 }) => {
   test.setTimeout(90_000);
@@ -138,7 +138,7 @@ test('US-030 CA-3 : un fichier trop gros ou d’un type refusé est refusé avec
   expect(envois).toEqual([]);
 });
 
-test('US-030 CA-4 et CA-6 : une épreuve montre l’affiche de sa manifestation, aussi sans réseau', async ({
+test('US-030 CA-4 et CA-6 : une épreuve montre l’affiche de sa manifestation, aussi sans réseau @reel', async ({
   page,
   context,
 }) => {

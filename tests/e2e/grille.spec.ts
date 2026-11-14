@@ -164,7 +164,7 @@ test('US-048 cas limite : un nom vide est refusé sur sa ligne et rien n’est c
   await expect(page).toHaveURL(/\/competitions\/[0-9a-f-]{36}\/epreuves$/);
 });
 
-test('US-048 hors ligne : la grille crée les épreuves d’une compétition connue, envoyées au retour du réseau', async ({
+test('US-048 hors ligne : la grille crée les épreuves d’une compétition connue, envoyées au retour du réseau @reel', async ({
   page,
   context,
 }) => {

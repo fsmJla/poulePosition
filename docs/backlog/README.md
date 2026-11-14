@@ -104,6 +104,9 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-072](US-072-apercu-affiche-feuille-de-route.md) | Voir un aperçu de l'affiche et de la feuille de route sur la page Documents (P2) | E2 | Prête | US-030, US-056 |
 | [US-073](US-073-indiquer-documents-sur-la-ligne.md) | Indiquer sur la ligne qu'il y a une affiche ou une feuille de route, et l'ouvrir en aperçu (P2) | E2 | Prête | US-072, US-055, US-056 |
 | [US-074](US-074-correction-annuler-en-bouton.md) | Afficher « Annuler » comme un bouton dans les formulaires (correction) (P2) | E2 | En revue | US-024, US-027, US-048, US-054 |
+| [US-075](US-075-etiqueter-reel-et-selection-par-impact.md) | Étiqueter les tests « réel » et choisir les E2E par impact (technique, ADR-0023) | E0 | Terminée | US-037 |
+| [US-076](US-076-e2e-interface-sur-runner-local.md) | Lancer les E2E « interface » sur le runner GitHub contre le serveur local (technique) | E0 | Terminée | US-075 |
+| [US-077](US-077-reduire-e2e-reel-sur-preview.md) | Limiter les E2E de la preview Cloudflare aux tests « réel » et mesurer le gain (technique) | E0 | En revue | US-075, US-076 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
@@ -125,6 +128,8 @@ le menu « ⋯ » de l'épreuve (US-058 CA-6).
 **Retours de recette du 2026-11-13 (« Brain Dump »), ordre conseillé :** les corrections d'abord et indépendantes
 (US-066, US-074, US-068), puis US-067 et US-069 ; l'adresse et le plan en suite (**ADR de l'API Adresse et de Leaflet
 d'abord**, via `/adr`) : US-070 → US-071 ; les documents : US-072 → US-073.
+
+**Économie des E2E (2026-11-13, quota Cloudflare à ~90 %), à faire avant les US fonctionnelles suivantes :** US-075 → US-076 → US-077 (ADR-0023).
 
 > **Maquette de référence (2026-11-11) :** toute US qui touche un écran de l'organisateur cite sa planche et respecte
 > les principes et le vocabulaire d'icônes de [`docs/maquettes/README.md`](../maquettes/README.md) ; un écart se

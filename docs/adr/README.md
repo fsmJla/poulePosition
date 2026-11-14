@@ -32,3 +32,4 @@ Vue d'ensemble : [`../architecture.md`](../architecture.md).
 | [0020](0020-suppression-avec-contenu-par-morceaux.md) | Suppression d'une épreuve ou d'une manifestation avec son contenu, par morceaux | Acceptée |
 | [0021](0021-inversion-vocabulaire-competition-epreuve.md) | Inversion du vocabulaire : la compétition regroupe des épreuves (les ADR 0005, 0007, 0010, 0011, 0016, 0019 et 0020 se lisent avec le nouveau sens) | Acceptée |
 | [0022](0022-fichiers-joints-dans-le-do-club.md) | Fichiers joints dans le DO `Club`, nom à empreinte et lecture publique (complète les ADR 0011 et 0016) | Acceptée |
+| [0023](0023-deux-niveaux-e2e-interface-et-reel.md) | Deux niveaux de E2E : « interface » en local, « réel » sur Cloudflare (remplace la règle 2 de l'ADR-0018) | Acceptée |

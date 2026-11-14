@@ -14,7 +14,7 @@ Lance et rapporte fidèlement le résultat, sortie d'erreur comprise en cas d'é
 - tests unitaires avec seuils de couverture ;
 - build ;
 - `npm audit --audit-level=high` ;
-- tests E2E Playwright en local.
+- tests E2E liés aux fichiers modifiés, en local (`npm run test:e2e:impact`), et les tests `@reel` si le serveur, le domaine ou le protocole changent. La suite complète d'interface tourne en CI (ADR-0023).
 
 Ne lance **jamais** les tests de charge. En cas d'échec, corrige et relance. N'affaiblis pas un test et
 n'abaisse pas un seuil pour passer.

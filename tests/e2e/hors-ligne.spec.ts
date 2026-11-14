@@ -64,7 +64,7 @@ async function saisir(page: Page, email: string, motDePasse: string) {
 
 const bandeauLocal = (page: Page) => page.getByRole('status').filter({ hasText: 'Hors ligne : connexion locale' });
 
-test('US-005 CA-1 et CA-5 : reconnexion hors ligne avec le bandeau, puis revalidation au retour du réseau', async ({
+test('US-005 CA-1 et CA-5 : reconnexion hors ligne avec le bandeau, puis revalidation au retour du réseau @reel', async ({
   page,
   context,
 }) => {
@@ -91,7 +91,7 @@ test('US-005 CA-4 : hors ligne, un mot de passe faux est refusé', async ({ page
   await context.setOffline(false);
 });
 
-test('US-005 CA-6 : compte modifié pendant la coupure : retour à la connexion avec l’explication', async ({
+test('US-005 CA-6 : compte modifié pendant la coupure : retour à la connexion avec l’explication @reel', async ({
   page,
   context,
 }) => {
