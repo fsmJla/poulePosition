@@ -57,7 +57,7 @@ test('US-045 CA-1 : sans compétition choisie, la création est impossible et le
   await expect(page).toHaveURL(/\/epreuves\/nouvelle$/);
 });
 
-test('US-025 CA-2 et US-045 CA-4 : créer une compétition seule mène à la page de son épreuve, en préparation, non publiée, pilotée par ce PC', async ({
+test('US-025 CA-2 et US-045 CA-4 : créer une compétition seule mène à la page de son épreuve, en préparation, non publiée, pilotée par ce PC @reel', async ({
   page,
 }) => {
   // US-061 : sous 40 rem, la page d'une épreuve a une flèche de retour et une barre d'onglets au lieu du fil et de la navigation.
@@ -124,7 +124,7 @@ test('US-025 cas limites : nom et arme obligatoires, nom trop long, message sous
   await expect(page).toHaveURL(/\/epreuves\/nouvelle$/);
 });
 
-test('US-025 CA-6 et US-045 hors ligne : créée dans une compétition connue de l’appareil, puis envoyée au retour du réseau', async ({
+test('US-025 CA-6 et US-045 hors ligne : créée dans une compétition connue de l’appareil, puis envoyée au retour du réseau @reel', async ({
   page,
   context,
 }) => {

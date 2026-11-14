@@ -4,9 +4,9 @@
 - **Fonctionnalité :** transverse (qualité et CI, ADR-0012, ADR-0023)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-075
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-076-e2e-interface-runner-local` (empilée sur `us/US-075-reel-et-impact`)
 
 ## Récit
 
@@ -64,6 +64,10 @@ Sans objet : outillage de CI. Les tests hors ligne de l'application tournent dan
 - `retries` reste à 1 en CI (comme aujourd'hui) ; un test qui passe au second essai est signalé comme instable.
 - Les minutes consommées par ce job remplacent celles des runs E2E complets sur la preview ; à confirmer par `/quotas` après deux semaines (US-077 CA-5).
 
+- **Écart d'implémentation (CA-2) :** le job se déclenche sur la *pull request* vers `dev`/`main` plutôt que sur chaque push d'une branche `us/*` ou `spec/*` : un push de branche sans PR ne coûte rien, et la PR est de toute façon exigée avant le merge. Sur push, le job ne concerne que `dev` et `main`.
+- **Garde (CA-1) :** `--host-resolver-rules` (`playwright.config.ts`) fait échouer toute résolution de `*.workers.dev`, `*.vercel.app` et du domaine de production ; posée uniquement hors `BASE_URL`. Tests : `tests/e2e/garde-hors-cloudflare.spec.ts`, `outils/choisir-e2e-interface.test.ts`.
+- **CA-5 :** la durée du premier run complet sur `dev` sera consignée au suivi après le merge ; le plafond de 20 minutes du job est le filet.
+
 ## Questions bloquantes
 
 Aucune.
@@ -78,3 +82,6 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-13 | Créée : plan à deux niveaux (ADR-0023) |
+| 2026-11-14 | Implémentation démarrée (plan validé) |
+| 2026-11-14 | Implémentée (workflow `e2e-interface.yml`, sélection `outils/choisir-e2e-interface.ts`, garde de résolution) ; PR ouverte, durée du run sur `dev` à consigner |
+| 2026-11-14 | Job « Playwright en local » vert sur la PR (4 min 29, 265 tests). E2E de la preview rouge pour cause de quota Durable Objects épuisé ; merge validé par l'utilisateur. Durée du premier run complet sur `dev` à consigner (CA-5). Terminée |

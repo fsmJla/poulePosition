@@ -23,7 +23,7 @@ test('US-003 CA-1 (US-055 : nom dans l’entête, plus de « Bonjour » ni de r�
   ).toBeVisible();
 });
 
-test('US-003 CA-2 : un e-mail inconnu affiche « E-mail ou mot de passe incorrect »', async ({ page }) => {
+test('US-003 CA-2 : un e-mail inconnu affiche « E-mail ou mot de passe incorrect » @reel', async ({ page }) => {
   // Un e-mail différent à chaque passage : son compteur d'essais (US-004 CA-4) ne se remplit jamais.
   await essayer(page, `inconnu-${crypto.randomUUID()}@poule-position.test`, compteTest().motDePasse);
   await expect(page.getByRole('alert')).toHaveText('E-mail ou mot de passe incorrect', { timeout: 20_000 });
@@ -57,7 +57,7 @@ test('US-003 : le bouton « Se connecter » reste inactif tant qu’un champ est
   await expect(bouton).toBeEnabled();
 });
 
-test('US-003 CA-4 : on reste connecté après un rechargement ou une réouverture', async ({ page, context }) => {
+test('US-003 CA-4 : on reste connecté après un rechargement ou une réouverture @reel', async ({ page, context }) => {
   await seConnecter(page);
   await page.reload();
   await expect(page).toHaveURL(/\/organisateur$/);
@@ -71,7 +71,7 @@ test('US-003 CA-4 : on reste connecté après un rechargement ou une réouvertur
   await expect(boutonMenuCompte(rouverte)).toBeVisible();
 });
 
-test('US-003 CA-5 : « Se déconnecter » ramène à l’écran de connexion', async ({ page }) => {
+test('US-003 CA-5 : « Se déconnecter » ramène à l’écran de connexion @reel', async ({ page }) => {
   await seConnecter(page);
   await choisirDansMenuCompte(page, 'Se déconnecter');
   await expect(page).toHaveURL(/\/connexion$/);

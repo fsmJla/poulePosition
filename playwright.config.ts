@@ -11,6 +11,9 @@ const enCi = Boolean(process.env.CI);
 const urlPreview = process.env.BASE_URL;
 const secretContournement = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
+const REGLES_HORS_CLOUDFLARE =
+  '--host-resolver-rules=MAP *.workers.dev ~NOTFOUND, MAP *.vercel.app ~NOTFOUND, MAP poule-position.pessac-escrime.fr ~NOTFOUND';
+
 if (urlPreview && !secretContournement) {
   throw new Error('VERCEL_AUTOMATION_BYPASS_SECRET est requis pour tester une preview Vercel protégée.');
 }
@@ -27,6 +30,9 @@ export default defineConfig({
     baseURL: urlPreview ?? 'http://localhost:4280',
     trace: urlPreview ? 'off' : 'on-first-retry',
     storageState: urlPreview ? ETAT_PREVIEW : undefined,
+    // Garde du niveau « interface » (US-076) : contre le serveur local, Chromium ne résout aucun domaine Cloudflare ni
+    // Vercel, pour qu'un test d'interface ne consomme jamais le quota gratuit. Hors BASE_URL seulement.
+    launchOptions: urlPreview ? {} : { args: [REGLES_HORS_CLOUDFLARE] },
   },
   projects: [
     { name: 'pc', use: { ...devices['Desktop Chrome'] } },

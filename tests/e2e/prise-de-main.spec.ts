@@ -43,7 +43,7 @@ const prendreLaMain = async (page: Page) => {
     .click();
 };
 
-test('US-029 CA-1 et CA-4 : un autre PC prend la main, après avoir été averti que le pilote est connecté', async ({
+test('US-029 CA-1 et CA-4 : un autre PC prend la main, après avoir été averti que le pilote est connecté @reel', async ({
   page,
   browser,
   baseURL,
@@ -70,7 +70,7 @@ test('US-029 CA-1 et CA-4 : un autre PC prend la main, après avoir été averti
   }
 });
 
-test('US-029 CA-2 : l’ancien pilote en ligne passe en lecture seule et sait qui a pris la main', async ({
+test('US-029 CA-2 : l’ancien pilote en ligne passe en lecture seule et sait qui a pris la main @reel', async ({
   page,
   browser,
   baseURL,
@@ -95,7 +95,7 @@ test('US-029 CA-2 : l’ancien pilote en ligne passe en lecture seule et sait qu
   }
 });
 
-test('US-029 CA-3 : les modifications faites hors ligne par l’ancien pilote sont signalées et exportables', async ({
+test('US-029 CA-3 : les modifications faites hors ligne par l’ancien pilote sont signalées et exportables @reel', async ({
   page,
   context,
   browser,
