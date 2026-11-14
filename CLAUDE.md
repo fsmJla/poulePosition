@@ -85,8 +85,10 @@ Hors de ces modes, ne pas modifier le code applicatif sans demande explicite.
 ## Définition de « terminé » (une US)
 
 - [ ] Tous les critères d'acceptation sont couverts par des tests.
-- [ ] Les tests unitaires passent en CI, avec lint, typage, couverture et audit verts ; les E2E de la preview passent
-      (ciblés sur une branche de travail, complets sur `dev` et `main`, ADR-0018) et la suite complète passe en local.
+- [ ] Les tests unitaires passent en CI, avec lint, typage, couverture et audit verts ; les E2E « interface » passent en CI
+      (runner GitHub contre le serveur local, ADR-0023), les E2E « réel » (`@reel`) passent sur la preview quand le
+      serveur, le domaine, le protocole ou un test `@reel` change, et les tests liés aux fichiers modifiés
+      (`npm run test:e2e:impact`) passent en local.
 - [ ] L'US est déployée en preview et vérifiée (`/recette`).
 - [ ] La doc concernée est à jour (US, protocole, ADR, README).
 
