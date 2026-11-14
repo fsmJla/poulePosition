@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** correction
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-047, US-050
 - **Branche / PR :** `us/US-068-aligner-plan-verifier`
 
@@ -72,3 +72,4 @@ Aucune.
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (manifestation) |
 | 2026-11-14 | Implémentée : cause = `display: flex` sur la cellule `th.competition` de `PlanLecture.svelte` (la cellule n'était plus une cellule de tableau) ; le liseré et le nom passent dans un bloc interne `.entree`, comme dans `PlanManifestation.svelte` (déjà correct, CA-3). Tests : `tests/e2e/plan-alignement.spec.ts` (CA-1 et CA-2 en rouge avant correction, puis verts ; CA-3, CA-4, cas limite). En revue |
+| 2026-11-14 | Recette OK **en local** (capture à 1 000 px : traits continus et alignés entre le nom et les jours, dont une compétition à deux lignes d'étiquettes) ; la preview était inutilisable (quota Durable Objects de Cloudflare épuisé). CI verte. Terminée |
