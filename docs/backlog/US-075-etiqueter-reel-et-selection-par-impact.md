@@ -4,7 +4,7 @@
 - **Fonctionnalité :** transverse (qualité et CI, ADR-0012, ADR-0023)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-037
 - **Branche / PR :** `us/US-075-reel-et-impact`
 
@@ -92,3 +92,4 @@ Aucune. Non bloquant : quelle limite Cloudflare est à environ 90 % ? La répons
 | 2026-11-13 | Créée : plan à deux niveaux (ADR-0023) après un quota Cloudflare à environ 90 % |
 | 2026-11-13 | Implémentation démarrée (plan validé) |
 | 2026-11-13 | Implémentée : 26 tests `@reel`, table d'impact, `impact-e2e.ts`, `npm run test:e2e:impact`, README des E2E. Lint, typage, couverture (96,1 %), build, audit verts ; 17 tests unitaires de l'US verts. E2E locaux : les 26 tests `@reel` donnent 23 verts et 3 échecs **non causés par l'US** : `epreuves` « hors ligne » (instable sous charge, passe seul) et `suppression-lot` / `suppression-serie` (échouent aussi sur `dev` contre le serveur Wrangler local, mais passent sur Cloudflare en CI : écart entre Wrangler local et le vrai Worker, ce que le niveau « réel » de l'ADR-0023 doit couvrir). Suite complète non lancée (mémoire). En revue |
+| 2026-11-14 | Mergée dans `dev` sans E2E de preview vert : le quota Durable Objects de Cloudflare était épuisé (`wrangler tail` : « Exceeded allowed volume of requests in Durable Objects free tier »), les runs échouaient dès la connexion. Lint, typage, tests unitaires, build et audit verts ; merge validé par l'utilisateur. Terminée |

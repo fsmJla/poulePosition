@@ -4,7 +4,7 @@
 - **Fonctionnalité :** transverse (qualité et CI, ADR-0012, ADR-0023)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-075
 - **Branche / PR :** `us/US-076-e2e-interface-runner-local` (empilée sur `us/US-075-reel-et-impact`)
 
@@ -84,3 +84,4 @@ Aucune.
 | 2026-11-13 | Créée : plan à deux niveaux (ADR-0023) |
 | 2026-11-14 | Implémentation démarrée (plan validé) |
 | 2026-11-14 | Implémentée (workflow `e2e-interface.yml`, sélection `outils/choisir-e2e-interface.ts`, garde de résolution) ; PR ouverte, durée du run sur `dev` à consigner |
+| 2026-11-14 | Job « Playwright en local » vert sur la PR (4 min 29, 265 tests). E2E de la preview rouge pour cause de quota Durable Objects épuisé ; merge validé par l'utilisateur. Durée du premier run complet sur `dev` à consigner (CA-5). Terminée |
