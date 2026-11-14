@@ -56,12 +56,12 @@ describe('E2E sur la preview (US-013, US-037)', () => {
     expect(workflow).toContain('cancel-in-progress: true');
   });
 
-  it('US-037 CA-3 et CA-4 : tout n’est lancé que dans le mode complet, sinon les tests et formats choisis', () => {
+  it('US-077 CA-2 à CA-4 : la preview ne lance que les tests @reel, sur les tests et formats choisis', () => {
     const tests = etape(/name: Tests E2E/);
     expect(tests).toBeDefined();
-    expect(tests).toContain('if [ "$MODE" = "complet" ]; then');
-    expect(tests).toContain('npm run test:e2e');
-    expect(tests).toContain('npx playwright test $SPECS $PROJETS');
+    expect(tests).toContain('npx playwright test --grep @reel --pass-with-no-tests $SPECS $PROJETS');
+    expect(tests).not.toContain('npm run test:e2e');
+    expect(tests).not.toContain('complet');
   });
 
   it('US-037 CA-1 : le job de choix ne récupère que son script et n’installe aucune dépendance', () => {
