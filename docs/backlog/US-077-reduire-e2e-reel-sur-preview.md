@@ -4,7 +4,7 @@
 - **Fonctionnalité :** transverse (qualité et CI, ADR-0018, ADR-0023)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-075, US-076
 - **Branche / PR :** `us/US-077-reduire-e2e-reel-preview` (empilée sur US-076)
 
@@ -82,3 +82,4 @@ Aucune.
 |---|---|
 | 2026-11-13 | Créée : plan à deux niveaux (ADR-0023) |
 | 2026-11-14 | Implémentée (sélecteur à deux modes, workflow `--grep @reel`, règles écrites) ; PR à ouvrir après le merge de l'US-076 |
+| 2026-11-14 | Mergée dans `dev` (PR #100, lint et job local verts). Sans effet sur la preview tant que la PR `dev` → `main` n'est pas mergée (un workflow `deployment_status` s'exécute dans la version de `main`). CA-5 : mesure à consigner après deux semaines. Terminée |
