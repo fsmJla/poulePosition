@@ -106,7 +106,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-074](US-074-correction-annuler-en-bouton.md) | Afficher « Annuler » comme un bouton dans les formulaires (correction) (P2) | E2 | Prête | US-024, US-027, US-048, US-054 |
 | [US-075](US-075-etiqueter-reel-et-selection-par-impact.md) | Étiqueter les tests « réel » et choisir les E2E par impact (technique, ADR-0023) | E0 | Terminée | US-037 |
 | [US-076](US-076-e2e-interface-sur-runner-local.md) | Lancer les E2E « interface » sur le runner GitHub contre le serveur local (technique) | E0 | Terminée | US-075 |
-| [US-077](US-077-reduire-e2e-reel-sur-preview.md) | Limiter les E2E de la preview Cloudflare aux tests « réel » et mesurer le gain (technique) | E0 | En revue | US-075, US-076 |
+| [US-077](US-077-reduire-e2e-reel-sur-preview.md) | Limiter les E2E de la preview Cloudflare aux tests « réel » et mesurer le gain (technique) | E0 | Terminée | US-075, US-076 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
