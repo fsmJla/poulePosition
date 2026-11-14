@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** correction
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-024, US-027, US-048, US-054
 - **Branche / PR :** `us/US-074-annuler-en-bouton`
 
@@ -88,3 +88,4 @@ Aucune.
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (modification de compétition) |
 | 2026-11-13 | Implémentation démarrée (plan validé) |
 | 2026-11-13 | Implémentée : « Annuler » en bouton neutre dans le formulaire d’épreuve et la grille. Lint, typage, couverture, build, audit, E2E ciblés (annuler-bouton, plan, épreuves, modification, grille : 64 verts) et E2E par lots (lot 1 : 221 verts). **Lot 2 : 3 échecs non analysés** (epreuves « hors ligne » sur PC et smartphone, lancement « npm run dev »), **lots 3 et 4 non exécutés** : la machine a manqué de mémoire. La CI de la preview tranche. En revue |
+| 2026-11-14 | Recette OK **en local** (serveur Wrangler et build, captures PC 1100 px et smartphone 390 px : « Créer l'épreuve » puis « Annuler », bouton neutre côte à côte) et 12 tests E2E de l'US verts (PC et smartphone) : la preview était inutilisable, le quota Durable Objects de Cloudflare étant épuisé. CI verte. Terminée |
