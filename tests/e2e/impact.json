@@ -32,8 +32,16 @@
   "app/src/pages/Creer.svelte": ["creer"],
   "app/src/pages/AideOrganisation.svelte": ["creer"],
   "app/src/pages/AssistantManifestation.svelte": ["assistant", "creer", "manifestation"],
-  "app/src/pages/GrilleEpreuves.svelte": ["grille", "assistant", "creer", "plan"],
-  "app/src/pages/NouvelleEpreuve.svelte": ["epreuves", "modification", "competitions", "creer", "plan", "rattachement"],
+  "app/src/pages/GrilleEpreuves.svelte": ["annuler-bouton", "grille", "assistant", "creer", "plan"],
+  "app/src/pages/NouvelleEpreuve.svelte": [
+    "annuler-bouton",
+    "epreuves",
+    "modification",
+    "competitions",
+    "creer",
+    "plan",
+    "rattachement"
+  ],
   "app/src/pages/Manifestation.svelte": [
     "manifestation",
     "manifestations",

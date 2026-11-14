@@ -61,7 +61,7 @@ test('US-049 CA-1, CA-2, CA-3 et CA-4 : lire le plan, y ajouter une épreuve, vo
   // CA-2 : « + Épreuve » préchoisit la compétition et le jour ; « Annuler » revient au plan.
   await page.getByRole('button', { name: `Ajouter une épreuve à ${competition}, ${SAMEDI}` }).click();
   await expect(page.getByLabel('Compétition', { exact: true })).not.toHaveValue('');
-  await page.getByRole('link', { name: 'Annuler' }).click();
+  await page.getByRole('button', { name: 'Annuler', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: manifestation })).toBeVisible();
   await ajouterUneEpreuve(page, competition, SAMEDI, epreuve);
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
@@ -323,7 +323,7 @@ test('US-051 CA-1, CA-2, CA-3, CA-4, CA-5 et CA-6 : dupliquer une épreuve depui
   await expect(page.getByLabel('Début des poules', { exact: true })).toHaveValue('');
 
   // CA-2 : « Annuler » revient au plan sans rien créer.
-  await page.getByRole('link', { name: 'Annuler' }).click();
+  await page.getByRole('button', { name: 'Annuler', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: manifestation })).toBeVisible();
   await expect(page.getByRole('button', { name: /^Épreuve / })).toHaveCount(1);
 
