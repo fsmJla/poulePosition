@@ -31,7 +31,7 @@ async function preparer(page: Page) {
   return { manifestation, competition, epreuve };
 }
 
-test('US-041 CA-1 et CA-8 : supprimer une compétition avec son épreuve, après avoir saisi son nom', async ({
+test('US-041 CA-1 et CA-8 : supprimer une compétition avec son épreuve, après avoir saisi son nom @reel', async ({
   page,
 }) => {
   test.skip(Boolean(process.env.BASE_URL), AVEC_ADMINISTRATEUR);

@@ -52,7 +52,7 @@ test('US-040 CA-1 : cocher des épreuves affiche la barre et leur nombre', async
   await expect(page.getByText('1 épreuve sélectionnée')).toBeVisible();
 });
 
-test('US-040 CA-3 et CA-4 : une confirmation unique supprime les épreuves cochées, avec un compte rendu', async ({
+test('US-040 CA-3 et CA-4 : une confirmation unique supprime les épreuves cochées, avec un compte rendu @reel', async ({
   page,
 }) => {
   test.skip(Boolean(process.env.BASE_URL), AVEC_ADMINISTRATEUR);

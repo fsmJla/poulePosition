@@ -69,7 +69,7 @@ async function ouvrirLaListe(page: Page, manifestation: string, isolee: string) 
   await page.getByRole('button', { name: 'Sélectionner', exact: true }).click();
 }
 
-test('US-043 CA-1, CA-2 et CA-4 : cocher une manifestation couvre son contenu, et une confirmation unique supprime tout', async ({
+test('US-043 CA-1, CA-2 et CA-4 : cocher une manifestation couvre son contenu, et une confirmation unique supprime tout @reel', async ({
   page,
 }) => {
   test.skip(Boolean(process.env.BASE_URL), AVEC_ADMINISTRATEUR);
