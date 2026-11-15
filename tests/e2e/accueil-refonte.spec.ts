@@ -103,7 +103,8 @@ test('US-055 CA-4 et CA-5 : icônes d’état nommées avec infobulle, et légen
   await expect(dames.getByText('Non publiée')).toHaveCount(0);
   await expect(epreuves.getByRole('link', { name: /M7 Mixte$/ }).getByRole('img', { name: 'Publiée' })).toBeVisible();
   const legende = page.getByRole('list', { name: 'Légende des icônes' });
-  await expect(legende.getByRole('listitem')).toHaveText([
+  // US-073 : la légende ajoute « Affiche ou feuille de route jointe » dès qu'un document existe dans le club (donnée partagée).
+  await expect(legende.getByRole('listitem').filter({ hasNotText: 'jointe' })).toHaveText([
     'Publiée',
     'Non publiée',
     'Ce PC est le pilote',

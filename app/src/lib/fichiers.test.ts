@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { describe, expect, it, vi } from 'vitest';
 import { TAILLE_MAX_FICHIER } from '@poule-position/domaine';
 import type { FichierJoint } from '@poule-position/protocole';
-import { creerClientFichiers, fichiersEffectifs } from './fichiers';
+import { creerClientFichiers, fichiersEffectifs, fichiersPropres } from './fichiers';
 
 const URL_SERVEUR = 'http://serveur.test';
 const MAINTENANT = 1_900_000_000_000;
@@ -372,5 +372,32 @@ describe('fichiersEffectifs (US-030 CA-4)', () => {
     ] as const;
     expect(fichiersEffectifs([deManifestation], sansManifestation).affiche).toBeNull();
     expect(fichiersEffectifs([deCompetition], sansManifestation).affiche).toBe(deCompetition);
+  });
+});
+
+describe('fichiersPropres (US-073 CA-4)', () => {
+  const deManifestation = fichier({
+    proprietaire: 'manifestation',
+    proprietaireId: 'm1',
+    nom: `${'1'.repeat(64)}.webp`,
+  });
+  const feuilleEpreuve = fichier({
+    proprietaire: 'epreuve',
+    proprietaireId: 'e1',
+    sorte: 'feuilleDeRoute',
+    type: 'pdf',
+    nom: `${'5'.repeat(64)}.pdf`,
+  });
+
+  it('ne rend que les fichiers de l’élément lui-même, jamais ceux de ses parents', () => {
+    expect(fichiersPropres([deManifestation, feuilleEpreuve], 'manifestation', 'm1')).toEqual({
+      affiche: deManifestation,
+      feuilleDeRoute: null,
+    });
+    expect(fichiersPropres([deManifestation, feuilleEpreuve], 'epreuve', 'e1')).toEqual({
+      affiche: null,
+      feuilleDeRoute: feuilleEpreuve,
+    });
+    expect(fichiersPropres([deManifestation], 'competition', 'c1')).toEqual({ affiche: null, feuilleDeRoute: null });
   });
 });

@@ -1,6 +1,7 @@
 {
   "app/src/pages/Organisateur.svelte": [
     "accueil",
+    "reperes-documents",
     "accueil-refonte",
     "archivage",
     "filtres-liste",
@@ -188,7 +189,7 @@
     "adresse-lieu"
   ],
   "app/src/composants/FichiersJoints.svelte": ["fichiers", "apercu-documents", "publication"],
-  "app/src/composants/ApercuDocument.svelte": ["fichiers", "apercu-documents"],
+  "app/src/composants/ApercuDocument.svelte": ["fichiers", "apercu-documents", "reperes-documents"],
   "app/src/lib/apercu-pdf.ts": ["apercu-documents"],
   "app/src/composants/ConfirmationSuppression.svelte": [
     "suppression",
@@ -205,7 +206,16 @@
   "app/src/composants/NavigationEpreuve.svelte": ["epreuve-etapes", "prochaine-etape", "smartphone-organisateur"],
   "app/src/composants/BarreOngletsEpreuve.svelte": ["epreuve-etapes", "prochaine-etape", "smartphone-organisateur"],
   "app/src/composants/BandeauProchaineEtape.svelte": ["epreuve-etapes", "prochaine-etape", "smartphone-organisateur"],
-  "app/src/composants/LegendeIcones.svelte": ["accueil", "accueil-refonte", "filtres-liste", "smartphone-organisateur"],
+  "app/src/composants/LegendeIcones.svelte": [
+    "accueil",
+    "accueil-refonte",
+    "filtres-liste",
+    "reperes-documents",
+    "smartphone-organisateur"
+  ],
+  "app/src/composants/RepereDocuments.svelte": ["reperes-documents"],
+  "app/src/composants/FenetreApercu.svelte": ["apercu-documents", "reperes-documents"],
+  "tests/e2e/fichiers-types.ts": ["apercu-documents", "reperes-documents"],
   "app/src/composants/IconesEtat.svelte": ["accueil", "accueil-refonte", "filtres-liste", "smartphone-organisateur"],
   "app/src/composants/MenuActions.svelte": ["accueil-refonte", "suppression-unique", "archivage", "manifestation"],
   "app/src/composants/Onglets.svelte": ["manifestation", "plan"],
@@ -218,7 +228,7 @@
   "app/src/lib/plan.ts": ["plan", "manifestation"],
   "app/src/lib/lot.ts": ["grille", "assistant"],
   "app/src/lib/publication.ts": ["publication"],
-  "app/src/lib/fichiers.ts": ["fichiers"],
+  "app/src/lib/fichiers.ts": ["fichiers", "reperes-documents"],
   "app/vite.config.ts": ["lancement"],
   "package.json": ["*"],
   "package-lock.json": ["*"],

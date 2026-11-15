@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-072, US-055, US-056
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-073-documents-sur-la-ligne`
 
 ## Récit
 
@@ -75,7 +75,12 @@ le fichier a déjà été vu sur l'appareil, sinon « Aperçu disponible en lign
 - Écart à la planche 1 : une icône d'état de plus (« Document ») sur la ligne. Elle existe dans le vocabulaire
   (« Avec libellé ») ; son emploi **seule** sur une ligne, avec nom accessible et infobulle, amende le principe 4 (icône seule
   réservée à l'universel). À valider avec la mise à jour de `docs/maquettes/README.md`.
-- L'index du club ne dit peut-être pas aujourd'hui si une manifestation, une compétition ou une épreuve a des
+- **Réalisé sans changer l'index ni le protocole** : le repère se calcule avec la liste des fichiers du club (`GET /fichiers`,
+  déjà gardée sur l'appareil, US-030) : une seule lecture par affichage de la liste, jamais une requête par ligne ; la copie
+  locale s'affiche tout de suite et hors ligne. Placement : épreuve, repère **après** la ligne (commande à part, jamais
+  dans le lien) ; compétition, avant « + Épreuves » ; manifestation, avant « ⋯ ». Légende : l'entrée s'ajoute dès qu'un
+  document existe dans le club. Mode sélection : l'icône est inerte.
+- (Hypothèse d'origine) L'index du club ne dit peut-être pas aujourd'hui si une manifestation, une compétition ou une épreuve a des
   documents (US-022, US-038) : à vérifier ; sinon ajouter deux indicateurs (affiche, feuille de route) au résumé de l'index (technique, dans cette US).
 
 ## Questions bloquantes
@@ -94,3 +99,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (liste) ; format d'aperçu validé en dialogue |
+| 2026-11-15 | Implémentée (réutilise la fenêtre d'aperçu d'US-072, extraite en `FenetreApercu`) ; CI verte sur la PR. Terminée |

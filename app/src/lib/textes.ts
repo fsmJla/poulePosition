@@ -1399,6 +1399,14 @@ export const textes = {
       indisponible: 'Aperçu indisponible',
       introuvable: 'Fichier introuvable',
     },
+    /** US-073 : repère « Document » sur les lignes de la liste, et sa légende. */
+    repere: {
+      affiche: 'Affiche jointe',
+      feuilleDeRoute: 'Feuille de route jointe',
+      les2: 'Affiche et feuille de route jointes',
+      legende: 'Affiche ou feuille de route jointe',
+      choix: 'Document à voir',
+    },
     /** CA-4 : le fichier vient d'un niveau au-dessus. */
     heritee: {
       competition: 'reprise de la compétition',

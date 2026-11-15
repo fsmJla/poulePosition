@@ -46,7 +46,8 @@ maquette.
    ou des liens.
 4. **Icône + libellé pour naviguer, icône seule pour l'universel.** La navigation (étapes, onglets, « Créer »,
    « Comptes ») porte toujours une icône et un libellé court. L'icône seule est réservée à : rechercher, modifier
-   (crayon), autres actions (« ⋯ »), aide, thème, fermer, retour. Elle a toujours un nom accessible (`aria-label`) et
+   (crayon), autres actions (« ⋯ »), aide, thème, fermer, retour, et le repère « Document » d'une ligne qui porte une
+   affiche ou une feuille de route (US-073, expliqué dans la légende sous la liste). Elle a toujours un nom accessible (`aria-label`) et
    une infobulle, et une cible d'au moins 44 × 44 px.
 5. **Un menu « ⋯ » par objet** au lieu d'une pile de boutons. Il regroupe les actions secondaires ; l'action
    destructrice est la dernière, en rouge (`--etat-erreur`), sous un séparateur.
@@ -86,7 +87,7 @@ pas d'émoji. Une icône garde **le même sens partout**.
 | Triangle d'alerte | À traiter (épreuves à rattacher…) | Avec texte |
 | Calendrier | Date, informations | Avec texte |
 | Repère de carte | Lieu | Avec texte |
-| Document | Affiche et feuille de route | Avec libellé |
+| Document | Affiche et feuille de route | Avec libellé ; seule, repère d'une ligne de la liste (US-073) |
 | Maison | Résumé de l'épreuve | Avec libellé |
 | Personne et plus | Inscriptions | Avec libellé |
 | Liste cochée | Émargement | Avec libellé |
