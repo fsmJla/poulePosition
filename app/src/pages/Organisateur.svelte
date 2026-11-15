@@ -88,7 +88,8 @@
   /** US-035 : import d'une épreuve depuis un fichier, sans réseau ; le résumé se confirme dans une fenêtre. */
   const ti = textes.importation;
   let champImport: HTMLInputElement | undefined = $state();
-  let examen: ResultatExamen | null = $state(null);
+  /** `$state.raw` : le contenu va dans IndexedDB, qui ne clone pas les proxys réactifs de `$state`. */
+  let examen: ResultatExamen | null = $state.raw(null);
 
   async function choisirFichierImport(evenement: Event) {
     const champ = evenement.currentTarget as HTMLInputElement;
