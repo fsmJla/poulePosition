@@ -76,8 +76,8 @@ test('US-049 CA-1, CA-2, CA-3 et CA-4 : lire le plan, y ajouter une épreuve, vo
   const panneau = page.getByRole('region', { name: `Détail de l’épreuve ${epreuve}` });
   await expect(panneau).toContainText('comme la compétition');
   await expect(panneau).toContainText(SAMEDI);
-  // US-050 cas limite : aucun horaire renseigné, le panneau n'en montre aucun.
-  await expect(panneau).toContainText(/Horaires\s*—/);
+  // US-069 : les horaires reprennent 9 h 00 par défaut (le cas « aucun horaire » reste couvert par les tests de la grille).
+  await expect(panneau).toContainText(/Horaires\s*appel 09:00/);
   await expect(panneau.getByRole('link', { name: 'Ouvrir l’épreuve' })).toBeVisible();
 
   // CA-4 : « Changer de jour » déplace la tuile dans la colonne du lundi.

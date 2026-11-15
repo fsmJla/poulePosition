@@ -8,6 +8,7 @@
   import type { FichierJoint } from '@poule-position/protocole';
   import { fichiersEffectifs, type ClientFichiers, type ErreurFichiers } from '../lib/fichiers';
   import { textes } from '../lib/textes';
+  import ApercuDocument from './ApercuDocument.svelte';
 
   interface Proprietes {
     client: ClientFichiers;
@@ -140,12 +141,9 @@
         <h4>{libelle(sorte)}</h4>
         {#if fichier}
           {@const adresse = adresses[fichier.nom]}
-          {#if sorte === 'affiche'}
-            {#if adresse}<img src={adresse} alt={t.affiche} />{/if}
-          {:else if adresse}
-            <a href={adresse} target="_blank" rel="noopener">{t.ouvrir}</a>
-          {:else}
-            <span class="discret">{t.feuilleDeRoute}</span>
+          <ApercuDocument {sorte} nom={fichier.nom} taille={fichier.taille} {adresse} />
+          {#if sorte === 'feuilleDeRoute' && adresse}
+            <a class="ouvrir" href={adresse} target="_blank" rel="noopener">{t.ouvrir}</a>
           {/if}
           {#if !propre}<small class="discret"
               >{t.heritee[fichier.proprietaire as 'competition' | 'manifestation']}</small
@@ -208,13 +206,8 @@
     justify-items: start;
   }
 
-  img {
-    max-width: min(100%, 220px);
-    max-height: 160px;
-    border-radius: 0.4rem;
-    border: 1px solid var(--bordure);
-    object-fit: contain;
-    background: var(--surface);
+  .ouvrir {
+    color: var(--accent);
   }
 
   .actions {
@@ -225,15 +218,26 @@
   }
 
   /* Le champ de fichier est caché : son libellé fait le bouton (reste atteignable au clavier). */
-  .bouton {
+  .bouton,
+  button.secondaire {
     position: relative;
-    display: inline-block;
-    padding: 0.5rem 0.9rem;
-    border-radius: 0.4rem;
-    background: var(--accent-fond);
-    color: var(--sur-accent);
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    min-height: 44px;
+    padding: 0 0.9rem;
+    border: 1px solid var(--bordure-champ);
+    border-radius: var(--rayon);
+    background: var(--surface);
+    color: var(--texte);
+    font: inherit;
     font-weight: 600;
     cursor: pointer;
+  }
+
+  button.secondaire:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .bouton.inactif {
