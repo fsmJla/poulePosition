@@ -3,6 +3,7 @@
 // une épreuve dans cette compétition connue de l'appareil.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { regler } from './heure';
 import { ouvrirNouvelleEpreuve } from './creer';
 
 /** Nom unique, pour reconnaître l’épreuve créée par ce test parmi celles du club. */
@@ -30,9 +31,9 @@ test('US-025 CA-1 : le formulaire « Nouvelle épreuve » propose tous les champ
     'Catégorie',
     'Sexe',
     'Date',
-    'Appel',
-    'Scratch',
-    'Début des poules',
+    'Appel — heures',
+    'Scratch — heures',
+    'Début des poules — heures',
   ]) {
     await expect(page.getByLabel(champ, { exact: false }).first()).toBeVisible();
   }
@@ -71,9 +72,9 @@ test('US-025 CA-2 et US-045 CA-4 : créer une compétition seule mène à la pag
   await page.getByLabel('Catégorie').selectOption('M13');
   await page.getByLabel('Sexe').selectOption('mixte');
   await page.getByLabel('Date').fill('2027-03-13');
-  await page.getByLabel('Appel').fill('08:30');
-  await page.getByLabel('Scratch').fill('09:00');
-  await page.getByLabel('Début des poules').fill('09:30');
+  await regler(page, 'Appel', '08:30');
+  await regler(page, 'Scratch', '09:00');
+  await regler(page, 'Début des poules', '09:30');
   await page.getByLabel('Lieu').fill('Salle Bellegrave, Pessac');
   await creer(page);
 
@@ -97,14 +98,14 @@ test('US-025 CA-5 : des horaires incohérents sont refusés, le message nomme le
   await choisirSeule(page);
   await page.getByLabel('Nom').fill(nomUnique());
   await page.getByLabel('Arme').selectOption('epee');
-  await page.getByLabel('Appel').fill('09:00');
-  await page.getByLabel('Scratch').fill('08:30');
+  await regler(page, 'Appel', '09:00');
+  await regler(page, 'Scratch', '08:30');
   await creer(page);
   await expect(page.getByText('Le scratch doit être après l’appel')).toBeVisible();
-  await expect(page.getByLabel('Scratch')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByLabel('Scratch — heures')).toHaveAttribute('aria-invalid', 'true');
 
-  await page.getByLabel('Scratch').fill('09:15');
-  await page.getByLabel('Début des poules').fill('09:10');
+  await regler(page, 'Scratch', '09:15');
+  await regler(page, 'Début des poules', '09:00');
   await creer(page);
   await expect(page.getByText('Le début des poules doit être après le scratch')).toBeVisible();
   await expect(page).toHaveURL(/\/epreuves\/nouvelle$/);

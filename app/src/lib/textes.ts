@@ -45,6 +45,12 @@ export const textes = {
   /** Nom affiché de l'application (US-014) ; le nom technique reste poulePosition. */
   nomApplication: 'Poule Position',
   sousTitre: 'Gestion de compétitions d’escrime',
+  /** US-069 : champ d'heure à deux listes (heures, minutes par quart d'heure). */
+  heure: {
+    aucune: 'Aucune heure',
+    heures: (libelle: string) => `${libelle} — heures`,
+    minutes: (libelle: string) => `${libelle} — minutes`,
+  },
   /** US-052 : sélecteur de thème (« Auto » suit le réglage du système). */
   theme: {
     libelle: 'Thème',

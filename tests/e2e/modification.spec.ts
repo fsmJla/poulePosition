@@ -2,6 +2,7 @@
 // du PC pilote, mêmes validations qu'à la création, modification hors ligne.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { regler } from './heure';
 
 /** Nom unique, pour reconnaître l’épreuve de ce test parmi celles du club. */
 const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
@@ -41,8 +42,8 @@ test('US-027 CA-1 : modifier le nom, le lieu et les horaires met la page à jour
   await expect(page.getByLabel('Lieu')).toHaveValue('Salle Bellegrave');
   await page.getByLabel('Nom', { exact: true }).fill(nouveauNom);
   await page.getByLabel('Lieu').fill('Gymnase Nord');
-  await page.getByLabel('Appel').fill('08:30');
-  await page.getByLabel('Scratch').fill('09:00');
+  await regler(page, 'Appel', '08:30');
+  await regler(page, 'Scratch', '09:00');
   await enregistrer(page);
 
   await expect(page).toHaveURL(MOTIF_PAGE_EPREUVE);
@@ -89,15 +90,15 @@ test('US-027 CA-4 : les horaires incohérents sont refusés avec le message de l
   await creerEpreuve(page, nomUnique());
 
   await ouvrirModification(page);
-  await page.getByLabel('Appel').fill('09:00');
-  await page.getByLabel('Scratch').fill('08:00');
+  await regler(page, 'Appel', '09:00');
+  await regler(page, 'Scratch', '08:00');
   await enregistrer(page);
 
   await expect(page.getByText('Le scratch doit être après l’appel')).toBeVisible();
   await expect(page).toHaveURL(/\/modifier$/);
 
   await page.getByLabel('Nom', { exact: true }).fill('');
-  await page.getByLabel('Scratch').fill('09:30');
+  await regler(page, 'Scratch', '09:30');
   await enregistrer(page);
   await expect(page.getByText('Le nom est obligatoire')).toBeVisible();
 });

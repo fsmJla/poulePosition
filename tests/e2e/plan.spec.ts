@@ -1,6 +1,7 @@
 // Plan de la manifestation (US-049, US-050) : une ligne par compétition, une colonne par jour, des tuiles pour les épreuves.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { regler } from './heure';
 import { ajouterCompetition, creerManifestationSimple, ouvrirManifestation } from './planche';
 
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
@@ -29,9 +30,9 @@ async function ajouterUneEpreuve(
   await expect(page.getByRole('button', { name: jour })).toHaveAttribute('aria-pressed', 'true');
   await page.getByLabel('Nom', { exact: true }).fill(nom);
   if (horaires) {
-    await page.getByLabel('Appel', { exact: true }).fill(horaires.appel);
-    await page.getByLabel('Scratch', { exact: true }).fill(horaires.scratch);
-    await page.getByLabel('Début des poules', { exact: true }).fill(horaires.debutPoules);
+    await regler(page, 'Appel', horaires.appel);
+    await regler(page, 'Scratch', horaires.scratch);
+    await regler(page, 'Début des poules', horaires.debutPoules);
   }
   await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
   await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
@@ -318,9 +319,9 @@ test('US-051 CA-1, CA-2, CA-3, CA-4, CA-5 et CA-6 : dupliquer une épreuve depui
   await expect(page.getByLabel('Nom', { exact: true })).toHaveValue(`${epreuve} (copie)`);
   await expect(page.getByLabel('Compétition', { exact: true })).not.toHaveValue('');
   await expect(page.getByRole('button', { name: SAMEDI })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByLabel('Appel', { exact: true })).toHaveValue('');
-  await expect(page.getByLabel('Scratch', { exact: true })).toHaveValue('');
-  await expect(page.getByLabel('Début des poules', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('Appel — heures', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('Scratch — heures', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('Début des poules — heures', { exact: true })).toHaveValue('');
 
   // CA-2 : « Annuler » revient au plan sans rien créer.
   await page.getByRole('button', { name: 'Annuler', exact: true }).click();

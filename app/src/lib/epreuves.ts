@@ -57,6 +57,9 @@ export interface SaisieEpreuve {
 }
 
 /** CA-1 : formulaire vide ; individuelle par défaut. */
+/** US-069 : heure proposée à la création d'une épreuve, pour l'appel, le scratch et le début des poules. */
+export const HEURE_PAR_DEFAUT = '09:00';
+
 export function saisieVide(): SaisieEpreuve {
   return {
     nom: '',

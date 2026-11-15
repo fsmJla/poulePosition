@@ -1,6 +1,7 @@
 // Grille des épreuves (US-048) : créer d'un coup les épreuves d'une compétition en cochant catégories et sexes.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { regler } from './heure';
 import { ajouterCompetition, creerManifestationSimple, ouvrirManifestation } from './planche';
 
 /** Nom unique, pour reconnaître les données de ce test parmi celles du club. */
@@ -75,7 +76,7 @@ test('US-048 CA-1, CA-3, CA-4, CA-5 et CA-6 : cocher, régler, créer le lot et 
   await page.getByLabel('Nom de l’épreuve Open Mixte').fill(`${competition} Open`);
 
   // CA-4 : réglages communs, l'appel de chaque jour et le type.
-  await page.getByLabel('Appel du dimanche 14 mars 2027').fill('08:30');
+  await regler(page, 'Appel du dimanche 14 mars 2027', '08:30');
   await page.getByLabel('Type').selectOption('equipes2');
 
   // CA-5 : « Créer les 3 épreuves », puis retour à la liste du club.

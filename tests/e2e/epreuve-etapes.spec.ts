@@ -3,6 +3,7 @@
 // compte local est administrateur, celui de la preview un organisateur.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { regler } from './heure';
 import { ajouterCompetition, ajouterEpreuve, creerManifestationSimple } from './planche';
 
 // US-061 : sous 40 rem, la page d'une épreuve a sa barre d'onglets et son entête compact (smartphone-organisateur.spec.ts).
@@ -32,9 +33,9 @@ async function creerEpreuvePilote(page: Page) {
   await page.getByLabel('Catégorie').selectOption('M13');
   await page.getByLabel('Sexe').selectOption('dames');
   await page.getByRole('button', { name: 'mercredi 11 novembre 2026' }).click();
-  await page.getByLabel('Appel').fill('09:00');
-  await page.getByLabel('Scratch').fill('09:15');
-  await page.getByLabel('Début des poules').fill('09:30');
+  await regler(page, 'Appel', '09:00');
+  await regler(page, 'Scratch', '09:15');
+  await regler(page, 'Début des poules', '09:30');
   await page.getByLabel('Lieu').fill('Pessac');
   await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
   await expect(page).toHaveURL(MOTIF_PAGE_EPREUVE);
