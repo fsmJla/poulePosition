@@ -35,6 +35,7 @@
     type ErreurCompetitionSeule,
     type ErreurCreation,
     type ErreurModification,
+    HEURE_PAR_DEFAUT,
   } from '../lib/epreuves';
   import type { Accueil, DonneesAccueil } from '../lib/accueil';
   import type { ClientCompetitions } from '../lib/competitions';
@@ -44,6 +45,7 @@
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
+  import ChampHeure from '../composants/ChampHeure.svelte';
 
   interface Proprietes {
     session: SessionAppareil;
@@ -73,6 +75,10 @@
   const t = textes.epreuves;
 
   const saisie = $state(saisieVide());
+  // US-069 CA-1 : à la création, les trois horaires partent de 9 h 00 ; une épreuve enregistrée garde les siens (CA-4).
+  // svelte-ignore state_referenced_locally
+  if (epreuveId === undefined)
+    Object.assign(saisie, { appel: HEURE_PAR_DEFAUT, scratch: HEURE_PAR_DEFAUT, debutPoules: HEURE_PAR_DEFAUT });
   let erreurs: ErreursEpreuve = $state({});
   let erreur: ErreurCreation | ErreurModification | ErreurCompetitionSeule | null = $state(null);
   let enCours = $state(false);
@@ -437,13 +443,14 @@
         <div class="ligne horaires">
           {#each ['appel', 'scratch', 'debutPoules'] as const as champ (champ)}
             <div class="champ">
-              <label for={champ}>{t[champ]}</label>
-              <input
+              <span class="etiquette">{t[champ]}</span>
+              <ChampHeure
                 id={champ}
-                type="time"
+                libelle={t[champ]}
                 bind:value={saisie[champ]}
                 disabled={inactif('horaires')}
-                {...invalide(champ)}
+                invalide={Boolean(erreurs[champ])}
+                decritPar={erreurs[champ] ? `erreur-${champ}` : undefined}
               />
               {@render message(champ)}
             </div>
@@ -529,6 +536,7 @@
   }
 
   label,
+  .etiquette,
   legend {
     font-weight: 600;
   }
@@ -590,7 +598,7 @@
     font-weight: 600;
   }
 
-  .horaires label {
+  .horaires .etiquette {
     font-weight: 400;
   }
 

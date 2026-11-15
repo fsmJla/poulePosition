@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-025, US-027, US-048
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-069-horaires-quarts-d-heure`
 
 ## Récit
 
@@ -70,6 +70,10 @@ Sans objet : saisie locale, enregistrée dans le journal local comme aujourd'hui
 - Le sélecteur s'applique à tous les écrans qui saisissent ces horaires : `GrilleEpreuves.svelte`,
   `FormulaireCompetition.svelte`, assistant (étape Épreuves).
 
+- Noms accessibles : « <libellé du champ> — heures » et « — minutes » (ex. « Appel — heures »), le groupe portant le libellé seul. Tant qu'aucune heure n'est choisie, la liste des minutes est inactive.
+- Épreuve dupliquée : les horaires restent vides, comme le fixe US-051 (testé) ; la valeur de départ 9 h 00 ne vaut que pour une création sans copie.
+- Le cas « 9 h 10 conservée » (CA-4) est couvert par un test unitaire du composant (`lib/heure.test.ts`) : l'interface ne permet pas de produire une telle valeur.
+
 ## Questions bloquantes
 
 Aucune.
@@ -85,3 +89,5 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (manifestation) ; minutes validées en dialogue |
+| 2026-11-15 | Implémentée : composant `ChampHeure` (deux listes), `lib/heure.ts`, formulaire d'épreuve et grille ; tests `heure-quarts.spec.ts`, `heure.test.ts`, anciens tests adaptés (`heure.ts`). En revue |
+| 2026-11-15 | Recette OK en local (captures 900 et 390 px, listes lisibles), CI verte sur la PR #108. Terminée |

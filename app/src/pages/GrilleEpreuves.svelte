@@ -37,6 +37,8 @@
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
+  import ChampHeure from '../composants/ChampHeure.svelte';
+  import { HEURE_PAR_DEFAUT } from '../lib/epreuves';
 
   interface Proprietes {
     session: SessionAppareil;
@@ -88,6 +90,10 @@
   let touchesTableau = $state(formuleParDefaut('individuelle').touchesTableau);
   let matchTroisieme = $state(false);
   const appelParJour: Record<string, string> = $state({});
+  // US-069 CA-1 : l'appel de chaque jour part de 9 h 00 ; un jour déjà réglé n'est pas écrasé.
+  $effect(() => {
+    for (const jour of jours) appelParJour[jour] ??= HEURE_PAR_DEFAUT;
+  });
 
   let enCours = $state(false);
   let tente = $state(false);
@@ -315,8 +321,12 @@
             >
             {#each jours as jour (jour)}
               <div class="champ">
-                <label for="appel-{jour}">{tg.appelDuJour(jourCourt(jour))}</label>
-                <input id="appel-{jour}" type="time" bind:value={appelParJour[jour]} />
+                <span class="etiquette">{tg.appelDuJour(jourCourt(jour))}</span>
+                <ChampHeure
+                  id="appel-{jour}"
+                  libelle={tg.appelDuJour(jourCourt(jour))}
+                  bind:value={() => appelParJour[jour] ?? HEURE_PAR_DEFAUT, (v) => (appelParJour[jour] = v)}
+                />
               </div>
             {/each}
             {#if manifestation?.lieu}<small>{tg.lieuRepris(manifestation.lieu)}</small>{/if}
@@ -465,6 +475,7 @@
   }
 
   label,
+  .etiquette,
   legend {
     font-weight: 600;
   }
