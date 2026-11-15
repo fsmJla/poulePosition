@@ -22,6 +22,7 @@
   import FormulaireCompetition from '../composants/FormulaireCompetition.svelte';
   import FormulaireManifestation from '../composants/FormulaireManifestation.svelte';
   import Icone from '../composants/Icone.svelte';
+  import PlanLieu from '../composants/PlanLieu.svelte';
   import Lien from '../composants/Lien.svelte';
   import MenuActions, { type ActionMenu } from '../composants/MenuActions.svelte';
   import Onglets, { type Onglet } from '../composants/Onglets.svelte';
@@ -361,6 +362,7 @@
           >
           {#if manifestation.lieu}<span class="info"><Icone nom="lieu" taille={18} />{manifestation.lieu}</span>{/if}
         </p>
+        <PlanLieu lieu={manifestation.lieu} coordonnees={manifestationComplete?.coordonnees} />
       </div>
       <div class="actions">
         <button

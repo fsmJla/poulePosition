@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3), F18 (carte, P3, par anticipation)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-070, US-047, US-056
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-071-plan-du-lieu`
 
 ## Récit
 
@@ -68,6 +68,9 @@ Aucune fonction essentielle n'en dépend : le PC pilote continue seul.
 - Cette US avance une partie de F18 (priorité P3) ; la page publique avec carte reste hors de cette US.
 - Plan sans planche : une carte de 200 px dans une carte de page, bordure `--bordure`, rayon 14 px, repère aux couleurs de la charte.
 
+- **Écart à l'hypothèse Leaflet :** le plan est non interactif (autorisé par CA-5), donc formé de tuiles OSM posées par un petit module pur (`lib/plan-lieu.ts`), sans bibliothèque ni poids de bundle ; un chargement différé reste assuré par `IntersectionObserver`. Décrit dans [ADR-0025](../adr/0025-recherche-adresse-geoplateforme.md), **proposée, à valider**.
+- Le plan s'affiche à l'étape « Vérifier » et dans l'en-tête de la page de la manifestation (pas dans la liste de l'accueil). Les tuiles ne sont pas montrées dans le thème sombre en couleurs sombres : elles gardent leurs couleurs.
+
 ## Questions bloquantes
 
 Aucune.
@@ -84,3 +87,5 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (manifestation) |
+| 2026-11-15 | Implémentée : `PlanLieu`, `lib/plan-lieu.ts` (tuiles, liens), ADR-0025 complétée, garde Chromium étendue aux tuiles ; tests `plan-lieu.spec.ts`, `plan-lieu.test.ts`. En revue |
+| 2026-11-15 | Recette OK en local (capture : plan, repère, lien, attribution à 1 000 px ; tuiles simulées), CI à vérifier sur la PR. Terminée après CI verte |

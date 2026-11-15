@@ -45,6 +45,14 @@ export const textes = {
   /** Nom affiché de l'application (US-014) ; le nom technique reste poulePosition. */
   nomApplication: 'Poule Position',
   sousTitre: 'Gestion de compétitions d’escrime',
+  /** US-071 : plan du lieu (tuiles OpenStreetMap). */
+  planLieu: {
+    libelle: (lieu: string) => `Plan du lieu : ${lieu}`,
+    ouvrir: 'Ouvrir dans une application de cartes',
+    attribution: '© OpenStreetMap contributors',
+    indisponible: 'Plan indisponible',
+    horsLigne: 'Plan disponible en ligne',
+  },
   /** US-069 : champ d'heure à deux listes (heures, minutes par quart d'heure). */
   heure: {
     aucune: 'Aucune heure',

@@ -1,4 +1,4 @@
-# ADR-0025 — Recherche d'adresse : service de géocodage de la Géoplateforme (IGN)
+# ADR-0025 — Recherche d'adresse (Géoplateforme, IGN) et plan du lieu (tuiles OpenStreetMap)
 
 - **Statut :** Proposée (2026-11-15), à valider
 - **Date :** 2026-11-15
@@ -34,6 +34,22 @@ public gratuit de la Base Adresse Nationale. Vérifications faites le 2026-11-15
   en test.
 - L'application n'a pas de politique CSP (`connect-src`) à ce jour : aucune configuration à changer.
 
+## Plan du lieu (US-071)
+
+- Le plan est formé de **tuiles `tile.openstreetmap.org`** (zoom 16, au plus 21 images de 256 px), posées autour des
+  coordonnées de l'adresse choisie, avec un repère, l'attribution « © OpenStreetMap contributors » (lien vers
+  `openstreetmap.org/copyright`) et un lien « Ouvrir dans une application de cartes » (`geo:` sur appareil tactile).
+- **Sans Leaflet** : le plan n'est pas interactif, donc aucune dépendance ni poids de bundle en plus (écart à l'hypothèse
+  d'US-071, qui prévoyait Leaflet). Si une carte interactive devenait nécessaire (page publique, F18), Leaflet (licence BSD,
+  gratuit) serait introduit par une nouvelle ADR.
+- Politique d'usage OSM respectée : attribution visible, requêtes depuis le navigateur avec leur `Referer`, **aucun
+  préchargement ni cache hors ligne** (le service worker ne garde que les fichiers de l'application), chargement
+  différé (le plan n'est demandé que lorsqu'il approche de l'écran, une seule fois par page), jamais pour les lignes d'une
+  liste. Hors ligne : « Plan disponible en ligne ». Tuiles refusées : « Plan indisponible » ; plan B, un fournisseur de
+  tuiles à clé gratuite, par une nouvelle ADR.
+- Source de la politique : <https://operations.osmfoundation.org/policies/tiles/> (consultée le 2026-11-15 : attribution
+  obligatoire, pas de téléchargement massif, usage modéré).
+
 ## Limites du plan gratuit (vérifiées le 2026-11-15)
 
 | Point | Valeur | Source |
@@ -41,6 +57,7 @@ public gratuit de la Base Adresse Nationale. Vérifications faites le 2026-11-15
 | Prix, clé, compte | Gratuit, sans clé ni compte | annonce data.gouv.fr ci-dessus |
 | Quota | En-têtes observés : `ratelimit-limit: 50` et `x-ratelimit-limit-second: 1` ; le détail (50 requêtes par seconde et par IP, selon la documentation de l'IGN) est **à vérifier** | réponse HTTP du 2026-11-15 |
 | Usage prévu | Une requête par pause de frappe, un seul organisateur à la fois : très en dessous de toute limite plausible | décision ci-dessus |
+| Tuiles OSM | Service gratuit sans clé, usage « modéré » ; un plan par affichage du récapitulatif, au plus 21 tuiles, mises en cache par le navigateur seulement | politique OSM ci-dessus |
 | Couverture | France (adresses de la BAN) ; ailleurs, saisie libre | |
 | Mise en veille | Sans objet (service public hébergé) | |
 
