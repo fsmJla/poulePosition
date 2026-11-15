@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-023, US-047
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-070-rechercher-adresse-du-lieu`
 
 ## Récit
 
@@ -80,6 +80,11 @@ jamais bloqués. Un lieu saisi hors ligne n'a pas de coordonnées ; il pourra en
   US-062 : liste sous le champ, `combobox`). À valider à la recette.
 - Seule la manifestation reçoit le sélecteur d'adresse, car c'est le « lieu » du retour de recette. À valider : faut-il l'étendre aux compétitions et épreuves ?
 
+- **Écart au fournisseur validé (2026-11-15) :** l'« API Adresse » de `api-adresse.data.gouv.fr` a été transférée à l'IGN. L'implémentation utilise son successeur officiel, le géocodage de la Géoplateforme (`data.geopf.fr/geocodage`), même service, mêmes données, gratuit et sans clé : [ADR-0025](../adr/0025-recherche-adresse-geoplateforme.md), **proposée, à valider**.
+- Le lieu reste un texte ; les coordonnées sont un champ facultatif `coordonnees` (rétrocompatible), plutôt qu'une valeur structurée qui aurait cassé la lecture de l'existant.
+- Les suggestions s'affichent sous le champ, dans le flux de la page (elles ne masquent pas « Suivant »). Le champ est dans l'assistant (étape 1) et le formulaire de modification de la manifestation.
+- Les E2E du niveau « interface » interceptent le service ; la garde de Chromium refuse `data.geopf.fr`.
+
 ## Questions bloquantes
 
 Aucune.
@@ -100,3 +105,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » ; fournisseur validé en dialogue |
+| 2026-11-15 | ADR-0025 rédigée (successeur de l'API Adresse). Implémentée : `ChampLieu`, `lib/adresse.ts`, champ `coordonnees` (domaine, protocole), tests unitaires et `adresse-lieu.spec.ts`. En revue |

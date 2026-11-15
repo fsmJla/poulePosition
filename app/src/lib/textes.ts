@@ -925,6 +925,14 @@ export const textes = {
     debut: 'Date de début',
     fin: 'Date de fin',
     lieu: 'Lieu',
+    /** US-070 : suggestions d'adresses sous le champ « Lieu ». */
+    adresse: {
+      suggestions: 'Adresses suggérées',
+      recherche: 'Recherche…',
+      aucune: 'Aucune adresse trouvée',
+      indisponible: 'Recherche d’adresse indisponible : saisissez le lieu à la main',
+      horsLigne: 'Suggestions d’adresses disponibles en ligne',
+    },
     commentaire: 'Commentaire',
     facultatif: 'facultatif',
     creer: 'Créer la manifestation',
@@ -996,6 +1004,7 @@ export const textes = {
       DATE_INVALIDE: 'Date invalide',
       FIN_AVANT_DEBUT: 'La date de fin doit suivre la date de début',
       LIEU_TROP_LONG: 'Le lieu fait au plus 200 caractères',
+      COORDONNEES_INVALIDES: 'Adresse invalide : choisissez-la de nouveau',
       COMMENTAIRE_TROP_LONG: 'Le commentaire fait au plus 2 000 caractères',
     } satisfies Record<ErreurManifestation, string>,
     erreurs: {

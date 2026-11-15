@@ -73,7 +73,7 @@ const rattachee = (champs: Partial<EpreuveRattachee> = {}): EpreuveRattachee => 
 
 describe('manifestations côté application (US-023)', () => {
   it('CA-1 : le formulaire démarre vide ; un texte facultatif vide part à null', async () => {
-    expect(saisieVide()).toEqual({ nom: '', debut: '', fin: '', lieu: '', commentaire: '' });
+    expect(saisieVide()).toEqual({ nom: '', debut: '', fin: '', lieu: '', commentaire: '', coordonnees: null });
     const serveur = fauxServeur({
       'POST /manifestations': { statut: 201, corps: { ok: true, manifestation: manifestation() } },
     });
@@ -102,7 +102,7 @@ describe('manifestations côté application (US-023)', () => {
     });
     const envoi = serveur.requetes.find(({ route }) => route.startsWith('PATCH'));
     expect(envoi?.corps).toEqual({ ...saisie({ lieu: 'Gymnase' }), commentaire: null, version: 1 });
-    expect(saisieDe(manifestation())).toEqual({ ...saisie(), commentaire: '' });
+    expect(saisieDe(manifestation())).toEqual({ ...saisie(), commentaire: '', coordonnees: null });
   });
 
   it('CA-3 : une fin avant le début est refusée sans rien envoyer', async () => {
@@ -248,5 +248,34 @@ describe('archivage côté application (US-033)', () => {
     expect(await client(inconnue).archiver('m1', true)).toEqual({ ok: false, erreur: 'MANIFESTATION_INCONNUE' });
     const illisible = fauxServeur({ 'POST /manifestations/m1/archivage': { statut: 200, corps: { ok: true } } });
     expect(await client(illisible).archiver('m1', true)).toEqual({ ok: false, erreur: 'ERREUR_INATTENDUE' });
+  });
+});
+
+describe('adresse choisie du lieu (US-070)', () => {
+  const coordonnees = { lat: 44.8127, lon: -0.6334 };
+
+  it('CA-2 : les coordonnées de l’adresse choisie sont envoyées avec le lieu', async () => {
+    const serveur = fauxServeur({
+      'POST /manifestations': { statut: 201, corps: { ok: true, manifestation: manifestation({ coordonnees }) } },
+    });
+    const c = client(serveur);
+    const resultat = await c.creer(saisie({ lieu: 'Allée de Bellegrave 33600 Pessac', coordonnees }));
+    expect(resultat.ok).toBe(true);
+    expect(serveur.requetes[0]?.corps).toMatchObject({ lieu: 'Allée de Bellegrave 33600 Pessac', coordonnees });
+  });
+
+  it('CA-3 : un lieu libre part sans coordonnées, un lieu effacé aussi', async () => {
+    const serveur = fauxServeur({
+      'POST /manifestations': { statut: 201, corps: { ok: true, manifestation: manifestation() } },
+    });
+    const c = client(serveur);
+    await c.creer(saisie({ lieu: 'Gymnase du club', coordonnees: null }));
+    await c.creer(saisie({ lieu: '', coordonnees }));
+    for (const requete of serveur.requetes) expect(requete.corps).not.toHaveProperty('coordonnees');
+  });
+
+  it('CA-4 : le formulaire repart des coordonnées enregistrées', () => {
+    expect(saisieDe(manifestation({ coordonnees })).coordonnees).toEqual(coordonnees);
+    expect(saisieDe(manifestation()).coordonnees).toBeNull();
   });
 });

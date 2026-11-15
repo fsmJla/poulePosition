@@ -713,6 +713,7 @@ rôle. Même CORS qu'au §7.
 | `nom` | texte | Obligatoire, 1 à 100 caractères, espaces autour retirés |
 | `debut`, `fin` | texte | Jours `AAAA-MM-JJ`, obligatoires ; `fin` égale ou postérieure à `debut` (un seul jour possible) |
 | `lieu` | texte ou `null` | 200 caractères au plus |
+| `coordonnees` | `{ lat, lon }`, facultatif (champ absent s'il n'y en a pas) | US-070 : position de l'adresse choisie dans les suggestions (ADR-0025). Nombres finis, `lat` de −90 à 90, `lon` de −180 à 180, aucun autre champ. Retiré si le lieu est vide. Une manifestation d'avant reste lisible sans ce champ |
 | `commentaire` | texte ou `null` | 2 000 caractères au plus |
 
 **Manifestation renvoyée** : les champs saisis, plus `id` (UUID tiré par le serveur), `version` (1 à la création,
