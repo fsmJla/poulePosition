@@ -13,7 +13,13 @@ test('US-076 CA-1 : les deux formats lancent Chromium sans résoudre workers.dev
   const regles = arguments_.find((argument) => argument.startsWith('--host-resolver-rules='));
   expect(regles, `projet ${info.project.name}`).toBeDefined();
   // data.geopf.fr (US-070) : les tests d'interface ne joignent pas le vrai service d'adresses ; ils interceptent ses réponses.
-  for (const hote of ['*.workers.dev', '*.vercel.app', 'poule-position.pessac-escrime.fr', 'data.geopf.fr']) {
+  for (const hote of [
+    '*.workers.dev',
+    '*.vercel.app',
+    'poule-position.pessac-escrime.fr',
+    'data.geopf.fr',
+    '*.tile.openstreetmap.org',
+  ]) {
     expect(regles).toContain(`MAP ${hote} ~NOTFOUND`);
   }
 });

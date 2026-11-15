@@ -12,7 +12,7 @@ const urlPreview = process.env.BASE_URL;
 const secretContournement = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
 const REGLES_HORS_CLOUDFLARE =
-  '--host-resolver-rules=MAP *.workers.dev ~NOTFOUND, MAP *.vercel.app ~NOTFOUND, MAP poule-position.pessac-escrime.fr ~NOTFOUND, MAP data.geopf.fr ~NOTFOUND';
+  '--host-resolver-rules=MAP *.workers.dev ~NOTFOUND, MAP *.vercel.app ~NOTFOUND, MAP poule-position.pessac-escrime.fr ~NOTFOUND, MAP data.geopf.fr ~NOTFOUND, MAP *.tile.openstreetmap.org ~NOTFOUND, MAP www.openstreetmap.org ~NOTFOUND';
 
 if (urlPreview && !secretContournement) {
   throw new Error('VERCEL_AUTOMATION_BYPASS_SECRET est requis pour tester une preview Vercel protégée.');

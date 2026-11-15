@@ -22,6 +22,7 @@
   } from '@poule-position/domaine';
   import type { Competition, Manifestation } from '@poule-position/protocole';
   import PlanLecture from '../composants/PlanLecture.svelte';
+  import PlanLieu from '../composants/PlanLieu.svelte';
   import type { Accueil, DonneesAccueil } from '../lib/accueil';
   import {
     saisieDe as saisieDeCompetition,
@@ -431,6 +432,7 @@
         {/if}
       {:else}
         <p class="bilan" role="status">{a.bilan(bilan.competitions, bilan.epreuves)}</p>
+        {#if manifestation}<PlanLieu lieu={manifestation.lieu} coordonnees={manifestation.coordonnees} />{/if}
         {#if plan}<PlanLecture {plan} />{:else}<p role="status">{a.chargement}</p>{/if}
       {/if}
 
