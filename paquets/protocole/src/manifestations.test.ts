@@ -147,3 +147,45 @@ describe('archivage d’une manifestation (US-033)', () => {
     }
   });
 });
+
+describe('coordonnées de l’adresse du lieu (US-070)', () => {
+  const coordonnees = { lat: 44.8127, lon: -0.6334 };
+
+  it('CA-2 : une demande avec coordonnées est lue et les garde ; sans coordonnées, comme avant', () => {
+    expect(analyserDemandeManifestation(saisie({ coordonnees }))).toEqual({
+      ok: true,
+      demande: saisie({ coordonnees }),
+    });
+    expect(analyserDemandeManifestation(saisie())).toEqual({ ok: true, demande: saisie() });
+    expect(analyserDemandeModificationManifestation({ ...saisie({ coordonnees }), version: 3 })).toEqual({
+      ok: true,
+      demande: { ...saisie({ coordonnees }), version: 3 },
+    });
+  });
+
+  it('refuse des coordonnées illisibles ou hors bornes', () => {
+    expect(analyserDemandeManifestation(saisie({ coordonnees: { lat: 95, lon: 0 } }))).toEqual({ ok: false });
+    expect(analyserDemandeManifestation(saisie({ coordonnees: 'ici' }))).toEqual({ ok: false });
+  });
+
+  it('CA-4 : un lieu sans texte perd ses coordonnées', () => {
+    expect(analyserDemandeManifestation(saisie({ lieu: null, coordonnees }))).toEqual({
+      ok: true,
+      demande: saisie({ lieu: null }),
+    });
+  });
+
+  it('une manifestation du serveur est lisible avec ou sans coordonnées (rétrocompatible)', () => {
+    expect(analyserReponseManifestation({ ok: true, manifestation: { ...manifestation, coordonnees } })).toEqual({
+      ok: true,
+      manifestation: { ...manifestation, coordonnees },
+    });
+    expect(analyserReponseManifestation({ ok: true, manifestation })).toEqual({ ok: true, manifestation });
+    expect(
+      analyserReponseManifestation({ ok: true, manifestation: { ...manifestation, coordonnees: { lat: 1 } } }),
+    ).toEqual({ ok: false, erreur: 'REPONSE_INVALIDE' });
+    expect(
+      analyserReponseManifestations({ ok: true, manifestations: [manifestation, { ...manifestation, coordonnees }] }),
+    ).toMatchObject({ ok: true });
+  });
+});

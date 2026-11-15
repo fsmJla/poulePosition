@@ -3,6 +3,7 @@
 import {
   epreuvesHorsDates,
   validerManifestation,
+  type Coordonnees,
   type EpreuveRattachee,
   type DonneesManifestation,
   type ErreursManifestation,
@@ -23,7 +24,10 @@ import { Base, LIGNE_UNIQUE, type CopieManifestations } from './stockage';
 import { enchainerSuppressionContenu, type ResultatSuppressionContenu } from './suppression';
 
 /** Champs du formulaire, tels que saisis : un texte vide est un champ non renseigné. */
-export type SaisieManifestation = Record<keyof DonneesManifestation, string>;
+export type SaisieManifestation = Record<Exclude<keyof DonneesManifestation, 'coordonnees'>, string> & {
+  /** US-070 : position de l'adresse choisie dans les suggestions ; retirée dès que le texte du lieu est modifié à la main. */
+  coordonnees?: Coordonnees | null;
+};
 
 /** Erreurs affichées par la page « Manifestations ». */
 export type ErreurManifestations =
@@ -60,16 +64,24 @@ export interface OptionsManifestations {
 
 /** CA-1 : formulaire vide. */
 export function saisieVide(): SaisieManifestation {
-  return { nom: '', debut: '', fin: '', lieu: '', commentaire: '' };
+  return { nom: '', debut: '', fin: '', lieu: '', commentaire: '', coordonnees: null };
 }
 
 /** CA-2 : formulaire prérempli avec une manifestation existante. */
-export function saisieDe({ nom, debut, fin, lieu, commentaire }: Manifestation): SaisieManifestation {
-  return { nom, debut, fin, lieu: lieu ?? '', commentaire: commentaire ?? '' };
+export function saisieDe({ nom, debut, fin, lieu, commentaire, coordonnees }: Manifestation): SaisieManifestation {
+  return { nom, debut, fin, lieu: lieu ?? '', commentaire: commentaire ?? '', coordonnees: coordonnees ?? null };
 }
 
-function versDonnees({ nom, debut, fin, lieu, commentaire }: SaisieManifestation): DonneesManifestation {
-  return { nom, debut, fin, lieu: lieu === '' ? null : lieu, commentaire: commentaire === '' ? null : commentaire };
+function versDonnees({ nom, debut, fin, lieu, commentaire, coordonnees }: SaisieManifestation): DonneesManifestation {
+  return {
+    nom,
+    debut,
+    fin,
+    lieu: lieu === '' ? null : lieu,
+    commentaire: commentaire === '' ? null : commentaire,
+    // US-070 : sans lieu, des coordonnées n'ont pas de sens ; absentes plutôt que nulles (compatibilité des manifestations d'avant).
+    ...(coordonnees && lieu !== '' ? { coordonnees } : {}),
+  };
 }
 
 const SESSION_REFUSEE: readonly ErreurReponse[] = ['SESSION_INVALIDE', 'COMPTE_MODIFIE', 'COMPTE_RETIRE'];

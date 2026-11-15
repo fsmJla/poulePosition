@@ -4,6 +4,7 @@
   // concurrente propose « Recharger » ; des épreuves hors des nouvelles dates sont refusées avec leur liste.
   import type { ErreursManifestation } from '@poule-position/domaine';
   import type { Manifestation } from '@poule-position/protocole';
+  import ChampLieu from './ChampLieu.svelte';
   import { saisieDe, type ClientManifestations, type SaisieManifestation } from '../lib/manifestations';
   import { textes } from '../lib/textes';
 
@@ -95,7 +96,13 @@
   </div>
   <div class="champ">
     <label for="lieu">{t.lieu} <small>({t.facultatif})</small></label>
-    <input id="lieu" type="text" bind:value={saisie.lieu} disabled={enCours} {...invalide('lieu')} />
+    <ChampLieu
+      bind:lieu={saisie.lieu}
+      bind:coordonnees={saisie.coordonnees}
+      disabled={enCours}
+      invalide={Boolean(erreurs.lieu)}
+      decritPar={erreurs.lieu ? 'erreur-lieu' : undefined}
+    />
     {@render erreurChamp('lieu')}
   </div>
   <div class="champ">

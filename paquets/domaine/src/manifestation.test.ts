@@ -93,3 +93,38 @@ describe('manifestation (US-023)', () => {
     );
   });
 });
+
+describe('coordonnées de l’adresse du lieu (US-070)', () => {
+  const position = { lat: 44.8127, lon: -0.6334 };
+
+  it('CA-2 : des coordonnées dans les bornes sont valides, avec ou sans elles', () => {
+    expect(validerManifestation(donnees({ lieu: 'Allée de Bellegrave 33600 Pessac', coordonnees: position }))).toEqual(
+      {},
+    );
+    expect(validerManifestation(donnees({ lieu: 'Gymnase du club' }))).toEqual({});
+    expect(validerManifestation(donnees({ lieu: 'Gymnase du club', coordonnees: null }))).toEqual({});
+  });
+
+  it('refuse des coordonnées hors bornes, non finies ou mal formées', () => {
+    for (const mauvaises of [
+      { lat: 91, lon: 0 },
+      { lat: 0, lon: -181 },
+      { lat: Number.NaN, lon: 0 },
+      { lat: '44', lon: 0 },
+      { lat: 44, lon: 0, altitude: 3 },
+    ]) {
+      expect(
+        validerManifestation(
+          donnees({ lieu: 'X', coordonnees: mauvaises as unknown as DonneesManifestation['coordonnees'] }),
+        ),
+      ).toEqual({ coordonnees: 'COORDONNEES_INVALIDES' });
+    }
+  });
+
+  it('CA-3 : sans lieu, des coordonnées sont retirées ; une manifestation d’avant n’en reçoit pas', () => {
+    expect(normaliserManifestation(donnees({ lieu: ' ', coordonnees: position }))).not.toHaveProperty('coordonnees');
+    expect(normaliserManifestation(donnees({ lieu: 'Salle', coordonnees: null }))).not.toHaveProperty('coordonnees');
+    expect(normaliserManifestation(donnees({ lieu: 'Salle', coordonnees: position })).coordonnees).toEqual(position);
+    expect(normaliserManifestation(donnees({ lieu: 'Salle' }))).not.toHaveProperty('coordonnees');
+  });
+});

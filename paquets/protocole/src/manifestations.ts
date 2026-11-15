@@ -1,6 +1,11 @@
 // Manifestations du club (US-023, ADR-0016, docs/protocole.md §12) : stockées par le serveur dans le DO `Club`, avec un
 // numéro de version qui refuse l'écrasement d'une modification concurrente. Elles ne se modifient qu'en ligne.
-import { normaliserManifestation, validerManifestation, type DonneesManifestation } from '@poule-position/domaine';
+import {
+  normaliserManifestation,
+  sontCoordonneesValides,
+  validerManifestation,
+  type DonneesManifestation,
+} from '@poule-position/domaine';
 import { analyserCompetition, type Competition } from './competitions';
 import { CODES_ERREUR_SESSION, type CodeErreurSession, type ErreurReponse } from './session';
 import { aExactementLesChamps, estTexteOuNull } from './validation';
@@ -26,6 +31,10 @@ export type ReponseManifestation =
 
 const CHAMPS = ['nom', 'debut', 'fin', 'lieu', 'commentaire'] as const;
 
+/** US-070 : `coordonnees` est facultatif ; une manifestation d'avant, ou un lieu libre, n'a pas ce champ. */
+const avecCoordonnees = (brut: unknown, champs: readonly string[]) =>
+  estObjet(brut) && 'coordonnees' in brut ? [...champs, 'coordonnees'] : [...champs];
+
 /** Corps de `POST /manifestations/<id>/archivage` (US-033) : archive ou désarchive la manifestation et ses compétitions. */
 export interface DemandeArchivageManifestation {
   archivee: boolean;
@@ -49,7 +58,12 @@ const estVersion = (valeur: unknown): valeur is number => Number.isInteger(valeu
 
 function estDonnees(objet: Record<string, unknown>): boolean {
   const { nom, debut, fin, lieu, commentaire } = objet;
-  return [nom, debut, fin].every((texte) => typeof texte === 'string') && [lieu, commentaire].every(estTexteOuNull);
+  const coordonneesLisibles = !('coordonnees' in objet) || sontCoordonneesValides(objet.coordonnees);
+  return (
+    coordonneesLisibles &&
+    [nom, debut, fin].every((texte) => typeof texte === 'string') &&
+    [lieu, commentaire].every(estTexteOuNull)
+  );
 }
 
 /** Données lisibles et valides selon les règles du domaine (CA-1, CA-3), normalisées ; null sinon. */
@@ -63,14 +77,14 @@ function donneesValides(objet: Record<string, unknown> | null): DonneesManifesta
 export function analyserDemandeManifestation(
   brut: unknown,
 ): { ok: true; demande: DonneesManifestation } | { ok: false } {
-  const demande = donneesValides(aExactementLesChamps(brut, CHAMPS));
+  const demande = donneesValides(aExactementLesChamps(brut, avecCoordonnees(brut, CHAMPS)));
   return demande ? { ok: true, demande } : { ok: false };
 }
 
 export function analyserDemandeModificationManifestation(
   brut: unknown,
 ): { ok: true; demande: DemandeModificationManifestation } | { ok: false } {
-  const objet = aExactementLesChamps(brut, [...CHAMPS, 'version']);
+  const objet = aExactementLesChamps(brut, avecCoordonnees(brut, [...CHAMPS, 'version']));
   const donnees = donneesValides(objet);
   if (!donnees || !estVersion(objet?.version)) return { ok: false };
   return { ok: true, demande: { ...donnees, version: objet.version } };
@@ -99,7 +113,7 @@ export function analyserReponseArchivageManifestation(brut: unknown): ReponseArc
 function analyserManifestation(brut: unknown): Manifestation | null {
   const base = [...CHAMPS, 'id', 'version', 'modifieeLe', 'modifieePar'];
   const avecArchivage = estObjet(brut) && 'archivee' in brut;
-  const objet = aExactementLesChamps(brut, avecArchivage ? [...base, 'archivee'] : base);
+  const objet = aExactementLesChamps(brut, avecCoordonnees(brut, avecArchivage ? [...base, 'archivee'] : base));
   if (!objet || !estDonnees(objet) || (avecArchivage && typeof objet.archivee !== 'boolean')) return null;
   const { id, version, modifieeLe, modifieePar } = objet;
   if (typeof id !== 'string' || !estVersion(version) || typeof modifieeLe !== 'number') return null;

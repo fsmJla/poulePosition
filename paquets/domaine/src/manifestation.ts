@@ -3,6 +3,12 @@
 import { estDate, LONGUEUR_MAX_COMMENTAIRE, LONGUEUR_MAX_LIEU, type Rattachement } from './epreuve';
 import { validerNom } from './comptes';
 
+/** Position d'une adresse choisie (US-070), en degrés décimaux. */
+export interface Coordonnees {
+  lat: number;
+  lon: number;
+}
+
 /** Champs saisis d'une manifestation ; dates au format `AAAA-MM-JJ`, texte facultatif non saisi : null. */
 export interface DonneesManifestation {
   nom: string;
@@ -10,6 +16,23 @@ export interface DonneesManifestation {
   fin: string;
   lieu: string | null;
   commentaire: string | null;
+  /** US-070 : position de l'adresse choisie ; absente (ou null) pour un lieu saisi à la main et pour les manifestations d'avant. */
+  coordonnees?: Coordonnees | null;
+}
+
+/** Vrai pour une latitude de −90 à 90 et une longitude de −180 à 180, nombres finis (US-070). */
+export function sontCoordonneesValides(valeur: unknown): valeur is Coordonnees {
+  if (valeur === null || typeof valeur !== 'object' || Array.isArray(valeur)) return false;
+  const { lat, lon, ...autres } = valeur as Record<string, unknown>;
+  return (
+    Object.keys(autres).length === 0 &&
+    typeof lat === 'number' &&
+    typeof lon === 'number' &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lon) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lon) <= 180
+  );
 }
 
 export type ErreurManifestation =
@@ -19,6 +42,7 @@ export type ErreurManifestation =
   | 'DATE_INVALIDE'
   | 'FIN_AVANT_DEBUT'
   | 'LIEU_TROP_LONG'
+  | 'COORDONNEES_INVALIDES'
   | 'COMMENTAIRE_TROP_LONG';
 
 /** Une erreur par champ, pour l'afficher sous le champ en cause. */
@@ -35,11 +59,15 @@ export interface EpreuveRattachee {
 /** Textes sans les espaces autour ; un texte facultatif vide devient absent. */
 export function normaliserManifestation(donnees: DonneesManifestation): DonneesManifestation {
   const facultatif = (texte: string | null) => texte?.trim() || null;
+  const lieu = facultatif(donnees.lieu);
+  const { coordonnees, ...reste } = donnees;
+  // US-070 : des coordonnées sans lieu n'ont pas de sens ; le champ est absent plutôt que null pour rester compatible.
   return {
-    ...donnees,
+    ...reste,
     nom: donnees.nom.trim(),
-    lieu: facultatif(donnees.lieu),
+    lieu,
     commentaire: facultatif(donnees.commentaire),
+    ...(coordonnees && lieu !== null ? { coordonnees } : {}),
   };
 }
 
@@ -61,6 +89,9 @@ export function validerManifestation(saisie: DonneesManifestation): ErreursManif
   // Les jours `AAAA-MM-JJ` se comparent comme des textes ; une manifestation peut durer un seul jour.
   else if (!debut && donnees.fin < donnees.debut) erreurs.fin = 'FIN_AVANT_DEBUT';
   if ((donnees.lieu?.length ?? 0) > LONGUEUR_MAX_LIEU) erreurs.lieu = 'LIEU_TROP_LONG';
+  if (donnees.coordonnees != null && !sontCoordonneesValides(donnees.coordonnees)) {
+    erreurs.coordonnees = 'COORDONNEES_INVALIDES';
+  }
   if ((donnees.commentaire?.length ?? 0) > LONGUEUR_MAX_COMMENTAIRE) erreurs.commentaire = 'COMMENTAIRE_TROP_LONG';
   return erreurs;
 }

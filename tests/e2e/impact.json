@@ -31,7 +31,7 @@
   "app/src/pages/Comptes.svelte": ["comptes", "desactivation"],
   "app/src/pages/Creer.svelte": ["creer"],
   "app/src/pages/AideOrganisation.svelte": ["creer"],
-  "app/src/pages/AssistantManifestation.svelte": ["assistant", "creer", "manifestation"],
+  "app/src/pages/AssistantManifestation.svelte": ["assistant", "creer", "manifestation", "adresse-lieu"],
   "app/src/pages/GrilleEpreuves.svelte": ["annuler-bouton", "grille", "assistant", "creer", "plan", "heure-quarts"],
   "app/src/pages/NouvelleEpreuve.svelte": [
     "annuler-bouton",
@@ -49,7 +49,8 @@
     "plan",
     "assistant",
     "competitions",
-    "fichiers"
+    "fichiers",
+    "adresse-lieu"
   ],
   "app/src/pages/PlanManifestation.svelte": [
     "manifestation",
@@ -182,7 +183,8 @@
     "manifestation",
     "assistant",
     "plan",
-    "creer"
+    "creer",
+    "adresse-lieu"
   ],
   "app/src/composants/FichiersJoints.svelte": ["fichiers", "publication"],
   "app/src/composants/ConfirmationSuppression.svelte": [
@@ -238,5 +240,7 @@
     "plan",
     "rattachement",
     "heure-quarts"
-  ]
+  ],
+  "app/src/composants/ChampLieu.svelte": ["adresse-lieu", "assistant", "manifestations", "manifestation"],
+  "app/src/lib/adresse.ts": ["adresse-lieu"]
 }

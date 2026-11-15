@@ -42,6 +42,7 @@
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
+  import ChampLieu from '../composants/ChampLieu.svelte';
   import GrilleEpreuves from './GrilleEpreuves.svelte';
 
   interface Proprietes {
@@ -315,8 +316,14 @@
           </div>
           <div class="champ">
             <label for="lieu">{tm.lieu} <small>({tm.facultatif})</small></label>
-            <input id="lieu" type="text" bind:value={saisie.lieu} disabled={enCours} {...invalide(erreurs.lieu)} />
-            {#if erreurs.lieu}<span class="erreur">{tm.champs[erreurs.lieu]}</span>{/if}
+            <ChampLieu
+              bind:lieu={saisie.lieu}
+              bind:coordonnees={saisie.coordonnees}
+              disabled={enCours}
+              invalide={Boolean(erreurs.lieu)}
+              decritPar={erreurs.lieu ? 'erreur-lieu' : undefined}
+            />
+            {#if erreurs.lieu}<span class="erreur" id="erreur-lieu">{tm.champs[erreurs.lieu]}</span>{/if}
           </div>
           {#if message}<p class="message" role="alert">{message}</p>{/if}
           <div class="navigation">
