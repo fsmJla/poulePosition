@@ -321,7 +321,9 @@ test('US-054 CA-9 : la page d’une épreuve, menu « ⋯ » ouvert, est conform
   expect(await fondDe(menu)).toBe(await couleurDe(page, 'var(--surface)'));
   // US-057 : un administrateur (le compte local) a « Supprimer… » en dernier ; un organisateur (la preview), non.
   const actions = (await menu.getByRole('menuitem').allInnerTexts()).map((texte) => texte.split('\n')[0]);
-  expect(actions).toEqual(process.env.BASE_URL ? ['Dupliquer', 'Archiver'] : ['Dupliquer', 'Archiver', 'Supprimer…']);
+  expect(actions).toEqual(
+    process.env.BASE_URL ? ['Dupliquer', 'Exporter', 'Archiver'] : ['Dupliquer', 'Exporter', 'Archiver', 'Supprimer…'],
+  );
   expect(await menu.locator('svg[data-icone]').count()).toBe(actions.length);
   expect(await sansDefilementHorizontal(page)).toBe(true);
 

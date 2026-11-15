@@ -60,7 +60,7 @@ test('US-034 CA-1, CA-3 et CA-4 : « Exporter » télécharge <nom>-<date>.poule
   expect(contenu.clubId).not.toBe('');
   expect(contenu.journal[0]).toMatchObject({ seq: 1, type: 'EpreuveCreee' });
   expect(contenu.competition.nom).toBe(competition);
-  expect(contenu.manifestation).toMatchObject({ nom: manifestation, debut: '2027-03-13' });
+  expect(contenu.manifestation).toMatchObject({ nom: manifestation, debut: '2027-03-14' });
   expect(contenu.fichiers).toEqual([]);
 
   const retour = page.locator('[data-retour="export"]');

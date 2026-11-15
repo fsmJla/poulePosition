@@ -193,9 +193,9 @@ en pleine largeur ; résultats groupés (manifestations, compétitions, épreuve
 **Livré par US-033 (archivage) :** « Archiver » et « Désarchiver » sont des entrées du menu « ⋯ » d'une épreuve, d'une manifestation
 et d'une ligne de l'accueil (icône « Archive », ajoutée au vocabulaire), avec une confirmation en fenêtre modale ; l'étiquette « Archivée » marque une manifestation
 archivée. Aucune planche : écart déclaré dans les Hypothèses de l'US.
+
 **Livré par US-034 (export) :** « Exporter » est une entrée du menu « ⋯ » d'une épreuve (icône « Télécharger », ajoutée au vocabulaire) ; son résultat
 s'affiche dans un message sous l'entête. Aucune planche : écart déclaré dans les Hypothèses de l'US.
-
 
 **Livré par US-064 (prochaine étape) :** le bandeau « Prochaine étape » du Résumé, dont la règle est
 `paquets/domaine/src/prochaine-etape.ts` ; chaque Epic qui livre une étape y ajoute son cas.
