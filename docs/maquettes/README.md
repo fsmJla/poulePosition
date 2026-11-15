@@ -40,7 +40,7 @@ maquette.
    d'Ariane « Accueil › manifestation › compétition › épreuve » (les niveaux qui existent). Pas de page de gestion à
    part : on gère un objet sur sa page ou sur sa ligne.
 2. **Un entête unique** sur toutes les pages connectées : marque (retour à l'accueil), recherche, « Créer », « Comptes »
-   (administrateurs), aide, thème, menu de compte. Sur un écran étroit : marque, recherche et menu de compte ; « Créer »
+   (administrateurs), aide, thème (trois icônes visibles sur écran large, US-067), menu de compte. Sur un écran étroit : marque, recherche et menu de compte ; « Créer »
    devient un bouton flottant en bas à droite.
 3. **Une action principale par écran**, en tiffany (`--palette-tiffany`). Les autres actions sont des boutons neutres
    ou des liens.
@@ -95,12 +95,13 @@ pas d'émoji. Une icône garde **le même sens partout**.
 | Imprimante | Impressions | Avec libellé |
 | Curseurs | Paramètres | Avec libellé |
 | Point d'interrogation | Aide « Comment ça s'organise » | Seule |
-| Soleil | Thème | Seule |
+| Soleil | Thème clair (groupe de trois icônes : soleil, lune, écran, toujours visibles sur écran large, US-067) | Seule |
 | Croix | Fermer, quitter un mode | Seule |
 | Flèche gauche | Retour (écran étroit) | Seule |
 | Chevron | Déplier, ouvrir | Seule (décorative) |
 | Personnes | Comptes | Avec libellé |
-| Lune | Thème sombre (choix du menu de thème) | Avec libellé |
+| Lune | Thème sombre (groupe de trois icônes ; avec libellé dans le menu de compte étroit) | Seule sur écran large |
+| Écran (thème automatique) | Thème automatique, groupé avec Soleil et Lune ; à ne pas confondre avec « Ce PC est le pilote » | Seule sur écran large |
 | Coche | Choix en cours dans un menu | Seule (décorative) |
 | Liste | Onglet « Compétitions » de la page d'une manifestation | Avec libellé |
 | Quatre carrés | Onglet « Plan » de la page d'une manifestation | Avec libellé |

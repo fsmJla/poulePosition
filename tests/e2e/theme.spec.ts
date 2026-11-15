@@ -9,21 +9,19 @@ const fondDeLaPage = (page: Page) => page.evaluate(() => getComputedStyle(docume
 const selecteur = (page: Page) => page.getByRole('group', { name: 'Thème' });
 const choix = (page: Page, nom: 'Clair' | 'Sombre' | 'Auto') => selecteur(page).getByRole('button', { name: nom });
 /**
- * Pages réservées (US-054) : le thème se choisit par l'icône de l'entête (menu de trois choix) ; sur un écran étroit
- * (< 640 px), par le groupe « Thème » du menu de compte. Ces aides ouvrent le menu au besoin et rendent les choix.
+ * Pages réservées : le thème se choisit par les trois icônes de l'entête (US-067) ; sur un écran étroit (< 640 px),
+ * par le groupe « Thème » du menu de compte. Ces aides ouvrent le menu au besoin et rendent les choix.
  */
 const etroit = (page: Page) => (page.viewportSize()?.width ?? 1280) < 640;
-const attributChoix = (page: Page) => (etroit(page) ? 'aria-pressed' : 'aria-checked');
+const attributChoix = () => 'aria-pressed';
 async function choixConnecte(page: Page) {
   if (etroit(page)) {
     if (!(await page.locator('#menu-compte').isVisible())) await boutonMenuCompte(page).click();
     const groupe = page.locator('#menu-compte').getByRole('group', { name: 'Thème' });
     return (nom: string) => groupe.getByRole('button', { name: nom, exact: true });
   }
-  const menu = page.getByRole('menu', { name: 'Thème' });
-  if (!(await menu.isVisible()))
-    await page.getByRole('banner').getByRole('button', { name: 'Thème', exact: true }).click();
-  return (nom: string) => menu.getByRole('menuitemradio', { name: nom, exact: true });
+  const groupe = page.getByRole('banner').getByRole('group', { name: 'Thème' });
+  return (nom: string) => groupe.getByRole('button', { name: nom });
 }
 
 const themePose = (page: Page) => page.locator('html').getAttribute('data-theme');
@@ -33,19 +31,15 @@ test('US-052 CA-1 (US-054 : icône et menu) : l’entête d’une page réservé
 }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await seConnecter(page);
-  if (!etroit(page)) {
-    const declencheur = page.getByRole('banner').getByRole('button', { name: 'Thème', exact: true });
-    await expect(declencheur).toHaveAttribute('title', 'Thème');
-  }
   let choix = await choixConnecte(page);
-  await expect(choix('Auto')).toHaveAttribute(attributChoix(page), 'true');
-  await expect(choix('Clair')).toHaveAttribute(attributChoix(page), 'false');
-  await expect(choix('Sombre')).toHaveAttribute(attributChoix(page), 'false');
+  await expect(choix('Auto')).toHaveAttribute(attributChoix(), 'true');
+  await expect(choix('Clair')).toHaveAttribute(attributChoix(), 'false');
+  await expect(choix('Sombre')).toHaveAttribute(attributChoix(), 'false');
 
   await choix('Sombre').click();
   choix = await choixConnecte(page);
-  await expect(choix('Sombre')).toHaveAttribute(attributChoix(page), 'true');
-  await expect(choix('Auto')).toHaveAttribute(attributChoix(page), 'false');
+  await expect(choix('Sombre')).toHaveAttribute(attributChoix(), 'true');
+  await expect(choix('Auto')).toHaveAttribute(attributChoix(), 'false');
 });
 
 test('US-052 CA-2 : le sélecteur est aussi sur l’accueil, la connexion, « mot de passe oublié » et la réinitialisation', async ({
@@ -129,21 +123,15 @@ test('US-052 CA-6 : lisible dans les deux thèmes, le choix en cours s’y disti
     let choix = await choixConnecte(page);
     await choix(nom).click();
     choix = await choixConnecte(page);
-    await expect(choix(nom)).toHaveAttribute(attributChoix(page), 'true');
-    if (etroit(page)) {
-      // Le choix actif et les autres se distinguent par leur fond.
-      const fonds = await page
-        .locator('#menu-compte')
-        .getByRole('group', { name: 'Thème' })
-        .getByRole('button')
-        .evaluateAll((boutons) => boutons.map((bouton) => getComputedStyle(bouton).backgroundColor));
-      expect(new Set(fonds).size).toBeGreaterThan(1);
-    } else {
-      // Une coche marque le seul choix en cours.
-      await expect(page.getByRole('menu', { name: 'Thème' }).locator('svg[data-icone="coche"]')).toHaveCount(1);
-      await expect(choix(nom).locator('svg[data-icone="coche"]')).toHaveCount(1);
-      await page.keyboard.press('Escape');
-    }
+    await expect(choix(nom)).toHaveAttribute(attributChoix(), 'true');
+    // Le choix actif et les autres se distinguent par leur fond.
+    const groupe = etroit(page)
+      ? page.locator('#menu-compte').getByRole('group', { name: 'Thème' })
+      : page.getByRole('banner').getByRole('group', { name: 'Thème' });
+    const fonds = await groupe
+      .getByRole('button')
+      .evaluateAll((boutons) => boutons.map((bouton) => getComputedStyle(bouton).backgroundColor));
+    expect(new Set(fonds).size).toBeGreaterThan(1);
   }
 });
 

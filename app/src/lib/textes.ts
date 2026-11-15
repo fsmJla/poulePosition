@@ -49,6 +49,8 @@ export const textes = {
   theme: {
     libelle: 'Thème',
     choix: { clair: 'Clair', sombre: 'Sombre', auto: 'Auto' },
+    /** US-067 : nom accessible et infobulle des trois icônes de l'entête. */
+    nomBouton: { clair: 'Thème clair', sombre: 'Thème sombre', auto: 'Thème automatique' },
   },
   /** US-054 : entête commun des pages connectées, fil d'Ariane et menu « ⋯ » (maquette « IHM de l'organisateur »). */
   entete: {
