@@ -16,6 +16,13 @@
   adapté au smartphone.
 - **Suppressions** : une compétition, une épreuve ou une manifestation, avec son contenu, seule ou par lot.
 - **Thème** clair, sombre ou automatique ; menu de compte, profil, réinitialisation du mot de passe par e-mail.
+- **Horaires** : 9 h 00 par défaut et des minutes par quart d'heure.
+- **Lieu d'une manifestation** : suggestions d'adresses pendant la saisie, puis plan du lieu (OpenStreetMap) dans le récapitulatif
+  et sur la page de la manifestation.
+- **Documents** : aperçu de l'affiche et de la feuille de route (vignette de la première page du PDF, fenêtre d'aperçu) et repère
+  « Document » sur les lignes de la liste qui en portent un.
+- **Finitions** : les trois icônes de thème toujours visibles sur PC, « Annuler » est un bouton dans les formulaires, lignes du plan
+  alignées à l'étape « Vérifier ».
 - **Vocabulaire** : la **compétition regroupe des épreuves** (le sens des deux mots est inversé, voir l'ADR-0021).
 
 ### Pour l'équipe
