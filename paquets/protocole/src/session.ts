@@ -13,7 +13,7 @@ import {
 import { decoderBase64Url, deriverCle, encoderBase64Url, nouveauSel, TAILLE_CLE, TAILLE_SEL } from './authentification';
 import { aExactementLesChamps, aLaTaille } from './validation';
 
-/** Codes d'erreur des routes HTTP de l'application (docs/protocole.md §7 à §9). */
+/** Codes d'erreur des routes HTTP de l'application (docs/protocole.md §7 à §9, §11 et §12). */
 export const CODES_ERREUR_SESSION = [
   'DEMANDE_INVALIDE',
   'IDENTIFIANTS_INVALIDES',
@@ -29,6 +29,28 @@ export const CODES_ERREUR_SESSION = [
   'EMAIL_DEJA_UTILISE',
   'DERNIER_ADMINISTRATEUR',
   'SERVEUR_NON_CONFIGURE',
+  // Réplication du journal (US-022, §11).
+  'SEQ_INATTENDU',
+  'PAS_PILOTE',
+  'EPREUVE_INCONNUE',
+  // Prise de main (US-029).
+  'MAIN_DEJA_PRISE',
+  // Manifestations (US-023, §12).
+  'MANIFESTATION_INCONNUE',
+  'MODIFIEE_ENTRE_TEMPS',
+  'MANIFESTATION_NON_VIDE',
+  // Compétitions (US-024, §13).
+  'COMPETITION_INCONNUE',
+  'COMPETITION_NON_VIDE',
+  // Suppression définitive d'une épreuve (US-039, §14).
+  'EPREUVE_EN_COURS',
+  'EPREUVE_SUPPRIMEE',
+  // Fichiers joints (US-030, §15).
+  'FICHIER_REFUSE',
+  'FICHIER_INCONNU',
+  'PROPRIETAIRE_INCONNU',
+  // Page publique (US-031, §16).
+  'EPREUVE_NON_PUBLIEE',
 ] as const;
 
 export type CodeErreurSession = (typeof CODES_ERREUR_SESSION)[number];
@@ -42,6 +64,11 @@ export interface CompteConnecte {
   temporaire: boolean;
   /** Couleur de l'avatar (US-016). */
   avatar: CouleurAvatar;
+  /**
+   * Club du compte (US-025), gardé avec la session et l'appareil connu pour créer une épreuve hors ligne. Absent
+   * d'une session ouverte auprès d'un serveur antérieur à US-025, jusqu'à sa revalidation en ligne.
+   */
+  clubId?: string;
 }
 
 export interface Session {
@@ -121,12 +148,20 @@ export function analyserReponseSel(brut: unknown): { ok: true; sel: string } | {
 
 function analyserCompte(brut: unknown): CompteConnecte | null {
   if (!estObjet(brut)) return null;
-  const { email, nom, role, temporaire, avatar } = brut;
+  const { email, nom, role, temporaire, avatar, clubId } = brut;
   if (typeof email !== 'string' || typeof nom !== 'string' || typeof temporaire !== 'boolean') return null;
   if (!(ROLES as readonly unknown[]).includes(role)) return null;
   // US-016 : un serveur d'avant US-016 n'envoie pas la couleur ; on prend alors celle par défaut du compte.
   if (avatar !== undefined && !estCouleurAvatar(avatar)) return null;
-  return { email, nom, role: role as Role, temporaire, avatar: avatar ?? couleurParDefaut(email) };
+  if (clubId !== undefined && (typeof clubId !== 'string' || clubId === '')) return null;
+  return {
+    email,
+    nom,
+    role: role as Role,
+    temporaire,
+    avatar: avatar ?? couleurParDefaut(email),
+    ...(clubId !== undefined && { clubId }),
+  };
 }
 
 export function analyserReponseSession(

@@ -35,7 +35,7 @@ class FausseSocket implements SocketMinimale {
 
 const derniere = () => FausseSocket.creees.at(-1) as FausseSocket;
 
-function demarrer(url: string | null = 'ws://serveur/competitions/demo/connexion') {
+function demarrer(url: string | null = 'ws://serveur/epreuves/demo/connexion') {
   const etats: EtatConnexion[] = [];
   const connexion = demarrerConnexion({
     url,
@@ -55,11 +55,9 @@ afterEach(() => {
 });
 
 describe('urlConnexion', () => {
-  it('construit l’adresse de connexion à une compétition', () => {
-    expect(urlConnexion('wss://serveur.workers.dev', 'demo')).toBe(
-      'wss://serveur.workers.dev/competitions/demo/connexion',
-    );
-    expect(urlConnexion(' ws://localhost:8787/ ', 'demo')).toBe('ws://localhost:8787/competitions/demo/connexion');
+  it('construit l’adresse de connexion à une épreuve', () => {
+    expect(urlConnexion('wss://serveur.workers.dev', 'demo')).toBe('wss://serveur.workers.dev/epreuves/demo/connexion');
+    expect(urlConnexion(' ws://localhost:8787/ ', 'demo')).toBe('ws://localhost:8787/epreuves/demo/connexion');
   });
 
   it('US-001 : renvoie null si l’adresse du serveur est absente ou n’est pas en ws(s)://', () => {

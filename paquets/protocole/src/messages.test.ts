@@ -12,11 +12,11 @@ import {
 } from './messages';
 
 describe('construction des messages', () => {
-  it('bienvenue porte la version, le type et la compétition', () => {
+  it('bienvenue porte la version, le type et l’épreuve', () => {
     expect(JSON.parse(messageBienvenue('demo'))).toEqual({
       v: VERSION_PROTOCOLE,
       type: 'bienvenue',
-      competitionId: 'demo',
+      epreuveId: 'demo',
     });
   });
 
@@ -76,7 +76,7 @@ describe('analyserMessageServeur', () => {
   it('reconnaît bienvenue, erreur et pong', () => {
     expect(analyserMessageServeur(messageBienvenue('demo'))).toEqual({
       ok: true,
-      message: { v: 1, type: 'bienvenue', competitionId: 'demo' },
+      message: { v: 1, type: 'bienvenue', epreuveId: 'demo' },
     });
     expect(analyserMessageServeur(messageErreur('MESSAGE_INVALIDE'))).toMatchObject({
       ok: true,

@@ -1,0 +1,409 @@
+import 'fake-indexeddb/auto';
+import { describe, expect, it, vi } from 'vitest';
+import type { Evenement, Proposition } from '@poule-position/domaine';
+import { analyserDemandeEnvoi, type EpreuveIndexee } from '@poule-position/protocole';
+import { ouvrirJournal, type Contexte, type Journal } from './journal';
+import { creerSynchronisation } from './synchronisation';
+
+const URL_SERVEUR = 'http://serveur.test';
+const creation = (nom = 'Challenge Orpi 2027'): Proposition => ({
+  type: 'EpreuveCreee',
+  donnees: {
+    nom,
+    arme: 'sabre',
+    typeEpreuve: 'individuelle',
+    categorie: 'M13',
+    sexe: null,
+    date: '2027-03-14',
+    horaires: { appel: null, scratch: null, debutPoules: null },
+    lieu: null,
+    commentaire: null,
+    rattachement: { competitionId: 'c-test' },
+  },
+});
+let horloge = 1_800_000_000_000;
+const contexte: Contexte = { clubId: 'pessac', auteur: 'orga@club.fr', maintenant: () => ++horloge };
+
+const nouveauJournal = () => ouvrirJournal(`test-${crypto.randomUUID()}`, async () => true);
+
+/** Faux serveur en mémoire, avec les règles de l'ADR-0016 : seq attendu, pilote fixé par le premier lot. */
+function fauxServeur() {
+  const journaux = new Map<string, { evenements: Evenement[]; pilote: string }>();
+  const index = new Map<string, EpreuveIndexee>();
+  const lots: number[][] = [];
+  let reponseForcee: { statut: number; corps: unknown } | null = null;
+  let reseau = true;
+
+  const repondre = (statut: number, corps: unknown) =>
+    new Response(JSON.stringify(corps), { status: statut, headers: { 'Content-Type': 'application/json' } });
+
+  const envoyer = vi.fn(async (adresse: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    if (!reseau) throw new TypeError('Failed to fetch');
+    if (reponseForcee) return repondre(reponseForcee.statut, reponseForcee.corps);
+    const chemin = String(adresse).replace(URL_SERVEUR, '');
+    if (chemin === '/epreuves') return repondre(200, { ok: true, epreuves: [...index.values()] });
+    const id = /^\/epreuves\/([^/]+)\/evenements$/.exec(chemin)?.[1] as string;
+    const journal = journaux.get(id);
+    if (init?.method === 'GET') {
+      if (!journal) return repondre(404, { ok: false, erreur: 'EPREUVE_INCONNUE' });
+      const dernierSeq = journal.evenements.length;
+      return repondre(200, { ok: true, evenements: journal.evenements, dernierSeq, piloteAppareil: journal.pilote });
+    }
+    const analyse = analyserDemandeEnvoi(JSON.parse(String(init?.body)));
+    if (!analyse.ok) return repondre(400, { ok: false, erreur: 'DEMANDE_INVALIDE' });
+    const { appareilId, depuis, evenements, resume } = analyse.demande;
+    lots.push(evenements.map(({ seq }) => seq));
+    if (journal && journal.pilote !== appareilId) return repondre(409, { ok: false, erreur: 'PAS_PILOTE' });
+    const dernierSeq = journal?.evenements.length ?? 0;
+    if (depuis !== dernierSeq) return repondre(409, { ok: false, erreur: 'SEQ_INATTENDU', dernierSeq });
+    const suite = { evenements: [...(journal?.evenements ?? []), ...evenements], pilote: appareilId };
+    journaux.set(id, suite);
+    index.set(id, {
+      id,
+      ...resume,
+      piloteAppareil: appareilId,
+      piloteNom: 'Orga',
+      dernierSeq: suite.evenements.length,
+      modifieeLe: 1,
+    });
+    return repondre(200, { ok: true, dernierSeq: suite.evenements.length });
+  });
+
+  return {
+    envoyer,
+    index,
+    journaux,
+    lots,
+    couper: () => (reseau = false),
+    retablir: () => (reseau = true),
+    forcer: (statut: number, corps: unknown) => (reponseForcee = { statut, corps }),
+  };
+}
+
+function synchro(journal: Journal, serveur: ReturnType<typeof fauxServeur>, champs = {}) {
+  return creerSynchronisation({
+    urlServeur: URL_SERVEUR,
+    journal,
+    jeton: async () => 'jeton',
+    envoyer: serveur.envoyer,
+    enLigne: () => true,
+    maintenant: () => 1_900_000_000_000,
+    ...champs,
+  });
+}
+
+describe('envoi du journal au serveur (ADR-0016)', () => {
+  it('US-022 CA-1 : envoie les événements non confirmés, avec la session, et avance le curseur', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation(), contexte);
+    const synchronisation = synchro(journal, serveur);
+    expect(await synchronisation.envoyer('c1')).toBe('a-jour');
+    expect(serveur.journaux.get('c1')?.evenements).toHaveLength(1);
+    expect(await journal.etat('c1')).toMatchObject({ confirme: 1 });
+    const [, init] = serveur.envoyer.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).toMatchObject({ Authorization: 'Bearer jeton' });
+    expect(await synchronisation.enAttente('c1')).toBe(0);
+    expect(await synchronisation.envoyer('c1')).toBe('a-jour');
+    expect(serveur.lots).toHaveLength(1);
+  });
+
+  it('US-022 CA-1 : après SEQ_INATTENDU, reprend au dernier seq du serveur', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation(), contexte);
+    const synchronisation = synchro(journal, serveur);
+    await synchronisation.envoyer('c1');
+    // Le curseur local a été perdu (par exemple, accusé jamais reçu) : le PC renvoie depuis 0.
+    await journal.confirmer('c1', 0);
+    expect(await synchronisation.envoyer('c1')).toBe('a-jour');
+    expect(await journal.etat('c1')).toMatchObject({ confirme: 1 });
+    expect(serveur.journaux.get('c1')?.evenements).toHaveLength(1);
+  });
+
+  it('US-022 CA-2 : au retour du réseau, envoie tout ce qui suit le dernier seq confirmé, sans doublon', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    const synchronisation = synchro(journal, serveur);
+    serveur.couper();
+    await journal.enregistrer('c1', creation(), contexte);
+    expect(await synchronisation.envoyer('c1')).toBe('en-attente');
+    expect(await synchronisation.enAttente('c1')).toBe(1);
+
+    const cible = new EventTarget();
+    const arreter = synchronisation.surveiller(cible);
+    serveur.retablir();
+    cible.dispatchEvent(new Event('online'));
+    await vi.waitFor(async () => expect(await synchronisation.enAttente('c1')).toBe(0));
+    arreter();
+    expect(serveur.journaux.get('c1')?.evenements.map(({ seq }) => seq)).toEqual([1]);
+  });
+
+  it('US-022 CA-6 : un refus PAS_PILOTE arrête l’envoi ; depuis US-029, les événements sont mis de côté, pas perdus', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation(), contexte);
+    serveur.forcer(409, { ok: false, erreur: 'PAS_PILOTE' });
+    expect(await synchro(journal, serveur).envoyer('c1')).toBe('pas-pilote');
+    expect(await journal.aEnvoyer('c1')).toHaveLength(0);
+    expect((await journal.lireEcartes('c1')).flatMap(({ evenements }) => evenements)).toHaveLength(1);
+  });
+
+  it('US-022 cas limite : une session expirée laisse les événements en attente, rien n’est perdu', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation(), contexte);
+    serveur.forcer(401, { ok: false, erreur: 'SESSION_INVALIDE' });
+    expect(await synchro(journal, serveur).envoyer('c1')).toBe('session-expiree');
+    expect(await synchro(journal, serveur, { jeton: async () => null }).envoyer('c1')).toBe('en-attente');
+    expect(await journal.aEnvoyer('c1')).toHaveLength(1);
+  });
+
+  it('US-022 cas limite : une erreur inattendue du serveur laisse les événements en attente', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation(), contexte);
+    serveur.forcer(500, 'oups');
+    expect(await synchro(journal, serveur).envoyer('c1')).toBe('en-attente');
+  });
+
+  it('US-022 cas limite : une épreuve jamais envoyée se reconnaît (« Pas encore envoyée »)', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation(), contexte);
+    const synchronisation = synchro(journal, serveur);
+    expect(await synchronisation.jamaisEnvoyee('c1')).toBe(true);
+    await synchronisation.envoyer('c1');
+    expect(await synchronisation.jamaisEnvoyee('c1')).toBe(false);
+    expect(await synchronisation.jamaisEnvoyee('inconnue')).toBe(false);
+  });
+
+  it('US-022 : sans serveur configuré, rien ne part et tout reste en attente', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation(), contexte);
+    expect(await synchro(journal, serveur, { urlServeur: null }).envoyer('c1')).toBe('en-attente');
+    expect(await synchro(journal, serveur).envoyer('copie-inconnue')).toBe('a-jour');
+    expect(serveur.envoyer).not.toHaveBeenCalled();
+  });
+
+  it('US-022 : deux envois simultanés d’une même épreuve n’en font qu’un', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation(), contexte);
+    const synchronisation = synchro(journal, serveur);
+    await Promise.all([synchronisation.envoyer('c1'), synchronisation.envoyer('c1')]);
+    expect(serveur.lots).toEqual([[1]]);
+  });
+});
+
+describe('épreuves des autres PC (ADR-0016)', () => {
+  it('US-022 CA-4 : liste l’index du club et télécharge une copie en lecture seule', async () => {
+    const serveur = fauxServeur();
+    const pilote = nouveauJournal();
+    await pilote.enregistrer('c1', creation('Orpi'), contexte);
+    await synchro(pilote, serveur).envoyer('c1');
+
+    const autrePc = nouveauJournal();
+    const synchronisation = synchro(autrePc, serveur);
+    expect(await synchronisation.listerEpreuvesDuClub()).toMatchObject({
+      ok: true,
+      epreuves: [{ id: 'c1', nom: 'Orpi' }],
+    });
+    expect(await synchronisation.telechargerCopie('c1')).toMatchObject({
+      ok: true,
+      projection: { epreuve: { nom: 'Orpi' }, dernierSeq: 1 },
+      copieLe: 1_900_000_000_000,
+    });
+    expect(await autrePc.enregistrer('c1', creation(), contexte)).toEqual({ erreur: 'PAS_PILOTE' });
+  });
+
+  it('US-022 CA-4 : sur le PC pilote, le journal local fait foi et n’est pas remplacé', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation('Mienne'), contexte);
+    expect(await synchro(journal, serveur).telechargerCopie('c1')).toMatchObject({
+      ok: true,
+      projection: { epreuve: { nom: 'Mienne' } },
+      copieLe: null,
+    });
+    expect(serveur.envoyer).not.toHaveBeenCalled();
+  });
+
+  it('US-022 CA-4 : une épreuve inconnue du serveur ou une réponse invalide est signalée', async () => {
+    const serveur = fauxServeur();
+    const synchronisation = synchro(nouveauJournal(), serveur);
+    expect(await synchronisation.telechargerCopie('absente')).toEqual({ ok: false, erreur: 'EPREUVE_INCONNUE' });
+    serveur.forcer(200, { ok: true, epreuves: 'non' });
+    expect(await synchronisation.listerEpreuvesDuClub()).toEqual({ ok: false, erreur: 'ERREUR_INATTENDUE' });
+    serveur.forcer(401, { ok: false, erreur: 'SESSION_INVALIDE' });
+    expect(await synchronisation.listerEpreuvesDuClub()).toEqual({ ok: false, erreur: 'SESSION_INVALIDE' });
+  });
+
+  it('US-022 hors ligne : la copie d’un autre PC reste lisible avec sa date, la liste du club est indisponible', async () => {
+    const serveur = fauxServeur();
+    const pilote = nouveauJournal();
+    await pilote.enregistrer('c1', creation('Orpi'), contexte);
+    await synchro(pilote, serveur).envoyer('c1');
+    const autrePc = nouveauJournal();
+    const synchronisation = synchro(autrePc, serveur);
+    await synchronisation.telechargerCopie('c1');
+
+    serveur.couper();
+    expect(await synchronisation.listerEpreuvesDuClub()).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect(await synchronisation.telechargerCopie('c1')).toMatchObject({
+      ok: false,
+      erreur: 'HORS_LIGNE',
+      copie: { projection: { epreuve: { nom: 'Orpi' } }, copieLe: 1_900_000_000_000 },
+    });
+    const horsLigne = synchro(autrePc, serveur, { enLigne: () => false });
+    expect(await horsLigne.listerEpreuvesDuClub()).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+  });
+
+  it('US-022 hors ligne : sur le pilote, les modifications restent en attente et sont comptées', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    const synchronisation = synchro(journal, serveur, { enLigne: () => false });
+    await journal.enregistrer('c1', creation(), contexte);
+    expect(await synchronisation.envoyer('c1')).toBe('en-attente');
+    expect(await synchronisation.enAttente('c1')).toBe(1);
+    expect(serveur.envoyer).not.toHaveBeenCalled();
+  });
+});
+
+describe('création d’une épreuve (US-025)', () => {
+  it('US-025 CA-2 : le résumé envoyé à l’index du club est calculé depuis la projection', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation(), contexte);
+    await synchro(journal, serveur).envoyer('c1');
+    const resultat = await synchro(journal, serveur).listerEpreuvesDuClub();
+    expect(resultat).toMatchObject({
+      ok: true,
+      epreuves: [
+        {
+          id: 'c1',
+          nom: 'Challenge Orpi 2027',
+          arme: 'sabre',
+          categorie: 'M13',
+          sexe: null,
+          date: '2027-03-14',
+          statut: 'preparation',
+          publiee: false,
+          rattachement: { competitionId: 'c-test' },
+        },
+      ],
+    });
+  });
+
+  it('US-025 CA-6 : créée hors ligne, elle est gardée localement puis envoyée au retour du réseau', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    let enLigne = false;
+    const synchronisation = synchro(journal, serveur, { enLigne: () => enLigne });
+    await journal.enregistrer('c1', creation(), contexte);
+    expect(await synchronisation.envoyer('c1')).toBe('en-attente');
+    expect(await synchronisation.enAttente('c1')).toBe(1);
+    expect(await synchronisation.jamaisEnvoyee('c1')).toBe(true);
+    expect(serveur.envoyer).not.toHaveBeenCalled();
+
+    const cible = new EventTarget();
+    const arreter = synchronisation.surveiller(cible);
+    enLigne = true;
+    cible.dispatchEvent(new Event('online'));
+    await vi.waitFor(async () => expect(await synchronisation.enAttente('c1')).toBe(0));
+    arreter();
+    expect(serveur.journaux.get('c1')?.evenements).toHaveLength(1);
+    expect(await synchronisation.jamaisEnvoyee('c1')).toBe(false);
+  });
+});
+
+describe('épreuves connues (US-023 CA-4)', () => {
+  it('US-023 CA-4 : réunit l’index du club et les épreuves de cet appareil, même pas encore envoyées', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation('Envoyée'), contexte);
+    await synchro(journal, serveur).envoyer('c1');
+    const autrePc = nouveauJournal();
+    await autrePc.enregistrer('c2', creation('Autre PC'), contexte);
+    await synchro(autrePc, serveur, { enLigne: () => false }).envoyer('c2');
+    await journal.enregistrer('c3', creation('Locale'), contexte);
+
+    const epreuves = await synchro(journal, serveur).epreuvesConnues();
+    expect(epreuves.map(({ id, nom }) => `${id}:${nom}`).sort()).toEqual(['c1:Envoyée', 'c3:Locale']);
+    expect(epreuves[0]).toMatchObject({ date: '2027-03-14', rattachement: { competitionId: 'c-test' } });
+  });
+
+  it('US-023 hors ligne : sans index, seules les épreuves de cet appareil sont connues', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation('Locale'), contexte);
+    const epreuves = await synchro(journal, serveur, { enLigne: () => false }).epreuvesConnues();
+    expect(epreuves.map(({ id }) => id)).toEqual(['c1']);
+  });
+});
+
+describe('publication d’une épreuve (US-031)', () => {
+  it('CA-2 et hors ligne : une publication faite sans réseau part au retour du réseau, avec le résumé à jour', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    const synchronisation = synchro(journal, serveur);
+    await journal.enregistrer('c1', creation(), contexte);
+    expect(await synchronisation.envoyer('c1')).toBe('a-jour');
+    expect(serveur.index.get('c1')).toMatchObject({ publiee: false });
+
+    serveur.couper();
+    await journal.enregistrer('c1', { type: 'PublicationModifiee', donnees: { publiee: true } }, contexte);
+    expect(await synchronisation.envoyer('c1')).toBe('en-attente');
+    expect(await synchronisation.enAttente('c1')).toBe(1);
+    expect(serveur.index.get('c1')).toMatchObject({ publiee: false });
+
+    serveur.retablir();
+    expect(await synchronisation.envoyer('c1')).toBe('a-jour');
+    expect(serveur.index.get('c1')).toMatchObject({
+      publiee: true,
+      horaires: { appel: null, scratch: null, debutPoules: null },
+      lieu: null,
+    });
+    expect(serveur.journaux.get('c1')?.evenements.map(({ type }) => type)).toEqual([
+      'EpreuveCreee',
+      'PublicationModifiee',
+    ]);
+  });
+
+  it('CA-4 : dépublier envoie aussi l’événement et le résumé non publié', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    const synchronisation = synchro(journal, serveur);
+    await journal.enregistrer('c1', creation(), contexte);
+    await journal.enregistrer('c1', { type: 'PublicationModifiee', donnees: { publiee: true } }, contexte);
+    await synchronisation.envoyer('c1');
+    expect(serveur.index.get('c1')).toMatchObject({ publiee: true });
+    await journal.enregistrer('c1', { type: 'PublicationModifiee', donnees: { publiee: false } }, contexte);
+    await synchronisation.envoyer('c1');
+    expect(serveur.index.get('c1')).toMatchObject({ publiee: false });
+  });
+
+  it('le résumé envoyé porte les horaires et le lieu de l’épreuve (CA-3)', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    const { donnees } = creation() as Extract<Proposition, { type: 'EpreuveCreee' }>;
+    await journal.enregistrer(
+      'c1',
+      {
+        type: 'EpreuveCreee',
+        donnees: {
+          ...donnees,
+          lieu: 'Salle Bellegrave',
+          horaires: { appel: '08:30', scratch: '09:00', debutPoules: null },
+        },
+      },
+      contexte,
+    );
+    await synchro(journal, serveur).envoyer('c1');
+    expect(serveur.index.get('c1')).toMatchObject({
+      lieu: 'Salle Bellegrave',
+      horaires: { appel: '08:30', scratch: '09:00', debutPoules: null },
+    });
+  });
+});

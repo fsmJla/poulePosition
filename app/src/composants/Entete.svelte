@@ -1,41 +1,89 @@
 <script lang="ts">
-  // Entête des pages réservées (US-014) : bannière « header » qui ramène à l'accueil de l'organisateur, et menu de
-  // compte en haut à droite (US-017 : profil, déconnexions). Les liens de navigation (Compétitions, Résultats)
-  // viendront avec leurs US. Bandeau « connexion locale » tant que la session ouverte hors ligne n'est pas revalidée
-  // (US-005 CA-1). « Se déconnecter et oublier cet appareil » (US-006) se confirme dans un panneau sous l'entête, sans
-  // boîte de dialogue du navigateur.
+  // Entête des pages réservées (US-014, US-054, planches 1 à 3) : la marque (retour à l'accueil de l'organisateur), puis
+  // « Créer », « Comptes » (administrateurs), l'aide, les trois icônes de thème (US-067) et le menu de compte (US-017). La recherche (US-062)
+  // suit la marque ; sur un écran étroit, une loupe l'ouvre en pleine largeur. Sur un écran étroit (CA-7), il ne reste que la marque et le menu de compte, qui reçoit
+  // « Comptes », l'aide et le thème. Bandeau « connexion locale » tant que la session ouverte hors ligne n'est pas
+  // revalidée (US-005 CA-1). « Se déconnecter et oublier cet appareil » (US-006) se confirme dans un panneau sous
+  // l'entête, sans boîte de dialogue du navigateur.
+  import { onMount } from 'svelte';
   import type { CompteConnecte } from '@poule-position/protocole';
+  import type { Accueil } from '../lib/accueil';
   import { CHEMINS } from '../lib/routes';
   import { textes } from '../lib/textes';
-  import Banniere from './Banniere.svelte';
+  import BoutonIcone from './BoutonIcone.svelte';
+  import Icone from './Icone.svelte';
   import MenuCompte from './MenuCompte.svelte';
+  import SelecteurTheme from './SelecteurTheme.svelte';
+  import RechercheEntete from './RechercheEntete.svelte';
 
   interface Proprietes {
     compte: CompteConnecte;
     surDeconnexion: () => void;
     surOubli: () => void;
     naviguer: (chemin: string) => void;
+    /** US-062 : liste du club, lue au premier usage du champ de recherche. */
+    accueil: Accueil;
     locale?: boolean;
   }
 
-  let { compte, surDeconnexion, surOubli, naviguer, locale = false }: Proprietes = $props();
+  let { compte, surDeconnexion, surOubli, naviguer, accueil, locale = false }: Proprietes = $props();
 
   const t = textes.organisateur.oublier;
+  const te = textes.entete;
   /** US-006 : confirmation de l'oubli affichée. */
   let aConfirmer = $state(false);
+  const administrateur = $derived(compte.role === 'administrateur');
+  let etroit = $state(window.matchMedia('(max-width: 639px)').matches);
+  let enLigne = $state(navigator.onLine);
 
-  function versAccueil(evenement: MouseEvent) {
-    if (evenement.button !== 0 || evenement.ctrlKey || evenement.metaKey || evenement.shiftKey) return;
-    evenement.preventDefault();
-    naviguer(CHEMINS.organisateur);
+  onMount(() => {
+    const requete = window.matchMedia('(max-width: 639px)');
+    const surTaille = () => (etroit = requete.matches);
+    const surReseau = () => (enLigne = navigator.onLine);
+    requete.addEventListener('change', surTaille);
+    window.addEventListener('online', surReseau);
+    window.addEventListener('offline', surReseau);
+    return () => {
+      requete.removeEventListener('change', surTaille);
+      window.removeEventListener('online', surReseau);
+      window.removeEventListener('offline', surReseau);
+    };
+  });
+
+  function vers(chemin: string) {
+    return (evenement: MouseEvent) => {
+      if (evenement.button !== 0 || evenement.ctrlKey || evenement.metaKey || evenement.shiftKey) return;
+      evenement.preventDefault();
+      naviguer(chemin);
+    };
   }
 </script>
 
 <header>
-  <a href={CHEMINS.organisateur} onclick={versAccueil} class="marque">
-    <Banniere variante="header" surFondSombre hauteur={32} />
-  </a>
-  <MenuCompte {compte} {naviguer} {surDeconnexion} surOubli={() => (aConfirmer = true)} />
+  <a href={CHEMINS.organisateur} onclick={vers(CHEMINS.organisateur)} class="marque">{te.marque}</a>
+  {#if !etroit}<RechercheEntete {accueil} {naviguer} {etroit} />{/if}
+  <div class="outils">
+    {#if etroit}<RechercheEntete {accueil} {naviguer} {etroit} />{/if}
+    {#if !etroit}
+      <!-- « Créer » reste actif hors ligne : la page /creer grise elle-même ce qui demande une connexion (US-046). -->
+      <a class="creer" href={CHEMINS.creer} onclick={vers(CHEMINS.creer)}><Icone nom="plus" />{te.creer}</a>
+      {#if administrateur}
+        {#if enLigne}
+          <a class="navigation" href={CHEMINS.comptes} onclick={vers(CHEMINS.comptes)}
+            ><Icone nom="personnes" />{te.comptes}</a
+          >
+        {:else}
+          <span class="navigation inactif" aria-disabled="true" title={te.horsLigne}
+            ><Icone nom="personnes" />{te.comptes}</span
+          >
+        {/if}
+      {/if}
+      <BoutonIcone icone="aide" nom={te.aide} chemin={CHEMINS.aideOrganisation} {naviguer} surMarque />
+      <!-- US-067 : les trois icônes de thème restent visibles sur écran large, sans menu à ouvrir. -->
+      <SelecteurTheme surMarque grand />
+    {/if}
+    <MenuCompte {compte} {naviguer} {surDeconnexion} surOubli={() => (aConfirmer = true)} {etroit} {enLigne} />
+  </div>
 </header>
 {#if aConfirmer}
   <div class="confirmation" id="confirmation-oubli" role="group" aria-labelledby="avertissement-oubli">
@@ -62,25 +110,79 @@
     text-align: center;
   }
 
-  /* Bannière à gauche, avatar à droite : une seule ligne, smartphone compris (US-017). */
+  /* Marque à gauche, outils à droite : une seule ligne, smartphone compris (US-017). Marges de la planche : 8 × 24 px. */
   header {
+    position: relative;
+    z-index: 40;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 0.6rem max(1rem, env(safe-area-inset-left));
+    padding: 0.5rem max(1.5rem, env(safe-area-inset-left));
     background: var(--marque);
     color: var(--sur-marque);
   }
 
-  .marque {
+  /* « Créer », « Comptes », aide, thème puis menu de compte, à droite. */
+  .outils {
     display: flex;
-    min-width: 0;
-    border-radius: 6px;
+    flex: none;
+    align-items: center;
+    gap: 0.5rem;
   }
 
-  .marque:focus-visible {
+  .marque {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    min-width: 0;
+    border-radius: 6px;
+    color: var(--sur-marque);
+    font-family: var(--police-titre);
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .marque:focus-visible,
+  .creer:focus-visible,
+  .navigation:focus-visible {
     outline-color: var(--sur-marque);
+  }
+
+  .creer,
+  .navigation {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-sizing: border-box;
+    min-height: 44px;
+    padding: 0 0.9rem;
+    border-radius: var(--rayon);
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .creer {
+    background: var(--palette-tiffany);
+    color: var(--sur-tiffany);
+  }
+
+  .navigation {
+    position: relative;
+    color: var(--sur-marque);
+    font-weight: 400;
+  }
+
+  .navigation:hover {
+    background: color-mix(in srgb, var(--sur-marque) 16%, transparent);
+  }
+
+  .inactif {
+    opacity: 0.6;
   }
 
   .confirmation {

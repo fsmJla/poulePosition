@@ -17,3 +17,14 @@ export function aExactementLesChamps(brut: unknown, champs: readonly string[]): 
   const objet = brut as Record<string, unknown>;
   return Object.keys(objet).sort().join(',') === [...champs].sort().join(',') ? objet : null;
 }
+
+/** Vrai pour un texte, ou null (champ facultatif non saisi). */
+export function estTexteOuNull(valeur: unknown): valeur is string | null {
+  return valeur === null || typeof valeur === 'string';
+}
+
+/** Vrai pour le rattachement d'une épreuve : `{ competitionId }`, jamais vide (US-045 CA-1). */
+export function estRattachement(brut: unknown): boolean {
+  const rattachement = aExactementLesChamps(brut, ['competitionId']);
+  return rattachement !== null && typeof rattachement.competitionId === 'string' && rattachement.competitionId !== '';
+}

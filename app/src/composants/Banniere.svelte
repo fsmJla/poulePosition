@@ -1,7 +1,8 @@
 <script lang="ts">
   // Bannière « Poule Position » (US-014), SVG vectorisés du pack d'icônes (public/brand) : aucune police à charger,
-  // rendu identique hors ligne. Variante claire ou sombre selon le mode de l'appareil, ou toujours sombre sur la marque.
+  // rendu identique hors ligne. Variante claire ou sombre selon le thème (US-052), ou toujours sombre sur la marque.
   import { textes } from '../lib/textes';
+  import { theme } from '../lib/theme';
 
   interface Proprietes {
     /** login : icône, nom et filet · header : petite icône et nom · wordmark : nom seul. */
@@ -16,15 +17,14 @@
 
   /** Dimensions des SVG du pack (viewBox). */
   const TAILLES = { login: [321, 190], header: [222, 40], wordmark: [343, 64] } as const;
+  /** US-052 : la variante suit le thème effectif (choix manuel ou système), pas seulement le réglage du système. */
+  const effectif = theme.effectif;
   const largeur = $derived(Math.round((TAILLES[variante][0] * hauteur) / TAILLES[variante][1]));
 </script>
 
 <picture>
-  {#if !surFondSombre}
-    <source srcset="/brand/{variante}-dark.svg" media="(prefers-color-scheme: dark)" />
-  {/if}
   <img
-    src="/brand/{variante}-{surFondSombre ? 'dark' : 'light'}.svg"
+    src="/brand/{variante}-{surFondSombre || $effectif === 'sombre' ? 'dark' : 'light'}.svg"
     alt={textes.nomApplication}
     width={largeur}
     height={hauteur}

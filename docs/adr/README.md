@@ -25,3 +25,13 @@ Vue d'ensemble : [`../architecture.md`](../architecture.md).
 | [0013](0013-integrations-email-carte.md) | Intégrations externes : e-mail et carte | Acceptée ; partie e-mail remplacée par ADR-0015 |
 | [0014](0014-donnees-personnelles-multi-clubs.md) | Données personnelles, conservation, préparation multi-clubs | Acceptée |
 | [0015](0015-envoi-emails-smtp-ovh.md) | Envoi d'e-mails par le SMTP OVH du club (remplace la partie e-mail de l'ADR-0013) | Acceptée |
+| [0016](0016-replication-index-pilote.md) | Réplication du journal par HTTP, pilote identifié par son appareil, index des compétitions dans le DO `Club` | Acceptée |
+| [0017](0017-prise-de-main-et-presence-du-pilote.md) | Prise de main par HTTP et présence du pilote par battements (provisoire, en attendant la WebSocket) | Acceptée |
+| [0018](0018-economie-minutes-ci.md) | Économie des minutes de CI : E2E de la preview choisis selon le commit | Acceptée |
+| [0019](0019-suppression-definitive-pierres-tombales.md) | Suppression définitive d'une compétition et pierres tombales | Acceptée |
+| [0020](0020-suppression-avec-contenu-par-morceaux.md) | Suppression d'une épreuve ou d'une manifestation avec son contenu, par morceaux | Acceptée |
+| [0021](0021-inversion-vocabulaire-competition-epreuve.md) | Inversion du vocabulaire : la compétition regroupe des épreuves (les ADR 0005, 0007, 0010, 0011, 0016, 0019 et 0020 se lisent avec le nouveau sens) | Acceptée |
+| [0022](0022-fichiers-joints-dans-le-do-club.md) | Fichiers joints dans le DO `Club`, nom à empreinte et lecture publique (complète les ADR 0011 et 0016) | Acceptée |
+| [0023](0023-deux-niveaux-e2e-interface-et-reel.md) | Deux niveaux de E2E : « interface » en local, « réel » sur Cloudflare (remplace la règle 2 de l'ADR-0018) | Acceptée |
+| [0025](0025-recherche-adresse-geoplateforme.md) | Recherche d'adresse : service de géocodage de la Géoplateforme (IGN), complète l'ADR-0013 | Proposée |
+| [0026](0026-pdfjs-apercu-feuille-de-route.md) | pdf.js (Apache-2.0, chargé à la demande, hors précache) pour l'aperçu de la feuille de route, complète l'ADR-0022 | Proposée |

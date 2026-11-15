@@ -90,20 +90,23 @@ smartphone et l'affichage en direct reprennent.
   - Si possible et gratuit, un système de mot de passe oublié
 
 
-### F2 — Création d'une compétition
+### F2 — Création d'une compétition et de ses épreuves
 - **Priorité :** P1
 - **Rôle(s) concerné(s) :** Administrateur, Organisateur
-- **Description :** pouvoir créer une compétition d'escrime :
-  - Nom de la compétition - Exemple : Challenge Orpi 2027
-  - Catégorie (facultatif) - Exemple : Vétéran 1
-  - Homme / femme (facultatif)
-  - Individuelle / par équipe de 2 ou 3
-  - Formule - Exemple : poules puis tableau par élimination directe (choix par défaut)
-  - Date (facultatif)
-  - Lieu (facultatif)
-  - Feuille de route (facultatif), fichier PDF
-  - Affiche (facultatif)
-  - ...
+- **Description :** pouvoir créer une compétition d'escrime et les épreuves qui la composent (vocabulaire révisé le
+  2026-11-08 : la compétition regroupe des épreuves, l'épreuve est ce qui se tire ; voir le glossaire) :
+  - Compétition : nom - Exemple : Championnats de Nouvelle-Aquitaine de sabre, Challenge Orpi 2027 ; dans une
+    manifestation ou seule ; un challenge seul est une compétition à une seule épreuve
+  - Épreuve, toujours dans une compétition :
+    - Catégorie (facultatif) - Exemple : Vétéran 1
+    - Homme / femme (facultatif)
+    - Individuelle / par équipe de 2 ou 3
+    - Formule - Exemple : poules puis tableau par élimination directe (choix par défaut)
+    - Date (facultatif)
+    - Lieu (facultatif)
+    - Feuille de route (facultatif), fichier PDF
+    - Affiche (facultatif)
+    - ...
 
 - **Règles métier connues :**
   -
@@ -127,7 +130,7 @@ smartphone et l'affichage en direct reprennent.
 - **F12 — Mode hors-ligne et resynchronisation** du PC de l'organisateur (voir scénario section 1) — P1
 - **F13 — Affichage en direct sur écran géant** — P1
 - **F14 — Suivi de la compétition par les spectateurs** sur smartphone — P2
-- **F15 — Compétitions par équipes** (rencontres en relais) — P2
+- **F15 — Épreuves par équipes** (rencontres en relais) — P2
 - **F16 — Import / export des compétitions** (tireurs, poules, résultats) — P2
 - **F17 — Journal des actions** — P2
 - **F18 — Carte de localisation de la compétition** — P3

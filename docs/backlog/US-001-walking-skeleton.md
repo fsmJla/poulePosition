@@ -111,7 +111,7 @@ et indique « serveur injoignable ». Un test E2E le vérifie avec `context.setO
 | CA-5 | `.github/workflows/e2e-preview.yml` : vérifié sur la PR |
 | CA-6 | Test cassé volontairement sur la PR, avec l'utilisateur, à la recette |
 | CA-7 | `.github/workflows/deploiement-serveur.yml` (main → production) et production Vercel : vérifié au premier merge `dev` → `main` |
-| CA-8 | `serveur/src/logique.test.ts` (2 tests « US-001 CA-8 ») ; `serveur/src/serveur.test.ts` › « US-001 CA-8 : une origine non autorisée est refusée (403) » et « … la connexion reçoit bienvenue » ; `app/src/lib/connexion.test.ts` › « US-001 CA-8 : passe de « connexion » à « connecté » » ; `tests/e2e/page.spec.ts` › « US-001 CA-8 : la page affiche « Serveur connecté » » |
+| CA-8 | `serveur/src/logique.test.ts` (2 tests « US-001 CA-8 ») ; `serveur/src/serveur.test.ts` › « US-001 CA-8 : une origine non autorisée est refusée (403) » et « … la connexion reçoit bienvenue » ; `app/src/lib/connexion.test.ts` › « US-001 CA-8 : passe de « connexion » à « connecté » » ; `tests/e2e/page.spec.ts` › « US-001 CA-8 (US-065) : l’accueil charge la liste des épreuves auprès du serveur » |
 | CA-9 | `tests/garde-fous/charge.test.ts` (2 tests « US-001 CA-9 ») ; première exécution manuelle à faire avec l'utilisateur |
 | CA-10 | `README.md` : relecture à la recette |
 | Hors ligne | `tests/e2e/hors-ligne.spec.ts` ; `app/src/lib/connexion.test.ts` › « US-001 hors ligne : … reconnexion avec délai croissant » et « US-001 : sans adresse, l'état est « non configuré » » |
@@ -139,3 +139,4 @@ ADR-0012 (monorepo, CI). Créer `docs/protocole.md` (première version : connexi
 | 2026-10-24 | CA-7 ✅ : mise en production 2026.10.24 (PR #5, mergée par l'utilisateur). Worker `poule-position-serveur` déployé par la CI (`/sante` OK, origine pirate 403, production 101). Production publique `https://poule-position-livid.vercel.app` : « Serveur connecté » sans session Vercel, chargement 608 ms, 16 Ko. |
 | 2026-10-24 | **Terminée** : tous les critères sont vérifiés. Porte d'entrée ouverte pour les US fonctionnelles. |
 | 2026-10-25 | Suite : Dependabot ignore les montées majeures de `typescript` et `@types/node` (PR Dependabot #6 et #7 fermées). |
+| 2026-11-08 | Impactée par US-044 (vocabulaire inversé : la compétition regroupe, l'épreuve se tire) |

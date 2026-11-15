@@ -1,0 +1,63 @@
+# E2E « interface » (US-076, ADR-0023) : sur le runner GitHub, contre le serveur local (Wrangler) et la build de l'app.
+# Aucune requête vers Cloudflare ni Vercel : pas d'URL de preview, pas de secret. Les tests @reel sont dans e2e-preview.yml.
+name: E2E interface
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+concurrency:
+  group: e2e-interface-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  interface:
+    name: Playwright en local (sans @reel)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Choisir les tests
+        id: choix
+        run: npx tsx outils/choisir-e2e-interface.ts
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          REF_NAME: ${{ github.ref_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+      - name: Cache de Chromium
+        if: steps.choix.outputs.mode != 'aucun'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - name: Installer Chromium
+        if: steps.choix.outputs.mode != 'aucun'
+        run: npx playwright install --with-deps chromium
+      - name: Playwright
+        if: steps.choix.outputs.mode != 'aucun'
+        run: npx playwright test --workers=2 --grep-invert @reel ${{ steps.choix.outputs.projets }} ${{ steps.choix.outputs.specs }}
+      - name: Rapport HTML
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-playwright-interface
+          path: playwright-report
+          retention-days: 7

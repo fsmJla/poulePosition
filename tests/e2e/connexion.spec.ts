@@ -12,16 +12,18 @@ async function essayer(page: Page, email: string, motDePasse: string) {
   await page.getByRole('button', { name: 'Se connecter' }).click();
 }
 
-test('US-003 CA-1 : l’organisateur se connecte et voit son nom et son rôle', async ({ page }) => {
+test('US-003 CA-1 (US-055 : nom dans l’entête, plus de « Bonjour » ni de rôle) : l’organisateur se connecte et voit son nom', async ({
+  page,
+}) => {
   const compte = compteTest();
   await seConnecter(page, compte);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    compte.nom ? `Bonjour, ${compte.nom}` : /^Bonjour, .+/,
-  );
-  await expect(page.getByText(/^(Administrateur|Organisateur)$/)).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Manifestations et compétitions' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: compte.nom ? `Menu du compte de ${compte.nom}` : /^Menu du compte de / }),
+  ).toBeVisible();
 });
 
-test('US-003 CA-2 : un e-mail inconnu affiche « E-mail ou mot de passe incorrect »', async ({ page }) => {
+test('US-003 CA-2 : un e-mail inconnu affiche « E-mail ou mot de passe incorrect » @reel', async ({ page }) => {
   // Un e-mail différent à chaque passage : son compteur d'essais (US-004 CA-4) ne se remplit jamais.
   await essayer(page, `inconnu-${crypto.randomUUID()}@poule-position.test`, compteTest().motDePasse);
   await expect(page.getByRole('alert')).toHaveText('E-mail ou mot de passe incorrect', { timeout: 20_000 });
@@ -55,7 +57,7 @@ test('US-003 : le bouton « Se connecter » reste inactif tant qu’un champ est
   await expect(bouton).toBeEnabled();
 });
 
-test('US-003 CA-4 : on reste connecté après un rechargement ou une réouverture', async ({ page, context }) => {
+test('US-003 CA-4 : on reste connecté après un rechargement ou une réouverture @reel', async ({ page, context }) => {
   await seConnecter(page);
   await page.reload();
   await expect(page).toHaveURL(/\/organisateur$/);
@@ -69,7 +71,7 @@ test('US-003 CA-4 : on reste connecté après un rechargement ou une réouvertur
   await expect(boutonMenuCompte(rouverte)).toBeVisible();
 });
 
-test('US-003 CA-5 : « Se déconnecter » ramène à l’écran de connexion', async ({ page }) => {
+test('US-003 CA-5 : « Se déconnecter » ramène à l’écran de connexion @reel', async ({ page }) => {
   await seConnecter(page);
   await choisirDansMenuCompte(page, 'Se déconnecter');
   await expect(page).toHaveURL(/\/connexion$/);

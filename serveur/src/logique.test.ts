@@ -22,26 +22,112 @@ import {
   NOM_EXPEDITEUR,
   empreinteJeton,
   lienReinitialisation,
+  requetesCompetitionsSeules,
+  requetesInversionVocabulaire,
 } from './logique';
 
 describe('analyserChemin', () => {
-  it('reconnaît l’accueil, la santé et la connexion à une compétition', () => {
+  it('reconnaît l’accueil, la santé et la connexion à une épreuve', () => {
     expect(analyserChemin('/')).toEqual({ route: 'accueil' });
     expect(analyserChemin('/sante')).toEqual({ route: 'sante' });
-    expect(analyserChemin('/competitions/demo/connexion')).toEqual({ route: 'connexion', competitionId: 'demo' });
-    expect(analyserChemin('/competitions/club-1-2027/connexion')).toEqual({
+    expect(analyserChemin('/epreuves/demo/connexion')).toEqual({ route: 'connexion', epreuveId: 'demo' });
+    expect(analyserChemin('/epreuves/club-1-2027/connexion')).toEqual({
       route: 'connexion',
-      competitionId: 'club-1-2027',
+      epreuveId: 'club-1-2027',
     });
+  });
+
+  it('US-024 : reconnaît la liste des compétitions et une compétition', () => {
+    expect(analyserChemin('/competitions')).toEqual({ route: 'competitions' });
+    expect(analyserChemin('/competitions/0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c')).toEqual({
+      route: 'competition',
+      id: '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c',
+    });
+    expect(analyserChemin('/competitions/Pas Un Id')).toBeNull();
+    expect(analyserChemin('/competitions/e1/autre')).toBeNull();
+  });
+
+  it('US-023 : reconnaît la liste des manifestations et une manifestation', () => {
+    expect(analyserChemin('/manifestations')).toEqual({ route: 'manifestations' });
+    expect(analyserChemin('/manifestations/0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c')).toEqual({
+      route: 'manifestation',
+      id: '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c',
+    });
+    expect(analyserChemin('/manifestations/Pas Un Id')).toBeNull();
+    expect(analyserChemin('/manifestations/m1/autre')).toBeNull();
+  });
+
+  it('US-033 : reconnaît l’archivage d’une manifestation', () => {
+    expect(analyserChemin('/manifestations/0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c/archivage')).toEqual({
+      route: 'archivage-manifestation',
+      id: '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c',
+    });
+    expect(analyserChemin('/manifestations/Pas Un Id/archivage')).toBeNull();
+  });
+
+  it('US-022 : reconnaît l’index des épreuves et le journal d’une épreuve', () => {
+    expect(analyserChemin('/epreuves')).toEqual({ route: 'epreuves' });
+    expect(analyserChemin('/epreuves/0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c/evenements')).toEqual({
+      route: 'evenements',
+      epreuveId: '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c',
+    });
+  });
+
+  it('US-030 : reconnaît la liste des fichiers, un fichier d’un élément et la lecture publique par nom', () => {
+    const id = '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c';
+    const nom = `${'ab'.repeat(32)}.webp`;
+    expect(analyserChemin('/fichiers')).toEqual({ route: 'fichiers' });
+    expect(analyserChemin(`/fichiers/epreuve/${id}/affiche`)).toEqual({
+      route: 'fichier',
+      proprietaire: 'epreuve',
+      id,
+      sorte: 'affiche',
+    });
+    expect(analyserChemin(`/fichiers/manifestation/${id}/feuilleDeRoute`)).toEqual({
+      route: 'fichier',
+      proprietaire: 'manifestation',
+      id,
+      sorte: 'feuilleDeRoute',
+    });
+    expect(analyserChemin(`/fichiers/${nom}`)).toEqual({ route: 'fichier-public', nom });
+    expect(analyserChemin('/fichiers/club/x/affiche')).toBeNull();
+    expect(analyserChemin(`/fichiers/epreuve/${id}/logo`)).toBeNull();
+    expect(analyserChemin('/fichiers/Pas Un Nom')).toBeNull();
+    expect(analyserChemin(`/fichiers/../${nom}`)).toBeNull();
+  });
+
+  it('US-031 : reconnaît la page publique et la lecture publique d’une épreuve', () => {
+    const id = '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c';
+    expect(analyserChemin('/public')).toEqual({ route: 'public' });
+    expect(analyserChemin(`/public/epreuves/${id}`)).toEqual({ route: 'epreuve-publique', epreuveId: id });
+    expect(analyserChemin('/public/epreuves/Pas Un Id')).toBeNull();
+    expect(analyserChemin('/public/epreuves')).toBeNull();
+    expect(analyserChemin('/public/autre')).toBeNull();
+  });
+
+  it('US-039 : reconnaît la route d’une épreuve seule, pour sa suppression', () => {
+    const id = '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c';
+    expect(analyserChemin(`/epreuves/${id}`)).toEqual({ route: 'epreuve', epreuveId: id });
+    expect(analyserChemin('/epreuves/Demo')).toBeNull();
+  });
+
+  it('US-029 : reconnaît le pilote et la présence d’une épreuve', () => {
+    const id = '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c';
+    expect(analyserChemin(`/epreuves/${id}/pilote`)).toEqual({ route: 'pilote', epreuveId: id });
+    expect(analyserChemin(`/epreuves/${id}/presence`)).toEqual({ route: 'presence', epreuveId: id });
+    expect(analyserChemin('/epreuves/Demo/pilote')).toBeNull();
   });
 
   it.each([
     '/inconnu',
-    '/competitions//connexion',
-    '/competitions/Demo/connexion',
-    '/competitions/-demo/connexion',
-    `/competitions/${'a'.repeat(65)}/connexion`,
-    '/competitions/demo/connexion/plus',
+    '/epreuves/',
+    '/epreuves/Demo/evenements',
+    '/epreuves/demo/evenements/plus',
+    '/epreuves//connexion',
+    '/epreuves/Demo/connexion',
+    '/epreuves/-demo/connexion',
+    `/epreuves/${'a'.repeat(65)}/connexion`,
+    '/epreuves/demo/connexion/plus',
   ])('refuse le chemin %s', (chemin) => {
     expect(analyserChemin(chemin)).toBeNull();
   });
@@ -404,5 +490,40 @@ describe('réinitialisation par e-mail (US-019)', () => {
   it('US-020 CA-3 : une demande venue du domaine du club reçoit un lien vers ce domaine', () => {
     const club = 'https://poule-position.pessac-escrime.fr';
     expect(lienReinitialisation(club, `${club},${PRODUCTION}`, club, JETON)).toBe(`${club}/reinitialisation#${JETON}`);
+  });
+});
+
+describe('requetesInversionVocabulaire (US-044, ADR-0021)', () => {
+  it('US-044 CA-5 : une table epreuves de l’ancien sens (avec manifestation_id) est supprimée avec ses voisines', () => {
+    expect(requetesInversionVocabulaire(['id', 'club_id', 'manifestation_id', 'contenu', 'version'])).toEqual([
+      'DROP TABLE IF EXISTS epreuves',
+      'DROP TABLE IF EXISTS competitions',
+      'DROP TABLE IF EXISTS competitions_supprimees',
+    ]);
+  });
+
+  it('US-044 CA-5 : une base neuve ou déjà au nouveau schéma n’a rien à faire', () => {
+    expect(requetesInversionVocabulaire([])).toEqual([]);
+    expect(requetesInversionVocabulaire(['id', 'club_id', 'contenu', 'modifiee_le'])).toEqual([]);
+  });
+});
+
+describe('requetesCompetitionsSeules (US-045)', () => {
+  const colonnes = (notnull: number) => [
+    { name: 'id', notnull: 0 },
+    { name: 'manifestation_id', notnull },
+    { name: 'contenu', notnull: 1 },
+  ];
+
+  it('US-045 CA-2 : recrée la table de l’ancien schéma, où la manifestation est obligatoire', () => {
+    expect(requetesCompetitionsSeules(colonnes(1))).toEqual(['DROP TABLE IF EXISTS competitions']);
+  });
+
+  it('US-045 CA-2 : ne touche pas à une table qui accepte déjà une manifestation absente', () => {
+    expect(requetesCompetitionsSeules(colonnes(0))).toEqual([]);
+  });
+
+  it('US-045 CA-2 : ne fait rien sur une base neuve (table absente)', () => {
+    expect(requetesCompetitionsSeules([])).toEqual([]);
   });
 });

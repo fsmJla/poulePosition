@@ -11,7 +11,7 @@ async function installerHorsLigne(page: Page) {
   await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true);
 }
 
-test('US-001 hors ligne : la page s’affiche après une première visite et indique « serveur injoignable »', async ({
+test('US-001 hors ligne (US-065) : la page s’affiche après une première visite et indique que le serveur est injoignable', async ({
   page,
   context,
 }) => {
@@ -21,7 +21,9 @@ test('US-001 hors ligne : la page s’affiche après une première visite et ind
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName('Poule Position');
-  await expect(page.getByRole('status')).toHaveText('Serveur injoignable');
+  await expect(page.getByRole('alert')).toHaveText(
+    'Impossible de joindre le serveur : vérifiez votre connexion internet.',
+  );
   await context.setOffline(false);
 });
 
@@ -62,7 +64,7 @@ async function saisir(page: Page, email: string, motDePasse: string) {
 
 const bandeauLocal = (page: Page) => page.getByRole('status').filter({ hasText: 'Hors ligne : connexion locale' });
 
-test('US-005 CA-1 et CA-5 : reconnexion hors ligne avec le bandeau, puis revalidation au retour du réseau', async ({
+test('US-005 CA-1 et CA-5 : reconnexion hors ligne avec le bandeau, puis revalidation au retour du réseau @reel', async ({
   page,
   context,
 }) => {
@@ -72,7 +74,7 @@ test('US-005 CA-1 et CA-5 : reconnexion hors ligne avec le bandeau, puis revalid
   await page.reload();
   await saisir(page, compte.email, compte.motDePasse);
   await expect(page).toHaveURL(/\/organisateur$/, { timeout: 20_000 });
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Bonjour, .+/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Manifestations et compétitions' })).toBeVisible();
   await expect(bandeauLocal(page)).toBeVisible();
 
   await context.setOffline(false);
@@ -89,7 +91,7 @@ test('US-005 CA-4 : hors ligne, un mot de passe faux est refusé', async ({ page
   await context.setOffline(false);
 });
 
-test('US-005 CA-6 : compte modifié pendant la coupure : retour à la connexion avec l’explication', async ({
+test('US-005 CA-6 : compte modifié pendant la coupure : retour à la connexion avec l’explication @reel', async ({
   page,
   context,
 }) => {
@@ -122,7 +124,7 @@ test('US-003 hors ligne : une session déjà ouverte reste utilisable sans rése
   await context.setOffline(true);
   await page.reload();
   await expect(page).toHaveURL(/\/organisateur$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Bonjour, .+/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Manifestations et compétitions' })).toBeVisible();
   await context.setOffline(false);
 });
 
@@ -137,7 +139,7 @@ test('US-006 CA-1, CA-3 et hors ligne : oublier l’appareil, puis la reconnexio
 
   // L'oubli fonctionne sans réseau : l'effacement est purement local.
   await choisirDansMenuCompte(page, 'Se déconnecter et oublier cet appareil');
-  await expect(page.getByText('Les compétitions enregistrées sur cet appareil sont conservées.')).toBeVisible();
+  await expect(page.getByText('Les épreuves enregistrées sur cet appareil sont conservées.')).toBeVisible();
   await page.getByRole('button', { name: 'Oublier cet appareil', exact: true }).click();
   await expect(page).toHaveURL(/\/connexion$/);
 

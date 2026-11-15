@@ -26,6 +26,27 @@
   --marque: var(--palette-ardoise);
   /* Texte et boutons posés sur la marque (entête de site, US-014). */
   --sur-marque: #f7f4ef;
+  /* Maquette « IHM de l'organisateur » (US-054) : action principale tiffany, teintes d'accent, états et étapes à venir. */
+  --sur-tiffany: #0f1716;
+  --accent-survol: #044e4c;
+  --accent-teinte: #e3f1f0;
+  --accent-teinte-bordure: #b9dcda;
+  --etat-ok-fond: #dcefe5;
+  --sur-etat-ok-fond: #14573a;
+  --etat-attente-fond: #fbf3e2;
+  --etat-attente-bordure: #e6cf9c;
+  --sur-etat-attente-fond: #8a560c;
+  /* Étape ou onglet « À venir » : grisé, composant inactif (hors exigence AA ; 2,5:1 vérifié). */
+  --texte-inactif: #8d9694;
+  /* Couleurs des compétitions du plan de la manifestation (US-049), leur contraste passe 4,5:1 sur le fond et la surface (US-046 CA-4). */
+  --plan-0: #066f6c;
+  --plan-1: #7358a8;
+  --plan-2: #9c5214;
+  --plan-3: #28649f;
+  --plan-4: #a63d5a;
+  --plan-5: #486f26;
+  --plan-6: #7d6200;
+  --plan-7: #5b6770;
   --decor: var(--palette-sable);
   --decor-2: var(--palette-lavande);
   /* Case vide de la grille de poule (icônes du pack, icône animée). */
@@ -37,6 +58,7 @@
      modes clair et sombre. */
   /* Ombre des cartes flottantes (menu de compte, US-017). */
   --ombre-flottante: 0 8px 24px rgb(0 0 0 / 0.18);
+  --voile: rgb(0 0 0 / 0.45);
   --sur-avatar: #ffffff;
   --avatar-sarcelle: #066f6c;
   --avatar-ardoise: #2f4b4a;
@@ -56,8 +78,13 @@
   line-height: 1.5;
 }
 
+/*
+ * Thème (US-052) : « Auto » suit le système (bloc @media) ; « Clair » et « Sombre » posent data-theme sur la racine.
+ * Les variables sombres sont écrites deux fois, sous @media et sous data-theme="sombre" : couleurs.test.ts vérifie qu'elles
+ * sont identiques.
+ */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='clair']) {
     --fond: #0f1716;
     --surface: #172221;
     --surface-2: #1f2d2c;
@@ -70,9 +97,72 @@
     --sur-accent: #0f1716;
     --focus: var(--palette-tiffany);
     --etat-ok: #4cc38a;
+    --plan-0: #0abab5;
+    --plan-1: #b7a6d9;
+    --plan-2: #e0a060;
+    --plan-3: #6ea8e8;
+    --plan-4: #e57a95;
+    --plan-5: #8cc063;
+    --plan-6: #d9bd4a;
+    --plan-7: #9aa7b2;
     --etat-attente: #e3a948;
     --etat-erreur: #f07168;
+    --accent-survol: #5fd6d2;
+    --accent-teinte: #12302f;
+    --accent-teinte-bordure: #1f4a49;
+    --etat-ok-fond: #14301f;
+    --sur-etat-ok-fond: #8fdcb4;
+    --etat-attente-fond: #33270f;
+    --etat-attente-bordure: #5c4719;
+    --sur-etat-attente-fond: #f0c06a;
+    --texte-inactif: #6f7f7c;
   }
+}
+
+:root[data-theme='clair'] {
+  color-scheme: light;
+}
+
+:root[data-theme='sombre'] {
+  color-scheme: dark;
+  --fond: #0f1716;
+  --surface: #172221;
+  --surface-2: #1f2d2c;
+  --texte: #e6eeec;
+  --texte-discret: #9fb0ad;
+  --bordure: #2a3a39;
+  --bordure-champ: #6b7f7c;
+  --accent: #0abab5;
+  --accent-fond: #0abab5;
+  --sur-accent: #0f1716;
+  --focus: var(--palette-tiffany);
+  --etat-ok: #4cc38a;
+  --plan-0: #0abab5;
+  --plan-1: #b7a6d9;
+  --plan-2: #e0a060;
+  --plan-3: #6ea8e8;
+  --plan-4: #e57a95;
+  --plan-5: #8cc063;
+  --plan-6: #d9bd4a;
+  --plan-7: #9aa7b2;
+  --etat-attente: #e3a948;
+  --etat-erreur: #f07168;
+  --accent-survol: #5fd6d2;
+  --accent-teinte: #12302f;
+  --accent-teinte-bordure: #1f4a49;
+  --etat-ok-fond: #14301f;
+  --sur-etat-ok-fond: #8fdcb4;
+  --etat-attente-fond: #33270f;
+  --etat-attente-bordure: #5c4719;
+  --sur-etat-attente-fond: #f0c06a;
+  --texte-inactif: #6f7f7c;
+}
+
+/* US-054 : sur les pages connectées, l'action principale est tiffany avec un texte sombre (planches 1 à 3). */
+.pages-connectees {
+  display: contents;
+  --accent-fond: var(--palette-tiffany);
+  --sur-accent: var(--sur-tiffany);
 }
 
 body {

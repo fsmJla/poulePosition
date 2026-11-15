@@ -13,13 +13,14 @@ export default defineConfig({
     ],
     coverage: {
       provider: 'v8',
-      // Code exécuté sous Node. Le Worker et ses Durable Objects (index.ts, competition.ts) tournent dans
+      // Code exécuté sous Node. Le Worker et ses Durable Objects (index.ts, epreuve.ts) tournent dans
       // workerd : ils sont couverts par les tests d'intégration du serveur, non mesurés ici.
       include: [
         'paquets/*/src/**/*.ts',
         'serveur/src/logique.ts',
         'serveur/src/courriel.ts',
         'serveur/src/gabarits.ts',
+        'serveur/src/replication.ts',
         'app/src/lib/**/*.ts',
         'outils/**/*.ts',
       ],
@@ -35,6 +36,7 @@ export default defineConfig({
         'serveur/src/logique.ts': { lines: 80, branches: 80, functions: 80, statements: 80 },
         'serveur/src/courriel.ts': { lines: 80, branches: 80, functions: 80, statements: 80 },
         'serveur/src/gabarits.ts': { lines: 80, branches: 80, functions: 80, statements: 80 },
+        'serveur/src/replication.ts': { lines: 80, branches: 80, functions: 80, statements: 80 },
       },
     },
   },

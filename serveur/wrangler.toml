@@ -4,12 +4,12 @@ name = "poule-position-serveur"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"
 
-# Une instance par compétition (idFromName(competitionId)).
+# Une instance par épreuve (idFromName("epreuve:<CLUB_ID>:<id>"), ADR-0014) : copie du journal (ADR-0016).
 [[durable_objects.bindings]]
-name = "COMPETITIONS"
-class_name = "Competition"
+name = "EPREUVES"
+class_name = "Epreuve"
 
-# Un objet par club (idFromName("club:<CLUB_ID>"), ADR-0014) : comptes (ADR-0006).
+# Un objet par club (idFromName("club:<CLUB_ID>"), ADR-0014) : comptes (ADR-0006), index des épreuves (ADR-0016).
 [[durable_objects.bindings]]
 name = "CLUB"
 class_name = "Club"
@@ -27,6 +27,12 @@ new_sqlite_classes = ["Competition"]
 [[migrations]]
 tag = "v2"
 new_sqlite_classes = ["Club", "Limiteur"]
+
+# US-044, ADR-0021 : l’unité qui se tire s’appelle désormais « épreuve ». La classe `Competition` (v1) devient `Epreuve` ; la
+# preview hérite de cette migration (pas de [[env.preview.migrations]]). Pas de migration de données (rien en production).
+[[migrations]]
+tag = "v3"
+renamed_classes = [{ from = "Competition", to = "Epreuve" }]
 
 # Secrets (wrangler secret put, par environnement ; jamais dans le dépôt) : POIVRE (créé une fois, ne change
 # jamais : le changer invaliderait tous les mots de passe) et SECRET_INSTALLATION (création du 1er administrateur).
@@ -51,8 +57,8 @@ URL_APPLICATION = "https://poule-position.pessac-escrime.fr"
 name = "poule-position-serveur-preview"
 
 [[env.preview.durable_objects.bindings]]
-name = "COMPETITIONS"
-class_name = "Competition"
+name = "EPREUVES"
+class_name = "Epreuve"
 
 [[env.preview.durable_objects.bindings]]
 name = "CLUB"

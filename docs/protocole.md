@@ -10,6 +10,12 @@
 > US-003 : connexion, session et CORS (§7).
 > US-010 : changement de mot de passe et version du mot de passe dans la session (§8).
 > US-007 : gestion des comptes par les administrateurs (§9) ; US-009 : réinitialisation d'un mot de passe (§9).
+> US-021 : format du journal d'une épreuve (§10), stocké sur le PC pilote.
+> US-022 : réplication du journal et index des épreuves du club (§11, ADR-0016).
+> US-044 (ADR-0021) : vocabulaire inversé. L'**épreuve** est l'unité qui se tire (journal, pilote : `/epreuves/<epreuveId>/…`) ;
+> la **compétition** est le regroupement d'épreuves (`/competitions`, §13). Les anciennes routes de l'unité sous
+> `/competitions/<id>/…` n'existent plus.
+> US-030 (ADR-0022) : fichiers joints, affiche et feuille de route (§15).
 > Les rôles, la synchronisation du journal et les saisies (ADR-0005) viendront avec leurs US.
 
 ## 1. Adresses
@@ -46,11 +52,23 @@
 | `PATCH /comptes/<id>` | Modifier le nom, le rôle ou l'état (actif ou désactivé) d'un compte (§9) |
 | `DELETE /comptes/<id>` | Supprimer définitivement un compte (§9, US-008) |
 | `POST /comptes/<id>/mot-de-passe` | Réinitialiser le mot de passe d'un compte (§9, US-009) |
-| `OPTIONS` sur ces routes | Requête CORS préalable (§7) ; méthodes `GET, POST, PATCH, DELETE` |
-| WebSocket `/competitions/<competitionId>/connexion` | Connexion à une compétition (§3) |
+| `GET /epreuves` | Index des épreuves du club et liste des épreuves supprimées (§11, §14) |
+| `DELETE /epreuves/<epreuveId>` | Supprimer définitivement une épreuve, administrateur seulement (§14, US-039) |
+| `GET /epreuves/<epreuveId>/evenements` | Télécharger le journal d'une épreuve (§11) |
+| `POST /epreuves/<epreuveId>/evenements` | Envoyer un lot d'événements du PC pilote (§11) |
+| `GET /manifestations`, `POST /manifestations` | Lister et créer les manifestations du club (§12, US-023) |
+| `PATCH /manifestations/<id>`, `DELETE /manifestations/<id>` | Modifier ou supprimer une manifestation (§12) |
+| `POST /manifestations/<id>/archivage` | Archiver ou désarchiver une manifestation et ses compétitions (§12, US-033) |
+| `GET /competitions`, `POST /competitions` | Lister et créer les compétitions du club (§13, US-024) |
+| `PATCH /competitions/<id>`, `DELETE /competitions/<id>` | Modifier ou supprimer une compétition (§13, §14) |
+| `GET /fichiers` | Description des fichiers joints du club (§15, US-030) |
+| `PUT /fichiers/<élément>/<id>/<sorte>`, `DELETE …` | Joindre, remplacer ou retirer un fichier (§15) |
+| `GET /fichiers/<nom>` | Lire le contenu d'un fichier, **sans session** (§15) |
+| `OPTIONS` sur ces routes | Requête CORS préalable (§7) ; méthodes `GET, POST, PUT, PATCH, DELETE` |
+| WebSocket `/epreuves/<epreuveId>/connexion` | Connexion à une épreuve (§3) |
 | Tout autre chemin | `404` |
 
-`competitionId` : des minuscules, des chiffres et des tirets, 64 caractères au plus, sans tiret au début. La
+`epreuveId` : des minuscules, des chiffres et des tirets, 64 caractères au plus, sans tiret au début. La
 page minimale d'US-001 utilise `demo`.
 
 Refus HTTP avant la WebSocket : `426` si ce n'est pas une demande de WebSocket, `403` si l'origine n'est pas
@@ -59,8 +77,8 @@ autorisée.
 ## 3. Connexion
 
 1. Le client ouvre la WebSocket.
-2. Le serveur (Durable Object `Competition`, une instance par compétition) l'accepte et envoie aussitôt
-   `{"v":1,"type":"bienvenue","competitionId":"demo"}`.
+2. Le serveur (Durable Object `Epreuve`, une instance par épreuve) l'accepte et envoie aussitôt
+   `{"v":1,"type":"bienvenue","epreuveId":"demo"}`.
 3. L'application considère la connexion comme établie à la réception de `bienvenue`, pas seulement à
    l'ouverture de la socket.
 
@@ -73,7 +91,7 @@ Ce sont des textes JSON d'au plus **256 Ko** (262 144 octets en UTF-8), avec deu
 
 | Type | Champs | Quand |
 |---|---|---|
-| `bienvenue` | `competitionId` | À chaque connexion acceptée |
+| `bienvenue` | `epreuveId` | À chaque connexion acceptée |
 | `erreur` | `code`, `message` (texte lisible en français) | Message client refusé (la connexion reste ouverte) |
 | `pong` | — | Réponse à `ping` (§4.3) |
 
@@ -101,7 +119,7 @@ Toutes les 30 s, le client envoie **exactement** `{"v":1,"type":"ping"}`. Le ser
 | Code | Sens | Reconnexion automatique |
 |---|---|---|
 | `4000` | Connexion refusée | — |
-| `4001` | Compétition fermée | — |
+| `4001` | Épreuve fermée | — |
 | `4002` | Connexion remplacée par une autre du même appareil | **Non** |
 | `4003` | Appareil exclu par l'organisateur | **Non** |
 | autre (`1006`, réseau coupé, veille…) | Coupure | Oui, après 1 s, 2 s, 5 s, puis toutes les 10 s |
@@ -191,7 +209,14 @@ Pour un e-mail inconnu, le sel renvoyé est un **faux sel stable** (`HMAC-SHA256
   "ok": true,
   "jeton": "…",
   "expireLe": 1795000000000,
-  "compte": { "email": "…", "nom": "…", "role": "organisateur", "temporaire": false, "avatar": "sarcelle" }
+  "compte": {
+    "email": "…",
+    "nom": "…",
+    "role": "organisateur",
+    "temporaire": false,
+    "avatar": "sarcelle",
+    "clubId": "…"
+  }
 }
 ```
 
@@ -202,6 +227,10 @@ Pour un e-mail inconnu, le sel renvoyé est un **faux sel stable** (`HMAC-SHA256
 - `avatar` : couleur de l'avatar (US-016), l'une de `sarcelle`, `ardoise`, `foret`, `ocre`, `brique`, `prune`, `ciel`,
   `terre` ; celle choisie par la personne, sinon une couleur par défaut déduite de son e-mail. Un serveur antérieur à
   US-016 ne l'envoie pas : l'application prend alors la couleur par défaut.
+- `clubId` : club du compte (US-025), le même que `club` dans le jeton. L'application le garde avec la session et
+  l'appareil connu, pour créer une épreuve hors ligne (les événements portent le `clubId`, §10). Une session
+  ouverte auprès d'un serveur antérieur à US-025 n'en a pas : la création d'une épreuve est alors refusée
+  (`CLUB_INCONNU`) jusqu'à une reconnexion en ligne.
 
 **`GET /session`** avec `Authorization: Bearer <jeton>` : vérifie la signature, l'expiration, que le compte existe,
 est **toujours actif** et que son mot de passe n'a pas changé, puis renvoie une session prolongée de 30 jours (même
@@ -370,7 +399,7 @@ mot de passe ; les sessions qui n'ont pas été refusées entre-temps redevienne
 
 **Suppression** (US-008) : le compte est effacé du serveur (e-mail, nom, sel, vérificateur) ; ses sessions reçoivent
 `401 COMPTE_RETIRE` et son e-mail peut servir à un nouveau compte. La confirmation par la saisie de l'e-mail est
-faite par l'application. Le journal des compétitions garde le nom de l'auteur recopié dans ses événements.
+faite par l'application. Le journal des épreuves garde le nom de l'auteur recopié dans ses événements.
 
 **Réinitialisation** (US-009) : comme à la création, le navigateur de l'administrateur tire un nouveau mot de passe
 temporaire et n'envoie que `sel` et `cle`. Le serveur remplace le sel et le vérificateur, repasse le compte en
@@ -387,3 +416,549 @@ lui-même. La réinitialisation lève aussi le blocage du compte après trop d'e
 | `409` | `EMAIL_DEJA_UTILISE` | Un compte utilise déjà cet e-mail (casse ignorée) |
 | `409` | `DERNIER_ADMINISTRATEUR` | Le changement de rôle, la désactivation ou la suppression laisserait le club sans administrateur actif |
 | `503` | `SERVEUR_NON_CONFIGURE` | Secrets absents |
+
+## 10. Journal d'une épreuve (US-021)
+
+Le journal est la source de vérité d'une épreuve (ADR-0001). Il est écrit sur le PC pilote, dans la table
+IndexedDB `evenements` (clé `[epreuveId+seq]`, ADR-0003). Le même format servira à la réplication vers le
+serveur (US-022) et à l'export JSON (US-034). Types : `Evenement` (`paquets/domaine`) ; lecture et migration :
+`lireEvenement` (`paquets/protocole`).
+
+### Enveloppe d'un événement (version 1)
+
+| Champ | Type | Contenu |
+|---|---|---|
+| `epreuveId` | texte non vide | UUID de l’épreuve, généré par le PC (création possible hors ligne) |
+| `clubId` | texte non vide | Club propriétaire (ADR-0014) |
+| `seq` | entier ≥ 1 | Numéro de séquence : 1, 2, 3… sans trou pour une épreuve |
+| `version` | entier | Version du format (`VERSION_JOURNAL`, actuellement `1`) |
+| `date` | nombre | Date d'enregistrement, en millisecondes |
+| `auteur` | texte non vide | E-mail du compte connecté |
+| `source` | `clavier` | Origine (les saisies smartphone viendront avec E5) |
+| `type` | texte | Type d'événement (ci-dessous) |
+| `donnees` | objet | Contenu propre au type |
+
+Aucun autre champ n'est accepté.
+
+### Types d'événements
+
+| Type | `donnees` | Règles |
+|---|---|---|
+| `EpreuveCreee` | voir ci-dessous | Premier événement d'une épreuve, une seule fois. |
+| `EpreuveModifiee` | un ou plusieurs champs de `EpreuveCreee` | Modifie les champs donnés (US-027), seulement ceux qui ont changé. |
+| `FormuleModifiee` | un ou plusieurs réglages de la formule | Modifie la formule de l’épreuve (US-028), seulement ce qui a changé. |
+| `PiloteChange` | `{ ancienAppareil, nouvelAppareil }` | Un autre PC a pris la main (US-029). |
+| `ParametresModifies` | un ou plusieurs paramètres de l’épreuve | Modifie les droits et l'affichage des noms (US-032), seulement ce qui a changé. |
+| `PublicationModifiee` | `{ publiee }` | Publie ou dépublie l’épreuve (US-031). |
+| `EpreuveArchivee` | `{}` | Archive l’épreuve (US-033) : statut « Archivée », lecture seule. |
+| `EpreuveDesarchivee` | `{}` | Désarchive l’épreuve (US-033) : elle retrouve son statut d’avant, non publiée. |
+
+**Données de `EpreuveCreee`** (US-025) : exactement ces champs ; un champ facultatif non saisi vaut `null`.
+Le format a été complété par US-025 sans changer de version : rien n'était encore en production.
+
+| Champ | Type | Règles (domaine, `validerEpreuve`) |
+|---|---|---|
+| `nom` | texte | Obligatoire, 1 à 100 caractères, espaces autour retirés |
+| `arme` | texte | `sabre`, `epee`, `fleuret` ou `sabreLaser` |
+| `typeEpreuve` | texte | `individuelle`, `equipes2` ou `equipes3` |
+| `categorie` | texte ou `null` | Catégorie FFE (`M7` … `Vétéran 4`) ou texte libre, 30 caractères au plus |
+| `sexe` | texte ou `null` | `hommes`, `dames` ou `mixte` |
+| `date` | texte ou `null` | Jour `AAAA-MM-JJ` ; obligatoire et compris dans la manifestation si la compétition de l’épreuve y est rattachée, facultative pour une compétition seule (US-045) |
+| `horaires` | objet | `{ appel, scratch, debutPoules }`, chacun `HH:MM` ou `null` ; dans cet ordre (un horaire absent est sauté) |
+| `lieu` | texte ou `null` | 200 caractères au plus |
+| `commentaire` | texte ou `null` | 2 000 caractères au plus |
+| `rattachement` | objet | **Obligatoire** : `{ competitionId }` (US-045). La manifestation s'en déduit par la compétition ; `null` et un `competitionId` vide sont refusés (`RATTACHEMENT_OBLIGATOIRE`) |
+
+La projection ajoute le statut (`preparation`), la publication (`false`) et la formule par défaut (US-028). Les règles
+qui dépendent de la manifestation ou de la compétition (dates, arme de la compétition) sont vérifiées à la saisie, où elles
+sont connues, et non à la relecture du journal.
+
+**Données de `EpreuveModifiee`** (US-027) : au moins un des champs ci-dessus, seulement ceux dont la valeur
+change ; les autres restent ce qu'ils étaient. Chaque champ a la même forme que dans `EpreuveCreee`, et
+`horaires`, s'il change, porte les trois heures. Le format est inchangé (`VERSION_JOURNAL` reste à 1) : c'est un
+nouveau type d'événement, que les versions précédentes ne produisaient pas.
+
+Règles du domaine (`verifierEvenement`), dans cet ordre :
+
+- `EPREUVE_INCONNUE` : aucune `EpreuveCreee` avant ;
+- `EPREUVE_ARCHIVEE` : une épreuve archivée n'est plus modifiable ;
+- `CHAMP_FIGE` : un champ que le statut interdit de modifier — `arme` et `typeEpreuve` quand l’épreuve est
+  « En cours », tout sauf `commentaire` quand elle est « Terminée » (`champsModifiables`) ;
+- `AUCUNE_MODIFICATION` : le résultat est identique à l’épreuve (rien n'est écrit, US-027 CA-5) ;
+- sinon, le résultat de la fusion est validé comme une création (`validerEpreuve`), d'où les mêmes erreurs.
+
+La projection fusionne les champs, retire les espaces autour des textes, et recalcule `touchesRelais` de la formule
+quand le type change (le reste de la formule relève de `FormuleModifiee`).
+
+**Données de `FormuleModifiee`** (US-028) : au moins un des réglages ci-dessous, seulement ceux dont la valeur change.
+Les touches de relais n'y figurent pas : elles sont fixées par le type de l’épreuve (20 touches en équipes de 2,
+45 en équipes de 3, `null` en individuel). Comme `EpreuveModifiee`, c'est un nouveau type d'événement
+(`VERSION_JOURNAL` reste à 1).
+
+| Champ | Type | Règles (domaine, `validerFormule`) |
+|---|---|---|
+| `touchesPoules` | entier | De 3 à 10 touches (5 par défaut) |
+| `touchesTableau` | entier | 10 ou 15 touches (15 par défaut) |
+| `matchTroisieme` | booléen | Match pour la 3e place (`false` par défaut) |
+
+Règles du domaine (`verifierEvenement`), dans cet ordre :
+
+- `EPREUVE_INCONNUE` : aucune `EpreuveCreee` avant ;
+- `EPREUVE_ARCHIVEE` : une épreuve archivée n'est plus modifiable ;
+- `FORMULE_FIGEE` : la formule ne se règle plus quand l’épreuve est « Terminée » ; elle reste réglable en
+  préparation et en cours (CA-4 et CA-5) ;
+- `CHAMP_FIGE` : un réglage inconnu, `touchesRelais` compris ;
+- `TOUCHES_POULES_INVALIDES`, `TOUCHES_TABLEAU_INVALIDES`, `MATCH_TROISIEME_INVALIDE` : valeur hors des bornes ;
+- `AUCUNE_MODIFICATION` : la formule résultante est identique à la courante (rien n'est écrit).
+
+La date et l'auteur de chaque changement sont ceux de l'en-tête de l'événement : `historiqueFormule` (domaine) en tire
+la trace des changements de formule (CA-6).
+
+**Données de `PiloteChange`** (US-029) : exactement `ancienAppareil` et `nouvelAppareil`, deux identifiants d'appareil
+(§11). L'auteur et la date sont ceux de l'en-tête. C'est le premier événement que le nouveau pilote écrit après avoir
+pris la main ; il ne change rien à l’épreuve. Règles du domaine : `EPREUVE_INCONNUE` sans `EpreuveCreee`
+avant, `PILOTE_INVALIDE` pour un appareil vide ou deux appareils identiques. Une épreuve terminée ou archivée peut
+changer de pilote. Le format est inchangé (`VERSION_JOURNAL` reste à 1).
+
+**Données de `ParametresModifies`** (US-032, ADR-0007 et ADR-0014) : au moins un des réglages ci-dessous, seulement ceux
+dont la valeur change. Les droits sont appliqués par le pilote à la réception d'une saisie ; dans cette US ils sont
+seulement enregistrés (la saisie smartphone, E5, et l'affichage public, E9, les liront dans la projection).
+
+| Champ | Type | Défaut |
+|---|---|---|
+| `arbitreSaisitScores` | booléen | `true` : l'arbitre saisit les scores de poule et de tableau |
+| `arbitreDeplace` | booléen | `true` : l'arbitre déplace une poule ou un match de piste |
+| `tireurSaisitPoule` | booléen | `true` : le tireur saisit les scores des matchs de sa poule |
+| `tireurSaisitTableau` | booléen | `true` : le tireur saisit le score de ses matchs de tableau |
+| `correctionScore` | texte | `arbitre` ou `personne` (`arbitre` par défaut) : qui corrige un score déjà saisi |
+| `prenomInitiale` | booléen | `false` : afficher les noms au public sous la forme « Prénom N. » |
+
+Règles du domaine (`verifierEvenement`), dans cet ordre :
+
+- `EPREUVE_INCONNUE` : aucune `EpreuveCreee` avant ;
+- `EPREUVE_ARCHIVEE` : les paramètres d'une épreuve archivée sont en lecture seule ; une épreuve en
+  préparation, en cours ou terminée reste modifiable ;
+- `CHAMP_FIGE` : un réglage inconnu ;
+- `PARAMETRE_INVALIDE` (valeur non booléenne) ou `CORRECTION_SCORE_INVALIDE` ;
+- `AUCUNE_MODIFICATION` : les paramètres résultants sont identiques aux courants (rien n'est écrit).
+
+La projection porte `epreuve.parametres`, avec les valeurs par défaut à la création : un journal écrit avant
+US-032 n'a donc pas besoin de migration (`VERSION_JOURNAL` reste à 1).
+
+**Données de `PublicationModifiee`** (US-031) : exactement `{ "publiee": true | false }`. L'auteur et la date sont ceux de
+l'en-tête. La projection met `epreuve.publiee` à la valeur donnée ; une épreuve créée n'est pas publiée. Règles du domaine
+(`verifierEvenement`), dans cet ordre :
+
+- `EPREUVE_INCONNUE` : aucune `EpreuveCreee` avant ;
+- `EPREUVE_ARCHIVEE` : une épreuve archivée ne se publie ni ne se dépublie (elle est déjà retirée de la page publique) ;
+- `AUCUNE_MODIFICATION` : la publication est déjà celle demandée (rien n'est écrit).
+
+On publie ou dépublie à tout moment, quel que soit le statut, sauf archivée. Désarchiver (US-033) la rend non publiée.
+Le format est inchangé (`VERSION_JOURNAL` reste à 1).
+
+**Données de `EpreuveArchivee` et `EpreuveDesarchivee`** (US-033) : exactement `{}` (aucun champ). La projection porte
+`epreuve.avantArchivage` (le statut d'avant l'archivage, ou `null`) : `EpreuveArchivee` passe le statut à `archivee` et
+le garde dans `avantArchivage` ; `EpreuveDesarchivee` rend ce statut, remet `publiee` à `false` et `avantArchivage` à
+`null`. Règles du domaine (`verifierEvenement`) :
+
+- `EPREUVE_INCONNUE` : aucune `EpreuveCreee` avant ;
+- `EPREUVE_ARCHIVEE` (archiver) : l'épreuve est déjà archivée ;
+- `EPREUVE_EN_COURS` (archiver) : une épreuve « En cours » ne s'archive pas ;
+- `EPREUVE_NON_ARCHIVEE` (désarchiver) : l'épreuve n'est pas archivée.
+
+Le format est inchangé (`VERSION_JOURNAL` reste à 1) : un journal écrit avant US-033 n'a pas besoin de migration.
+
+### Règles d'écriture et de lecture
+
+- Un événement est **écrit avant d'être affiché**. La lecture du journal, le contrôle des règles et l'écriture se
+  font dans une même transaction : deux écritures ne peuvent pas prendre le même `seq`.
+- Erreurs d'écriture : le code de la règle refusée (`NOM_VIDE`, `SCRATCH_AVANT_APPEL`… ou `EPREUVE_DEJA_CREEE`),
+  `EPREUVE_INCONNUE`, `EPREUVE_ARCHIVEE`, `CHAMP_FIGE`, `AUCUNE_MODIFICATION` (US-027), `PAS_PILOTE` (copie d'un
+  autre PC), `JOURNAL_INCOHERENT` (on n'écrit pas à la suite d'un journal incohérent) ou `ECRITURE_IMPOSSIBLE` (IndexedDB en
+  échec). Dans tous les cas, rien n'est écrit.
+- **Migration à la lecture** : un événement d'une version antérieure passe par les migrations successives
+  (`MIGRATIONS`, de la version `n` à `n + 1`), sans réécrire le journal. Une version sans migration ou venant du
+  futur est illisible.
+- La projection s'arrête au dernier événement cohérent et signale l'anomalie : `TROU` ou `DOUBLON` de `seq`,
+  événement `INVALIDE` (refusé par les règles) ou `ILLISIBLE`.
+- Un seul onglet écrit dans une épreuve (verrou Web Locks `epreuve:<epreuveId>`) ; les autres sont en
+  lecture seule.
+
+## 11. Réplication du journal et index des épreuves (US-022, ADR-0016)
+
+Le PC pilote envoie son journal (§10) au DO `Epreuve` du club (`epreuve:<clubId>:<epreuveId>`), par
+requêtes HTTP. Les autres PC du club listent les épreuves et en téléchargent une copie, qu'ils projettent
+localement en lecture seule. Le serveur ne calcule rien d'escrime.
+
+Les trois routes demandent une **session valide** (`Authorization: Bearer <jeton>`, contrôles du §7) et un mot de
+passe définitif (sinon `403 ACCES_REFUSE`), pour tout rôle. Même CORS qu'au §7. Une session d'un autre club est
+refusée en `401 SESSION_INVALIDE`.
+
+### Envoyer un lot : `POST /epreuves/<epreuveId>/evenements`
+
+Corps (16 Ko au plus, `TAILLE_MAX_LOT`) :
+
+| Champ | Contenu |
+|---|---|
+| `appareilId` | Identifiant de l'appareil (minuscules, chiffres, tirets ; un UUID), tiré une fois et gardé dans IndexedDB |
+| `depuis` | Dernier `seq` que le pilote croit confirmé ; le lot commence à `depuis + 1` |
+| `evenements` | Au moins un événement (§10), de `seq` consécutifs |
+| `resume` | Résumé calculé par le pilote pour l'index (`resumeDe`) : `{ nom, arme, categorie, sexe, date, horaires, lieu, statut, publiee, rattachement }` (US-025 ; `horaires` et `lieu` : US-031), valeurs du §10 |
+
+Le DO ajoute le lot si, dans cet ordre :
+
+1. tous ses événements portent le `clubId` du club et le `epreuveId` de l'adresse (sinon `403 ACCES_REFUSE`) ;
+2. l'appareil est le pilote : le premier lot fixe le pilote, les suivants doivent venir du même appareil (sinon
+   `409 PAS_PILOTE`, jusqu'à une prise de main, US-029, ci-dessous) ;
+3. `depuis` est son dernier `seq` (sinon `409 {"ok":false,"erreur":"SEQ_INATTENDU","dernierSeq":n}` : le pilote
+   reprend à `n`). Renvoyer un lot déjà reçu est donc sans effet.
+
+Réponse : `200 {"ok":true,"dernierSeq":n}`. Le Worker met alors à jour l'index du club. Un corps illisible, trop
+grand ou mal formé reçoit `400 DEMANDE_INVALIDE`.
+
+### Télécharger le journal : `GET /epreuves/<epreuveId>/evenements`
+
+`200 {"ok":true,"evenements":[…],"dernierSeq":n,"piloteAppareil":"…"}`, ou `404 EPREUVE_INCONNUE` si rien n'a
+encore été reçu.
+
+### Index du club : `GET /epreuves`
+
+`200 {"ok":true,"epreuves":[…]}`, les plus récemment modifiées d'abord. Chaque ligne : `id`, le résumé du pilote
+(`nom`, `arme`, `categorie`, `sexe`, `date`, `horaires`, `lieu`, `statut`, `publiee`, `rattachement`), `piloteAppareil`, `piloteNom`
+(nom du compte qui a envoyé le dernier lot), `dernierSeq` et `modifieeLe` (date du dernier événement).
+
+L'application ignore une ligne illisible (format plus ancien, ligne abîmée) et garde les autres (US-023, pour
+US-026).
+
+**Résumé d'avant US-031** : un résumé sans `horaires` ni `lieu` (envoyé avant US-031, ou déjà dans l'index) reste lisible,
+avec des horaires vides (`{ appel: null, scratch: null, debutPoules: null }`) et un lieu `null`, jusqu'au prochain lot du
+pilote, qui apporte les vraies valeurs (`completerResume`, paquet protocole).
+
+### Prise de main et présence du pilote (US-029, ADR-0017)
+
+Mêmes contrôles de session que ci-dessus. `appareilId` et `piloteAttendu` suivent le motif d'un identifiant d'appareil.
+
+**`POST /epreuves/<epreuveId>/pilote`** — prendre la main. Corps : `{ "appareilId": "…", "piloteAttendu": "…" }`
+(l'appareil demandeur et le pilote qu'il croit en place). Le DO le désigne pilote s'il vise bien le pilote en place :
+
+- `200 {"ok":true,"evenements":[…],"dernierSeq":n,"ancienAppareil":"…"}` : journal complet ; l'index du club désigne le
+  nouveau pilote (appareil et nom du compte) ;
+- `409 {"ok":false,"erreur":"MAIN_DEJA_PRISE","piloteAppareil":"…","piloteNom":"…"}` : le pilote n'est plus celui que
+  le demandeur croyait (deux demandes simultanées : une seule réussit) ;
+- `404 EPREUVE_INCONNUE` si rien n'a encore été reçu ; `400 DEMANDE_INVALIDE` pour un corps mal formé.
+
+**`GET /epreuves/<epreuveId>/pilote`** — `200 {"ok":true,"piloteAppareil":"…","piloteNom":"…","connecte":true}`.
+`connecte` vaut vrai si le pilote a envoyé un lot ou un battement depuis moins de 60 s (`DELAI_PRESENCE_MS`).
+
+**`POST /epreuves/<epreuveId>/presence`** — battement du pilote. Corps : `{ "appareilId": "…" }`. `200 {"ok":true}`
+pour le pilote en place ; sinon `409 {"ok":false,"erreur":"PAS_PILOTE","piloteAppareil":"…","piloteNom":"…"}`.
+Ces deux routes sont provisoires : la WebSocket du pilote (E5) les remplacera (ADR-0017).
+
+Un refus `PAS_PILOTE` d'un lot porte aussi `piloteAppareil` et `piloteNom` : l'ancien pilote sait qui a pris la main.
+`piloteNom` est le nom du compte ; l'application l'affiche suivi du début de l'identifiant de l'appareil
+(« Julien Lameyre (appareil 7f3a) »), ce qui distingue deux PC d'un même compte.
+
+### Côté application
+
+- Une épreuve créée sur un PC en fait le pilote. Le PC garde, par épreuve, le dernier `seq` confirmé et,
+  pour une copie, la date du téléchargement (table `epreuvesLocales`).
+- L'envoi part au démarrage, à la connexion, après chaque écriture (US-025) et au retour du réseau. Sans réseau,
+  avec une session locale ou une session expirée, les événements attendent dans IndexedDB, sans perte.
+- Une copie n'est jamais écrite localement (`PAS_PILOTE`) et ne remplace jamais le journal d'une épreuve pilotée
+  ici.
+- **Prendre la main** exige le réseau. L'application interroge le pilote (`GET …/pilote`) pour que la confirmation dise
+  s'il est connecté, puis demande la main, remplace la copie par le journal reçu, devient pilote, écrit `PiloteChange`
+  et l'envoie. Si elle s'interrompt entre-temps, le téléchargement suivant reconnaît que le serveur la désigne comme
+  pilote et rend le journal modifiable.
+- **Perdre la main** : le pilote bat toutes les 30 s (`INTERVALLE_BATTEMENT`) pour chaque épreuve en préparation ou en
+  cours qu'il pilote. Sur `PAS_PILOTE` (battement ou lot), il met de côté ses événements non envoyés dans la table
+  IndexedDB `ecartes` (jamais reprise dans le journal), cesse d'être le pilote et télécharge la copie du nouveau
+  pilote. La page affiche « <nom> a pris la main depuis un autre PC » et « n modifications faites hors ligne n'ont pas été
+  reprises », avec « Exporter en JSON » : un fichier `{ epreuveId, evenements }` au format du journal.
+
+### Liste du club sur l'accueil (US-026)
+
+Aucune route nouvelle : l'accueil de l'organisateur réunit `GET /epreuves` (§11), `GET /manifestations` (§12) et
+`GET /competitions` (§13), et les épreuves gardées sur l'appareil.
+
+- **Dernière copie de l'index** : la réponse de `GET /epreuves` est gardée dans IndexedDB (table `copieIndex`,
+  base locale en version 10), avec sa date. Hors ligne, la liste s'affiche depuis cette copie, les copies des
+  manifestations et des compétitions et les épreuves locales (« Hors ligne : liste du … »). Sans aucune copie, seules les
+  épreuves de l'appareil sont listées.
+- **Fusion** : pour une même épreuve, la version locale de celle que ce PC pilote l'emporte sur la ligne de l'index.
+  La copie locale d'une épreuve pilotée ailleurs ne remplace pas la ligne de l'index, mais la remplace si l'index
+  n'a pas la ligne. Une épreuve pilotée ici dont rien n'est parvenu au serveur (`confirme = 0`) est « Pas encore
+  envoyée ».
+- **Lignes illisibles** : l'index ignore déjà une ligne qu'il ne sait pas lire (§11) ; les autres s'affichent.
+- **Arborescence** : construite par le domaine (`construireListe`). Une épreuve dont la manifestation est inconnue
+  de l'appareil est listée parmi les isolées ; une compétition inconnue la place directement sous sa manifestation. Les
+  épreuves archivées (`statut` `archivee`) sont masquées sauf avec « Afficher les archives ».
+- **Actions de création** : « Nouvelle manifestation » et « Nouvelle compétition » ouvrent la page « Manifestations » avec le
+  formulaire ouvert (`/manifestations?nouvelle`, `/manifestations?competition=<manifestationId>`) ; la partie « ?… » de
+  l'adresse ne change pas la page affichée. Elles sont grisées hors ligne (« Nécessite une connexion internet »).
+
+## 12. Manifestations du club (US-023, ADR-0016 §4)
+
+Une manifestation regroupe des compétitions et des épreuves sur un ou plusieurs jours. Ce sont des données du club,
+stockées par le DO `Club` (table `manifestations`, avec le `clubId`) : ni journal ni pilote. Elles ne se créent et ne
+se modifient qu'**en ligne** ; un **numéro de version** refuse l'écrasement d'une modification concurrente.
+
+Les quatre routes demandent une **session valide** et un mot de passe définitif (sinon `403 ACCES_REFUSE`), pour tout
+rôle. Même CORS qu'au §7.
+
+**Champs saisis** (exactement ceux-ci ; règles du domaine, `validerManifestation`) :
+
+| Champ | Type | Règles |
+|---|---|---|
+| `nom` | texte | Obligatoire, 1 à 100 caractères, espaces autour retirés |
+| `debut`, `fin` | texte | Jours `AAAA-MM-JJ`, obligatoires ; `fin` égale ou postérieure à `debut` (un seul jour possible) |
+| `lieu` | texte ou `null` | 200 caractères au plus |
+| `coordonnees` | `{ lat, lon }`, facultatif (champ absent s'il n'y en a pas) | US-070 : position de l'adresse choisie dans les suggestions (ADR-0025). Nombres finis, `lat` de −90 à 90, `lon` de −180 à 180, aucun autre champ. Retiré si le lieu est vide. Une manifestation d'avant reste lisible sans ce champ |
+| `commentaire` | texte ou `null` | 2 000 caractères au plus |
+
+**Manifestation renvoyée** : les champs saisis, plus `id` (UUID tiré par le serveur), `version` (1 à la création,
+puis + 1 à chaque modification), `modifieeLe` (millisecondes) et `modifieePar` (nom du compte de la dernière
+écriture).
+
+| Route | Corps | Réponse |
+|---|---|---|
+| `GET /manifestations` | — | `200 {"ok":true,"manifestations":[…]}`, triées par date de début |
+| `POST /manifestations` | Champs saisis | `201 {"ok":true,"manifestation":{…}}` |
+| `PATCH /manifestations/<id>` | Champs saisis et `version` (celle sur laquelle la modification s'appuie) | `200 {"ok":true,"manifestation":{…}}` |
+| `DELETE /manifestations/<id>` | — | `200 {"ok":true}` |
+
+**Erreurs** : `400 DEMANDE_INVALIDE` (corps mal formé ou refusé par les règles), `404 MANIFESTATION_INCONNUE`,
+`409 MODIFIEE_ENTRE_TEMPS` avec la version courante (`{"ok":false,"erreur":…,"manifestation":{…}}`, l'application
+affiche « Modifié entre-temps par <modifieePar> : rechargez ») et `409 MANIFESTATION_NON_VIDE` : une épreuve de
+l'index du club s'y rattache (par une de ses compétitions, `rattachement.competitionId`), ou si elle contient une compétition (§13), la suppression est
+refusée ; une manifestation non vide s'archive (US-033, ci-dessous).
+
+### Archiver une manifestation : `POST /manifestations/<id>/archivage` (US-033)
+
+Corps exact : `{"archivee": true | false}`. Le serveur archive (ou désarchive) la manifestation **et toutes ses compétitions**
+en une seule écriture : chacune porte `archivee`, voit sa `version` augmenter et sa `modifieePar` mise à jour. Les
+modifications ordinaires (`PATCH`) conservent l'indicateur. Tout compte du club au mot de passe définitif peut le faire
+(administrateur ou organisateur).
+
+- `200 {"ok":true,"manifestation":{…},"competitions":[…]}` : la manifestation et ses compétitions, telles qu'elles sont désormais ;
+- `400 DEMANDE_INVALIDE`, `404 MANIFESTATION_INCONNUE`, `405` pour toute autre méthode que `POST`.
+
+`archivee` est absent d'une manifestation ou d'une compétition qui ne l'a jamais été. Le serveur ne décide rien pour les
+épreuves : l'application écrit d'abord `EpreuveArchivee` dans le journal de chacune (ce PC doit toutes les piloter, sauf
+les archivées, ADR-0001), puis appelle cette route. Hors ligne, l'archivage d'une manifestation est refusé.
+
+### Côté application
+
+- La dernière liste reçue est gardée dans IndexedDB (table `copieManifestations`, base locale en version 5), avec sa
+  date. Hors ligne, elle reste consultable (« Hors ligne : liste du … ») ; création, modification et suppression
+  sont grisées (« Nécessite une connexion internet »).
+- **Dates et épreuves rattachées** (US-023 CA-4) : avant d'envoyer une modification, l'application confronte les
+  nouvelles dates aux épreuves connues de l'appareil (index du club et épreuves gardées localement, y compris
+  pas encore envoyées) et refuse en citant celles qui sortiraient des dates. Le serveur ne fait pas ce contrôle : il
+  n'a aucune règle d'escrime.
+
+## 13. Compétitions du club (US-024, ADR-0016 §4)
+
+Une compétition regroupe des épreuves d'une manifestation sous un même nom (ex. « Championnats de Nouvelle-Aquitaine de
+sabre »). Comme les manifestations (§12), c'est une donnée du club stockée par le DO `Club` (table `competitions`, avec le
+`clubId` et la manifestation), sans journal ni pilote, modifiable seulement **en ligne**, avec un **numéro de version**.
+Une compétition appartient toujours à une manifestation et n'en change jamais ; elle n'a pas de dates propres (ce sont celles
+de ses épreuves).
+
+Les quatre routes demandent une **session valide** et un mot de passe définitif (sinon `403 ACCES_REFUSE`), pour tout
+rôle. Même CORS qu'au §7.
+
+**Champs saisis** (règles du domaine, `validerCompetition`) :
+
+| Champ | Type | Règles |
+|---|---|---|
+| `manifestationId` | texte ou `null` | D'une manifestation existante, ou `null` pour une compétition seule (US-045) ; fixé à la création |
+| `nom` | texte | Obligatoire, 1 à 100 caractères, espaces autour retirés |
+| `arme` | texte ou `null` | `sabre`, `epee`, `fleuret` ou `sabreLaser` ; `null` : toutes armes |
+| `commentaire` | texte ou `null` | 2 000 caractères au plus |
+
+**Compétition renvoyée** : les champs saisis, plus `id` (UUID tiré par le serveur), `version`, `modifieeLe` et
+`modifieePar` (comme au §12).
+
+| Route | Corps | Réponse |
+|---|---|---|
+| `GET /competitions` | — | `200 {"ok":true,"competitions":[…]}`, regroupées par manifestation |
+| `POST /competitions` | `manifestationId` (ou `null`, compétition seule), `nom`, `arme`, `commentaire` | `201 {"ok":true,"competition":{…}}` |
+| `PATCH /competitions/<id>` | `nom`, `arme`, `commentaire` et `version` ; **pas** de `manifestationId` | `200 {"ok":true,"competition":{…}}` |
+| `DELETE /competitions/<id>` | — | `200 {"ok":true}` (compétition vide) ; avec `?contenu=1`, voir §14 |
+
+**Erreurs** : `400 DEMANDE_INVALIDE` (corps mal formé, refusé par les règles, ou `manifestationId` dans un `PATCH`),
+`404 MANIFESTATION_INCONNUE` (création), `404 COMPETITION_INCONNUE`, `409 MODIFIEE_ENTRE_TEMPS` avec la version courante
+(`{"ok":false,"erreur":…,"competition":{…}}`) et `409 COMPETITION_NON_VIDE` : une épreuve de l'index du club s'y rattache
+(`rattachement.competitionId`).
+
+**Compétition seule (US-045)** : quand la dernière épreuve d'une compétition sans manifestation est supprimée (§14, une
+ou en série), le serveur supprime aussi la compétition. Une épreuve dont la compétition n'existe plus (supprimée par un
+autre administrateur) reste acceptée et listée : l'application la signale « à rattacher » (CA-7). Au démarrage, le
+Club migre l'ancienne table `competitions` (colonne `manifestation_id` obligatoire) vers la colonne facultative.
+
+### Côté application
+
+- La dernière liste reçue est gardée dans IndexedDB (table `copieCompetitions`, base locale en version 10), avec sa date.
+  Hors ligne, les compétitions restent consultables sous leur manifestation ; création, modification et suppression sont
+  grisées (« Nécessite une connexion internet »).
+- Les compétitions s'affichent et se gèrent sous chaque manifestation de la page « Manifestations » ; la liste complète du
+  club viendra avec US-026.
+- **Arme** (US-024 CA-4) : le serveur ne contrôle pas l'arme des épreuves (il n'a aucune règle d'escrime). C'est le
+  domaine (`validerEpreuve` avec un `CadreRattachement`) qui refuse, à la création d'une épreuve, une arme
+  différente de celle de la compétition : « Cette compétition est au sabre ». Changer l'arme d'une compétition ne modifie pas les
+  épreuves déjà rattachées.
+- **Rattachement d'une épreuve** (US-045, qui remplace US-025 CA-3 et CA-4) : le formulaire « Nouvelle épreuve » propose
+  un seul choix « Compétition » : les compétitions des dernières listes gardées sur l'appareil (à jour en ligne, sinon
+  la copie), nommées « <compétition> — <manifestation> » ou « <compétition> (seule) », plus « Nouvelle compétition seule »
+  (en ligne seulement). Le lieu de la manifestation et l'arme de la compétition sont proposés ; la date est obligatoire,
+  proposée parmi les jours de la manifestation et refusée hors de ses dates, seulement si la compétition y est rattachée.
+  Sans choix : `RATTACHEMENT_OBLIGATOIRE` ; hors ligne, une compétition que la copie ne contient pas est refusée
+  (`RATTACHEMENT_INVALIDE`).
+- **Compétition seule et première épreuve** (US-045 CA-4) : l'application valide l'épreuve, crée la compétition
+  (`POST /competitions`, `manifestationId: null`, même nom et même arme), puis écrit l'épreuve dans le journal local ; si
+  l'écriture échoue, elle retire la compétition (`DELETE`, au mieux). Le niveau « compétition » n'est pas montré tant qu'une
+  compétition seule n'a qu'une épreuve.
+
+## 14. Suppression définitive d'une épreuve (US-039, ADR-0019)
+
+Contrairement à l'archivage (US-033), la suppression efface l’épreuve du serveur et, à leur prochaine
+synchronisation, des PC du club. Elle ne se fait qu'**en ligne**, par un **administrateur** au mot de passe définitif.
+Même CORS qu'au §7.
+
+| Route | Corps | Réponse |
+|---|---|---|
+| `DELETE /epreuves/<epreuveId>` | — | `200 {"ok":true}` |
+
+La suppression est **idempotente** : une épreuve inconnue ou déjà supprimée reçoit aussi `200 {"ok":true}`, sans
+aucune écriture si elle n'a jamais existé. Une suppression interrompue (pierre tombale posée, journal pas encore effacé)
+est terminée par la suivante.
+
+**Erreurs** : `401` (session), `403 ACCES_REFUSE` (compte qui n'est pas administrateur, ou mot de passe temporaire),
+`404` (identifiant mal formé), `409 EPREUVE_EN_COURS` : le dernier résumé du pilote donne le statut `enCours` (le
+serveur ne décide d'aucune règle d'escrime, il lit ce statut).
+
+**Pierre tombale.** Le DO `Club` garde, dans la table `epreuves_supprimees` (identifiant, date), la trace de chaque
+épreuve supprimée, retire sa ligne de l'index, puis le DO `Epreuve` efface son stockage (journal, pilote,
+présence) et ferme ses WebSocket. L'identifiant n'est jamais réutilisé. Tant que la pierre tombale existe, toute route
+sur cette épreuve répond `410 EPREUVE_SUPPRIMEE` : `GET` et `POST /epreuves/<id>/evenements`,
+`GET` et `POST /epreuves/<id>/pilote`, `POST /epreuves/<id>/presence`. Un lot en cours pendant la suppression ne
+recrée pas la ligne d'index.
+
+**Index.** `GET /epreuves` ajoute `supprimees` : les identifiants des épreuves supprimées. Un serveur antérieur à
+US-039 ne l'envoie pas, et l'application lit alors une liste vide.
+
+```json
+{ "ok": true, "epreuves": [], "supprimees": ["0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c"] }
+```
+
+### Côté application
+
+- L'administrateur voit « Supprimer définitivement… » sur la page d'une épreuve. Le bouton est grisé hors ligne
+  (« Connexion requise pour supprimer ») et pour une épreuve en cours ; la confirmation exige de saisir le nom exact.
+- À chaque lecture de l'index (démarrage, retour du réseau, accueil), et à chaque `410 EPREUVE_SUPPRIMEE` reçu pour un
+  lot, un battement ou un téléchargement, le PC efface sa copie locale (journal, ligne locale, modifications écartées) et
+  annonce une fois : « L’épreuve <nom> a été supprimée par un administrateur » (suivi de « Des saisies non envoyées
+  ont été abandonnées » s'il y en avait). La suppression prime sur les saisies hors ligne.
+- Le PC qui a lui-même demandé la suppression efface sa copie sans annonce.
+
+### Suppression d'une compétition avec son contenu (US-041, ADR-0020)
+
+`DELETE /competitions/<id>?contenu=1` supprime la compétition **et ses épreuves** (archivées comprises). Il faut un **administrateur**
+au mot de passe définitif (`403 ACCES_REFUSE` sinon). Sans `?contenu=1`, une compétition non vide reste refusée
+(`409 COMPETITION_NON_VIDE`, §13).
+
+Le serveur supprime au plus **30 épreuves par requête** (limite de 50 sous-requêtes du plan gratuit) et répond :
+
+```json
+{ "ok": true, "termine": false, "supprimees": 30, "restantes": 5 }
+```
+
+tant qu'il en reste ; la dernière requête (`"termine": true`, `"restantes": 0`) retire aussi la ligne de la compétition.
+L'application enchaîne les requêtes et affiche la progression. Une interruption laisse la compétition et ce qui reste en
+place : **relancer la reprend**, sans recompter ce qui est déjà supprimé. Chaque épreuve supprimée a sa pierre
+tombale (ci-dessus).
+
+- **Compétition inconnue ou vide** : `200 {"ok":true,"termine":true,"supprimees":0,"restantes":0}`, sans autre effet.
+- **Épreuve en cours** : `409 {"ok":false,"erreur":"EPREUVE_EN_COURS","enCours":["<noms>"]}` ; rien n'est supprimé,
+  ni dans la compétition ni ailleurs. Le serveur lit le statut du dernier résumé envoyé par le pilote.
+- **Épreuve rattachée entre-temps** : la compétition n'est pas retirée, la réponse a `"termine": false` avec ce qui reste.
+
+## 15. Fichiers joints : affiche et feuille de route (US-030, ADR-0011, ADR-0022)
+
+Une manifestation, une compétition ou une épreuve porte au plus une **affiche** (image) et une **feuille de route** (PDF).
+Le serveur les garde dans le DO `Club`, en morceaux de 1 Mo. Même CORS qu'au §7.
+
+| Route | Corps | Réponse |
+|---|---|---|
+| `GET /fichiers` | — | `200 {"ok":true,"fichiers":[Fichier…]}` : la description de tous les fichiers du club |
+| `PUT /fichiers/<élément>/<id>/<sorte>` | le contenu brut du fichier | `201 {"ok":true,"fichier":Fichier}` ; remplace celui de même sorte |
+| `DELETE /fichiers/<élément>/<id>/<sorte>` | — | `200 {"ok":true}` ; `404 FICHIER_INCONNU` s'il n'y en a pas |
+| `GET /fichiers/<nom>` | — | `200` : le contenu, **sans session** ; `404` si le nom n'est plus gardé |
+
+`<élément>` : `manifestation`, `competition` ou `epreuve`. `<sorte>` : `affiche` ou `feuilleDeRoute`. `<id>` : l'identifiant de l'élément
+(même forme qu'au §1). L'envoi, le remplacement, le retrait et la liste demandent une session d'un compte au mot de passe
+définitif (`401` sans session, `403 ACCES_REFUSE` avec un mot de passe temporaire).
+
+```json
+{ "proprietaire": "competition", "proprietaireId": "<id>", "sorte": "affiche",
+  "nom": "<sha256 en hexadécimal>.webp", "type": "webp", "taille": 123456,
+  "ajouteLe": 1760000000000, "ajoutePar": "<nom du compte>" }
+```
+
+- **Nom** : l'empreinte SHA-256 du contenu et l'extension du type réel (`pdf`, `png`, `jpg`, `webp`). Remplacer un fichier change
+  son nom : l'ancien n'est plus servi (`404`). Joindre deux fois le même contenu ne change rien.
+- **Lecture publique** : `GET /fichiers/<nom>` répond avec le type réel (`Content-Type`), `Content-Disposition: inline`,
+  `Cache-Control: public, max-age=31536000, immutable`, `X-Content-Type-Options: nosniff` et `Access-Control-Allow-Origin: *`.
+- **Contrôles** (les mêmes dans l'application et sur le serveur, `paquets/domaine/src/fichiers.ts`) : 5 Mo au plus (5 242 880
+  octets) ; type réel lu dans les premiers octets, jamais dans l'extension ; une affiche est un PNG, un JPEG ou un WebP, une
+  feuille de route est un PDF ; pas d'image animée ; pas plus de 20 millions de pixels. L'application réduit l'affiche avant
+  l'envoi (WebP, 1 600 px au plus).
+- **Refus** : `{"ok":false,"erreur":"FICHIER_REFUSE","raison":"…"}` avec `413` pour `TROP_GROS`, `400` pour `VIDE`, `415` pour
+  `TYPE_REFUSE`, `TYPE_INCOMPATIBLE`, `IMAGE_ANIMEE` et `IMAGE_TROP_GRANDE`. Le serveur lit le corps jusqu'à 5 Mo au plus et
+  s'arrête au-delà. `404 PROPRIETAIRE_INCONNU` si l'élément n'existe pas : une épreuve existe sur le serveur dès le premier lot
+  de son pilote (§11).
+- **Suppression** : supprimer une manifestation, une compétition ou une épreuve (§12, §13, §14) supprime aussi ses fichiers.
+- **Héritage** (CA-4) : il se calcule dans l'application (`fichierHerite`), pas sur le serveur : une épreuve sans affiche montre
+  celle de sa compétition, à défaut celle de sa manifestation. Même règle pour la feuille de route.
+
+## 16. Page publique : épreuves publiées (US-031, ADR-0007)
+
+Deux routes **sans session**, en lecture seule (`GET` ; toute autre méthode répond `405`), avec `Access-Control-Allow-Origin: *`
+et `Cache-Control: no-store` : une dépublication doit se voir tout de suite. Le serveur ne fait qu'un filtre sur l'index du
+club (§11) : il ne calcule rien d'escrime.
+
+### `GET /public`
+
+`200 { "ok": true, "manifestations": […], "competitions": […], "epreuves": […], "fichiers": […] }`, avec seulement ce que le
+public voit :
+
+- **`epreuves`** : les épreuves **publiées et non archivées** (`publiee` vrai et `statut` différent de `archivee`,
+  `estVisibleDuPublic`), chacune réduite à `{ id, nom, arme, categorie, sexe, date, horaires, lieu, competitionId }` ;
+- **`competitions`** : celles qui contiennent au moins une de ces épreuves, réduites à `{ id, manifestationId, nom, arme }` ;
+- **`manifestations`** : celles qui contiennent au moins une de ces compétitions, réduites à `{ id, nom, debut, fin, lieu }` ;
+- **`fichiers`** : l'affiche et la feuille de route de ces épreuves, compétitions et manifestations (§15), **sans**
+  `ajoutePar`. Le contenu se lit par `GET /fichiers/<nom>` (§15).
+
+Rien d'autre n'en sort : ni nom de compte, ni appareil, ni numéro de séquence, ni commentaire, ni donnée de tireur (CA-5).
+L'application regroupe ces lignes par manifestation puis par compétition (`regrouperPagePublique`, domaine) et calcule
+l'héritage des fichiers (`fichiersEffectifs`, §15).
+
+### `GET /public/epreuves/<id>`
+
+`200 { "ok": true, "epreuve": { … } }` (mêmes champs que ci-dessus) si l'épreuve est publiée et non archivée, sinon
+`404 { "ok": false, "erreur": "EPREUVE_NON_PUBLIEE" }`. Une épreuve inconnue répond exactement de même : rien ne permet de
+deviner l'existence d'une épreuve non publiée. L'application affiche alors « Cette épreuve n'est pas publiée ».
+
+### Côté application
+
+- **Adresses** : la page d'accueil `/` est la page publique ; `/direct/<id>` est le lien public d'une épreuve (ADR-0007 le
+  notait `#/direct/<id>` : l'application utilise de vraies adresses). Le suivi en direct (E9) s'y ajoutera ; pour l'instant la
+  page montre l'épreuve elle-même.
+- **Publier / Dépublier** : boutons de la page de l'épreuve, réservés au PC pilote (`modifierPublication`). L'événement
+  `PublicationModifiee` (§10) s'écrit dans le journal local, **hors ligne comprise** ; il part avec le lot suivant (§11), dont
+  le résumé porte la nouvelle valeur de `publiee`. La page publique ne change qu'à la réception du lot : la page de l'épreuve
+  affiche « Publication en attente d'envoi » en attendant.
+- **Visiteur** : pas de mode hors ligne ; sans réseau la page le dit (« Impossible de joindre le serveur… ») et recharge au
+  retour du réseau.
+- **Vocabulaire** : « Publiée / Non publiée » pour la visibilité ; « en ligne / hors ligne » est réservé à l'état du réseau.

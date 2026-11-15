@@ -1,7 +1,7 @@
 import css from '../app.css?raw';
 import { describe, expect, it } from 'vitest';
-import { COULEURS_AVATAR } from '@poule-position/domaine';
-import { contraste, lireVariables, COUPLES_CHARTE, PALETTE_CALME_RETRO } from './couleurs';
+import { COULEURS_AVATAR, PALETTE_PLAN } from '@poule-position/domaine';
+import { contraste, lireSombreManuel, lireVariables, melanger, COUPLES_CHARTE, PALETTE_CALME_RETRO } from './couleurs';
 
 const { clair, sombre } = lireVariables(css);
 
@@ -63,6 +63,54 @@ describe('charte (US-011)', () => {
   });
 });
 
+describe('couleurs des compétitions (US-046 CA-4)', () => {
+  const teintes = Array.from({ length: PALETTE_PLAN }, (_, rang) => `--plan-${rang}`);
+
+  it.each([
+    ['clair', clair],
+    ['sombre', sombre],
+  ])(
+    'US-046 CA-4 : chaque teinte du plan est définie et passe 4,5:1 sur le fond et la surface, en mode %s',
+    (_mode, variables) => {
+      const ecarts: string[] = [];
+      for (const teinte of teintes) {
+        expect(variables[teinte], teinte).toMatch(/^#[0-9a-f]{6}$/i);
+        for (const fond of ['--fond', '--surface']) {
+          const valeur = contraste(variables[teinte] ?? '', variables[fond] ?? '');
+          if (valeur < 4.5) ecarts.push(`${teinte} sur ${fond} : ${valeur.toFixed(2)} < 4.5`);
+        }
+      }
+      expect(ecarts).toEqual([]);
+    },
+  );
+});
+
+describe('bandes de compétition du plan (US-050 CA-1)', () => {
+  /** Part de la couleur de la compétition dans le fond (CSS : `color-mix`) et dans la bordure de sa bande. */
+  const PART_FOND = 0.12;
+  const teintes = Array.from({ length: PALETTE_PLAN }, (_, rang) => `--plan-${rang}`);
+
+  it('melanger reprend color-mix : 0 donne la base, 1 la couleur, 0,5 le milieu', () => {
+    expect(melanger('#000000', '#ffffff', 0)).toBe('#ffffff');
+    expect(melanger('#000000', '#ffffff', 1)).toBe('#000000');
+    expect(melanger('#000000', '#ffffff', 0.5)).toBe('#808080');
+  });
+
+  it.each([
+    ['clair', clair],
+    ['sombre', sombre],
+  ])('US-050 CA-1 : le nom d’une compétition garde 4,5:1 sur sa bande teintée, en mode %s', (_mode, variables) => {
+    const ecarts: string[] = [];
+    for (const teinte of teintes) {
+      const couleur = variables[teinte] ?? '';
+      const fond = melanger(couleur, variables['--surface'] ?? '', PART_FOND);
+      const valeur = contraste(couleur, fond);
+      if (valeur < 4.5) ecarts.push(`${teinte} sur sa bande : ${valeur.toFixed(2)} < 4.5`);
+    }
+    expect(ecarts).toEqual([]);
+  });
+});
+
 describe('couleurs d’avatar (US-016)', () => {
   it.each(COULEURS_AVATAR)(
     'US-016 CA-3 : la couleur « %s » est définie, et les initiales y sont lisibles (AA)',
@@ -74,4 +122,63 @@ describe('couleurs d’avatar (US-016)', () => {
       }
     },
   );
+});
+
+describe('thème choisi à la main (US-052)', () => {
+  it('CA-6 : le thème « Sombre » choisi à la main a exactement les variables du mode sombre du système', () => {
+    expect(lireSombreManuel(css)).toEqual(sombre);
+  });
+
+  it('CA-6 : tous les couples de la charte restent contrastés dans le thème « Sombre » choisi à la main', () => {
+    const manuel = lireSombreManuel(css);
+    for (const { texte, fond, minimum } of COUPLES_CHARTE) {
+      expect(contraste(manuel[texte]!, manuel[fond]!), `${texte} sur ${fond}`).toBeGreaterThanOrEqual(minimum);
+    }
+  });
+
+  it('lit le bloc manuel, ou rien de plus que le mode clair s’il n’y en a pas', () => {
+    const exemple = `:root { --a: #fff; --b: #000; }
+      :root[data-theme='sombre'] { color-scheme: dark; --b: #111; }`;
+    expect(lireSombreManuel(exemple)).toEqual({ '--a': '#fff', '--b': '#111' });
+    expect(lireSombreManuel(':root { --a: #fff; }')).toEqual({ '--a': '#fff' });
+  });
+});
+
+describe('variables de la maquette de l’IHM (US-054 CA-8)', () => {
+  const VARIABLES = [
+    '--sur-tiffany',
+    '--accent-survol',
+    '--accent-teinte',
+    '--accent-teinte-bordure',
+    '--etat-ok-fond',
+    '--sur-etat-ok-fond',
+    '--etat-attente-fond',
+    '--etat-attente-bordure',
+    '--sur-etat-attente-fond',
+    '--texte-inactif',
+  ];
+
+  it.each([
+    ['clair', clair],
+    ['sombre', sombre],
+  ])('CA-8 : les variables « à créer » de la table de la maquette existent, en mode %s', (_mode, variables) => {
+    for (const nom of VARIABLES) expect(variables[nom], nom).toMatch(/^#[0-9a-f]{6}$/i);
+  });
+
+  it('CA-8 : le mode sombre redéfinit les teintes, pas le texte posé sur tiffany (même fond dans les deux thèmes)', () => {
+    expect(sombre['--accent-teinte']).not.toBe(clair['--accent-teinte']);
+    expect(sombre['--sur-tiffany']).toBe(clair['--sur-tiffany']);
+  });
+
+  it('CA-8 : le texte posé sur le bouton principal tiffany reste AA dans les deux thèmes', () => {
+    for (const variables of [clair, sombre]) {
+      expect(contraste(variables['--sur-tiffany']!, variables['--palette-tiffany']!)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('CA-8 : la bordure d’élément coché reste distincte de son fond teinté', () => {
+    for (const variables of [clair, sombre]) {
+      expect(variables['--accent-teinte-bordure']).not.toBe(variables['--accent-teinte']);
+    }
+  });
 });

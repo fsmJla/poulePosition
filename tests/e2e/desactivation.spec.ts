@@ -1,6 +1,7 @@
 // US-008 : désactiver, réactiver ou supprimer un compte. Réponses de /comptes simulées (même raison qu'US-007 : ne pas
 // modifier les comptes réels de la preview) ; la chaîne réelle est couverte par serveur/src/comptes.test.ts.
 import { expect, test, type Page } from '@playwright/test';
+import { ouvrirPageComptes } from './compte';
 import { connecterSimule, sessionSimulee, simuler } from './simulation';
 
 const ORGA = {
@@ -18,13 +19,13 @@ const MOI = { ...ORGA, id: 'c1', email: sessionSimulee().compte.email, nom: 'Com
 async function ouvrirComptes(page: Page, comptes: unknown[] = [ORGA]) {
   await simuler(page, '/comptes', 200, { ok: true, comptes }, 'GET');
   await connecterSimule(page, 'administrateur');
-  await page.getByRole('link', { name: 'Comptes' }).click();
+  await ouvrirPageComptes(page);
   await expect(page).toHaveURL(/\/comptes$/);
 }
 
 const ligne = (page: Page, nom: string) => page.getByRole('row').filter({ hasText: nom });
 
-test('US-008 CA-1 : désactivation confirmée, le compte apparaît désactivé', async ({ page }) => {
+test('US-008 CA-1 : désactivation confirmée, le compte apparaît désactivé @reel', async ({ page }) => {
   await ouvrirComptes(page);
   let envoye: unknown = null;
   await simuler(page, '/comptes/c2', 200, { ok: true, compte: { ...ORGA, actif: false } }, 'PATCH', (corps) => {
@@ -86,7 +87,7 @@ test('US-008 CA-4 : le refus du dernier administrateur est affiché', async ({ p
   await expect(ligne(page, 'Compte simulé')).toContainText('Actif');
 });
 
-test('US-008 : un administrateur qui se désactive est déconnecté aussitôt', async ({ page }) => {
+test('US-008 : un administrateur qui se désactive est déconnecté aussitôt @reel', async ({ page }) => {
   await ouvrirComptes(page, [MOI, ORGA]);
   await simuler(page, '/comptes/c1', 200, { ok: true, compte: { ...MOI, actif: false } }, 'PATCH');
   await page.getByRole('button', { name: 'Désactiver Compte simulé' }).click();
@@ -94,12 +95,14 @@ test('US-008 : un administrateur qui se désactive est déconnecté aussitôt', 
   await expect(page).toHaveURL(/\/connexion$/);
 });
 
-test('US-008 hors ligne : désactivation et suppression sont grisées', async ({ page, context }) => {
+test('US-036 CA-1 : US-008 hors ligne : désactivation et suppression sont grisées', async ({ page, context }) => {
   await ouvrirComptes(page);
   const boutons = [
     page.getByRole('button', { name: 'Désactiver Bruno Petit' }),
     page.getByRole('button', { name: 'Supprimer Bruno Petit' }),
   ];
+  // La liste est chargée au montage de la page : couper le réseau avant son arrivée la ferait échouer (US-036).
+  for (const bouton of boutons) await expect(bouton).toBeVisible();
   await context.setOffline(true);
   for (const bouton of boutons) {
     await expect(bouton).toBeDisabled();

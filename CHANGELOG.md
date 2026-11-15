@@ -1,5 +1,44 @@
 # Notes de version
 
+## 2026.11.14 : l'organisateur crée, range et publie ses événements
+
+### Nouveautés
+
+- **Manifestations, compétitions et épreuves** : on crée une manifestation, ses compétitions et leurs épreuves, seul ou
+  en lot (grille des épreuves), on les modifie, on les duplique depuis le plan et on rattache toute épreuve à une
+  compétition. Une page par manifestation (onglets Compétitions, Plan, Documents) et une page par épreuve organisée par étapes,
+  avec l'indication de la prochaine étape.
+- **Formule et paramètres d'une compétition** ; **prise de main** d'une compétition depuis un autre PC.
+- **Fichiers joints** : affiche et feuille de route, avec héritage de la manifestation, consultables hors ligne.
+- **Publication** : publier ou dépublier une épreuve, page d'accueil publique et lien public.
+- **Nouvel accueil de l'organisateur** : entête avec fil d'Ariane et icônes, recherche, filtres (à venir et en cours, terminées,
+  archivées, toutes), sélection de plusieurs éléments, archivage, alerte pour les épreuves à rattacher, bouton « Créer » flottant,
+  adapté au smartphone.
+- **Suppressions** : une compétition, une épreuve ou une manifestation, avec son contenu, seule ou par lot.
+- **Thème** clair, sombre ou automatique ; menu de compte, profil, réinitialisation du mot de passe par e-mail.
+- **Horaires** : 9 h 00 par défaut et des minutes par quart d'heure.
+- **Lieu d'une manifestation** : suggestions d'adresses pendant la saisie, puis plan du lieu (OpenStreetMap) dans le récapitulatif
+  et sur la page de la manifestation.
+- **Documents** : aperçu de l'affiche et de la feuille de route (vignette de la première page du PDF, fenêtre d'aperçu) et repère
+  « Document » sur les lignes de la liste qui en portent un.
+- **Finitions** : les trois icônes de thème toujours visibles sur PC, « Annuler » est un bouton dans les formulaires, lignes du plan
+  alignées à l'étape « Vérifier ».
+- **Vocabulaire** : la **compétition regroupe des épreuves** (le sens des deux mots est inversé, voir l'ADR-0021).
+
+### Pour l'équipe
+
+- Les tests d'interface tournent désormais sur GitHub contre un serveur local ; la preview Cloudflare ne reçoit plus que
+  les tests « réel » (étiquetés `@reel`), ce qui ménage le quota gratuit partagé avec la production.
+- Le dépôt est public, avec protection de `main` (passage obligatoire par une pull request).
+
+### Points d'attention
+
+- **Ne pas mettre en production un jour de compétition.** Cette version change beaucoup de choses : le serveur de production
+  est déployé en même temps que l'application.
+- **Se reconnecter une fois avec internet** après la mise à jour, avant de partir au gymnase.
+- **Les E2E de la preview sont désactivés** (quota Cloudflare épuisé le 14 novembre) : à réactiver dans l'onglet Actions de GitHub
+  (« E2E sur la preview ») une fois cette version sur `main`, avec la nouvelle sélection « réel seulement ».
+
 ## 2026.10.28 : l'adresse du club
 
 ### Nouveautés

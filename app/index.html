@@ -2,7 +2,7 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Organisation et suivi de compétitions d'escrime" />
     <meta name="theme-color" content="#2F4B4A" />
     <meta name="apple-mobile-web-app-title" content="Poule Position" />
@@ -10,6 +10,13 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Poule Position</title>
+    <script>
+      // US-052 : thème choisi, posé avant le premier affichage (pas de clignotement). Même clé que lib/theme.ts.
+      try {
+        var theme = localStorage.getItem('poule-position:theme');
+        if (theme === 'clair' || theme === 'sombre') document.documentElement.setAttribute('data-theme', theme);
+      } catch (erreur) {}
+    </script>
   </head>
   <body>
     <div id="app"></div>

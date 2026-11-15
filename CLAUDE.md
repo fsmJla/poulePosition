@@ -12,15 +12,16 @@ Application d'organisation et de suivi de compétitions d'escrime (poules, table
 | `docs/adr/` | Décisions d'architecture. Une ADR acceptée ne se modifie pas : on la remplace (`/adr`). |
 | `docs/backlog/README.md` | Index des US par Epic, avec statut et dépendances. |
 | `docs/glossaire.md` | Vocabulaire métier : employer exactement ces termes dans le code et les docs. |
+| `docs/maquettes/README.md` | Maquettes validées de l'interface : planches, principes d'IHM, vocabulaire d'icônes. |
 | `docs/reference/relais-wireless-fencing/` | Relais d'origine (lecture seule, ne pas modifier). |
 
 ## Architecture en bref (détails dans les ADR)
 
 - `app/` : PWA Svelte 5 + Vite + TypeScript, un build pour quatre usages (pilote, saisie, écran, spectateur).
-- `serveur/` : Worker Cloudflare et Durable Objects (`Competition`, `Club`, `Limiteur`), issu du relais. Il ne contient **aucune logique métier d'escrime**.
+- `serveur/` : Worker Cloudflare et Durable Objects (`Epreuve`, `Club`, `Limiteur`), issu du relais. Il ne contient **aucune logique métier d'escrime**.
 - `paquets/domaine/` : règles métier **pures** (aucun accès réseau, stockage ou DOM). Tout calcul métier vit ici.
 - `paquets/protocole/` : types et validation des messages, partagés par l'app et le serveur.
-- L'état d'une compétition est un **journal d'événements**. Seul le PC pilote l'écrit. Les smartphones *proposent* des saisies, que le pilote accepte ou refuse.
+- L'état d'une épreuve est un **journal d'événements**. Seul le PC pilote l'écrit. Les smartphones *proposent* des saisies, que le pilote accepte ou refuse.
 
 ## Commandes du projet (Node 24)
 
@@ -35,7 +36,7 @@ parallèle. **Ne jamais arrêter un processus sans avoir vérifié qu'il apparti
 1. **Gratuit uniquement.** Tout nouveau service ou toute nouvelle dépendance payante passe d'abord par une ADR
    qui documente les limites du plan gratuit (quotas, mise en veille, conditions). Ne jamais ajouter de moyen de paiement.
 2. **Hors ligne d'abord.** Chaque fonctionnalité précise son comportement sans internet, et ce comportement est testé.
-   Le PC pilote doit toujours pouvoir continuer la compétition seul.
+   Le PC pilote doit toujours pouvoir continuer l'épreuve seul.
 3. **Le PC pilote fait foi.** Aucune écriture métier ne se fait hors du pilote. Le serveur stocke et diffuse, il ne décide pas.
 4. **Langue.** Le code (identifiants, commentaires), les docs, les messages de commit et l'interface sont en **français**, comme dans le relais.
    Exceptions : les mots-clés et les API imposées par les outils. Les textes de l'interface passent par le catalogue de traduction.
@@ -44,6 +45,10 @@ parallèle. **Ne jamais arrêter un processus sans avoir vérifié qu'il apparti
 6. **Tests de charge (k6) : JAMAIS lancés automatiquement**, ni en CI, ni par Claude de sa propre initiative. Ils ne se lancent qu'avec l'utilisateur, via `/test-charge`, contre la preview et jamais contre la production.
 7. **Données personnelles.** Collecter le minimum (ADR-0014). Toute donnée porte un `clubId`. Conservation : 1 an.
 8. **Secrets.** Jamais dans le dépôt. Ils vont dans les secrets Wrangler, les variables Vercel ou les secrets GitHub. `.env.local` n'est pas versionné.
+9. **Maquette.** Tout écran de l'organisateur, nouveau ou modifié, suit `docs/maquettes/README.md` : entête et fil d'Ariane,
+   une action principale par écran, actions secondaires dans le menu « ⋯ », icônes du vocabulaire (jamais d'icône seule sans
+   nom accessible ni infobulle), étapes à venir grisées. L'US cite sa planche ; un écart se déclare dans ses **Hypothèses**
+   et un écran sans planche demande d'abord une maquette validée par l'utilisateur.
 
 ## Git et livraison
 
@@ -80,11 +85,15 @@ Hors de ces modes, ne pas modifier le code applicatif sans demande explicite.
 ## Définition de « terminé » (une US)
 
 - [ ] Tous les critères d'acceptation sont couverts par des tests.
-- [ ] Les tests unitaires et E2E passent en CI, avec lint, typage, couverture et audit verts.
+- [ ] Les tests unitaires passent en CI, avec lint, typage, couverture et audit verts ; les E2E « interface » passent en CI
+      (runner GitHub contre le serveur local, ADR-0023), les E2E « réel » (`@reel`) passent sur la preview quand le
+      serveur, le domaine, le protocole ou un test `@reel` change, et les tests liés aux fichiers modifiés
+      (`npm run test:e2e:impact`) passent en local.
 - [ ] L'US est déployée en preview et vérifiée (`/recette`).
 - [ ] La doc concernée est à jour (US, protocole, ADR, README).
 
 ## Statuts des US
 
 `À spécifier` → `Prête` → `En cours` → `En revue` (PR ouverte) → `Terminée` (recette OK et mergée dans `dev`).
-Une US peut aussi être `Bloquée`, avec le motif indiqué. Le statut se met à jour à la fois dans le fichier de l'US et dans `docs/backlog/README.md`.
+Une US peut aussi être `Bloquée`, avec le motif indiqué, ou `Abandonnée` : décision de ne pas la réaliser, avec le motif indiqué
+(le fichier de l'US est conservé comme trace et elle sort de l'ordre de réalisation). Le statut se met à jour à la fois dans le fichier de l'US et dans `docs/backlog/README.md`.

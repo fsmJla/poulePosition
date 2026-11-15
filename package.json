@@ -21,6 +21,7 @@
     "test": "vitest run",
     "test:couverture": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:impact": "tsx outils/tests-impact.ts",
     "audit": "npm audit --audit-level=high",
     "test:charge": "node tests/charge/lancer.mjs",
     "creer-admin": "tsx outils/creer-admin.ts",
@@ -39,7 +40,7 @@
     "prettier-plugin-svelte": "^4.1.1",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.72.0",
+    "typescript-eslint": "^8.72.1",
     "vitest": "^5.0.5"
   },
   "overrides": {

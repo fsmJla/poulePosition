@@ -3,6 +3,11 @@
 // Aucune dépendance à l'environnement Cloudflare (testée sous Node). Protocole : docs/protocole.md.
 import {
   expirationSession,
+  MOTIF_NOM_FICHIER,
+  PROPRIETAIRES_FICHIER,
+  SORTES_FICHIER,
+  type ProprietaireFichier,
+  type SorteFichier,
   sessionExpiree,
   validerEmail,
   ROLES,
@@ -17,8 +22,8 @@ import {
   type CodeErreur,
 } from '@poule-position/protocole';
 
-/** Identifiant de compétition : minuscules, chiffres et tirets, 64 caractères au plus. */
-const MOTIF_COMPETITION = /^[a-z0-9][a-z0-9-]{0,63}$/;
+/** Identifiant d’épreuve ou de manifestation : minuscules, chiffres et tirets, 64 caractères au plus. */
+const MOTIF_EPREUVE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 export type Route =
   | { route: 'accueil' }
@@ -34,7 +39,22 @@ export type Route =
   | { route: 'comptes' }
   | { route: 'compte'; id: string }
   | { route: 'reinitialisation'; id: string }
-  | { route: 'connexion'; competitionId: string };
+  | { route: 'manifestations' }
+  | { route: 'manifestation'; id: string }
+  | { route: 'archivage-manifestation'; id: string }
+  | { route: 'competitions' }
+  | { route: 'competition'; id: string }
+  | { route: 'epreuves' }
+  | { route: 'epreuve'; epreuveId: string }
+  | { route: 'evenements'; epreuveId: string }
+  | { route: 'pilote'; epreuveId: string }
+  | { route: 'presence'; epreuveId: string }
+  | { route: 'connexion'; epreuveId: string }
+  | { route: 'fichiers' }
+  | { route: 'fichier'; proprietaire: ProprietaireFichier; id: string; sorte: SorteFichier }
+  | { route: 'fichier-public'; nom: string }
+  | { route: 'public' }
+  | { route: 'epreuve-publique'; epreuveId: string };
 
 /** Analyse le chemin d'une requête entrante ; null si la route n'existe pas. */
 export function analyserChemin(chemin: string): Route | null {
@@ -53,9 +73,34 @@ export function analyserChemin(chemin: string): Route | null {
   if (reinitialisation?.[1]) return { route: 'reinitialisation', id: reinitialisation[1] };
   const compte = /^\/comptes\/([A-Za-z0-9-]{1,64})$/.exec(chemin);
   if (compte?.[1]) return { route: 'compte', id: compte[1] };
-  const morceaux = /^\/competitions\/([^/]+)\/connexion$/.exec(chemin);
-  if (!morceaux?.[1] || !MOTIF_COMPETITION.test(morceaux[1])) return null;
-  return { route: 'connexion', competitionId: morceaux[1] };
+  if (chemin === '/manifestations') return { route: 'manifestations' };
+  const manifestation = /^\/manifestations\/([^/]+)$/.exec(chemin)?.[1];
+  if (manifestation) return MOTIF_EPREUVE.test(manifestation) ? { route: 'manifestation', id: manifestation } : null;
+  const archivage = /^\/manifestations\/([^/]+)\/archivage$/.exec(chemin)?.[1];
+  if (archivage) return MOTIF_EPREUVE.test(archivage) ? { route: 'archivage-manifestation', id: archivage } : null;
+  if (chemin === '/competitions') return { route: 'competitions' };
+  const competition = /^\/competitions\/([^/]+)$/.exec(chemin)?.[1];
+  if (competition) return MOTIF_EPREUVE.test(competition) ? { route: 'competition', id: competition } : null;
+  if (chemin === '/epreuves') return { route: 'epreuves' };
+  const seule = /^\/epreuves\/([^/]+)$/.exec(chemin)?.[1];
+  if (seule) return MOTIF_EPREUVE.test(seule) ? { route: 'epreuve', epreuveId: seule } : null;
+  if (chemin === '/public') return { route: 'public' };
+  const publique = /^\/public\/epreuves\/([^/]+)$/.exec(chemin)?.[1];
+  if (publique) return MOTIF_EPREUVE.test(publique) ? { route: 'epreuve-publique', epreuveId: publique } : null;
+  if (chemin === '/fichiers') return { route: 'fichiers' };
+  const nomFichier = /^\/fichiers\/([^/]+)$/.exec(chemin)?.[1];
+  if (nomFichier) return MOTIF_NOM_FICHIER.test(nomFichier) ? { route: 'fichier-public', nom: nomFichier } : null;
+  const fichier = /^\/fichiers\/([^/]+)\/([^/]+)\/([^/]+)$/.exec(chemin);
+  if (fichier) {
+    const [, proprietaire = '', id = '', sorte = ''] = fichier;
+    const connu = (PROPRIETAIRES_FICHIER as readonly string[]).includes(proprietaire);
+    if (!connu || !MOTIF_EPREUVE.test(id) || !(SORTES_FICHIER as readonly string[]).includes(sorte)) return null;
+    return { route: 'fichier', proprietaire: proprietaire as ProprietaireFichier, id, sorte: sorte as SorteFichier };
+  }
+  const morceaux = /^\/epreuves\/([^/]+)\/(connexion|evenements|pilote|presence)$/.exec(chemin);
+  if (!morceaux?.[1] || !MOTIF_EPREUVE.test(morceaux[1])) return null;
+  const route = { connexion: 'connexion', evenements: 'evenements', pilote: 'pilote', presence: 'presence' } as const;
+  return { route: route[morceaux[2] as keyof typeof route], epreuveId: morceaux[1] };
 }
 
 /**
@@ -129,6 +174,13 @@ export async function verificateurServeur(cle: string, poivre: string): Promise<
  * Le comptage est celui du domaine (essais.ts), comme pour les connexions (US-004).
  */
 export const REGLE_INSTALLATION: RegleEssais = { max: 5, fenetre: 60_000, duree: 60_000 };
+
+/**
+ * US-041 (ADR-0020) : épreuves supprimées par requête lors d'une suppression avec contenu. Le plan gratuit de
+ * Cloudflare limite les sous-requêtes d'une requête à 50 ; chaque épreuve coûte un appel au DO `Epreuve`, et le
+ * reste (session, index, compétition) quelques autres.
+ */
+export const LIMITE_SUPPRESSION_CONTENU = 30;
 
 /**
  * Sel renvoyé pour un e-mail inconnu (US-003 CA-2) : stable et de la taille d'un vrai sel, il ne permet pas de
@@ -320,4 +372,32 @@ export function lienReinitialisation(
 ): string {
   const base = origine && origineAutorisee(origine, motifs) ? origine : urlApplication.replace(/\/+$/, '');
   return `${base}/reinitialisation#${jeton}`;
+}
+
+/**
+ * US-044 CA-5 (ADR-0021) : requêtes qui préparent le schéma du DO `Club` à l'inversion du vocabulaire. Avant elle, la
+ * table `epreuves` était le regroupement (elle a une colonne `manifestation_id`) et `competitions` l'unité qui se tire ;
+ * ces tables, qui n'ont que des données de test, sont supprimées pour être recréées sous leur nouveau sens. Les comptes
+ * ne sont pas touchés. Une base déjà au nouveau schéma, ou neuve, n'a rien à faire.
+ */
+export function requetesInversionVocabulaire(colonnesEpreuves: readonly string[]): string[] {
+  if (!colonnesEpreuves.includes('manifestation_id')) return [];
+  return ['epreuves', 'competitions', 'competitions_supprimees'].map((table) => `DROP TABLE IF EXISTS ${table}`);
+}
+
+/** Colonne d'une table SQLite, telle que la décrit `PRAGMA table_info`. */
+export interface ColonneSql {
+  name: string;
+  /** 1 si la colonne est déclarée `NOT NULL`. */
+  notnull: number;
+}
+
+/**
+ * US-045 : une compétition peut être seule, sa colonne `manifestation_id` accepte donc `NULL`. SQLite ne retire pas un
+ * `NOT NULL` : la table de l'ancien schéma, qui n'a que des données de test (la preview est purgée, pas de migration),
+ * est supprimée pour être recréée. Une base déjà au nouveau schéma, ou neuve, n'a rien à faire.
+ */
+export function requetesCompetitionsSeules(colonnesCompetitions: readonly ColonneSql[]): string[] {
+  const exigee = colonnesCompetitions.some(({ name, notnull }) => name === 'manifestation_id' && notnull === 1);
+  return exigee ? ['DROP TABLE IF EXISTS competitions'] : [];
 }

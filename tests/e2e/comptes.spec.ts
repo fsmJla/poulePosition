@@ -3,6 +3,7 @@
 // réelle (serveur, droits, unicité, dernier administrateur) est couverte par serveur/src/comptes.test.ts.
 // La connexion est simulée elle aussi, avec le rôle voulu : le compte E2E réel de la preview est un organisateur.
 import { expect, test, type Page } from '@playwright/test';
+import { ouvrirPageComptes } from './compte';
 import { connecterSimule, simuler } from './simulation';
 
 const ADMIN = {
@@ -28,7 +29,7 @@ const ORGA = {
 async function ouvrirComptes(page: Page) {
   await simuler(page, '/comptes', 200, { ok: true, comptes: [ADMIN, ORGA] }, 'GET');
   await connecterSimule(page, 'administrateur');
-  await page.getByRole('link', { name: 'Comptes' }).click();
+  await ouvrirPageComptes(page);
   await expect(page).toHaveURL(/\/comptes$/);
 }
 
@@ -46,7 +47,7 @@ test('US-007 CA-1 : l’administrateur voit la liste des comptes', async ({ page
   await expect(ligne(page, 'Bruno Petit')).toContainText('mot de passe temporaire');
 });
 
-test('US-007 CA-2 : le mot de passe temporaire s’affiche une seule fois, avec « Copier »', async ({
+test('US-007 CA-2 : le mot de passe temporaire s’affiche une seule fois, avec « Copier » @reel', async ({
   page,
   context,
 }) => {
@@ -142,12 +143,15 @@ test('US-007 hors ligne : l’entrée « Comptes » est grisée avec « Nécessi
   page,
   context,
 }) => {
+  // Écran large : « Comptes » est dans l'entête (sur un écran étroit, il est dans le menu de compte).
+  await page.setViewportSize({ width: 1280, height: 800 });
   await connecterSimule(page, 'administrateur');
   await expect(page.getByRole('link', { name: 'Comptes' })).toBeVisible();
   await context.setOffline(true);
   await expect(page.getByRole('link', { name: 'Comptes' })).toHaveCount(0);
   const entree = page.locator('[aria-disabled="true"]').filter({ hasText: 'Comptes' });
-  await expect(entree).toContainText('Nécessite une connexion internet');
+  // Dans l'entête, le motif est l'infobulle et la description accessible (pas de texte en double sur la page).
+  await expect(entree).toHaveAttribute('title', 'Nécessite une connexion internet');
   await context.setOffline(false);
   await expect(page.getByRole('link', { name: 'Comptes' })).toBeVisible();
 });

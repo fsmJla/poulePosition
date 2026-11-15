@@ -4,6 +4,9 @@ import { expect, test, type Page } from '@playwright/test';
 import { boutonMenuCompte } from './compte';
 import { connecterSimule, sessionSimulee, simuler } from './simulation';
 
+/** US-054 CA-7 : sur un écran étroit (< 640 px), le menu reçoit aussi « Créer », l'aide et le thème. */
+const etroit = (page: Page) => (page.viewportSize()?.width ?? 1280) < 640;
+
 const menu = (page: Page) => page.locator('#menu-compte');
 
 test('US-017 CA-1 : l’avatar remplace les deux boutons de l’entête', async ({ page }) => {
@@ -26,6 +29,7 @@ test('US-017 CA-2 : le menu montre l’avatar, le nom, l’e-mail, puis les troi
   await expect(menu(page)).toContainText('simule@poule-position.test');
   expect(await menu(page).locator('a, button').allInnerTexts()).toEqual([
     'Éditer le profil',
+    ...(etroit(page) ? ['Créer', 'Comment ça s’organise', 'Clair', 'Sombre', 'Auto'] : []),
     'Se déconnecter',
     'Se déconnecter et oublier cet appareil',
   ]);
@@ -36,7 +40,7 @@ test('US-017 CA-2 : le menu montre l’avatar, le nom, l’e-mail, puis les troi
 
   await boutonMenuCompte(page).click();
   await menu(page).getByRole('button', { name: 'Se déconnecter et oublier cet appareil' }).click();
-  await expect(page.getByText('Les compétitions enregistrées sur cet appareil sont conservées.')).toBeVisible();
+  await expect(page.getByText('Les épreuves enregistrées sur cet appareil sont conservées.')).toBeVisible();
   await page.getByRole('button', { name: 'Annuler' }).click();
 
   await boutonMenuCompte(page).click();
@@ -69,7 +73,8 @@ test('US-017 CA-4 : au clavier, avec les flèches, Début, Fin et Entrée', asyn
   await expect(boutonMenuCompte(page)).toHaveAttribute('aria-expanded', 'true');
   await page.keyboard.press('ArrowDown');
   await expect(menu(page).getByRole('link', { name: 'Éditer le profil' })).toBeFocused();
-  await page.keyboard.press('ArrowDown');
+  // Écran étroit : cinq entrées de plus (Créer, aide, trois thèmes) entre le profil et « Se déconnecter ».
+  for (let pas = 0; pas < (etroit(page) ? 6 : 1); pas++) await page.keyboard.press('ArrowDown');
   await expect(menu(page).getByRole('button', { name: 'Se déconnecter', exact: true })).toBeFocused();
   await page.keyboard.press('End');
   await expect(menu(page).getByRole('button', { name: 'Se déconnecter et oublier cet appareil' })).toBeFocused();

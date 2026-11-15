@@ -1,9 +1,19 @@
 // Stockage local de l'appareil (ADR-0003) : IndexedDB par Dexie. Tables `session` (la session ouverte, une au
 // plus), `appareilConnu` (comptes déjà connectés en ligne sur cet appareil, pour la reconnexion hors ligne) et
-// `essaisLocaux` (frein local de la reconnexion hors ligne, US-005).
-import { Dexie, type EntityTable } from 'dexie';
+// `essaisLocaux` (frein local de la reconnexion hors ligne, US-005) ; `evenements`, le journal des épreuves, est
+// géré par `journal.ts` (US-021) ; `copieManifestations`, la dernière liste des manifestations, par
+// `manifestations.ts` (US-023).
+import { Dexie, type EntityTable, type Table } from 'dexie';
 import { couleurParDefaut, essaisVides, type CouleurAvatar, type Essais, type Role } from '@poule-position/domaine';
-import type { CompteConnecte, Session } from '@poule-position/protocole';
+import type { Evenement } from '@poule-position/domaine';
+import type {
+  EpreuveIndexee,
+  CompteConnecte,
+  Competition,
+  FichierJoint,
+  Manifestation,
+  Session,
+} from '@poule-position/protocole';
 
 /** Compte déjà connecté en ligne sur cet appareil (ADR-0006) : il pourra s'y reconnecter hors ligne (US-005). */
 export interface AppareilConnu {
@@ -16,6 +26,8 @@ export interface AppareilConnu {
   temporaire: boolean;
   /** Couleur de l'avatar (US-016), pour l'afficher hors ligne. */
   avatar: CouleurAvatar;
+  /** Club du compte (US-025), pour créer une épreuve hors ligne ; absent d'un appareil connu avant US-025. */
+  clubId?: string;
   /** Date de la première connexion en ligne, en millisecondes. */
   connuDepuis: number;
 }
@@ -47,8 +59,8 @@ export interface Stockage {
   ecrireEssaisLocaux(essais: Essais): Promise<void>;
 }
 
-/** Clé unique des tables `session` et `essaisLocaux` : une seule ligne par appareil. */
-const LIGNE_UNIQUE = 'courante';
+/** Clé unique des tables `session`, `essaisLocaux` et `appareil` : une seule ligne par appareil. */
+export const LIGNE_UNIQUE = 'courante';
 
 type LigneSession = {
   cle: typeof LIGNE_UNIQUE;
@@ -59,15 +71,174 @@ type LigneSession = {
 };
 type LigneEssais = Essais & { cle: typeof LIGNE_UNIQUE };
 
-class Base extends Dexie {
+/** Épreuve connue de cet appareil (US-022, ADR-0016) : pilotée ici, ou copie téléchargée d'un autre PC. */
+export interface EpreuveLocale {
+  epreuveId: string;
+  /** Vrai si cet appareil est le pilote : lui seul écrit dans le journal. */
+  pilote: boolean;
+  /** Dernier seq confirmé par le serveur. */
+  confirme: number;
+  /** Date du téléchargement de la copie, en millisecondes ; null pour une épreuve pilotée ici. */
+  copieLe: number | null;
+}
+
+/**
+ * Modifications qu'un ancien pilote n'avait pas pu envoyer avant qu'un autre PC prenne la main (US-029 CA-3) : mises de
+ * côté, jamais reprises dans le journal, consultables et exportables.
+ */
+export interface Ecart {
+  id?: number;
+  epreuveId: string;
+  evenements: Evenement[];
+  /** Pilote qui a repris la main, tel que le serveur l'a annoncé. */
+  piloteAppareil?: string;
+  piloteNom?: string;
+  /** Date de la mise de côté, en millisecondes. */
+  ecartesLe: number;
+}
+
+/** Manifestations du club telles que reçues du serveur, et date de cette copie (US-023). */
+export interface CopieManifestations {
+  manifestations: Manifestation[];
+  /** Date de la copie, en millisecondes. */
+  copieLe: number;
+}
+
+/** Compétitions du club telles que reçues du serveur, et date de cette copie (US-024). */
+export interface CopieCompetitions {
+  competitions: Competition[];
+  /** Date de la copie, en millisecondes. */
+  copieLe: number;
+}
+
+/** Index des épreuves du club tel que reçu du serveur, et date de cette copie (US-026). */
+export interface CopieIndex {
+  epreuves: EpreuveIndexee[];
+  /** Date de la copie, en millisecondes. */
+  copieLe: number;
+}
+
+/** Description des fichiers joints du club telle que reçue du serveur, et date de cette copie (US-030). */
+export interface CopieFichiers {
+  fichiers: FichierJoint[];
+  /** Date de la copie, en millisecondes. */
+  copieLe: number;
+}
+
+/** Contenu d'un fichier joint gardé sur l'appareil, pour rester affichable et imprimable hors ligne (US-030 CA-6). */
+export interface ContenuFichier {
+  /** Nom à empreinte du fichier : le même nom est toujours le même contenu. */
+  nom: string;
+  contenu: Blob;
+}
+
+/** Base IndexedDB de l'appareil, partagée par le stockage de session et le journal des épreuves (US-021). */
+export class Base extends Dexie {
   session!: EntityTable<LigneSession, 'cle'>;
   appareilConnu!: EntityTable<AppareilConnu, 'email'>;
   essaisLocaux!: EntityTable<LigneEssais, 'cle'>;
+  /** Journal des épreuves, tel qu'écrit (lu par `lireEvenement`, qui le migre). */
+  evenements!: Table<Record<string, unknown>, [string, number]>;
+  /** Identifiant de l'appareil, tiré une fois (US-022). */
+  appareil!: EntityTable<{ cle: typeof LIGNE_UNIQUE; id: string }, 'cle'>;
+  epreuvesLocales!: EntityTable<EpreuveLocale, 'epreuveId'>;
+  /** Dernière liste des manifestations du club reçue du serveur, consultable hors ligne (US-023). */
+  copieManifestations!: EntityTable<CopieManifestations & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
+  /** Dernière liste des compétitions du club reçue du serveur, consultable hors ligne (US-024). */
+  copieCompetitions!: EntityTable<CopieCompetitions & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
+  /** Dernier index des épreuves du club reçu du serveur, consultable hors ligne (US-026). */
+  copieIndex!: EntityTable<CopieIndex & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
+  /** Modifications écartées après une prise de main par un autre PC (US-029). */
+  ecartes!: EntityTable<Ecart, 'id'>;
+  /** Dernière description des fichiers joints reçue du serveur (US-030). */
+  copieFichiers!: EntityTable<CopieFichiers & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
+  /** Contenu des fichiers joints gardés pour le hors ligne, par nom à empreinte (US-030 CA-6). */
+  contenusFichiers!: EntityTable<ContenuFichier, 'nom'>;
 
   constructor(nom: string) {
     super(nom);
+    // Versions 1 à 8 : historique, avec le vocabulaire d'avant US-044 (competitionId : l'unité qui se tire ; copieEpreuves :
+    // le regroupement). Dexie en a besoin pour mettre à niveau une base déjà ouverte par une ancienne version.
     this.version(1).stores({ session: 'cle', appareilConnu: 'email' });
     this.version(2).stores({ session: 'cle', appareilConnu: 'email', essaisLocaux: 'cle' });
+    this.version(3).stores({
+      session: 'cle',
+      appareilConnu: 'email',
+      essaisLocaux: 'cle',
+      evenements: '[competitionId+seq]',
+    });
+    this.version(4).stores({
+      session: 'cle',
+      appareilConnu: 'email',
+      essaisLocaux: 'cle',
+      evenements: '[competitionId+seq]',
+      appareil: 'cle',
+      competitionsLocales: 'competitionId',
+    });
+    this.version(5).stores({
+      session: 'cle',
+      appareilConnu: 'email',
+      essaisLocaux: 'cle',
+      evenements: '[competitionId+seq]',
+      appareil: 'cle',
+      competitionsLocales: 'competitionId',
+      copieManifestations: 'cle',
+    });
+    this.version(6).stores({
+      session: 'cle',
+      appareilConnu: 'email',
+      essaisLocaux: 'cle',
+      evenements: '[competitionId+seq]',
+      appareil: 'cle',
+      competitionsLocales: 'competitionId',
+      copieManifestations: 'cle',
+      copieEpreuves: 'cle',
+    });
+    this.version(7).stores({
+      session: 'cle',
+      appareilConnu: 'email',
+      essaisLocaux: 'cle',
+      evenements: '[competitionId+seq]',
+      appareil: 'cle',
+      competitionsLocales: 'competitionId',
+      copieManifestations: 'cle',
+      copieEpreuves: 'cle',
+      copieIndex: 'cle',
+    });
+    this.version(8).stores({
+      session: 'cle',
+      appareilConnu: 'email',
+      essaisLocaux: 'cle',
+      evenements: '[competitionId+seq]',
+      appareil: 'cle',
+      competitionsLocales: 'competitionId',
+      copieManifestations: 'cle',
+      copieEpreuves: 'cle',
+      copieIndex: 'cle',
+      ecartes: '++id, competitionId',
+    });
+    // US-044 (ADR-0021) : l'unité qui se tire s'appelle « épreuve ». Dexie ne change pas une clé primaire : les magasins
+    // dont l'identifiant change sont supprimés (version 9, leurs journaux de test sont perdus) puis recréés (version 10).
+    // La session, l'appareil connu, le frein local, l'identifiant de l'appareil et les manifestations sont conservés.
+    this.version(9).stores({
+      evenements: null,
+      competitionsLocales: null,
+      copieEpreuves: null,
+      copieIndex: null,
+      ecartes: null,
+    });
+    this.version(10).stores({
+      evenements: '[epreuveId+seq]',
+      epreuvesLocales: 'epreuveId',
+      copieCompetitions: 'cle',
+      copieIndex: 'cle',
+      ecartes: '++id, epreuveId',
+    });
+    // Version 11 (US-030) : description et contenu des fichiers joints, gardés pour le hors ligne. Rien d'existant ne bouge.
+    this.version(11).stores({
+      copieFichiers: 'cle',
+      contenusFichiers: 'nom',
+    });
   }
 }
 
