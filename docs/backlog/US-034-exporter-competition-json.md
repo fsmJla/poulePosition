@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F16 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-044, US-021
 - **Branche / PR :** us/US-034-exporter-epreuve-json / —
 
@@ -70,3 +70,4 @@ Fonctionne entièrement hors ligne, depuis le journal local et les fichiers gard
 | 2026-11-08 | Amendée : vocabulaire inversé (la compétition regroupe, l'épreuve se tire ; US-044), au niveau de l'épreuve comme avant (décision du 2026-11-08) ; dépend de US-044 |
 | 2026-11-15 | Plan validé par l'utilisateur (entrée d'import dans le menu « ⋯ » de la liste, deux PR) ; passée à En cours |
 | 2026-11-15 | Implémentée : format `.poule.json` dans `paquets/protocole` (§17 du protocole), `preparerExport` et `enregistrerFichier`, entrée « Exporter » du menu « ⋯ » de l'épreuve, icône « Télécharger » ; passée à En revue |
+| 2026-11-15 | CI verte (lint, typage, tests, build, audit, E2E interface) ; recette automatisée, non rejouée à la main sur la preview (quota Cloudflare) ; passée à Terminée |
