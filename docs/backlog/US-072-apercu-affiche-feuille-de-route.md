@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-030, US-056
 - **Branche / PR :** `us/US-072-apercu-documents`
 
@@ -94,3 +94,4 @@ Aucune.
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (documents) ; format d'aperçu validé en dialogue |
 | 2026-11-15 | Implémentée (branche `us/US-072-apercu-documents`), ADR-0026 (pdf.js) proposée ; passe En revue |
+| 2026-11-15 | CI verte sur la PR #111 (E2E locaux CA-1 à CA-6 et hors ligne). Terminée |
