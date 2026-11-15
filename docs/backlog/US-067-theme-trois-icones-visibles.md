@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-052, US-054
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-067-theme-trois-icones-visibles`
 
 ## Récit
 
@@ -63,6 +63,7 @@ Sans objet : le thème est un réglage local de l'appareil, sans réseau (US-052
 - L'icône « écran » désigne aussi « Ce PC est le pilote » dans le vocabulaire ; elle est utilisée ici pour « automatique »,
   comme dans la capture de recette. Pour lever l'ambiguïté, le tableau d'icônes doit nommer « Écran (thème automatique) »
   à part, groupée avec Soleil et Lune. À valider.
+- Noms accessibles et infobulles des boutons : « Thème clair », « Thème sombre », « Thème automatique » (`textes.theme.nomBouton`) ; le menu de compte garde « Clair », « Sombre », « Auto ».
 - Le sélecteur à trois icônes existe déjà (`SelecteurTheme.svelte`, `BarreOutils.svelte`, US-052) : on le remet dans
   l'entête des pages connectées, sans nouveau comportement.
 
@@ -81,3 +82,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (PC) |
+| 2026-11-15 | Implémentée : `SelecteurTheme` (44 px) remplace le menu de thème dans l’entête ; tests `theme-icones.spec.ts`, entete et theme adaptés ; tableau d’icônes de la maquette mis à jour. En revue |

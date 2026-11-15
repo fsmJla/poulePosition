@@ -8,21 +8,23 @@
   interface Proprietes {
     /** Sur le fond ardoise de l'entête : couleurs de la marque au lieu de celles de la page. */
     surMarque?: boolean;
+    /** US-067 : boutons de 44 px (cible tactile) au lieu de 36. */
+    grand?: boolean;
   }
 
-  let { surMarque = false }: Proprietes = $props();
+  let { surMarque = false, grand = false }: Proprietes = $props();
 
   const t = textes.theme;
   const choix = theme.choix;
 </script>
 
-<div class="selecteur" class:sur-marque={surMarque} role="group" aria-label={t.libelle}>
+<div class="selecteur" class:sur-marque={surMarque} class:grand role="group" aria-label={t.libelle}>
   {#each CHOIX_THEME as option (option)}
     <button
       type="button"
       aria-pressed={$choix === option}
-      aria-label={t.choix[option]}
-      title={t.choix[option]}
+      aria-label={t.nomBouton[option]}
+      title={t.nomBouton[option]}
       data-choix={option}
       onclick={() => theme.choisir(option as ChoixTheme)}
     >
@@ -83,6 +85,16 @@
   button[aria-pressed='true'] {
     background: var(--accent-fond);
     color: var(--sur-accent);
+  }
+
+  .grand {
+    padding: 0;
+    gap: 0;
+  }
+
+  .grand button {
+    width: 44px;
+    height: 44px;
   }
 
   /* Entête : fond ardoise de la marque, sur lequel le choix actif s'inverse. */

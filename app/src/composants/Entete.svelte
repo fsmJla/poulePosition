@@ -1,6 +1,6 @@
 <script lang="ts">
   // Entête des pages réservées (US-014, US-054, planches 1 à 3) : la marque (retour à l'accueil de l'organisateur), puis
-  // « Créer », « Comptes » (administrateurs), l'aide, le thème et le menu de compte (US-017). La recherche (US-062)
+  // « Créer », « Comptes » (administrateurs), l'aide, les trois icônes de thème (US-067) et le menu de compte (US-017). La recherche (US-062)
   // suit la marque ; sur un écran étroit, une loupe l'ouvre en pleine largeur. Sur un écran étroit (CA-7), il ne reste que la marque et le menu de compte, qui reçoit
   // « Comptes », l'aide et le thème. Bandeau « connexion locale » tant que la session ouverte hors ligne n'est pas
   // revalidée (US-005 CA-1). « Se déconnecter et oublier cet appareil » (US-006) se confirme dans un panneau sous
@@ -9,12 +9,11 @@
   import type { CompteConnecte } from '@poule-position/protocole';
   import type { Accueil } from '../lib/accueil';
   import { CHEMINS } from '../lib/routes';
-  import { CHOIX_THEME, theme, type ChoixTheme } from '../lib/theme';
   import { textes } from '../lib/textes';
   import BoutonIcone from './BoutonIcone.svelte';
   import Icone from './Icone.svelte';
-  import MenuActions, { type ActionMenu } from './MenuActions.svelte';
   import MenuCompte from './MenuCompte.svelte';
+  import SelecteurTheme from './SelecteurTheme.svelte';
   import RechercheEntete from './RechercheEntete.svelte';
 
   interface Proprietes {
@@ -31,17 +30,6 @@
 
   const t = textes.organisateur.oublier;
   const te = textes.entete;
-  const choixTheme = theme.choix;
-  const iconesTheme = { clair: 'soleil', sombre: 'lune', auto: 'ecran' } as const;
-  const actionsTheme = $derived<ActionMenu[]>(
-    CHOIX_THEME.map((option) => ({
-      libelle: textes.theme.choix[option],
-      icone: iconesTheme[option],
-      coche: $choixTheme === option,
-      surChoix: () => theme.choisir(option as ChoixTheme),
-    })),
-  );
-
   /** US-006 : confirmation de l'oubli affichée. */
   let aConfirmer = $state(false);
   const administrateur = $derived(compte.role === 'administrateur');
@@ -91,14 +79,8 @@
         {/if}
       {/if}
       <BoutonIcone icone="aide" nom={te.aide} chemin={CHEMINS.aideOrganisation} {naviguer} surMarque />
-      <MenuActions
-        id="menu-theme"
-        icone="soleil"
-        etiquette={te.theme}
-        actions={actionsTheme}
-        surMarque
-        contour={false}
-      />
+      <!-- US-067 : les trois icônes de thème restent visibles sur écran large, sans menu à ouvrir. -->
+      <SelecteurTheme surMarque grand />
     {/if}
     <MenuCompte {compte} {naviguer} {surDeconnexion} surOubli={() => (aConfirmer = true)} {etroit} {enLigne} />
   </div>

@@ -12,7 +12,8 @@ const nomUnique = () => `E2E ${crypto.randomUUID().slice(0, 8)}`;
 const entete = (page: Page) => page.getByRole('banner');
 const fil = (page: Page) => page.getByRole('navigation', { name: 'Fil d’Ariane' });
 const aide = (page: Page) => entete(page).getByRole('link', { name: 'Comment ça s’organise' });
-const theme = (page: Page) => entete(page).getByRole('button', { name: 'Thème', exact: true });
+const theme = (page: Page) => entete(page).getByRole('group', { name: 'Thème' });
+const boutonsTheme = (page: Page) => theme(page).getByRole('button');
 
 /** Couleur calculée d'une valeur CSS (une variable de la charte, par exemple), au format `rgb(…)` du navigateur. */
 const couleurDe = (page: Page, valeur: string) =>
@@ -52,7 +53,7 @@ async function creerHierarchie(page: Page) {
   return { manifestation, competition, epreuve, chemin: new URL(page.url()).pathname };
 }
 
-test('US-054 CA-1 : l’entête montre marque, Créer, Comptes, aide, thème et compte, dans cet ordre', async ({
+test('US-054 CA-1 : l’entête montre marque, Créer, Comptes, aide, trois icônes de thème (US-067) et compte, dans cet ordre', async ({
   page,
 }) => {
   await page.setViewportSize(LARGE);
@@ -175,7 +176,7 @@ test('US-054 CA-4 : une icône seule a un nom accessible et une infobulle identi
 }) => {
   await page.setViewportSize(LARGE);
   await connecterSimule(page, 'administrateur');
-  for (const bouton of [aide(page), theme(page)]) {
+  for (const bouton of [aide(page), ...(await boutonsTheme(page).all())]) {
     const nom = await bouton.getAttribute('aria-label');
     expect(nom).toBeTruthy();
     await expect(bouton).toHaveAttribute('title', nom!);
@@ -196,17 +197,18 @@ test('US-054 CA-4 : une icône seule a un nom accessible et une infobulle identi
 test('US-054 CA-5 : un bouton à icône seule mesure au moins 44 × 44 px et a un focus visible', async ({ page }) => {
   await page.setViewportSize(LARGE);
   await connecterSimule(page, 'organisateur');
-  for (const bouton of [aide(page), theme(page), boutonMenuCompte(page)]) {
+  for (const bouton of [aide(page), ...(await boutonsTheme(page).all()), boutonMenuCompte(page)]) {
     const boite = (await bouton.boundingBox())!;
     expect(boite.width).toBeGreaterThanOrEqual(44);
     expect(boite.height).toBeGreaterThanOrEqual(44);
   }
   // Focus au clavier : le contour est tracé, dans une couleur distincte du fond de l'entête.
-  await theme(page).focus();
+  const premier = boutonsTheme(page).first();
+  await premier.focus();
   await page.keyboard.press('Shift+Tab');
   await page.keyboard.press('Tab');
-  await expect(theme(page)).toBeFocused();
-  const contour = await theme(page).evaluate((b) => {
+  await expect(premier).toBeFocused();
+  const contour = await premier.evaluate((b) => {
     const style = getComputedStyle(b);
     return { style: style.outlineStyle, largeur: parseFloat(style.outlineWidth), couleur: style.outlineColor };
   });
@@ -215,57 +217,20 @@ test('US-054 CA-5 : un bouton à icône seule mesure au moins 44 × 44 px et a u
   expect(contour.couleur).not.toBe(await fondDe(entete(page)));
 });
 
-test('US-054 CA-6 : le menu s’ouvre au clic, à Entrée et à Espace, se parcourt aux flèches et se ferme avec Échap', async ({
-  page,
-}) => {
+test('US-054 CA-6 (US-067) : le thème se choisit en un clic ou au clavier, sans menu à ouvrir', async ({ page }) => {
   await page.setViewportSize(LARGE);
   await connecterSimule(page, 'organisateur');
-  const menu = page.getByRole('menu', { name: 'Thème' });
-  const choix = (nom: string) => menu.getByRole('menuitemradio', { name: nom });
-
-  // Clic : le menu s'ouvre, le focus va sur sa première action, le bouton annonce l'état.
-  await theme(page).click();
-  await expect(theme(page)).toHaveAttribute('aria-expanded', 'true');
-  await expect(menu).toBeVisible();
-  await expect(choix('Clair')).toBeFocused();
-  await page.keyboard.press('ArrowDown');
-  await expect(choix('Sombre')).toBeFocused();
-  await page.keyboard.press('End');
-  await expect(choix('Auto')).toBeFocused();
-  await page.keyboard.press('ArrowDown');
-  await expect(choix('Clair')).toBeFocused();
-  await page.keyboard.press('ArrowUp');
-  await expect(choix('Auto')).toBeFocused();
-  await page.keyboard.press('Home');
-  await expect(choix('Clair')).toBeFocused();
-
-  // Échap ferme et rend le focus au bouton.
-  await page.keyboard.press('Escape');
-  await expect(menu).toHaveCount(0);
-  await expect(theme(page)).toBeFocused();
-
-  // Entrée, puis Espace, depuis le bouton.
+  await expect(entete(page).getByRole('menu')).toHaveCount(0);
+  const sombre = boutonsTheme(page).nth(1);
+  await expect(boutonsTheme(page)).toHaveCount(3);
+  await sombre.focus();
   await page.keyboard.press('Enter');
-  await expect(menu).toBeVisible();
-  await expect(choix('Clair')).toBeFocused();
-  await page.keyboard.press('Escape');
-  await page.keyboard.press('Space');
-  await expect(menu).toBeVisible();
-  await expect(choix('Clair')).toBeFocused();
-
-  // Un clic ailleurs ferme le menu.
-  await page.mouse.click(5, LARGE.height - 5);
-  await expect(menu).toHaveCount(0);
-
-  // Choisir une action : le thème s'applique, le menu se ferme et le focus revient au bouton.
-  await theme(page).click();
-  await choix('Sombre').click();
-  await expect(menu).toHaveCount(0);
-  await expect(theme(page)).toBeFocused();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'sombre');
-  await theme(page).click();
-  await expect(choix('Sombre')).toHaveAttribute('aria-checked', 'true');
-  await expect(choix('Clair')).toHaveAttribute('aria-checked', 'false');
+  await expect(sombre).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Space');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'clair');
+  await expect(boutonsTheme(page).first()).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('US-054 CA-7 : à 390 px, l’entête garde la marque et le compte ; le reste est dans le menu de compte', async ({
