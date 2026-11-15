@@ -78,6 +78,17 @@ export function fichiersEffectifs<F extends Pick<FichierJoint, 'proprietaire' | 
   return { affiche: de('affiche'), feuilleDeRoute: de('feuilleDeRoute') };
 }
 
+/** US-073 : les fichiers que porte un élément lui-même (sans héritage) : seule sa ligne montre le repère (CA-4). */
+export function fichiersPropres<F extends Pick<FichierJoint, 'proprietaire' | 'proprietaireId' | 'sorte'>>(
+  fichiers: readonly F[],
+  proprietaire: ProprietaireFichier,
+  id: string,
+): Record<SorteFichier, F | null> {
+  const de = (sorte: SorteFichier) =>
+    fichiers.find((f) => f.proprietaire === proprietaire && f.proprietaireId === id && f.sorte === sorte) ?? null;
+  return { affiche: de('affiche'), feuilleDeRoute: de('feuilleDeRoute') };
+}
+
 export function creerClientFichiers({
   urlServeur,
   nomBase = 'poulePosition',

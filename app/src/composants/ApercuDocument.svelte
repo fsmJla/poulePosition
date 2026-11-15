@@ -8,6 +8,7 @@
   import { apercuPdf } from '../lib/apercu-pdf';
   import { formaterTaille } from '../lib/taille';
   import { textes } from '../lib/textes';
+  import FenetreApercu from './FenetreApercu.svelte';
   import Icone from './Icone.svelte';
 
   interface Proprietes {
@@ -26,9 +27,8 @@
 
   let etat = $state<Etat>('chargement');
   let pages = $state(0);
-  let ouverte = $state(false);
   let vignette: HTMLElement | undefined = $state();
-  let fenetre: HTMLDialogElement | undefined = $state();
+  let fenetre: FenetreApercu | undefined = $state();
   let bouton: HTMLButtonElement | undefined = $state();
   let enLigne = $state(navigator.onLine);
 
@@ -65,13 +65,11 @@
   });
 
   function ouvrir() {
-    ouverte = true;
-    fenetre?.showModal();
+    fenetre?.ouvrir();
   }
 
   /** Fermer (bouton, Échap) : le navigateur rend le focus au bouton d'origine ; on le garantit pour les anciens moteurs. */
   function fermee() {
-    ouverte = false;
     bouton?.focus();
   }
 
@@ -114,28 +112,7 @@
     <a class="ouvrir" href={adresse} target="_blank" rel="noopener">{t.nouvelOnglet}</a>
   {/if}
 
-  <dialog
-    bind:this={fenetre}
-    class="fenetre"
-    aria-label={t.fenetre(libelle)}
-    onclose={fermee}
-    onclick={(evenement) => evenement.target === fenetre && fenetre?.close()}
-  >
-    {#if ouverte && adresse}
-      <header>
-        <strong>{libelle}</strong>
-        <span class="boutons">
-          <a class="neutre" href={adresse} target="_blank" rel="noopener">{t.nouvelOnglet}</a>
-          <button type="button" class="neutre" onclick={() => fenetre?.close()}>{t.fermer}</button>
-        </span>
-      </header>
-      {#if sorte === 'affiche'}
-        <img class="grande" src={adresse} alt={libelle} />
-      {:else}
-        <iframe class="grande" src={adresse} title={t.fenetre(libelle)}></iframe>
-      {/if}
-    {/if}
-  </dialog>
+  <FenetreApercu bind:this={fenetre} {sorte} {adresse} surFermeture={fermee} />
 </div>
 
 <style>
@@ -201,76 +178,5 @@
 
   .ouvrir {
     color: var(--accent);
-  }
-
-  .fenetre {
-    width: min(900px, 100vw - 2rem);
-    height: min(700px, 100dvh - 2rem);
-    padding: 0;
-    border: 1px solid var(--bordure);
-    border-radius: 14px;
-    background: var(--surface);
-    color: var(--texte);
-  }
-
-  .fenetre[open] {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-
-  .fenetre::backdrop {
-    background: color-mix(in srgb, var(--texte) 55%, transparent);
-  }
-
-  .fenetre header {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid var(--bordure);
-  }
-
-  .boutons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .neutre {
-    display: inline-flex;
-    align-items: center;
-    min-width: 44px;
-    min-height: 44px;
-    box-sizing: border-box;
-    padding: 0 0.9rem;
-    border: 1px solid var(--bordure-champ);
-    border-radius: var(--rayon);
-    background: var(--surface);
-    color: var(--texte);
-    font: inherit;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-  }
-
-  .grande {
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-    border: none;
-    object-fit: contain;
-    background: var(--surface-2);
-  }
-
-  @media (max-width: 640px) {
-    .fenetre {
-      width: 100vw;
-      height: 100dvh;
-      max-width: 100vw;
-      max-height: 100dvh;
-      border-radius: 0;
-    }
   }
 </style>

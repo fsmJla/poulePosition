@@ -36,6 +36,7 @@
   import IconesEtat from '../composants/IconesEtat.svelte';
   import LegendeIcones from '../composants/LegendeIcones.svelte';
   import Lien from '../composants/Lien.svelte';
+  import RepereDocuments from '../composants/RepereDocuments.svelte';
   import ConfirmationArchivage from '../composants/ConfirmationArchivage.svelte';
   import MenuActions, { type ActionMenu } from '../composants/MenuActions.svelte';
   import { verdictManifestation } from '../lib/archivage';
@@ -61,15 +62,18 @@
     cheminNouvelleCompetition,
     CHEMINS,
   } from '../lib/routes';
+  import { fichiersPropres, type ClientFichiers } from '../lib/fichiers';
   import { textes } from '../lib/textes';
+  import type { FichierJoint } from '@poule-position/protocole';
 
   interface Proprietes {
     session: SessionAppareil;
     accueil: Accueil;
+    fichiers: ClientFichiers;
     naviguer: (chemin: string) => void;
   }
 
-  let { session, accueil, naviguer }: Proprietes = $props();
+  let { session, accueil, fichiers, naviguer }: Proprietes = $props();
 
   const t = textes.listeClub;
   const tc = textes.epreuves;
@@ -232,6 +236,19 @@
     donnees = await accueil.charger();
   }
 
+  /**
+   * US-073 : les documents de chaque élément. La copie gardée sur l'appareil s'affiche tout de suite (et hors ligne) ; une
+   * seule lecture du club la met à jour : aucune requête par ligne.
+   */
+  let documents: FichierJoint[] = $state([]);
+  const aDesDocuments = $derived(documents.length > 0);
+  async function chargerDocuments() {
+    const copie = await fichiers.copie();
+    if (copie) documents = copie.fichiers;
+    const reponse = await fichiers.lister();
+    documents = reponse.ok ? reponse.fichiers : (reponse.copie?.fichiers ?? documents);
+  }
+
   /** US-040 et US-043 : suppression de manifestations, de compétitions et d’épreuves, réservée aux administrateurs. */
   const ts = t.suppression;
   const administrateur = $derived(session.compte.role === 'administrateur');
@@ -383,6 +400,7 @@
     window.addEventListener('offline', surReseau);
     window.addEventListener('keydown', surTouche);
     void charger();
+    void chargerDocuments();
     return () => {
       window.removeEventListener('online', surReseau);
       window.removeEventListener('offline', surReseau);
@@ -390,6 +408,16 @@
     };
   });
 </script>
+
+{#snippet repere(proprietaire: 'manifestation' | 'competition' | 'epreuve', id: string)}
+  {@const propres = fichiersPropres(documents, proprietaire, id)}
+  <RepereDocuments
+    client={fichiers}
+    affiche={propres.affiche}
+    feuilleDeRoute={propres.feuilleDeRoute}
+    inerte={modeSelection}
+  />
+{/snippet}
 
 {#snippet caseSelection(id: string, libelle: string, motifEnCours: string)}
   <!-- US-059 CA-2 : une case par élément, seulement en mode sélection et pour un administrateur ; US-043 CA-2 : couverte par un parent coché, elle est cochée et verrouillée. -->
@@ -485,6 +513,8 @@
       {#if entree.nonEnvoyee}<span class="attente">{tc.pasEncoreEnvoyee}</span>{/if}
       <span class="chevron"><Icone nom="chevron" taille={18} /></span>
     </a>
+    <!-- US-073 : le repère est une commande à part (jamais dans le lien) ; son emplacement est réservé à toutes les lignes pour garder les colonnes alignées. -->
+    {#if aDesDocuments}<span class="emplacement-repere">{@render repere('epreuve', entree.id)}</span>{/if}
   </li>
 {/snippet}
 
@@ -509,6 +539,7 @@
           {competition.arme ? `${tc.armes[competition.arme]} · ` : ''}{t.nombreEpreuves(epreuves.length)}
         </span>
       </button>
+      <span class="devant">{@render repere('competition', competition.id)}</span>
       <span class="devant">
         <Lien chemin={cheminGrilleEpreuves(competition.id)} {naviguer} etiquette={tc.grille.ajouterA(competition.nom)}
           ><span class="texte-large">{t.plusEpreuves}</span><span class="icone-etroit" aria-hidden="true"
@@ -806,6 +837,7 @@
                   ><Icone nom="grille" taille={18} /><span class="texte-large">{t.plan}</span></Lien
                 >
               </span>
+              {@render repere('manifestation', manifestation.id)}
               <MenuActions
                 id="menu-manifestation-{manifestation.id}"
                 nom={manifestation.nom}
@@ -837,7 +869,7 @@
 
         <!-- US-055 CA-5 : légende des quatre icônes, dès qu'il y a une épreuve. -->
         {#if liste.manifestations.some( ({ competitions }) => competitions.some(({ epreuves }) => epreuves.length > 0) ) || liste.competitionsSeules.some(({ epreuves }) => epreuves.length > 0) || liste.aRattacher.length > 0}
-          <LegendeIcones />
+          <LegendeIcones avecDocuments={aDesDocuments} />
         {/if}
       {/if}
     {/if}
@@ -1156,6 +1188,13 @@
 
   .case {
     accent-color: var(--accent);
+  }
+
+  .emplacement-repere {
+    display: inline-flex;
+    flex: none;
+    width: 44px;
+    min-height: 44px;
   }
 
   /* US-059 (planche 4) : une épreuve sélectionnée a le fond teinté. */
@@ -1479,7 +1518,7 @@
     }
 
     .identite {
-      flex-basis: 8rem;
+      flex-basis: 6rem;
     }
 
     .titre-carte {

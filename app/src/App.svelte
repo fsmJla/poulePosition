@@ -170,7 +170,7 @@
     <div class="pages-connectees">
       <Entete compte={session.compte} {surDeconnexion} {surOubli} {naviguer} {accueil} locale={estLocale(session)} />
       {#if route.page === 'organisateur'}
-        <Organisateur {session} {accueil} {naviguer} />
+        <Organisateur {session} {accueil} {fichiers} {naviguer} />
       {:else if route.page === 'motDePasse'}
         <MotDePasse
           {client}
