@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F1 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-052, US-054
 - **Branche / PR :** `us/US-067-theme-trois-icones-visibles`
 
@@ -83,3 +83,4 @@ Aucune.
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (PC) |
 | 2026-11-15 | Implémentée : `SelecteurTheme` (44 px) remplace le menu de thème dans l’entête ; tests `theme-icones.spec.ts`, entete et theme adaptés ; tableau d’icônes de la maquette mis à jour. En revue |
+| 2026-11-15 | Recette OK en local (captures 1 360 px, thèmes clair et sombre, preview non utilisée : quota Cloudflare), CI verte sur la PR #107. Terminée |
