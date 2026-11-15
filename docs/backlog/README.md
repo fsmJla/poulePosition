@@ -64,7 +64,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-032](US-032-parametres-competition.md) | Régler les paramètres d'une compétition (droits des QR codes, « Prénom N. ») | E2 | Terminée | US-025 |
 | [US-033](US-033-archiver-competition.md) | Archiver ou désarchiver une épreuve ou une manifestation | E2 | Terminée | US-044, US-026 |
 | [US-034](US-034-exporter-competition-json.md) | Exporter une épreuve en JSON (P2) | E2 | Terminée | US-044, US-021 |
-| [US-035](US-035-importer-competition-json.md) | Importer une épreuve depuis un fichier JSON (P2) | E2 | Prête | US-044, US-034, US-029 |
+| [US-035](US-035-importer-competition-json.md) | Importer une épreuve depuis un fichier JSON (P2) | E2 | En revue | US-044, US-034, US-029 |
 | [US-036](US-036-correction-e2e-desactivation-hors-ligne.md) | Corriger le test E2E « désactivation hors ligne » qui échoue sur la preview | E0 | Terminée | US-008 |
 | [US-037](US-037-economiser-minutes-ci.md) | Économiser les minutes de CI sur les E2E de la preview | E0 | Terminée | US-013, US-015 |
 | [US-038](US-038-correction-lectures-index.md) | Corriger les lectures répétées de tout l'index du club (quota Cloudflare) | E2 | Terminée | US-022, US-023, US-024, US-029 |

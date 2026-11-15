@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F16 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-044, US-034, US-029
-- **Branche / PR :** —
+- **Branche / PR :** us/US-035-importer-epreuve-json / —
 
 ## Récit
 
@@ -63,6 +63,15 @@ L'import fonctionne hors ligne : c'est le cas d'usage principal (PC pilote en pa
 
 - Import comme copie possible : « Importer comme nouvelle épreuve » génère un nouvel identifiant (utile pour
   dupliquer).
+- **Écran sans planche (2026-11-15) :** « Importer une épreuve… » est une entrée d'un menu « ⋯ » ajouté à la liste de l'organisateur
+  (principe 5 de la maquette, icône « Téléverser » ajoutée au vocabulaire), qui ouvre le sélecteur de fichier puis une fenêtre
+  de résumé. Une épreuve importée s'ouvre sur sa page, dont la carte « Pilote » porte la reprise au retour en ligne (CA-5, CA-6).
+- **Fichiers joints :** l'import les garde sur l'appareil (affichables hors ligne) mais ne les renvoie pas au serveur : celui-ci
+  ne connaît pas encore l'épreuve. Ceux que le serveur ne connaît pas disparaissent de la copie à la prochaine lecture en ligne ;
+  les rejoindre depuis la page de l'épreuve.
+- **Reprise explicite :** tant que l'organisateur n'a pas pris la main, l'épreuve importée n'envoie rien et ne bat pas ; il peut
+  la modifier localement (elle a ce PC pour pilote). La reprise est un bouton, jamais automatique, pour ne pas écraser le
+  serveur sans que l'organisateur le sache.
 
 ## Questions bloquantes
 
@@ -79,3 +88,5 @@ L'import fonctionne hors ligne : c'est le cas d'usage principal (PC pilote en pa
 |---|---|
 | 2026-10-28 | Créée |
 | 2026-11-08 | Amendée : vocabulaire inversé (la compétition regroupe, l'épreuve se tire ; US-044), au niveau de l'épreuve comme avant (décision du 2026-11-08) ; dépend de US-044 |
+| 2026-11-15 | Plan validé par l'utilisateur ; passée à En cours |
+| 2026-11-15 | Implémentée : `planifierImport`, `reconcilier` et `renumeroterEpreuve` (domaine), `journal.importer` et `journal.reprendre`, `reprendreApresImport` (synchronisation), menu « ⋯ » de la liste, fenêtre de résumé, carte de reprise ; passée à En revue |

@@ -55,6 +55,8 @@
   let epreuve: Epreuve | null = $state(null);
   let chargee = $state(false);
   let pilote = $state(false);
+  /** US-035 CA-5 : épreuve reprise d'un fichier, dont rien n'est envoyé tant que ce PC n'a pas pris la main. */
+  let reprise = $state(false);
   let copieLe: number | null = $state(null);
   /** Faux si un autre onglet détient déjà l'écriture de cette épreuve. */
   let ecriture = $state(true);
@@ -97,7 +99,9 @@
     const copie = resultat.ok ? resultat : resultat.copie;
     epreuve = copie?.projection.epreuve ?? null;
     copieLe = copie?.copieLe ?? null;
-    pilote = (await journal.etat(epreuveId))?.pilote ?? false;
+    const etat = await journal.etat(epreuveId);
+    pilote = etat?.pilote ?? false;
+    reprise = etat?.reprise === true;
     ecartes = await journal.lireEcartes(epreuveId);
     if (pilote) {
       liberer = await prendreEcriture(epreuveId);
@@ -283,6 +287,38 @@
     }
   }
 
+  /** US-035 CA-5 et CA-6 : au retour en ligne, prend la main sur l'épreuve reprise d'un fichier, puis envoie. */
+  const tr = textes.importation.reprise;
+  let repriseEnCours = $state(false);
+  let erreurReprise: string | null = $state(null);
+  let retourReprise: { ok: boolean; message: string } | null = $state(null);
+
+  async function reprendreApresImport() {
+    if (repriseEnCours) return;
+    repriseEnCours = true;
+    erreurReprise = null;
+    retourReprise = null;
+    try {
+      const resultat = await synchronisation.reprendreApresImport(epreuveId, {
+        clubId: session.compte.clubId ?? '',
+        auteur: session.compte.email,
+      });
+      if (resultat.ok) {
+        retourReprise = {
+          ok: resultat.ecartes === 0,
+          message: resultat.ecartes === 0 ? tr.reussie : tr.divergence(resultat.ecartes),
+        };
+        await charger();
+      } else if (resultat.erreur === 'MAIN_DEJA_PRISE') {
+        erreurReprise = tr.mainDejaPrise(libellePilote(resultat.piloteNom, resultat.piloteAppareil));
+      } else {
+        erreurReprise = tr.erreurs[resultat.erreur];
+      }
+    } finally {
+      repriseEnCours = false;
+    }
+  }
+
   /** US-034 : exporte l'épreuve dans un fichier, depuis le journal de cet appareil (sans réseau). */
   const tx = tpe.exportation;
   let exportEnCours = $state(false);
@@ -462,6 +498,27 @@
         {/if}
         {#if pilote && !ecriture}
           <p class="avertissement" role="status">{t.autreOnglet}</p>
+        {/if}
+        {#if reprise}
+          <div class="prise" role="group" aria-label={tr.titre} data-reprise>
+            <p class="avertissement" role="status">{tr.aReprendre}</p>
+            <div class="actions">
+              <button
+                type="button"
+                onclick={reprendreApresImport}
+                disabled={!enLigne || repriseEnCours}
+                aria-describedby={enLigne ? undefined : 'reprise-hors-ligne'}
+                >{repriseEnCours ? tr.enCours : tr.bouton}</button
+              >
+            </div>
+            {#if !enLigne}<small id="reprise-hors-ligne">{tr.horsLigne}</small>{/if}
+            {#if erreurReprise}<p class="message" role="alert">{erreurReprise}</p>{/if}
+          </div>
+        {/if}
+        {#if retourReprise}
+          <p class={retourReprise.ok ? 'envoi' : 'avertissement'} role="status" data-retour="reprise">
+            {retourReprise.message}
+          </p>
         {/if}
         {#if perteLibelle ?? annonceEcart}
           <p class="avertissement" role="status">{tp.perte(perteLibelle ?? annonceEcart ?? '')}</p>

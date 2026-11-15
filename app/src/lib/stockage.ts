@@ -80,6 +80,11 @@ export interface EpreuveLocale {
   confirme: number;
   /** Date du téléchargement de la copie, en millisecondes ; null pour une épreuve pilotée ici. */
   copieLe: number | null;
+  /**
+   * US-035 CA-5 : épreuve reprise d'un fichier hors ligne. Rien n'est envoyé tant que ce PC n'a pas pris la main au retour
+   * en ligne : le serveur a pu continuer l'épreuve sans lui.
+   */
+  reprise?: boolean;
 }
 
 /**

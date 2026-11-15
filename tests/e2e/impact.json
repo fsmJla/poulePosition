@@ -20,7 +20,8 @@
     "manifestations",
     "manifestation",
     "plan",
-    "assistant"
+    "assistant",
+    "importer-epreuve"
   ],
   "app/src/pages/Accueil.svelte": ["page", "marque", "publication", "charte"],
   "app/src/pages/Direct.svelte": ["publication", "page"],
@@ -77,7 +78,8 @@
     "suppression-contenu",
     "smartphone-organisateur",
     "epreuves",
-    "exporter-epreuve"
+    "exporter-epreuve",
+    "importer-epreuve"
   ],
   "app/src/pages/Formule.svelte": ["formule", "epreuve-etapes"],
   "app/src/pages/Parametres.svelte": ["parametres", "epreuve-etapes"],
@@ -223,7 +225,8 @@
     "suppression-unique",
     "archivage",
     "manifestation",
-    "exporter-epreuve"
+    "exporter-epreuve",
+    "importer-epreuve"
   ],
   "app/src/composants/Onglets.svelte": ["manifestation", "plan"],
   "app/src/lib/theme.ts": ["theme", "theme-icones"],
@@ -235,7 +238,7 @@
   "app/src/lib/plan.ts": ["plan", "manifestation"],
   "app/src/lib/lot.ts": ["grille", "assistant"],
   "app/src/lib/publication.ts": ["publication"],
-  "app/src/lib/fichiers.ts": ["fichiers", "reperes-documents", "exporter-epreuve"],
+  "app/src/lib/fichiers.ts": ["fichiers", "reperes-documents", "exporter-epreuve", "importer-epreuve"],
   "app/vite.config.ts": ["lancement"],
   "package.json": ["*"],
   "package-lock.json": ["*"],
@@ -265,5 +268,9 @@
   "app/src/lib/adresse.ts": ["adresse-lieu"],
   "app/src/composants/PlanLieu.svelte": ["plan-lieu", "assistant", "manifestation"],
   "app/src/lib/plan-lieu.ts": ["plan-lieu"],
-  "app/src/lib/sauvegarde.ts": ["exporter-epreuve"]
+  "app/src/lib/sauvegarde.ts": ["exporter-epreuve"],
+  "app/src/lib/import-sauvegarde.ts": ["importer-epreuve"],
+  "app/src/composants/ConfirmationImport.svelte": ["importer-epreuve"],
+  "app/src/lib/synchronisation.ts": ["importer-epreuve", "prise-de-main"],
+  "app/src/lib/journal.ts": ["importer-epreuve", "prise-de-main"]
 }

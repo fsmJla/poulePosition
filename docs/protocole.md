@@ -1004,3 +1004,32 @@ l'import (US-035) s'appuie sur la même validation.
 - **Enregistrement** : sous Chrome et Edge, l'application propose de choisir l'emplacement (API File System Access) ; ailleurs,
   ou si l'API est refusée, le fichier est téléchargé. Fermer le sélecteur n'enregistre rien et n'est pas une erreur.
 - **Rappel** : après l'export, un message rappelle que le fichier contient des noms de tireurs (ADR-0014).
+
+### Import d'un fichier et reprise au retour en ligne (US-035)
+
+L'import se fait sur l'appareil, sans réseau (`app/src/lib/import-sauvegarde.ts`). Le fichier est lu (50 Mo au plus), analysé
+(`analyserSauvegarde`), refusé s'il vient d'un autre club ou si son journal ne se rejoue pas, puis comparé au journal de
+l'appareil (`planifierImport`, domaine) :
+
+| Situation | Effet |
+|---|---|
+| Épreuve inconnue de l'appareil | créée avec son journal complet ; cet appareil en est le pilote (CA-2) |
+| Copie plus courte (début du journal du fichier) | les événements manquants sont ajoutés (CA-3) |
+| Journal identique ou plus court | rien n'est modifié |
+| Journaux différents au même `seq` | refus ; « Importer comme nouvelle épreuve » donne un nouvel identifiant à l'épreuve et à ses événements |
+
+Les fichiers joints du fichier sont gardés sur l'appareil (contenu et description) pour rester affichables hors ligne ; le
+serveur n'en est pas informé.
+
+Une épreuve importée porte `reprise` dans `epreuvesLocales` : **rien n'est envoyé** (`envoyer` répond `reprise-requise`) et son
+battement de présence est suspendu, jusqu'à ce que l'organisateur demande « Prendre la main et envoyer » au retour en ligne
+(`reprendreApresImport`) :
+
+1. `GET /epreuves/<id>/evenements` : si le serveur ne connaît pas l'épreuve (`EPREUVE_INCONNUE`), les événements partent tels
+   quels et ce PC devient le pilote au premier lot ; si elle est supprimée (`EPREUVE_SUPPRIMEE`), la copie est effacée.
+2. Si un autre appareil pilote, `POST /epreuves/<id>/pilote` (§11, US-029) désigne ce PC ; `MAIN_DEJA_PRISE` est signalé sans rien
+   changer.
+3. Le journal local est comparé à celui du serveur (`reconcilier`, domaine) : s'il n'a pas avancé (CA-5), les événements locaux
+   restent à envoyer ; sinon (CA-6) le journal du serveur est repris et les événements locaux qu'il n'a pas sont mis de côté
+   dans la table `ecartes`, consultables et exportables, **sans fusion automatique**.
+4. `PiloteChange` est écrit si la main a changé, puis les événements sont envoyés.

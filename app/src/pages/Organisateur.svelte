@@ -38,8 +38,11 @@
   import Lien from '../composants/Lien.svelte';
   import RepereDocuments from '../composants/RepereDocuments.svelte';
   import ConfirmationArchivage from '../composants/ConfirmationArchivage.svelte';
+  import ConfirmationImport from '../composants/ConfirmationImport.svelte';
   import MenuActions, { type ActionMenu } from '../composants/MenuActions.svelte';
   import { verdictManifestation } from '../lib/archivage';
+  import { examinerFichier, importerSauvegarde, type ResultatExamen } from '../lib/import-sauvegarde';
+  import type { Journal } from '../lib/journal';
   import { estDeplie, filtreMemorise, memoriserFiltre, memoriserRepli } from '../lib/repli';
   import type { RaisonNonRattachee } from '../lib/rattachement-lot';
   import { supprimerElement } from '../lib/suppression-unique';
@@ -70,15 +73,45 @@
     session: SessionAppareil;
     accueil: Accueil;
     fichiers: ClientFichiers;
+    /** US-035 : l'import écrit dans le journal de cet appareil. */
+    journal: Journal;
     naviguer: (chemin: string) => void;
   }
 
-  let { session, accueil, fichiers, naviguer }: Proprietes = $props();
+  let { session, accueil, fichiers, journal, naviguer }: Proprietes = $props();
 
   const t = textes.listeClub;
   const tc = textes.epreuves;
 
   let horsLigne = $state(!navigator.onLine);
+
+  /** US-035 : import d'une épreuve depuis un fichier, sans réseau ; le résumé se confirme dans une fenêtre. */
+  const ti = textes.importation;
+  let champImport: HTMLInputElement | undefined = $state();
+  let examen: ResultatExamen | null = $state(null);
+
+  async function choisirFichierImport(evenement: Event) {
+    const champ = evenement.currentTarget as HTMLInputElement;
+    const fichier = champ.files?.[0];
+    champ.value = '';
+    if (!fichier) return;
+    examen = await examinerFichier(fichier, { journal, clubId: session.compte.clubId ?? '' });
+  }
+
+  /** CA-2, CA-3 : reprend le fichier, puis ouvre l'épreuve, où la reprise au retour en ligne est proposée. */
+  async function validerImport(copie: boolean) {
+    if (!examen?.ok) return null;
+    const resultat = await importerSauvegarde(examen.sauvegarde, {
+      journal,
+      fichiers,
+      auteur: session.compte.email,
+      comme: copie ? 'copie' : 'meme',
+    });
+    if (!resultat.ok) return resultat.erreur;
+    examen = null;
+    naviguer(cheminEpreuve(resultat.epreuveId));
+    return null;
+  }
   let donnees: DonneesAccueil | null = $state(null);
   /** US-063 CA-1 et CA-7 : filtre de la liste, « À venir et en cours » à chaque nouvelle visite. */
   let filtre: FiltreListe = $state((filtreMemorise() as FiltreListe | null) ?? 'avenir');
@@ -567,6 +600,10 @@
   </div>
 {/snippet}
 
+{#if examen}
+  <ConfirmationImport {examen} valider={validerImport} fermer={() => (examen = null)} />
+{/if}
+
 {#if archivageDemande}
   <ConfirmationArchivage
     titre={archivageDemande.archiver
@@ -649,6 +686,30 @@
       >
       {#if horsLigne}<small id="selection-aide">{ts.horsLigne}</small>{/if}
     {/if}
+    <!-- US-035 : action secondaire de la liste, proposée à tout organisateur, hors ligne comprise. -->
+    {#if !modeSelection}
+      <MenuActions
+        id="menu-liste"
+        etiquette={ti.menuListe}
+        {naviguer}
+        actions={[
+          {
+            libelle: ti.action,
+            icone: 'televerser',
+            detail: ti.actionDetail,
+            surChoix: () => champImport?.click(),
+          },
+        ]}
+      />
+    {/if}
+    <input
+      type="file"
+      accept=".json,application/json"
+      hidden
+      bind:this={champImport}
+      onchange={choisirFichierImport}
+      data-import
+    />
   </div>
 
   <section class="liste" aria-label={t.titre}>
