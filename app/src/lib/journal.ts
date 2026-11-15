@@ -4,7 +4,9 @@
 import { Dexie } from 'dexie';
 import {
   appliquer,
+  planifierImport,
   projeter,
+  reconcilier,
   verifierEvenement,
   type ErreurEvenement,
   type Evenement,
@@ -29,6 +31,12 @@ export interface Contexte {
 export type ErreurJournal = ErreurEvenement | 'JOURNAL_INCOHERENT' | 'PAS_PILOTE' | 'ECRITURE_IMPOSSIBLE';
 
 export type ResultatEcriture = { projection: Projection } | { erreur: ErreurJournal };
+
+/** Résultat d'une reprise depuis un fichier (US-035). */
+export type ResultatImport =
+  | { ok: true; mode: 'nouvelle' | 'prolonge'; ajoutes: number }
+  | { ok: true; mode: 'a-jour'; ajoutes: 0 }
+  | { ok: false; erreur: 'DIVERGENT' | 'ECRITURE_IMPOSSIBLE' };
 
 export interface Journal {
   lire(epreuveId: string): Promise<Projection>;
@@ -62,6 +70,18 @@ export interface Journal {
    * modifications écartées) et renvoie le nombre d'événements pas encore envoyés, abandonnés avec elle.
    */
   supprimerCopie(epreuveId: string): Promise<number>;
+  /**
+   * US-035 CA-2 et CA-3 : reprend le journal d'un fichier. Une épreuve inconnue est créée avec son journal complet ; une copie
+   * plus courte est prolongée des événements manquants. Dans les deux cas ce PC en devient le pilote et rien n'est envoyé
+   * avant qu'il ait pris la main au retour en ligne (`reprise`). Un journal qui diverge de celui de l'appareil est refusé.
+   */
+  importer(epreuveId: string, evenements: readonly Evenement[]): Promise<ResultatImport>;
+  /**
+   * US-035 CA-5 et CA-6 : au retour en ligne, réconcilie le journal repris avec celui du serveur. S'il n'a pas avancé, les
+   * événements locaux restent à envoyer ; sinon le journal du serveur est repris et les événements locaux qu'il n'a pas sont
+   * mis de côté (jamais fusionnés). Renvoie le nombre d'événements mis de côté.
+   */
+  reprendre(epreuveId: string, serveur: readonly Evenement[], copieLe: number): Promise<number>;
   lireEcartes(epreuveId: string): Promise<Ecart[]>;
   effacerEcartes(epreuveId: string): Promise<void>;
   /** Identifiant de cet appareil, tiré au premier appel puis gardé (ADR-0016). */
@@ -216,6 +236,78 @@ export function ouvrirJournal(nom = 'poulePosition', persister: () => Promise<bo
         await base.epreuvesLocales.delete(epreuveId);
         await base.ecartes.where('epreuveId').equals(epreuveId).delete();
         return abandonnes;
+      });
+    },
+
+    async importer(epreuveId, evenements) {
+      try {
+        return await base.transaction(
+          'rw',
+          base.evenements,
+          base.epreuvesLocales,
+          async (): Promise<ResultatImport> => {
+            const locaux: Evenement[] = [];
+            for (const brut of await evenementsBruts(epreuveId)) {
+              const evenement = lireEvenement(brut);
+              if (!evenement) break;
+              locaux.push(evenement);
+            }
+            const plan = planifierImport(locaux, evenements);
+            if (plan.mode === 'divergent') return { ok: false, erreur: 'DIVERGENT' };
+            if (plan.mode === 'a-jour') return { ok: true, mode: 'a-jour', ajoutes: 0 };
+            const ajouts = plan.mode === 'nouvelle' ? evenements : plan.ajouts;
+            await base.evenements.bulkAdd(ajouts.map((evenement) => ({ ...evenement })));
+            const locale = await base.epreuvesLocales.get(epreuveId);
+            await base.epreuvesLocales.put({
+              epreuveId,
+              pilote: true,
+              confirme: locale?.confirme ?? 0,
+              copieLe: null,
+              reprise: true,
+            });
+            return { ok: true, mode: plan.mode, ajoutes: ajouts.length };
+          },
+        );
+      } catch {
+        return { ok: false, erreur: 'ECRITURE_IMPOSSIBLE' };
+      }
+    },
+
+    async reprendre(epreuveId, serveur, copieLe) {
+      return base.transaction('rw', base.evenements, base.epreuvesLocales, base.ecartes, async () => {
+        const locaux: Evenement[] = [];
+        for (const brut of await evenementsBruts(epreuveId)) {
+          const evenement = lireEvenement(brut);
+          if (!evenement) break;
+          locaux.push(evenement);
+        }
+        const reconciliation = reconcilier(locaux, serveur);
+        if (reconciliation.resultat === 'prolonge') {
+          await base.epreuvesLocales.put({
+            epreuveId,
+            pilote: true,
+            confirme: reconciliation.confirme,
+            copieLe: null,
+            reprise: false,
+          });
+          return 0;
+        }
+        if (reconciliation.ecartes.length > 0) {
+          await base.ecartes.add({ epreuveId, evenements: reconciliation.ecartes, ecartesLe: copieLe });
+        }
+        await base.evenements
+          .where('[epreuveId+seq]')
+          .between([epreuveId, Dexie.minKey], [epreuveId, Dexie.maxKey])
+          .delete();
+        await base.evenements.bulkAdd(serveur.map((evenement) => ({ ...evenement })));
+        await base.epreuvesLocales.put({
+          epreuveId,
+          pilote: true,
+          confirme: serveur.length,
+          copieLe: null,
+          reprise: false,
+        });
+        return reconciliation.ecartes.length;
       });
     },
 

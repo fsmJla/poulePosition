@@ -20,7 +20,8 @@ import { DELAI_REPONSE } from './session';
 import type { Contexte, Journal } from './journal';
 
 /** Résultat d'un envoi : tout est confirmé, il reste des événements à envoyer, ou l'envoi est bloqué. */
-export type EtatEnvoi = 'a-jour' | 'en-attente' | 'session-expiree' | 'pas-pilote' | 'supprimee';
+/** `reprise-requise` : épreuve reprise d'un fichier, rien ne part tant que ce PC n'a pas pris la main (US-035 CA-5). */
+export type EtatEnvoi = 'a-jour' | 'en-attente' | 'session-expiree' | 'pas-pilote' | 'supprimee' | 'reprise-requise';
 
 /** US-029 : ce PC n'est plus le pilote ; `ecartes` modifications faites hors ligne n'ont pas été reprises. */
 export interface PerteDeMain {
@@ -115,6 +116,7 @@ export function creerSynchronisation({
   }
 
   async function envoyerMaintenant(epreuveId: string): Promise<EtatEnvoi> {
+    if ((await journal.etat(epreuveId))?.reprise) return 'reprise-requise';
     for (let tour = 0; tour < TOURS_MAX; tour++) {
       const evenements = await journal.aEnvoyer(epreuveId);
       if (evenements.length === 0) return 'a-jour';
@@ -277,7 +279,8 @@ export function creerSynchronisation({
     const locales = await journal.epreuvesLocales();
     await Promise.all(
       locales
-        .filter(({ pilote }) => pilote)
+        // US-035 : une épreuve reprise d'un fichier ne bat pas avant la prise de main, sinon le serveur lui ferait perdre la main.
+        .filter(({ pilote, reprise }) => pilote && !reprise)
         .map(async ({ epreuveId }) => {
           const { epreuve } = await journal.lire(epreuveId);
           if (epreuve && epreuve.statut !== 'terminee' && epreuve.statut !== 'archivee') {
@@ -425,6 +428,75 @@ export function creerSynchronisation({
       }
       await envoyerEpreuve(epreuveId);
       return { ok: true };
+    },
+
+    /**
+     * US-035 CA-5 et CA-6 : au retour en ligne, ce PC reprend la main sur une épreuve importée d'un fichier. Si le serveur ne
+     * la connaît pas, les événements partent tels quels ; sinon il désigne ce PC (comme US-029) et son journal est comparé au
+     * journal local : s'il n'a pas avancé, les événements locaux sont envoyés ; sinon le journal du serveur est repris et les
+     * événements locaux qu'il n'a pas sont mis de côté, sans fusion (`ecartes` en donne le nombre).
+     */
+    async reprendreApresImport(
+      epreuveId: string,
+      contexte: Contexte,
+    ): Promise<
+      | { ok: true; ecartes: number }
+      | Refus
+      | { ok: false; erreur: 'MAIN_DEJA_PRISE'; piloteAppareil: string; piloteNom: string }
+    > {
+      const jetonSession = await jetonEnLigne();
+      if (!jetonSession) return sansReseau();
+      const appareilId = await journal.appareil();
+      let lecture;
+      try {
+        lecture = analyserReponseJournal(await requete(`/epreuves/${epreuveId}/evenements`, jetonSession));
+      } catch {
+        return { ok: false, erreur: 'HORS_LIGNE' };
+      }
+      if (!lecture.ok) {
+        if (lecture.erreur === 'EPREUVE_SUPPRIMEE') {
+          await effacerSupprimee(epreuveId);
+          return { ok: false, erreur: 'EPREUVE_SUPPRIMEE' };
+        }
+        if (lecture.erreur !== 'EPREUVE_INCONNUE') return { ok: false, erreur: erreurDe(lecture.erreur) };
+        // Le serveur ne la connaît pas : le premier lot en fera ce PC le pilote.
+        await journal.reprendre(epreuveId, [], maintenant());
+        await envoyerEpreuve(epreuveId);
+        return { ok: true, ecartes: 0 };
+      }
+      let serveur = lecture.evenements;
+      let ancienAppareil = appareilId;
+      if (lecture.piloteAppareil !== appareilId) {
+        let prise;
+        try {
+          const corps = { appareilId, piloteAttendu: lecture.piloteAppareil };
+          prise = analyserReponsePriseDeMain(await requete(`/epreuves/${epreuveId}/pilote`, jetonSession, corps));
+        } catch {
+          return { ok: false, erreur: 'HORS_LIGNE' };
+        }
+        if (!prise.ok) {
+          if (prise.erreur !== 'MAIN_DEJA_PRISE') return { ok: false, erreur: erreurDe(prise.erreur) };
+          return {
+            ok: false,
+            erreur: 'MAIN_DEJA_PRISE',
+            piloteAppareil: prise.piloteAppareil ?? '',
+            piloteNom: prise.piloteNom ?? '',
+          };
+        }
+        serveur = prise.evenements;
+        ancienAppareil = prise.ancienAppareil;
+      }
+      const ecartes = await journal.reprendre(epreuveId, serveur, maintenant());
+      if (ancienAppareil !== appareilId) {
+        const ecrit = await journal.enregistrer(
+          epreuveId,
+          { type: 'PiloteChange', donnees: { ancienAppareil, nouvelAppareil: appareilId } },
+          contexte,
+        );
+        if ('erreur' in ecrit) return { ok: false, erreur: 'ERREUR_INATTENDUE' };
+      }
+      await envoyerEpreuve(epreuveId);
+      return { ok: true, ecartes };
     },
 
     battre,

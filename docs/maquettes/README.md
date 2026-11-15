@@ -109,6 +109,7 @@ pas d'émoji. Une icône garde **le même sens partout**.
 | Lien | « Rattacher à une compétition » (barre du mode sélection) | Avec libellé |
 | Archive | Archiver, désarchiver (menu « ⋯ ») | Avec libellé |
 | Télécharger | Exporter une épreuve dans un fichier (menu « ⋯ », US-034) | Avec libellé |
+| Téléverser | Importer une épreuve depuis un fichier (menu « ⋯ » de la liste, US-035) | Avec libellé |
 
 Ajouter une icône à ce tableau avant de l'employer dans un écran.
 
@@ -196,6 +197,10 @@ archivée. Aucune planche : écart déclaré dans les Hypothèses de l'US.
 
 **Livré par US-034 (export) :** « Exporter » est une entrée du menu « ⋯ » d'une épreuve (icône « Télécharger », ajoutée au vocabulaire) ; son résultat
 s'affiche dans un message sous l'entête. Aucune planche : écart déclaré dans les Hypothèses de l'US.
+
+**Livré par US-035 (import) :** « Importer une épreuve… » est l'entrée d'un menu « ⋯ » de la liste de l'organisateur (icône « Téléverser », ajoutée
+au vocabulaire) ; le résumé se confirme dans une fenêtre modale, et la reprise au retour en ligne est un bouton de la carte « Pilote » de l'épreuve.
+Aucune planche : écart déclaré dans les Hypothèses de l'US.
 
 **Livré par US-064 (prochaine étape) :** le bandeau « Prochaine étape » du Résumé, dont la règle est
 `paquets/domaine/src/prochaine-etape.ts` ; chaque Epic qui livre une étape y ajoute son cas.

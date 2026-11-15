@@ -364,3 +364,207 @@ describe('export des modifications écartées (US-029)', () => {
     });
   });
 });
+
+describe('reprise d’une épreuve importée (US-035)', () => {
+  /** Journal complet d'une épreuve pilotée par `poste`, tel qu'un export le contiendrait. */
+  const exportDe = (poste: Pc, id: string) => poste.journal.evenements(id);
+  const secoursDe = (serveur: ReturnType<typeof serveurSimule>, enLigne?: () => boolean) =>
+    pc(serveur, 'Secours', enLigne);
+  const contexteSecours = contexteDe('secours@club.fr');
+
+  it('CA-2 et CA-5 : une épreuve inconnue est créée avec son journal, ce PC en est le pilote, rien ne part', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    const secours = secoursDe(serveur);
+    await creerEtEnvoyer(serveur, a, 'c1');
+
+    const resultat = await secours.journal.importer('c1', await exportDe(a, 'c1'));
+    expect(resultat).toEqual({ ok: true, mode: 'nouvelle', ajoutes: 1 });
+    expect(await secours.journal.etat('c1')).toMatchObject({ pilote: true, confirme: 0, reprise: true });
+    expect((await secours.journal.lire('c1')).epreuve?.nom).toBe('Challenge Orpi 2027');
+    serveur.envoyer.mockClear();
+    expect(await secours.synchronisation.envoyer('c1')).toBe('reprise-requise');
+    expect(serveur.envoyer).not.toHaveBeenCalled();
+    expect(serveur.journaux.get('c1')!.evenements).toHaveLength(1);
+  });
+
+  it('CA-3 : une copie plus courte est prolongée des événements manquants', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    await creerEtEnvoyer(serveur, a, 'c1');
+    const secours = secoursDe(serveur);
+    await secours.journal.importer('c1', await exportDe(a, 'c1'));
+    await a.journal.enregistrer('c1', modification('Nom 2'), orga);
+    await a.journal.enregistrer('c1', modification('Nom 3'), orga);
+
+    const resultat = await secours.journal.importer('c1', await exportDe(a, 'c1'));
+    expect(resultat).toEqual({ ok: true, mode: 'prolonge', ajoutes: 2 });
+    expect((await secours.journal.lire('c1')).epreuve?.nom).toBe('Nom 3');
+    expect(await secours.journal.evenements('c1')).toHaveLength(3);
+  });
+
+  it('un fichier que l’appareil a déjà ne change rien', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    await creerEtEnvoyer(serveur, a, 'c1');
+    const evenements = await exportDe(a, 'c1');
+    expect(await a.journal.importer('c1', evenements)).toEqual({ ok: true, mode: 'a-jour', ajoutes: 0 });
+    expect((await a.journal.etat('c1'))?.reprise).toBeUndefined();
+  });
+
+  it('cas limite : des journaux qui divergent au même seq sont refusés, rien n’est modifié', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    await creerEtEnvoyer(serveur, a, 'c1');
+    const autre = pc(serveur, 'Autre');
+    await autre.journal.enregistrer('c1', creation('Un autre nom'), contexteDe('autre@club.fr'));
+    const avant = await a.journal.evenements('c1');
+
+    expect(await a.journal.importer('c1', await exportDe(autre, 'c1'))).toEqual({ ok: false, erreur: 'DIVERGENT' });
+    expect(await a.journal.evenements('c1')).toEqual(avant);
+  });
+
+  it('CA-5 : le serveur n’a pas avancé, ce PC prend la main et envoie ses événements', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    await creerEtEnvoyer(serveur, a, 'c1');
+    const secours = secoursDe(serveur);
+    serveur.noms.set(await secours.appareil(), 'Secours');
+    await secours.journal.importer('c1', await exportDe(a, 'c1'));
+    await secours.journal.enregistrer('c1', modification('Reprise'), contexteSecours);
+
+    const resultat = await secours.synchronisation.reprendreApresImport('c1', contexteSecours);
+    expect(resultat).toEqual({ ok: true, ecartes: 0 });
+    const enLigne = serveur.journaux.get('c1')!;
+    expect(enLigne.pilote).toBe(await secours.appareil());
+    expect(enLigne.evenements.map(({ type }) => type)).toEqual(['EpreuveCreee', 'EpreuveModifiee', 'PiloteChange']);
+    expect(await secours.journal.etat('c1')).toMatchObject({ pilote: true, reprise: false, confirme: 3 });
+    expect(await secours.synchronisation.envoyer('c1')).toBe('a-jour');
+  });
+
+  it('CA-6 : le serveur a continué ailleurs, il est repris et les événements locaux sont gardés à part', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    await creerEtEnvoyer(serveur, a, 'c1');
+    const secours = secoursDe(serveur);
+    serveur.noms.set(await secours.appareil(), 'Secours');
+    await secours.journal.importer('c1', await exportDe(a, 'c1'));
+    await secours.journal.enregistrer('c1', modification('Fait au secours'), contexteSecours);
+    await a.journal.enregistrer('c1', modification('Fait sur le PC pilote'), orga);
+    expect(await a.synchronisation.envoyer('c1')).toBe('a-jour');
+
+    const resultat = await secours.synchronisation.reprendreApresImport('c1', contexteSecours);
+    expect(resultat).toEqual({ ok: true, ecartes: 1 });
+    expect((await secours.journal.lire('c1')).epreuve?.nom).toBe('Fait sur le PC pilote');
+    const ecartes = await secours.journal.lireEcartes('c1');
+    expect(ecartes).toHaveLength(1);
+    expect(ecartes[0]!.evenements).toMatchObject([{ seq: 2, donnees: { nom: 'Fait au secours' } }]);
+    expect(JSON.stringify(serveur.journaux.get('c1')!.evenements)).not.toContain('Fait au secours');
+    expect(serveur.journaux.get('c1')!.pilote).toBe(await secours.appareil());
+  });
+
+  it('une épreuve que le serveur ne connaît pas part telle quelle, ce PC en devient le pilote', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    await a.journal.enregistrer('c1', creation(), orga);
+    const secours = secoursDe(serveur);
+    await secours.journal.importer('c1', await exportDe(a, 'c1'));
+
+    expect(await secours.synchronisation.reprendreApresImport('c1', contexteSecours)).toEqual({ ok: true, ecartes: 0 });
+    expect(serveur.journaux.get('c1')!.evenements).toHaveLength(1);
+    expect(serveur.journaux.get('c1')!.pilote).toBe(await secours.appareil());
+  });
+
+  it('sans réseau, la reprise est refusée et l’épreuve reste à reprendre', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    await creerEtEnvoyer(serveur, a, 'c1');
+    const secours = secoursDe(serveur, () => false);
+    await secours.journal.importer('c1', await exportDe(a, 'c1'));
+    expect(await secours.synchronisation.reprendreApresImport('c1', orga)).toEqual({
+      ok: false,
+      erreur: 'HORS_LIGNE',
+    });
+    expect((await secours.journal.etat('c1'))?.reprise).toBe(true);
+  });
+
+  it('serveur coupé en route : la reprise échoue sans rien changer', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    await creerEtEnvoyer(serveur, a, 'c1');
+    const secours = secoursDe(serveur);
+    await secours.journal.importer('c1', await exportDe(a, 'c1'));
+    serveur.couper();
+    expect(await secours.synchronisation.reprendreApresImport('c1', orga)).toEqual({
+      ok: false,
+      erreur: 'HORS_LIGNE',
+    });
+    expect((await secours.journal.etat('c1'))?.reprise).toBe(true);
+  });
+
+  it('la main prise entre-temps par un autre PC est signalée, sans rien changer', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    const b = pc(serveur, 'Marie');
+    await creerEtEnvoyer(serveur, a, 'c1');
+    const secours = secoursDe(serveur);
+    await secours.journal.importer('c1', await exportDe(a, 'c1'));
+    const origine = serveur.envoyer.getMockImplementation()!;
+    let premiere = true;
+    serveur.envoyer.mockImplementation(async (adresse, init) => {
+      const reponse = await origine(adresse, init);
+      if (premiere && init?.method === 'GET') {
+        premiere = false;
+        serveur.noms.set(await b.appareil(), 'Marie');
+        serveur.journaux.get('c1')!.pilote = await b.appareil();
+      }
+      return reponse;
+    });
+    const resultat = await secours.synchronisation.reprendreApresImport('c1', orga);
+    expect(resultat).toMatchObject({ ok: false, erreur: 'MAIN_DEJA_PRISE', piloteNom: 'Marie' });
+    expect((await secours.journal.etat('c1'))?.reprise).toBe(true);
+  });
+
+  it('une épreuve supprimée sur le serveur est signalée et sa copie importée effacée', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    await creerEtEnvoyer(serveur, a, 'c1');
+    const secours = secoursDe(serveur);
+    await secours.journal.importer('c1', await exportDe(a, 'c1'));
+    const origine = serveur.envoyer.getMockImplementation()!;
+    serveur.envoyer.mockImplementation(async (adresse, init) =>
+      init?.method === 'GET'
+        ? new Response(JSON.stringify({ ok: false, erreur: 'EPREUVE_SUPPRIMEE' }), { status: 410 })
+        : origine(adresse, init),
+    );
+    expect(await secours.synchronisation.reprendreApresImport('c1', orga)).toEqual({
+      ok: false,
+      erreur: 'EPREUVE_SUPPRIMEE',
+    });
+    expect(await secours.journal.etat('c1')).toBeNull();
+  });
+
+  it('le battement du pilote ignore une épreuve pas encore reprise, qui ne perd pas la main avant d’avoir pu la prendre', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    await creerEtEnvoyer(serveur, a, 'c1');
+    const secours = secoursDe(serveur);
+    await secours.journal.importer('c1', await exportDe(a, 'c1'));
+    serveur.envoyer.mockClear();
+    await secours.synchronisation.battreTout();
+    expect(serveur.envoyer).not.toHaveBeenCalled();
+    expect(await secours.journal.etat('c1')).toMatchObject({ pilote: true, reprise: true });
+    expect(await secours.journal.lireEcartes('c1')).toEqual([]);
+  });
+
+  it('une réponse inattendue du serveur n’efface rien', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    await creerEtEnvoyer(serveur, a, 'c1');
+    const secours = secoursDe(serveur);
+    await secours.journal.importer('c1', await exportDe(a, 'c1'));
+    serveur.envoyer.mockImplementation(async () => new Response('?', { status: 500 }));
+    expect(await secours.synchronisation.reprendreApresImport('c1', orga)).toMatchObject({ ok: false });
+    expect((await secours.journal.etat('c1'))?.reprise).toBe(true);
+  });
+});

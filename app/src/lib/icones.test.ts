@@ -36,7 +36,17 @@ describe('icônes de la charte (US-054 CA-4)', () => {
   });
 
   it('CA-4 : les icônes ajoutées au-delà du vocabulaire initial figurent dans le tableau du vocabulaire', () => {
-    for (const libelle of ['Personnes', 'Lune', 'Coche', 'Liste', 'Quatre carrés', 'Lien', 'Archive', 'Télécharger'])
+    for (const libelle of [
+      'Personnes',
+      'Lune',
+      'Coche',
+      'Liste',
+      'Quatre carrés',
+      'Lien',
+      'Archive',
+      'Télécharger',
+      'Téléverser',
+    ])
       expect(vocabulaire).toContain(`| ${libelle} |`);
   });
 

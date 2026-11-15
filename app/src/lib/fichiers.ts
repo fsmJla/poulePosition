@@ -15,6 +15,7 @@ import {
   cheminFichier,
   type ErreurReponse,
   type FichierJoint,
+  type FichierSauvegarde,
 } from '@poule-position/protocole';
 import { reduireAffiche } from './reduction';
 import { Base, LIGNE_UNIQUE, type CopieFichiers } from './stockage';
@@ -250,6 +251,33 @@ export function creerClientFichiers({
           // Réseau perdu en route : on réessaiera au prochain affichage.
         }
       }
+    },
+
+    /**
+     * US-035 CA-2 : garde sur l'appareil les fichiers d'une sauvegarde importée (contenu et description), pour qu'ils
+     * restent affichables et imprimables hors ligne. Le serveur n'en est pas informé : un fichier qu'il ne connaît pas
+     * disparaît de la copie à la prochaine lecture en ligne (hypothèse d'US-035).
+     */
+    async garderImportes(importes: readonly FichierSauvegarde[], par: string): Promise<void> {
+      const decrits: FichierJoint[] = [];
+      for (const { contenu, ...description } of importes) {
+        const octets = Uint8Array.from(atob(contenu), (c) => c.charCodeAt(0));
+        await base.contenusFichiers.put({ nom: description.nom, contenu: new Blob([octets]) });
+        decrits.push({ ...description, ajouteLe: maintenant(), ajoutePar: par });
+      }
+      if (decrits.length === 0) return;
+      const courante = await copie();
+      const autres = (courante?.fichiers ?? []).filter(
+        (f) =>
+          !decrits.some(
+            (d) => d.proprietaire === f.proprietaire && d.proprietaireId === f.proprietaireId && d.sorte === f.sorte,
+          ),
+      );
+      await base.copieFichiers.put({
+        cle: LIGNE_UNIQUE,
+        fichiers: [...autres, ...decrits],
+        copieLe: courante?.copieLe ?? maintenant(),
+      });
     },
 
     /**

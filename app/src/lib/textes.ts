@@ -78,6 +78,86 @@ export const textes = {
     accueil: 'Accueil',
     autresActions: (nom: string) => `Autres actions pour ${nom}`,
   },
+  /** US-035 : import d'une épreuve depuis un fichier `.poule.json`, et reprise au retour en ligne. */
+  importation: {
+    action: 'Importer une épreuve…',
+    actionDetail: 'Reprendre une épreuve depuis un fichier .poule.json, même sans internet',
+    menuListe: 'Actions de la liste',
+    titre: 'Importer une épreuve',
+    lecture: 'Lecture du fichier…',
+    resume: {
+      nom: 'Épreuve',
+      date: 'Date',
+      evenements: 'Événements',
+      exporteLe: 'Exporté le',
+      fichiers: 'Fichiers joints',
+      /** Pour « Exporté le » : jour et heure locaux. */
+      dateExport: (ms: number) => new Date(ms).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' }),
+      dateEpreuve: (jour: string) =>
+        new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(`${jour}T00:00:00Z`)),
+    },
+    /** Ce que l'import fera, selon que l'appareil connaît ou non l'épreuve. */
+    plans: {
+      nouvelle: 'Cette épreuve sera créée sur cet appareil, qui en deviendra le pilote.',
+      prolonge: (ajouts: number) =>
+        ajouts > 1
+          ? `Cet appareil a déjà une copie plus courte : ${ajouts} événements seront ajoutés, et il en deviendra le pilote.`
+          : 'Cet appareil a déjà une copie plus courte : 1 événement sera ajouté, et il en deviendra le pilote.',
+      aJour: 'Cet appareil a déjà tout ce que contient ce fichier : rien ne sera modifié.',
+      divergent:
+        'Le fichier et la copie de cet appareil ne racontent pas la même épreuve : ils diffèrent à un même numéro d’événement. Rien n’a été modifié. Vous pouvez l’importer comme une nouvelle épreuve, à côté de l’autre.',
+    },
+    rappelEnLigne:
+      'Au retour en ligne, il faudra prendre la main sur cette épreuve avant d’envoyer quoi que ce soit au serveur.',
+    boutons: {
+      importer: 'Importer',
+      commeNouvelle: 'Importer comme nouvelle épreuve',
+      annuler: 'Annuler',
+      fermer: 'Fermer',
+      enCours: 'Import en cours…',
+    },
+    erreurs: {
+      ILLISIBLE: 'Ce fichier est illisible : ce n’est pas une sauvegarde poulePosition.',
+      AUTRE_FORMAT: 'Ce fichier n’est pas une sauvegarde d’épreuve poulePosition.',
+      VERSION_FUTURE: 'Ce fichier vient d’une version plus récente de poulePosition : mettez l’application à jour.',
+      JOURNAL_INVALIDE: 'Le journal de ce fichier est incomplet ou abîmé : il ne peut pas être importé.',
+      TROP_GROS: 'Ce fichier dépasse 50 Mo : il est refusé.',
+      LECTURE_IMPOSSIBLE: 'Ce fichier n’a pas pu être lu. Réessayez.',
+      AUTRE_CLUB: 'Ce fichier vient d’un autre club : il ne peut pas être importé ici.',
+      DIVERGENT: 'Le journal du fichier diverge de celui de cet appareil : rien n’a été modifié.',
+      ECRITURE_IMPOSSIBLE: 'L’import n’a pas pu être enregistré sur cet appareil. Réessayez.',
+    },
+    fait: {
+      nouvelle: (nom: string) => `Épreuve « ${nom} » importée.`,
+      prolonge: (nom: string, ajoutes: number) =>
+        `Épreuve « ${nom} » mise à jour : ${ajoutes} événement${ajoutes > 1 ? 's' : ''} ajouté${ajoutes > 1 ? 's' : ''}.`,
+      aJour: (nom: string) => `Rien à importer : l’épreuve « ${nom} » est déjà à jour sur cet appareil.`,
+    },
+    /** Carte « Pilote » de l'épreuve importée, avant et après la reprise (CA-5 et CA-6). */
+    reprise: {
+      titre: 'Épreuve reprise d’un fichier',
+      aReprendre:
+        'Cette épreuve vient d’un fichier. Rien n’est envoyé au serveur tant que ce PC n’a pas pris la main : une autre version a pu continuer entre-temps.',
+      bouton: 'Prendre la main et envoyer',
+      enCours: 'Reprise en cours…',
+      horsLigne: 'Nécessite une connexion internet',
+      reussie: 'Main prise : les modifications de cet appareil sont envoyées.',
+      divergence: (ecartes: number) =>
+        ecartes > 1
+          ? `L’épreuve a continué sur un autre PC : ${ecartes} modifications faites ici n’ont pas été reprises. Elles sont gardées à part : exportez-les pour les consulter.`
+          : 'L’épreuve a continué sur un autre PC : 1 modification faite ici n’a pas été reprise. Elle est gardée à part : exportez-la pour la consulter.',
+      mainDejaPrise: (libelle: string) => `La main vient d’être prise par ${libelle}. Réessayez.`,
+      erreurs: {
+        HORS_LIGNE: 'Nécessite une connexion internet',
+        SESSION_INVALIDE: 'Reconnectez-vous pour prendre la main',
+        EPREUVE_INCONNUE: 'Épreuve inconnue du serveur',
+        ERREUR_INATTENDUE: 'Reprise impossible pour le moment',
+        ACCES_REFUSE: 'Reprise impossible pour le moment',
+        EPREUVE_EN_COURS: 'Reprise impossible pour le moment',
+        EPREUVE_SUPPRIMEE: 'Cette épreuve a été supprimée',
+      },
+    },
+  },
   /** US-033 : archiver et désarchiver une épreuve ou une manifestation. */
   archivage: {
     archiver: 'Archiver',
