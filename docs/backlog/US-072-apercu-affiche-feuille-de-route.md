@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-030, US-056
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-072-apercu-documents`
 
 ## Récit
 
@@ -72,7 +72,7 @@ remplacer un fichier reste suspendu hors ligne, comme US-030. L'épreuve continu
   une fenêtre modale moyenne (validée en dialogue le 2026-11-13).
 - Les boutons « Retirer » et le lien « Ouvrir la feuille de route » aux styles par défaut sont visibles sur la capture
   de recette mais n'étaient pas cités par l'utilisateur ; ils sont corrigés ici (CA-3). À valider.
-- Rendu du PDF : lecteur intégré du navigateur dans la fenêtre (`<iframe>`/`<object>`), vignette de la première page produite
+- Rendu du PDF : vignette dessinée par pdf.js (ADR-0026, chargé à la demande, hors précache) ; fenêtre : lecteur intégré du navigateur. Hors ligne, un PDF jamais ouvert n'a pas de vignette (icône + nom).
   côté navigateur ; aucune bibliothèque payante. Si une bibliothèque de rendu PDF est nécessaire, elle passe par l'ADR
   de l'US (règle 1 : libre et gratuite) et n'est chargée qu'à la demande.
 - La fenêtre modale suit les confirmations existantes (`ConfirmationArchivage`) pour le piège du focus.
@@ -93,3 +93,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (documents) ; format d'aperçu validé en dialogue |
+| 2026-11-15 | Implémentée (branche `us/US-072-apercu-documents`), ADR-0026 (pdf.js) proposée ; passe En revue |

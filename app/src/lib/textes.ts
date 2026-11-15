@@ -1386,6 +1386,19 @@ export const textes = {
     remplacer: 'Remplacer',
     retirer: 'Retirer',
     ouvrir: 'Ouvrir la feuille de route',
+    /** US-072 : aperçu des documents et fenêtre d'aperçu. */
+    apercu: {
+      agrandir: (document: string) => `Agrandir l’aperçu : ${document}`,
+      premierePage: (document: string) => `Première page : ${document}`,
+      pages: (n: number) => (n > 1 ? `${n} pages` : '1 page'),
+      chargement: 'Aperçu…',
+      nouvelOnglet: 'Ouvrir dans un nouvel onglet',
+      fermer: 'Fermer',
+      fenetre: (document: string) => `Aperçu : ${document}`,
+      horsLigne: 'Aperçu disponible en ligne',
+      indisponible: 'Aperçu indisponible',
+      introuvable: 'Fichier introuvable',
+    },
     /** CA-4 : le fichier vient d'un niveau au-dessus. */
     heritee: {
       competition: 'reprise de la compétition',

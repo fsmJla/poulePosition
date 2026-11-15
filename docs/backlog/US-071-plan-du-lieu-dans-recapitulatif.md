@@ -88,4 +88,4 @@ Aucune.
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (manifestation) |
 | 2026-11-15 | Implémentée : `PlanLieu`, `lib/plan-lieu.ts` (tuiles, liens), ADR-0025 complétée, garde Chromium étendue aux tuiles ; tests `plan-lieu.spec.ts`, `plan-lieu.test.ts`. En revue |
-| 2026-11-15 | Recette OK en local (capture : plan, repère, lien, attribution à 1 000 px ; tuiles simulées), CI à vérifier sur la PR. Terminée après CI verte |
+| 2026-11-15 | Recette OK en local (capture : plan, repère, lien, attribution à 1 000 px ; tuiles simulées), CI verte sur la PR #110. Terminée |

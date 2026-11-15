@@ -187,7 +187,9 @@
     "creer",
     "adresse-lieu"
   ],
-  "app/src/composants/FichiersJoints.svelte": ["fichiers", "publication"],
+  "app/src/composants/FichiersJoints.svelte": ["fichiers", "apercu-documents", "publication"],
+  "app/src/composants/ApercuDocument.svelte": ["fichiers", "apercu-documents"],
+  "app/src/lib/apercu-pdf.ts": ["apercu-documents"],
   "app/src/composants/ConfirmationSuppression.svelte": [
     "suppression",
     "suppression-unique",

@@ -31,7 +31,12 @@ export default defineConfig({
         ],
       },
       // Polices (woff2), icônes et manifeste sont précachés : même style hors ligne (US-011).
-      workbox: { globPatterns: ['**/*.{js,css,html,svg,woff2,png,ico}'], navigateFallback: 'index.html' },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,svg,woff2,png,ico}'],
+        // US-072 : pdf.js (aperçu des feuilles de route, chargé à la demande) n'est pas précaché : il alourdirait l'installation.
+        globIgnores: ['**/assets/pdf-*.js'],
+        navigateFallback: 'index.html',
+      },
     }),
   ],
 });
