@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-023, US-047
 - **Branche / PR :** `us/US-070-rechercher-adresse-du-lieu`
 
@@ -106,3 +106,4 @@ Aucune.
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » ; fournisseur validé en dialogue |
 | 2026-11-15 | ADR-0025 rédigée (successeur de l'API Adresse). Implémentée : `ChampLieu`, `lib/adresse.ts`, champ `coordonnees` (domaine, protocole), tests unitaires et `adresse-lieu.spec.ts`. En revue |
+| 2026-11-15 | Recette OK en local (capture : suggestions sous le champ, 1 000 px), CI verte sur la PR #109. ADR-0025 reste à valider. Terminée |
