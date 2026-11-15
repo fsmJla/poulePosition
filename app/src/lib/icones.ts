@@ -45,6 +45,7 @@ export const ICONES = {
   coche: '<path d="m5 12.5 4.5 4.5L19 7.5" />',
   archive:
     '<rect x="3" y="4" width="18" height="4.5" rx="1" /><path d="M5 8.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5M10 12.5h4" />',
+  telecharger: '<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14" />',
   lien: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />',
 } as const;
 

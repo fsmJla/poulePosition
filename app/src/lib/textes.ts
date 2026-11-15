@@ -1203,6 +1203,22 @@ export const textes = {
     menuEpreuve: 'Autres actions',
     dupliquer: 'Dupliquer',
     dupliquerDetail: 'Une nouvelle épreuve préremplie, dans la même compétition',
+    /** US-034 : export de l'épreuve dans un fichier `.poule.json`. */
+    exporter: 'Exporter',
+    exporterDetail: 'Un fichier de sauvegarde, avec le journal et les fichiers joints',
+    exportation: {
+      enCours: 'Préparation du fichier…',
+      choisi: (nom: string) => `Épreuve exportée dans le fichier ${nom}.`,
+      telecharge: (nom: string) => `Épreuve exportée : le fichier ${nom} a été téléchargé.`,
+      annule: 'Export annulé : aucun fichier n’a été enregistré.',
+      echec: 'Le fichier n’a pas pu être enregistré. Réessayez.',
+      journalAbsent: 'Cette épreuve n’est pas encore sur cet appareil : ouvrez-la en ligne avant de l’exporter.',
+      fichiersManquants: (n: number) =>
+        n === 1
+          ? 'Un fichier joint n’est pas disponible sur cet appareil : il n’est pas dans la sauvegarde.'
+          : `${n} fichiers joints ne sont pas disponibles sur cet appareil : ils ne sont pas dans la sauvegarde.`,
+      donneesPersonnelles: 'Ce fichier contient les noms des tireurs : gardez-le pour vous (ADR-0014).',
+    },
   },
   /** US-056 : page d'une manifestation (onglets Compétitions, Plan, Affiche et feuille de route). */
   pageManifestation: {

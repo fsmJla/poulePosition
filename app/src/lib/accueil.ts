@@ -205,7 +205,7 @@ export function creerAccueil({
         manifestations: (lesManifestations.ok
           ? lesManifestations.manifestations
           : (lesManifestations.copie?.manifestations ?? [])
-        ).map(({ id, nom }) => ({ id, nom })),
+        ).map(({ id, nom, debut, fin, lieu }) => ({ id, nom, debut, fin, lieu })),
         competitions: (lesCompetitions.ok
           ? lesCompetitions.competitions
           : (lesCompetitions.copie?.competitions ?? [])

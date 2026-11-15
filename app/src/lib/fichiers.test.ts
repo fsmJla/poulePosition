@@ -401,3 +401,28 @@ describe('fichiersPropres (US-073 CA-4)', () => {
     expect(fichiersPropres([deManifestation], 'competition', 'c1')).toEqual({ affiche: null, feuilleDeRoute: null });
   });
 });
+
+describe('decrire et contenu (US-034 CA-2)', () => {
+  it('décrit les fichiers en ligne, et d’après la dernière copie hors ligne', async () => {
+    const f = fichier();
+    const enLigne = client({ 'GET /fichiers': { statut: 200, corps: { ok: true, fichiers: [f] } } });
+    expect(await enLigne.client.decrire()).toEqual([f]);
+    const coupe = client({ 'GET /fichiers': 'reseau' });
+    expect(await coupe.client.decrire()).toEqual([]);
+  });
+
+  it('donne le contenu gardé, sinon le télécharge et le garde, sinon null', async () => {
+    const f = fichier();
+    const un = client({ [`GET /fichiers/${f.nom}`]: { statut: 200, corps: webp() } });
+    expect(await un.client.contenu(f.nom)).not.toBeNull();
+    expect(await un.client.contenu(f.nom)).not.toBeNull();
+    expect(un.requetes.filter(({ route }) => route.startsWith('GET /fichiers/'))).toHaveLength(1);
+
+    const horsLigne = client({}, { enLigne: () => false });
+    expect(await horsLigne.client.contenu(f.nom)).toBeNull();
+    const coupe = client({ [`GET /fichiers/${f.nom}`]: 'reseau' });
+    expect(await coupe.client.contenu(f.nom)).toBeNull();
+    const absent = client({ [`GET /fichiers/${f.nom}`]: { statut: 404, corps: 'Introuvable' } });
+    expect(await absent.client.contenu(f.nom)).toBeNull();
+  });
+});

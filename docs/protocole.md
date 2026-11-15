@@ -962,3 +962,45 @@ deviner l'existence d'une épreuve non publiée. L'application affiche alors « 
 - **Visiteur** : pas de mode hors ligne ; sans réseau la page le dit (« Impossible de joindre le serveur… ») et recharge au
   retour du réseau.
 - **Vocabulaire** : « Publiée / Non publiée » pour la visibilité ; « en ligne / hors ligne » est réservé à l'état du réseau.
+
+## 17. Sauvegarde d'une épreuve : fichier `.poule.json` (US-034, US-035, ADR-0003)
+
+Un fichier JSON, sans appel au serveur : l'export est construit sur l'appareil, depuis le journal local (§10) et les copies
+gardées dans IndexedDB. Le format est défini et validé dans `paquets/protocole/src/sauvegarde.ts` (`analyserSauvegarde`) ;
+l'import (US-035) s'appuie sur la même validation.
+
+```json
+{
+  "format": "poule-position-epreuve",
+  "version": 1,
+  "exporteLe": 1800000100000,
+  "epreuveId": "…",
+  "clubId": "…",
+  "journal": [ { "seq": 1, "type": "EpreuveCreee", … }, … ],
+  "competition": { "id": "…", "nom": "…", "arme": "sabre" },
+  "manifestation": { "id": "…", "nom": "…", "debut": "2027-03-13", "fin": "2027-03-14", "lieu": "…" },
+  "fichiers": [
+    { "proprietaire": "manifestation", "proprietaireId": "…", "sorte": "affiche", "nom": "<sha256>.webp", "type": "webp", "taille": 1234, "contenu": "<base64>" }
+  ]
+}
+```
+
+- **Nom du fichier** : `<nom-de-l-epreuve>-<AAAA-MM-JJ-HHhMM>.poule.json` (`nomFichierSauvegarde`) ; le nom est réduit à des
+  lettres sans accent, des chiffres et des tirets, et l'heure est celle de l'appareil.
+- **`journal`** : le journal complet de l'épreuve tel que l'appareil le détient (celui qui fait foi sur le PC pilote, une copie
+  sinon), dans l'ordre des `seq`, sans trou. Chaque événement est celui du §10, de la version courante.
+- **`competition` et `manifestation`** : la description du rattachement (nom, arme ; nom, dates, lieu), `null` si l'épreuve
+  n'a plus de compétition ou si l'appareil ne la connaît pas (jamais ouverte en ligne). Ils ne servent qu'à lire le fichier :
+  l'import ne recrée ni l'une ni l'autre.
+- **`fichiers`** : l'affiche et la feuille de route de l'épreuve **et** celles dont elle hérite (de sa compétition, de sa
+  manifestation), avec leur contenu en base64. Un fichier dont le contenu n'est ni gardé sur l'appareil ni téléchargeable (hors
+  ligne) manque : l'export le signale.
+- **Refus à l'import** (`ErreurSauvegarde`) : `ILLISIBLE` (pas du JSON de ce format), `AUTRE_FORMAT`, `VERSION_FUTURE`,
+  `JOURNAL_INVALIDE` (événement illisible, trou dans les `seq`, autre épreuve ou autre club).
+
+### Côté application
+
+- **Exporter** : entrée du menu « ⋯ » de l'épreuve, proposée à tout compte, sur tout PC, en ligne ou non.
+- **Enregistrement** : sous Chrome et Edge, l'application propose de choisir l'emplacement (API File System Access) ; ailleurs,
+  ou si l'API est refusée, le fichier est téléchargé. Fermer le sélecteur n'enregistre rien et n'est pas une erreur.
+- **Rappel** : après l'export, un message rappelle que le fichier contient des noms de tireurs (ADR-0014).

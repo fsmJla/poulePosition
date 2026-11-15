@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F16 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-044, US-021
-- **Branche / PR :** —
+- **Branche / PR :** us/US-034-exporter-epreuve-json / —
 
 ## Récit
 
@@ -51,6 +51,8 @@ Fonctionne entièrement hors ligne, depuis le journal local et les fichiers gard
 
 - Le même format sert à la sauvegarde automatique à la clôture d'un tour (ADR-0003), qui relève de E8.
 - Pas d'export CSV, ni des formats FFE, Belle Poule ou Engarde pour l'instant (décision du 2026-10-28).
+- **Écran sans planche (2026-11-15) :** « Exporter » est une entrée du menu « ⋯ » de l'épreuve (principe 5 de la maquette), avec la nouvelle icône « Télécharger » ajoutée au vocabulaire ; le résultat s'affiche dans un message sous l'entête. Aucun nouvel écran.
+- Le fichier décrit la compétition et la manifestation sans les recréer à l'import ; une épreuve dont l'appareil ne connaît pas la compétition les exporte à `null`.
 
 ## Questions bloquantes
 
@@ -66,3 +68,6 @@ Fonctionne entièrement hors ligne, depuis le journal local et les fichiers gard
 |---|---|
 | 2026-10-28 | Créée |
 | 2026-11-08 | Amendée : vocabulaire inversé (la compétition regroupe, l'épreuve se tire ; US-044), au niveau de l'épreuve comme avant (décision du 2026-11-08) ; dépend de US-044 |
+| 2026-11-15 | Plan validé par l'utilisateur (entrée d'import dans le menu « ⋯ » de la liste, deux PR) ; passée à En cours |
+| 2026-11-15 | Implémentée : format `.poule.json` dans `paquets/protocole` (§17 du protocole), `preparerExport` et `enregistrerFichier`, entrée « Exporter » du menu « ⋯ » de l'épreuve, icône « Télécharger » ; passée à En revue |
+| 2026-11-15 | CI verte (lint, typage, tests, build, audit, E2E interface) ; recette automatisée, non rejouée à la main sur la preview (quota Cloudflare) ; passée à Terminée |

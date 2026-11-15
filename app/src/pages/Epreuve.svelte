@@ -18,6 +18,7 @@
   import ConfirmationArchivage from '../composants/ConfirmationArchivage.svelte';
   import { prendreEcriture, type Journal } from '../lib/journal';
   import { contenuExport, libellePilote } from '../lib/pilotage';
+  import { enregistrerFichier, preparerExport } from '../lib/sauvegarde';
   import type { Ecart, SessionAppareil } from '../lib/stockage';
   import {
     cheminDirect,
@@ -282,6 +283,46 @@
     }
   }
 
+  /** US-034 : exporte l'épreuve dans un fichier, depuis le journal de cet appareil (sans réseau). */
+  const tx = tpe.exportation;
+  let exportEnCours = $state(false);
+  let retourExport: { ok: boolean; messages: string[] } | null = $state(null);
+
+  async function exporterEpreuve() {
+    if (!epreuve || exportEnCours) return;
+    exportEnCours = true;
+    retourExport = { ok: true, messages: [tx.enCours] };
+    try {
+      const preparation = await preparerExport({
+        epreuveId,
+        nom: epreuve.nom,
+        rattachement: epreuve.rattachement,
+        journal,
+        hierarchie: await accueil.hierarchie(),
+        fichiers,
+      });
+      if (!preparation.ok) {
+        retourExport = { ok: false, messages: [tx.journalAbsent] };
+        return;
+      }
+      const enregistre = await enregistrerFichier(preparation.nomFichier, preparation.contenu);
+      if (!enregistre.ok) {
+        retourExport = { ok: false, messages: [enregistre.erreur === 'ANNULE' ? tx.annule : tx.echec] };
+        return;
+      }
+      retourExport = {
+        ok: true,
+        messages: [
+          (enregistre.mode === 'choisi' ? tx.choisi : tx.telecharge)(preparation.nomFichier),
+          ...(preparation.fichiersManquants > 0 ? [tx.fichiersManquants(preparation.fichiersManquants)] : []),
+          tx.donneesPersonnelles,
+        ],
+      };
+    } finally {
+      exportEnCours = false;
+    }
+  }
+
   /** US-064 : la règle du domaine choisit l'étape ; le bandeau ne s'affiche que s'il y en a une. */
   const etapeSuivante = $derived(etapeDe());
 
@@ -336,7 +377,7 @@
             <Icone nom="crayon" />{t.modifier}
           </a>
         {/if}
-        <!-- US-058 CA-6 : actions secondaires de l'épreuve ; Archiver (US-033) et Exporter (US-034) s'y ajouteront. -->
+        <!-- US-058 CA-6 : actions secondaires de l'épreuve ; Exporter (US-034) et Archiver (US-033) en font partie. -->
         <MenuActions
           id="menu-epreuve"
           nom={epreuve.nom}
@@ -352,6 +393,13 @@
                   },
                 ]
               : []),
+            // US-034 : exporter, sur n'importe quel PC (journal local, même hors ligne) ; jamais indisponible.
+            {
+              libelle: tpe.exporter,
+              icone: 'telecharger' as const,
+              detail: tpe.exporterDetail,
+              surChoix: () => void exporterEpreuve(),
+            },
             // US-033 : archiver (ou désarchiver) ; seul le PC pilote écrit dans le journal, et pas pendant l'épreuve.
             {
               libelle: archivee ? ta.desarchiver : ta.archiver,
@@ -382,6 +430,13 @@
         />
       {/if}
     {/snippet}
+    {#if retourExport}
+      <div class={retourExport.ok ? 'envoi' : 'message'} role="status" data-retour="export">
+        {#each retourExport.messages as ligne (ligne)}
+          <p>{ligne}</p>
+        {/each}
+      </div>
+    {/if}
     {#if etapeSuivante}
       <BandeauProchaineEtape
         etape={etapeSuivante}

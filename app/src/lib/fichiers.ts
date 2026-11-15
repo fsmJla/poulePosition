@@ -252,6 +252,34 @@ export function creerClientFichiers({
       }
     },
 
+    /**
+     * US-034 : description de tous les fichiers du club pour un export : à jour si le serveur répond, sinon la dernière
+     * copie de l'appareil (vide si l'appareil n'en a jamais eu).
+     */
+    async decrire(): Promise<readonly FichierJoint[]> {
+      const reponse = await this.lister();
+      return reponse.ok ? reponse.fichiers : (reponse.copie?.fichiers ?? []);
+    },
+
+    /**
+     * US-034 : contenu d'un fichier pour un export : celui gardé sur l'appareil ou, à défaut et en ligne, téléchargé (et
+     * gardé). Null s'il n'est disponible nulle part.
+     */
+    async contenu(nom: string): Promise<Blob | null> {
+      const garde = (await base.contenusFichiers.get(nom))?.contenu;
+      if (garde) return garde;
+      if (!urlServeur || !enLigne()) return null;
+      try {
+        const reponse = await envoyer(`${urlServeur}/fichiers/${nom}`, { signal: AbortSignal.timeout(delai) });
+        if (!reponse.ok) return null;
+        const contenu = await reponse.blob();
+        await base.contenusFichiers.put({ nom, contenu });
+        return contenu;
+      } catch {
+        return null;
+      }
+    },
+
     /** Contenu gardé sur l'appareil, ou null. */
     async contenuLocal(nom: string): Promise<Blob | null> {
       return (await base.contenusFichiers.get(nom))?.contenu ?? null;

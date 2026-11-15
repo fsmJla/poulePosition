@@ -76,7 +76,8 @@
     "suppression-unique",
     "suppression-contenu",
     "smartphone-organisateur",
-    "epreuves"
+    "epreuves",
+    "exporter-epreuve"
   ],
   "app/src/pages/Formule.svelte": ["formule", "epreuve-etapes"],
   "app/src/pages/Parametres.svelte": ["parametres", "epreuve-etapes"],
@@ -217,7 +218,13 @@
   "app/src/composants/FenetreApercu.svelte": ["apercu-documents", "reperes-documents"],
   "tests/e2e/fichiers-types.ts": ["apercu-documents", "reperes-documents"],
   "app/src/composants/IconesEtat.svelte": ["accueil", "accueil-refonte", "filtres-liste", "smartphone-organisateur"],
-  "app/src/composants/MenuActions.svelte": ["accueil-refonte", "suppression-unique", "archivage", "manifestation"],
+  "app/src/composants/MenuActions.svelte": [
+    "accueil-refonte",
+    "suppression-unique",
+    "archivage",
+    "manifestation",
+    "exporter-epreuve"
+  ],
   "app/src/composants/Onglets.svelte": ["manifestation", "plan"],
   "app/src/lib/theme.ts": ["theme", "theme-icones"],
   "app/src/lib/textes.ts": [],
@@ -228,7 +235,7 @@
   "app/src/lib/plan.ts": ["plan", "manifestation"],
   "app/src/lib/lot.ts": ["grille", "assistant"],
   "app/src/lib/publication.ts": ["publication"],
-  "app/src/lib/fichiers.ts": ["fichiers", "reperes-documents"],
+  "app/src/lib/fichiers.ts": ["fichiers", "reperes-documents", "exporter-epreuve"],
   "app/vite.config.ts": ["lancement"],
   "package.json": ["*"],
   "package-lock.json": ["*"],
@@ -257,5 +264,6 @@
   "app/src/composants/ChampLieu.svelte": ["adresse-lieu", "assistant", "manifestations", "manifestation"],
   "app/src/lib/adresse.ts": ["adresse-lieu"],
   "app/src/composants/PlanLieu.svelte": ["plan-lieu", "assistant", "manifestation"],
-  "app/src/lib/plan-lieu.ts": ["plan-lieu"]
+  "app/src/lib/plan-lieu.ts": ["plan-lieu"],
+  "app/src/lib/sauvegarde.ts": ["exporter-epreuve"]
 }
