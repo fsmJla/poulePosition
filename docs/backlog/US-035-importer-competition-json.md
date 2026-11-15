@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F16 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-044, US-034, US-029
 - **Branche / PR :** us/US-035-importer-epreuve-json / —
 
@@ -90,3 +90,4 @@ L'import fonctionne hors ligne : c'est le cas d'usage principal (PC pilote en pa
 | 2026-11-08 | Amendée : vocabulaire inversé (la compétition regroupe, l'épreuve se tire ; US-044), au niveau de l'épreuve comme avant (décision du 2026-11-08) ; dépend de US-044 |
 | 2026-11-15 | Plan validé par l'utilisateur ; passée à En cours |
 | 2026-11-15 | Implémentée : `planifierImport`, `reconcilier` et `renumeroterEpreuve` (domaine), `journal.importer` et `journal.reprendre`, `reprendreApresImport` (synchronisation), menu « ⋯ » de la liste, fenêtre de résumé, carte de reprise ; passée à En revue |
+| 2026-11-15 | CI verte (lint, typage, tests, build, audit, E2E interface) ; recette automatisée, non rejouée à la main sur la preview (quota Cloudflare) ; passée à Terminée |
