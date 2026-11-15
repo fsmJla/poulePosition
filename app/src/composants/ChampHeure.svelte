@@ -66,16 +66,13 @@
   select {
     min-width: 0;
     min-height: 44px;
-    padding: 0.6rem 0.75rem;
+    flex: 1 1 0;
+    padding: 0.6rem 0.4rem;
     border: 1px solid var(--bordure-champ);
     border-radius: var(--rayon);
     background: var(--fond);
     color: var(--texte);
     font: inherit;
-  }
-
-  select:first-child {
-    flex: 1 1 auto;
   }
 
   select[aria-invalid='true'] {

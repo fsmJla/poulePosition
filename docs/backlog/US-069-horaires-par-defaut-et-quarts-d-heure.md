@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-025, US-027, US-048
 - **Branche / PR :** `us/US-069-horaires-quarts-d-heure`
 
@@ -90,3 +90,4 @@ Aucune.
 |---|---|
 | 2026-11-13 | Créée depuis le retour de recette « Brain Dump » (manifestation) ; minutes validées en dialogue |
 | 2026-11-15 | Implémentée : composant `ChampHeure` (deux listes), `lib/heure.ts`, formulaire d'épreuve et grille ; tests `heure-quarts.spec.ts`, `heure.test.ts`, anciens tests adaptés (`heure.ts`). En revue |
+| 2026-11-15 | Recette OK en local (captures 900 et 390 px, listes lisibles), CI verte sur la PR #108. Terminée |
