@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { CompetitionListee, EpreuveListee, ManifestationListee } from './liste';
-import { construireListePlan, jourOppose, originesDe, peutChangerDeJour, PALETTE_PLAN } from './plan';
+import {
+  construireListePlan,
+  jourOppose,
+  originesDe,
+  peutChangerDeJour,
+  peutDeposer,
+  PALETTE_PLAN,
+  type TuileGlissee,
+} from './plan';
 
 const manifestation: ManifestationListee = {
   id: 'm1',
@@ -137,6 +145,33 @@ describe('plan de la manifestation (US-049)', () => {
     expect(peutChangerDeJour({ statut: 'enCours', pilote: true })).toBe(false);
     expect(peutChangerDeJour({ statut: 'terminee', pilote: true })).toBe(false);
     expect(peutChangerDeJour({ statut: 'preparation', pilote: false })).toBe(false);
+  });
+});
+
+describe('glisser une épreuve d’un jour à l’autre (US-078)', () => {
+  const tuile = (champs: Partial<TuileGlissee> = {}): TuileGlissee => ({
+    statut: 'preparation',
+    pilote: true,
+    date: '2027-03-13',
+    rattachement: { competitionId: 'c1' },
+    ...champs,
+  });
+
+  it('US-078 CA-5 : le dépôt est permis dans un autre jour de la même compétition, pas dans son jour actuel', () => {
+    expect(peutDeposer(tuile(), 'c1', '2027-03-14')).toBe(true);
+    expect(peutDeposer(tuile(), 'c1', '2027-03-13')).toBe(false);
+    expect(peutDeposer(tuile({ date: null }), 'c1', '2027-03-13')).toBe(true);
+  });
+
+  it('US-078 CA-5 : ni dans une autre compétition, ni dans « Jour à fixer »', () => {
+    expect(peutDeposer(tuile(), 'c2', '2027-03-14')).toBe(false);
+    expect(peutDeposer(tuile(), 'c1', null)).toBe(false);
+  });
+
+  it('US-078 CA-7 : une épreuve en cours, terminée ou d’un autre PC ne se glisse pas', () => {
+    expect(peutDeposer(tuile({ statut: 'enCours' }), 'c1', '2027-03-14')).toBe(false);
+    expect(peutDeposer(tuile({ statut: 'terminee' }), 'c1', '2027-03-14')).toBe(false);
+    expect(peutDeposer(tuile({ pilote: false }), 'c1', '2027-03-14')).toBe(false);
   });
 });
 

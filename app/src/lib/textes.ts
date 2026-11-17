@@ -688,8 +688,14 @@ export const textes = {
       seraCreees: (nombre: number) =>
         nombre > 1 ? `${nombre} épreuves seront créées` : `${nombre} épreuve sera créée`,
       aucuneCochee: 'Aucune case cochée : cochez les catégories et les sexes des épreuves à créer.',
-      nomEpreuve: (cle: string) => `Nom de l’épreuve ${cle}`,
-      jourEpreuve: (cle: string) => `Jour de l’épreuve ${cle}`,
+      /** US-078 CA-1 : en-tête des colonnes de jours, et nom de chaque bouton radio de jour d'une ligne. */
+      jours: 'Jours',
+      /** En-tête d'une colonne de jour : « sam. 21 ». */
+      enteteJour: (date: string) =>
+        new Date(`${date}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }),
+      jourDesEpreuves: (categorie: string, jour: string) => `Jour des épreuves ${categorie} : ${jour}`,
+      /** US-078 CA-3 : la liste des épreuves n'existe plus ; une erreur s'affiche sous le récapitulatif. */
+      erreurEpreuve: (epreuve: string, erreur: string) => `${epreuve} : ${erreur}`,
       sansJour: 'Sans jour',
       repartition: (jour: string, nombre: number) => `${jour} : ${nombre}`,
       creer: (nombre: number) => (nombre > 1 ? `Créer les ${nombre} épreuves` : 'Créer l’épreuve'),

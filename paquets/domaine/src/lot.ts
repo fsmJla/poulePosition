@@ -59,7 +59,7 @@ export function nomGenere(competition: string, categorie: string, sexe: Sexe): s
   return `${competition} ${categorie} ${SEXE_DANS_LE_NOM[sexe]}`;
 }
 
-/** Une épreuve proposée au lot : son nom et son jour sont modifiables avant la création. */
+/** Une épreuve proposée au lot : son nom généré et le jour de sa ligne. */
 export interface EpreuveProposee {
   cle: string;
   categorie: string;
@@ -68,19 +68,28 @@ export interface EpreuveProposee {
   date: string | null;
 }
 
-/** Modifications de l'organisateur sur une ligne du lot. */
-export type ModificationsLigne = Map<string, { nom?: string; date?: string | null }>;
+/** US-078 CA-1 : le jour choisi pour chaque ligne (catégorie) de la grille. */
+export type JoursParLigne = ReadonlyMap<string, string>;
 
 /**
- * CA-2 et CA-3 : les épreuves proposées pour les cases cochées, dans l'ordre. Le jour par défaut est le premier de la
- * manifestation (aucun pour une compétition seule) ; les cases occupées sont refusées et rendues à part.
+ * US-078 CA-1 et CA-2 : jour d'une ligne de la grille : celui choisi s'il fait partie des jours de la manifestation,
+ * sinon le premier ; aucun pour une compétition seule.
+ */
+export function jourDeLigne(categorie: string, jours: readonly string[], joursParLigne: JoursParLigne): string | null {
+  const choisi = joursParLigne.get(categorie);
+  return choisi !== undefined && jours.includes(choisi) ? choisi : (jours[0] ?? null);
+}
+
+/**
+ * US-048 CA-2 et CA-3, US-078 CA-1 : les épreuves proposées pour les cases cochées, dans l'ordre, avec leur nom généré
+ * et le jour de leur ligne ; les cases occupées sont refusées et rendues à part.
  */
 export function proposerLot(
   competition: string,
   cases: readonly CaseGrille[],
   occupees: ReadonlySet<string>,
   jours: readonly string[],
-  modifications: ModificationsLigne,
+  joursParLigne: JoursParLigne = new Map(),
 ): { epreuves: EpreuveProposee[]; refusees: string[] } {
   const epreuves: EpreuveProposee[] = [];
   const refusees: string[] = [];
@@ -90,13 +99,12 @@ export function proposerLot(
       refusees.push(cle);
       continue;
     }
-    const modifiee = modifications.get(cle);
     epreuves.push({
       cle,
       categorie,
       sexe,
-      nom: modifiee?.nom ?? nomGenere(competition, categorie, sexe),
-      date: modifiee?.date !== undefined ? modifiee.date : (jours[0] ?? null),
+      nom: nomGenere(competition, categorie, sexe),
+      date: jourDeLigne(categorie, jours, joursParLigne),
     });
   }
   return { epreuves, refusees };

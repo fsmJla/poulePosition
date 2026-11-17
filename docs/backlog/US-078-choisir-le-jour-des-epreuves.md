@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-048, US-049, US-050
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-078-choisir-le-jour-des-epreuves` / —
 
 ## Récit
 
@@ -43,7 +43,8 @@ Vétéran 3    [   ]    [   ]    [   ]  │     ·         ·     ← ligne sans
 - **Alors** après les colonnes Dames, Hommes et Mixte, séparées d'elles par un filet, une colonne par jour de la
   manifestation porte en tête le jour court (« sam. 21 »). Sur chaque ligne qui a au moins une case cochée, un bouton
   radio par jour choisit le jour de toutes les épreuves cochées de cette ligne ; le premier jour est choisi par défaut.
-  Une ligne sans case cochée n'a pas de bouton radio. Chaque groupe a un nom accessible (« Jour des épreuves M13 »).
+  Une ligne sans case cochée n'a pas de bouton radio. Les boutons d'une ligne forment un groupe (même nom de champ,
+  flèches du clavier) et chacun a un nom accessible (« Jour des épreuves M13 : samedi 21 novembre 2026 »).
 
 **CA-2 — Un seul jour : pas de colonne**
 - **Étant donné** une compétition seule, ou une manifestation d'un seul jour
@@ -67,8 +68,9 @@ Vétéran 3    [   ]    [   ]    [   ]  │     ·         ·     ← ligne sans
 **CA-5 — Glisser une épreuve d'un jour à l'autre sur le plan**
 - **Étant donné** le plan d'une manifestation de plusieurs jours, et une épreuve en préparation pilotée par ce PC
 - **Quand** l'organisateur glisse sa tuile dans la case d'un autre jour de la même compétition
-- **Alors** pendant le glissement, les cases où le dépôt est permis (les autres jours de la même ligne, et « Jour à
-  fixer ») sont mises en évidence, et la tuile laisse sa place en pointillés. Au dépôt, la date de l'épreuve change
+- **Alors** pendant le glissement, les cases où le dépôt est permis (les autres jours de la même ligne) sont mises en évidence, et la tuile laisse sa place en pointillés.
+  La colonne « Jour à fixer » n'accepte pas de dépôt, comme « Changer de jour » qui ne propose que les jours de la
+  manifestation. Au dépôt, la date de l'épreuve change
   (comme « Changer de jour », US-049 CA-4) et la tuile s'affiche dans sa nouvelle colonne. Un dépôt hors d'une case
   permise ne change rien.
 
@@ -101,7 +103,7 @@ colonne et l'événement en attente d'envoi.
 - Ligne avec Dames et Hommes cochées mais des jours voulus différents : on choisit un jour pour la ligne, puis on
   déplace l'une des deux épreuves sur le plan (CA-5) après la création.
 - Manifestation qui raccourcit après la création (un jour supprimé) : déjà traité par la colonne « Jour à fixer »
-  (US-049 CA-5) ; on peut y glisser une tuile et en sortir une.
+  (US-049 CA-5) ; on peut en sortir une tuile en la glissant vers un jour, pas l'y déposer.
 - Glisser dans la case d'une autre compétition : refusé (l'épreuve ne change pas de compétition), la case n'est pas
   mise en évidence.
 - Échec de l'écriture locale au dépôt : la tuile revient à sa place et un message dit « Le jour n'a pas pu être
@@ -137,3 +139,4 @@ Aucune. Le bouton radio par ligne et la suppression de la liste de droite ont é
 |---|---|
 | 2026-11-17 | Créée (retours ergonomiques de l'utilisateur) |
 | 2026-11-17 | Disposition de la grille validée ; passe à Prête |
+| 2026-11-17 | Passe à En cours |
