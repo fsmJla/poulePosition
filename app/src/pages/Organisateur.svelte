@@ -15,6 +15,7 @@
     disponibiliteSuppression,
     couleurDeCompetition,
     elementsEnCours,
+    filtreParDefaut,
     filtrerDonnees,
     FILTRES_LISTE,
     manifestationAujourdhui,
@@ -114,11 +115,15 @@
     return null;
   }
   let donnees: DonneesAccueil | null = $state(null);
-  /** US-063 CA-1 et CA-7 : filtre de la liste, « À venir et en cours » à chaque nouvelle visite. */
-  let filtre: FiltreListe = $state((filtreMemorise() as FiltreListe | null) ?? 'avenir');
+  /**
+   * US-063 CA-7, US-079 CA-2 : le filtre choisi pendant la visite ; tant qu'aucun ne l'est, « En cours » s'il contient
+   * une épreuve, sinon « À venir ».
+   */
+  let filtreChoisi = $state(filtreMemorise() as FiltreListe | null);
+  const filtre: FiltreListe = $derived.by(() => filtreChoisi ?? filtreParDefaut(comptes));
   const archivesAffichees = $derived(filtre === 'archivees' || filtre === 'toutes');
   function choisirFiltre(valeur: FiltreListe) {
-    filtre = valeur;
+    filtreChoisi = valeur;
     memoriserFiltre(valeur);
     // La sélection ne garde que ce que le filtre montre encore.
     if (modeSelection) cochees.clear();
@@ -727,7 +732,7 @@
         <p class="vide">{t.vide}</p>
       {:else}
         {#if remarqueArchivage}<p class="remarque" role="status">{remarqueArchivage}</p>{/if}
-        <!-- US-063 CA-1 : quatre filtres exclusifs, en pilules ; le nombre d'épreuves suit le libellé (CA-6). -->
+        <!-- US-063 CA-1, US-079 CA-1 : cinq filtres exclusifs, en pilules ; le nombre d'épreuves suit le libellé (CA-6). -->
         <div class="filtres" role="group" aria-label={t.filtres}>
           {#each FILTRES_LISTE as valeur (valeur)}
             <button type="button" class="pilule" aria-pressed={filtre === valeur} onclick={() => choisirFiltre(valeur)}

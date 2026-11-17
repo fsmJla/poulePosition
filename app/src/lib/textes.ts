@@ -280,17 +280,19 @@ export const textes = {
     /** Hors ligne, sans aucune copie du club gardée sur l'appareil. */
     horsLigneSansCopie: 'Hors ligne : seules les épreuves de cet appareil sont listées',
     chargement: 'Chargement de la liste…',
-    /** US-063 CA-1 : filtres de la liste. */
+    /** US-063 CA-1, US-079 CA-1 : filtres de la liste. */
     filtres: 'Filtrer la liste',
     filtre: {
-      avenir: 'À venir et en cours',
+      avenir: 'À venir',
+      enCours: 'En cours',
       terminees: 'Terminées',
       archivees: 'Archivées',
       toutes: 'Toutes',
     },
     /** CA-6 : un filtre sans épreuve ne montre pas la liste du club vide. */
     filtreVide: {
-      avenir: 'Aucune épreuve à venir ou en cours',
+      avenir: 'Aucune épreuve à venir',
+      enCours: 'Aucune épreuve en cours',
       terminees: 'Aucune épreuve terminée',
       archivees: 'Aucune épreuve archivée',
       toutes: 'Aucune épreuve',

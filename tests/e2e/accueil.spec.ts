@@ -230,7 +230,7 @@ test('US-026 CA-3 : une épreuve archivée est masquée, le filtre « Archivées
   await page.getByRole('button', { name: /^Archivées/ }).click();
   await expect(epreuveDe(page, archivee)).toBeVisible();
   await expect(epreuveDe(page, archivee)).toContainText('Archivée');
-  await page.getByRole('button', { name: /^À venir et en cours/ }).click();
+  await page.getByRole('button', { name: /^À venir/ }).click();
   await expect(epreuveDe(page, archivee)).toHaveCount(0);
 });
 

@@ -59,7 +59,7 @@ test('US-033 CA-1 et CA-3 : archiver une épreuve la met en lecture seule, la ma
   await expect(entree(page, /^Archiver/)).toHaveCount(0);
   await page.keyboard.press('Escape');
 
-  // Masquée de « À venir et en cours » ; le filtre « Archivées » (US-063) la remontre.
+  // Masquée de « À venir » ; le filtre « Archivées » (US-063) la remontre.
   await page.goto('/organisateur');
   const carte = page.getByRole('article', { name: manifestation });
   await expect(page.getByRole('heading', { name: 'Manifestations et compétitions' })).toBeVisible({ timeout: 20_000 });
@@ -121,7 +121,7 @@ test('US-033 CA-4 et CA-6 : un organisateur archive une manifestation avec ses c
   await entree(page, /^Désarchiver/).click();
   await fenetre(page).getByRole('button', { name: 'Désarchiver', exact: true }).click();
   await expect(fenetre(page)).toHaveCount(0, { timeout: 20_000 });
-  await page.getByRole('button', { name: /^À venir et en cours/ }).click();
+  await page.getByRole('button', { name: /^À venir/ }).click();
   await expect(page.getByRole('article', { name: manifestation })).toBeVisible();
   await expect(page.getByRole('article', { name: manifestation })).toContainText('1 épreuve');
   await ouvrirManifestation(page, manifestation, 'plan');

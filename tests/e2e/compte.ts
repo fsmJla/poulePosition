@@ -32,6 +32,14 @@ export const compteLocal = COMPTE_LOCAL;
 
 /** Se connecte depuis l'écran de connexion et attend l'accueil de l'organisateur. */
 export async function seConnecter(page: Page, compte: CompteTest = compteTest()) {
+  // US-079 CA-2 : le club de test est partagé ; dès qu'une épreuve y est « en cours » (`peupler`), l'accueil s'ouvrirait
+  // sur « En cours » et masquerait les données à venir créées par chaque test. On choisit donc « À venir » une fois par
+  // onglet, comme un organisateur l'aurait fait ; le test du filtre par défaut retire ce choix.
+  await page.addInitScript((cle) => {
+    if (sessionStorage.getItem('e2e.filtrePose') !== null) return;
+    sessionStorage.setItem('e2e.filtrePose', '1');
+    if (sessionStorage.getItem(cle) === null) sessionStorage.setItem(cle, 'avenir');
+  }, 'poulePosition.filtreListe');
   await page.goto('/connexion');
   await page.getByLabel('E-mail').fill(compte.email);
   await page.getByLabel('Mot de passe').fill(compte.motDePasse);

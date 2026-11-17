@@ -159,7 +159,8 @@ describe('textes des compétitions (US-024)', () => {
 
 describe('textes de l’accueil (US-026)', () => {
   it('CA-3 : le filtre des archives et le nombre d’épreuves masquées', () => {
-    expect(textes.listeClub.filtre.avenir).toBe('À venir et en cours');
+    expect(textes.listeClub.filtre.avenir).toBe('À venir');
+    expect(textes.listeClub.filtre.enCours).toBe('En cours');
     expect(textes.listeClub.filtreVide.terminees).toBe('Aucune épreuve terminée');
   });
 
