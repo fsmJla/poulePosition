@@ -237,7 +237,13 @@
             </div>
           {/if}
 
+          <!-- US-080 CA-1 : largeurs fixées par les colonnes, les trois colonnes de sexe sont égales. -->
           <table class="grille">
+            <colgroup>
+              <col class="col-categorie" />
+              {#each COLONNES_GRILLE as sexe (sexe)}<col class="col-sexe" />{/each}
+              {#each colonnesJours as jour (jour)}<col class="col-jour" />{/each}
+            </colgroup>
             <thead>
               <tr>
                 <th scope="col"><span class="invisible">{t.categorie}</span></th>
@@ -270,23 +276,23 @@
                       >
                     </td>
                   {/each}
-                  <!-- US-078 CA-1 : un bouton radio par jour, sur les lignes qui ont une case cochée ; le premier jour par défaut. -->
+                  <!-- US-078 CA-1 : un bouton radio par jour, le premier jour par défaut ; US-080 CA-2 : sur toutes les
+                       lignes, désactivé et non choisi tant que la ligne n'a pas de case cochée. -->
                   {#each colonnesJours as jour, indice (jour)}
+                    {@const active = ligneCochee(categorie)}
                     <td class="jour" class:premier-jour={indice === 0}>
-                      {#if ligneCochee(categorie)}
-                        <!-- Toute la case est la cible du clic, pas seulement le petit bouton radio. -->
-                        <label class="choix-jour">
-                          <input
-                            type="radio"
-                            name="jour-{categorie}"
-                            value={jour}
-                            aria-label={tg.jourDesEpreuves(categorie, jourCourt(jour))}
-                            checked={jourDeLigne(categorie, jours, joursParLigne) === jour}
-                            disabled={enCours}
-                            onchange={() => joursParLigne.set(categorie, jour)}
-                          />
-                        </label>
-                      {/if}
+                      <!-- Toute la case est la cible du clic, pas seulement le petit bouton radio. -->
+                      <label class="choix-jour" class:inactif={!active} title={active ? undefined : tg.jourInactif}>
+                        <input
+                          type="radio"
+                          name="jour-{categorie}"
+                          value={jour}
+                          aria-label={tg.jourDesEpreuves(categorie, jourCourt(jour))}
+                          checked={active && jourDeLigne(categorie, jours, joursParLigne) === jour}
+                          disabled={!active || enCours}
+                          onchange={() => joursParLigne.set(categorie, jour)}
+                        />
+                      </label>
                     </td>
                   {/each}
                 </tr>
@@ -543,6 +549,7 @@
 
   table.grille {
     width: 100%;
+    table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0.25rem;
   }
@@ -593,6 +600,21 @@
   .grille .premier-jour {
     border-left: 1px solid var(--bordure);
     padding-left: 0.5rem;
+  }
+
+  /* US-080 CA-1 : la catégorie a sa largeur ; les trois colonnes de sexe se partagent le reste à égalité. */
+  .col-categorie {
+    width: 6.5rem;
+  }
+
+  .col-jour {
+    width: 4.5rem;
+  }
+
+  /* US-080 CA-2 : un bouton de jour inaccessible reste visible, grisé. */
+  .choix-jour.inactif {
+    cursor: not-allowed;
+    opacity: 0.45;
   }
 
   .choix-jour {

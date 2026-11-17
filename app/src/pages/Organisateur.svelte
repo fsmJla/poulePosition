@@ -69,6 +69,8 @@
   import { fichiersPropres, type ClientFichiers } from '../lib/fichiers';
   import { textes } from '../lib/textes';
   import { actionsPublication, messagePublication, publierLot } from '../lib/publication-lot';
+  import { actionReprise, chercherPilotes, detailReprise, messageReprise, reprendreLot } from '../lib/reprise-lot';
+  import { epreuvesAReprendre, type PiloteEnPlace } from '@poule-position/domaine';
   import type { Synchronisation } from '../lib/synchronisation';
   import type { FichierJoint } from '@poule-position/protocole';
 
@@ -263,6 +265,7 @@
   const actionsCompetition = (id: string): ActionMenu[] => [
     { libelle: tc.grille.ajouter, icone: 'plus', chemin: cheminGrilleEpreuves(id) },
     ...actionsPublication(epreuvesDeCompetition(id), (publiee) => void publierCompetition(id, publiee)),
+    ...actionReprise(epreuvesDeCompetition(id), horsLigne, () => void demanderReprise(id)),
     ...actionSupprimer(id),
   ];
 
@@ -272,6 +275,41 @@
 
   /** US-079 CA-3 : le résultat du dernier lot de publication, au-dessus de la liste. */
   let remarquePublication: string | null = $state(null);
+
+  // US-080 CA-3 à CA-5 : reprendre en main toutes les épreuves d'une compétition, après une seule confirmation.
+  let repriseDemande: { titre: string; detail: string; pilotes: PiloteEnPlace[] } | null = $state(null);
+  let remarqueReprise: string | null = $state(null);
+
+  async function demanderReprise(id: string) {
+    remarqueReprise = null;
+    const recherche = await chercherPilotes(synchronisation, epreuvesAReprendre(epreuvesDeCompetition(id)));
+    if (!recherche.ok) {
+      remarqueReprise =
+        textes.epreuves.prise.erreurs[recherche.erreur] ?? textes.epreuves.prise.erreurs.ERREUR_INATTENDUE;
+      return;
+    }
+    repriseDemande = {
+      titre: textes.repriseLot.titre(donnees?.competitions.find((competition) => competition.id === id)?.nom ?? ''),
+      detail: detailReprise(recherche.pilotes),
+      pilotes: recherche.pilotes,
+    };
+  }
+
+  async function validerReprise() {
+    const demande = repriseDemande;
+    if (!demande) return { ok: true as const };
+    const rendu = await reprendreLot(synchronisation, demande.pilotes, {
+      clubId: session.compte.clubId ?? '',
+      auteur: session.compte.email,
+    });
+    await charger();
+    return { ok: true as const, remarque: messageReprise(rendu) };
+  }
+
+  function fermerReprise(_fait: boolean, remarque?: string) {
+    repriseDemande = null;
+    remarqueReprise = remarque ?? null;
+  }
 
   async function publierCompetition(id: string, publiee: boolean) {
     remarquePublication = null;
@@ -636,6 +674,16 @@
   <ConfirmationImport {examen} valider={validerImport} fermer={() => (examen = null)} />
 {/if}
 
+{#if repriseDemande}
+  <ConfirmationArchivage
+    titre={repriseDemande.titre}
+    detail={repriseDemande.detail}
+    action={textes.repriseLot.valider}
+    valider={validerReprise}
+    fermer={fermerReprise}
+  />
+{/if}
+
 {#if archivageDemande}
   <ConfirmationArchivage
     titre={archivageDemande.archiver
@@ -759,6 +807,7 @@
       {:else}
         {#if remarqueArchivage}<p class="remarque" role="status">{remarqueArchivage}</p>{/if}
         {#if remarquePublication}<p class="remarque" role="status">{remarquePublication}</p>{/if}
+        {#if remarqueReprise}<p class="remarque" role="status">{remarqueReprise}</p>{/if}
         <!-- US-063 CA-1, US-079 CA-1 : cinq filtres exclusifs, en pilules ; le nombre d'épreuves suit le libellé (CA-6). -->
         <div class="filtres" role="group" aria-label={t.filtres}>
           {#each FILTRES_LISTE as valeur (valeur)}

@@ -41,7 +41,9 @@ test('US-078 CA-1, CA-3 et CA-4 : un jour par ligne dans la grille, un récapitu
   // CA-1 : une colonne par jour après Dames, Hommes, Mixte ; pas de bouton de jour tant qu'une ligne n'est pas cochée.
   await expect(page.getByRole('columnheader', { name: 'dim. 14' })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'lun. 15' })).toBeVisible();
-  await expect(page.getByRole('radio')).toHaveCount(0);
+  // US-080 CA-2 : les boutons de jour sont affichés, désactivés et non choisis, tant que la ligne n'est pas cochée.
+  await expect(leJour(page, 'M13', DIMANCHE)).toBeDisabled();
+  await expect(leJour(page, 'M13', DIMANCHE)).not.toBeChecked();
 
   // CA-4 : une catégorie libre a, elle aussi, ses boutons de jour.
   await page.getByLabel('Catégorie libre').fill('Open');
@@ -55,7 +57,9 @@ test('US-078 CA-1, CA-3 et CA-4 : un jour par ligne dans la grille, un récapitu
   // CA-1 : une ligne cochée a un bouton par jour, le premier choisi par défaut ; une ligne non cochée n'en a pas.
   await expect(leJour(page, 'M13', DIMANCHE)).toBeChecked();
   await expect(leJour(page, 'M13', LUNDI)).not.toBeChecked();
-  await expect(leJour(page, 'M17', DIMANCHE)).toHaveCount(0);
+  await expect(leJour(page, 'M13', DIMANCHE)).toBeEnabled();
+  await expect(leJour(page, 'M17', DIMANCHE)).toBeDisabled();
+  await expect(leJour(page, 'M17', DIMANCHE)).not.toBeChecked();
   await expect(leJour(page, 'Open', LUNDI)).toBeVisible();
 
   // CA-3 : plus de nom ni de jour par épreuve ; un récapitulatif avec la répartition par jour.
@@ -198,4 +202,24 @@ test('US-078 hors ligne : glisser une épreuve écrit son nouveau jour dans le j
     });
     await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 3_000 });
   }).toPass({ timeout: 30_000 });
+});
+
+test('US-080 CA-1 : les colonnes Dames, Hommes et Mixte ont la même largeur, cases cochées ou non', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const manifestation = nomUnique();
+  const competition = nomUnique();
+  await seConnecter(page);
+  await ouvrirLaGrille(page, manifestation, competition);
+  await laCase(page, 'M13', 'Dames').click();
+  const largeurs = async () =>
+    Promise.all(
+      ['Dames', 'Hommes', 'Mixte'].map(
+        async (sexe) => (await page.getByRole('columnheader', { name: sexe, exact: true }).boundingBox())!.width,
+      ),
+    );
+  const [dames, hommes, mixte] = await largeurs();
+  expect(Math.abs(dames! - hommes!)).toBeLessThan(1);
+  expect(Math.abs(hommes! - mixte!)).toBeLessThan(1);
 });

@@ -22,7 +22,8 @@
     "plan",
     "assistant",
     "importer-epreuve",
-    "publication-competition"
+    "publication-competition",
+    "reprise-competition"
   ],
   "app/src/pages/Accueil.svelte": ["page", "marque", "publication", "charte", "accueil-public"],
   "app/src/pages/Direct.svelte": ["publication", "page"],
@@ -63,7 +64,8 @@
     "fichiers",
     "adresse-lieu",
     "plan-lieu",
-    "publication-competition"
+    "publication-competition",
+    "reprise-competition"
   ],
   "app/src/pages/PlanManifestation.svelte": [
     "manifestation",
@@ -285,5 +287,6 @@
   "app/src/composants/ConfirmationImport.svelte": ["importer-epreuve"],
   "app/src/lib/synchronisation.ts": ["importer-epreuve", "prise-de-main"],
   "app/src/lib/journal.ts": ["importer-epreuve", "prise-de-main"],
-  "app/src/lib/publication-lot.ts": ["publication-competition", "accueil-public"]
+  "app/src/lib/publication-lot.ts": ["publication-competition", "accueil-public"],
+  "app/src/lib/reprise-lot.ts": ["reprise-competition"]
 }

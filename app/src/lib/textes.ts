@@ -696,6 +696,8 @@ export const textes = {
       enteteJour: (date: string) =>
         new Date(`${date}T12:00:00`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }),
       jourDesEpreuves: (categorie: string, jour: string) => `Jour des épreuves ${categorie} : ${jour}`,
+      /** US-080 CA-2 : infobulle d'un bouton de jour inaccessible. */
+      jourInactif: 'Cochez une case de la ligne pour choisir son jour',
       /** US-078 CA-3 : la liste des épreuves n'existe plus ; une erreur s'affiche sous le récapitulatif. */
       erreurEpreuve: (epreuve: string, erreur: string) => `${epreuve} : ${erreur}`,
       sansJour: 'Sans jour',
@@ -1478,6 +1480,28 @@ export const textes = {
       `${nombre} épreuve${nombre > 1 ? 's archivées restent' : ' archivée reste'} telle${nombre > 1 ? 's' : ''} quelle${nombre > 1 ? 's' : ''}`,
     echecs: (nombre: number) =>
       `${nombre} épreuve${nombre > 1 ? 's n’ont' : ' n’a'} pas pu être enregistrée${nombre > 1 ? 's' : ''} sur cet appareil`,
+  },
+  /** US-080 CA-3 à CA-5 : reprendre en main toutes les épreuves d'une compétition. */
+  repriseLot: {
+    action: 'Tout reprendre en main',
+    detail: 'ce PC devient le pilote de toutes ses épreuves',
+    horsLigne: 'Nécessite une connexion internet',
+    titre: (competition: string) => `Tout reprendre en main « ${competition} » ?`,
+    resume: (nombre: number) =>
+      nombre > 1
+        ? `${nombre} épreuves pilotées par un autre PC passent sur ce PC.`
+        : '1 épreuve pilotée par un autre PC passe sur ce PC.',
+    connecte: (libelle: string, nombre: number) =>
+      `Le PC de ${libelle} est connecté et pilote ${nombre > 1 ? `${nombre} de ces épreuves` : 'l’une d’elles'}.`,
+    valider: 'Tout reprendre en main',
+    faites: (nombre: number) =>
+      nombre > 1 ? `${nombre} épreuves reprises en main` : `${nombre} épreuve reprise en main`,
+    dejaPrises: (nombre: number) =>
+      nombre > 1
+        ? `${nombre} épreuves ont été reprises entre-temps par un autre PC`
+        : '1 épreuve a été reprise entre-temps par un autre PC',
+    echecs: (nombre: number) =>
+      nombre > 1 ? `${nombre} épreuves n’ont pas pu être reprises` : '1 épreuve n’a pas pu être reprise',
   },
   /** US-031 : page d'accueil publique et page « direct » d'une épreuve (E9 y ajoutera le suivi en direct). */
   accueilPublic: {

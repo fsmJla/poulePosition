@@ -1,0 +1,8 @@
+[
+  {
+    "id": "GHSA-fc5q-39xc-vjpf",
+    "paquet": "picomatch",
+    "motif": "ReDoS dans des outils de développement seulement (Vite, Vitest, svelte-check, workbox-build) ; absent des dépendances livrées ; aucune version corrigée publiée le 2026-11-17 (ADR-0027).",
+    "jusquAu": "2026-12-01"
+  }
+]
