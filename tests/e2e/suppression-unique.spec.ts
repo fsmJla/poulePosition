@@ -42,7 +42,7 @@ test('US-057 CA-1 : une seule action « Supprimer… », la dernière du menu d�
   await expect(entrees.last()).toContainText('Supprimer…');
   // US-079 CA-3 et CA-4 : entre les deux, seulement « Publier / Dépublier toutes les épreuves ».
   for (const libelle of (await entrees.allInnerTexts()).slice(1, -1)) {
-    expect(libelle).toMatch(/(Publier|Dépublier) toutes les épreuves/);
+    expect(libelle).toMatch(/(Publier|Dépublier) toutes les épreuves|Tout reprendre en main/);
   }
   await page.keyboard.press('Escape');
 

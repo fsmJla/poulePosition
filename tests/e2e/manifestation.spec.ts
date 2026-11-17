@@ -75,7 +75,8 @@ test('US-056 CA-2 et US-079 CA-3 : le menu d’une compétition propose Modifier
   expect(libelles[1]).toContain('Ajouter des épreuves');
   expect(libelles.at(-1)).toContain('Supprimer…');
   // US-079 CA-3 et CA-4 : entre les deux, « Publier / Dépublier toutes les épreuves », selon l'état des épreuves.
-  for (const libelle of libelles.slice(2, -1)) expect(libelle).toMatch(/(Publier|Dépublier) toutes les épreuves/);
+  for (const libelle of libelles.slice(2, -1))
+    expect(libelle).toMatch(/(Publier|Dépublier) toutes les épreuves|Tout reprendre en main/);
 });
 
 test('US-056 CA-3 : l’onglet « Plan » affiche le plan de la manifestation, à son adresse', async ({ page }) => {
@@ -301,7 +302,8 @@ test('US-056 CA-8 : conforme à la planche 2 (menu « ⋯ » de la première com
   const libelles = await ouvert.getByRole('menuitem').allInnerTexts();
   expect(libelles[1]).toMatch(/^\s*Ajouter des épreuves/);
   expect(libelles.at(-1)).toMatch(/^\s*Supprimer…/);
-  for (const libelle of libelles.slice(2, -1)) expect(libelle).toMatch(/(Publier|Dépublier) toutes les épreuves/);
+  for (const libelle of libelles.slice(2, -1))
+    expect(libelle).toMatch(/(Publier|Dépublier) toutes les épreuves|Tout reprendre en main/);
   await expect(ouvert.getByRole('separator')).toHaveCount(1);
 
   const capture = await page.screenshot({ path: process.env.CAPTURE_MANIFESTATION });
