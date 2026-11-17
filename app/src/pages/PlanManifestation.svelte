@@ -10,6 +10,7 @@
     jourOppose,
     originesDe,
     peutChangerDeJour,
+    peutDeposer,
     type LignePlan,
     type Plan,
     type TuilePlan,
@@ -97,29 +98,82 @@
 
   /** CA-6 : déplace l'épreuve choisie vers `vers` (le jour du sélecteur, ou le jour opposé d'un geste). */
   async function deplacer(vers = jourCible) {
-    if (!tuileChoisie || !donnees || enCours || !vers || vers === tuileChoisie.date) return;
+    if (!tuileChoisie || !vers || vers === tuileChoisie.date) return;
     jourCible = vers;
+    await changerLeJour(tuileChoisie.id, vers);
+  }
+
+  /** US-049 CA-4, US-078 CA-5 : écrit le nouveau jour d'une épreuve (panneau ou glisser-déposer), puis relit le plan. */
+  async function changerLeJour(epreuveId: string, vers: string) {
+    if (!donnees || enCours) return;
     enCours = true;
     message = null;
     try {
       const resultat = await changerJour(
         journal,
-        tuileChoisie.id,
-        jourCible,
+        epreuveId,
+        vers,
         { clubId: session.compte.clubId, auteur: session.compte.email },
         $state.snapshot(donnees.manifestations) as Manifestation[],
         $state.snapshot(donnees.competitions) as Competition[],
       );
       if (resultat.ok) {
-        const jour = te.dateLongue(jourCible);
-        void synchronisation.envoyer(tuileChoisie.id);
+        void synchronisation.envoyer(epreuveId);
         await charger();
-        message = { ok: true, texte: t.jourChange(jour) };
+        message = { ok: true, texte: t.jourChange(te.dateLongue(vers)) };
       } else message = { ok: false, texte: t.jourRefuse };
     } finally {
       enCours = false;
     }
   }
+
+  // US-078 CA-5 : glisser une tuile d'un jour à l'autre (écran large seulement, CA-8).
+  /** Tuile en cours de glissement. */
+  let glissee = $state<TuilePlan | null>(null);
+  /** Case survolée où le dépôt est permis : `<compétition>|<jour>`. */
+  let survolee = $state<string | null>(null);
+
+  const depotPermis = (competitionId: string, jour: string | null) =>
+    glissee !== null && peutDeposer(glissee, competitionId, jour);
+
+  function commencerGlissement(evenement: DragEvent, entree: TuilePlan) {
+    if (etroit || !peutChangerDeJour(entree)) {
+      evenement.preventDefault();
+      return;
+    }
+    glissee = entree;
+    message = null;
+    evenement.dataTransfer?.setData('text/plain', entree.id);
+    if (evenement.dataTransfer) evenement.dataTransfer.effectAllowed = 'move';
+  }
+
+  function finirGlissement() {
+    glissee = null;
+    survolee = null;
+  }
+
+  function survoler(evenement: DragEvent, competitionId: string, jour: string | null) {
+    if (!depotPermis(competitionId, jour)) return;
+    evenement.preventDefault();
+    if (evenement.dataTransfer) evenement.dataTransfer.dropEffect = 'move';
+    survolee = `${competitionId}|${jour}`;
+  }
+
+  function quitter(competitionId: string, jour: string | null) {
+    if (survolee === `${competitionId}|${jour}`) survolee = null;
+  }
+
+  async function deposer(evenement: DragEvent, competitionId: string, jour: string | null) {
+    const tuile = glissee;
+    finirGlissement();
+    if (!tuile || jour === null || !peutDeposer(tuile, competitionId, jour)) return;
+    evenement.preventDefault();
+    await changerLeJour(tuile.id, jour);
+  }
+
+  /** US-078 CA-7 : pourquoi une tuile ne se glisse pas (infobulle). */
+  const raisonFigee = (entree: TuilePlan) =>
+    peutChangerDeJour(entree) ? undefined : entree.pilote ? t.jourFige : t.jourLectureSeule;
 
   /** CA-4 : les horaires que l'appareil connaît (appel, scratch, poules), séparés par « · » ; « — » s'il n'y en a aucun. */
   const horaires = (detail: DetailEpreuve | undefined) =>
@@ -140,12 +194,19 @@
 </script>
 
 {#snippet tuile(entree: TuilePlan)}
+  {@const glissable = !etroit && peutChangerDeJour(entree)}
   <button
     type="button"
     class="tuile"
     class:choisie={choisie === entree.id}
+    class:glissable
+    class:glissee={glissee?.id === entree.id}
     aria-pressed={choisie === entree.id}
     aria-label={t.tuile(entree.nom)}
+    title={etroit ? undefined : raisonFigee(entree)}
+    draggable={glissable ? 'true' : 'false'}
+    ondragstart={(e) => commencerGlissement(e, entree)}
+    ondragend={finirGlissement}
     onclick={() => choisir(entree)}
   >
     <strong>{t.titreTuile(entree.categorie ?? entree.nom, entree.sexe ? te.sexes[entree.sexe] : null)}</strong>
@@ -198,6 +259,11 @@
       </p>
     {/if}
 
+    <!-- US-078 CA-5 : après un glissement, le résultat s'affiche au-dessus du plan (le panneau n'est pas ouvert). -->
+    {#if message && !tuileChoisie}
+      <p class={message.ok ? 'message ok' : 'message'} role="status">{message.texte}</p>
+    {/if}
+
     <div class="disposition">
       <div class="zone-plan">
         {#if etroit}
@@ -238,7 +304,14 @@
                     <th scope="row" class="competition"><div class="entree">{@render entreeCompetition(ligne)}</div></th
                     >
                     {#each plan.colonnes as colonne, indice (colonne.jour ?? 'a-fixer')}
-                      <td>
+                      <!-- US-078 CA-5 : pendant un glissement, les cases où le dépôt est permis sont mises en évidence. -->
+                      <td
+                        class:depot-permis={depotPermis(ligne.competition.id, colonne.jour)}
+                        class:depot-survole={survolee === `${ligne.competition.id}|${colonne.jour}`}
+                        ondragover={(e) => survoler(e, ligne.competition.id, colonne.jour)}
+                        ondragleave={() => quitter(ligne.competition.id, colonne.jour)}
+                        ondrop={(e) => deposer(e, ligne.competition.id, colonne.jour)}
+                      >
                         {#each ligne.cases[indice] ?? [] as entree (entree.id)}{@render tuile(entree)}{/each}
                         {#if colonne.jour !== null}{@render ajout(ligne, colonne.jour)}{/if}
                       </td>
@@ -490,6 +563,28 @@
 
   .tuile strong {
     font-weight: 600;
+  }
+
+  /* US-078 CA-5 : une tuile qui se glisse en a le curseur ; pendant le glissement, elle laisse sa place en pointillés. */
+  .tuile.glissable {
+    cursor: grab;
+  }
+
+  .tuile.glissee {
+    border-style: dashed;
+    border-color: var(--texte-discret);
+    background: transparent;
+    opacity: 0.6;
+  }
+
+  td.depot-permis {
+    outline: 2px dashed var(--accent);
+    outline-offset: -4px;
+  }
+
+  td.depot-survole {
+    background: var(--accent-teinte);
+    outline-style: solid;
   }
 
   /* CA-2 : la tuile choisie est mise en évidence. */
