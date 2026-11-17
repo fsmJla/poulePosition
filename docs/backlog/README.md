@@ -109,7 +109,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-077](US-077-reduire-e2e-reel-sur-preview.md) | Limiter les E2E de la preview Cloudflare aux tests « réel » et mesurer le gain (technique) | E0 | Terminée | US-075, US-076 |
 | [US-078](US-078-choisir-le-jour-des-epreuves.md) | Choisir le jour des épreuves dans la grille et en glissant sur le plan (P2) | E2 | Terminée | US-048, US-049, US-050 |
 | [US-079](US-079-accueil-plus-lisible-et-publier-une-competition.md) | Séparer « À venir » et « En cours », publier toute une compétition et structurer l'accueil public (P2) | E2 | Terminée | US-031, US-055, US-056, US-063, US-070 |
-| [US-080](US-080-grille-et-reprise-en-main.md) | Retoucher la grille des jours et reprendre en main toutes les épreuves d'une compétition (P2) | E2 | En revue | US-029, US-078, US-079 |
+| [US-080](US-080-grille-et-reprise-en-main.md) | Retoucher la grille des jours et reprendre en main toutes les épreuves d'une compétition (P2) | E2 | Terminée | US-029, US-078, US-079 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 

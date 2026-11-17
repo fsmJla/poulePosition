@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-029, US-078, US-079
-- **Branche / PR :** `us/US-080-grille-et-reprise-en-main` / —
+- **Branche / PR :** `us/US-080-grille-et-reprise-en-main` / #120
 
 ## Récit
 
@@ -92,3 +92,4 @@ Aucune.
 |---|---|
 | 2026-11-17 | Créée et passée à En cours (retours de recette d'US-078 et d'US-079) |
 | 2026-11-17 | Implémentée ; passe à En revue |
+| 2026-11-17 | Recette OK sur https://poule-position-git-us-us-080-grille-et-096afd-fsmjlas-projects.vercel.app (CA-1 à CA-5 vérifiés à la main, dont 12 épreuves reprises en main avec un pilote connecté signalé ; colonnes de jour élargies pendant la recette ; hors ligne par les E2E de la CI) ; passe à Terminée |
