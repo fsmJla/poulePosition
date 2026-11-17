@@ -112,7 +112,7 @@
     <div class="intertitre">
       <span class="carre" aria-hidden="true"></span>
       <h4>
-        {noeud.competition.nom}{#if arme}<span class="arme"> · {te.armes[arme]}</span>{/if}
+        {noeud.competition.nom}{#if arme}<span class="arme">{` · ${te.armes[arme]}`}</span>{/if}
       </h4>
       <span class="documents">{@render documents('competition', noeud.competition.id, noeud.competition.nom)}</span>
     </div>
@@ -124,8 +124,8 @@
           <Lien chemin={cheminDirect(epreuve.id)} {naviguer} etiquette={t.voirEpreuve(epreuve.nom)}>
             <span class="ligne">
               <span class="nom"
-                >{courts.get(epreuve.id) ?? epreuve.nom}{#if !arme}<span class="arme">
-                    · {te.armes[epreuve.arme]}</span
+                >{courts.get(epreuve.id) ?? epreuve.nom}{#if !arme}<span class="arme"
+                    >{` · ${te.armes[epreuve.arme]}`}</span
                   >{/if}</span
               >
               <span class="jour">{epreuve.date ? t.jourCourt(epreuve.date) : ''}</span>

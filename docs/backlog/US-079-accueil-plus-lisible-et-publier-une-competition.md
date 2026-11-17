@@ -179,6 +179,8 @@ Disposition proposée de l'accueil public (écran large) :
     recherche de l'adresse. Le domaine sait déjà centrer sur des coordonnées si elles sont un jour publiées ;
   - le message d'un lot de publication paraît une fois la liste relue (les icônes « Publiée » sont déjà à jour) ;
   - une entrée « Publier toutes les épreuves » indisponible montre son motif à la place de sa précision ;
+  - écart à la planche 2 (`ihm/2-manifestation.png`) : le menu « ⋯ » d'une compétition gagne « Publier / Dépublier
+    toutes les épreuves » entre « Ajouter des épreuves » et « Supprimer… », comme le demande CA-3 ;
   - une épreuve sans catégorie ni sexe garde son nom complet sur sa ligne (`nomsCourts`), et l'arme passe sur la
     ligne pour une compétition sans arme.
 

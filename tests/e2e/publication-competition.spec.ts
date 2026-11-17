@@ -93,7 +93,11 @@ test('US-079 hors ligne : publier toutes les épreuves s’écrit dans les journ
   const { manifestation, competition } = await creerCompetition(page);
   const carte = page.getByRole('article', { name: manifestation });
   await expect(carte).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText('Pas encore envoyée')).toHaveCount(0, { timeout: 20_000 });
+  // La liste ne se rafraîchit pas seule à l'envoi : on la relit jusqu'à ce que les épreuves soient parties.
+  await expect(async () => {
+    await page.goto('/organisateur');
+    await expect(page.getByText('Pas encore envoyée')).toHaveCount(0, { timeout: 3_000 });
+  }).toPass({ timeout: 40_000 });
 
   await context.setOffline(true);
   await expect(page.getByText(/^Hors ligne : liste du /)).toBeVisible({ timeout: 20_000 });

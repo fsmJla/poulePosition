@@ -63,17 +63,19 @@ test('US-056 CA-2 : chaque compétition est une carte avec ses épreuves, « + �
   await expect(page).toHaveURL(new RegExp(`/epreuves/${ID}$`));
 });
 
-test('US-056 CA-2 : le menu d’une compétition propose Modifier, Ajouter des épreuves, puis Supprimer…', async ({
+test('US-056 CA-2 et US-079 CA-3 : le menu d’une compétition propose Modifier, Ajouter des épreuves, la publication, puis Supprimer…', async ({
   page,
 }) => {
   test.skip(Boolean(process.env.BASE_URL), AVEC_ADMINISTRATEUR);
   const planche = await ouvrirPage(page);
   await menuDe(page, planche.competitionSabre).click();
   const entrees = page.getByRole('menu').getByRole('menuitem');
-  await expect(entrees).toHaveCount(3);
-  await expect(entrees.nth(0)).toContainText('Modifier');
-  await expect(entrees.nth(1)).toContainText('Ajouter des épreuves');
-  await expect(entrees.nth(2)).toContainText('Supprimer…');
+  await expect(entrees.first()).toContainText('Modifier');
+  const libelles = await entrees.allInnerTexts();
+  expect(libelles[1]).toContain('Ajouter des épreuves');
+  expect(libelles.at(-1)).toContain('Supprimer…');
+  // US-079 CA-3 et CA-4 : entre les deux, « Publier / Dépublier toutes les épreuves », selon l'état des épreuves.
+  for (const libelle of libelles.slice(2, -1)) expect(libelle).toMatch(/(Publier|Dépublier) toutes les épreuves/);
 });
 
 test('US-056 CA-3 : l’onglet « Plan » affiche le plan de la manifestation, à son adresse', async ({ page }) => {
@@ -291,10 +293,15 @@ test('US-056 CA-8 : conforme à la planche 2 (menu « ⋯ » de la première com
   expect(styles.traitActif).toBe(styles.accent);
   expect(styles.pointilles).toBe('dashed');
 
-  // Menu de la première compétition : Modifier, Ajouter des épreuves, séparateur, Supprimer… en rouge.
+  // Menu de la première compétition : Modifier, Ajouter des épreuves, (US-079) la publication de toutes les épreuves,
+  // séparateur, Supprimer… en rouge.
   await menuDe(page, planche.competitionEpee).click();
   const ouvert = page.getByRole('menu');
-  await expect(ouvert.getByRole('menuitem')).toHaveText([/^\s*Modifier/, /^\s*Ajouter des épreuves/, /^\s*Supprimer…/]);
+  await expect(ouvert.getByRole('menuitem').first()).toContainText('Modifier');
+  const libelles = await ouvert.getByRole('menuitem').allInnerTexts();
+  expect(libelles[1]).toMatch(/^\s*Ajouter des épreuves/);
+  expect(libelles.at(-1)).toMatch(/^\s*Supprimer…/);
+  for (const libelle of libelles.slice(2, -1)) expect(libelle).toMatch(/(Publier|Dépublier) toutes les épreuves/);
   await expect(ouvert.getByRole('separator')).toHaveCount(1);
 
   const capture = await page.screenshot({ path: process.env.CAPTURE_MANIFESTATION });
