@@ -1,6 +1,6 @@
 # ADR-0027 — Exceptions ciblées et datées à l'audit des dépendances
 
-- **Statut :** Proposée (2026-11-17), à valider
+- **Statut :** Acceptée (2026-11-17)
 - **Date :** 2026-11-17
 - **Complète :** ADR-0012 (ligne « Audit dépendances » : `npm audit --audit-level=high`, bloquant).
 

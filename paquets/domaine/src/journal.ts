@@ -23,6 +23,19 @@ import {
   type Parametres,
   type Statut,
 } from './epreuve';
+import {
+  heureValide,
+  inscriptionsOuvertes,
+  tireurInscrit,
+  tireurModifie,
+  validerTireur,
+  type DonneesPresence,
+  type DonneesTireurInscrit,
+  type DonneesTireurModifie,
+  type DonneesTireurRetire,
+  type ErreurTireur,
+  type Tireur,
+} from './tireurs';
 
 /** Origine d'un événement : le clavier du PC pilote (les saisies smartphone viendront avec E5). */
 export type Source = 'clavier';
@@ -50,7 +63,11 @@ export type Proposition =
   | { type: 'ParametresModifies'; donnees: ModificationParametres }
   | { type: 'PublicationModifiee'; donnees: DonneesPublication }
   | { type: 'EpreuveArchivee'; donnees: DonneesArchivage }
-  | { type: 'EpreuveDesarchivee'; donnees: DonneesArchivage };
+  | { type: 'EpreuveDesarchivee'; donnees: DonneesArchivage }
+  | { type: 'TireurInscrit'; donnees: DonneesTireurInscrit }
+  | { type: 'TireurModifie'; donnees: DonneesTireurModifie }
+  | { type: 'TireurRetire'; donnees: DonneesTireurRetire }
+  | { type: 'PresenceModifiee'; donnees: DonneesPresence };
 
 /** Événement enregistré : la proposition acceptée, avec son en-tête. */
 export type Evenement = {
@@ -82,7 +99,15 @@ export interface Epreuve extends DonneesEpreuve {
   formule: Formule;
   /** US-032 CA-1 : droits et affichage des noms, valeurs par défaut à la création. */
   parametres: Parametres;
+  /**
+   * US-081 : les inscrits, dans l'ordre d'inscription ; absent d'une projection gardée avant cette US (lire avec
+   * `tireursDe`).
+   */
+  tireurs?: Tireur[];
 }
+
+/** US-081 : les inscrits d'une épreuve, y compris pour une projection gardée avant US-081. */
+export const tireursDe = (epreuve: Pick<Epreuve, 'tireurs'>): Tireur[] => epreuve.tireurs ?? [];
 
 /**
  * Raison pour laquelle la projection s'arrête avant la fin du journal : `seq` manquant (`TROU`), répété
@@ -103,6 +128,7 @@ export type ErreurEvenement =
   | ErreurEpreuve
   | ErreurFormule
   | ErreurParametres
+  | ErreurTireur
   | 'FORMULE_FIGEE'
   | 'PILOTE_INVALIDE'
   | 'EPREUVE_DEJA_CREEE'
@@ -133,6 +159,14 @@ export function verifierEvenement(projection: Projection, proposition: Propositi
   if (proposition.type === 'PublicationModifiee') return verifierPublication(epreuve, proposition.donnees);
   if (proposition.type === 'EpreuveArchivee') return verifierArchivage(epreuve);
   if (proposition.type === 'EpreuveDesarchivee') return verifierDesarchivage(epreuve);
+  if (
+    proposition.type === 'TireurInscrit' ||
+    proposition.type === 'TireurModifie' ||
+    proposition.type === 'TireurRetire' ||
+    proposition.type === 'PresenceModifiee'
+  ) {
+    return verifierInscription(epreuve, proposition);
+  }
   // US-027 : la modification est validée sur le résultat de la fusion, comme une création.
   if (!epreuve) return 'EPREUVE_INCONNUE';
   if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
@@ -185,6 +219,29 @@ function verifierDesarchivage(epreuve: Epreuve | null): ErreurEvenement | null {
   return epreuve.statut === 'archivee' ? null : 'EPREUVE_NON_ARCHIVEE';
 }
 
+/** US-081 CA-1 à CA-4 et CA-7 : inscrire, modifier, retirer et pointer, tant que les inscriptions sont ouvertes. */
+function verifierInscription(
+  epreuve: Epreuve | null,
+  proposition: Extract<Proposition, { type: 'TireurInscrit' | 'TireurModifie' | 'TireurRetire' | 'PresenceModifiee' }>,
+): ErreurEvenement | null {
+  if (!epreuve) return 'EPREUVE_INCONNUE';
+  if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
+  if (!inscriptionsOuvertes(epreuve.statut)) return 'INSCRIPTIONS_CLOSES';
+  const inscrit = tireursDe(epreuve).find(({ id }) => id === proposition.donnees.tireurId);
+  if (proposition.type === 'TireurInscrit') {
+    return inscrit ? 'TIREUR_DEJA_INSCRIT' : validerTireur(proposition.donnees);
+  }
+  if (!inscrit) return 'TIREUR_INCONNU';
+  if (proposition.type === 'TireurRetire') return null;
+  if (proposition.type === 'PresenceModifiee') {
+    const { present, heure } = proposition.donnees;
+    if (heure !== undefined && (!present || !heureValide(heure))) return 'HEURE_INVALIDE';
+    return inscrit.present === present ? 'AUCUNE_MODIFICATION' : null;
+  }
+  if (Object.keys(proposition.donnees).every((champ) => champ === 'tireurId')) return 'AUCUNE_MODIFICATION';
+  return validerTireur(proposition.donnees);
+}
+
 const CHAMPS_FORMULE: readonly string[] = ['touchesPoules', 'touchesTableau', 'matchTroisieme'];
 
 /** US-028 : la formule se règle jusqu'à la fin de l’épreuve ; les touches de relais ne se modifient pas. */
@@ -218,6 +275,20 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
     const { epreuve } = projection;
     if (!epreuve) return projection;
     return { ...projection, epreuve: { ...epreuve, publiee: evenement.donnees.publiee }, dernierSeq: evenement.seq };
+  }
+  if (
+    evenement.type === 'TireurInscrit' ||
+    evenement.type === 'TireurModifie' ||
+    evenement.type === 'TireurRetire' ||
+    evenement.type === 'PresenceModifiee'
+  ) {
+    const { epreuve } = projection;
+    if (!epreuve) return projection;
+    return {
+      ...projection,
+      epreuve: { ...epreuve, tireurs: tireursApres(tireursDe(epreuve), evenement) },
+      dernierSeq: evenement.seq,
+    };
   }
   if (evenement.type === 'EpreuveArchivee') {
     const { epreuve } = projection;
@@ -267,9 +338,26 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
       publiee: false,
       formule: formuleParDefaut(donnees.typeEpreuve),
       parametres: parametresParDefaut(),
+      tireurs: [],
     },
     dernierSeq: evenement.seq,
   };
+}
+
+/** US-081 : la liste des inscrits après un événement d'inscription déjà vérifié. */
+function tireursApres(
+  tireurs: Tireur[],
+  evenement: Extract<Evenement, { type: 'TireurInscrit' | 'TireurModifie' | 'TireurRetire' | 'PresenceModifiee' }>,
+): Tireur[] {
+  if (evenement.type === 'TireurInscrit') return [...tireurs, tireurInscrit(evenement.donnees)];
+  const { tireurId } = evenement.donnees;
+  if (evenement.type === 'TireurRetire') return tireurs.filter(({ id }) => id !== tireurId);
+  return tireurs.map((tireur) => {
+    if (tireur.id !== tireurId) return tireur;
+    if (evenement.type === 'TireurModifie') return tireurModifie(tireur, evenement.donnees);
+    const { present, heure } = evenement.donnees;
+    return { ...tireur, present, heure: present ? (heure ?? null) : null };
+  });
 }
 
 /** État de l’épreuve calculé à partir de son journal, arrêté au dernier événement cohérent (CA-2). */

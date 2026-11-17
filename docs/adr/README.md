@@ -35,4 +35,4 @@ Vue d'ensemble : [`../architecture.md`](../architecture.md).
 | [0023](0023-deux-niveaux-e2e-interface-et-reel.md) | Deux niveaux de E2E : « interface » en local, « réel » sur Cloudflare (remplace la règle 2 de l'ADR-0018) | Acceptée |
 | [0025](0025-recherche-adresse-geoplateforme.md) | Recherche d'adresse : service de géocodage de la Géoplateforme (IGN), complète l'ADR-0013 | Proposée |
 | [0026](0026-pdfjs-apercu-feuille-de-route.md) | pdf.js (Apache-2.0, chargé à la demande, hors précache) pour l'aperçu de la feuille de route, complète l'ADR-0022 | Proposée |
-| [0027](0027-exceptions-datees-audit-dependances.md) | Exceptions ciblées et datées à l'audit des dépendances (complète l'ADR-0012) | Proposée |
+| [0027](0027-exceptions-datees-audit-dependances.md) | Exceptions ciblées et datées à l'audit des dépendances (complète l'ADR-0012) | Acceptée |

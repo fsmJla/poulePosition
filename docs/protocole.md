@@ -452,6 +452,13 @@ Aucun autre champ n'est accepté.
 | `PublicationModifiee` | `{ publiee }` | Publie ou dépublie l’épreuve (US-031). |
 | `EpreuveArchivee` | `{}` | Archive l’épreuve (US-033) : statut « Archivée », lecture seule. |
 | `EpreuveDesarchivee` | `{}` | Désarchive l’épreuve (US-033) : elle retrouve son statut d’avant, non publiée. |
+| `TireurInscrit` | `{ tireurId, nom, prenom, club, classement?, licence? }` | Inscrit un tireur (US-081), absent ; nom et prénom non vides, 60 caractères au plus par champ, classement entier de 1 à 99 999. |
+| `TireurModifie` | `{ tireurId, …champs changés }` | Modifie un inscrit (US-081) ; `null` efface le classement ou la licence. |
+| `TireurRetire` | `{ tireurId }` | Retire un inscrit (US-081). |
+| `PresenceModifiee` | `{ tireurId, present, heure? }` | Pointe un inscrit présent, avec l'heure `HH:MM`, ou le remet absent (US-081, US-084). |
+
+Les quatre événements d'inscription ne s'écrivent que sur une épreuve en préparation (`INSCRIPTIONS_CLOSES` sinon,
+`EPREUVE_ARCHIVEE` pour une épreuve archivée). La page publique n'expose pas les inscrits.
 
 **Données de `EpreuveCreee`** (US-025) : exactement ces champs ; un champ facultatif non saisi vaut `null`.
 Le format a été complété par US-025 sans changer de version : rien n'était encore en production.
