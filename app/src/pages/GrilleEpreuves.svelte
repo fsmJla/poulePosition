@@ -608,7 +608,7 @@
   }
 
   .col-jour {
-    width: 3.5rem;
+    width: 4.5rem;
   }
 
   /* US-080 CA-2 : un bouton de jour inaccessible reste visible, grisé. */
