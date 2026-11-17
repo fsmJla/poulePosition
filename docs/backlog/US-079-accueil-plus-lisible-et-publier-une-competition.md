@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-031, US-055, US-056, US-063, US-070
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-079-accueil-public-et-publication` / —
 
 ## Récit
 
@@ -171,6 +171,16 @@ Disposition proposée de l'accueil public (écran large) :
 - Les épreuves gardent l'ordre actuel (par compétition) ; elles ne sont pas regroupées par jour, le jour étant une
   colonne.
 - L'accueil de l'organisateur ne change pas en dehors des filtres (pas de bulles, ni de ville, ni d'adresse modifiée).
+- Prises à l'implémentation :
+  - le filtre choisi est gardé dans le stockage de l'onglet (`sessionStorage`) : il survit à un rechargement, et un
+    nouvel onglet repart du filtre par défaut. Les tests E2E, dont le club est partagé et contient une épreuve en
+    cours, choisissent « À venir » une fois par onglet à la connexion ; le test du filtre par défaut retire ce choix ;
+  - la page publique (`GET /public`) ne transmet pas les coordonnées du lieu : le lien OpenStreetMap ouvre une
+    recherche de l'adresse. Le domaine sait déjà centrer sur des coordonnées si elles sont un jour publiées ;
+  - le message d'un lot de publication paraît une fois la liste relue (les icônes « Publiée » sont déjà à jour) ;
+  - une entrée « Publier toutes les épreuves » indisponible montre son motif à la place de sa précision ;
+  - une épreuve sans catégorie ni sexe garde son nom complet sur sa ligne (`nomsCourts`), et l'arme passe sur la
+    ligne pour une compétition sans arme.
 
 ## Questions bloquantes
 
@@ -196,3 +206,4 @@ Aucune.
 |---|---|
 | 2026-11-17 | Créée (retours ergonomiques de l'utilisateur) |
 | 2026-11-17 | Précisée : l'accueil public seul est restructuré, l'accueil de l'organisateur ne change que par ses filtres ; passe à Prête |
+| 2026-11-17 | Implémentée ; passe à En revue |

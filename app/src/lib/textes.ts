@@ -1489,6 +1489,31 @@ export const textes = {
       const jour = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}`;
       return debut === fin ? `le ${jour(debut)}` : `du ${jour(debut)} au ${jour(fin)}`;
     },
+    /** US-079 CA-6 : les dates en toutes lettres, « du samedi 21 au dimanche 22 novembre 2026 ». */
+    periode: (debut: string, fin: string) => {
+      const ecrire = (date: string, options: Intl.DateTimeFormatOptions) =>
+        new Intl.DateTimeFormat('fr-FR', { ...options, timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));
+      const complet = (date: string) =>
+        ecrire(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      if (debut === fin) return `le ${complet(debut)}`;
+      const memeAnnee = debut.slice(0, 4) === fin.slice(0, 4);
+      const memeMois = memeAnnee && debut.slice(5, 7) === fin.slice(5, 7);
+      const depart = memeMois
+        ? ecrire(debut, { weekday: 'long', day: 'numeric' })
+        : memeAnnee
+          ? ecrire(debut, { weekday: 'long', day: 'numeric', month: 'long' })
+          : complet(debut);
+      return `du ${depart} au ${complet(fin)}`;
+    },
+    /** US-079 CA-7 : jour court d'une épreuve, « sam. 21 ». */
+    jourCourt: (date: string) =>
+      new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', timeZone: 'UTC' }).format(
+        new Date(`${date}T00:00:00Z`),
+      ),
+    /** US-079 CA-10 : nom accessible et infobulle du lien vers la carte. */
+    voirSurCarte: (lieu: string) => `Voir ${lieu} sur OpenStreetMap`,
+    /** US-079 CA-7 : la ligne d'une épreuve est le lien vers elle. */
+    voirEpreuve: (nom: string) => `Voir l’épreuve ${nom}`,
     direct: {
       titre: 'Épreuve',
       chargement: 'Chargement de l’épreuve…',

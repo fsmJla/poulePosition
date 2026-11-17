@@ -269,6 +269,23 @@ describe('vocabulaire de la publication (US-031 CA-6)', () => {
   });
 });
 
+describe('accueil public structuré (US-079)', () => {
+  const t = textes.accueilPublic;
+
+  it('CA-6 : les dates en toutes lettres, le mois et l’année une seule fois quand ils sont communs', () => {
+    expect(t.periode('2026-11-21', '2026-11-22')).toBe('du samedi 21 au dimanche 22 novembre 2026');
+    expect(t.periode('2026-10-31', '2026-11-01')).toBe('du samedi 31 octobre au dimanche 1 novembre 2026');
+    expect(t.periode('2026-12-31', '2027-01-01')).toBe('du jeudi 31 décembre 2026 au vendredi 1 janvier 2027');
+    expect(t.periode('2026-11-21', '2026-11-21')).toBe('le samedi 21 novembre 2026');
+  });
+
+  it('CA-7 et CA-10 : le jour court d’une épreuve et les noms accessibles des liens', () => {
+    expect(t.jourCourt('2026-11-21')).toBe('sam. 21');
+    expect(t.voirSurCarte('33600 Pessac')).toBe('Voir 33600 Pessac sur OpenStreetMap');
+    expect(t.voirEpreuve('Championnats M13 Dames')).toBe('Voir l’épreuve Championnats M13 Dames');
+  });
+});
+
 describe('dates de la page d’une manifestation (US-056 CA-8)', () => {
   const { dates } = textes.pageManifestation;
 
