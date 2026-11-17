@@ -227,7 +227,7 @@ ouvre leur liste (ou le mode sélection, d'office), avec un choix de compétitio
 
 Elle prolonge la maquette « IHM de l'organisateur » (mêmes entête, fil d'Ariane, navigation par étapes, charte et
 principes) et sert de base à la rédaction des US des Epics E3 (inscriptions), E4 (poules), E5 (saisie smartphone)
-et E6 (tableau). Les planches poursuivent la numérotation (7 à 18). Les données sont celles d'un même exemple :
+et E6 (tableau). Les planches poursuivent la numérotation (7 à 19 ; la planche 19, « Émargement », validée le 2026-11-17, se lit entre les planches 7 et 8). Les données sont celles d'un même exemple :
 l'épreuve « M13 Dames » de sabre, 24 tireuses de 6 clubs, 4 poules de 6, puis un tableau de 32.
 
 Comme `ihm/`, le dossier `deroule/` garde une capture `.png` par planche (la référence visuelle), les sources
@@ -250,6 +250,7 @@ l'état initial.
 | 16 | Smartphone : saisie suspendue | [`deroule/16-smartphone-saisie-suspendue.png`](deroule/16-smartphone-saisie-suspendue.png) | `deroule/MobileSuspendue.dc.html` | 390 × 844 | Planche 13 quand le pilote est absent : « Table déconnectée », bandeau « Saisie suspendue » (rapporter la feuille à la table), saisie et correction désactivées |
 | 17 | Smartphone tireur : qui êtes-vous ? | [`deroule/17-smartphone-tireur-qui.png`](deroule/17-smartphone-tireur-qui.png) | `deroule/MobileTireurQui.dc.html` | 390 × 844 | Ouverture par le QR des tireurs : recherche de son nom dans les inscrits, lien spectateur |
 | 18 | Smartphone tireur : mes matchs | [`deroule/18-smartphone-tireur-matchs.png`](deroule/18-smartphone-tireur-matchs.png) | `deroule/MobileTireurMatchs.dc.html` | 390 × 844 | « C'est à vous » avec « Saisir le score », classement provisoire de sa poule, ses matchs terminés, « Ce n'est pas moi » |
+| 19 | Émargement : pointer les présents | [`deroule/19-emargement.png`](deroule/19-emargement.png) | `deroule/Emargement.dc.html` | 1360 × 1720 | Compteur « 16 présentes sur 24 », appel et scratch ; recherche (Entrée pointe le seul résultat), filtres Toutes / Absentes / Présentes ; une ligne cliquable par inscrit (case, classement, nom, club, « Présente · 08:41 » ou « Absente ») ; « Inscrire sur place » (inscrit et pointé), « ⋯ » (feuille de présence, remettre tout le monde absent) ; action principale « Constituer les poules » (planche interactive) |
 
 ### Choix retenus
 

@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Émargement</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#066f6c}a:hover{color:#044e4c}
+</style>
+</helmet>
+<div style="min-height: 1720px; background: #f7f4ef; color: #1c2b2a; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 8px 24px; background: #2f4b4a; color: #f7f4ef">
+<a href="Main.dc.html" style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 21px; letter-spacing: -0.01em; color: #f7f4ef; text-decoration: none">Poule Position</a>
+<label style="flex: 1 1 220px; max-width: 440px; margin-left: 24px; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 10px; background: #f7f4ef; color: #55615f">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.500-3.500"></path></svg>
+<input type="search" aria-label="Rechercher" placeholder="Rechercher une épreuve, une compétition…" style="flex: 1; min-width: 0; border: none; outline: none; background: transparent; color: #1c2b2a; font: inherit; font-size: 15px">
+</label>
+<div style="display: flex; align-items: center; gap: 4px; margin-left: auto">
+<button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 18px 0 14px; border: none; border-radius: 10px; background: #0abab5; color: #0f1716; font: inherit; font-weight: 600; cursor: pointer">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
+Créer
+</button>
+<button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 12px; border: none; border-radius: 10px; background: transparent; color: #f7f4ef; font: inherit; cursor: pointer">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.500"></circle><path d="M2.500 20c0-3.600 2.900-6 6.500-6s6.500 2.400 6.500 6M16 4.600a3.500 3.500 0 0 1 0 6.800M18 14.300c2.100.8 3.500 2.800 3.500 5.700"></path></svg>
+Comptes
+</button>
+<button type="button" aria-label="Aide : comment ça s'organise" title="Aide" style="width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 10px; background: transparent; color: #f7f4ef; cursor: pointer">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M9.500 9.500a2.500 2.500 0 1 1 3.500 2.300c-.7.4-1 1-1 1.700M12 17h.01"></path></svg>
+</button>
+<button type="button" aria-label="Menu de compte de Julien Lameyre" style="width: 40px; height: 40px; margin-left: 4px; border: 2px solid #f7f4ef; border-radius: 999px; background: #066f6c; color: #ffffff; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer">JL</button>
+</div>
+</header>
+
+<div style="max-width: 1240px; margin: 0 auto; padding: 20px 24px 64px; display: flex; flex-direction: column; gap: 20px">
+
+<nav aria-label="Fil d'Ariane" style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: #55615f; font-size: 15px">
+<a href="Main.dc.html">Accueil</a>
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+<a href="Main.dc.html">Grand Week end du SPUC</a>
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+<a href="Main.dc.html">Championnats de Nouvelle Aquitaine</a>
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+<span aria-current="page" style="color: #1c2b2a">M13 Dames</span>
+</nav>
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px">
+
+<nav aria-label="Étapes de l'épreuve" style="flex: 0 0 216px; display: flex; flex-direction: column; gap: 2px; padding: 8px; border: 1px solid #e2dbd0; border-radius: 14px; background: #ffffff">
+<sc-for list="{{ etapes }}" as="s" hint-placeholder-count="6">
+<a href="{{ s.lien }}" aria-current="{{ s.courant }}" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; background: {{ s.fond }}; color: {{ s.couleur }}; font-weight: {{ s.graisse }}; text-decoration: none">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="{{ s.icone }}"></path></svg>
+<span style="flex: 1">{{ s.nom }}</span>
+<span style="color: #55615f; font-size: 13px; font-weight: 400">{{ s.compte }}</span>
+</a>
+</sc-for>
+<div style="height: 1px; margin: 8px 4px; background: #e2dbd0"></div>
+<sc-for list="{{ reglages }}" as="s" hint-placeholder-count="2">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; color: #1c2b2a; text-decoration: none">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="{{ s.icone }}"></path></svg>
+<span>{{ s.nom }}</span>
+</a>
+</sc-for>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<!-- Titre, compteur de présents, horaires ; actions : « Inscrire sur place » (neutre), « ⋯ », et l'action principale. -->
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 16px">
+<div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px">
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 32px; line-height: 1.15; letter-spacing: -0.01em">Émargement</h1>
+<span role="status" style="display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 999px; background: #dcefe5; color: #14573a; font-size: 14px; font-weight: 600">{{ compteur }}</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: #55615f">
+<span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 3px; background: #9c5214"></span>
+<span>M13 Dames · Sabre · mercredi 11 novembre 2026</span>
+<span>Appel 09:00 · scratch 09:15</span>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 8px">
+<button type="button" onClick="{{ basculerSurPlace }}" aria-expanded="{{ surPlaceOuvert }}" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border: 1px solid #7d8886; border-radius: 10px; background: #ffffff; color: #1c2b2a; font: inherit; cursor: pointer">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11a3.500 3.500 0 1 0 0-7 3.500 3.500 0 0 0 0 7zM2.500 20c0-3.600 2.900-6 6.500-6s6.500 2.400 6.500 6M18 8v6M15 11h6"></path></svg>
+Inscrire sur place
+</button>
+<button type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Autres actions : imprimer la feuille de présence, remettre tout le monde absent" title="Autres actions" style="width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #7d8886; border-radius: 10px; background: #ffffff; color: #1c2b2a; cursor: pointer">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.800"></circle><circle cx="12" cy="12" r="1.800"></circle><circle cx="19" cy="12" r="1.800"></circle></svg>
+</button>
+<a href="Repartition.dc.html" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px 0 14px; border-radius: 10px; background: #0abab5; color: #0f1716; font-weight: 600; text-decoration: none">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"></path></svg>
+Constituer les poules
+</a>
+</div>
+</div>
+
+<!-- Inscription sur place : la saisie de la planche 7, en une ligne ; la tireuse est inscrite et pointée présente. -->
+<sc-if value="{{ surPlaceOuvert }}" hint-placeholder-val="{{ true }}">
+<section aria-labelledby="titre-sur-place" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 2px solid #066f6c; border-radius: 14px; background: #ffffff">
+<h2 id="titre-sur-place" style="margin: 0; font-family: 'Figtree', sans-serif; font-size: 16px; font-weight: 600">Inscrire sur place · pointée présente d'emblée</h2>
+<div style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1.4fr) minmax(0, 0.8fr) auto auto; gap: 12px; align-items: end">
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; font-weight: 600">Nom<input value="FAURE" style="height: 44px; box-sizing: border-box; padding: 0 12px; border: 2px solid #066f6c; border-radius: 10px; background: #ffffff; color: #1c2b2a; font: inherit; font-size: 15px; font-weight: 400"></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; font-weight: 600">Prénom<input value="Lison" style="height: 44px; box-sizing: border-box; padding: 0 12px; border: 1px solid #7d8886; border-radius: 10px; background: #ffffff; color: #1c2b2a; font: inherit; font-size: 15px; font-weight: 400"></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; font-weight: 600">Club<input value="Mérignac" style="height: 44px; box-sizing: border-box; padding: 0 12px; border: 1px solid #7d8886; border-radius: 10px; background: #ffffff; color: #1c2b2a; font: inherit; font-size: 15px; font-weight: 400"></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; font-weight: 600">Classement<input inputmode="numeric" style="height: 44px; box-sizing: border-box; padding: 0 12px; border: 1px solid #7d8886; border-radius: 10px; background: #ffffff; color: #1c2b2a; font: inherit; font-size: 15px; font-weight: 400"></label>
+<button type="button" onClick="{{ inscrireSurPlace }}" style="height: 44px; padding: 0 16px; border: 1px solid #066f6c; border-radius: 10px; background: #e3f1f0; color: #066f6c; font: inherit; font-weight: 600; cursor: pointer">Inscrire et pointer</button>
+<button type="button" onClick="{{ basculerSurPlace }}" style="height: 44px; padding: 0 14px; border: 1px solid #7d8886; border-radius: 10px; background: #ffffff; color: #1c2b2a; font: inherit; cursor: pointer">Annuler</button>
+</div>
+<span style="color: #55615f; font-size: 14px">Après le scratch (09:15), l'inscription reste possible : un avertissement le rappelle.</span>
+</section>
+</sc-if>
+
+<!-- La liste à pointer : recherche (Entrée pointe le seul résultat), filtre, une ligne cliquable par inscrite. -->
+<section aria-labelledby="titre-liste" style="display: flex; flex-direction: column; border: 1px solid #e2dbd0; border-radius: 14px; background: #ffffff; overflow: hidden">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 16px; border-bottom: 1px solid #e2dbd0">
+<h2 id="titre-liste" style="margin: 0; font-family: 'Figtree', sans-serif; font-size: 16px; font-weight: 600">Pointer les présentes</h2>
+<label style="flex: 1 1 280px; display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px; border: 2px solid #066f6c; border-radius: 10px; color: #55615f">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.500-3.500"></path></svg>
+<input type="search" value="{{ recherche }}" onInput="{{ surRecherche }}" aria-label="Rechercher une tireuse" placeholder="Nom, prénom ou club · Entrée pointe le seul résultat" style="flex: 1; min-width: 0; border: none; outline: none; background: transparent; color: #1c2b2a; font: inherit; font-size: 15px">
+</label>
+<div role="group" aria-label="Afficher" style="display: flex; gap: 6px">
+<sc-for list="{{ filtres }}" as="f" hint-placeholder-count="3">
+<button type="button" onClick="{{ f.choisir }}" aria-pressed="{{ f.choisi }}" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border: 1px solid {{ f.bordure }}; border-radius: 999px; background: {{ f.fond }}; color: {{ f.couleur }}; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer">{{ f.nom }} <span style="font-weight: 400">{{ f.nombre }}</span></button>
+</sc-for>
+</div>
+</div>
+<ul aria-label="Inscrites à pointer" style="margin: 0; padding: 0; list-style: none">
+<sc-for list="{{ lignes }}" as="t" hint-placeholder-count="24">
+<li style="border-top: {{ t.trait }}">
+<button type="button" role="checkbox" aria-checked="{{ t.present }}" onClick="{{ t.basculer }}" style="width: 100%; display: grid; grid-template-columns: 44px 72px minmax(0, 1fr) minmax(0, 1fr) 150px; align-items: center; gap: 12px; min-height: 52px; padding: 4px 16px; border: none; background: {{ t.fond }}; color: #1c2b2a; font: inherit; text-align: left; cursor: pointer">
+<span aria-hidden="true" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border: 2px solid {{ t.bordureCase }}; border-radius: 8px; background: {{ t.fondCase }}; color: #ffffff">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: {{ t.opaciteCoche }}"><path d="M5 12l5 5 9-10"></path></svg>
+</span>
+<span style="color: {{ t.couleurRang }}; font-size: 15px">{{ t.rang }}</span>
+<span><strong style="font-weight: 600">{{ t.nom }}</strong> {{ t.prenom }}</span>
+<span style="color: #55615f; font-size: 15px">{{ t.club }}</span>
+<span style="justify-self: end; color: {{ t.couleurEtat }}; font-size: 14px; font-weight: 600">{{ t.etat }}</span>
+</button>
+</li>
+</sc-for>
+</ul>
+<div style="padding: 12px 16px; border-top: 1px solid #e2dbd0; color: #55615f; font-size: 14px">Cliquez une ligne, ou Espace, pour la pointer ; recliquez pour la remettre absente. Les absentes ne sont pas placées dans les poules.</div>
+</section>
+
+</main>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1720}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+const base = [
+['MARTIN', 'Léa', 'Talence', '3'], ['DUBOIS', 'Chloé', 'Pessac (SPUC)', '5'], ['BERNARD', 'Inès', 'Mérignac', '8'],
+['THOMAS', 'Jade', 'Bordeaux BEC', '11'], ['ROBERT', 'Manon', 'Libourne', '12'], ['RICHARD', 'Zoé', 'Pessac (SPUC)', '15'],
+['PETIT', 'Louise', 'Bayonne', '18'], ['DURAND', 'Emma', 'Talence', '21'], ['LEROY', 'Alice', 'Mérignac', '24'],
+['MOREAU', 'Lina', 'Bordeaux BEC', '27'], ['SIMON', 'Rose', 'Pessac (SPUC)', '30'], ['LAURENT', 'Anna', 'Libourne', '33'],
+['LEFEBVRE', 'Mia', 'Bayonne', '36'], ['MICHEL', 'Julia', 'Talence', '40'], ['GARCIA', 'Lou', 'Mérignac', '44'],
+['DAVID', 'Agathe', 'Bordeaux BEC', '47'], ['BERTRAND', 'Nina', 'Pessac (SPUC)', '52'], ['ROUX', 'Romane', 'Libourne', '58'],
+['VINCENT', 'Sarah', 'Bayonne', '63'], ['FOURNIER', 'Clara', 'Talence', '70'], ['MOREL', 'Eva', 'Mérignac', '76'],
+['GIRARD', 'Léna', 'Pessac (SPUC)', '—'], ['ANDRÉ', 'Margot', 'Bordeaux BEC', '—'], ['MERCIER', 'Iris', 'Libourne', '—']
+];
+// 16 présentes sur 24, pointées entre 08:41 et 09:04.
+const absentes = new Set(['LEROY', 'LAURENT', 'DAVID', 'ROUX', 'FOURNIER', 'MOREL', 'ANDRÉ', 'MERCIER']);
+let minute = 41;
+this.state = {
+tireuses: base.map((t) => ({
+nom: t[0], prenom: t[1], club: t[2], rang: t[3],
+heure: absentes.has(t[0]) ? '' : '08:' + String(minute++ % 60).padStart(2, '0')
+})),
+filtre: 'tous',
+recherche: '',
+surPlaceOuvert: false
+};
+}
+renderVals() {
+const s = this.state;
+const etape = (nom, icone, compte, actif, lien) => ({
+nom: nom, icone: icone, compte: compte, lien: lien,
+courant: actif ? 'page' : 'false',
+fond: actif ? '#e3f1f0' : 'transparent',
+couleur: actif ? '#066f6c' : '#1c2b2a',
+graisse: actif ? 600 : 400
+});
+const presentes = s.tireuses.filter((t) => t.heure).length;
+const total = s.tireuses.length;
+const sansAccent = (texte) => texte.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const cherche = sansAccent(s.recherche.trim());
+const visibles = s.tireuses
+.map((t, i) => Object.assign({ index: i }, t))
+.filter((t) => s.filtre === 'tous' || (s.filtre === 'presentes' ? t.heure : !t.heure))
+.filter((t) => !cherche || sansAccent(t.nom + ' ' + t.prenom + ' ' + t.club).includes(cherche));
+const basculer = (index) => () => {
+const tireuses = this.state.tireuses.slice();
+const t = tireuses[index];
+tireuses[index] = Object.assign({}, t, { heure: t.heure ? '' : '09:06' });
+this.setState({ tireuses: tireuses });
+};
+const filtre = (cle, nom, nombre) => {
+const choisi = s.filtre === cle;
+return {
+nom: nom, nombre: nombre, choisi: choisi,
+fond: choisi ? '#2f4b4a' : '#ffffff', couleur: choisi ? '#f7f4ef' : '#1c2b2a', bordure: choisi ? '#2f4b4a' : '#e2dbd0',
+choisir: () => this.setState({ filtre: cle })
+};
+};
+return {
+etapes: [
+etape('Résumé', 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6', '', false, 'Main.dc.html'),
+etape('Inscriptions', 'M9 11a3.500 3.500 0 1 0 0-7 3.500 3.500 0 0 0 0 7zM2.500 20c0-3.600 2.900-6 6.500-6s6.500 2.400 6.500 6M18 8v6M15 11h6', String(total), false, 'Main.dc.html'),
+etape('Émargement', 'M9 4h6v3H9zM9 5.500H6V21h12V5.500h-3M9 14l2 2 4-4', presentes + '/' + total, true, 'Emargement.dc.html'),
+etape('Poules', 'M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18', '', false, 'Repartition.dc.html'),
+etape('Tableau', 'M3 5h6v14H3M9 12h6M15 8v8M15 12h6', '', false, 'Tableau.dc.html'),
+etape('Impressions', 'M7 8V3h10v5M7 17H4V8h16v9h-3M7 14h10v7H7z', '', false, 'Main.dc.html')
+],
+reglages: [
+{ nom: 'Formule', icone: 'M5 3v6a4 4 0 0 0 4 4h6a4 4 0 0 1 4 4v4M3 5l2-2 2 2M17 19l2 2 2-2' },
+{ nom: 'Paramètres', icone: 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M16 4v4M10 10v4M18 16v4' }
+],
+compteur: presentes + ' présentes sur ' + total,
+filtres: [
+filtre('tous', 'Toutes', total),
+filtre('absentes', 'Absentes', total - presentes),
+filtre('presentes', 'Présentes', presentes)
+],
+recherche: s.recherche,
+surRecherche: (e) => this.setState({ recherche: e.target.value }),
+surPlaceOuvert: s.surPlaceOuvert,
+basculerSurPlace: () => this.setState({ surPlaceOuvert: !this.state.surPlaceOuvert }),
+inscrireSurPlace: () => this.setState({
+tireuses: this.state.tireuses.concat([{ nom: 'FAURE', prenom: 'Lison', club: 'Mérignac', rang: '—', heure: '09:08' }]),
+surPlaceOuvert: false
+}),
+lignes: visibles.map((t, i) => ({
+nom: t.nom, prenom: t.prenom, club: t.club, rang: t.rang,
+couleurRang: t.rang === '—' ? '#55615f' : '#1c2b2a',
+present: t.heure ? 'true' : 'false',
+trait: i === 0 ? 'none' : '1px solid #e2dbd0',
+fond: t.heure ? '#f1f8f7' : '#ffffff',
+fondCase: t.heure ? '#1f7a4d' : '#ffffff',
+bordureCase: t.heure ? '#1f7a4d' : '#7d8886',
+opaciteCoche: t.heure ? 1 : 0,
+etat: t.heure ? 'Présente · ' + t.heure : 'Absente',
+couleurEtat: t.heure ? '#14573a' : '#55615f',
+basculer: basculer(t.index)
+}))
+};
+}
+}
+</script>
+</body>
+</html>
