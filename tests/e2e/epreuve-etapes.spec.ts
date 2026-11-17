@@ -15,7 +15,9 @@ const MOTIF_PAGE_EPREUVE = /\/epreuves\/[0-9a-f-]{36}$/;
 
 const navigation = (page: Page) => page.getByRole('navigation', { name: 'Étapes de l’épreuve' });
 const fil = (page: Page) => page.getByRole('navigation', { name: 'Fil d’Ariane' });
-const ETAPES_A_VENIR = ['Inscriptions', 'Émargement', 'Poules', 'Tableau', 'Impressions'];
+// US-082 livre « Inscriptions » : elle n'est plus à venir.
+const ETAPES_LIVREES_DEROULEMENT = ['Inscriptions'];
+const ETAPES_A_VENIR = ['Émargement', 'Poules', 'Tableau', 'Impressions'];
 
 /**
  * Crée une épreuve de la planche 3 (M13 Dames, sabre, mercredi 11 novembre 2026, à Pessac, appel 9 h 00, scratch 9 h 15,
@@ -53,7 +55,7 @@ test('US-058 CA-1 : la navigation liste les étapes dans l’ordre, avec Formule
   const libelles = (await nav.getByRole('listitem').allInnerTexts())
     .map((texte) => texte.split('\n')[0]!.trim())
     .filter(Boolean);
-  expect(libelles).toEqual(['Résumé', ...ETAPES_A_VENIR, 'Formule', 'Paramètres']);
+  expect(libelles).toEqual(['Résumé', ...ETAPES_LIVREES_DEROULEMENT, ...ETAPES_A_VENIR, 'Formule', 'Paramètres']);
   await expect(nav.getByRole('separator')).toHaveCount(1);
   await expect(nav.getByRole('link', { name: 'Résumé' })).toHaveAttribute('aria-current', 'page');
   expect(await nav.locator('svg[data-icone]').count()).toBe(8);
