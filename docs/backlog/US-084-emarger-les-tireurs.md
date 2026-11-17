@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F4 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-081, US-082
-- **Branche / PR :** `us/US-084-emarger-les-tireurs` / —
+- **Branche / PR :** `us/US-084-emarger-les-tireurs` / #126
 
 ## Récit
 
@@ -94,3 +94,4 @@ Aucune.
 | 2026-11-17 | Créée, en attente de sa planche |
 | 2026-11-17 | Planche 19 validée ; passe à Prête |
 | 2026-11-17 | Implémentée ; passe à En revue |
+| 2026-11-17 | Recette OK sur https://poule-position-git-us-us-084-emarger-le-bb9129-fsmjlas-projects.vercel.app (recette commune d'US-082 à US-084) : pointage au clic, recherche + Entrée, filtres, « 2/4 » dans la navigation, inscription sur place, remise à absent ; passe à Terminée |
