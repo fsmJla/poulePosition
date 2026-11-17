@@ -58,6 +58,13 @@
         )
       : 0,
   );
+  /** US-082 CA-1, US-084 CA-1 : nombre d'inscrits, et « présents/inscrits » pour l'émargement. */
+  const comptesEtapes = $derived.by(() => {
+    const inscrits = tireursDe(epreuve);
+    if (inscrits.length === 0) return {};
+    const presents = inscrits.filter(({ present }) => present).length;
+    return { inscriptions: String(inscrits.length), emargement: `${presents}/${inscrits.length}` };
+  });
   /** Nom court (« M13 Dames ») ; sans catégorie ou sans sexe, le nom complet. */
   const nomCourt = $derived(nomsCourts([epreuve], t.sexes).get(epreuve.id) ?? epreuve.nom);
 </script>
@@ -65,12 +72,7 @@
 <main>
   <FilAriane {niveaux} {naviguer} />
   <div class="corps">
-    <NavigationEpreuve
-      epreuveId={epreuve.id}
-      {courante}
-      {naviguer}
-      comptes={{ inscriptions: tireursDe(epreuve).length > 0 ? String(tireursDe(epreuve).length) : undefined }}
-    />
+    <NavigationEpreuve epreuveId={epreuve.id} {courante} {naviguer} comptes={comptesEtapes} />
     <div class="colonne">
       <header>
         <!-- US-061 CA-3 : flèche de retour, visible seulement sur smartphone (le fil d'Ariane y est masqué). -->
