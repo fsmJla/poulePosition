@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F3 (exigences §3), F16 (import)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-081, US-082
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-083-importer-fichier-ffe` / —
 
 ## Récit
 
@@ -99,6 +99,13 @@ réseau ; l'envoi au serveur suit au retour du réseau (US-022). Testé par un E
   fichier servira de jeu d'essai aux tests.
 - Le format texte « FFF » d'Engarde et les CSV libres ne sont pas pris en charge par cette US.
 - L'aperçu reprend la fenêtre de confirmation d'US-035 (pas de planche dédiée).
+- Prises à l'implémentation :
+  - le XML est lu par un petit lecteur d'attributs (balises `BaseCompetitionIndividuelle` et `Tireur`, entités XML,
+    commentaires) plutôt que par l'analyseur du navigateur : il se teste hors navigateur et tolère un fichier
+    légèrement mal formé ;
+  - `Sexe` « F » ou « D » vaut Dames, « M » ou « H » vaut Hommes ; un sexe absent ou inconnu n'écarte pas le tireur ;
+  - le fichier d'essai des tests est `tests/e2e/donnees/inscription-ffe.xml` (anonymisé, ISO-8859-1), en attendant
+    un vrai fichier de la Fédération dans `docs/reference/import-ffe/`.
 
 ## Questions bloquantes
 
@@ -115,3 +122,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-17 | Créée |
+| 2026-11-17 | Implémentée ; passe à En revue |

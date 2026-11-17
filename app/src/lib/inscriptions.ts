@@ -1,6 +1,11 @@
 // Inscriptions d'une épreuve (US-082, US-084) : écriture des événements d'US-081 dans le journal local du PC pilote,
 // donc aussi hors ligne ; l'envoi au serveur suit (US-022). Les règles sont celles du domaine.
-import type { DonneesTireurInscrit, DonneesTireurModifie, ErreurEvenement } from '@poule-position/domaine';
+import type {
+  AnalyseImport,
+  DonneesTireurInscrit,
+  DonneesTireurModifie,
+  ErreurEvenement,
+} from '@poule-position/domaine';
 import type { Journal, ErreurJournal } from './journal';
 
 export type ResultatInscription = { ok: true } | { ok: false; erreur: ErreurJournal };
@@ -80,3 +85,45 @@ export type ErreurInscriptionConnue = Extract<
   ErreurEvenement,
   'TIREUR_NOM_VIDE' | 'TIREUR_PRENOM_VIDE' | 'TIREUR_CHAMP_TROP_LONG' | 'CLASSEMENT_INVALIDE' | 'INSCRIPTIONS_CLOSES'
 >;
+
+/** US-083 CA-3 : le compte rendu d'un import. */
+export interface CompteRenduImport {
+  inscrits: number;
+  misAJour: number;
+  echecs: number;
+}
+
+/**
+ * US-083 CA-3 : inscrit les nouveaux et les homonymes cochés, met à jour (club, classement) les déjà inscrits de même
+ * licence qui ont changé ; une écriture refusée est comptée sans arrêter l'import.
+ */
+export async function importerTireurs(
+  journal: Journal,
+  epreuveId: string,
+  analyse: Pick<AnalyseImport, 'nouveaux' | 'dejaInscrits' | 'homonymes'>,
+  homonymesCoches: ReadonlySet<number>,
+  contexte: Contexte,
+): Promise<CompteRenduImport> {
+  const rendu: CompteRenduImport = { inscrits: 0, misAJour: 0, echecs: 0 };
+  const aInscrire = [
+    ...analyse.nouveaux,
+    ...analyse.homonymes.filter((_, rang) => homonymesCoches.has(rang)).map(({ importe }) => importe),
+  ];
+  for (const { nom, prenom, club, classement, licence } of aInscrire) {
+    const resultat = await inscrireTireur(
+      journal,
+      epreuveId,
+      { nom, prenom, club, ...(classement !== null && { classement }), ...(licence && { licence }) },
+      contexte,
+    );
+    if (resultat.ok) rendu.inscrits++;
+    else rendu.echecs++;
+  }
+  for (const { inscrit, changes } of analyse.dejaInscrits) {
+    if (Object.keys(changes).length === 0) continue;
+    const resultat = await modifierTireur(journal, epreuveId, { tireurId: inscrit.id, ...changes }, contexte);
+    if (resultat.ok) rendu.misAJour++;
+    else rendu.echecs++;
+  }
+  return rendu;
+}
