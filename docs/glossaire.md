@@ -39,6 +39,12 @@ l'ajoute ici avant de l'utiliser.
 | Feuille de poule | Grille imprimée des matchs et résultats d'une poule. | `feuillePoule` |
 | Feuille de match | Feuille d'un match de tableau. | `feuilleMatch` |
 | Émargement | Pointage de la présence des tireurs le jour J. | `emargement` |
+| Inscrit | Tireur inscrit à une épreuve : nom, prénom, club, classement et licence facultatifs (US-081). | `tireur` |
+| Classement (d'un tireur) | Rang du tireur à son inscription (classement national), entier facultatif ; sert à répartir les poules en serpentin. À ne pas confondre avec le classement après poules. | `classement` |
+| Licence | Numéro de licence FFE du tireur, facultatif ; deux inscrits de même licence sont le même tireur. | `licence` |
+| Homonyme | Inscrit de même nom et prénom qu'un autre, sans licence commune ; l'organisateur décide de l'ajouter quand même. | `homonyme` |
+| Présent / absent | État d'un inscrit après l'émargement ; absent par défaut. | `present` |
+| Fichier d'inscription FFE | Fichier XML « BaseCompetitionIndividuelle » des inscrits, au format d'Engarde et de BellePoule (US-083). | `fichierFfe` |
 | Catégorie | Tranche d'âge (M15, Senior, Vétéran 1…), ou catégorie libre pour un challenge. | `categorie` |
 | Sexe d'une épreuve | Hommes, Dames ou Mixte. | `sexe` : `hommes`, `dames`, `mixte` |
 
