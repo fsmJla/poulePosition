@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Saisie d'un match du tableau</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#066f6c}a:hover{color:#044e4c}
+button:disabled{cursor:default}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: #f7f4ef; color: #1c2b2a; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 16px; line-height: 1.5; overflow: hidden">
+
+<header style="display: flex; align-items: center; gap: 6px; padding: 6px 12px 6px 4px; background: #2f4b4a; color: #f7f4ef">
+<a href="MobileArbitreMatchs.dc.html" aria-label="Retour aux matchs de la piste" title="Retour" style="width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; color: #f7f4ef">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+</a>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="font-weight: 600; font-size: 17px">Match 5 · Tableau de 16</span>
+<span style="font-size: 13px; opacity: 0.9">Piste 3 · M13 Dames · en 15 touches</span>
+</div>
+<span role="status" aria-label="Table connectée" title="Table connectée" style="width: 10px; height: 10px; border-radius: 999px; background: #3fbf7f; box-shadow: 0 0 0 3px rgba(247, 244, 239, 0.25)"></span>
+</header>
+
+<main style="flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 12px 16px">
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
+<sc-for list="{{ cotes }}" as="c" hint-placeholder-count="2">
+<div role="group" aria-label="Score de {{ c.nomComplet }} ({{ c.cote }})" style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; flex-direction: column; align-items: center; line-height: 1.25; min-height: 40px">
+<span style="color: {{ c.couleur }}; font-size: 17px"><strong style="font-weight: 600">{{ c.nom }}</strong> {{ c.prenom }}</span>
+<span style="color: #55615f; font-size: 13px">tête de série {{ c.tete }} · {{ c.cote }}</span>
+</div>
+<output aria-label="Touches de {{ c.nomComplet }}" style="display: flex; align-items: center; justify-content: center; height: 52px; border-bottom: 3px solid {{ c.couleur }}; font-family: 'Bricolage Grotesque', sans-serif; font-size: 44px; font-weight: 700; line-height: 1; color: {{ c.couleurScore }}">{{ c.score }}</output>
+<div role="group" aria-label="Dizaines" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px">
+<sc-for list="{{ c.dizaines }}" as="t" hint-placeholder-count="2">
+<button type="button" onClick="{{ t.choisir }}" disabled="{{ t.inactif }}" aria-pressed="{{ t.choisi }}" aria-label="{{ t.nomAccessible }}" style="height: 44px; border: 2px solid {{ c.couleur }}; border-radius: 999px; background: {{ t.fond }}; color: {{ t.texte }}; font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; font-weight: 700; cursor: pointer; opacity: {{ t.opacite }}">{{ t.libelle }}</button>
+</sc-for>
+</div>
+<div role="group" aria-label="Unités" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px">
+<sc-for list="{{ c.unites }}" as="t" hint-placeholder-count="10">
+<button type="button" onClick="{{ t.choisir }}" disabled="{{ t.inactif }}" aria-pressed="{{ t.choisi }}" aria-label="{{ t.nomAccessible }}" style="grid-column: {{ t.colonne }}; height: 44px; border: 2px solid {{ c.couleur }}; border-radius: 999px; background: {{ t.fond }}; color: {{ t.texte }}; font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; font-weight: 700; cursor: pointer; opacity: {{ t.opacite }}">{{ t.libelle }}</button>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+
+<p role="status" style="margin: 0; min-height: 24px; text-align: center; color: {{ message.couleur }}; font-size: 15px; font-weight: 600">{{ message.texte }}</p>
+
+<sc-if value="{{ enSaisie }}" hint-placeholder-val="{{ true }}">
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
+<a href="MobileArbitreMatchs.dc.html" style="display: flex; align-items: center; justify-content: center; height: 52px; border: 1px solid #7d8886; border-radius: 999px; background: #ffffff; color: #1c2b2a; font-weight: 600; text-decoration: none">Retour</a>
+<button type="button" onClick="{{ envoyer }}" disabled="{{ invalide }}" style="height: 52px; border: none; border-radius: 999px; background: {{ fondBouton }}; color: {{ texteBouton }}; font: inherit; font-weight: 600; cursor: pointer">Envoyer à la table</button>
+</div>
+</sc-if>
+<sc-if value="{{ enAttente }}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; border-radius: 12px; background: #efe9e0">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-8-6 16-3-7-7-1z"></path></svg>
+<span>Envoyé · en attente de la table…</span>
+</div>
+</sc-if>
+<sc-if value="{{ acceptee }}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 6px 4px 12px; border-radius: 12px; background: #dcefe5; color: #14573a; font-size: 15px; font-weight: 600">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg>
+<span style="flex: 1">Enregistré par la table à 14 h 12</span>
+<button type="button" onClick="{{ recommencer }}" style="height: 40px; padding: 0 8px; border: none; background: transparent; color: #066f6c; font: inherit; font-size: 14px; cursor: pointer">Rejouer la démo</button>
+</div>
+</sc-if>
+
+<section aria-labelledby="titre-arbre" style="margin-top: auto; display: flex; flex-direction: column; gap: 6px">
+<h2 id="titre-arbre" style="margin: 0; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 600; color: #55615f">Dans le tableau · quart 3 sur 4</h2>
+<div style="display: grid; grid-template-columns: 1fr 22px 1fr; align-items: center">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="color: #55615f; font-size: 13px; text-align: center">Tableau de 16</span>
+<sc-for list="{{ t16 }}" as="m" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; padding: 4px 8px; border: {{ m.bordure }}; border-radius: 10px; background: #ffffff; font-size: 14px; line-height: 1.35">
+<sc-for list="{{ m.lignes }}" as="l" hint-placeholder-count="2">
+<span style="display: flex; gap: 6px; font-weight: {{ l.graisse }}"><span style="width: 16px; color: #55615f; font-weight: 400">{{ l.tete }}</span><span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ l.nom }}</span><span>{{ l.score }}</span></span>
+</sc-for>
+<span style="color: #55615f; font-size: 12px">{{ m.etat }}</span>
+</div>
+</sc-for>
+</div>
+<div aria-hidden="true" style="align-self: stretch; display: flex; flex-direction: column; padding-top: 22px">
+<div style="flex: 1; margin: 28px 0 28px 0; border: 2px solid #b9dcda; border-left: none; border-radius: 0 8px 8px 0; width: 10px"></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="color: #55615f; font-size: 13px; text-align: center">Quart de finale</span>
+<div style="display: flex; flex-direction: column; padding: 4px 8px; border: 1px dashed #7d8886; border-radius: 10px; background: #ffffff; font-size: 14px; line-height: 1.35">
+<span style="display: flex; gap: 6px; color: {{ quart.couleur }}; font-weight: {{ quart.graisse }}"><span style="width: 16px; color: #55615f; font-weight: 400">{{ quart.tete }}</span>{{ quart.nom }}</span>
+<span style="display: flex; gap: 6px; color: #55615f"><span style="width: 16px"></span>Vainqueur du match 6</span>
+<span style="color: #55615f; font-size: 12px">En attente</span>
+</div>
+</div>
+</div>
+</section>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+// Chaque score = dizaine (0 ou 10) + unité (0 à 9) ; null = rien de choisi.
+this.state = { da: 10, ua: 5, db: 10, ub: 1, etape: 'saisie' };
+}
+componentDidUpdate(avant, etatAvant) {
+if (this.state.etape === 'attente' && etatAvant.etape !== 'attente') {
+this.minuterie = setTimeout(() => this.setState({ etape: 'acceptee' }), 1400);
+}
+}
+componentWillUnmount() { clearTimeout(this.minuterie); }
+renderVals() {
+const s = this.state;
+const max = 15;
+const fige = s.etape !== 'saisie';
+const rouge = '#b3362f', vert = '#1f7a4d';
+const total = (d, u) => (d === null || u === null) ? null : d + u;
+const sa = total(s.da, s.ua), sb = total(s.db, s.ub);
+const valide = sa !== null && sb !== null && sa !== sb;
+const bouton = (valeur, choisi, interdit, couleur, nomAccessible, choisir, colonne) => ({
+libelle: String(valeur), choisi: choisi, inactif: fige || interdit,
+fond: choisi ? couleur : '#ffffff', texte: choisi ? '#ffffff' : '#1c2b2a',
+opacite: (fige && !choisi) || interdit ? 0.35 : 1,
+nomAccessible: nomAccessible, choisir: choisir, colonne: colonne
+});
+const cote = (cd, cu, nom, prenom, tete, cote, couleur, score, autre) => {
+const d = this.state[cd], u = this.state[cu];
+const dizaines = [0, 10].map((v) => bouton(v, d === v, v === 10 && u !== null && u > 5, couleur,
+v === 0 ? 'Dizaine 0' : 'Dizaine 10',
+() => this.setState({ [cd]: this.state[cd] === v ? null : v }), 'auto'));
+// Pavé 1 2 3 / 4 5 6 / 7 8 9 / 0 (le 0 au centre de la dernière ligne).
+const unites = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((v) => bouton(v, u === v, d === 10 && v > 5, couleur,
+'Unité ' + v, () => this.setState({ [cu]: this.state[cu] === v ? null : v }), v === 0 ? '2' : 'auto'));
+const gagne = valide && score > autre;
+return {
+nom: nom, prenom: prenom, tete: tete, cote: cote, couleur: couleur, nomComplet: prenom + ' ' + nom,
+score: score === null ? '–' : String(score),
+couleurScore: gagne ? couleur : '#1c2b2a',
+dizaines: dizaines, unites: unites
+};
+};
+let message;
+if (sa === null || sb === null) {
+message = { texte: 'Touchez la dizaine et l\'unité de chaque score.', couleur: '#55615f' };
+} else if (sa === sb) {
+message = { texte: 'Égalité : il faut un vainqueur.', couleur: '#8a560c' };
+} else {
+const gagnante = sa > sb ? 'BERNARD' : 'MICHEL';
+const haut = Math.max(sa, sb), bas = Math.min(sa, sb);
+message = { texte: 'Victoire de ' + gagnante + ', ' + haut + ' à ' + bas + (haut < max ? ' (au temps).' : '.'), couleur: '#14573a' };
+}
+const ligne = (tete, nom, score, gagne) => ({ tete: tete, nom: nom, score: score, graisse: gagne ? 600 : 400 });
+const vainqueur = valide ? (sa > sb ? ['3', 'BERNARD Inès'] : ['14', 'MICHEL Julia']) : null;
+return {
+cotes: [
+cote('da', 'ua', 'BERNARD', 'Inès', '3', 'à gauche', rouge, sa, sb),
+cote('db', 'ub', 'MICHEL', 'Julia', '14', 'à droite', vert, sb, sa)
+],
+message: message,
+invalide: !valide,
+fondBouton: valide ? '#0abab5' : '#efe9e0',
+texteBouton: valide ? '#0f1716' : '#55615f',
+enSaisie: s.etape === 'saisie',
+enAttente: s.etape === 'attente',
+acceptee: s.etape === 'acceptee',
+envoyer: () => { if (valide) this.setState({ etape: 'attente' }); },
+recommencer: () => this.setState({ da: 10, ua: 5, db: 10, ub: 1, etape: 'saisie' }),
+t16: [
+{ bordure: '2px solid #066f6c', etat: 'Match 5 · en saisie', lignes: [
+ligne('3', 'BERNARD Inès', sa === null ? '' : sa, valide && sa > sb),
+ligne('14', 'MICHEL Julia', sb === null ? '' : sb, valide && sb > sa)
+] },
+{ bordure: '1px solid #e2dbd0', etat: 'Match 6 · à tirer, piste 1', lignes: [
+ligne('6', 'RICHARD Zoé', '', false),
+ligne('11', 'SIMON Rose', '', false)
+] }
+],
+quart: vainqueur
+? { tete: vainqueur[0], nom: vainqueur[1], couleur: '#1c2b2a', graisse: 600 }
+: { tete: '', nom: 'Vainqueur du match 5', couleur: '#55615f', graisse: 400 }
+};
+}
+}
+</script>
+</body>
+</html>

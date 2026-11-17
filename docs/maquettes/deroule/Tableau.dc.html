@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Tableau</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#066f6c}a:hover{color:#044e4c}
+</style>
+</helmet>
+<div style="min-height: 1100px; background: #f7f4ef; color: #1c2b2a; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 8px 24px; background: #2f4b4a; color: #f7f4ef">
+<a href="Main.dc.html" style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 21px; letter-spacing: -0.01em; color: #f7f4ef; text-decoration: none">Poule Position</a>
+<label style="flex: 1 1 220px; max-width: 440px; margin-left: 24px; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 10px; background: #f7f4ef; color: #55615f">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.500-3.500"></path></svg>
+<input type="search" aria-label="Rechercher" placeholder="Rechercher une épreuve, une compétition…" style="flex: 1; min-width: 0; border: none; outline: none; background: transparent; color: #1c2b2a; font: inherit; font-size: 15px">
+</label>
+<div style="display: flex; align-items: center; gap: 4px; margin-left: auto">
+<button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 18px 0 14px; border: none; border-radius: 10px; background: #0abab5; color: #0f1716; font: inherit; font-weight: 600; cursor: pointer">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
+Créer
+</button>
+<button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 12px; border: none; border-radius: 10px; background: transparent; color: #f7f4ef; font: inherit; cursor: pointer">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.500"></circle><path d="M2.500 20c0-3.600 2.900-6 6.500-6s6.500 2.400 6.500 6M16 4.600a3.500 3.500 0 0 1 0 6.800M18 14.300c2.100.8 3.500 2.800 3.500 5.700"></path></svg>
+Comptes
+</button>
+<button type="button" aria-label="Aide : comment ça s'organise" style="width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 10px; background: transparent; color: #f7f4ef; cursor: pointer">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M9.500 9.500a2.500 2.500 0 1 1 3.500 2.300c-.7.4-1 1-1 1.700M12 17h.01"></path></svg>
+</button>
+<button type="button" aria-label="Thème clair" style="width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 10px; background: transparent; color: #f7f4ef; cursor: pointer">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.400 1.400M17.600 17.600 19 19M5 19l1.400-1.400M17.600 6.400 19 5"></path></svg>
+</button>
+<button type="button" aria-label="Menu de compte de Julien Lameyre" style="width: 40px; height: 40px; margin-left: 4px; border: 2px solid #f7f4ef; border-radius: 999px; background: #066f6c; color: #ffffff; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer">JL</button>
+</div>
+</header>
+
+<div style="max-width: 1240px; margin: 0 auto; padding: 20px 24px 64px; display: flex; flex-direction: column; gap: 20px">
+
+<nav aria-label="Fil d'Ariane" style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: #55615f; font-size: 15px">
+<a href="Main.dc.html">Accueil</a>
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+<a href="Main.dc.html">Grand Week end du SPUC</a>
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+<a href="Main.dc.html">Championnats de Nouvelle Aquitaine</a>
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+<span aria-current="page" style="color: #1c2b2a">M13 Dames</span>
+</nav>
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px">
+
+<nav aria-label="Étapes de l'épreuve" style="flex: 0 0 216px; display: flex; flex-direction: column; gap: 2px; padding: 8px; border: 1px solid #e2dbd0; border-radius: 14px; background: #ffffff">
+<sc-for list="{{ etapes }}" as="s" hint-placeholder-count="6">
+<a href="{{ s.lien }}" aria-current="{{ s.courant }}" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; background: {{ s.fond }}; color: {{ s.couleur }}; font-weight: {{ s.graisse }}; text-decoration: none">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="{{ s.icone }}"></path></svg>
+<span style="flex: 1">{{ s.nom }}</span>
+<span style="color: #55615f; font-size: 13px; font-weight: 400">{{ s.compte }}</span>
+</a>
+</sc-for>
+<div style="height: 1px; margin: 8px 4px; background: #e2dbd0"></div>
+<sc-for list="{{ reglages }}" as="s" hint-placeholder-count="2">
+<a href="Tableau.dc.html" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; color: #1c2b2a; text-decoration: none">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="{{ s.icone }}"></path></svg>
+<span>{{ s.nom }}</span>
+</a>
+</sc-for>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 16px">
+<div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px">
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 32px; line-height: 1.15; letter-spacing: -0.01em">Tableau</h1>
+<span style="display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 999px; background: #dcefe5; color: #14573a; font-size: 14px; font-weight: 600">En cours</span>
+</div>
+<div style="color: #55615f">Tableau de 32 · 24 qualifiées, 8 exemptes · pas de match pour la 3e place</div>
+</div>
+<button type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Autres actions : imprimer le tableau, imprimer les feuilles de match, voir le classement après poules" title="Autres actions" style="width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #7d8886; border-radius: 10px; background: #ffffff; color: #1c2b2a; cursor: pointer">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.800"></circle><circle cx="12" cy="12" r="1.800"></circle><circle cx="19" cy="12" r="1.800"></circle></svg>
+</button>
+</div>
+
+<div role="tablist" aria-label="Tours du tableau" style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{ tours }}" as="t" hint-placeholder-count="5">
+<button type="button" role="tab" aria-selected="{{ t.choisi }}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border: {{ t.bordure }}; border-radius: 999px; background: {{ t.fond }}; color: {{ t.couleur }}; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer">
+{{ t.nom }}<span style="font-weight: 400; font-size: 13px; opacity: 0.85">{{ t.etat }}</span>
+</button>
+</sc-for>
+</div>
+
+<section aria-labelledby="titre-saisie" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 16px; border: 2px solid #066f6c; border-radius: 14px; background: #ffffff">
+<div style="flex: 0 1 200px; display: flex; flex-direction: column">
+<h2 id="titre-saisie" style="margin: 0; font-family: 'Figtree', sans-serif; font-size: 16px; font-weight: 600">Tableau de 16 · match 5</h2>
+<span style="color: #55615f; font-size: 14px">Piste 3 · appelé à 11 h 20</span>
+</div>
+<div style="flex: 1 1 460px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 14px">
+<label for="t-a" style="display: flex; align-items: center; gap: 8px; font-size: 15px"><span style="color: #55615f">(3)</span><strong style="font-weight: 600">BERNARD</strong> Inès</label>
+<input id="t-a" inputmode="numeric" value="15" style="width: 64px; height: 52px; box-sizing: border-box; border: 2px solid #066f6c; border-radius: 10px; color: #1c2b2a; font: inherit; font-size: 24px; font-weight: 600; text-align: center">
+<span aria-hidden="true" style="color: #55615f">–</span>
+<input id="t-b" inputmode="numeric" value="11" style="width: 64px; height: 52px; box-sizing: border-box; border: 1px solid #7d8886; border-radius: 10px; color: #1c2b2a; font: inherit; font-size: 24px; font-weight: 600; text-align: center">
+<label for="t-b" style="display: flex; align-items: center; gap: 8px; font-size: 15px"><strong style="font-weight: 600">MICHEL</strong> Julia<span style="color: #55615f">(14)</span></label>
+</div>
+<div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px">
+<button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border: none; border-radius: 10px; background: #0abab5; color: #0f1716; font: inherit; font-weight: 600; cursor: pointer">Valider le score</button>
+<a href="Tableau.dc.html" style="font-size: 14px">Abandon, forfait, exclusion…</a>
+</div>
+</section>
+
+<section aria-labelledby="titre-tableau" style="display: flex; flex-direction: column; border: 1px solid #e2dbd0; border-radius: 14px; background: #ffffff; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #e2dbd0">
+<h2 id="titre-tableau" style="flex: 1; display: flex; align-items: center; gap: 8px; margin: 0; font-family: 'Figtree', sans-serif; font-size: 16px; font-weight: 600">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h6v14H3M9 12h6M15 8v8M15 12h6"></path></svg>
+Du tableau de 16 à la finale
+</h2>
+<span style="color: #55615f; font-size: 14px">Cliquez un match pour saisir ou corriger son score</span>
+</div>
+<div style="overflow-x: auto; padding: 16px">
+<div style="display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); column-gap: 28px; min-width: 980px">
+<sc-for list="{{ colonnes }}" as="c" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column">
+<h3 style="margin: 0 0 8px; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 600; color: #55615f">{{ c.titre }}</h3>
+<div style="height: 720px; display: flex; flex-direction: column">
+<sc-for list="{{ c.groupes }}" as="g" hint-placeholder-count="2">
+<div style="position: relative; flex: 1; display: flex; flex-direction: column; justify-content: space-around">
+<sc-if value="{{ g.trait }}" hint-placeholder-val="{{ true }}">
+<div aria-hidden="true" style="position: absolute; top: 25%; bottom: 25%; right: -15px; width: 13px; border: 2px solid #b9dcda; border-left: none; border-radius: 0 8px 8px 0"></div>
+</sc-if>
+<sc-for list="{{ g.matchs }}" as="m" hint-placeholder-count="2">
+<button type="button" aria-label="{{ m.nomAccessible }}" style="display: flex; flex-direction: column; padding: 0; border: {{ m.bordure }}; border-radius: 10px; background: #ffffff; color: #1c2b2a; font: inherit; text-align: left; overflow: hidden; cursor: pointer">
+<span style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; color: {{ m.a.couleur }}; font-weight: {{ m.a.graisse }}; font-size: 14px">
+<span style="width: 22px; color: #55615f; font-weight: 400; font-size: 13px">{{ m.a.tete }}</span><span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{ m.a.nom }}</span><span>{{ m.a.score }}</span>
+</span>
+<span style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-top: 1px solid #e2dbd0; color: {{ m.b.couleur }}; font-weight: {{ m.b.graisse }}; font-size: 14px">
+<span style="width: 22px; color: #55615f; font-weight: 400; font-size: 13px">{{ m.b.tete }}</span><span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{ m.b.nom }}</span><span>{{ m.b.score }}</span>
+</span>
+<span style="display: flex; align-items: center; height: 24px; padding: 0 10px; background: {{ m.fondEtat }}; color: {{ m.couleurEtat }}; font-size: 12px; font-weight: 600">{{ m.etat }}</span>
+</button>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="padding: 10px 16px; border-top: 1px solid #e2dbd0; color: #55615f; font-size: 14px">(n) : rang au classement après poules. Le vainqueur passe au tour suivant dès que le score est validé ; le classement final s'affiche après la finale.</div>
+</section>
+
+</main>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1100}}'>
+class Component extends DCLogic {
+renderVals() {
+const etape = (nom, icone, compte, actif, lien) => ({
+nom: nom, icone: icone, compte: compte, lien: lien,
+courant: actif ? 'page' : 'false',
+fond: actif ? '#e3f1f0' : 'transparent',
+couleur: actif ? '#066f6c' : '#1c2b2a',
+graisse: actif ? 600 : 400
+});
+const tour = (nom, etat, choisi) => ({
+nom: nom, etat: etat, choisi: choisi ? 'true' : 'false',
+bordure: choisi ? '1px solid #2f4b4a' : '1px solid #7d8886',
+fond: choisi ? '#2f4b4a' : '#ffffff',
+couleur: choisi ? '#f7f4ef' : '#1c2b2a'
+});
+const cote = (tete, nom, score, gagne, perdu, attente) => ({
+tete: tete ? '(' + tete + ')' : '', nom: nom, score: score,
+couleur: attente ? '#55615f' : (perdu ? '#55615f' : '#1c2b2a'),
+graisse: gagne ? 600 : 400
+});
+const match = (a, b, sa, sb, etat, genre, choisi) => {
+const fini = sa !== '' && sb !== '';
+const ga = fini && Number(sa) > Number(sb);
+const gb = fini && Number(sb) > Number(sa);
+const attente = genre === 'attente';
+const styles = {
+fini: ['#f7f4ef', '#55615f'],
+piste: ['#dcefe5', '#14573a'],
+tirer: ['#efe9e0', '#1c2b2a'],
+attente: ['transparent', '#55615f'],
+saisie: ['#e3f1f0', '#066f6c']
+}[genre];
+return {
+a: cote(a[0], a[1], sa, ga, gb, attente && !a[0]),
+b: cote(b[0], b[1], sb, gb, ga, attente && !b[0]),
+etat: etat,
+fondEtat: styles[0], couleurEtat: styles[1],
+bordure: choisi ? '2px solid #066f6c' : '1px solid #e2dbd0',
+nomAccessible: a[1] + ' contre ' + b[1] + ', ' + etat
+};
+};
+const t16 = [
+match([1, 'MARTIN Léa'], [16, 'LEROY Alice'], '15', '8', 'Terminé', 'fini'),
+match([8, 'PETIT Louise'], [9, 'DURAND Emma'], '15', '13', 'Terminé', 'fini'),
+match([5, 'ROBERT Manon'], [12, 'LAURENT Anna'], '12', '15', 'Terminé', 'fini'),
+match([4, 'THOMAS Jade'], [13, 'LEFEBVRE Mia'], '', '', 'En piste 4', 'piste'),
+match([3, 'BERNARD Inès'], [14, 'MICHEL Julia'], '', '', 'Piste 3 · en saisie', 'saisie', true),
+match([6, 'RICHARD Zoé'], [11, 'SIMON Rose'], '', '', 'À tirer · piste 1', 'tirer'),
+match([7, 'MOREAU Lina'], [10, 'GARCIA Lou'], '', '', 'À tirer · piste 2', 'tirer'),
+match([2, 'DUBOIS Chloé'], [15, 'ROUX Romane'], '15', '6', 'Terminé', 'fini')
+];
+const quarts = [
+match([1, 'MARTIN Léa'], [8, 'PETIT Louise'], '', '', 'À tirer · piste à attribuer', 'tirer'),
+match([12, 'LAURENT Anna'], [0, 'Vainqueur du match 4'], '', '', 'En attente', 'attente'),
+match([0, 'Vainqueur du match 5'], [0, 'Vainqueur du match 6'], '', '', 'En attente', 'attente'),
+match([0, 'Vainqueur du match 7'], [2, 'DUBOIS Chloé'], '', '', 'En attente', 'attente')
+];
+const demies = [
+match([0, 'Vainqueur du quart 1'], [0, 'Vainqueur du quart 2'], '', '', 'En attente', 'attente'),
+match([0, 'Vainqueur du quart 3'], [0, 'Vainqueur du quart 4'], '', '', 'En attente', 'attente')
+];
+const finale = [match([0, 'Vainqueur de la demie 1'], [0, 'Vainqueur de la demie 2'], '', '', 'En attente', 'attente')];
+const grouper = (liste, trait) => {
+const g = [];
+for (let i = 0; i < liste.length; i += 2) { g.push({ matchs: liste.slice(i, i + 2), trait: trait }); }
+return g;
+};
+return {
+etapes: [
+etape('Résumé', 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6', '', false, 'Main.dc.html'),
+etape('Inscriptions', 'M9 11a3.500 3.500 0 1 0 0-7 3.500 3.500 0 0 0 0 7zM2.500 20c0-3.600 2.900-6 6.500-6s6.500 2.400 6.500 6M18 8v6M15 11h6', '24', false, 'Main.dc.html'),
+etape('Émargement', 'M9 4h6v3H9zM9 5.500H6V21h12V5.500h-3M9 14l2 2 4-4', '24/24', false, 'Main.dc.html'),
+etape('Poules', 'M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18', '60/60', false, 'SaisiePoules.dc.html'),
+etape('Tableau', 'M3 5h6v14H3M9 12h6M15 8v8M15 12h6', '', true, 'Tableau.dc.html'),
+etape('Impressions', 'M7 8V3h10v5M7 17H4V8h16v9h-3M7 14h10v7H7z', '', false, 'Tableau.dc.html')
+],
+reglages: [
+{ nom: 'Formule', icone: 'M5 3v6a4 4 0 0 0 4 4h6a4 4 0 0 1 4 4v4M3 5l2-2 2 2M17 19l2 2 2-2' },
+{ nom: 'Paramètres', icone: 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M16 4v4M10 10v4M18 16v4' }
+],
+tours: [
+tour('Tableau de 32', 'terminé', false),
+tour('Tableau de 16', '4/8', true),
+tour('Quarts', '0/4', false),
+tour('Demies', '', false),
+tour('Finale', '', false)
+],
+colonnes: [
+{ titre: 'Tableau de 16', groupes: grouper(t16, true) },
+{ titre: 'Quarts de finale', groupes: grouper(quarts, true) },
+{ titre: 'Demi-finales', groupes: grouper(demies, true) },
+{ titre: 'Finale', groupes: [{ matchs: finale, trait: false }] }
+]
+};
+}
+}
+</script>
+</body>
+</html>

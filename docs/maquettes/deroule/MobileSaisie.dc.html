@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Saisie d'un match de poule</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#066f6c}a:hover{color:#044e4c}
+button:disabled{cursor:default}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: #f7f4ef; color: #1c2b2a; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 16px; line-height: 1.5; overflow: hidden">
+
+<header style="display: flex; align-items: center; gap: 6px; padding: 6px 12px 6px 4px; background: #2f4b4a; color: #f7f4ef">
+<a href="MobileArbitreMatchs.dc.html" aria-label="Retour aux matchs de la piste" title="Retour" style="width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; color: #f7f4ef">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+</a>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="font-weight: 600; font-size: 17px">Match 10 · Poule 2</span>
+<span style="font-size: 13px; opacity: 0.9">Piste 2 · M13 Dames · en 5 touches</span>
+</div>
+<span role="status" aria-label="Table connectée" title="Table connectée" style="width: 10px; height: 10px; border-radius: 999px; background: #3fbf7f; box-shadow: 0 0 0 3px rgba(247, 244, 239, 0.25)"></span>
+</header>
+
+<main style="flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 12px 16px">
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
+<sc-for list="{{ cotes }}" as="c" hint-placeholder-count="2">
+<div role="group" aria-label="Score de {{ c.nomComplet }} ({{ c.cote }})" style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; flex-direction: column; align-items: center; line-height: 1.25; min-height: 40px">
+<span style="color: {{ c.couleur }}; font-size: 17px"><strong style="font-weight: 600">{{ c.nom }}</strong> {{ c.prenom }}</span>
+<span style="color: #55615f; font-size: 13px">{{ c.club }} · {{ c.cote }}</span>
+</div>
+<sc-for list="{{ c.touches }}" as="t" hint-placeholder-count="6">
+<button type="button" onClick="{{ t.choisir }}" disabled="{{ t.fige }}" aria-pressed="{{ t.choisi }}" aria-label="{{ t.nomAccessible }}" style="height: 46px; border: 2px solid {{ c.couleur }}; border-radius: 999px; background: {{ t.fond }}; color: {{ t.texte }}; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; font-weight: 700; cursor: pointer; opacity: {{ t.opacite }}">{{ t.libelle }}</button>
+</sc-for>
+</div>
+</sc-for>
+</div>
+
+<p role="status" style="margin: 0; min-height: 24px; text-align: center; color: {{ message.couleur }}; font-size: 15px; font-weight: 600">{{ message.texte }}</p>
+
+<sc-if value="{{ enSaisie }}" hint-placeholder-val="{{ true }}">
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
+<a href="MobileArbitreMatchs.dc.html" style="display: flex; align-items: center; justify-content: center; height: 52px; border: 1px solid #7d8886; border-radius: 999px; background: #ffffff; color: #1c2b2a; font-weight: 600; text-decoration: none">Retour</a>
+<button type="button" onClick="{{ envoyer }}" disabled="{{ invalide }}" style="height: 52px; border: none; border-radius: 999px; background: {{ fondBouton }}; color: {{ texteBouton }}; font: inherit; font-weight: 600; cursor: pointer">Envoyer à la table</button>
+</div>
+</sc-if>
+<sc-if value="{{ enAttente }}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; border-radius: 12px; background: #efe9e0">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-8-6 16-3-7-7-1z"></path></svg>
+<span>Envoyé · en attente de la table…</span>
+</div>
+</sc-if>
+<sc-if value="{{ acceptee }}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 6px 4px 12px; border-radius: 12px; background: #dcefe5; color: #14573a; font-size: 15px; font-weight: 600">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg>
+<span style="flex: 1">Enregistré par la table à 10 h 48</span>
+<button type="button" onClick="{{ recommencer }}" style="height: 40px; padding: 0 8px; border: none; background: transparent; color: #066f6c; font: inherit; font-size: 14px; cursor: pointer">Rejouer la démo</button>
+</div>
+<a href="MobileArbitreMatchs.dc.html" style="display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 999px; background: #0abab5; color: #0f1716; font-weight: 600; text-decoration: none">Match suivant : GARCIA – DURAND</a>
+</sc-if>
+
+<section aria-labelledby="titre-feuille" style="margin-top: auto; display: flex; flex-direction: column; gap: 4px">
+<h2 id="titre-feuille" style="margin: 0; font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 600; color: #55615f">Feuille de la poule 2 · match 10 encadré</h2>
+<table style="width: 100%; border-collapse: collapse; background: #ffffff; font-size: 13px; line-height: 1.2; table-layout: fixed">
+<thead>
+<tr style="color: #55615f">
+<th scope="col" style="width: 74px; padding: 4px; text-align: left; font-weight: 600"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Tireuse</span></th>
+<th scope="col" style="width: 14px; padding: 4px 0; font-weight: 400"></th>
+<sc-for list="{{ numeros }}" as="n" hint-placeholder-count="6">
+<th scope="col" style="padding: 4px 0; font-weight: 600; text-align: center">{{ n }}</th>
+</sc-for>
+<th scope="col" title="Victoires" style="width: 26px; padding: 4px 0; font-weight: 600; text-align: center">V</th>
+<th scope="col" title="Indice" style="width: 32px; padding: 4px 0; font-weight: 600; text-align: right">Ind</th>
+<th scope="col" title="Rang provisoire" style="width: 30px; padding: 4px 4px 4px 0; font-weight: 600; text-align: right">Rg</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{ lignes }}" as="l" hint-placeholder-count="6">
+<tr>
+<th scope="row" style="padding: 0 4px; text-align: left; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ l.nom }}</th>
+<td style="padding: 0; color: #55615f; text-align: center">{{ l.num }}</td>
+<sc-for list="{{ l.cases }}" as="k" hint-placeholder-count="6">
+<td style="height: 28px; padding: 0; border: {{ k.bordure }}; background: {{ k.fond }}; color: {{ k.couleur }}; font-weight: {{ k.graisse }}; text-align: center">{{ k.texte }}</td>
+</sc-for>
+<td style="padding: 0; text-align: center">{{ l.v }}</td>
+<td style="padding: 0; text-align: right">{{ l.ind }}</td>
+<td style="padding: 0 4px 0 0; text-align: right; font-weight: 600">{{ l.rg }}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+// 5 = « V » (victoire en 5 touches) ; null = rien de choisi.
+this.state = { a: 5, b: 2, etape: 'saisie' };
+}
+componentDidUpdate(avant, etatAvant) {
+if (this.state.etape === 'attente' && etatAvant.etape !== 'attente') {
+this.minuterie = setTimeout(() => this.setState({ etape: 'acceptee' }), 1400);
+}
+}
+componentWillUnmount() { clearTimeout(this.minuterie); }
+renderVals() {
+const s = this.state;
+const max = 5;
+const fige = s.etape !== 'saisie';
+const rouge = '#b3362f', vert = '#1f7a4d';
+const choisis = s.a !== null && s.b !== null;
+const valide = choisis && (s.a === max) !== (s.b === max);
+const cote = (cle, nom, prenom, club, cote, couleur) => {
+const touches = [];
+for (let v = 0; v <= max; v++) {
+const choisi = this.state[cle] === v;
+const libelle = v === max ? 'V' : String(v);
+touches.push({
+libelle: libelle, choisi: choisi, fige: fige,
+fond: choisi ? couleur : '#ffffff',
+texte: choisi ? '#ffffff' : '#1c2b2a',
+opacite: fige && !choisi ? 0.45 : 1,
+nomAccessible: v === max ? 'Victoire' : v + (v > 1 ? ' touches' : ' touche'),
+choisir: () => this.setState({ [cle]: this.state[cle] === v ? null : v })
+});
+}
+return { nom: nom, prenom: prenom, club: club, cote: cote, couleur: couleur, nomComplet: prenom + ' ' + nom, touches: touches };
+};
+let message;
+if (!choisis) {
+message = { texte: 'Touchez le score de chaque tireuse.', couleur: '#55615f' };
+} else if (s.a === max && s.b === max) {
+message = { texte: 'Une seule tireuse peut avoir le V.', couleur: '#8a560c' };
+} else if (!valide) {
+message = { texte: 'Touchez le V de la gagnante.', couleur: '#8a560c' };
+} else {
+const gagnante = s.a === max ? 'DUBOIS' : 'VINCENT';
+message = { texte: 'Victoire de ' + gagnante + ', ' + max + ' à ' + Math.min(s.a, s.b) + '.', couleur: '#14573a' };
+}
+
+// Feuille de la poule 2 (mêmes données que la planche 10), le match 10 reflète la saisie.
+const tireuses = ['DUBOIS', 'DURAND', 'MOREAU', 'GARCIA', 'ROUX', 'VINCENT'];
+const ordre = [[1, 2], [4, 5], [2, 3], [5, 6], [3, 1], [6, 4], [2, 5], [1, 4], [5, 3], [1, 6]];
+const scores = [[5, 3], [4, 5], [2, 5], [5, 1], [4, 5], [3, 5], [5, 4], [5, 2], [3, 5]];
+const n = 6;
+const grille = [];
+for (let i = 0; i < n; i++) { grille.push(new Array(n).fill(null)); }
+const stats = tireuses.map(() => ({ v: 0, m: 0, td: 0, tr: 0 }));
+scores.forEach((sc, k) => {
+const a = ordre[k][0] - 1, b = ordre[k][1] - 1;
+grille[a][b] = sc[0]; grille[b][a] = sc[1];
+stats[a].m++; stats[b].m++;
+stats[a].td += sc[0]; stats[a].tr += sc[1]; stats[b].td += sc[1]; stats[b].tr += sc[0];
+if (sc[0] > sc[1]) stats[a].v++; else stats[b].v++;
+});
+const ca = 0, cb = 5;
+const tri = stats.map((st, i) => ({ i: i, r: st.m ? st.v / st.m : 0, ind: st.td - st.tr, td: st.td }))
+.sort((x, y) => (y.r - x.r) || (y.ind - x.ind) || (y.td - x.td));
+const rangs = new Array(n);
+tri.forEach((t, k) => { rangs[t.i] = k + 1; });
+const enCase = (v) => v === null ? '' : (v === max ? 'V' : String(v));
+const lignes = tireuses.map((nom, i) => {
+const st = stats[i];
+const cases = [];
+for (let j = 0; j < n; j++) {
+const val = grille[i][j];
+let texte = '', fond = '#ffffff', bordure = '1px solid #e2dbd0', couleur = '#1c2b2a', graisse = 400;
+if (i === j) { fond = '#2f4b4a'; bordure = '1px solid #2f4b4a'; }
+else if (i === ca && j === cb) { fond = '#e3f1f0'; bordure = '2px solid #066f6c'; texte = enCase(s.a); couleur = rouge; graisse = 600; }
+else if (i === cb && j === ca) { fond = '#e3f1f0'; bordure = '2px solid #066f6c'; texte = enCase(s.b); couleur = vert; graisse = 600; }
+else if (val !== null) {
+const gagne = val > grille[j][i];
+texte = gagne ? 'V' : String(val);
+graisse = gagne ? 600 : 400;
+couleur = gagne ? '#14573a' : '#1c2b2a';
+}
+cases.push({ texte: texte, fond: fond, bordure: bordure, couleur: couleur, graisse: graisse });
+}
+const ind = st.td - st.tr;
+return { nom: nom, num: i + 1, cases: cases, v: st.v, ind: (ind > 0 ? '+' : (ind < 0 ? '−' : '')) + Math.abs(ind), rg: rangs[i] };
+});
+
+return {
+cotes: [
+cote('a', 'DUBOIS', 'Chloé', 'SPUC', 'à gauche', rouge),
+cote('b', 'VINCENT', 'Sarah', 'Bayonne', 'à droite', vert)
+],
+message: message,
+invalide: !valide,
+fondBouton: valide ? '#0abab5' : '#efe9e0',
+texteBouton: valide ? '#0f1716' : '#55615f',
+enSaisie: s.etape === 'saisie',
+enAttente: s.etape === 'attente',
+acceptee: s.etape === 'acceptee',
+envoyer: () => { if (valide) this.setState({ etape: 'attente' }); },
+recommencer: () => this.setState({ a: 5, b: 2, etape: 'saisie' }),
+numeros: [1, 2, 3, 4, 5, 6],
+lignes: lignes
+};
+}
+}
+</script>
+</body>
+</html>
