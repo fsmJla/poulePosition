@@ -1,0 +1,41 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-17T10:00:00Z" },
+  "title": "Maquette déroulé de l'épreuve",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1360, "h": 1620, "title": "7 · Inscriptions : saisie des tireurs", "expand": "fill", "is_interactive": true },
+    "Repartition.dc.html": { "x": 1440, "y": 0, "w": 1360, "h": 1000, "title": "8 · Poules : constituer (automatique ou manuelle)", "expand": "fill", "is_interactive": true },
+    "Ajustement.dc.html": { "x": 2880, "y": 0, "w": 1360, "h": 1080, "title": "9 · Poules : vérifier et ajuster à la main", "expand": "fill" },
+    "SaisiePoules.dc.html": { "x": 0, "y": 2020, "w": 1360, "h": 1100, "title": "10 · Poules : saisie des scores sur le PC", "expand": "fill" },
+    "Tableau.dc.html": { "x": 1440, "y": 2020, "w": 1360, "h": 1100, "title": "11 · Tableau : visualisation et saisie", "expand": "fill" },
+    "MobileArbitreAcces.dc.html": { "x": 0, "y": 3520, "w": 390, "h": 844, "title": "12 · Smartphone arbitre : accès par QR code" },
+    "MobileArbitreMatchs.dc.html": { "x": 470, "y": 3520, "w": 390, "h": 844, "title": "13 · Smartphone arbitre : matchs de la piste" },
+    "MobileSaisie.dc.html": { "x": 940, "y": 3520, "w": 390, "h": 844, "title": "14 · Smartphone : saisie d'un match de poule", "is_interactive": true },
+    "MobileSaisieTableau.dc.html": { "x": 1410, "y": 3520, "w": 390, "h": 844, "title": "15 · Smartphone : saisie d'un match du tableau", "is_interactive": true },
+    "MobileSuspendue.dc.html": { "x": 1880, "y": 3520, "w": 390, "h": 844, "title": "16 · Smartphone : saisie suspendue" },
+    "MobileTireurQui.dc.html": { "x": 2350, "y": 3520, "w": 390, "h": 844, "title": "17 · Smartphone tireur : qui êtes-vous ?" },
+    "MobileTireurMatchs.dc.html": { "x": 2820, "y": 3520, "w": 390, "h": 844, "title": "18 · Smartphone tireur : mes matchs" }
+  },
+  "order": [
+    "Main.dc.html",
+    "Repartition.dc.html",
+    "Ajustement.dc.html",
+    "SaisiePoules.dc.html",
+    "Tableau.dc.html",
+    "MobileArbitreAcces.dc.html",
+    "MobileArbitreMatchs.dc.html",
+    "MobileSaisie.dc.html",
+    "MobileSaisieTableau.dc.html",
+    "MobileSuspendue.dc.html",
+    "MobileTireurQui.dc.html",
+    "MobileTireurMatchs.dc.html"
+  ],
+  "notes": {
+    "titreInscriptionsPoules": { "x": 0, "y": -300, "text": "Inscriptions et constitution des poules (PC de l'organisateur)", "kind": "title1", "maxW": 4240 },
+    "titreScores": { "x": 0, "y": 1720, "text": "Scores des poules et tableau (PC de l'organisateur)", "kind": "title1", "maxW": 2800 },
+    "titreSmartphone": { "x": 0, "y": 3220, "text": "Saisie sur smartphone : arbitres et tireurs (accès par QR code)", "kind": "title1", "maxW": 3210 }
+  },
+  "designSystems": []
+}

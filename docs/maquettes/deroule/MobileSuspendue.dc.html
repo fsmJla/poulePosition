@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Saisie suspendue</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#066f6c}a:hover{color:#044e4c}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; background: #f7f4ef; color: #1c2b2a; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif">
+<dc-import name="MobileArbitreMatchs" suspendue="{{ vrai }}" hint-size="390px,844px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return { vrai: true };
+}
+}
+</script>
+</body>
+</html>

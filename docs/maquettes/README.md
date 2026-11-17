@@ -7,8 +7,9 @@ des écrans. Les couleurs et les polices restent celles de la charte « Calme r�
 |---|---|---|---|---|
 | Création des manifestations | Assistant, grille des épreuves, plan de la manifestation (US-046 à US-051) | — | https://claude.ai/artifact/Pzn3RPYfvQkfWLDPjMPknZ | — |
 | **IHM de l'organisateur** | Accueil, manifestation, épreuve, mode sélection, smartphone | 2026-11-11 | https://claude.ai/artifact/2PXJVMFmMrZGxb4X9aoc4V | [`ihm/`](ihm/) |
+| **Déroulé de l'épreuve** | Inscriptions, poules (constitution, ajustement, saisie), tableau, saisie sur smartphone | 2026-11-17 | https://claude.ai/artifact/Xb4Vs7ftyoEGUWXvDKJoBv | [`deroule/`](deroule/) |
 
-Les canevas sont privés (compte de l'utilisateur). Le dossier `ihm/` en garde deux copies :
+Les canevas sont privés (compte de l'utilisateur). Les dossiers `ihm/` et `deroule/` en gardent deux copies :
 
 - **les captures `.png`**, une par planche, à la taille exacte de la planche : c'est **la référence visuelle**, à ouvrir
   avant d'implémenter un écran et à mettre à côté de la preview pendant la recette ;
@@ -31,8 +32,8 @@ Quand une planche change, sa capture est refaite dans le même commit.
 | 5 | Smartphone : accueil | [`ihm/5-smartphone-accueil.png`](ihm/5-smartphone-accueil.png) | `ihm/MobileAccueil.dc.html` | 390 × 844 | Une colonne, bouton « Créer » flottant |
 | 6 | Smartphone : épreuve | [`ihm/6-smartphone-epreuve.png`](ihm/6-smartphone-epreuve.png) | `ihm/MobileEpreuve.dc.html` | 390 × 844 | Entête avec retour, barre d'onglets en bas |
 
-Les planches 5 et 6 concernent l'organisateur sur téléphone. La saisie de l'arbitre et du tireur (E5) aura sa propre
-maquette.
+Les planches 5 et 6 concernent l'organisateur sur téléphone. La saisie de l'arbitre et du tireur (E5) est dans la
+maquette « Déroulé de l'épreuve » (planches 12 à 18).
 
 ### Principes (à respecter par tout nouvel écran)
 
@@ -84,7 +85,7 @@ pas d'émoji. Une icône garde **le même sens partout**.
 | Œil barré | Non publiée | État, seule |
 | Écran | Ce PC est le pilote | État, seule |
 | Cadenas | Lecture seule (un autre PC est le pilote) | État, seule |
-| Triangle d'alerte | À traiter (épreuves à rattacher…) | Avec texte |
+| Triangle d'alerte | À traiter (épreuves à rattacher, club en double dans une poule, saisie refusée…) | Avec texte |
 | Calendrier | Date, informations | Avec texte |
 | Repère de carte | Lieu | Avec texte |
 | Document | Affiche et feuille de route | Avec libellé ; seule, repère d'une ligne de la liste (US-073) |
@@ -103,13 +104,19 @@ pas d'émoji. Une icône garde **le même sens partout**.
 | Personnes | Comptes | Avec libellé |
 | Lune | Thème sombre (groupe de trois icônes ; avec libellé dans le menu de compte étroit) | Seule sur écran large |
 | Écran (thème automatique) | Thème automatique, groupé avec Soleil et Lune ; à ne pas confondre avec « Ce PC est le pilote » | Seule sur écran large |
-| Coche | Choix en cours dans un menu | Seule (décorative) |
+| Coche | Choix en cours dans un menu ; accepté, enregistré (saisie reçue, score enregistré par la table) | Seule (décorative) ; avec texte pour « enregistré » |
 | Liste | Onglet « Compétitions » de la page d'une manifestation | Avec libellé |
 | Quatre carrés | Onglet « Plan » de la page d'une manifestation | Avec libellé |
 | Lien | « Rattacher à une compétition » (barre du mode sélection) | Avec libellé |
 | Archive | Archiver, désarchiver (menu « ⋯ ») | Avec libellé |
 | Télécharger | Exporter une épreuve dans un fichier (menu « ⋯ », US-034) | Avec libellé |
 | Téléverser | Importer une épreuve depuis un fichier (menu « ⋯ » de la liste, US-035) | Avec libellé |
+| Flèches croisées | Répartir les poules (automatique), répartir à nouveau (planches 8 et 9) | Avec libellé |
+| Poignée (six points) | Glisser pour déplacer un tireur (planche 9) | Seule, avec nom accessible |
+| Lecture (triangle) | Lancer les poules (planche 9) | Avec libellé |
+| Smartphone | Saisies reçues des smartphones (planche 10) | Avec libellé |
+| Pause | Saisie suspendue, pilote absent (planche 16) | Avec texte |
+| Avion en papier | Envoyé, en attente de la table (planches 14 et 15) | Avec texte |
 
 Ajouter une icône à ce tableau avant de l'employer dans un écran.
 
@@ -148,6 +155,7 @@ test de contraste. Aucun composant ne les écrit en dur.
 | `#dcefe5` et `#14573a` | Pastille « En cours », étiquette « Aujourd'hui » (fond et texte) | `--etat-ok-fond`, `--sur-etat-ok-fond` |
 | `#fbf3e2`, `#e6cf9c`, `#8a560c` | Alerte « à rattacher » (fond, bordure sur smartphone, icône) | `--etat-attente-fond`, `--etat-attente-bordure`, `--sur-etat-attente-fond` |
 | `#8d9694`, `#a3aaa8` | Étape ou onglet « À venir », grisé | `--texte-inactif` |
+| `#b3362f`, `#1f7a4d` | Côtés de la piste dans la saisie smartphone : gauche rouge, droite vert (planches 14 et 15) | `--cote-gauche`, `--cote-droit` (à créer par l'US de saisie, distincts des états erreur et ok) |
 
 Mesures à reprendre des planches (les sources `.dc.html` donnent la valeur exacte de chaque élément) :
 
@@ -214,6 +222,71 @@ ouvre leur liste (ou le mode sélection, d'office), avec un choix de compétitio
 
 **Livré par US-063 (filtres de la liste) :** sous le titre de l'accueil, quatre filtres en pilules (999 px) : « À venir et en cours » (par défaut),
 « Terminées », « Archivées », « Toutes », chacun avec son nombre d'épreuves ; le filtre choisi est en `--marque`. Ils remplacent la case « Afficher les archives ».
+
+## Maquette « Déroulé de l'épreuve » (2026-11-17)
+
+Elle prolonge la maquette « IHM de l'organisateur » (mêmes entête, fil d'Ariane, navigation par étapes, charte et
+principes) et sert de base à la rédaction des US des Epics E3 (inscriptions), E4 (poules), E5 (saisie smartphone)
+et E6 (tableau). Les planches poursuivent la numérotation (7 à 18). Les données sont celles d'un même exemple :
+l'épreuve « M13 Dames » de sabre, 24 tireuses de 6 clubs, 4 poules de 6, puis un tableau de 32.
+
+Comme `ihm/`, le dossier `deroule/` garde une capture `.png` par planche (la référence visuelle), les sources
+`.dc.html` et `canvas.json`. Les planches 7, 8, 14 et 15 sont interactives dans le canevas ; leur capture montre
+l'état initial.
+
+### Les planches
+
+| N° | Planche | Capture (référence visuelle) | Source | Taille | Ce qu'elle fixe |
+|---|---|---|---|---|---|
+| 7 | Inscriptions : saisie des tireurs | [`deroule/7-inscriptions.png`](deroule/7-inscriptions.png) | `deroule/Main.dc.html` | 1360 × 1620 | Saisie rapide en ligne (Nom, Prénom, Club proposé d'après les clubs déjà saisis, Classement facultatif, « Ajouter » ; Entrée enchaîne), alerte d'homonyme, liste filtrable triée par classement, crayon et « ⋯ » par ligne, « Importer un fichier… » |
+| 8 | Poules : constituer | [`deroule/8-poules-constituer.png`](deroule/8-poules-constituer.png) | `deroule/Repartition.dc.html` | 1360 × 1000 | Nombre de présents (émargement), choix du nombre de poules (propositions selon la formule), répartition automatique (serpentin, clubs séparés, non classés au hasard) ou manuelle (poules vides), première piste, explication du serpentin |
+| 9 | Poules : vérifier et ajuster | [`deroule/9-poules-ajuster.png`](deroule/9-poules-ajuster.png) | `deroule/Ajustement.dc.html` | 1360 × 1080 | Une carte par poule (piste, moyenne des rangs), déplacement par glisser-déposer ou « ⋯ › Déplacer vers… », alerte de club en double, avertissement au dépôt, « Répartir à nouveau », action principale « Lancer les poules » qui fige la répartition |
+| 10 | Poules : saisie des scores sur le PC | [`deroule/10-poules-saisie.png`](deroule/10-poules-saisie.png) | `deroule/SaisiePoules.dc.html` | 1360 × 1100 | Onglets des poules avec avancement, feuille de poule (V5 / défaite, V, V/M, TD, TR, indice, rang provisoire), saisie du match en cours dans l'ordre officiel, liste « Ordre des matchs », journal des saisies reçues des smartphones (acceptée, refusée avec motif) |
+| 11 | Tableau : visualisation et saisie | [`deroule/11-tableau.png`](deroule/11-tableau.png) | `deroule/Tableau.dc.html` | 1360 × 1100 | Tours en pilules (tableau de 32 à finale), carte de saisie du match choisi (têtes de série, piste, « Abandon, forfait, exclusion… »), arbre du tableau de 16 à la finale avec l'état de chaque match (terminé, en piste, à tirer, en attente) |
+| 12 | Smartphone arbitre : accès | [`deroule/12-smartphone-arbitre-acces.png`](deroule/12-smartphone-arbitre-acces.png) | `deroule/MobileArbitreAcces.dc.html` | 390 × 844 | Ouverture par le QR des arbitres : nom de l'arbitre et choix de la piste |
+| 13 | Smartphone arbitre : matchs de la piste | [`deroule/13-smartphone-arbitre-matchs.png`](deroule/13-smartphone-arbitre-matchs.png) | `deroule/MobileArbitreMatchs.dc.html` | 390 × 844 | État de la table dans l'entête, match à saisir maintenant, matchs suivants, matchs terminés avec correction (crayon), « Changer de piste » |
+| 14 | Smartphone : saisie d'un match de poule | [`deroule/14-smartphone-saisie-poule.png`](deroule/14-smartphone-saisie-poule.png) | `deroule/MobileSaisie.dc.html` | 390 × 844 | Reprise de l'IHM du projet précédent : une colonne par tireur (gauche en rouge, droite en vert), boutons 0 à 4 et « V » à toucher, contrôle (un seul V), « Retour » et « Envoyer à la table », puis « en attente » et « enregistré par la table » ; feuille de la poule en dessous, la case du match reflétant la saisie (planche interactive) |
+| 15 | Smartphone : saisie d'un match du tableau | [`deroule/15-smartphone-saisie-tableau.png`](deroule/15-smartphone-saisie-tableau.png) | `deroule/MobileSaisieTableau.dc.html` | 390 × 844 | Même principe en 15 touches : score affiché en grand, dizaine (0 ou 10) puis unité sur un pavé 1–9 / 0 (unités au-delà de 15 désactivées), contrôle (pas d'égalité, victoire au temps signalée), extrait du tableau (match voisin et quart de finale, où le vainqueur s'inscrit) (planche interactive) |
+| 16 | Smartphone : saisie suspendue | [`deroule/16-smartphone-saisie-suspendue.png`](deroule/16-smartphone-saisie-suspendue.png) | `deroule/MobileSuspendue.dc.html` | 390 × 844 | Planche 13 quand le pilote est absent : « Table déconnectée », bandeau « Saisie suspendue » (rapporter la feuille à la table), saisie et correction désactivées |
+| 17 | Smartphone tireur : qui êtes-vous ? | [`deroule/17-smartphone-tireur-qui.png`](deroule/17-smartphone-tireur-qui.png) | `deroule/MobileTireurQui.dc.html` | 390 × 844 | Ouverture par le QR des tireurs : recherche de son nom dans les inscrits, lien spectateur |
+| 18 | Smartphone tireur : mes matchs | [`deroule/18-smartphone-tireur-matchs.png`](deroule/18-smartphone-tireur-matchs.png) | `deroule/MobileTireurMatchs.dc.html` | 390 × 844 | « C'est à vous » avec « Saisir le score », classement provisoire de sa poule, ses matchs terminés, « Ce n'est pas moi » |
+
+### Choix retenus
+
+1. **Saisie des inscrits en ligne** (planche 7) plutôt qu'en fenêtre modale : la saisie de 20 à 60 noms d'affilée
+   se fait au clavier, sans ouvrir ni fermer de fenêtre. L'import (CSV, fichier fédéral) est un bouton neutre visible,
+   car c'est le second moyen d'inscription.
+2. **La constitution des poules est un écran de réglages** (planche 8) dont le résultat se vérifie avant d'être
+   figé (planche 9) : « Lancer les poules » est l'acte qui fige la répartition et ouvre la saisie des scores.
+3. **La saisie sur le PC suit l'ordre officiel des matchs** (planche 10) ; un clic dans une case de la feuille ouvre
+   la saisie ou la correction de ce match. Les saisies des smartphones permises par les droits (Paramètres, US-032)
+   sont acceptées d'office ; la liste des saisies reçues les rend visibles, avec le motif d'un refus.
+4. **Le smartphone saisit le score final** d'un match, pas les touches une à une : pas de score en direct.
+   La saisie reprend l'IHM du projet précédent (planches 14 et 15) : on **touche** le score de chaque tireur
+   (pas de compteur − / +), une colonne par tireur aux couleurs de la piste (gauche rouge, droite vert), et le
+   contexte (feuille de poule ou extrait du tableau) reste visible sous la saisie.
+5. **L'arbitre choisit sa piste** à l'ouverture (le QR vaut pour toute l'épreuve, ADR-0007) et peut en changer.
+6. **Les mots de l'interface du smartphone** : « la table » (de marque) désigne le pilote, mot inconnu des arbitres
+   et des tireurs.
+
+### Icônes
+
+Six icônes nouvelles sont entrées au vocabulaire (Flèches croisées, Poignée, Lecture, Smartphone, Pause, Avion en
+papier) ; la Coche y a pris le sens « accepté, enregistré » et le Triangle d'alerte celui de saisie refusée et de club
+en double dans une poule.
+
+### Points ouverts pour les US
+
+- Le format du fichier d'import des inscrits (CSV libre, export fédéral) et les colonnes obligatoires.
+- Les règles exactes de la répartition automatique (échange pour séparer les clubs, tirage des non classés) et du
+  tableau (placement des exempts, abandon, forfait, exclusion).
+- La victoire au temps en poule (vainqueur à moins de 5 touches, noté V et ses touches) : la planche 14 ne
+  la saisit pas, car « V » vaut 5 touches. Les équipes (relais en 45 touches) : la rangée des dizaines irait de 0 à 40,
+  comme dans le projet précédent.
+- Le rouge et le vert des côtés de piste sont proches des couleurs d'erreur et de succès de la charte : à
+  distinguer par le libellé « à gauche » / « à droite » et la place, jamais par la seule couleur.
+- La disposition à 390 px des planches 7 à 11 (organisateur sur smartphone, principe 13) : elle suivra la planche 6
+  (barre d'onglets en bas) ; la feuille de poule et l'arbre du tableau défilent dans leur cadre.
 
 ## Règle pour les nouvelles US
 
