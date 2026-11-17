@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-031, US-055, US-056, US-063, US-070
-- **Branche / PR :** `us/US-079-accueil-public-et-publication` / —
+- **Branche / PR :** `us/US-079-accueil-public-et-publication` / #119
 
 ## Récit
 
@@ -209,3 +209,4 @@ Aucune.
 | 2026-11-17 | Créée (retours ergonomiques de l'utilisateur) |
 | 2026-11-17 | Précisée : l'accueil public seul est restructuré, l'accueil de l'organisateur ne change que par ses filtres ; passe à Prête |
 | 2026-11-17 | Implémentée ; passe à En revue |
+| 2026-11-17 | Recette OK sur https://poule-position-git-us-us-079-accueil-pu-2d7463-fsmjlas-projects.vercel.app (CA-1 à CA-7 et CA-10 vérifiés à la main, dont « Publier toutes » grisé pour les épreuves d'un autre PC ; CA-8, CA-9 par les tests unitaires ; CA-11, CA-12 et le hors ligne par les E2E de la CI) ; passe à Terminée |
