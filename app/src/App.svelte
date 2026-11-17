@@ -28,6 +28,7 @@
   import MotDePasse from './pages/MotDePasse.svelte';
   import Formule from './pages/Formule.svelte';
   import Inscriptions from './pages/Inscriptions.svelte';
+  import Emargement from './pages/Emargement.svelte';
   import Parametres from './pages/Parametres.svelte';
   import GrilleEpreuves from './pages/GrilleEpreuves.svelte';
   import AideOrganisation from './pages/AideOrganisation.svelte';
@@ -256,6 +257,10 @@
       {:else if route.page === 'inscriptionsEpreuve' && route.epreuveId}
         {#key route.epreuveId}
           <Inscriptions {session} epreuveId={route.epreuveId} {journal} {synchronisation} {accueil} {naviguer} />
+        {/key}
+      {:else if route.page === 'emargementEpreuve' && route.epreuveId}
+        {#key route.epreuveId}
+          <Emargement {session} epreuveId={route.epreuveId} {journal} {synchronisation} {accueil} {naviguer} />
         {/key}
       {:else if route.page === 'parametresEpreuve' && route.epreuveId}
         {#key route.epreuveId}

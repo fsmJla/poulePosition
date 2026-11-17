@@ -15,9 +15,9 @@ const MOTIF_PAGE_EPREUVE = /\/epreuves\/[0-9a-f-]{36}$/;
 
 const navigation = (page: Page) => page.getByRole('navigation', { name: 'Étapes de l’épreuve' });
 const fil = (page: Page) => page.getByRole('navigation', { name: 'Fil d’Ariane' });
-// US-082 livre « Inscriptions » : elle n'est plus à venir.
-const ETAPES_LIVREES_DEROULEMENT = ['Inscriptions'];
-const ETAPES_A_VENIR = ['Émargement', 'Poules', 'Tableau', 'Impressions'];
+// US-082 et US-084 livrent « Inscriptions » et « Émargement » : elles ne sont plus à venir.
+const ETAPES_LIVREES_DEROULEMENT = ['Inscriptions', 'Émargement'];
+const ETAPES_A_VENIR = ['Poules', 'Tableau', 'Impressions'];
 
 /**
  * Crée une épreuve de la planche 3 (M13 Dames, sabre, mercredi 11 novembre 2026, à Pessac, appel 9 h 00, scratch 9 h 15,

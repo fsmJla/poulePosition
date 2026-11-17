@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F3 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-081, US-058
-- **Branche / PR :** `us/US-082-saisir-les-tireurs` / —
+- **Branche / PR :** `us/US-082-saisir-les-tireurs` / #124
 
 ## Récit
 
@@ -117,3 +117,4 @@ Aucune.
 |---|---|
 | 2026-11-17 | Créée |
 | 2026-11-17 | Implémentée ; passe à En revue |
+| 2026-11-17 | Recette OK sur https://poule-position-git-us-us-084-emarger-le-bb9129-fsmjlas-projects.vercel.app (recette commune d'US-082 à US-084) : saisie au clavier (Entrée enchaîne, club repris), tri, nombre dans la navigation, homonyme, crayon, retrait ; nom en capitales dans l'alerte et les noms accessibles corrigé pendant la recette ; passe à Terminée |
