@@ -107,7 +107,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-075](US-075-etiqueter-reel-et-selection-par-impact.md) | Étiqueter les tests « réel » et choisir les E2E par impact (technique, ADR-0023) | E0 | Terminée | US-037 |
 | [US-076](US-076-e2e-interface-sur-runner-local.md) | Lancer les E2E « interface » sur le runner GitHub contre le serveur local (technique) | E0 | Terminée | US-075 |
 | [US-077](US-077-reduire-e2e-reel-sur-preview.md) | Limiter les E2E de la preview Cloudflare aux tests « réel » et mesurer le gain (technique) | E0 | Terminée | US-075, US-076 |
-| [US-078](US-078-choisir-le-jour-des-epreuves.md) | Choisir le jour des épreuves dans la grille et en glissant sur le plan (P2) | E2 | En cours | US-048, US-049, US-050 |
+| [US-078](US-078-choisir-le-jour-des-epreuves.md) | Choisir le jour des épreuves dans la grille et en glissant sur le plan (P2) | E2 | En revue | US-048, US-049, US-050 |
 | [US-079](US-079-accueil-plus-lisible-et-publier-une-competition.md) | Séparer « À venir » et « En cours », publier toute une compétition et structurer l'accueil public (P2) | E2 | Prête | US-031, US-055, US-056, US-063, US-070 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.

@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-048, US-049, US-050
 - **Branche / PR :** `us/US-078-choisir-le-jour-des-epreuves` / —
 
@@ -119,6 +119,14 @@ colonne et l'événement en attente d'envoi.
   récapitulatif.
 - Écart aux maquettes : la grille et le plan n'ont pas de planche validée pour ces deux changements. Une planche peut
   être faite avant l'implémentation si l'utilisateur le souhaite.
+- Prises à l'implémentation :
+  - un échec d'écriture au dépôt affiche le message existant de « Changer de jour » (« Impossible de changer le jour
+    de cette épreuve. »), au-dessus du plan quand le panneau n'est pas ouvert ; le résultat d'un glissement réussi
+    (« Épreuve déplacée au … ») s'y affiche aussi ;
+  - une erreur de validation d'une épreuve du lot (nom généré trop long, par exemple) s'affiche sous le récapitulatif,
+    avec la catégorie et le sexe de l'épreuve ;
+  - pour un seul jour, la répartition par jour n'est plus affichée (elle répéterait le nombre d'épreuves) ;
+  - toute la case d'un jour est cliquable, pas seulement le petit bouton radio.
 
 ## Questions bloquantes
 
@@ -140,3 +148,4 @@ Aucune. Le bouton radio par ligne et la suppression de la liste de droite ont é
 | 2026-11-17 | Créée (retours ergonomiques de l'utilisateur) |
 | 2026-11-17 | Disposition de la grille validée ; passe à Prête |
 | 2026-11-17 | Passe à En cours |
+| 2026-11-17 | Implémentée ; passe à En revue |
