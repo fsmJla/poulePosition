@@ -479,30 +479,30 @@
                     <td class="nom">{tireur.nom.toUpperCase()}</td>
                     <td>{tireur.prenom}</td>
                     <td class="discret">{tireur.club}</td>
-                    <td class="actions">
-                      {#if modifiable}
-                        <button
-                          type="button"
-                          class="icone"
-                          aria-label={t.modifier(nomComplet(tireur))}
-                          title={t.modifier(nomComplet(tireur))}
-                          onclick={() => commencerEdition(tireur)}><Icone nom="crayon" taille={18} /></button
-                        >
-                        <MenuActions
-                          id="menu-tireur-{tireur.id}"
-                          nom={nomComplet(tireur)}
-                          contour={false}
-                          actions={[
-                            {
-                              libelle: t.retirer,
-                              icone: 'corbeille',
-                              destructive: true,
-                              surChoix: () => (retraitDemande = tireur),
-                            },
-                          ]}
-                          {naviguer}
-                        />
-                      {/if}
+                    <td>
+                      {#if modifiable}<div class="actions">
+                          <button
+                            type="button"
+                            class="icone"
+                            aria-label={t.modifier(nomComplet(tireur))}
+                            title={t.modifier(nomComplet(tireur))}
+                            onclick={() => commencerEdition(tireur)}><Icone nom="crayon" taille={18} /></button
+                          >
+                          <MenuActions
+                            id="menu-tireur-{tireur.id}"
+                            nom={nomComplet(tireur)}
+                            contour={false}
+                            actions={[
+                              {
+                                libelle: t.retirer,
+                                icone: 'corbeille',
+                                destructive: true,
+                                surChoix: () => (retraitDemande = tireur),
+                              },
+                            ]}
+                            {naviguer}
+                          />
+                        </div>{/if}
                     </td>
                   </tr>
                 {/if}
@@ -787,10 +787,9 @@
     font-weight: 600;
   }
 
-  td.actions {
+  .actions {
     display: flex;
     justify-content: flex-end;
-    padding-right: 0.5rem;
   }
 
   .edition {
