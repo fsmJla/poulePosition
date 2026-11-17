@@ -159,7 +159,8 @@ describe('textes des compétitions (US-024)', () => {
 
 describe('textes de l’accueil (US-026)', () => {
   it('CA-3 : le filtre des archives et le nombre d’épreuves masquées', () => {
-    expect(textes.listeClub.filtre.avenir).toBe('À venir et en cours');
+    expect(textes.listeClub.filtre.avenir).toBe('À venir');
+    expect(textes.listeClub.filtre.enCours).toBe('En cours');
     expect(textes.listeClub.filtreVide.terminees).toBe('Aucune épreuve terminée');
   });
 
@@ -265,6 +266,23 @@ describe('vocabulaire de la publication (US-031 CA-6)', () => {
   it('hors ligne : le visiteur est averti que le serveur est injoignable', () => {
     expect(textes.accueilPublic.injoignable).toContain('connexion internet');
     expect(textes.publication.enAttente).toBe('Publication en attente d’envoi');
+  });
+});
+
+describe('accueil public structuré (US-079)', () => {
+  const t = textes.accueilPublic;
+
+  it('CA-6 : les dates en toutes lettres, le mois et l’année une seule fois quand ils sont communs', () => {
+    expect(t.periode('2026-11-21', '2026-11-22')).toBe('du samedi 21 au dimanche 22 novembre 2026');
+    expect(t.periode('2026-10-31', '2026-11-01')).toBe('du samedi 31 octobre au dimanche 1 novembre 2026');
+    expect(t.periode('2026-12-31', '2027-01-01')).toBe('du jeudi 31 décembre 2026 au vendredi 1 janvier 2027');
+    expect(t.periode('2026-11-21', '2026-11-21')).toBe('le samedi 21 novembre 2026');
+  });
+
+  it('CA-7 et CA-10 : le jour court d’une épreuve et les noms accessibles des liens', () => {
+    expect(t.jourCourt('2026-11-21')).toBe('sam. 21');
+    expect(t.voirSurCarte('33600 Pessac')).toBe('Voir 33600 Pessac sur OpenStreetMap');
+    expect(t.voirEpreuve('Championnats M13 Dames')).toBe('Voir l’épreuve Championnats M13 Dames');
   });
 });
 

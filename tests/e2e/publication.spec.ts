@@ -48,7 +48,8 @@ test('US-031 CA-1 à CA-5 : publier, voir l’épreuve sur la page publique et s
     await visiteur.goto('/');
     await expect(visiteur.getByRole('heading', { name: 'Épreuves à venir' })).toBeVisible({ timeout: 20_000 });
     await expect(visiteur.getByRole('status').filter({ hasText: 'Chargement' })).toHaveCount(0, { timeout: 20_000 });
-    return (await visiteur.getByText(nom, { exact: true }).count()) > 0;
+    // US-079 CA-7 : la ligne montre le nom court ; le nom complet est celui du lien vers l'épreuve.
+    return (await visiteur.getByRole('link', { name: `Voir l’épreuve ${nom}`, exact: true }).count()) > 0;
   };
   const publier = page
     .getByRole('region', { name: 'Publication' })
@@ -77,7 +78,11 @@ test('US-031 CA-1 à CA-5 : publier, voir l’épreuve sur la page publique et s
 
   // CA-3 : groupée sous sa manifestation et sa compétition ; CA-5 : aucune donnée de tireur ni de compte.
   await expect(visiteur.getByRole('heading', { name: manifestation })).toBeVisible();
-  await expect(visiteur.getByRole('region', { name: competition }).getByText(epreuve, { exact: true })).toBeVisible();
+  await expect(
+    visiteur
+      .getByRole('region', { name: competition })
+      .getByRole('link', { name: `Voir l’épreuve ${epreuve}`, exact: true }),
+  ).toBeVisible();
   await expect(visiteur.getByText('Sabre').first()).toBeVisible();
   await expect(visiteur.getByText(/@/)).toHaveCount(0);
 

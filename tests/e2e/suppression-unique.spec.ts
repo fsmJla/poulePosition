@@ -38,9 +38,12 @@ test('US-057 CA-1 : une seule action « Supprimer… », la dernière du menu d�
     .getByRole('button', { name: `Autres actions pour ${planche.competitionSabre}` })
     .click();
   entrees = page.getByRole('menu').getByRole('menuitem');
-  await expect(entrees).toHaveCount(2);
   await expect(entrees.first()).toContainText('Ajouter des épreuves');
   await expect(entrees.last()).toContainText('Supprimer…');
+  // US-079 CA-3 et CA-4 : entre les deux, seulement « Publier / Dépublier toutes les épreuves ».
+  for (const libelle of (await entrees.allInnerTexts()).slice(1, -1)) {
+    expect(libelle).toMatch(/(Publier|Dépublier) toutes les épreuves/);
+  }
   await page.keyboard.press('Escape');
 
   // L'ancienne action n'existe plus nulle part.

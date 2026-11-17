@@ -1,4 +1,4 @@
-// Filtres de la liste du club (US-063) : « À venir et en cours », « Terminées », « Archivées », « Toutes ». Le classement
+// Filtres de la liste du club (US-063, US-079) : « À venir », « En cours », « Terminées », « Archivées », « Toutes ». Le classement
 // se fait sur l'appareil, sur le statut des épreuves. Les épreuves terminées et archivées sont créées « d'un autre PC ».
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
@@ -31,17 +31,15 @@ async function creerClub(page: Page) {
   return { manifestation, noms };
 }
 
-test('US-063 CA-1 : quatre filtres exclusifs, « À venir et en cours » par défaut, annoncés par aria-pressed', async ({
-  page,
-}) => {
+test('US-063 CA-1 et US-079 CA-1 : cinq filtres exclusifs, annoncés par aria-pressed', async ({ page }) => {
   await creerClub(page);
-  await expect(pilule(page, 'À venir et en cours')).toHaveAttribute('aria-pressed', 'true');
-  for (const autre of ['Terminées', 'Archivées', 'Toutes']) {
+  await expect(pilule(page, 'À venir')).toHaveAttribute('aria-pressed', 'true');
+  for (const autre of ['En cours', 'Terminées', 'Archivées', 'Toutes']) {
     await expect(pilule(page, autre)).toHaveAttribute('aria-pressed', 'false');
   }
   await pilule(page, 'Terminées').click();
   await expect(pilule(page, 'Terminées')).toHaveAttribute('aria-pressed', 'true');
-  await expect(pilule(page, 'À venir et en cours')).toHaveAttribute('aria-pressed', 'false');
+  await expect(pilule(page, 'À venir')).toHaveAttribute('aria-pressed', 'false');
 });
 
 test('US-063 CA-2 à CA-5 : chaque filtre montre les épreuves de son statut', async ({ page }) => {
@@ -73,7 +71,7 @@ test('US-063 CA-2 à CA-5 : chaque filtre montre les épreuves de son statut', a
 
 test('US-063 CA-6 : chaque filtre porte son nombre d’épreuves ; un filtre vide le dit', async ({ page }) => {
   await creerClub(page);
-  for (const nom of ['À venir et en cours', 'Terminées', 'Archivées', 'Toutes']) {
+  for (const nom of ['À venir', 'Terminées', 'Archivées', 'Toutes']) {
     await expect(pilule(page, nom)).toHaveText(new RegExp(`^${nom}[ ]*[1-9][0-9]*$`));
   }
 });
@@ -116,7 +114,7 @@ test('US-063 hors ligne : le filtrage se fait sur l’appareil, sans réseau', a
 
 test('US-063 CA-8 : conforme aux planches 1 et 5 (pilules, filtre choisi en --marque)', async ({ page }, info) => {
   await creerClub(page);
-  const choisie = pilule(page, 'À venir et en cours');
+  const choisie = pilule(page, 'À venir');
   const rayon = await choisie.evaluate((e) => getComputedStyle(e).borderTopLeftRadius);
   expect(parseFloat(rayon)).toBeGreaterThanOrEqual(20);
   const couleurs = await choisie.evaluate((e) => {
@@ -130,4 +128,32 @@ test('US-063 CA-8 : conforme aux planches 1 et 5 (pilules, filtre choisi en --ma
   expect(couleurs.fond).toBe(couleurs.marque);
   const capture = await page.screenshot({ path: process.env.CAPTURE_FILTRES });
   await info.attach(`filtres-${info.project.name}.png`, { body: capture, contentType: 'image/png' });
+});
+
+test('US-079 CA-1 et CA-2 : « En cours » est un filtre à part, choisi par défaut quand il contient une épreuve', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const { manifestation, noms } = await creerClub(page);
+  const enCours = `EnCours ${nomUnique()}`;
+  const competitionId = await ajouterCompetition(page, manifestation, enCours);
+  await ajouterEpreuve(page, competitionId, `${enCours} M15`, '2027-03-14', { statut: 'enCours' });
+  const c = carte(page, manifestation);
+  const competition = (nom: string) => c.getByRole('button', { name: new RegExp(`^${nom}`) });
+
+  // Une nouvelle visite, sans filtre choisi : « En cours » contient une épreuve, il est choisi.
+  await page.evaluate(() => sessionStorage.removeItem('poulePosition.filtreListe'));
+  await page.goto('/organisateur');
+  await expect(pilule(page, 'En cours')).toHaveAttribute('aria-pressed', 'true', { timeout: 20_000 });
+  await expect(competition(enCours)).toBeVisible();
+  await expect(competition(noms.avenir)).toHaveCount(0);
+
+  // « À venir » ne montre plus les épreuves en cours ; la même manifestation y figure avec ses seules épreuves à venir.
+  await pilule(page, 'À venir').click();
+  await expect(competition(noms.avenir)).toBeVisible();
+  await expect(competition(enCours)).toHaveCount(0);
+
+  // Le choix reste pour la visite, rechargement compris.
+  await page.reload();
+  await expect(pilule(page, 'À venir')).toHaveAttribute('aria-pressed', 'true', { timeout: 20_000 });
 });

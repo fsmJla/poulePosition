@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { compterParFiltre, epreuveDuFiltre, filtrerDonnees, type FiltreListe } from './filtres-liste';
+import {
+  compterParFiltre,
+  epreuveDuFiltre,
+  filtreParDefaut,
+  filtrerDonnees,
+  FILTRES_LISTE,
+  type FiltreListe,
+} from './filtres-liste';
 import type { CompetitionListee, DonneesListe, EpreuveListee, ManifestationListee } from './liste';
 import type { Statut } from './epreuve';
 
@@ -60,12 +67,34 @@ const donnees: DonneesListe = {
 const ids = (liste: readonly { id: string }[]) => liste.map(({ id }) => id).sort();
 
 describe('filtres de la liste du club (US-063)', () => {
-  it('CA-2 : « À venir et en cours » garde les épreuves en préparation ou en cours et les éléments vides', () => {
+  it('US-079 CA-1 : cinq filtres, « À venir » et « En cours » séparés', () => {
+    expect(FILTRES_LISTE).toEqual(['avenir', 'enCours', 'terminees', 'archivees', 'toutes']);
+  });
+
+  it('US-079 CA-1 : « À venir » garde les épreuves en préparation et les éléments vides', () => {
     const d = filtrerDonnees(donnees, 'avenir');
-    expect(ids(d.epreuves)).toEqual(['e1', 'e2', 'orpheline']);
+    expect(ids(d.epreuves)).toEqual(['e1', 'orpheline']);
     expect(ids(d.manifestations)).toEqual(['mixte', 'vide']);
-    // c2 n'a plus d'épreuve à venir : elle est masquée ; la compétition seule est vide, donc à venir.
+    // c2 n'a pas d'épreuve à venir : elle est masquée ; la compétition seule est vide, donc à venir.
     expect(ids(d.competitions)).toEqual(['c1', 'cVide', 'seule']);
+  });
+
+  it('US-079 CA-1 : « En cours » ne garde que les épreuves en cours et leurs parents, pas les éléments vides', () => {
+    const d = filtrerDonnees(donnees, 'enCours');
+    expect(ids(d.epreuves)).toEqual(['e2', 'orpheline']);
+    expect(ids(d.manifestations)).toEqual(['mixte']);
+    expect(ids(d.competitions)).toEqual(['c1']);
+  });
+
+  it('US-079 CA-1 : une manifestation aux épreuves à venir et en cours apparaît sous les deux filtres, avec les seules épreuves du filtre', () => {
+    expect(ids(filtrerDonnees(donnees, 'avenir').manifestations)).toContain('mixte');
+    expect(ids(filtrerDonnees(donnees, 'enCours').manifestations)).toContain('mixte');
+    expect(ids(filtrerDonnees(donnees, 'enCours').epreuves)).not.toContain('e1');
+  });
+
+  it('US-079 CA-2 : par défaut, « En cours » s’il contient une épreuve, sinon « À venir »', () => {
+    expect(filtreParDefaut({ enCours: 1 })).toBe('enCours');
+    expect(filtreParDefaut({ enCours: 0 })).toBe('avenir');
   });
 
   it('CA-3 : « Terminées » ne garde que les épreuves terminées et leurs parents', () => {
@@ -92,18 +121,26 @@ describe('filtres de la liste du club (US-063)', () => {
   });
 
   it('cas limite : une épreuve à rattacher non archivée reste visible sous chaque filtre', () => {
-    for (const filtre of ['avenir', 'terminees', 'archivees'] as FiltreListe[]) {
+    for (const filtre of ['avenir', 'enCours', 'terminees', 'archivees'] as FiltreListe[]) {
       expect(ids(filtrerDonnees(donnees, filtre).epreuves)).toContain('orpheline');
     }
   });
 
-  it('CA-6 : compte les épreuves de chaque filtre', () => {
-    expect(compterParFiltre(donnees.epreuves)).toEqual({ avenir: 3, terminees: 2, archivees: 3, toutes: 8 });
-    expect(compterParFiltre([])).toEqual({ avenir: 0, terminees: 0, archivees: 0, toutes: 0 });
+  it('CA-6 et US-079 CA-1 : compte les épreuves de chaque filtre', () => {
+    expect(compterParFiltre(donnees.epreuves)).toEqual({
+      avenir: 2,
+      enCours: 1,
+      terminees: 2,
+      archivees: 3,
+      toutes: 8,
+    });
+    expect(compterParFiltre([])).toEqual({ avenir: 0, enCours: 0, terminees: 0, archivees: 0, toutes: 0 });
   });
 
   it('CA-1 : les filtres sont exclusifs sur le statut', () => {
-    expect(epreuveDuFiltre({ statut: 'enCours' }, 'avenir')).toBe(true);
+    expect(epreuveDuFiltre({ statut: 'enCours' }, 'avenir')).toBe(false);
+    expect(epreuveDuFiltre({ statut: 'enCours' }, 'enCours')).toBe(true);
+    expect(epreuveDuFiltre({ statut: 'preparation' }, 'enCours')).toBe(false);
     expect(epreuveDuFiltre({ statut: 'enCours' }, 'terminees')).toBe(false);
     expect(epreuveDuFiltre({ statut: 'archivee' }, 'avenir')).toBe(false);
     expect(epreuveDuFiltre({ statut: 'archivee' }, 'toutes')).toBe(true);

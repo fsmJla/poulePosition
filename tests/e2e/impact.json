@@ -21,9 +21,10 @@
     "manifestation",
     "plan",
     "assistant",
-    "importer-epreuve"
+    "importer-epreuve",
+    "publication-competition"
   ],
-  "app/src/pages/Accueil.svelte": ["page", "marque", "publication", "charte"],
+  "app/src/pages/Accueil.svelte": ["page", "marque", "publication", "charte", "accueil-public"],
   "app/src/pages/Direct.svelte": ["publication", "page"],
   "app/src/pages/Connexion.svelte": ["connexion", "connexion-moderne", "hors-ligne", "charte", "theme", "theme-icones"],
   "app/src/pages/MotDePasse.svelte": ["mot-de-passe", "profil"],
@@ -61,7 +62,8 @@
     "competitions",
     "fichiers",
     "adresse-lieu",
-    "plan-lieu"
+    "plan-lieu",
+    "publication-competition"
   ],
   "app/src/pages/PlanManifestation.svelte": [
     "manifestation",
@@ -189,7 +191,8 @@
     "manifestation",
     "assistant",
     "plan",
-    "creer"
+    "creer",
+    "publication-competition"
   ],
   "app/src/composants/FormulaireManifestation.svelte": [
     "competitions",
@@ -281,5 +284,6 @@
   "app/src/lib/import-sauvegarde.ts": ["importer-epreuve"],
   "app/src/composants/ConfirmationImport.svelte": ["importer-epreuve"],
   "app/src/lib/synchronisation.ts": ["importer-epreuve", "prise-de-main"],
-  "app/src/lib/journal.ts": ["importer-epreuve", "prise-de-main"]
+  "app/src/lib/journal.ts": ["importer-epreuve", "prise-de-main"],
+  "app/src/lib/publication-lot.ts": ["publication-competition", "accueil-public"]
 }

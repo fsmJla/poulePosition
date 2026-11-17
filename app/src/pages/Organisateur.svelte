@@ -15,6 +15,7 @@
     disponibiliteSuppression,
     couleurDeCompetition,
     elementsEnCours,
+    filtreParDefaut,
     filtrerDonnees,
     FILTRES_LISTE,
     manifestationAujourdhui,
@@ -67,6 +68,8 @@
   } from '../lib/routes';
   import { fichiersPropres, type ClientFichiers } from '../lib/fichiers';
   import { textes } from '../lib/textes';
+  import { actionsPublication, messagePublication, publierLot } from '../lib/publication-lot';
+  import type { Synchronisation } from '../lib/synchronisation';
   import type { FichierJoint } from '@poule-position/protocole';
 
   interface Proprietes {
@@ -75,10 +78,12 @@
     fichiers: ClientFichiers;
     /** US-035 : l'import écrit dans le journal de cet appareil. */
     journal: Journal;
+    /** US-079 : la publication par compétition part au serveur après l'écriture locale. */
+    synchronisation: Synchronisation;
     naviguer: (chemin: string) => void;
   }
 
-  let { session, accueil, fichiers, journal, naviguer }: Proprietes = $props();
+  let { session, accueil, fichiers, journal, synchronisation, naviguer }: Proprietes = $props();
 
   const t = textes.listeClub;
   const tc = textes.epreuves;
@@ -114,11 +119,15 @@
     return null;
   }
   let donnees: DonneesAccueil | null = $state(null);
-  /** US-063 CA-1 et CA-7 : filtre de la liste, « À venir et en cours » à chaque nouvelle visite. */
-  let filtre: FiltreListe = $state((filtreMemorise() as FiltreListe | null) ?? 'avenir');
+  /**
+   * US-063 CA-7, US-079 CA-2 : le filtre choisi pendant la visite ; tant qu'aucun ne l'est, « En cours » s'il contient
+   * une épreuve, sinon « À venir ».
+   */
+  let filtreChoisi = $state(filtreMemorise() as FiltreListe | null);
+  const filtre: FiltreListe = $derived.by(() => filtreChoisi ?? filtreParDefaut(comptes));
   const archivesAffichees = $derived(filtre === 'archivees' || filtre === 'toutes');
   function choisirFiltre(valeur: FiltreListe) {
-    filtre = valeur;
+    filtreChoisi = valeur;
     memoriserFiltre(valeur);
     // La sélection ne garde que ce que le filtre montre encore.
     if (modeSelection) cochees.clear();
@@ -250,11 +259,33 @@
     ];
   }
 
-  /** US-055 CA-6 : actions secondaires d'une compétition. */
+  /** US-055 CA-6 : actions secondaires d'une compétition ; US-079 CA-3 et CA-4 : publier ou dépublier toutes ses épreuves. */
   const actionsCompetition = (id: string): ActionMenu[] => [
     { libelle: tc.grille.ajouter, icone: 'plus', chemin: cheminGrilleEpreuves(id) },
+    ...actionsPublication(epreuvesDeCompetition(id), (publiee) => void publierCompetition(id, publiee)),
     ...actionSupprimer(id),
   ];
+
+  /** Toutes les épreuves de la compétition, quel que soit le filtre affiché. */
+  const epreuvesDeCompetition = (id: string) =>
+    (donnees?.epreuves ?? []).filter(({ rattachement }) => rattachement.competitionId === id);
+
+  /** US-079 CA-3 : le résultat du dernier lot de publication, au-dessus de la liste. */
+  let remarquePublication: string | null = $state(null);
+
+  async function publierCompetition(id: string, publiee: boolean) {
+    remarquePublication = null;
+    const rendu = await publierLot(
+      journal,
+      epreuvesDeCompetition(id),
+      publiee,
+      { clubId: session.compte.clubId, auteur: session.compte.email },
+      (epreuveId) => synchronisation.envoyer(epreuveId),
+    );
+    // Le message suit la liste relue : les icônes « Publiée » sont déjà à jour quand il paraît.
+    await charger();
+    remarquePublication = messagePublication(rendu, horsLigne);
+  }
 
   /** US-057 : la fenêtre se ferme ; si l'élément est supprimé, la liste se relit (et les copies locales avec elle). */
   async function fermerConfirmation(supprime: boolean) {
@@ -727,7 +758,8 @@
         <p class="vide">{t.vide}</p>
       {:else}
         {#if remarqueArchivage}<p class="remarque" role="status">{remarqueArchivage}</p>{/if}
-        <!-- US-063 CA-1 : quatre filtres exclusifs, en pilules ; le nombre d'épreuves suit le libellé (CA-6). -->
+        {#if remarquePublication}<p class="remarque" role="status">{remarquePublication}</p>{/if}
+        <!-- US-063 CA-1, US-079 CA-1 : cinq filtres exclusifs, en pilules ; le nombre d'épreuves suit le libellé (CA-6). -->
         <div class="filtres" role="group" aria-label={t.filtres}>
           {#each FILTRES_LISTE as valeur (valeur)}
             <button type="button" class="pilule" aria-pressed={filtre === valeur} onclick={() => choisirFiltre(valeur)}

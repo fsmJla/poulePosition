@@ -20,6 +20,8 @@ export * from './assistant';
 export * from './creer';
 export * from './fichiers';
 export * from './publication';
+export * from './publication-lot';
+export * from './lieu-public';
 export * from './prochaine-etape';
 export * from './rattachement';
 export * from './recherche';

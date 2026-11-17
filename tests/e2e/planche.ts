@@ -233,12 +233,18 @@ const manifestationsCreees = new Map<string, string>();
  * US-056 : crée au serveur une manifestation du 14 au 15 mars 2027 (Salle Bellegrave), comme le faisait l'ancienne page
  * « Manifestations ». Retourne son identifiant ; `ouvrirManifestation` l'ouvre par son nom.
  */
-export async function creerManifestationSimple(page: Page, nom: string, debut = '2027-03-14', fin = '2027-03-15') {
+export async function creerManifestationSimple(
+  page: Page,
+  nom: string,
+  debut = '2027-03-14',
+  fin = '2027-03-15',
+  lieu = 'Salle Bellegrave',
+) {
   const { manifestation } = await appelerServeur(page, '/manifestations', {
     nom,
     debut,
     fin,
-    lieu: 'Salle Bellegrave',
+    lieu,
     commentaire: null,
   });
   manifestationsCreees.set(nom, manifestation.id);

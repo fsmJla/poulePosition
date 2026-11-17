@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { estDeplie, filtreMemorise, memoriserFiltre, memoriserRepli, oublierReplis } from './repli';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CLE_FILTRE, estDeplie, filtreMemorise, memoriserFiltre, memoriserRepli, oublierReplis } from './repli';
 
 describe('repli de l’accueil (US-055 CA-2)', () => {
   beforeEach(oublierReplis);
@@ -22,6 +22,49 @@ describe('repli de l’accueil (US-055 CA-2)', () => {
     expect(filtreMemorise()).toBe('terminees');
     oublierReplis();
     expect(filtreMemorise()).toBeNull();
+  });
+
+  it('US-079 CA-2 : le filtre choisi est gardé dans l’onglet (il survit à un rechargement) et oublié au changement de compte', () => {
+    const valeurs = new Map<string, string>();
+    vi.stubGlobal('sessionStorage', {
+      getItem: (cle: string) => valeurs.get(cle) ?? null,
+      setItem: (cle: string, valeur: string) => valeurs.set(cle, valeur),
+      removeItem: (cle: string) => valeurs.delete(cle),
+    });
+    try {
+      memoriserFiltre('enCours');
+      expect(valeurs.get(CLE_FILTRE)).toBe('enCours');
+      // Un rechargement repart du stockage de l'onglet.
+      valeurs.set(CLE_FILTRE, 'terminees');
+      expect(filtreMemorise()).toBe('terminees');
+      oublierReplis();
+      expect(valeurs.has(CLE_FILTRE)).toBe(false);
+      expect(filtreMemorise()).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('US-079 CA-2 : un stockage refusé n’empêche pas de garder le filtre en mémoire', () => {
+    vi.stubGlobal('sessionStorage', {
+      getItem: () => {
+        throw new Error('refusé');
+      },
+      setItem: () => {
+        throw new Error('refusé');
+      },
+      removeItem: () => {
+        throw new Error('refusé');
+      },
+    });
+    try {
+      memoriserFiltre('avenir');
+      expect(filtreMemorise()).toBe('avenir');
+      oublierReplis();
+      expect(filtreMemorise()).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('oublier les choix rend les états par défaut', () => {

@@ -1,16 +1,19 @@
-// Filtres de la liste du club (US-063) : « À venir et en cours », « Terminées », « Archivées », « Toutes ».
+// Filtres de la liste du club (US-063, US-079) : « À venir », « En cours », « Terminées », « Archivées », « Toutes ».
 // Logique pure : le classement se fait sur le statut des épreuves (pas sur les dates), sur l'appareil.
 import type { CompetitionListee, DonneesListe, EpreuveListee } from './liste';
 
-export type FiltreListe = 'avenir' | 'terminees' | 'archivees' | 'toutes';
+export type FiltreListe = 'avenir' | 'enCours' | 'terminees' | 'archivees' | 'toutes';
 
-export const FILTRES_LISTE: readonly FiltreListe[] = ['avenir', 'terminees', 'archivees', 'toutes'];
+/** US-079 CA-1 : « À venir » et « En cours » sont deux filtres distincts. */
+export const FILTRES_LISTE: readonly FiltreListe[] = ['avenir', 'enCours', 'terminees', 'archivees', 'toutes'];
 
-/** CA-2 à CA-5 : l'épreuve appartient-elle à ce filtre ? */
+/** US-063 CA-2 à CA-5, US-079 CA-1 : l'épreuve appartient-elle à ce filtre ? */
 export function epreuveDuFiltre({ statut }: Pick<EpreuveListee, 'statut'>, filtre: FiltreListe): boolean {
   switch (filtre) {
     case 'avenir':
-      return statut === 'preparation' || statut === 'enCours';
+      return statut === 'preparation';
+    case 'enCours':
+      return statut === 'enCours';
     case 'terminees':
       return statut === 'terminee';
     case 'archivees':
@@ -22,19 +25,30 @@ export function epreuveDuFiltre({ statut }: Pick<EpreuveListee, 'statut'>, filtr
 
 /** CA-6 : le nombre d'épreuves de chaque filtre. */
 export function compterParFiltre(epreuves: readonly Pick<EpreuveListee, 'statut'>[]): Record<FiltreListe, number> {
-  const comptes: Record<FiltreListe, number> = { avenir: 0, terminees: 0, archivees: 0, toutes: epreuves.length };
+  const comptes: Record<FiltreListe, number> = {
+    avenir: 0,
+    enCours: 0,
+    terminees: 0,
+    archivees: 0,
+    toutes: epreuves.length,
+  };
   for (const epreuve of epreuves) {
-    for (const filtre of ['avenir', 'terminees', 'archivees'] as const) {
+    for (const filtre of ['avenir', 'enCours', 'terminees', 'archivees'] as const) {
       if (epreuveDuFiltre(epreuve, filtre)) comptes[filtre]++;
     }
   }
   return comptes;
 }
 
+/** US-079 CA-2 : à une nouvelle visite, « En cours » s'il contient une épreuve, sinon « À venir ». */
+export function filtreParDefaut(comptes: Pick<Record<FiltreListe, number>, 'enCours'>): FiltreListe {
+  return comptes.enCours > 0 ? 'enCours' : 'avenir';
+}
+
 /**
  * CA-2 à CA-5 et cas limites : les données que la liste doit montrer pour ce filtre.
  * - Une épreuve est gardée si son statut correspond ; une compétition ou une manifestation l'est si elle en contient
- *   une, ou si elle est vide (non archivée, sous « À venir et en cours » et « Toutes » seulement).
+ *   une, ou si elle est vide (non archivée, sous « À venir » et « Toutes » seulement).
  * - « Archivées » garde aussi les compétitions et manifestations archivées.
  * - Une épreuve à rattacher non archivée reste visible quel que soit le filtre (l'alerte d'US-060 ne se masque pas).
  */

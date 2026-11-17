@@ -50,6 +50,7 @@
   import { supprimerElement } from '../lib/suppression-unique';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
+  import { actionsPublication, messagePublication, publierLot } from '../lib/publication-lot';
 
   interface Proprietes {
     session: SessionAppareil;
@@ -238,8 +239,34 @@
       indisponible: motifHorsLigne,
     },
     { libelle: t.ajouterDesEpreuves, icone: 'plus', chemin: cheminGrilleEpreuves(id) },
+    // US-079 CA-3 et CA-4 : publier ou dépublier toutes les épreuves de la compétition.
+    ...actionsPublication(epreuvesDeCompetition(id), (publiee) => void publierCompetition(id, publiee)),
     ...actionSupprimer(id),
   ];
+
+  const epreuvesDeCompetition = (id: string) =>
+    (donnees?.epreuves ?? []).filter(({ rattachement }) => rattachement.competitionId === id);
+
+  /** US-079 CA-3 : le résultat du dernier lot de publication, au-dessus des onglets. */
+  let remarquePublication: string | null = $state(null);
+
+  async function publierCompetition(id: string, publiee: boolean) {
+    remarquePublication = null;
+    remarquePublication = await publierEtDire(id, publiee);
+  }
+
+  /** US-079 CA-3 et CA-5 : écrit le lot, relit la page et rend le message du résultat. */
+  async function publierEtDire(id: string, publiee: boolean): Promise<string> {
+    const rendu = await publierLot(
+      journal,
+      epreuvesDeCompetition(id),
+      publiee,
+      { clubId: session.compte.clubId, auteur: session.compte.email },
+      (epreuveId) => synchronisation.envoyer(epreuveId),
+    );
+    await charger();
+    return messagePublication(rendu, horsLigne);
+  }
 
   /** US-057 : la fenêtre se ferme ; une manifestation supprimée ramène à l'accueil, une compétition relit la page. */
   async function fermerConfirmation(supprime: boolean) {
@@ -378,6 +405,7 @@
     </header>
     {#if horsLigne}<small class="hors-ligne">{t.necessiteInternet}</small>{/if}
     {#if remarqueArchivage}<p class="remarque" role="status">{remarqueArchivage}</p>{/if}
+    {#if remarquePublication}<p class="remarque" role="status">{remarquePublication}</p>{/if}
 
     {#key versionFormulaire}
       {#if formulaire && 'manifestation' in formulaire && manifestationComplete}
@@ -399,6 +427,12 @@
           enregistre={apresEnregistrement}
           annule={fermerFormulaire}
           {recharger}
+          publication={competitionModifiee
+            ? {
+                epreuves: epreuvesDeCompetition(competitionModifiee.id),
+                publier: () => publierEtDire((competitionModifiee as Competition).id, true),
+              }
+            : undefined}
         />
       {/if}
     {/key}

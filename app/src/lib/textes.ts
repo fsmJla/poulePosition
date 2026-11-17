@@ -280,17 +280,19 @@ export const textes = {
     /** Hors ligne, sans aucune copie du club gardée sur l'appareil. */
     horsLigneSansCopie: 'Hors ligne : seules les épreuves de cet appareil sont listées',
     chargement: 'Chargement de la liste…',
-    /** US-063 CA-1 : filtres de la liste. */
+    /** US-063 CA-1, US-079 CA-1 : filtres de la liste. */
     filtres: 'Filtrer la liste',
     filtre: {
-      avenir: 'À venir et en cours',
+      avenir: 'À venir',
+      enCours: 'En cours',
       terminees: 'Terminées',
       archivees: 'Archivées',
       toutes: 'Toutes',
     },
     /** CA-6 : un filtre sans épreuve ne montre pas la liste du club vide. */
     filtreVide: {
-      avenir: 'Aucune épreuve à venir ou en cours',
+      avenir: 'Aucune épreuve à venir',
+      enCours: 'Aucune épreuve en cours',
       terminees: 'Aucune épreuve terminée',
       archivees: 'Aucune épreuve archivée',
       toutes: 'Aucune épreuve',
@@ -1453,6 +1455,30 @@ export const textes = {
       ECRITURE_IMPOSSIBLE: 'La publication n’a pas pu être enregistrée sur cet appareil',
     },
   },
+  /** US-079 CA-3 à CA-5 : publier ou dépublier toutes les épreuves d'une compétition. */
+  publicationLot: {
+    publier: 'Publier toutes les épreuves',
+    depublier: 'Dépublier toutes les épreuves',
+    detailPublier: 'visibles du public sur la page d’accueil',
+    detailDepublier: 'seuls les organisateurs les verront',
+    lectureSeule: 'Lecture seule : un autre PC est le pilote',
+    titre: 'Publication',
+    compte: (publiees: number, total: number) =>
+      `${publiees} épreuve${publiees > 1 ? 's' : ''} publiée${publiees > 1 ? 's' : ''} sur ${total}`,
+    enCours: 'Publication…',
+    faites: (nombre: number, publiee: boolean) => {
+      const verbe = publiee ? 'publiée' : 'dépubliée';
+      return nombre === 0
+        ? `Aucune épreuve ${verbe}`
+        : `${nombre} épreuve${nombre > 1 ? 's' : ''} ${verbe}${nombre > 1 ? 's' : ''}`;
+    },
+    autrePc: (nombre: number, publiee: boolean) =>
+      `${nombre} épreuve${nombre > 1 ? 's n’ont' : ' n’a'} pas été ${publiee ? 'publiée' : 'dépubliée'}${nombre > 1 ? 's' : ''} : un autre PC est le pilote`,
+    archivees: (nombre: number) =>
+      `${nombre} épreuve${nombre > 1 ? 's archivées restent' : ' archivée reste'} telle${nombre > 1 ? 's' : ''} quelle${nombre > 1 ? 's' : ''}`,
+    echecs: (nombre: number) =>
+      `${nombre} épreuve${nombre > 1 ? 's n’ont' : ' n’a'} pas pu être enregistrée${nombre > 1 ? 's' : ''} sur cet appareil`,
+  },
   /** US-031 : page d'accueil publique et page « direct » d'une épreuve (E9 y ajoutera le suivi en direct). */
   accueilPublic: {
     titre: 'Épreuves à venir',
@@ -1469,6 +1495,31 @@ export const textes = {
       const jour = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}/${date.slice(0, 4)}`;
       return debut === fin ? `le ${jour(debut)}` : `du ${jour(debut)} au ${jour(fin)}`;
     },
+    /** US-079 CA-6 : les dates en toutes lettres, « du samedi 21 au dimanche 22 novembre 2026 ». */
+    periode: (debut: string, fin: string) => {
+      const ecrire = (date: string, options: Intl.DateTimeFormatOptions) =>
+        new Intl.DateTimeFormat('fr-FR', { ...options, timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));
+      const complet = (date: string) =>
+        ecrire(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      if (debut === fin) return `le ${complet(debut)}`;
+      const memeAnnee = debut.slice(0, 4) === fin.slice(0, 4);
+      const memeMois = memeAnnee && debut.slice(5, 7) === fin.slice(5, 7);
+      const depart = memeMois
+        ? ecrire(debut, { weekday: 'long', day: 'numeric' })
+        : memeAnnee
+          ? ecrire(debut, { weekday: 'long', day: 'numeric', month: 'long' })
+          : complet(debut);
+      return `du ${depart} au ${complet(fin)}`;
+    },
+    /** US-079 CA-7 : jour court d'une épreuve, « sam. 21 ». */
+    jourCourt: (date: string) =>
+      new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', timeZone: 'UTC' }).format(
+        new Date(`${date}T00:00:00Z`),
+      ),
+    /** US-079 CA-10 : nom accessible et infobulle du lien vers la carte. */
+    voirSurCarte: (lieu: string) => `Voir ${lieu} sur OpenStreetMap`,
+    /** US-079 CA-7 : la ligne d'une épreuve est le lien vers elle. */
+    voirEpreuve: (nom: string) => `Voir l’épreuve ${nom}`,
     direct: {
       titre: 'Épreuve',
       chargement: 'Chargement de l’épreuve…',
