@@ -22,9 +22,9 @@
     TYPES_EPREUVE,
     validerLot,
     type Arme,
+    jourDeLigne,
     type CaseGrille,
     type ContexteLot,
-    type ModificationsLigne,
     type Sexe,
     type TypeEpreuve,
   } from '@poule-position/domaine';
@@ -84,7 +84,8 @@
   let categorieLibre = $state('');
   let erreurCategorie: string | null = $state(null);
   const cochees = new SvelteMap<string, CaseGrille>();
-  const modifications: ModificationsLigne = new SvelteMap();
+  /** US-078 CA-1 : le jour choisi pour chaque ligne (catégorie) ; une ligne absente prend le premier jour. */
+  const joursParLigne = new SvelteMap<string, string>();
   let typeEpreuve: TypeEpreuve = $state('individuelle');
   let touchesPoules = $state(formuleParDefaut('individuelle').touchesPoules);
   let touchesTableau = $state(formuleParDefaut('individuelle').touchesTableau);
@@ -119,7 +120,7 @@
       : null,
   );
   const proposition = $derived(
-    competition ? proposerLot(competition.nom, casesCochees, occupees, jours, modifications) : null,
+    competition ? proposerLot(competition.nom, casesCochees, occupees, jours, joursParLigne) : null,
   );
   const lot = $derived(
     contexte && proposition
@@ -128,6 +129,11 @@
   );
   const erreurs = $derived(contexte ? validerLot(lot, contexte) : new Map());
   const repartition = $derived(proposition ? repartitionParJour(proposition.epreuves) : []);
+  /** US-078 CA-1 et CA-2 : une colonne par jour, seulement pour une manifestation de plusieurs jours. */
+  const colonnesJours = $derived(jours.length > 1 ? jours : []);
+  /** US-078 CA-1 : une ligne a des boutons de jour dès qu'une de ses cases est cochée (et pas déjà créée). */
+  const ligneCochee = (categorie: string) =>
+    COLONNES_GRILLE.some((sexe) => cochees.has(cleCase(categorie, sexe)) && !occupees.has(cleCase(categorie, sexe)));
 
   async function charger() {
     donnees = await accueil.charger();
@@ -156,10 +162,6 @@
       categorieLibre = '';
       erreurCategorie = null;
     } else erreurCategorie = tg.categoriesLibres[resultat.erreur] ?? null;
-  }
-
-  function modifier(cle: string, champs: { nom?: string; date?: string | null }) {
-    modifications.set(cle, { ...modifications.get(cle), ...champs });
   }
 
   /** CA-5 : crée les épreuves, puis revient à la liste du club ; un lot interrompu garde ses cases cochées. */
@@ -240,6 +242,12 @@
               <tr>
                 <th scope="col"><span class="invisible">{t.categorie}</span></th>
                 {#each COLONNES_GRILLE as sexe (sexe)}<th scope="col">{sexeLibelle(sexe)}</th>{/each}
+                <!-- US-078 CA-1 : une colonne par jour, après un filet ; CA-2 : aucune pour un seul jour. -->
+                {#each colonnesJours as jour, indice (jour)}
+                  <th scope="col" class="jour" class:premier-jour={indice === 0} title={jourCourt(jour)}
+                    >{tg.enteteJour(jour)}</th
+                  >
+                {/each}
               </tr>
             </thead>
             <tbody>
@@ -260,6 +268,25 @@
                         onclick={() => basculer(categorie, sexe)}
                         >{#if prise}{tg.dejaCreee}{:else if cochees.has(cle)}✓{:else}&nbsp;{/if}</button
                       >
+                    </td>
+                  {/each}
+                  <!-- US-078 CA-1 : un bouton radio par jour, sur les lignes qui ont une case cochée ; le premier jour par défaut. -->
+                  {#each colonnesJours as jour, indice (jour)}
+                    <td class="jour" class:premier-jour={indice === 0}>
+                      {#if ligneCochee(categorie)}
+                        <!-- Toute la case est la cible du clic, pas seulement le petit bouton radio. -->
+                        <label class="choix-jour">
+                          <input
+                            type="radio"
+                            name="jour-{categorie}"
+                            value={jour}
+                            aria-label={tg.jourDesEpreuves(categorie, jourCourt(jour))}
+                            checked={jourDeLigne(categorie, jours, joursParLigne) === jour}
+                            disabled={enCours}
+                            onchange={() => joursParLigne.set(categorie, jour)}
+                          />
+                        </label>
+                      {/if}
                     </td>
                   {/each}
                 </tr>
@@ -332,49 +359,35 @@
             {#if manifestation?.lieu}<small>{tg.lieuRepris(manifestation.lieu)}</small>{/if}
           </fieldset>
 
-          <!-- CA-3 : les épreuves proposées, leur nom (modifiable), leur jour, et la répartition par jour. -->
+          <!-- US-078 CA-3 : un récapitulatif sur une ligne (nombre et répartition par jour), sans liste d'épreuves à régler. -->
           <div class="proposees" aria-live="polite">
             <h2>
               {#if proposition.epreuves.length > 0}{tg.seraCreees(
                   proposition.epreuves.length,
                 )}{:else}{tg.aucuneCochee}{/if}
             </h2>
-            {#if repartition.length > 0 && jours.length > 0}
+            {#if repartition.length > 0 && jours.length > 1}
               <p class="repartition">
                 {repartition.map(({ jour, nombre }) => tg.repartition(jourCourt(jour), nombre)).join(' · ')}
               </p>
             {/if}
-            <ul>
-              {#each proposition.epreuves as epreuve (epreuve.cle)}
-                {@const erreur = tente ? erreurs.get(epreuve.cle) : undefined}
-                {@const nomLigne = `${epreuve.categorie} ${sexeLibelle(epreuve.sexe)}`}
-                <li>
-                  <input
-                    type="text"
-                    aria-label={tg.nomEpreuve(nomLigne)}
-                    value={epreuve.nom}
-                    oninput={(e) => modifier(epreuve.cle, { nom: e.currentTarget.value })}
-                    aria-invalid={erreur?.nom ? 'true' : undefined}
-                  />
-                  {#if jours.length > 0}
-                    <select
-                      aria-label={tg.jourEpreuve(nomLigne)}
-                      value={epreuve.date ?? ''}
-                      onchange={(e) => modifier(epreuve.cle, { date: e.currentTarget.value || null })}
-                    >
-                      {#each jours as jour (jour)}<option value={jour}>{jourCourt(jour)}</option>{/each}
-                    </select>
-                  {/if}
+            {#if tente && erreurs.size > 0}
+              <ul class="erreurs">
+                {#each proposition.epreuves as epreuve (epreuve.cle)}
+                  {@const erreur = erreurs.get(epreuve.cle)}
                   {#if erreur}
-                    <span class="erreur" role="alert"
-                      >{Object.values(erreur)
-                        .map((code) => (code ? (t.champs[code as keyof typeof t.champs] ?? code) : ''))
-                        .join(' · ')}</span
-                    >
+                    <li class="erreur" role="alert">
+                      {tg.erreurEpreuve(
+                        `${epreuve.categorie} ${sexeLibelle(epreuve.sexe)}`,
+                        Object.values(erreur)
+                          .map((code) => (code ? (t.champs[code as keyof typeof t.champs] ?? code) : ''))
+                          .join(' · '),
+                      )}
+                    </li>
                   {/if}
-                </li>
-              {/each}
-            </ul>
+                {/each}
+              </ul>
+            {/if}
           </div>
         </section>
       </div>
@@ -566,24 +579,44 @@
     font-style: italic;
   }
 
-  .proposees ul {
+  /* US-078 CA-1 : les colonnes de jours, séparées des colonnes de sexe par un filet. */
+  .grille .jour {
+    min-width: 3rem;
+    text-align: center;
+  }
+
+  .grille thead th.jour {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .grille .premier-jour {
+    border-left: 1px solid var(--bordure);
+    padding-left: 0.5rem;
+  }
+
+  .choix-jour {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.25rem;
+    cursor: pointer;
+  }
+
+  .choix-jour input {
+    width: 1.15rem;
+    height: 1.15rem;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--accent);
+  }
+
+  .erreurs {
     display: grid;
-    gap: 0.5rem;
+    gap: 0.25rem;
     margin: 0;
     padding: 0;
     list-style: none;
-  }
-
-  .proposees li {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .proposees li input {
-    flex: 1 1 12rem;
-    min-width: 0;
   }
 
   .repartition {

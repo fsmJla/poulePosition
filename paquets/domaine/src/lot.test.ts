@@ -6,6 +6,7 @@ import {
   cleCase,
   COLONNES_GRILLE,
   donneesDuLot,
+  jourDeLigne,
   lignesDeGrille,
   nomGenere,
   proposerLot,
@@ -79,14 +80,40 @@ describe('grille des épreuves (US-048)', () => {
     ]);
   });
 
-  it('CA-3 : le nom et le jour se modifient épreuve par épreuve ; sans jour de manifestation, la date reste vide', () => {
-    const cle = cleCase('M13', 'hommes');
-    const modifs = new Map([[cle, { nom: 'Coupe M13', date: '2027-03-14' }]]);
-    const cases = [{ categorie: 'M13', sexe: 'hommes' as const }];
-    const [modifiee] = proposerLot('Championnats', cases, new Set(), ['2027-03-13', '2027-03-14'], modifs).epreuves;
-    expect(modifiee).toMatchObject({ nom: 'Coupe M13', date: '2027-03-14' });
-    const [seule] = proposerLot('Défi', cases, new Set(), [], new Map()).epreuves;
+  it('US-078 CA-1 : le jour choisi pour une ligne vaut pour toutes ses épreuves, les autres lignes gardent le premier jour', () => {
+    const jours = ['2027-03-13', '2027-03-14'];
+    const cases = [
+      { categorie: 'M13', sexe: 'dames' as const },
+      { categorie: 'M13', sexe: 'hommes' as const },
+      { categorie: 'M15', sexe: 'dames' as const },
+    ];
+    const { epreuves } = proposerLot('Championnats', cases, new Set(), jours, new Map([['M13', '2027-03-14']]));
+    expect(epreuves.map(({ nom, date }) => [nom, date])).toEqual([
+      ['Championnats M13 Dames', '2027-03-14'],
+      ['Championnats M13 Hommes', '2027-03-14'],
+      ['Championnats M15 Dames', '2027-03-13'],
+    ]);
+  });
+
+  it('US-078 CA-1 et CA-2 : un jour hors de la manifestation revient au premier ; sans jour de manifestation, la date reste vide', () => {
+    const jours = ['2027-03-13', '2027-03-14'];
+    expect(jourDeLigne('M13', jours, new Map([['M13', '2027-03-20']]))).toBe('2027-03-13');
+    expect(jourDeLigne('M13', jours, new Map())).toBe('2027-03-13');
+    expect(jourDeLigne('M13', [], new Map([['M13', '2027-03-14']]))).toBeNull();
+    const [seule] = proposerLot('Défi', [{ categorie: 'M13', sexe: 'hommes' }], new Set(), []).epreuves;
     expect(seule?.date).toBeNull();
+  });
+
+  it('US-078 CA-4 : une catégorie libre a, elle aussi, son jour', () => {
+    const jours = ['2027-03-13', '2027-03-14'];
+    const [open] = proposerLot(
+      'Défi',
+      [{ categorie: 'Open', sexe: 'mixte' }],
+      new Set(),
+      jours,
+      new Map([['Open', '2027-03-14']]),
+    ).epreuves;
+    expect(open).toMatchObject({ nom: 'Défi Open Mixte', date: '2027-03-14' });
   });
 
   it('CA-3 : la répartition par jour est triée et ignore les épreuves sans jour', () => {

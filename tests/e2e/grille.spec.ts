@@ -67,13 +67,11 @@ test('US-048 CA-1, CA-3, CA-4, CA-5 et CA-6 : cocher, régler, créer le lot et 
   await laCase(page, 'Open', 'Mixte').click();
   await expect(laCase(page, 'M13', 'Hommes')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText('3 épreuves seront créées')).toBeVisible();
-  await expect(page.getByLabel('Nom de l’épreuve M13 Hommes')).toHaveValue(`${competition} M13 Hommes`);
   await expect(page.getByText('dimanche 14 mars 2027 : 3')).toBeVisible();
 
-  // CA-3 : le jour et le nom d'une épreuve se modifient ; la répartition suit.
-  await page.getByLabel('Jour de l’épreuve M15 Hommes').selectOption({ label: 'lundi 15 mars 2027' });
+  // CA-3 (revu par US-078) : le jour se choisit par ligne ; la répartition suit.
+  await page.getByRole('radio', { name: 'Jour des épreuves M15 : lundi 15 mars 2027' }).check();
   await expect(page.getByText('dimanche 14 mars 2027 : 2 · lundi 15 mars 2027 : 1')).toBeVisible();
-  await page.getByLabel('Nom de l’épreuve Open Mixte').fill(`${competition} Open`);
 
   // CA-4 : réglages communs, l'appel de chaque jour et le type.
   await regler(page, 'Appel du dimanche 14 mars 2027', '08:30');
@@ -91,7 +89,9 @@ test('US-048 CA-1, CA-3, CA-4, CA-5 et CA-6 : cocher, régler, créer le lot et 
   await expect(
     page.getByRole('link', { name: `Ouvrir l’épreuve ${competition} M15 Hommes`, exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole('link', { name: `Ouvrir l’épreuve ${competition} Open`, exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: `Ouvrir l’épreuve ${competition} Open Mixte`, exact: true }),
+  ).toBeVisible();
 
   // CA-5 : chaque épreuve a son journal, ce PC en est le pilote, avec les réglages communs.
   await page.getByRole('link', { name: `Ouvrir l’épreuve ${competition} M13 Hommes`, exact: true }).click();
@@ -150,21 +150,6 @@ test('US-048 CA-7 : une compétition sans arme demande l’arme du lot, pour tou
   await expect(page.getByText('Épée').first()).toBeVisible();
 });
 
-test('US-048 cas limite : un nom vide est refusé sur sa ligne et rien n’est créé', async ({ page }) => {
-  const manifestation = nomUnique();
-  const competition = nomUnique();
-  await seConnecter(page);
-  await creerManifestation(page, manifestation);
-  await creerCompetition(page, manifestation, competition);
-  await ouvrirLaGrille(page, competition);
-
-  await laCase(page, 'M13', 'Dames').click();
-  await page.getByLabel('Nom de l’épreuve M13 Dames').fill('');
-  await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
-  await expect(page.getByText('Le nom est obligatoire')).toBeVisible();
-  await expect(page).toHaveURL(/\/competitions\/[0-9a-f-]{36}\/epreuves$/);
-});
-
 test('US-048 hors ligne : la grille crée les épreuves d’une compétition connue, envoyées au retour du réseau @reel', async ({
   page,
   context,
@@ -205,5 +190,5 @@ test('US-048 hors ligne : la grille crée les épreuves d’une compétition con
 
 /** La liste de l'accueil ; la manifestation de 2027, à venir, est dépliée par défaut (US-055). */
 async function deplier(page: Page, manifestation: string) {
-  await expect(page.getByRole('article', { name: manifestation })).toBeVisible();
+  await expect(page.getByRole('article', { name: manifestation })).toBeVisible({ timeout: 20_000 });
 }

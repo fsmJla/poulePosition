@@ -142,6 +142,22 @@ export function peutChangerDeJour({ statut, pilote }: { statut: Statut; pilote: 
   return pilote && statut === 'preparation';
 }
 
+/** Une tuile glissée sur le plan : ce qu'il faut savoir d'elle pour accepter un dépôt. */
+export type TuileGlissee = Pick<TuilePlan, 'statut' | 'pilote' | 'date' | 'rattachement'>;
+
+/**
+ * US-078 CA-5 et CA-7 : une tuile se dépose dans la case d'un autre jour de sa compétition, si elle peut changer de
+ * jour ; jamais dans la colonne « Jour à fixer » (`jour` null), ni dans la ligne d'une autre compétition.
+ */
+export function peutDeposer(tuile: TuileGlissee, competitionId: string, jour: string | null): boolean {
+  return (
+    peutChangerDeJour(tuile) &&
+    tuile.rattachement.competitionId === competitionId &&
+    jour !== null &&
+    jour !== tuile.date
+  );
+}
+
 /**
  * US-050 CA-6 : pour une manifestation de deux jours, le jour où déplacer d'un geste une épreuve placée dans l'un d'eux.
  * Null à trois jours ou plus, ou pour une épreuve sans jour ou hors des jours : le choix du jour reste proposé.
