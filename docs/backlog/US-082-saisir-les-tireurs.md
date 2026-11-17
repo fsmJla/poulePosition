@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F3 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-081, US-058
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-082-saisir-les-tireurs` / —
 
 ## Récit
 
@@ -94,6 +94,12 @@ coupé : ajouter deux tireurs, en modifier un, puis vérifier l'envoi au retour 
   est grisé « À venir ».
 - Les clubs proposés viennent des tireurs des épreuves connues de l'appareil (pas d'annuaire des clubs).
 - Le nom est affiché en capitales et enregistré tel que saisi.
+- Prises à l'implémentation :
+  - la liste des clubs proposés est la liste native du navigateur (`datalist`), plutôt que la liste dessinée sur la
+    planche ; même rôle, accessible au clavier sans code à maintenir ;
+  - le menu « ⋯ » de l'entête de la planche (exporter, imprimer, retirer tous les inscrits) n'est pas livré : il
+    relève d'E7 (impressions) et d'une demande à venir ;
+  - « Importer un fichier… » est grisé « À venir » jusqu'à US-083.
 
 ## Questions bloquantes
 
@@ -110,3 +116,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-17 | Créée |
+| 2026-11-17 | Implémentée ; passe à En revue |

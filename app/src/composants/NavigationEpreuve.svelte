@@ -11,9 +11,11 @@
     /** Étape ouverte : mise en évidence et `aria-current="page"`. */
     courante: IdEtapeEpreuve;
     naviguer: (chemin: string) => void;
+    /** US-082 CA-1 : un nombre après le libellé d'une étape (« 24 » inscrits). */
+    comptes?: Partial<Record<IdEtapeEpreuve, string>>;
   }
 
-  let { epreuveId, courante, naviguer }: Proprietes = $props();
+  let { epreuveId, courante, naviguer, comptes = {} }: Proprietes = $props();
 
   const t = textes.pageEpreuve;
 
@@ -42,6 +44,7 @@
           >
             <Icone nom={etape.icone} />
             <span class="libelle">{t.etapes[etape.id]}</span>
+            {#if comptes[etape.id]}<span class="compte">{comptes[etape.id]}</span>{/if}
           </a>
         {:else}
           <span class="a-venir" aria-disabled="true">
@@ -109,6 +112,12 @@
 
   small {
     font-size: 0.75rem;
+  }
+
+  .compte {
+    color: var(--texte-discret);
+    font-size: 0.8rem;
+    font-weight: 400;
   }
 
   .separateur {

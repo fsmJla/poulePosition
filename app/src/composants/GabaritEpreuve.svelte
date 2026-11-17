@@ -2,7 +2,7 @@
   // Gabarit à étapes de la page d'une épreuve (US-058) : fil d'Ariane, entête (nom court, statut, compétition, arme,
   // date, actions), navigation par étapes à gauche et contenu de l'étape à droite. Le Résumé, la Formule et les
   // Paramètres s'y insèrent ; leurs adresses ne changent pas.
-  import { couleurDeCompetition, nomsCourts, type Epreuve } from '@poule-position/domaine';
+  import { couleurDeCompetition, nomsCourts, tireursDe, type Epreuve } from '@poule-position/domaine';
   import { onMount, type Snippet } from 'svelte';
   import type { Accueil } from '../lib/accueil';
   import type { IdEtapeEpreuve } from '../lib/etapes-epreuve';
@@ -65,7 +65,12 @@
 <main>
   <FilAriane {niveaux} {naviguer} />
   <div class="corps">
-    <NavigationEpreuve epreuveId={epreuve.id} {courante} {naviguer} />
+    <NavigationEpreuve
+      epreuveId={epreuve.id}
+      {courante}
+      {naviguer}
+      comptes={{ inscriptions: tireursDe(epreuve).length > 0 ? String(tireursDe(epreuve).length) : undefined }}
+    />
     <div class="colonne">
       <header>
         <!-- US-061 CA-3 : flèche de retour, visible seulement sur smartphone (le fil d'Ariane y est masqué). -->

@@ -111,7 +111,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-079](US-079-accueil-plus-lisible-et-publier-une-competition.md) | Séparer « À venir » et « En cours », publier toute une compétition et structurer l'accueil public (P2) | E2 | Terminée | US-031, US-055, US-056, US-063, US-070 |
 | [US-080](US-080-grille-et-reprise-en-main.md) | Retoucher la grille des jours et reprendre en main toutes les épreuves d'une compétition (P2) | E2 | Terminée | US-029, US-078, US-079 |
 | [US-081](US-081-tireurs-dans-le-journal.md) | Tenir la liste des tireurs d'une épreuve dans son journal (technique) | E3 | Terminée | US-021, US-022 |
-| [US-082](US-082-saisir-les-tireurs.md) | Saisir les tireurs d'une épreuve | E3 | Prête | US-081, US-058 |
+| [US-082](US-082-saisir-les-tireurs.md) | Saisir les tireurs d'une épreuve | E3 | En revue | US-081, US-058 |
 | [US-083](US-083-importer-fichier-ffe.md) | Importer les tireurs depuis le fichier d'inscription de la Fédération (format Engarde / BellePoule) | E3 | Prête | US-081, US-082 |
 | [US-084](US-084-emarger-les-tireurs.md) | Émarger les tireurs le jour de l'épreuve | E3 | Prête | US-081, US-082 |
 

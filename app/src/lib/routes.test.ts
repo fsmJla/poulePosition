@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   cheminEpreuve,
   cheminFormuleEpreuve,
+  cheminInscriptionsEpreuve,
   cheminGrilleEpreuves,
   cheminModificationEpreuve,
   cheminModificationManifestation,
@@ -173,6 +174,16 @@ describe('formule d’une épreuve (US-028)', () => {
     expect(resoudreRoute(`/epreuves/${id}/formule/`, true)).toEqual(route);
     expect(resoudreRoute(`/epreuves/${id}/formule`, false)).toEqual({ redirection: CHEMINS.connexion });
     expect(resoudreRoute('/epreuves/Pas Un Id/formule', true)).toEqual({ redirection: '/' });
+  });
+});
+
+describe('inscriptions d’une épreuve (US-082)', () => {
+  it('CA-1 : « /epreuves/<id>/inscriptions » est réservée aux comptes connectés et porte l’identifiant', () => {
+    const id = '0b6f1c1e-6d1a-4f0a-9a43-2f3c9e5d7b10';
+    expect(cheminInscriptionsEpreuve(id)).toBe(`/epreuves/${id}/inscriptions`);
+    expect(resoudreRoute(`/epreuves/${id}/inscriptions`, true)).toEqual({ page: 'inscriptionsEpreuve', epreuveId: id });
+    expect(resoudreRoute(`/epreuves/${id}/inscriptions`, false)).toEqual({ redirection: CHEMINS.connexion });
+    expect(resoudreRoute('/epreuves/Pas Un Id/inscriptions', true)).toEqual({ redirection: '/' });
   });
 });
 
