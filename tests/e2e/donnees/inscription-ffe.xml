@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Fichier d'inscription anonymisé pour les tests (US-083) : XML BaseCompetitionIndividuelle (Engarde / BellePoule). -->
+<BaseCompetitionIndividuelle Version="3.3" Arme="S" Sexe="F" Categorie="M13" TitreCourt="M13 Dames">
+  <Tireurs>
+    <Tireur ID="1" Nom="DUBOIS" Prenom="Chloé" Sexe="F" Licence="900001" Club="PESSAC SPUC" Classement="5" DateNaissance="01.02.2014" />
+    <Tireur ID="2" Nom="MARTIN" Prenom="Léa" Sexe="F" Licence="900002" Club="TALENCE" Classement="3" />
+    <Tireur ID="3" Nom="BERNARD" Prenom="Inès" Sexe="F" Licence="900003" Club="MÉRIGNAC" Classement="8" />
+    <Tireur ID="4" Nom="DURAND" Prenom="Paul" Sexe="M" Licence="900004" Club="BAYONNE" Classement="12" />
+    <Tireur ID="5" Nom="PETIT" Prenom="Louise" Sexe="F" Club="BAYONNE" />
+  </Tireurs>
+</BaseCompetitionIndividuelle>

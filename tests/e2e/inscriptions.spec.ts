@@ -139,7 +139,7 @@ test('US-082 CA-9 : conforme à la planche 7 (zones, libellés, action principal
   const boiteAjout = (await ajout.boundingBox())!;
   const boiteListe = (await liste.boundingBox())!;
   expect(boiteAjout.y).toBeLessThan(boiteListe.y);
-  await expect(page.getByRole('button', { name: /^Importer un fichier/ })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /^Importer un fichier/ })).toBeEnabled();
   const ajouterBouton = ajout.getByRole('button', { name: 'Ajouter', exact: true });
   const fond = await ajouterBouton.evaluate((e) => getComputedStyle(e).backgroundColor);
   const tiffany = await page.evaluate(() => {

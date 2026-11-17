@@ -5,11 +5,13 @@
   import { onMount, tick } from 'svelte';
   import {
     cleTexte,
+    analyserImport,
     comparerTireur,
     inscriptionsOuvertes,
     tireursDe,
     trierTireurs,
     validerTireur,
+    type AnalyseImport,
     type Epreuve,
     type Tireur,
   } from '@poule-position/domaine';
@@ -18,7 +20,15 @@
   import Icone from '../composants/Icone.svelte';
   import MenuActions from '../composants/MenuActions.svelte';
   import type { Accueil } from '../lib/accueil';
-  import { inscrireTireur, modifierTireur, retirerTireur, type ResultatInscription } from '../lib/inscriptions';
+  import {
+    importerTireurs,
+    inscrireTireur,
+    modifierTireur,
+    retirerTireur,
+    type ResultatInscription,
+  } from '../lib/inscriptions';
+  import ApercuImportFfe from '../composants/ApercuImportFfe.svelte';
+  import { lireFichierFfe } from '../lib/fichier-ffe';
   import { prendreEcriture, type Journal } from '../lib/journal';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
@@ -256,6 +266,45 @@
   };
 
   const nomComplet = (tireur: Pick<Tireur, 'nom' | 'prenom'>) => `${tireur.prenom} ${tireur.nom}`;
+
+  // US-083 : import du fichier de la Fédération, lu sur l'appareil puis montré dans un aperçu.
+  const ti = textes.importFfe;
+  let champFichier: HTMLInputElement | undefined = $state();
+  let apercu: { analyse: AnalyseImport; avertissement: string | null } | null = $state(null);
+
+  /** CA-1, CA-2 et CA-5 : lit le fichier choisi et ouvre l'aperçu, ou dit pourquoi il est refusé. */
+  async function choisirFichier(evenement: Event & { currentTarget: HTMLInputElement }) {
+    const fichier = evenement.currentTarget.files?.[0];
+    evenement.currentTarget.value = '';
+    if (!fichier || !epreuve) return;
+    erreurs = {};
+    const lu = lireFichierFfe(new Uint8Array(await fichier.arrayBuffer()));
+    if (!lu.ok) {
+      erreurs = { general: ti.erreurs[lu.erreur] };
+      return;
+    }
+    const analyse = analyserImport(lu.fichier.tireurs, { sexe: epreuve.sexe, tireurs: tireursDe(epreuve) });
+    const { Arme: arme, Categorie: categorie } = lu.fichier.competition;
+    const lettreArme: Record<string, string> = { sabre: 'S', epee: 'E', fleuret: 'F' };
+    const autreArme = arme && lettreArme[epreuve.arme] && arme.toUpperCase() !== lettreArme[epreuve.arme];
+    const autreCategorie = categorie && epreuve.categorie && cleTexte(categorie) !== cleTexte(epreuve.categorie);
+    apercu = {
+      analyse,
+      avertissement:
+        autreArme || autreCategorie ? ti.competitionDifferente([arme, categorie].filter(Boolean).join(' · ')) : null,
+    };
+  }
+
+  /** CA-3 : importe, relit la liste et dit le résultat. */
+  async function importer(homonymesCoches: ReadonlySet<number>) {
+    const encours = apercu;
+    if (!encours) return;
+    const rendu = await importerTireurs(journal, epreuveId, encours.analyse, homonymesCoches, contexte);
+    await recharger();
+    void synchronisation.envoyer(epreuveId).then(() => recharger());
+    annonce = ti.resultat(rendu.inscrits, rendu.misAJour, encours.analyse.ecartes.length, rendu.echecs);
+    apercu = null;
+  }
 </script>
 
 {#snippet etape()}
@@ -263,10 +312,21 @@
     <h2>{t.titre}</h2>
     {#if epreuve}<span class="pastille-nombre">{t.nombre(tireurs.length)}</span>{/if}
     <span class="espace"></span>
-    <!-- US-083 livrera l'import ; d'ici là le bouton reste visible, grisé « À venir » (principe 11). -->
-    <button type="button" class="secondaire" disabled title={t.importerAVenir}>
-      <Icone nom="televerser" taille={20} />{t.importer}<small>{t.importerAVenir}</small>
-    </button>
+    <!-- US-083 : « Importer un fichier… » (bouton neutre) ouvre le choix d'un fichier XML de la Fédération. -->
+    {#if modifiable}
+      <button type="button" class="secondaire" onclick={() => champFichier?.click()}>
+        <Icone nom="televerser" taille={20} />{t.importer}
+      </button>
+      <input
+        bind:this={champFichier}
+        class="invisible"
+        type="file"
+        accept=".xml,text/xml,application/xml"
+        aria-label={ti.choisir}
+        tabindex="-1"
+        onchange={choisirFichier}
+      />
+    {/if}
   </div>
 
   {#if !chargee}
@@ -455,6 +515,15 @@
     </section>
   {/if}
 {/snippet}
+
+{#if apercu}
+  <ApercuImportFfe
+    analyse={apercu.analyse}
+    avertissement={apercu.avertissement}
+    {importer}
+    fermer={() => (apercu = null)}
+  />
+{/if}
 
 {#if retraitDemande}
   <ConfirmationArchivage

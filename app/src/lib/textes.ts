@@ -1486,7 +1486,6 @@ export const textes = {
     titre: 'Inscriptions',
     nombre: (nombre: number) => (nombre > 1 ? `${nombre} inscrits` : `${nombre} inscrit`),
     importer: 'Importer un fichier…',
-    importerAVenir: 'À venir',
     autresActions: 'Autres actions',
     ajout: 'Ajouter un tireur',
     nom: 'Nom',
@@ -1535,6 +1534,41 @@ export const textes = {
       PAS_PILOTE: 'Lecture seule : un autre PC est le pilote',
       AUTRE: 'L’inscription n’a pas pu être enregistrée sur cet appareil',
     } as Record<string, string>,
+  },
+  /** US-083 : import du fichier d'inscription de la Fédération (XML Engarde / BellePoule). */
+  importFfe: {
+    titre: 'Importer le fichier de la Fédération',
+    choisir: 'Fichier d’inscription (XML Engarde / BellePoule)',
+    resume: (total: number) => (total > 1 ? `${total} tireurs dans le fichier` : `${total} tireur dans le fichier`),
+    nouveaux: (nombre: number) => `${nombre} nouveau${nombre > 1 ? 'x' : ''}`,
+    deja: (nombre: number, aMettreAJour: number) =>
+      `${nombre} déjà inscrit${nombre > 1 ? 's' : ''} (même licence)${aMettreAJour > 0 ? `, dont ${aMettreAJour} à mettre à jour` : ''}`,
+    homonymes: (nombre: number) => `${nombre} homonyme${nombre > 1 ? 's' : ''} : cochez ceux à inscrire quand même`,
+    homonyme: (importe: string, inscrit: string) => `${importe}, comme ${inscrit}`,
+    ecartes: (nombre: number) => `${nombre} écarté${nombre > 1 ? 's' : ''}`,
+    motifs: {
+      NOM_MANQUANT: 'Nom ou prénom manquant',
+      SEXE_DIFFERENT: 'Sexe différent de l’épreuve',
+      LICENCE_EN_DOUBLE: 'Licence en double dans le fichier',
+    },
+    competitionDifferente: (detail: string) =>
+      `Le fichier concerne une autre épreuve (${detail}) : vérifiez avant d’importer.`,
+    importer: (nombre: number) => (nombre > 1 ? `Importer ${nombre} tireurs` : `Importer ${nombre} tireur`),
+    annuler: 'Annuler',
+    resultat: (inscrits: number, misAJour: number, ecartes: number, echecs: number) =>
+      [
+        `${inscrits} tireur${inscrits > 1 ? 's' : ''} inscrit${inscrits > 1 ? 's' : ''}`,
+        misAJour > 0 ? `${misAJour} mis à jour` : null,
+        ecartes > 0 ? `${ecartes} écarté${ecartes > 1 ? 's' : ''}` : null,
+        echecs > 0 ? `${echecs} non enregistré${echecs > 1 ? 's' : ''}` : null,
+      ]
+        .filter(Boolean)
+        .join(', '),
+    erreurs: {
+      TROP_GROS: 'Ce fichier dépasse 5 Mo',
+      PAS_INDIVIDUEL: 'Ce fichier n’est pas un fichier d’inscription individuelle au format Engarde / BellePoule',
+      AUCUN_TIREUR: 'Ce fichier ne contient aucun tireur',
+    },
   },
   /** US-080 CA-3 à CA-5 : reprendre en main toutes les épreuves d'une compétition. */
   repriseLot: {
