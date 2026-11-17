@@ -2,7 +2,7 @@
 // latérale et les pages. Livrer une étape (Epic d'inscriptions, d'émargement, de poules, de tableau, d'impressions) se
 // fait ici, en lui donnant `livree: true` et son adresse.
 import type { NomIcone } from './icones';
-import { cheminEpreuve, cheminFormuleEpreuve, cheminParametresEpreuve } from './routes';
+import { cheminEpreuve, cheminFormuleEpreuve, cheminInscriptionsEpreuve, cheminParametresEpreuve } from './routes';
 
 export type IdEtapeEpreuve =
   'resume' | 'inscriptions' | 'emargement' | 'poules' | 'tableau' | 'impressions' | 'formule' | 'parametres';
@@ -20,7 +20,14 @@ export interface EtapeEpreuve {
 
 export const ETAPES_EPREUVE: readonly EtapeEpreuve[] = [
   { id: 'resume', icone: 'maison', groupe: 'deroulement', livree: true, chemin: cheminEpreuve },
-  { id: 'inscriptions', icone: 'personnePlus', groupe: 'deroulement', livree: false },
+  // US-082 : l'étape « Inscriptions » est livrée.
+  {
+    id: 'inscriptions',
+    icone: 'personnePlus',
+    groupe: 'deroulement',
+    livree: true,
+    chemin: cheminInscriptionsEpreuve,
+  },
   { id: 'emargement', icone: 'listeCochee', groupe: 'deroulement', livree: false },
   { id: 'poules', icone: 'grille', groupe: 'deroulement', livree: false },
   { id: 'tableau', icone: 'arbre', groupe: 'deroulement', livree: false },

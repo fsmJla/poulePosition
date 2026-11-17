@@ -15,6 +15,7 @@ export type Page =
   | 'epreuve'
   | 'modifierEpreuve'
   | 'formuleEpreuve'
+  | 'inscriptionsEpreuve'
   | 'parametresEpreuve'
   | 'grilleEpreuves'
   | 'manifestation'
@@ -47,6 +48,7 @@ export const CHEMINS = Object.freeze({
     | 'epreuve'
     | 'modifierEpreuve'
     | 'formuleEpreuve'
+    | 'inscriptionsEpreuve'
     | 'parametresEpreuve'
     | 'grilleEpreuves'
     | 'manifestation'
@@ -130,6 +132,11 @@ export function cheminFormuleEpreuve(epreuveId: string): string {
   return `/epreuves/${epreuveId}/formule`;
 }
 
+/** US-082 : inscriptions d'une épreuve. */
+export function cheminInscriptionsEpreuve(epreuveId: string): string {
+  return `/epreuves/${epreuveId}/inscriptions`;
+}
+
 /** US-032 : paramètres d'une épreuve. */
 export function cheminParametresEpreuve(epreuveId: string): string {
   return `/epreuves/${epreuveId}/parametres`;
@@ -181,6 +188,7 @@ const MOTIF_GRILLE = /^\/competitions\/([^/]+)\/epreuves$/;
 const MOTIF_EPREUVE = /^\/epreuves\/([^/]+)$/;
 const MOTIF_MODIFICATION = /^\/epreuves\/([^/]+)\/modifier$/;
 const MOTIF_FORMULE = /^\/epreuves\/([^/]+)\/formule$/;
+const MOTIF_INSCRIPTIONS = /^\/epreuves\/([^/]+)\/inscriptions$/;
 const MOTIF_PARAMETRES = /^\/epreuves\/([^/]+)\/parametres$/;
 
 /** Pages réservées : un visiteur non connecté est renvoyé à l'écran de connexion (CA-6). */
@@ -193,6 +201,7 @@ const RESERVEES: readonly Page[] = [
   'epreuve',
   'modifierEpreuve',
   'formuleEpreuve',
+  'inscriptionsEpreuve',
   'parametresEpreuve',
   'grilleEpreuves',
   'manifestation',
@@ -241,6 +250,7 @@ function pageDe(chemin: string): {
       | 'epreuve'
       | 'modifierEpreuve'
       | 'formuleEpreuve'
+      | 'inscriptionsEpreuve'
       | 'parametresEpreuve'
       | 'grilleEpreuves'
       | 'manifestation'
@@ -266,6 +276,10 @@ function pageDe(chemin: string): {
   if (modifiee) return MOTIF_IDENTIFIANT.test(modifiee) ? { page: 'modifierEpreuve', epreuveId: modifiee } : null;
   const formule = MOTIF_FORMULE.exec(chemin)?.[1];
   if (formule) return MOTIF_IDENTIFIANT.test(formule) ? { page: 'formuleEpreuve', epreuveId: formule } : null;
+  const inscriptions = MOTIF_INSCRIPTIONS.exec(chemin)?.[1];
+  if (inscriptions) {
+    return MOTIF_IDENTIFIANT.test(inscriptions) ? { page: 'inscriptionsEpreuve', epreuveId: inscriptions } : null;
+  }
   const parametres = MOTIF_PARAMETRES.exec(chemin)?.[1];
   if (parametres) {
     return MOTIF_IDENTIFIANT.test(parametres) ? { page: 'parametresEpreuve', epreuveId: parametres } : null;
