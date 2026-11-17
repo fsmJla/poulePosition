@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-048, US-049, US-050
-- **Branche / PR :** `us/US-078-choisir-le-jour-des-epreuves` / —
+- **Branche / PR :** `us/US-078-choisir-le-jour-des-epreuves` / #118
 
 ## Récit
 
@@ -149,3 +149,4 @@ Aucune. Le bouton radio par ligne et la suppression de la liste de droite ont é
 | 2026-11-17 | Disposition de la grille validée ; passe à Prête |
 | 2026-11-17 | Passe à En cours |
 | 2026-11-17 | Implémentée ; passe à En revue |
+| 2026-11-17 | Recette OK sur https://poule-position-git-us-us-078-choisir-le-0ee77b-fsmjlas-projects.vercel.app (CA-1, CA-3, CA-5, CA-6, CA-8 vérifiés à la main ; CA-2, CA-4, CA-7 et le hors ligne par les E2E de la CI) ; passe à Terminée |
