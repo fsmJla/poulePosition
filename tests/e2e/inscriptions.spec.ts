@@ -115,7 +115,7 @@ test('US-082 CA-6 et CA-7 : modifier un inscrit au crayon, le retirer par « ⋯
   await ajouter(page, 'DUBOIS', 'Chloé', 'Pessac', '5');
 
   await page.getByRole('button', { name: 'Modifier Chloé DUBOIS' }).click();
-  await page.getByRole('textbox', { name: 'Club' }).last().fill('Talence');
+  await page.getByRole('combobox', { name: 'Club' }).last().fill('Talence');
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(lignes(page).first()).toContainText('Talence');
 

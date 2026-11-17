@@ -185,12 +185,13 @@
         }
         Object.assign(saisie, { nom: '', prenom: '', classement: '' });
         annonce = t.ajoute(nom);
-        await tick();
-        champNom?.focus();
       }
     } finally {
       enCours = false;
     }
+    // CA-2 : le curseur revient sur « Nom », une fois les champs réactivés (ils sont désactivés pendant l'écriture).
+    await tick();
+    champNom?.focus();
   }
 
   function commencerEdition(tireur: Tireur) {
@@ -282,9 +283,10 @@
       <section class="carte" aria-labelledby="titre-ajout">
         <h3 id="titre-ajout"><Icone nom="personnePlus" taille={20} />{t.ajout}</h3>
         <form class="ajout" onsubmit={(e) => ajouter(e)} novalidate>
-          <label>
-            {t.nom}
+          <div class="champ">
+            <label for="saisie-nom">{t.nom}</label>
             <input
+              id="saisie-nom"
               bind:this={champNom}
               bind:value={saisie.nom}
               class="majuscules"
@@ -295,10 +297,11 @@
               disabled={enCours}
             />
             {#if erreurs.nom}<span id="erreur-nom" class="erreur">{erreurs.nom}</span>{/if}
-          </label>
-          <label>
-            {t.prenom}
+          </div>
+          <div class="champ">
+            <label for="saisie-prenom">{t.prenom}</label>
             <input
+              id="saisie-prenom"
               bind:value={saisie.prenom}
               placeholder={t.exemplePrenom}
               autocomplete="off"
@@ -307,17 +310,24 @@
               disabled={enCours}
             />
             {#if erreurs.prenom}<span id="erreur-prenom" class="erreur">{erreurs.prenom}</span>{/if}
-          </label>
-          <label>
-            {t.club}
-            <input bind:value={saisie.club} list="clubs-connus" autocomplete="off" disabled={enCours} />
+          </div>
+          <div class="champ">
+            <label for="saisie-club">{t.club}</label>
+            <input
+              id="saisie-club"
+              bind:value={saisie.club}
+              list="clubs-connus"
+              autocomplete="off"
+              disabled={enCours}
+            />
             <datalist id="clubs-connus" aria-label={t.clubsProposes}>
               {#each clubsConnus as club (club)}<option value={club}></option>{/each}
             </datalist>
-          </label>
-          <label>
-            <span>{t.classement} <small>{t.facultatif}</small></span>
+          </div>
+          <div class="champ">
+            <label for="saisie-classement">{t.classement} <small>{t.facultatif}</small></label>
             <input
+              id="saisie-classement"
               bind:value={saisie.classement}
               inputmode="numeric"
               autocomplete="off"
@@ -326,7 +336,7 @@
               disabled={enCours}
             />
             {#if erreurs.classement}<span id="erreur-classement" class="erreur">{erreurs.classement}</span>{/if}
-          </label>
+          </div>
           <button type="submit" class="principal" disabled={enCours}>
             <Icone nom="plus" taille={20} />{t.ajouter}
           </button>
@@ -514,9 +524,12 @@
     align-items: start;
   }
 
-  .ajout label {
+  .ajout .champ {
     display: grid;
     gap: 0.25rem;
+  }
+
+  .ajout label {
     font-size: 0.875rem;
     font-weight: 600;
   }
