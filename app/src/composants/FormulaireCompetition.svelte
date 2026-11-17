@@ -3,7 +3,13 @@
   // Les données du club sont stockées par le serveur : hors ligne, l'enregistrement est grisé. L'enregistrement
   // prévient la page (`enregistre`), qui relit ses listes et ramène à l'onglet « Compétitions ».
   import FichiersJoints from './FichiersJoints.svelte';
-  import { ARMES, type ErreursCompetition } from '@poule-position/domaine';
+  import {
+    ARMES,
+    etatPublication,
+    planPublication,
+    type EpreuvePublication,
+    type ErreursCompetition,
+  } from '@poule-position/domaine';
   import type { Competition, Manifestation } from '@poule-position/protocole';
   import { saisieDe, saisieVide, type ClientCompetitions, type SaisieCompetition } from '../lib/competitions';
   import type { ClientFichiers } from '../lib/fichiers';
@@ -21,9 +27,37 @@
     annule: () => void;
     /** « Recharger » après une modification concurrente : la page relit la compétition, le formulaire repart d'elle. */
     recharger: () => Promise<void>;
+    /** US-079 CA-5 : épreuves de la compétition modifiée, et la publication de toutes ses épreuves (rend le message). */
+    publication?: { epreuves: EpreuvePublication[]; publier: () => Promise<string> };
   }
 
-  let { manifestation, competition, client, fichiers, horsLigne, enregistre, annule, recharger }: Proprietes = $props();
+  let {
+    manifestation,
+    competition,
+    client,
+    fichiers,
+    horsLigne,
+    enregistre,
+    annule,
+    recharger,
+    publication,
+  }: Proprietes = $props();
+
+  const tp = textes.publicationLot;
+  const etatPublie = $derived(publication ? etatPublication(publication.epreuves) : null);
+  const publiableIci = $derived(publication ? planPublication(publication.epreuves, true).aChanger.length > 0 : false);
+  let publicationEnCours = $state(false);
+  let messagePublie: string | null = $state(null);
+
+  async function publierTout() {
+    if (!publication || publicationEnCours) return;
+    publicationEnCours = true;
+    try {
+      messagePublie = await publication.publier();
+    } finally {
+      publicationEnCours = false;
+    }
+  }
 
   const t = textes.competitions;
   const armes = textes.epreuves.armes;
@@ -121,6 +155,25 @@
     />
   {/if}
 
+  {#if competition && publication && etatPublie}
+    <!-- US-079 CA-5 : la publication de toutes les épreuves, bouton neutre (l'action principale reste « Enregistrer »). -->
+    <section class="publication" aria-labelledby="publication-{competition.id}">
+      <h3 id="publication-{competition.id}">{tp.titre}</h3>
+      <p>{tp.compte(etatPublie.publiees, etatPublie.total)}</p>
+      {#if etatPublie.publiable}
+        <button
+          type="button"
+          class="secondaire"
+          disabled={publicationEnCours || !publiableIci}
+          title={publiableIci ? undefined : tp.lectureSeule}
+          onclick={publierTout}>{publicationEnCours ? tp.enCours : tp.publier}</button
+        >
+        {#if !publiableIci}<small>{tp.lectureSeule}</small>{/if}
+      {/if}
+      {#if messagePublie}<p class="resultat" role="status">{messagePublie}</p>{/if}
+    </section>
+  {/if}
+
   {#if message}
     <p class="message" role="alert">
       {message}
@@ -139,6 +192,23 @@
 </form>
 
 <style>
+  .publication {
+    display: grid;
+    justify-items: start;
+    gap: 0.4rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--bordure);
+  }
+
+  .publication h3,
+  .publication p {
+    margin: 0;
+  }
+
+  .publication h3 {
+    font-size: 1rem;
+  }
+
   form {
     display: grid;
     gap: 0.8rem;

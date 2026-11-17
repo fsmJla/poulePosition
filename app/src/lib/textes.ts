@@ -1449,6 +1449,30 @@ export const textes = {
       ECRITURE_IMPOSSIBLE: 'La publication n’a pas pu être enregistrée sur cet appareil',
     },
   },
+  /** US-079 CA-3 à CA-5 : publier ou dépublier toutes les épreuves d'une compétition. */
+  publicationLot: {
+    publier: 'Publier toutes les épreuves',
+    depublier: 'Dépublier toutes les épreuves',
+    detailPublier: 'visibles du public sur la page d’accueil',
+    detailDepublier: 'seuls les organisateurs les verront',
+    lectureSeule: 'Lecture seule : un autre PC est le pilote',
+    titre: 'Publication',
+    compte: (publiees: number, total: number) =>
+      `${publiees} épreuve${publiees > 1 ? 's' : ''} publiée${publiees > 1 ? 's' : ''} sur ${total}`,
+    enCours: 'Publication…',
+    faites: (nombre: number, publiee: boolean) => {
+      const verbe = publiee ? 'publiée' : 'dépubliée';
+      return nombre === 0
+        ? `Aucune épreuve ${verbe}`
+        : `${nombre} épreuve${nombre > 1 ? 's' : ''} ${verbe}${nombre > 1 ? 's' : ''}`;
+    },
+    autrePc: (nombre: number, publiee: boolean) =>
+      `${nombre} épreuve${nombre > 1 ? 's n’ont' : ' n’a'} pas été ${publiee ? 'publiée' : 'dépubliée'}${nombre > 1 ? 's' : ''} : un autre PC est le pilote`,
+    archivees: (nombre: number) =>
+      `${nombre} épreuve${nombre > 1 ? 's archivées restent' : ' archivée reste'} telle${nombre > 1 ? 's' : ''} quelle${nombre > 1 ? 's' : ''}`,
+    echecs: (nombre: number) =>
+      `${nombre} épreuve${nombre > 1 ? 's n’ont' : ' n’a'} pas pu être enregistrée${nombre > 1 ? 's' : ''} sur cet appareil`,
+  },
   /** US-031 : page d'accueil publique et page « direct » d'une épreuve (E9 y ajoutera le suivi en direct). */
   accueilPublic: {
     titre: 'Épreuves à venir',
