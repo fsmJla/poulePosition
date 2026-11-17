@@ -107,6 +107,8 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-075](US-075-etiqueter-reel-et-selection-par-impact.md) | Étiqueter les tests « réel » et choisir les E2E par impact (technique, ADR-0023) | E0 | Terminée | US-037 |
 | [US-076](US-076-e2e-interface-sur-runner-local.md) | Lancer les E2E « interface » sur le runner GitHub contre le serveur local (technique) | E0 | Terminée | US-075 |
 | [US-077](US-077-reduire-e2e-reel-sur-preview.md) | Limiter les E2E de la preview Cloudflare aux tests « réel » et mesurer le gain (technique) | E0 | Terminée | US-075, US-076 |
+| [US-078](US-078-choisir-le-jour-des-epreuves.md) | Choisir le jour des épreuves dans la grille et en glissant sur le plan (P2) | E2 | Prête | US-048, US-049, US-050 |
+| [US-079](US-079-accueil-plus-lisible-et-publier-une-competition.md) | Séparer « À venir » et « En cours », publier toute une compétition et structurer l'accueil public (P2) | E2 | Prête | US-031, US-055, US-056, US-063, US-070 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
@@ -130,6 +132,10 @@ le menu « ⋯ » de l'épreuve (US-058 CA-6).
 d'abord**, via `/adr`) : US-070 → US-071 ; les documents : US-072 → US-073.
 
 **Économie des E2E (2026-11-13, quota Cloudflare à ~90 %), à faire avant les US fonctionnelles suivantes :** US-075 → US-076 → US-077 (ADR-0023).
+
+**Retours ergonomiques du 2026-11-17, indépendants l'un de l'autre :** US-078 (jour des épreuves : grille et
+glisser-déposer sur le plan) et US-079 (filtres « À venir » / « En cours » de l'accueil de l'organisateur,
+publication par compétition, accueil public structuré avec la ville et le lieu sur OpenStreetMap).
 
 > **Maquette de référence (2026-11-11) :** toute US qui touche un écran de l'organisateur cite sa planche et respecte
 > les principes et le vocabulaire d'icônes de [`docs/maquettes/README.md`](../maquettes/README.md) ; un écart se
