@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F4 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** À spécifier
+- **Statut :** Prête
 - **Dépend de :** US-081, US-082
 - **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
 
@@ -13,10 +13,11 @@
 **En tant qu'**organisateur, **je veux** pointer les tireurs présents à l'appel, et inscrire sur place un retardataire
 jusqu'au scratch, **afin de** constituer les poules avec les seuls présents.
 
-Maquette : planche « Émargement » **à faire et à faire valider** (choix de l'utilisateur le 2026-11-17). La planche 8
-montre déjà le nombre de présents repris à la constitution des poules.
+Maquette : planche 19 « Émargement » (`docs/maquettes/deroule/19-emargement.png`, `deroule/Emargement.dc.html`),
+validée le 2026-11-17. Principes 3 (une action principale : « Constituer les poules »), 4 et 5 (« ⋯ »), 11 (l'étape
+« Émargement » s'active).
 
-## Critères d'acceptation (provisoires, à ajuster à la planche)
+## Critères d'acceptation
 
 **CA-1 — L'étape « Émargement »**
 - **Étant donné** la page d'une épreuve qui a des inscrits
@@ -27,8 +28,9 @@ montre déjà le nombre de présents repris à la constitution des poules.
 **CA-2 — Pointer**
 - **Étant donné** la liste des inscrits, tous absents au départ
 - **Quand** l'organisateur coche un tireur (clic, Espace ou Entrée sur la ligne)
-- **Alors** il passe « présent » (`PresenceModifiee`), le compteur « 18 présents sur 24 » se met à jour ; décocher le
-  remet absent.
+- **Alors** il passe « présent » (`PresenceModifiee`, avec l'heure de pointage), la ligne affiche « Présente · 08:41 »
+  et le compteur « 16 présentes sur 24 » se met à jour ; recliquer le remet absent. Les filtres Toutes / Absentes /
+  Présentes portent leur nombre.
 
 **CA-3 — Retrouver vite**
 - **Étant donné** une longue liste
@@ -59,9 +61,21 @@ E2E réseau coupé.
 
 - « Tout pointer présent » n'est pas proposé (risque d'erreur), sauf demande contraire à la validation de la planche.
 
+**CA-6 — Actions de l'écran**
+- **Étant donné** l'écran d'émargement
+- **Quand** il s'affiche
+- **Alors** « Constituer les poules » est l'action principale (vers l'étape « Poules », grisée « À venir » tant
+  qu'E4 n'est pas livrée) ; le menu « ⋯ » propose « Remettre tout le monde absent », après confirmation. « Imprimer la
+  feuille de présence » y figure grisé « À venir » (E7).
+
+**CA-7 — Conforme à la planche 19**
+- **Étant donné** la capture `docs/maquettes/deroule/19-emargement.png`
+- **Quand** un test E2E affiche l'écran à 1360 px avec des données proches de la planche
+- **Alors** la disposition, les libellés et les icônes suivent la planche ; la recette liste les écarts.
+
 ## Questions bloquantes
 
-- La planche « Émargement » est à faire et à valider avant que l'US passe à « Prête ».
+Aucune.
 
 ## Notes techniques
 
@@ -72,3 +86,4 @@ E2E réseau coupé.
 | Date | Événement |
 |---|---|
 | 2026-11-17 | Créée, en attente de sa planche |
+| 2026-11-17 | Planche 19 validée ; passe à Prête |

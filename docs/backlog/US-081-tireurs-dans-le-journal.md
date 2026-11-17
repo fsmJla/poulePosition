@@ -38,8 +38,9 @@ Maquette : sans objet (aucun écran).
 
 **CA-4 — Pointer la présence**
 - **Étant donné** un tireur inscrit
-- **Quand** l'application écrit `PresenceModifiee` avec `tireurId` et `present` (vrai ou faux)
-- **Alors** la projection met à jour sa présence (US-084).
+- **Quand** l'application écrit `PresenceModifiee` avec `tireurId`, `present` (vrai ou faux) et, pour un pointage,
+  l'heure `HH:MM`
+- **Alors** la projection met à jour sa présence et son heure de pointage (US-084, planche 19).
 
 **CA-5 — Ordre de la liste**
 - **Étant donné** la projection d'une épreuve

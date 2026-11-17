@@ -113,7 +113,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-081](US-081-tireurs-dans-le-journal.md) | Tenir la liste des tireurs d'une épreuve dans son journal (technique) | E3 | Prête | US-021, US-022 |
 | [US-082](US-082-saisir-les-tireurs.md) | Saisir les tireurs d'une épreuve | E3 | Prête | US-081, US-058 |
 | [US-083](US-083-importer-fichier-ffe.md) | Importer les tireurs depuis le fichier d'inscription de la Fédération (format Engarde / BellePoule) | E3 | Prête | US-081, US-082 |
-| [US-084](US-084-emarger-les-tireurs.md) | Émarger les tireurs le jour de l'épreuve | E3 | À spécifier | US-081, US-082 |
+| [US-084](US-084-emarger-les-tireurs.md) | Émarger les tireurs le jour de l'épreuve | E3 | Prête | US-081, US-082 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
@@ -138,8 +138,8 @@ d'abord**, via `/adr`) : US-070 → US-071 ; les documents : US-072 → US-073.
 
 **Économie des E2E (2026-11-13, quota Cloudflare à ~90 %), à faire avant les US fonctionnelles suivantes :** US-075 → US-076 → US-077 (ADR-0023).
 
-**Ordre conseillé pour E3 (inscriptions et émargement, maquette « Déroulé de l'épreuve ») :** US-081 → US-082 → US-083 ;
-US-084 une fois sa planche « Émargement » validée.
+**Ordre conseillé pour E3 (inscriptions et émargement, maquette « Déroulé de l'épreuve ») :** US-081 → US-082 → US-083 → US-084
+(planche 19 « Émargement »).
 
 **Retours ergonomiques du 2026-11-17, indépendants l'un de l'autre :** US-078 (jour des épreuves : grille et
 glisser-déposer sur le plan) et US-079 (filtres « À venir » / « En cours » de l'accueil de l'organisateur,
