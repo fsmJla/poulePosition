@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F3 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-021, US-022
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-081-tireurs-dans-le-journal`
 
 ## Récit
 
@@ -95,3 +95,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-17 | Créée |
+| 2026-11-17 | Implémentée ; US technique sans écran, vérifiée par la CI (tests unitaires du domaine et du protocole) ; passe à Terminée au merge |

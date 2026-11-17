@@ -271,3 +271,41 @@ describe('événements EpreuveArchivee et EpreuveDesarchivee (US-033)', () => {
     }
   });
 });
+
+describe('événements d’inscription (US-081)', () => {
+  const lit = (type: string, donnees: unknown) => lireEvenement(brut({ seq: 2, type, donnees })) !== null;
+
+  it('CA-1 : TireurInscrit porte nom, prénom et club ; classement et licence facultatifs, jamais null', () => {
+    expect(lit('TireurInscrit', { tireurId: 't1', nom: 'DUBOIS', prenom: 'Chloé', club: '' })).toBe(true);
+    expect(
+      lit('TireurInscrit', {
+        tireurId: 't1',
+        nom: 'DUBOIS',
+        prenom: 'Chloé',
+        club: 'Pessac',
+        classement: 5,
+        licence: '1',
+      }),
+    ).toBe(true);
+    expect(lit('TireurInscrit', { tireurId: 't1', nom: 'DUBOIS', prenom: 'Chloé' })).toBe(false);
+    expect(lit('TireurInscrit', { tireurId: 't1', nom: 'D', prenom: 'C', club: 'P', classement: null })).toBe(false);
+    expect(lit('TireurInscrit', { tireurId: 't1', nom: 'D', prenom: 'C', club: 'P', classement: '5' })).toBe(false);
+    expect(lit('TireurInscrit', { tireurId: 't1', nom: 'D', prenom: 'C', club: 'P', sexe: 'F' })).toBe(false);
+    expect(lit('TireurInscrit', { nom: 'D', prenom: 'C', club: 'P' })).toBe(false);
+  });
+
+  it('CA-2 et CA-3 : TireurModifie porte au moins un champ (null efface) ; TireurRetire seulement le tireur', () => {
+    expect(lit('TireurModifie', { tireurId: 't1', classement: null, licence: null })).toBe(true);
+    expect(lit('TireurModifie', { tireurId: 't1' })).toBe(false);
+    expect(lit('TireurModifie', { tireurId: 't1', nom: null })).toBe(false);
+    expect(lit('TireurRetire', { tireurId: 't1' })).toBe(true);
+    expect(lit('TireurRetire', { tireurId: 't1', nom: 'X' })).toBe(false);
+  });
+
+  it('CA-4 : PresenceModifiee porte la présence et, facultative, l’heure', () => {
+    expect(lit('PresenceModifiee', { tireurId: 't1', present: true, heure: '08:41' })).toBe(true);
+    expect(lit('PresenceModifiee', { tireurId: 't1', present: false })).toBe(true);
+    expect(lit('PresenceModifiee', { tireurId: 't1', present: 'oui' })).toBe(false);
+    expect(lit('PresenceModifiee', { tireurId: 't1', present: true, autre: 1 })).toBe(false);
+  });
+});

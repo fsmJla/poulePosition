@@ -89,6 +89,41 @@ const FORMES_PARAMETRES: Record<string, (valeur: unknown) => boolean> = {
   prenomInitiale: estBooleen,
 };
 
+/** US-081 : forme des données des événements d'inscription ; les règles (longueurs, bornes) sont celles du domaine. */
+const estEntier = (valeur: unknown) => Number.isInteger(valeur);
+const FORMES_TIREUR: Record<string, (valeur: unknown) => boolean> = {
+  nom: estTexte,
+  prenom: estTexte,
+  club: (valeur) => typeof valeur === 'string',
+  classement: (valeur) => valeur === null || estEntier(valeur),
+  licence: (valeur) => valeur === null || typeof valeur === 'string',
+};
+
+function donneesTireurValides(type: unknown, donnees: unknown): boolean {
+  if (donnees === null || typeof donnees !== 'object' || Array.isArray(donnees)) return false;
+  const objet = donnees as Record<string, unknown>;
+  if (!estTexte(objet.tireurId)) return false;
+  const autres = Object.keys(objet).filter((nom) => nom !== 'tireurId');
+  if (type === 'TireurRetire') return autres.length === 0;
+  if (type === 'PresenceModifiee') {
+    return (
+      estBooleen(objet.present) &&
+      autres.every((nom) => nom === 'present' || (nom === 'heure' && estTexte(objet.heure)))
+    );
+  }
+  const champsValides = autres.every((nom) => Object.hasOwn(FORMES_TIREUR, nom) && FORMES_TIREUR[nom]!(objet[nom]));
+  if (type === 'TireurModifie') return autres.length > 0 && champsValides;
+  // TireurInscrit : nom, prénom et club obligatoires ; classement et licence facultatifs, jamais null.
+  return (
+    champsValides &&
+    ['nom', 'prenom', 'club'].every((nom) => Object.hasOwn(objet, nom)) &&
+    objet.classement !== null &&
+    objet.licence !== null
+  );
+}
+
+const TYPES_TIREUR = ['TireurInscrit', 'TireurModifie', 'TireurRetire', 'PresenceModifiee'];
+
 /**
  * Forme des données : tous les champs pour `EpreuveCreee` ; pour `EpreuveModifiee` (US-027) et
  * `FormuleModifiee` (US-028), un ou plusieurs champs parmi les leurs, ceux qui ont changé.
@@ -98,6 +133,7 @@ function donneesValides(type: unknown, donnees: unknown): boolean {
     const pilote = aExactementLesChamps(donnees, ['ancienAppareil', 'nouvelAppareil']);
     return pilote !== null && Object.values(pilote).every(estTexte);
   }
+  if (TYPES_TIREUR.includes(type as string)) return donneesTireurValides(type, donnees);
   if (type === 'EpreuveArchivee' || type === 'EpreuveDesarchivee') return aExactementLesChamps(donnees, []) !== null;
   if (type === 'PublicationModifiee') {
     const publication = aExactementLesChamps(donnees, ['publiee']);
