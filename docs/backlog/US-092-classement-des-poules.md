@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F9 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-088, US-089
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-092-classement-des-poules` / #136
 
 ## Récit
 
@@ -70,6 +70,13 @@ PC pilote. Testé par un E2E réseau coupé (saisir un score, voir le classement
 - Le classement d'E4 ne départage pas plus loin que V/M, indice, TD (pas de tirage au sort) ; le classement définitif
   qui sert au tableau (qualifiés, exempts) relève d'E6.
 - Le menu « ⋯ » porte « Imprimer le classement », grisé « À venir (impressions, E7) ».
+- Implémentation (2026-11-18) : « en temps réel » relit le journal local toutes les 2 s ; sur un appareil qui n'est pas
+  le pilote, la copie du pilote est retéléchargée toutes les 30 s, seulement quand l'onglet est visible (quotas du
+  serveur).
+- Implémentation, écarts à la planche 20 : titre de page de l'épreuve (gabarit d'US-058), « Classement des poules »
+  étant le titre de l'étape ; colonne « Tireur » (la planche dit « Tireuse », d'après son exemple).
+- Implémentation : sur smartphone, l'étape est dans « Plus » de la barre d'onglets, toujours active ; avant le lancement,
+  elle renvoie vers « Poules ».
 
 ## Questions bloquantes
 
@@ -85,3 +92,5 @@ Aucune (planche 20 validée le 2026-11-18).
 | Date | Événement |
 |---|---|
 | 2026-11-18 | Créée (retour de l'utilisateur), planche 20 proposée puis validée ; passe à Prête |
+| 2026-11-18 | Implémentée : `classementDesPoules`, étape et page « Classement » ; passe En revue |
+| 2026-11-18 | Recette OK sur https://poule-position-git-us-us-092-classement-bc21a9-fsmjlas-projects.vercel.app (recette commune d'US-090 à US-092, thème sombre) : « À venir » avant le lancement puis « provisoire », 12 tireuses classées avec ex aequo, mise à jour sans recharger depuis un second onglet ; passe à Terminée |

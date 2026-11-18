@@ -1270,6 +1270,7 @@ export const textes = {
       inscriptions: 'Inscriptions',
       emargement: 'Émargement',
       poules: 'Poules',
+      classement: 'Classement',
       tableau: 'Tableau',
       impressions: 'Impressions',
       formule: 'Formule',
@@ -1708,6 +1709,37 @@ export const textes = {
     pouleFinie: 'Tous les matchs de cette poule sont saisis : cliquez une case pour corriger un score.',
     ordreDesMatchs: 'Ordre des matchs',
     enCoursDeSaisie: 'en cours',
+    // US-092 : classement des poules (planche 20).
+    classementTitre: 'Classement des poules',
+    classementProvisoire: 'provisoire',
+    classementDefinitif: 'définitif',
+    classementProvisoireEntete: (regles: number, total: number) =>
+      `Provisoire · ${regles} match${regles > 1 ? 's' : ''} sur ${total}`,
+    classementDefinitifEntete: 'Définitif',
+    classementAide: 'Se met à jour à chaque score saisi · départage : V/M, puis indice, puis touches données',
+    imprimerClassement: 'Imprimer le classement',
+    classementEffectif: (tireurs: number, poules: number) =>
+      `${tireurs} tireur${tireurs > 1 ? 's' : ''} · ${poules} poule${poules > 1 ? 's' : ''}`,
+    etatPoules: (terminees: number[], enCours: number[]) => {
+      const liste = (n: number[]) =>
+        n.length === 1 ? `Poule ${n[0]}` : `Poules ${n.slice(0, -1).join(', ')} et ${n.at(-1)}`;
+      return [
+        terminees.length ? `${liste(terminees)} terminée${terminees.length > 1 ? 's' : ''}` : null,
+        enCours.length ? `${liste(enCours).toLowerCase()} en cours` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+        .replace(/^poule/, 'Poule');
+    },
+    club: 'Club',
+    poulesColonne: 'Poule',
+    matchsTires: 'Matchs tirés',
+    etatColonne: 'État',
+    exaequo: 'ex aequo',
+    pouleTerminee: 'Poule terminée',
+    matchsATirer: (n: number) => `${n} match${n > 1 ? 's' : ''} à tirer`,
+    classementLegende:
+      '« = » : ex aequo. Le rang reste provisoire tant qu’une poule n’est pas terminée ; un tireur retiré (abandon, forfait, exclusion) est placé en fin de classement. Le tableau (E6) partira de ce classement.',
     // US-089 : retrait d'un tireur des poules.
     motifs: { abandon: 'Abandon', forfait: 'Forfait', exclusion: 'Exclusion' } as Record<string, string>,
     retirerMotif: (motif: string) => `${motif}…`,

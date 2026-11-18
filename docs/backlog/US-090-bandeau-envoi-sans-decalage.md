@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F7 (exigences §3)
 - **Priorité :** P1
 - **Type :** correction
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-088
-- **Branche / PR :** `us/US-090-bandeau-envoi-sans-decalage` / —
+- **Branche / PR :** `us/US-090-bandeau-envoi-sans-decalage` / #134
 
 ## Récit
 
@@ -68,3 +68,4 @@ Aucune.
 |---|---|
 | 2026-11-18 | Créée (retour de l'utilisateur sur US-088) |
 | 2026-11-18 | Implémentée : pastille `AttenteEnvoi` sur Inscriptions, Émargement et Poules ; passe En revue |
+| 2026-11-18 | Recette OK sur https://poule-position-git-us-us-092-classement-bc21a9-fsmjlas-projects.vercel.app (recette commune d'US-090 à US-092, thème sombre) : feuille immobile (398 px) pendant trois saisies en ligne, aucune pastille ; passe à Terminée |

@@ -3,6 +3,7 @@
 // fait ici, en lui donnant `livree: true` et son adresse.
 import type { NomIcone } from './icones';
 import {
+  cheminClassementEpreuve,
   cheminEmargementEpreuve,
   cheminPoulesEpreuve,
   cheminEpreuve,
@@ -12,7 +13,15 @@ import {
 } from './routes';
 
 export type IdEtapeEpreuve =
-  'resume' | 'inscriptions' | 'emargement' | 'poules' | 'tableau' | 'impressions' | 'formule' | 'parametres';
+  | 'resume'
+  | 'inscriptions'
+  | 'emargement'
+  | 'poules'
+  | 'classement'
+  | 'tableau'
+  | 'impressions'
+  | 'formule'
+  | 'parametres';
 
 export interface EtapeEpreuve {
   id: IdEtapeEpreuve;
@@ -45,6 +54,14 @@ export const ETAPES_EPREUVE: readonly EtapeEpreuve[] = [
   },
   // US-086 : l'étape « Poules » est livrée (constitution, puis ajustement et saisie).
   { id: 'poules', icone: 'grille', groupe: 'deroulement', livree: true, chemin: cheminPoulesEpreuve },
+  // US-092 : l'étape « Classement » des poules, entre Poules et Tableau.
+  {
+    id: 'classement',
+    icone: 'liste',
+    groupe: 'deroulement',
+    livree: true,
+    chemin: cheminClassementEpreuve,
+  },
   { id: 'tableau', icone: 'arbre', groupe: 'deroulement', livree: false },
   { id: 'impressions', icone: 'imprimante', groupe: 'deroulement', livree: false },
   { id: 'formule', icone: 'arbre', groupe: 'reglages', livree: true, chemin: cheminFormuleEpreuve },
