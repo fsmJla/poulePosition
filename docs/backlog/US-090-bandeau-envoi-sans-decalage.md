@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F7 (exigences §3)
 - **Priorité :** P1
 - **Type :** correction
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-088
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-090-bandeau-envoi-sans-decalage` / —
 
 ## Récit
 
@@ -50,6 +50,9 @@ réseau, sans décaler l'écran. Testé par un E2E réseau coupé.
 ## Hypothèses
 
 - Le délai de 3 secondes évite le clignotement à chaque saisie en ligne.
+- Implémentation (2026-11-18) : la pastille flotte en bas à droite de l'écran (composant `AttenteEnvoi`), au lieu d'une
+  zone de l'entête : elle ne pousse rien, quelle que soit la page. Les écrans Résumé, Formule et Paramètres gardent leur
+  avertissement actuel (hors du périmètre de CA-3).
 
 ## Questions bloquantes
 
@@ -64,3 +67,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-18 | Créée (retour de l'utilisateur sur US-088) |
+| 2026-11-18 | Implémentée : pastille `AttenteEnvoi` sur Inscriptions, Émargement et Poules ; passe En revue |
