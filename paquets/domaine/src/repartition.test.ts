@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  changerPiste,
   clubsEnDouble,
+  deplacerTireur,
+  memeClubDans,
+  pistesEnDouble,
   moyenneDesClassements,
   ordreDeRepartition,
   poulesVides,
@@ -117,5 +121,34 @@ describe('US-087 CA-1 : moyenne des classements', () => {
     const [poule] = repartirEnSerpentin(classes(24), 4, options);
     expect(moyenneDesClassements(poule!, presents)).toBe(12.5);
     expect(moyenneDesClassements({ numero: 1, piste: 1, tireurIds: ['x'] }, presents)).toBeNull();
+  });
+});
+
+describe('US-087 : ajuster les poules', () => {
+  const poules = [
+    { numero: 1, piste: 1, tireurIds: ['a', 'b'] },
+    { numero: 2, piste: 2, tireurIds: ['c'] },
+  ];
+  it('CA-2 et CA-3 : un tireur change de poule et se place en fin ; un tireur à placer entre dans la poule', () => {
+    expect(deplacerTireur(poules, 'a', 2).map(({ tireurIds }) => tireurIds)).toEqual([['b'], ['c', 'a']]);
+    expect(deplacerTireur(poules, 'z', 1)[0]!.tireurIds).toEqual(['a', 'b', 'z']);
+    expect(poules[0]!.tireurIds).toEqual(['a', 'b']);
+  });
+  it('CA-1 : changer la piste ; deux poules sur la même piste sont signalées', () => {
+    const changees = changerPiste(poules, 2, 1);
+    expect(changees.map(({ piste }) => piste)).toEqual([1, 1]);
+    expect(pistesEnDouble(changees)).toEqual([1]);
+    expect(pistesEnDouble(poules)).toEqual([]);
+  });
+  it('CA-2 : les tireurs du même club dans la poule d’arrivée', () => {
+    const presents = [
+      tireur('a', 1, 'Pessac'),
+      tireur('b', 2, 'Talence'),
+      tireur('c', 3, 'pessac'),
+      tireur('v', 4, ''),
+    ];
+    expect(memeClubDans(poules[1]!, presents[0]!, presents).map(({ id }) => id)).toEqual(['c']);
+    expect(memeClubDans(poules[1]!, presents[1]!, presents)).toEqual([]);
+    expect(memeClubDans(poules[1]!, presents[3]!, presents)).toEqual([]);
   });
 });

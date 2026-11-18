@@ -8,7 +8,8 @@
   import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
   import type { Accueil } from '../lib/accueil';
   import { prendreEcriture, type Journal } from '../lib/journal';
-  import { composerPoules } from '../lib/poules';
+  import type { VerdictArchivage } from '../lib/archivage';
+  import { composerPoules, lancerPoules } from '../lib/poules';
   import { cheminEmargementEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
@@ -99,6 +100,16 @@
     return true;
   }
 
+  /** US-087 CA-6 : lance les poules (après la confirmation de la carte). */
+  async function lancer(): Promise<VerdictArchivage> {
+    const resultat = await lancerPoules(journal, epreuveId, contexte);
+    await recharger();
+    if (!resultat.ok) return { ok: false, message: t.erreurs[resultat.erreur] ?? t.erreurs.AUTRE! };
+    annonce = t.lanceesAnnonce;
+    void synchronisation.envoyer(epreuveId).then(() => recharger());
+    return { ok: true };
+  }
+
   async function constituer(poules: Poule[], estManuelle: boolean) {
     if (await ecrireComposition(poules)) {
       manuelle = estManuelle;
@@ -139,7 +150,15 @@
       <div class="titre-etape"><h2>{t.titre}</h2></div>
       <p class="discret">{t.pointezDabord}</p>
     {:else}
-      <CartesPoules {etat} {tireurs} {manuelle} {modifiable} repartirANouveau={() => (refaire = true)} />
+      <CartesPoules
+        {etat}
+        {tireurs}
+        {manuelle}
+        {modifiable}
+        repartirANouveau={() => (refaire = true)}
+        composer={ecrireComposition}
+        {lancer}
+      />
     {/if}
   {/if}
 {/snippet}

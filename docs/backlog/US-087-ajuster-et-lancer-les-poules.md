@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F5, F6 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-086
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-087-ajuster-et-lancer-les-poules` / —
 
 ## Récit
 
@@ -75,6 +75,14 @@ du réseau. Testé par un E2E réseau coupé (déplacer puis lancer).
 
 - « Lancer les poules » demande une confirmation, car il ferme les inscriptions et l'émargement.
 - L'ordre des tireurs dans une poule (numéro) suit l'arrivée dans la poule ; il ne se réordonne pas à la main.
+- Implémentation (2026-11-18) : le menu « ⋯ » d'un tireur liste directement « Déplacer vers la poule N » (une entrée par
+  autre poule), et « Placer dans la poule N » pour un tireur à placer, au lieu d'un sous-menu « Déplacer vers… ».
+- Implémentation : un tireur déplacé se place en fin de sa nouvelle poule ; l'avertissement « même club » s'affiche dans
+  la carte survolée pendant le glissement, puis l'alerte de club reste sur la carte.
+- Implémentation : « Lancer les poules » donne d'abord la raison « N tireurs à placer », avant la taille des poules
+  (ordre des refus de `verifierLancement` revu).
+- Implémentation : le menu « ⋯ » de l'écran porte « Imprimer les feuilles de poule », grisé « À venir (impressions,
+  E7) ». Après le lancement, l'écran garde les cartes en lecture seule jusqu'à la saisie (US-088).
 
 ## Questions bloquantes
 
@@ -89,3 +97,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-17 | Créée |
+| 2026-11-18 | Implémentée : `CartesPoules` (glisser-déposer, menus, pistes, alertes, lancement) ; passe En revue |

@@ -116,7 +116,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-084](US-084-emarger-les-tireurs.md) | Émarger les tireurs le jour de l'épreuve | E3 | Terminée | US-081, US-082 |
 | [US-085](US-085-poules-dans-le-journal.md) | Tenir les poules d'une épreuve dans son journal (technique) | E4 | En revue | US-081 |
 | [US-086](US-086-constituer-les-poules.md) | Constituer les poules (automatique ou manuelle) | E4 | En revue | US-085, US-084 |
-| [US-087](US-087-ajuster-et-lancer-les-poules.md) | Vérifier, ajuster à la main et lancer les poules | E4 | Prête | US-086 |
+| [US-087](US-087-ajuster-et-lancer-les-poules.md) | Vérifier, ajuster à la main et lancer les poules | E4 | En revue | US-086 |
 | [US-088](US-088-saisir-les-scores-des-poules.md) | Saisir les scores des poules sur le PC | E4 | Prête | US-087 |
 | [US-089](US-089-abandon-forfait-exclusion-en-poule.md) | Retirer un tireur des poules (abandon, forfait, exclusion) | E4 | Prête | US-088 |
 

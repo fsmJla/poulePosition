@@ -1640,6 +1640,31 @@ export const textes = {
     archivee: 'Épreuve archivée : lecture seule',
     repartiesAnnonce: (n: number) => `${n} poule${n > 1 ? 's' : ''} constituée${n > 1 ? 's' : ''}`,
     repartirANouveau: 'Répartir à nouveau',
+    // US-087 (planche 9).
+    lancer: 'Lancer les poules',
+    confirmerLancement: 'Lancer les poules ?',
+    detailLancement:
+      'La répartition sera figée et la saisie des scores s’ouvrira ; les inscriptions et l’émargement se ferment.',
+    lanceesFigees: 'Les poules sont lancées : la répartition est figée.',
+    imprimerFeuilles: 'Imprimer les feuilles de poule',
+    imprimerAVenir: 'À venir (impressions, E7)',
+    aideAjustement:
+      'Glissez un tireur par sa poignée pour le changer de poule, ou ouvrez son menu « ⋯ » › Déplacer vers… (au clavier). Une fois les poules lancées, la répartition est figée et les feuilles de poule peuvent être imprimées.',
+    glisser: (nom: string) => `Glisser ${nom} vers une autre poule`,
+    deplacerVers: (numero: number) => `Déplacer vers la poule ${numero}`,
+    placerDans: (numero: number) => `Placer dans la poule ${numero}`,
+    aPlacer: (n: number) => `À placer · ${n} tireur${n > 1 ? 's' : ''}`,
+    pisteDe: (numero: number) => `Piste de la poule ${numero}`,
+    pisteEnDouble: (piste: number) => `Piste ${piste} utilisée par plusieurs poules`,
+    memeClub: (nom: string, autre: string, club: string) => `Déposer ${nom} ici : même club que ${autre} (${club})`,
+    alertes: (n: number) => `${n} alerte${n > 1 ? 's' : ''} à vérifier`,
+    raisonLancement: (code: string, aPlacer: number) =>
+      code === 'TIREURS_A_PLACER'
+        ? `${aPlacer} tireur${aPlacer > 1 ? 's' : ''} à placer`
+        : code === 'POULE_TROP_GRANDE'
+          ? 'Une poule a plus de 7 tireurs'
+          : 'Chaque poule doit avoir au moins 3 tireurs',
+    lanceesAnnonce: 'Poules lancées',
     erreurs: {
       POULES_LANCEES: 'Les poules sont lancées : la répartition est figée',
       POULES_NON_LANCEES: 'Les poules ne sont pas encore lancées',

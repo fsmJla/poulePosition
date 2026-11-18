@@ -263,7 +263,8 @@
     "smartphone-organisateur",
     "inscriptions",
     "emargement",
-    "poules-constituer"
+    "poules-constituer",
+    "poules-ajuster"
   ],
   "app/src/lib/fil-ariane.ts": ["epreuve-etapes", "plan", "manifestation", "smartphone-organisateur"],
   "app/src/lib/plan.ts": ["plan", "manifestation"],
@@ -307,15 +308,16 @@
   "app/src/lib/publication-lot.ts": ["publication-competition", "accueil-public"],
   "app/src/lib/reprise-lot.ts": ["reprise-competition"],
   "app/src/pages/Inscriptions.svelte": ["inscriptions", "import-ffe"],
-  "app/src/lib/inscriptions.ts": ["inscriptions", "import-ffe", "emargement", "poules-constituer"],
+  "app/src/lib/inscriptions.ts": ["inscriptions", "import-ffe", "emargement", "poules-constituer", "poules-ajuster"],
   "app/src/lib/fichier-ffe.ts": ["import-ffe"],
   "app/src/composants/ApercuImportFfe.svelte": ["import-ffe"],
-  "app/src/pages/Emargement.svelte": ["emargement", "poules-constituer"],
-  "app/src/pages/Poules.svelte": ["poules-constituer"],
-  "app/src/composants/ConstitutionPoules.svelte": ["poules-constituer"],
-  "app/src/composants/CartesPoules.svelte": ["poules-constituer"],
-  "app/src/lib/poules.ts": ["poules-constituer"],
-  "tests/e2e/poules-outils.ts": ["poules-constituer"],
-  "paquets/domaine/src/repartition.ts": ["poules-constituer"],
-  "paquets/domaine/src/poules.ts": ["poules-constituer"]
+  "app/src/pages/Emargement.svelte": ["emargement", "poules-constituer", "poules-ajuster"],
+  "app/src/pages/Poules.svelte": ["poules-constituer", "poules-ajuster"],
+  "app/src/composants/ConstitutionPoules.svelte": ["poules-constituer", "poules-ajuster"],
+  "app/src/composants/CartesPoules.svelte": ["poules-constituer", "poules-ajuster"],
+  "app/src/lib/poules.ts": ["poules-constituer", "poules-ajuster"],
+  "tests/e2e/poules-outils.ts": ["poules-constituer", "poules-ajuster"],
+  "paquets/domaine/src/repartition.ts": ["poules-constituer", "poules-ajuster"],
+  "paquets/domaine/src/poules.ts": ["poules-constituer", "poules-ajuster"],
+  "tests/e2e/poules-ajuster.spec.ts": ["poules-ajuster"]
 }
