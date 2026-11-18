@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F5, F6, F7 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-081
-- **Branche / PR :** `us/US-085-poules-dans-le-journal` / —
+- **Branche / PR :** `us/US-085-poules-dans-le-journal` / #128
 
 ## Récit
 
@@ -109,3 +109,4 @@ Aucune.
 |---|---|
 | 2026-11-17 | Créée |
 | 2026-11-18 | Implémentée : `paquets/domaine/src/poules.ts`, journal et protocole ; passe En revue |
+| 2026-11-18 | Recette OK sur https://poule-position-git-us-us-089-abandon-fo-ef5f5d-fsmjlas-projects.vercel.app (recette commune d'US-085 à US-089, thème sombre) : composition, lancement (épreuve « En cours », inscriptions closes), scores, correction, retrait et annulation écrits et relus ; passe à Terminée |

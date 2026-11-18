@@ -9,13 +9,17 @@
     pouleTerminee,
     resultatsPoule,
     scoreValide,
+    MOTIFS_RETRAIT,
     type EtatPoules,
     type MatchPoule,
+    type MotifRetrait,
     type Poule,
     type Tireur,
   } from '@poule-position/domaine';
+  import ConfirmationArchivage from './ConfirmationArchivage.svelte';
   import Icone from './Icone.svelte';
   import MenuActions from './MenuActions.svelte';
+  import type { VerdictArchivage } from '../lib/archivage';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
@@ -32,9 +36,15 @@
       touchesB: number;
       auTemps: boolean;
     }) => Promise<boolean>;
+    /** US-089 : retire un tireur des poules, ou annule ce retrait. */
+    retirer: (tireurId: string, motif: MotifRetrait) => Promise<VerdictArchivage>;
+    annulerRetrait: (tireurId: string) => Promise<VerdictArchivage>;
   }
 
-  let { etat, tireurs, touches, modifiable, saisir }: Proprietes = $props();
+  let { etat, tireurs, touches, modifiable, saisir, retirer, annulerRetrait }: Proprietes = $props();
+
+  /** US-089 : le retrait demandé (ou son annulation, motif null), en attente de confirmation. */
+  let demande: { tireurId: string; motif: MotifRetrait | null } | null = $state(null);
 
   const t = textes.poules;
   const parId = $derived(new Map(tireurs.map((tireur) => [tireur.id, tireur])));
@@ -197,8 +207,28 @@
             {@const r = resultats[i]!}
             <tr class:retire={r.retrait !== null}>
               <th scope="row" class="gauche">
-                <span class="nom"><strong>{tireur?.nom.toUpperCase()}</strong> {tireur?.prenom}</span>
-                <span class="discret">{tireur?.club}</span>
+                <span class="tireur">
+                  <span class="identite-tireur">
+                    <span class="nom"><strong>{tireur?.nom.toUpperCase()}</strong> {tireur?.prenom}</span>
+                    <span class="discret">{tireur?.club}</span>
+                  </span>
+                  {#if r.retrait}<span class="motif">{t.motifs[r.retrait]}</span>{/if}
+                  {#if modifiable}
+                    <MenuActions
+                      id="menu-retrait-{id}"
+                      nom={nom(id)}
+                      contour={false}
+                      actions={r.retrait
+                        ? [{ libelle: t.annulerRetrait, surChoix: () => (demande = { tireurId: id, motif: null }) }]
+                        : MOTIFS_RETRAIT.map((motif) => ({
+                            libelle: t.retirerMotif(t.motifs[motif]!),
+                            detail: t.retirerDetail,
+                            destructive: true,
+                            surChoix: () => (demande = { tireurId: id, motif }),
+                          }))}
+                    />
+                  {/if}
+                </span>
               </th>
               <td class="discret">{i + 1}</td>
               {#each poule.tireurIds as autre, j (autre)}
@@ -211,6 +241,7 @@
                       type="button"
                       class="case"
                       class:victoire={c.texte.startsWith('V')}
+                      class:forfait={c.match?.forfait}
                       class:courante={c.match !== null && courant?.numero === c.match.numero}
                       disabled={!modifiable || c.match === null || c.match.forfait}
                       aria-label={t.caseMatch(nom(id), nom(autre), c.match?.forfait ? t.forfait : c.texte || t.aTirer)}
@@ -289,6 +320,17 @@
     </section>
   </div>
 </div>
+
+{#if demande}
+  {@const { tireurId, motif } = demande}
+  <ConfirmationArchivage
+    titre={motif ? t.confirmerRetrait(nom(tireurId), t.motifs[motif]!) : t.confirmerAnnulation(nom(tireurId))}
+    detail={motif ? t.detailRetrait(touches) : t.detailAnnulation}
+    action={motif ? t.retirer : t.annulerLeRetrait}
+    valider={() => (motif ? retirer(tireurId, motif) : annulerRetrait(tireurId))}
+    fermer={() => (demande = null)}
+  />
+{/if}
 
 <style>
   .titre-etape {
@@ -444,7 +486,6 @@
   }
 
   th.gauche {
-    display: grid;
     font-weight: 400;
   }
 
@@ -467,6 +508,32 @@
     font: inherit;
     font-weight: 600;
     cursor: pointer;
+  }
+
+  .case.forfait {
+    border-style: dashed;
+    color: var(--texte-discret);
+    font-style: italic;
+  }
+
+  .tireur {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .identite-tireur {
+    display: grid;
+    flex: 1;
+  }
+
+  .motif {
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: var(--etat-attente-fond);
+    color: var(--sur-etat-attente-fond);
+    font-size: 0.75rem;
+    font-weight: 600;
   }
 
   .case:disabled {

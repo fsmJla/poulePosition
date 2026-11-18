@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F7 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-087
-- **Branche / PR :** `us/US-088-saisir-les-scores-des-poules` / —
+- **Branche / PR :** `us/US-088-saisir-les-scores-des-poules` / #131
 
 ## Récit
 
@@ -105,3 +105,4 @@ Aucune.
 |---|---|
 | 2026-11-17 | Créée |
 | 2026-11-18 | Implémentée : `SaisiePoules` (onglets, feuille, saisie, ordre des matchs) ; passe En revue |
+| 2026-11-18 | Recette OK sur https://poule-position-git-us-us-089-abandon-fo-ef5f5d-fsmjlas-projects.vercel.app (recette commune d'US-085 à US-089, thème sombre) : égalité et vainqueur sans 5 touches refusés, victoire au temps « V4 », Entrée passe au match suivant, correction par la case, rangs justes, « 3/60 » dans la navigation ; passe à Terminée |

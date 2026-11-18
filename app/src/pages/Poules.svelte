@@ -10,7 +10,8 @@
   import type { Accueil } from '../lib/accueil';
   import { prendreEcriture, type Journal } from '../lib/journal';
   import type { VerdictArchivage } from '../lib/archivage';
-  import { composerPoules, lancerPoules, saisirScore } from '../lib/poules';
+  import { annulerRetrait, composerPoules, lancerPoules, retirerDesPoules, saisirScore } from '../lib/poules';
+  import type { MotifRetrait } from '@poule-position/domaine';
   import { cheminEmargementEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
@@ -126,6 +127,23 @@
     return true;
   }
 
+  const nomDe = (id: string) => {
+    const tireur = tireurs.find((x) => x.id === id);
+    return tireur ? `${tireur.nom.toUpperCase()} ${tireur.prenom}` : '';
+  };
+
+  /** US-089 CA-1 et CA-4 : retire un tireur des poules, ou annule ce retrait. */
+  async function retirer(tireurId: string, motif: MotifRetrait | null): Promise<VerdictArchivage> {
+    const resultat = motif
+      ? await retirerDesPoules(journal, epreuveId, tireurId, motif, contexte)
+      : await annulerRetrait(journal, epreuveId, tireurId, contexte);
+    await recharger();
+    if (!resultat.ok) return { ok: false, message: t.erreurs[resultat.erreur] ?? t.erreurs.AUTRE! };
+    annonce = motif ? t.retraitAnnonce(nomDe(tireurId), t.motifs[motif]!) : t.retraitAnnuleAnnonce(nomDe(tireurId));
+    void synchronisation.envoyer(epreuveId).then(() => recharger());
+    return { ok: true };
+  }
+
   async function constituer(poules: Poule[], estManuelle: boolean) {
     if (await ecrireComposition(poules)) {
       manuelle = estManuelle;
@@ -163,7 +181,15 @@
         annuler={etat.poules.length > 0 ? () => (refaire = false) : undefined}
       />
     {:else if etat.lancees}
-      <SaisiePoules {etat} {tireurs} touches={epreuve.formule.touchesPoules} {modifiable} {saisir} />
+      <SaisiePoules
+        {etat}
+        {tireurs}
+        touches={epreuve.formule.touchesPoules}
+        {modifiable}
+        {saisir}
+        {retirer}
+        annulerRetrait={(id) => retirer(id, null)}
+      />
     {:else if etat.poules.length === 0}
       <div class="titre-etape"><h2>{t.titre}</h2></div>
       <p class="discret">{t.pointezDabord}</p>

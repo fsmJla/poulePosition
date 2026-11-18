@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F5, F6 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-085, US-084
-- **Branche / PR :** `us/US-086-constituer-les-poules` / —
+- **Branche / PR :** `us/US-086-constituer-les-poules` / #129
 
 ## Récit
 
@@ -113,3 +113,4 @@ Aucune.
 |---|---|
 | 2026-11-17 | Créée |
 | 2026-11-18 | Implémentée : `repartition.ts`, page « Poules » et `ConstitutionPoules` ; passe En revue |
+| 2026-11-18 | Recette OK sur https://poule-position-git-us-us-089-abandon-fo-ef5f5d-fsmjlas-projects.vercel.app (recette commune d'US-085 à US-089, thème sombre) : 24 présentes importées : « 4 poules de 6 » recommandée, serpentin de la planche 8, Pessac (SPUC) signalé une fois, pistes 1 à 4 ; passe à Terminée |

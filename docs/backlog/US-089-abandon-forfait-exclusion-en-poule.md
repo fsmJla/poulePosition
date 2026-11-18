@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F7 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-088
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-089-abandon-forfait-exclusion-en-poule` / #132
 
 ## Récit
 
@@ -56,7 +56,13 @@ Comme la saisie : écrit dans le journal local du PC pilote, envoyé au retour d
 - Règle simple choisie par l'utilisateur le 2026-11-17 ; elle diffère peut-être du règlement FFE/FIE (où les matchs
   d'un tireur exclu peuvent être annulés) : à revoir si le besoin apparaît.
 - Écart à la planche 10 : l'action est dans le menu « ⋯ » de la ligne du tireur, que la planche ne montre pas.
-- Ajoute l'événement `RetraitDesPoulesAnnule` à ceux d'US-085.
+- Ajoute l'événement `RetraitDesPoulesAnnule` à ceux d'US-085 (livré avec US-085).
+- Implémentation (2026-11-18) : le menu « ⋯ » de la ligne propose directement « Abandon… », « Forfait… » et
+  « Exclusion… » (le motif est choisi dans le menu), puis une confirmation ; un tireur retiré y trouve « Annuler le
+  retrait ».
+- Implémentation : les matchs réglés par le retrait gardent dans la feuille la notation des scores (« V5 » pour
+  l'adversaire, « 0 » pour le retiré), en case pointillée et grisée, et leur nom accessible se termine par « forfait » ;
+  l'ordre des matchs les note « forfait ».
 
 ## Questions bloquantes
 
@@ -72,3 +78,5 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-17 | Créée |
+| 2026-11-18 | Implémentée : menu de la ligne de la feuille, confirmations ; passe En revue |
+| 2026-11-18 | Recette OK sur https://poule-position-git-us-us-089-abandon-fo-ef5f5d-fsmjlas-projects.vercel.app (recette commune d'US-085 à US-089, thème sombre) : abandon : match tiré gardé, matchs restants « forfait » et désactivés, classée dernière ; annulation du retrait ; passe à Terminée |
