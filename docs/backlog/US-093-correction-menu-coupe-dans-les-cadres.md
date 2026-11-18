@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F7 (exigences §3)
 - **Priorité :** P1
 - **Type :** correction
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-089 (origine), US-087
-- **Branche / PR :** `us/US-093-correction-menu-coupe-dans-les-cadres` / —
+- **Branche / PR :** `us/US-093-correction-menu-coupe-dans-les-cadres` / #137
 
 ## Récit
 
@@ -68,6 +68,10 @@ Sans objet pour le réseau : l'affichage du menu ne dépend pas du réseau. Le t
   focus de ses entrées ne fait plus défiler la page (`preventScroll`). Un défilement replace le menu au lieu de le
   fermer (la première version le fermait, et `archivage.spec.ts` ne trouvait plus « Désarchiver »).
 
+- Trouvé pendant la recette (2026-11-18) : avec une seule poule, le menu « ⋯ » d'un tireur des cartes (US-087) s'ouvrait
+  vide ; il porte désormais « Déplacer vers une autre poule », grisé, avec le motif « Une seule poule : aucune autre où
+  déplacer ». Le test de CA-3 se joue avec deux poules (il passait à vide avec une seule).
+
 ## Questions bloquantes
 
 Aucune.
@@ -84,3 +88,4 @@ Aucune.
 |---|---|
 | 2026-11-18 | Créée (bug signalé par l'utilisateur sur US-089) |
 | 2026-11-18 | Test E2E rouge (menu coupé dans la feuille), puis `MenuActions` placé dans la fenêtre : vert ; passe En revue |
+| 2026-11-18 | Recette OK sur https://poule-position-git-us-us-093-correction-1e3188-fsmjlas-projects.vercel.app (thème sombre) : menu de la feuille entier, par-dessus le cadre ; menu vide d'une poule unique corrigé ; passe à Terminée |
