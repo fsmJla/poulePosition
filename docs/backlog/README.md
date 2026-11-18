@@ -118,7 +118,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-086](US-086-constituer-les-poules.md) | Constituer les poules (automatique ou manuelle) | E4 | En revue | US-085, US-084 |
 | [US-087](US-087-ajuster-et-lancer-les-poules.md) | Vérifier, ajuster à la main et lancer les poules | E4 | En revue | US-086 |
 | [US-088](US-088-saisir-les-scores-des-poules.md) | Saisir les scores des poules sur le PC | E4 | En revue | US-087 |
-| [US-089](US-089-abandon-forfait-exclusion-en-poule.md) | Retirer un tireur des poules (abandon, forfait, exclusion) | E4 | Prête | US-088 |
+| [US-089](US-089-abandon-forfait-exclusion-en-poule.md) | Retirer un tireur des poules (abandon, forfait, exclusion) | E4 | En revue | US-088 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 

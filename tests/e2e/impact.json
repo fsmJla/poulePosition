@@ -225,7 +225,8 @@
     "smartphone-organisateur",
     "inscriptions",
     "emargement",
-    "poules-saisie"
+    "poules-saisie",
+    "poules-retrait"
   ],
   "app/src/composants/NavigationEpreuve.svelte": [
     "epreuve-etapes",
@@ -266,7 +267,8 @@
     "emargement",
     "poules-constituer",
     "poules-ajuster",
-    "poules-saisie"
+    "poules-saisie",
+    "poules-retrait"
   ],
   "app/src/lib/fil-ariane.ts": ["epreuve-etapes", "plan", "manifestation", "smartphone-organisateur"],
   "app/src/lib/plan.ts": ["plan", "manifestation"],
@@ -316,19 +318,32 @@
     "emargement",
     "poules-constituer",
     "poules-ajuster",
-    "poules-saisie"
+    "poules-saisie",
+    "poules-retrait"
   ],
   "app/src/lib/fichier-ffe.ts": ["import-ffe"],
   "app/src/composants/ApercuImportFfe.svelte": ["import-ffe"],
-  "app/src/pages/Emargement.svelte": ["emargement", "poules-constituer", "poules-ajuster", "poules-saisie"],
-  "app/src/pages/Poules.svelte": ["poules-constituer", "poules-ajuster", "poules-saisie"],
-  "app/src/composants/ConstitutionPoules.svelte": ["poules-constituer", "poules-ajuster", "poules-saisie"],
-  "app/src/composants/CartesPoules.svelte": ["poules-constituer", "poules-ajuster", "poules-saisie"],
-  "app/src/lib/poules.ts": ["poules-constituer", "poules-ajuster", "poules-saisie"],
-  "tests/e2e/poules-outils.ts": ["poules-constituer", "poules-ajuster", "poules-saisie"],
-  "paquets/domaine/src/repartition.ts": ["poules-constituer", "poules-ajuster", "poules-saisie"],
-  "paquets/domaine/src/poules.ts": ["poules-constituer", "poules-ajuster", "poules-saisie"],
+  "app/src/pages/Emargement.svelte": [
+    "emargement",
+    "poules-constituer",
+    "poules-ajuster",
+    "poules-saisie",
+    "poules-retrait"
+  ],
+  "app/src/pages/Poules.svelte": ["poules-constituer", "poules-ajuster", "poules-saisie", "poules-retrait"],
+  "app/src/composants/ConstitutionPoules.svelte": [
+    "poules-constituer",
+    "poules-ajuster",
+    "poules-saisie",
+    "poules-retrait"
+  ],
+  "app/src/composants/CartesPoules.svelte": ["poules-constituer", "poules-ajuster", "poules-saisie", "poules-retrait"],
+  "app/src/lib/poules.ts": ["poules-constituer", "poules-ajuster", "poules-saisie", "poules-retrait"],
+  "tests/e2e/poules-outils.ts": ["poules-constituer", "poules-ajuster", "poules-saisie", "poules-retrait"],
+  "paquets/domaine/src/repartition.ts": ["poules-constituer", "poules-ajuster", "poules-saisie", "poules-retrait"],
+  "paquets/domaine/src/poules.ts": ["poules-constituer", "poules-ajuster", "poules-saisie", "poules-retrait"],
   "tests/e2e/poules-ajuster.spec.ts": ["poules-ajuster"],
-  "app/src/composants/SaisiePoules.svelte": ["poules-saisie"],
-  "tests/e2e/poules-saisie.spec.ts": ["poules-saisie"]
+  "app/src/composants/SaisiePoules.svelte": ["poules-saisie", "poules-retrait"],
+  "tests/e2e/poules-saisie.spec.ts": ["poules-saisie", "poules-retrait"],
+  "tests/e2e/poules-retrait.spec.ts": ["poules-retrait"]
 }

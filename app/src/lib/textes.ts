@@ -1701,6 +1701,20 @@ export const textes = {
     pouleFinie: 'Tous les matchs de cette poule sont saisis : cliquez une case pour corriger un score.',
     ordreDesMatchs: 'Ordre des matchs',
     enCoursDeSaisie: 'en cours',
+    // US-089 : retrait d'un tireur des poules.
+    motifs: { abandon: 'Abandon', forfait: 'Forfait', exclusion: 'Exclusion' } as Record<string, string>,
+    retirerMotif: (motif: string) => `${motif}…`,
+    retirerDetail: 'matchs restants perdus, classé dernier',
+    confirmerRetrait: (nom: string, motif: string) => `${motif} : retirer ${nom} des poules ?`,
+    detailRetrait: (touches: number) =>
+      `Ses matchs déjà tirés gardent leur score ; ses matchs restants comptent perdus 0 à ${touches} et ne se saisissent plus. Il est classé dernier de sa poule.`,
+    retirer: 'Retirer',
+    annulerRetrait: 'Annuler le retrait',
+    confirmerAnnulation: (nom: string) => `Annuler le retrait de ${nom} ?`,
+    detailAnnulation: 'Ses matchs restants redeviennent à tirer et son rang est recalculé.',
+    annulerLeRetrait: 'Annuler le retrait',
+    retraitAnnonce: (nom: string, motif: string) => `${nom} : ${motif.toLowerCase()} enregistré`,
+    retraitAnnuleAnnonce: (nom: string) => `Retrait de ${nom} annulé`,
     scoreEnregistre: (a: string, ta: number, tb: number, b: string) => `${a} ${ta}–${tb} ${b} enregistré`,
     erreurs: {
       POULES_LANCEES: 'Les poules sont lancées : la répartition est figée',
