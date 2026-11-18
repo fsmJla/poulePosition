@@ -114,6 +114,11 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-082](US-082-saisir-les-tireurs.md) | Saisir les tireurs d'une épreuve | E3 | En revue | US-081, US-058 |
 | [US-083](US-083-importer-fichier-ffe.md) | Importer les tireurs depuis le fichier d'inscription de la Fédération (format Engarde / BellePoule) | E3 | En revue | US-081, US-082 |
 | [US-084](US-084-emarger-les-tireurs.md) | Émarger les tireurs le jour de l'épreuve | E3 | Prête | US-081, US-082 |
+| [US-085](US-085-poules-dans-le-journal.md) | Tenir les poules d'une épreuve dans son journal (technique) | E4 | Prête | US-081 |
+| [US-086](US-086-constituer-les-poules.md) | Constituer les poules (automatique ou manuelle) | E4 | Prête | US-085, US-084 |
+| [US-087](US-087-ajuster-et-lancer-les-poules.md) | Vérifier, ajuster à la main et lancer les poules | E4 | Prête | US-086 |
+| [US-088](US-088-saisir-les-scores-des-poules.md) | Saisir les scores des poules sur le PC | E4 | Prête | US-087 |
+| [US-089](US-089-abandon-forfait-exclusion-en-poule.md) | Retirer un tireur des poules (abandon, forfait, exclusion) | E4 | Prête | US-088 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
@@ -140,6 +145,8 @@ d'abord**, via `/adr`) : US-070 → US-071 ; les documents : US-072 → US-073.
 
 **Ordre conseillé pour E3 (inscriptions et émargement, maquette « Déroulé de l'épreuve ») :** US-081 → US-082 → US-083 → US-084
 (planche 19 « Émargement »).
+
+**Ordre conseillé pour E4 (poules, planches 8 à 10) :** US-085 → US-086 → US-087 → US-088 → US-089.
 
 **Retours ergonomiques du 2026-11-17, indépendants l'un de l'autre :** US-078 (jour des épreuves : grille et
 glisser-déposer sur le plan) et US-079 (filtres « À venir » / « En cours » de l'accueil de l'organisateur,
