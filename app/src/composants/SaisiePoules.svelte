@@ -2,14 +2,16 @@
   // Saisie des scores des poules sur le PC (US-088, planche 10) : un onglet par poule, la feuille de poule (V5, touches,
   // V, V/M, TD, TR, indice, rang), la carte du match en cours (Entrée valide et passe au suivant), l'ordre des matchs.
   // Une case de la feuille ouvre son match pour le corriger. Le retrait d'un tireur (US-089) passe par sa ligne.
-  import { tick, untrack } from 'svelte';
+  import { untrack } from 'svelte';
   import {
     avancementPoules,
     matchsDePoule,
     pouleTerminee,
     resultatsPoule,
-    scoreValide,
     MOTIFS_RETRAIT,
+    boutonsDuScore,
+    scoreDesBoutons,
+    type ChoixScore,
     type EtatPoules,
     type MatchPoule,
     type MotifRetrait,
@@ -59,9 +61,12 @@
   const courant = $derived<MatchPoule | null>(
     matchs.find((m) => m.numero === choisi && !m.forfait) ?? matchs.find(({ touches: tt }) => tt === null) ?? null,
   );
-  const saisie = $state({ a: '', b: '', auTemps: false });
+  /** US-091 : le bouton choisi dans chaque colonne (gauche : tireurA, droite : tireurB). */
+  const choix = $state<{ a: ChoixScore | null; b: ChoixScore | null }>({ a: null, b: null });
   let erreur: string | null = $state(null);
-  let premierChamp: HTMLInputElement | undefined = $state();
+  let envoi = $state(false);
+  /** Boutons d'une colonne : 0 à N−1, puis « V ». */
+  const boutons = $derived<ChoixScore[]>([...Array.from({ length: touches }, (_, i) => i), 'V']);
 
   const nom = (id: string) => {
     const tireur = parId.get(id);
@@ -69,14 +74,14 @@
   };
   const nomCourt = (id: string) => parId.get(id)?.nom.toUpperCase() ?? '';
 
-  /** La saisie reprend le score du match ouvert (correction) ou repart à vide, quand ce match change. */
+  /** US-091 CA-6 : les boutons reprennent le score du match ouvert (correction), ou repartent à vide. */
   const cleCourant = $derived(courant ? `${poule.numero}-${courant.numero}-${courant.touches?.join() ?? ''}` : '');
   $effect(() => {
     void cleCourant;
     const match = untrack(() => courant);
-    saisie.a = match?.touches ? String(match.touches[0]) : '';
-    saisie.b = match?.touches ? String(match.touches[1]) : '';
-    saisie.auTemps = match?.auTemps ?? false;
+    const [a, b] = match?.touches ? boutonsDuScore(match.touches[0], match.touches[1], touches) : [null, null];
+    choix.a = a;
+    choix.b = b;
     erreur = null;
   });
 
@@ -102,37 +107,40 @@
     valeur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const signe = (valeur: number) => (valeur > 0 ? `+${valeur}` : String(valeur));
 
-  /** CA-4 : la raison du refus d'un score, ou null s'il est valable. */
-  function raison(a: number, b: number, auTemps: boolean): string | null {
-    if (![a, b].every((x) => Number.isInteger(x) && x >= 0 && x <= touches)) return t.horsBornesTouches(touches);
-    if (a === b) return t.egalite;
-    if (scoreValide(a, b, touches, auTemps)) return null;
-    return auTemps ? t.auTempsMoins(touches) : t.vainqueurATouches(touches);
-  }
-
-  async function valider(evenement: SubmitEvent) {
-    evenement.preventDefault();
+  /** US-091 CA-2 à CA-5 : un bouton choisi ; le choix dans l'autre colonne enregistre le score. */
+  async function choisir(cote: 'a' | 'b', valeur: ChoixScore) {
     const match = courant;
-    if (!match || !modifiable) return;
-    const a = saisie.a.trim() === '' ? NaN : Number(saisie.a);
-    const b = saisie.b.trim() === '' ? NaN : Number(saisie.b);
-    const refus = raison(a, b, saisie.auTemps);
-    if (refus) {
-      erreur = refus;
+    if (!match || !modifiable || envoi) return;
+    erreur = null;
+    const autre = cote === 'a' ? 'b' : 'a';
+    // Un match déjà saisi (correction) repart d'un seul choix : le second enregistre.
+    if (match.touches && choix.a !== null && choix.b !== null) choix[autre] = null;
+    choix[cote] = valeur;
+    if (choix.a === null || choix.b === null) return;
+    const score = scoreDesBoutons(choix.a, choix.b, touches);
+    if (!score.ok) {
+      erreur = score.raison === 'DEUX_VAINQUEURS' ? t.unSeulVainqueur : t.egalite;
+      choix.a = null;
+      choix.b = null;
       return;
     }
-    const ok = await saisir({
-      poule: poule.numero,
-      tireurA: match.tireurA,
-      tireurB: match.tireurB,
-      touchesA: a,
-      touchesB: b,
-      auTemps: saisie.auTemps,
-    });
-    if (ok) {
-      choisi = null;
-      await tick();
-      premierChamp?.focus();
+    envoi = true;
+    try {
+      const ok = await saisir({
+        poule: poule.numero,
+        tireurA: match.tireurA,
+        tireurB: match.tireurB,
+        touchesA: score.touchesA,
+        touchesB: score.touchesB,
+        auTemps: score.auTemps,
+      });
+      if (ok) {
+        choisi = null;
+        choix.a = null;
+        choix.b = null;
+      }
+    } finally {
+      envoi = false;
     }
   }
 </script>
@@ -273,29 +281,26 @@
             <h3 id="titre-saisie">{t.match(courant.numero, matchs.length)}</h3>
             <span class="discret">{t.contre(i, j)}</span>
           </header>
-          <form onsubmit={valider} novalidate>
-            <label class="score"
-              ><span>{nom(courant.tireurA)}</span><input
-                bind:this={premierChamp}
-                bind:value={saisie.a}
-                inputmode="numeric"
-                autocomplete="off"
-                aria-label={t.touchesDe(nom(courant.tireurA))}
-              /></label
-            >
-            <label class="score"
-              ><span>{nom(courant.tireurB)}</span><input
-                bind:value={saisie.b}
-                inputmode="numeric"
-                autocomplete="off"
-                aria-label={t.touchesDe(nom(courant.tireurB))}
-              /></label
-            >
-            <label class="option"><input type="checkbox" bind:checked={saisie.auTemps} />{t.auTemps}</label>
-            {#if erreur}<p class="message" role="alert">{erreur}</p>{/if}
-            <button type="submit" class="principal">{t.valider}</button>
-          </form>
-          <p class="discret">{t.aideSaisie(touches)}</p>
+          <div class="colonnes">
+            {#each [['a', courant.tireurA, 'gauche'], ['b', courant.tireurB, 'droite']] as const as [cote, id, piste] (cote)}
+              <div class="colonne {piste}" role="group" aria-label={t.boutonsDe(nom(id))}>
+                <p class="tireur-colonne"><strong>{nomCourt(id)}</strong> {parId.get(id)?.prenom}</p>
+                <p class="discret">{t.cotePiste[piste]}</p>
+                {#each boutons as valeur (valeur)}
+                  <button
+                    type="button"
+                    class="bouton-score"
+                    aria-pressed={choix[cote] === valeur}
+                    aria-label={t.boutonPour(valeur === 'V' ? 'V' : String(valeur), nom(id))}
+                    disabled={envoi}
+                    onclick={() => choisir(cote, valeur)}>{valeur}</button
+                  >
+                {/each}
+              </div>
+            {/each}
+          </div>
+          {#if erreur}<p class="message" role="alert">{erreur}</p>{/if}
+          <p class="discret">{t.aideBoutons}</p>
         {:else}
           <h3 id="titre-saisie">{t.feuille(poule.numero, poule.piste)}</h3>
           <p class="discret" role="status">{terminee ? t.pouleFinie : ''}</p>
@@ -428,7 +433,7 @@
 
   .corps {
     display: grid;
-    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
     gap: 1rem;
     align-items: start;
   }
@@ -468,7 +473,7 @@
 
   th,
   td {
-    padding: 0.35rem 0.25rem;
+    padding: 0.3rem 0.15rem;
     border-bottom: 1px solid var(--bordure);
   }
 
@@ -481,7 +486,7 @@
   }
 
   .gauche {
-    padding-left: 1rem;
+    padding-left: 0.75rem;
     text-align: left;
   }
 
@@ -499,8 +504,8 @@
   }
 
   .case {
-    width: 2.4rem;
-    height: 2.4rem;
+    width: 2.2rem;
+    height: 2.2rem;
     border: 1px solid var(--bordure-champ);
     border-radius: 8px;
     background: var(--surface);
@@ -561,65 +566,67 @@
     border: 2px solid var(--marque);
   }
 
-  .saisie form,
+  .saisie .colonnes,
   .saisie > p,
   .saisie > h3 {
     margin: 0;
     padding: 0.75rem 1rem;
   }
 
-  form {
+  .colonnes {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
   }
 
-  .score {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    font-weight: 600;
-  }
-
-  .score input {
-    box-sizing: border-box;
-    width: 4.5rem;
-    height: 3.25rem;
-    border: 2px solid var(--bordure-champ);
-    border-radius: var(--rayon);
-    background: var(--surface);
-    color: var(--texte);
-    font: inherit;
-    font-size: 1.5rem;
+  .colonne {
+    display: grid;
+    gap: 0.4rem;
+    align-content: start;
     text-align: center;
   }
 
-  .score input:focus {
-    border-color: var(--marque);
+  .tireur-colonne {
+    margin: 0;
+    font-size: 0.95rem;
   }
 
-  .option {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
+  .gauche .tireur-colonne {
+    color: var(--cote-gauche);
   }
 
-  .option input {
-    width: 1.2rem;
-    height: 1.2rem;
-    accent-color: var(--marque);
+  .droite .tireur-colonne {
+    color: var(--cote-droit);
   }
 
-  .principal {
-    min-height: 2.75rem;
-    border: none;
-    border-radius: var(--rayon);
-    background: var(--palette-tiffany);
-    color: var(--sur-tiffany);
+  .bouton-score {
+    min-height: 2.6rem;
+    border: 2px solid var(--cote-gauche);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--texte);
     font: inherit;
+    font-size: 1.15rem;
     font-weight: 600;
     cursor: pointer;
+  }
+
+  .droite .bouton-score {
+    border-color: var(--cote-droit);
+  }
+
+  .gauche .bouton-score[aria-pressed='true'] {
+    background: var(--cote-gauche);
+    color: var(--sur-cote);
+  }
+
+  .droite .bouton-score[aria-pressed='true'] {
+    background: var(--cote-droit);
+    color: var(--sur-cote);
+  }
+
+  .bouton-score:disabled {
+    cursor: wait;
   }
 
   .message {

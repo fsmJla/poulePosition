@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { poulesDe, projeter, verifierEvenement, type Epreuve, type Evenement, type Proposition } from './journal';
 import {
   avancementPoules,
+  boutonsDuScore,
+  scoreDesBoutons,
   matchsDePoule,
   ordreDesMatchs,
   pouleTerminee,
@@ -292,5 +294,32 @@ describe('US-085 : une poule hors de la projection', () => {
   it('une poule de 8 n’a pas de matchs', () => {
     const poule: Poule = { numero: 1, piste: 1, tireurIds: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] };
     expect(matchsDePoule({ poules: [poule], lancees: true, scores: [], retraits: [] }, poule, 5)).toEqual([]);
+  });
+});
+
+describe('US-091 : le score de deux boutons', () => {
+  it('CA-3 : « V » et un chiffre', () => {
+    expect(scoreDesBoutons('V', 3, 5)).toEqual({ ok: true, touchesA: 5, touchesB: 3, auTemps: false });
+    expect(scoreDesBoutons(0, 'V', 5)).toEqual({ ok: true, touchesA: 0, touchesB: 5, auTemps: false });
+  });
+  it('CA-4 : deux chiffres différents, victoire au temps du plus haut', () => {
+    expect(scoreDesBoutons(4, 3, 5)).toEqual({ ok: true, touchesA: 4, touchesB: 3, auTemps: true });
+    const { touchesA, touchesB, auTemps } = scoreDesBoutons(1, 2, 5) as {
+      touchesA: number;
+      touchesB: number;
+      auTemps: boolean;
+    };
+    expect(scoreValide(touchesA, touchesB, 5, auTemps)).toBe(true);
+  });
+  it('CA-5 : deux « V », deux chiffres égaux, hors bornes : refusés', () => {
+    expect(scoreDesBoutons('V', 'V', 5)).toEqual({ ok: false, raison: 'DEUX_VAINQUEURS' });
+    expect(scoreDesBoutons(2, 2, 5)).toEqual({ ok: false, raison: 'EGALITE' });
+    expect(scoreDesBoutons(5, 2, 5)).toEqual({ ok: false, raison: 'HORS_BORNES' });
+    expect(scoreDesBoutons(1, -1, 5)).toEqual({ ok: false, raison: 'HORS_BORNES' });
+  });
+  it('CA-6 : les boutons d’un score saisi', () => {
+    expect(boutonsDuScore(5, 3, 5)).toEqual(['V', 3]);
+    expect(boutonsDuScore(4, 3, 5)).toEqual([4, 3]);
+    expect(boutonsDuScore(1, 4, 4)).toEqual([1, 'V']);
   });
 });

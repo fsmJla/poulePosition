@@ -90,3 +90,22 @@ export async function repartir(page: Page, adresse: string) {
 /** La carte d'une poule (US-087). */
 export const cartePoule = (page: Page, numero: number) =>
   page.getByRole('region', { name: `Poule ${numero}`, exact: true });
+
+/** La carte de saisie du match en cours (US-088). */
+export const carteSaisie = (page: Page) => page.getByRole('region', { name: /^Match \d+ sur \d+$/ });
+
+/** US-091 : un bouton de score, à gauche (`a`, premier tireur) ou à droite (`b`) ; 5 touches = « V ». */
+export const boutonScore = (page: Page, cote: 'a' | 'b', touches: number | 'V') =>
+  carteSaisie(page)
+    .getByRole('group')
+    .nth(cote === 'a' ? 0 : 1)
+    .getByRole('button', { name: new RegExp(`^${touches === 5 ? 'V' : touches} pour `) });
+
+/** US-091 : saisit le match en cours en deux clics (5 = « V ») et attend le match suivant. */
+export async function saisirBoutons(page: Page, a: number, b: number) {
+  const titre = (await carteSaisie(page).getByRole('heading').textContent()) ?? '';
+  await boutonScore(page, 'a', a).click();
+  await boutonScore(page, 'b', b).click();
+  // Le match suivant s'ouvre (ou la carte disparaît après le dernier match).
+  await expect(page.getByRole('region', { name: titre, exact: true })).toHaveCount(0);
+}

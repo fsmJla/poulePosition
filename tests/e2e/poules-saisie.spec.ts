@@ -1,8 +1,16 @@
-// Saisir les scores des poules sur le PC (US-088, planche 10) : onglets, feuille de poule, match en cours (Entrée valide
-// et passe au suivant), contrôle du score, victoire au temps, correction, poule terminée, hors ligne.
+// Saisir les scores des poules sur le PC (US-088, planche 10 ; US-091, boutons de la planche 14) : onglets, feuille de
+// poule, match en cours (le second bouton enregistre et passe au suivant), contrôle, victoire au temps, correction,
+// poule terminée, hors ligne.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
-import { epreuveAvecPresentes, ouvrirPoules, repartir } from './poules-outils';
+import {
+  boutonScore,
+  carteSaisie,
+  epreuveAvecPresentes,
+  ouvrirPoules,
+  repartir,
+  saisirBoutons as saisir,
+} from './poules-outils';
 
 /** Répartit et lance les poules (US-086, US-087). */
 async function lancer(page: Page, adresse: string) {
@@ -12,23 +20,12 @@ async function lancer(page: Page, adresse: string) {
   await expect(page.getByRole('heading', { level: 3, name: /^Feuille de la poule 1/ })).toBeVisible();
 }
 
-const carteSaisie = (page: Page) => page.getByRole('region', { name: /^Match \d+ sur \d+$/ });
-
-/** Saisit le match en cours : `a` touches pour le premier tireur, `b` pour le second, Entrée. */
-async function saisir(page: Page, a: number, b: number) {
-  const carte = carteSaisie(page);
-  const titre = await carte.getByRole('heading').textContent();
-  await carte.getByRole('textbox').nth(0).fill(String(a));
-  await carte.getByRole('textbox').nth(1).fill(String(b));
-  await carte.getByRole('textbox').nth(1).press('Enter');
-  // Le match suivant s'ouvre (ou la carte disparaît après le dernier match).
-  await expect(page.getByRole('region', { name: titre ?? '', exact: true })).toHaveCount(0);
-}
-
 const case_ = (page: Page, nom: string, adversaire: string) =>
   page.getByRole('button', { name: new RegExp(`^${nom} contre ${adversaire} : `) });
 
-test('US-088 CA-1 à CA-3 et CA-8 : onglets, feuille, saisie dans l’ordre officiel (planche 10)', async ({ page }) => {
+test('US-088 CA-1 à CA-3, CA-8 et US-091 CA-1, CA-7 : onglets, feuille, boutons dans l’ordre officiel', async ({
+  page,
+}) => {
   test.setTimeout(180_000);
   await page.setViewportSize({ width: 1360, height: 1200 });
   await seConnecter(page);
@@ -41,10 +38,12 @@ test('US-088 CA-1 à CA-3 et CA-8 : onglets, feuille, saisie dans l’ordre offi
   await page.getByRole('tab', { name: /Poule 2/ }).click();
   await expect(page.getByRole('heading', { level: 3, name: 'Feuille de la poule 2 · piste 2' })).toBeVisible();
 
-  // CA-3 : match 1 (1 contre 2), Entrée valide et passe au match 2 (4 contre 5).
+  // CA-3 et US-091 CA-1 : match 1 (1 contre 2), deux colonnes de boutons 0 à 4 et « V », sans champ à taper.
   await expect(carteSaisie(page)).toHaveAccessibleName('Match 1 sur 15');
   await expect(carteSaisie(page)).toContainText('1 contre 2');
-  await expect(carteSaisie(page)).toContainText('DUBOIS Chloé');
+  await expect(carteSaisie(page).getByRole('group', { name: 'Score de DUBOIS Chloé' })).toBeVisible();
+  await expect(carteSaisie(page).getByRole('group').nth(0).getByRole('button')).toHaveCount(6);
+  await expect(carteSaisie(page).getByRole('textbox')).toHaveCount(0);
   await saisir(page, 5, 3);
   await expect(carteSaisie(page)).toHaveAccessibleName('Match 2 sur 15');
   await expect(carteSaisie(page)).toContainText('4 contre 5');
@@ -73,41 +72,41 @@ test('US-088 CA-1 à CA-3 et CA-8 : onglets, feuille, saisie dans l’ordre offi
   await page.screenshot({ path: 'test-results/poules-saisie.png', fullPage: true });
 });
 
-test('US-088 CA-4 à CA-7 : contrôle, victoire au temps, correction, poule terminée', async ({ page }) => {
+test('US-091 CA-2 à CA-6 et US-088 CA-7 : deux clics, au temps, refus, correction, poule terminée', async ({
+  page,
+}) => {
   test.setTimeout(150_000);
   await seConnecter(page);
   const adresse = await epreuveAvecPresentes(page, 6);
   await lancer(page, adresse);
   const carte = carteSaisie(page);
 
-  // CA-4 : égalité, vainqueur sans ses 5 touches : refusés, avec la raison.
-  await carte.getByRole('textbox').nth(0).fill('4');
-  await carte.getByRole('textbox').nth(1).fill('4');
-  await carte.getByRole('button', { name: 'Valider le score' }).click();
+  // US-091 CA-5 : deux « V », puis deux chiffres égaux : refusés avec la raison, les choix s'effacent.
+  await boutonScore(page, 'a', 'V').click();
+  await expect(boutonScore(page, 'a', 'V')).toHaveAttribute('aria-pressed', 'true');
+  await boutonScore(page, 'b', 'V').click();
+  await expect(carte.getByRole('alert')).toHaveText('Un seul vainqueur : choisissez « V » d’un seul côté');
+  await expect(boutonScore(page, 'a', 'V')).toHaveAttribute('aria-pressed', 'false');
+  await boutonScore(page, 'a', 2).click();
+  await boutonScore(page, 'b', 2).click();
   await expect(carte.getByRole('alert')).toHaveText('Pas d’égalité : un des deux tireurs gagne');
-  await carte.getByRole('textbox').nth(1).fill('3');
-  await carte.getByRole('button', { name: 'Valider le score' }).click();
-  await expect(carte.getByRole('alert')).toHaveText('Le vainqueur a 5 touches');
   await expect(carte).toHaveAccessibleName('Match 1 sur 15');
 
-  // CA-5 : au temps, 4 contre 3 est accepté et s'écrit « V4 ».
-  await carte.getByLabel('Victoire au temps').check();
-  await carte.getByRole('button', { name: 'Valider le score' }).click();
+  // US-091 CA-4 : sans « V », 4 contre 3 est une victoire au temps (« V4 »), en deux clics.
+  await saisir(page, 4, 3);
   await expect(carte).toHaveAccessibleName('Match 2 sur 15');
   await expect(case_(page, 'MARTIN Léa', 'DUBOIS Chloé')).toHaveText('V4');
 
-  // CA-6 : un clic sur la case rouvre le match, avec son score ; la validation le remplace.
+  // US-091 CA-6 : la case rouvre le match, ses deux boutons marqués ; deux nouveaux choix le remplacent.
   await case_(page, 'DUBOIS Chloé', 'MARTIN Léa').click();
   await expect(carte).toHaveAccessibleName('Match 1 sur 15');
-  await expect(carte.getByRole('textbox').nth(0)).toHaveValue('4');
-  await carte.getByLabel('Victoire au temps').uncheck();
-  await carte.getByRole('textbox').nth(0).fill('2');
-  await carte.getByRole('textbox').nth(1).fill('5');
-  await carte.getByRole('textbox').nth(1).press('Enter');
+  await expect(boutonScore(page, 'a', 4)).toHaveAttribute('aria-pressed', 'true');
+  await expect(boutonScore(page, 'b', 3)).toHaveAttribute('aria-pressed', 'true');
+  await saisir(page, 2, 5);
   await expect(case_(page, 'DUBOIS Chloé', 'MARTIN Léa')).toHaveText('V5');
   await expect(carte).toHaveAccessibleName('Match 2 sur 15');
 
-  // CA-7 : le dernier match saisi, la poule est terminée.
+  // US-088 CA-7 : le dernier match saisi, la poule est terminée.
   for (let i = 2; i <= 15; i += 1) await saisir(page, 5, i % 5);
   await expect(page.getByRole('tab', { name: /Poule 1/ })).toContainText('Terminée · 15/15');
   await expect(
@@ -116,7 +115,7 @@ test('US-088 CA-4 à CA-7 : contrôle, victoire au temps, correction, poule term
   await expect(page.getByText(/Tous les matchs de cette poule sont saisis/)).toBeVisible();
 });
 
-test('US-088 hors ligne : saisir trois matchs et en corriger un sans réseau', async ({ page, context }) => {
+test('US-088 et US-091 hors ligne : saisir trois matchs et en corriger un sans réseau', async ({ page, context }) => {
   test.setTimeout(150_000);
   await seConnecter(page);
   const adresse = await epreuveAvecPresentes(page, 6);
@@ -126,8 +125,7 @@ test('US-088 hors ligne : saisir trois matchs et en corriger un sans réseau', a
   await saisir(page, 5, 2);
   await saisir(page, 3, 5);
   await case_(page, 'MARTIN Léa', 'DUBOIS Chloé').click();
-  await carteSaisie(page).getByRole('textbox').nth(1).fill('4');
-  await carteSaisie(page).getByRole('textbox').nth(1).press('Enter');
+  await saisir(page, 5, 4);
   await expect(case_(page, 'DUBOIS Chloé', 'MARTIN Léa')).toHaveText('4');
   await context.setOffline(false);
   await ouvrirPoules(page, adresse);
