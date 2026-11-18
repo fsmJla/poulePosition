@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F7 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-087
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-088-saisir-les-scores-des-poules` / —
 
 ## Récit
 
@@ -83,6 +83,12 @@ E2E réseau coupé (saisir trois matchs, en corriger un).
 
 - Les touches se saisissent dans deux champs numériques (le smartphone, E5, a ses boutons, planches 14 et 15).
 - La correction reste possible jusqu'au début du tableau (E6).
+- Implémentation (2026-11-18) : la carte de saisie ajoute la case « Victoire au temps » (CA-5), absente de la planche 10 ;
+  les deux champs sont vides à l'ouverture d'un match à tirer, préremplis pour une correction.
+- Implémentation : après la validation, la carte passe au premier match à tirer dans l'ordre officiel ; quand la poule
+  est finie, elle le dit et une case rouvre son match.
+- Implémentation : la navigation porte l'avancement des poules lancées (« 9/60 »), comme la planche.
+- Implémentation : l'entête n'a pas « Lancer » ni « Répartir à nouveau » ; son menu « ⋯ » garde l'impression, grisée (E7).
 
 ## Questions bloquantes
 
@@ -98,3 +104,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-17 | Créée |
+| 2026-11-18 | Implémentée : `SaisiePoules` (onglets, feuille, saisie, ordre des matchs) ; passe En revue |

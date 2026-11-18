@@ -2,7 +2,14 @@
   // Gabarit à étapes de la page d'une épreuve (US-058) : fil d'Ariane, entête (nom court, statut, compétition, arme,
   // date, actions), navigation par étapes à gauche et contenu de l'étape à droite. Le Résumé, la Formule et les
   // Paramètres s'y insèrent ; leurs adresses ne changent pas.
-  import { couleurDeCompetition, nomsCourts, tireursDe, type Epreuve } from '@poule-position/domaine';
+  import {
+    avancementPoules,
+    couleurDeCompetition,
+    nomsCourts,
+    poulesDe,
+    tireursDe,
+    type Epreuve,
+  } from '@poule-position/domaine';
   import { onMount, type Snippet } from 'svelte';
   import type { Accueil } from '../lib/accueil';
   import type { IdEtapeEpreuve } from '../lib/etapes-epreuve';
@@ -63,7 +70,14 @@
     const inscrits = tireursDe(epreuve);
     if (inscrits.length === 0) return {};
     const presents = inscrits.filter(({ present }) => present).length;
-    return { inscriptions: String(inscrits.length), emargement: `${presents}/${inscrits.length}` };
+    const poules = poulesDe(epreuve);
+    // US-088 CA-1 : l'avancement des poules lancées (« 42/60 »).
+    const { regles, total } = avancementPoules(poules, epreuve.formule.touchesPoules);
+    return {
+      inscriptions: String(inscrits.length),
+      emargement: `${presents}/${inscrits.length}`,
+      ...(poules.lancees && { poules: `${regles}/${total}` }),
+    };
   });
   /** Nom court (« M13 Dames ») ; sans catégorie ou sans sexe, le nom complet. */
   const nomCourt = $derived(nomsCourts([epreuve], t.sexes).get(epreuve.id) ?? epreuve.nom);
