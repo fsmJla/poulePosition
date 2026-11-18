@@ -5,11 +5,12 @@
   import { poulesDe, tireursDe, trierTireurs, type Epreuve, type Poule } from '@poule-position/domaine';
   import CartesPoules from '../composants/CartesPoules.svelte';
   import ConstitutionPoules from '../composants/ConstitutionPoules.svelte';
+  import SaisiePoules from '../composants/SaisiePoules.svelte';
   import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
   import type { Accueil } from '../lib/accueil';
   import { prendreEcriture, type Journal } from '../lib/journal';
   import type { VerdictArchivage } from '../lib/archivage';
-  import { composerPoules, lancerPoules } from '../lib/poules';
+  import { composerPoules, lancerPoules, saisirScore } from '../lib/poules';
   import { cheminEmargementEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
@@ -110,6 +111,21 @@
     return { ok: true };
   }
 
+  /** US-088 CA-3 et CA-6 : saisit ou corrige un score. */
+  async function saisir(score: Parameters<typeof saisirScore>[2]): Promise<boolean> {
+    const resultat = await saisirScore(journal, epreuveId, score, contexte);
+    await recharger();
+    if (!resultat.ok) {
+      erreur = t.erreurs[resultat.erreur] ?? t.erreurs.AUTRE!;
+      return false;
+    }
+    erreur = null;
+    const nom = (id: string) => tireurs.find((x) => x.id === id)?.nom.toUpperCase() ?? '';
+    annonce = t.scoreEnregistre(nom(score.tireurA), score.touchesA, score.touchesB, nom(score.tireurB));
+    void synchronisation.envoyer(epreuveId).then(() => recharger());
+    return true;
+  }
+
   async function constituer(poules: Poule[], estManuelle: boolean) {
     if (await ecrireComposition(poules)) {
       manuelle = estManuelle;
@@ -146,6 +162,8 @@
         valider={constituer}
         annuler={etat.poules.length > 0 ? () => (refaire = false) : undefined}
       />
+    {:else if etat.lancees}
+      <SaisiePoules {etat} {tireurs} touches={epreuve.formule.touchesPoules} {modifiable} {saisir} />
     {:else if etat.poules.length === 0}
       <div class="titre-etape"><h2>{t.titre}</h2></div>
       <p class="discret">{t.pointezDabord}</p>
