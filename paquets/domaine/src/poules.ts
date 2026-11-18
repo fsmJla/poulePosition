@@ -192,9 +192,10 @@ export function tireursAPlacer(etat: EtatPoules, tireurs: readonly Tireur[]): Ti
 export function verifierLancement(etat: EtatPoules, tireurs: readonly Tireur[]): ErreurPoules | null {
   if (etat.lancees) return 'POULES_LANCEES';
   if (etat.poules.length === 0) return 'POULES_INCOMPLETES';
+  // US-087 CA-6 : des présents à placer d'abord, la raison la plus utile à l'organisateur.
+  if (tireursAPlacer(etat, tireurs).length > 0) return 'TIREURS_A_PLACER';
   if (etat.poules.some(({ tireurIds }) => tireurIds.length < TAILLE_MIN_POULE)) return 'POULES_INCOMPLETES';
-  if (etat.poules.some(({ tireurIds }) => tireurIds.length > TAILLE_MAX_POULE)) return 'POULE_TROP_GRANDE';
-  return tireursAPlacer(etat, tireurs).length > 0 ? 'TIREURS_A_PLACER' : null;
+  return etat.poules.some(({ tireurIds }) => tireurIds.length > TAILLE_MAX_POULE) ? 'POULE_TROP_GRANDE' : null;
 }
 
 const memePaire = (score: Pick<ScorePoule, 'tireurA' | 'tireurB'>, a: string, b: string) =>

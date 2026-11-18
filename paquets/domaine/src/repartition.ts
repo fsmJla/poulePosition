@@ -166,3 +166,32 @@ export function moyenneDesClassements(poule: Poule, tireurs: readonly Tireur[]):
     .filter((c): c is number => typeof c === 'number');
   return classements.length === 0 ? null : classements.reduce((a, b) => a + b, 0) / classements.length;
 }
+
+/** US-087 CA-2 et CA-3 : la composition après avoir mis un tireur (placé ou à placer) en fin de la poule `vers`. */
+export function deplacerTireur(poules: readonly Poule[], tireurId: string, vers: number): Poule[] {
+  return poules.map((poule) => {
+    const sans = poule.tireurIds.filter((id) => id !== tireurId);
+    return { ...poule, tireurIds: poule.numero === vers ? [...sans, tireurId] : sans };
+  });
+}
+
+/** US-087 CA-1 : la composition après avoir changé la piste d'une poule. */
+export function changerPiste(poules: readonly Poule[], numero: number, piste: number): Poule[] {
+  return poules.map((poule) => (poule.numero === numero ? { ...poule, piste } : { ...poule }));
+}
+
+/** US-087 : les pistes utilisées par plusieurs poules (avertissement, sans blocage). */
+export function pistesEnDouble(poules: readonly Poule[]): number[] {
+  const vues = poules.map(({ piste }) => piste);
+  return [...new Set(vues.filter((piste, i) => vues.indexOf(piste) !== i))];
+}
+
+/** US-087 CA-2 : les tireurs de la poule `vers` qui sont du club de `tireur` (avertissement au dépôt). */
+export function memeClubDans(poule: Poule, tireur: Tireur, tireurs: readonly Tireur[]): Tireur[] {
+  const club = clubDe(tireur);
+  if (!club) return [];
+  return poule.tireurIds
+    .filter((id) => id !== tireur.id)
+    .map((id) => tireurs.find((t) => t.id === id))
+    .filter((t): t is Tireur => t !== undefined && clubDe(t) === club);
+}
