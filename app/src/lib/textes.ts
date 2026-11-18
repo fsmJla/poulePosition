@@ -1535,6 +1535,41 @@ export const textes = {
       AUTRE: 'L’inscription n’a pas pu être enregistrée sur cet appareil',
     } as Record<string, string>,
   },
+  /** US-084 : émargement d'une épreuve (planche 19). */
+  emargement: {
+    titre: 'Émargement',
+    compteur: (presents: number, inscrits: number) => `${presents} présent${presents > 1 ? 's' : ''} sur ${inscrits}`,
+    horaires: (appel: string | null, scratch: string | null) =>
+      [appel ? `Appel ${appel}` : null, scratch ? `scratch ${scratch}` : null].filter(Boolean).join(' · '),
+    surPlace: 'Inscrire sur place',
+    surPlaceTitre: 'Inscrire sur place · pointé présent d’emblée',
+    inscrireEtPointer: 'Inscrire et pointer',
+    apresScratch: (scratch: string) =>
+      `Le scratch (${scratch}) est passé : l’inscription reste possible, à vous de décider.`,
+    constituer: 'Constituer les poules',
+    constituerAVenir: 'À venir : les poules arrivent avec l’Epic E4',
+    remettreAbsents: 'Remettre tout le monde absent',
+    remettreAbsentsDetail: 'après confirmation',
+    confirmerRemise: 'Remettre tout le monde absent ?',
+    detailRemise: (nombre: number) =>
+      `${nombre} pointage${nombre > 1 ? 's seront effacés' : ' sera effacé'} ; les inscrits restent inscrits.`,
+    remettre: 'Remettre absents',
+    imprimer: 'Imprimer la feuille de présence',
+    imprimerAVenir: 'À venir (impressions, E7)',
+    liste: 'Pointer les présents',
+    rechercher: 'Rechercher un tireur',
+    exempleRecherche: 'Nom, prénom ou club · Entrée pointe le seul résultat',
+    filtres: { toutes: 'Tous', absentes: 'Absents', presentes: 'Présents' },
+    afficher: 'Afficher',
+    present: (heure: string | null) => (heure ? `Présent · ${heure}` : 'Présent'),
+    absent: 'Absent',
+    pointer: (nom: string) => `Présent : ${nom}`,
+    aide: 'Cliquez une ligne, ou Espace, pour la pointer ; recliquez pour la remettre absente. Les absents ne sont pas placés dans les poules.',
+    aucunInscrit: 'Inscrivez d’abord les tireurs (étape « Inscriptions »).',
+    aucunResultat: 'Aucun inscrit ne correspond.',
+    pointe: (nom: string) => `${nom} pointé présent`,
+    depointe: (nom: string) => `${nom} remis absent`,
+  },
   /** US-083 : import du fichier d'inscription de la Fédération (XML Engarde / BellePoule). */
   importFfe: {
     titre: 'Importer le fichier de la Fédération',

@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F3 (exigences §3), F16 (import)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-081, US-082
-- **Branche / PR :** `us/US-083-importer-fichier-ffe` / —
+- **Branche / PR :** `us/US-083-importer-fichier-ffe` / #125
 
 ## Récit
 
@@ -123,3 +123,4 @@ Aucune.
 |---|---|
 | 2026-11-17 | Créée |
 | 2026-11-17 | Implémentée ; passe à En revue |
+| 2026-11-17 | Recette OK sur https://poule-position-git-us-us-084-emarger-le-bb9129-fsmjlas-projects.vercel.app (recette commune d'US-082 à US-084) : fichier ISO-8859-1 injecté : 2 nouveaux, 1 homonyme à cocher, 1 écarté (sexe), accents justes, classement repris ; passe à Terminée |

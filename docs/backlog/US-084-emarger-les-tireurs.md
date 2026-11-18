@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F4 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-081, US-082
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-084-emarger-les-tireurs` / #126
 
 ## Récit
 
@@ -60,6 +60,12 @@ E2E réseau coupé.
 ## Hypothèses
 
 - « Tout pointer présent » n'est pas proposé (risque d'erreur), sauf demande contraire à la validation de la planche.
+- Prises à l'implémentation :
+  - « Constituer les poules » (action principale) et « Imprimer la feuille de présence » (menu « ⋯ ») sont visibles,
+    grisés « À venir » jusqu'aux Epics E4 et E7 ;
+  - l'heure de pointage est l'heure locale de l'appareil ;
+  - le scratch est « passé » si la date de l'épreuve est passée, ou si c'est le jour même après l'heure du scratch ;
+  - les libellés sont au masculin (« présents », « absents ») : la planche, faite pour une épreuve Dames, les accordait.
 
 **CA-6 — Actions de l'écran**
 - **Étant donné** l'écran d'émargement
@@ -87,3 +93,5 @@ Aucune.
 |---|---|
 | 2026-11-17 | Créée, en attente de sa planche |
 | 2026-11-17 | Planche 19 validée ; passe à Prête |
+| 2026-11-17 | Implémentée ; passe à En revue |
+| 2026-11-17 | Recette OK sur https://poule-position-git-us-us-084-emarger-le-bb9129-fsmjlas-projects.vercel.app (recette commune d'US-082 à US-084) : pointage au clic, recherche + Entrée, filtres, « 2/4 » dans la navigation, inscription sur place, remise à absent ; passe à Terminée |

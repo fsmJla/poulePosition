@@ -265,7 +265,8 @@
     if (evenement.key === 'Escape') edition = null;
   };
 
-  const nomComplet = (tireur: Pick<Tireur, 'nom' | 'prenom'>) => `${tireur.prenom} ${tireur.nom}`;
+  // Le nom est affiché en capitales (hypothèse de l'US), y compris dans les noms accessibles.
+  const nomComplet = (tireur: Pick<Tireur, 'nom' | 'prenom'>) => `${tireur.prenom} ${tireur.nom.toUpperCase()}`;
 
   // US-083 : import du fichier de la Fédération, lu sur l'appareil puis montré dans un aperçu.
   const ti = textes.importFfe;
@@ -406,7 +407,7 @@
           <!-- CA-4 : un homonyme déjà inscrit : l'organisateur décide. -->
           <div class="alerte" role="alert">
             <Icone nom="alerte" taille={20} />
-            <span>{t.homonyme(`${homonyme.nom} ${homonyme.prenom}`, homonyme.club)}</span>
+            <span>{t.homonyme(`${homonyme.nom.toUpperCase()} ${homonyme.prenom}`, homonyme.club)}</span>
             <button type="button" class="lien" onclick={() => ajouter(undefined, true)}>{t.ajouterQuandMeme}</button>
             <button type="button" class="lien" onclick={() => (homonyme = null)}>{t.annuler}</button>
           </div>

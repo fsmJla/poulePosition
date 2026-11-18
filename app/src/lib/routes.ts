@@ -16,6 +16,7 @@ export type Page =
   | 'modifierEpreuve'
   | 'formuleEpreuve'
   | 'inscriptionsEpreuve'
+  | 'emargementEpreuve'
   | 'parametresEpreuve'
   | 'grilleEpreuves'
   | 'manifestation'
@@ -49,6 +50,8 @@ export const CHEMINS = Object.freeze({
     | 'modifierEpreuve'
     | 'formuleEpreuve'
     | 'inscriptionsEpreuve'
+    | 'emargementEpreuve'
+    | 'emargementEpreuve'
     | 'parametresEpreuve'
     | 'grilleEpreuves'
     | 'manifestation'
@@ -137,6 +140,11 @@ export function cheminInscriptionsEpreuve(epreuveId: string): string {
   return `/epreuves/${epreuveId}/inscriptions`;
 }
 
+/** US-084 : émargement d'une épreuve. */
+export function cheminEmargementEpreuve(epreuveId: string): string {
+  return `/epreuves/${epreuveId}/emargement`;
+}
+
 /** US-032 : paramètres d'une épreuve. */
 export function cheminParametresEpreuve(epreuveId: string): string {
   return `/epreuves/${epreuveId}/parametres`;
@@ -189,6 +197,7 @@ const MOTIF_EPREUVE = /^\/epreuves\/([^/]+)$/;
 const MOTIF_MODIFICATION = /^\/epreuves\/([^/]+)\/modifier$/;
 const MOTIF_FORMULE = /^\/epreuves\/([^/]+)\/formule$/;
 const MOTIF_INSCRIPTIONS = /^\/epreuves\/([^/]+)\/inscriptions$/;
+const MOTIF_EMARGEMENT = /^\/epreuves\/([^/]+)\/emargement$/;
 const MOTIF_PARAMETRES = /^\/epreuves\/([^/]+)\/parametres$/;
 
 /** Pages réservées : un visiteur non connecté est renvoyé à l'écran de connexion (CA-6). */
@@ -202,6 +211,7 @@ const RESERVEES: readonly Page[] = [
   'modifierEpreuve',
   'formuleEpreuve',
   'inscriptionsEpreuve',
+  'emargementEpreuve',
   'parametresEpreuve',
   'grilleEpreuves',
   'manifestation',
@@ -251,6 +261,9 @@ function pageDe(chemin: string): {
       | 'modifierEpreuve'
       | 'formuleEpreuve'
       | 'inscriptionsEpreuve'
+      | 'emargementEpreuve'
+      | 'emargementEpreuve'
+      | 'emargementEpreuve'
       | 'parametresEpreuve'
       | 'grilleEpreuves'
       | 'manifestation'
@@ -279,6 +292,10 @@ function pageDe(chemin: string): {
   const inscriptions = MOTIF_INSCRIPTIONS.exec(chemin)?.[1];
   if (inscriptions) {
     return MOTIF_IDENTIFIANT.test(inscriptions) ? { page: 'inscriptionsEpreuve', epreuveId: inscriptions } : null;
+  }
+  const emargement = MOTIF_EMARGEMENT.exec(chemin)?.[1];
+  if (emargement) {
+    return MOTIF_IDENTIFIANT.test(emargement) ? { page: 'emargementEpreuve', epreuveId: emargement } : null;
   }
   const parametres = MOTIF_PARAMETRES.exec(chemin)?.[1];
   if (parametres) {
