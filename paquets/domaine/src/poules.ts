@@ -378,3 +378,29 @@ export function avancementPoules(etat: EtatPoules, touchesFormule: number): { re
   }
   return { regles, total };
 }
+
+/** US-091 : un bouton de score, un chiffre de 0 à N−1 ou « V » (le vainqueur, N touches). */
+export type ChoixScore = number | 'V';
+
+export type ScoreDesBoutons =
+  | { ok: true; touchesA: number; touchesB: number; auTemps: boolean }
+  | { ok: false; raison: 'DEUX_VAINQUEURS' | 'EGALITE' | 'HORS_BORNES' };
+
+/**
+ * US-091 CA-3 à CA-5 : le score de deux boutons choisis. « V » donne N touches au vainqueur ; deux chiffres différents
+ * donnent une victoire au temps du plus haut ; deux « V » ou deux chiffres égaux sont refusés.
+ */
+export function scoreDesBoutons(a: ChoixScore, b: ChoixScore, touches: number): ScoreDesBoutons {
+  const chiffreValide = (c: ChoixScore) => c === 'V' || (Number.isInteger(c) && c >= 0 && c < touches);
+  if (!chiffreValide(a) || !chiffreValide(b)) return { ok: false, raison: 'HORS_BORNES' };
+  if (a === 'V' && b === 'V') return { ok: false, raison: 'DEUX_VAINQUEURS' };
+  if (a === b) return { ok: false, raison: 'EGALITE' };
+  const touchesA = a === 'V' ? touches : a;
+  const touchesB = b === 'V' ? touches : b;
+  return { ok: true, touchesA, touchesB, auTemps: a !== 'V' && b !== 'V' };
+}
+
+/** US-091 CA-6 : les boutons d'un score déjà saisi (le vainqueur à N touches est « V »). */
+export function boutonsDuScore(touchesA: number, touchesB: number, touches: number): [ChoixScore, ChoixScore] {
+  return [touchesA === touches ? 'V' : touchesA, touchesB === touches ? 'V' : touchesB];
+}

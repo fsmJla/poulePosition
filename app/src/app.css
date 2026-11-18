@@ -54,6 +54,10 @@
   --etat-ok: #1f7a4d;
   --etat-attente: #a86b12;
   --etat-erreur: #b3362f;
+  /* US-091 : côtés de la piste dans la saisie d'un score (gauche rouge, droite vert), distincts des états. */
+  --cote-gauche: #b3362f;
+  --cote-droit: #1f7a4d;
+  --sur-cote: #ffffff;
   /* Couleurs d'avatar (US-016) : initiales claires posées dessus, contraste AA vérifié par couleurs.test.ts. Communes aux
      modes clair et sombre. */
   /* Ombre des cartes flottantes (menu de compte, US-017). */
@@ -107,6 +111,9 @@
     --plan-7: #9aa7b2;
     --etat-attente: #e3a948;
     --etat-erreur: #f07168;
+    --cote-gauche: #f07168;
+    --cote-droit: #5cc48d;
+    --sur-cote: #0f1716;
     --accent-survol: #5fd6d2;
     --accent-teinte: #12302f;
     --accent-teinte-bordure: #1f4a49;
@@ -147,6 +154,9 @@
   --plan-7: #9aa7b2;
   --etat-attente: #e3a948;
   --etat-erreur: #f07168;
+  --cote-gauche: #f07168;
+  --cote-droit: #5cc48d;
+  --sur-cote: #0f1716;
   --accent-survol: #5fd6d2;
   --accent-teinte: #12302f;
   --accent-teinte-bordure: #1f4a49;

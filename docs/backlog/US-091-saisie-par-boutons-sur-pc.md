@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F7 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-088
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-091-saisie-par-boutons-sur-pc` / —
 
 ## Récit
 
@@ -82,6 +82,13 @@ matchs saisis par boutons).
 - Pas de raccourcis clavier en plus des boutons (choix de l'utilisateur) ; les boutons restent atteignables par
   Tabulation et Entrée.
 
+- Implémentation (2026-11-18) : les couleurs des côtés de la piste `--cote-gauche` (rouge) et `--cote-droit` (vert),
+  prévues par la charte, sont créées dans les deux thèmes ; le côté se lit aussi par le libellé « à gauche » / « à droite ».
+- Implémentation : pour corriger un match, le premier clic garde ce choix et efface l'autre colonne ; le second
+  enregistre.
+- Implémentation : la feuille de poule est resserrée (cases de 2,2 rem) pour tenir à 1360 px avec le menu « ⋯ » des
+  lignes (US-089), qui la faisait défiler.
+
 ## Questions bloquantes
 
 Aucune.
@@ -97,3 +104,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-18 | Créée (retour de l'utilisateur sur US-088) |
+| 2026-11-18 | Implémentée : `scoreDesBoutons`, boutons de la planche 14 dans la carte de saisie ; passe En revue |

@@ -1698,6 +1698,13 @@ export const textes = {
     vainqueurATouches: (touches: number) => `Le vainqueur a ${touches} touches`,
     auTempsMoins: (touches: number) => `Au temps, le vainqueur mène sans atteindre ${touches} touches`,
     egalite: 'Pas d’égalité : un des deux tireurs gagne',
+    // US-091 : saisie par boutons.
+    unSeulVainqueur: 'Un seul vainqueur : choisissez « V » d’un seul côté',
+    boutonsDe: (nom: string) => `Score de ${nom}`,
+    boutonPour: (valeur: string, nom: string) => `${valeur} pour ${nom}`,
+    cotePiste: { gauche: 'à gauche', droite: 'à droite' },
+    aideBoutons:
+      'Choisissez le score de chaque tireur : le second choix enregistre. Sans « V », c’est une victoire au temps.',
     pouleFinie: 'Tous les matchs de cette poule sont saisis : cliquez une case pour corriger un score.',
     ordreDesMatchs: 'Ordre des matchs',
     enCoursDeSaisie: 'en cours',

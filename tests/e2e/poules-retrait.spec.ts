@@ -2,7 +2,7 @@
 // restants sont perdus, il est classé dernier ; annuler le retrait ; hors ligne.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
-import { epreuveAvecPresentes, ouvrirPoules, repartir } from './poules-outils';
+import { epreuveAvecPresentes, ouvrirPoules, repartir, saisirBoutons } from './poules-outils';
 
 async function lancer(page: Page, adresse: string) {
   await repartir(page, adresse);
@@ -29,10 +29,7 @@ test('US-089 CA-1 à CA-4 : retirer une tireuse (abandon), ses matchs, son rang,
   const adresse = await epreuveAvecPresentes(page, 6);
   await lancer(page, adresse);
   // Match 1 : MARTIN 5 – 3 DUBOIS.
-  const carte = page.getByRole('region', { name: 'Match 1 sur 15' });
-  await carte.getByRole('textbox').nth(0).fill('5');
-  await carte.getByRole('textbox').nth(1).fill('3');
-  await carte.getByRole('textbox').nth(1).press('Enter');
+  await saisirBoutons(page, 5, 3);
   await expect(case_(page, 'MARTIN Léa', 'DUBOIS Chloé')).toHaveText('V5');
 
   // CA-1 : « ⋯ › Abandon… » sur sa ligne, puis la confirmation ; la ligne porte le motif.
