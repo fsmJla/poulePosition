@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F5, F6 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-086
-- **Branche / PR :** `us/US-087-ajuster-et-lancer-les-poules` / —
+- **Branche / PR :** `us/US-087-ajuster-et-lancer-les-poules` / #130
 
 ## Récit
 
@@ -98,3 +98,4 @@ Aucune.
 |---|---|
 | 2026-11-17 | Créée |
 | 2026-11-18 | Implémentée : `CartesPoules` (glisser-déposer, menus, pistes, alertes, lancement) ; passe En revue |
+| 2026-11-18 | Recette OK sur https://poule-position-git-us-us-089-abandon-fo-ef5f5d-fsmjlas-projects.vercel.app (recette commune d'US-085 à US-089, thème sombre) : cartes de la planche 9, « Déplacer vers… », piste en double signalée, lancement après confirmation ; glisser-déposer vérifié par l'E2E (la souris de l'extension ne le déclenche pas) ; passe à Terminée |
