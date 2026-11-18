@@ -105,3 +105,16 @@ test('US-087 hors ligne : déplacer puis lancer sans réseau', async ({ page, co
   // Depuis US-088, le lancement ouvre la saisie des scores.
   await expect(page.getByRole('heading', { level: 3, name: /^Feuille de la poule 1/ })).toBeVisible();
 });
+
+test('US-093 : avec une seule poule, « Déplacer vers une autre poule » est grisé avec son motif', async ({ page }) => {
+  test.setTimeout(120_000);
+  await seConnecter(page);
+  const adresse = await epreuveAvecPresentes(page, 6);
+  await repartir(page, adresse);
+  await page.getByRole('button', { name: 'Autres actions pour MARTIN Léa' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Déplacer vers une autre poule' })).toHaveAttribute(
+    'aria-disabled',
+    'true',
+  );
+  await expect(page.getByText('Une seule poule : aucune autre où déplacer')).toBeVisible();
+});

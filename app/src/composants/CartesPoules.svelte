@@ -92,6 +92,10 @@
   }
 
   function actionsDe(tireur: Tireur, depuis: number | null): ActionMenu[] {
+    // US-093 : une seule poule, rien à déplacer ; l'action reste visible, grisée, avec son motif.
+    if (depuis !== null && etat.poules.length === 1) {
+      return [{ libelle: t.deplacerAilleurs, indisponible: t.unePouleSeule }];
+    }
     return etat.poules
       .filter(({ numero }) => numero !== depuis)
       .map(({ numero }) => ({

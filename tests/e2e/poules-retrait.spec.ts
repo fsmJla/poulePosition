@@ -2,7 +2,7 @@
 // restants sont perdus, il est classé dernier ; annuler le retrait ; hors ligne.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
-import { epreuveAvecPresentes, ouvrirPoules, repartir, saisirBoutons } from './poules-outils';
+import { cartePoule, epreuveAvecPresentes, ouvrirPoules, repartir, saisirBoutons } from './poules-outils';
 
 async function lancer(page: Page, adresse: string) {
   await repartir(page, adresse);
@@ -81,4 +81,40 @@ test('US-089 hors ligne : le retrait s’écrit sans réseau', async ({ page, co
   await context.setOffline(false);
   await ouvrirPoules(page, adresse);
   await expect(ligne(page, 'MARTIN Léa')).toContainText('Abandon');
+});
+
+/** US-093 : chaque entrée du menu ouvert est visible en son milieu (rien ne la coupe ni ne la recouvre). */
+async function entreesVisibles(page: Page) {
+  return page.getByRole('menu').evaluate((menu) =>
+    [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]')].map((entree) => {
+      const { left, top, width, height } = entree.getBoundingClientRect();
+      const points = [left + 8, left + width / 2, left + width - 8].map((x) =>
+        document.elementFromPoint(x, top + height / 2),
+      );
+      return points.every((point) => point !== null && entree.contains(point));
+    }),
+  );
+}
+
+test('US-093 CA-1 et CA-3 : les menus « ⋯ » de la feuille et des cartes de poule sont entiers', async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1360, height: 1000 });
+  await seConnecter(page);
+  const adresse = await epreuveAvecPresentes(page, 12);
+  // CA-3 : le dernier tireur d'une carte de poule (US-087), deux poules : une vraie entrée « Déplacer vers ».
+  await repartir(page, adresse);
+  await cartePoule(page, 1)
+    .getByRole('button', { name: /^Autres actions pour / })
+    .last()
+    .click();
+  await expect(page.getByRole('menuitem', { name: 'Déplacer vers la poule 2' })).toBeVisible();
+  expect(await entreesVisibles(page)).toEqual([true]);
+  await page.keyboard.press('Escape');
+  // CA-1 : la ligne d'un tireur de la feuille de poule (US-089), première colonne.
+  await page.getByRole('button', { name: 'Lancer les poules' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Lancer les poules' }).click();
+  await page.getByRole('tab', { name: /Poule 1/ }).click();
+  await page.getByRole('button', { name: 'Autres actions pour MARTIN Léa' }).click();
+  await expect(page.getByRole('menuitem')).toHaveCount(3);
+  expect(await entreesVisibles(page)).toEqual([true, true, true]);
 });

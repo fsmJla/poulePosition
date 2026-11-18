@@ -255,7 +255,9 @@
     "archivage",
     "manifestation",
     "exporter-epreuve",
-    "importer-epreuve"
+    "importer-epreuve",
+    "poules-retrait",
+    "poules-ajuster"
   ],
   "app/src/composants/Onglets.svelte": ["manifestation", "plan"],
   "app/src/lib/theme.ts": ["theme", "theme-icones"],

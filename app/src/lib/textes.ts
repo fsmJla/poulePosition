@@ -1654,6 +1654,8 @@ export const textes = {
       'Glissez un tireur par sa poignée pour le changer de poule, ou ouvrez son menu « ⋯ » › Déplacer vers… (au clavier). Une fois les poules lancées, la répartition est figée et les feuilles de poule peuvent être imprimées.',
     glisser: (nom: string) => `Glisser ${nom} vers une autre poule`,
     deplacerVers: (numero: number) => `Déplacer vers la poule ${numero}`,
+    deplacerAilleurs: 'Déplacer vers une autre poule',
+    unePouleSeule: 'Une seule poule : aucune autre où déplacer',
     placerDans: (numero: number) => `Placer dans la poule ${numero}`,
     aPlacer: (n: number) => `À placer · ${n} tireur${n > 1 ? 's' : ''}`,
     pisteDe: (numero: number) => `Piste de la poule ${numero}`,
