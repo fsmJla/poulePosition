@@ -6,6 +6,7 @@
   import CartesPoules from '../composants/CartesPoules.svelte';
   import ConstitutionPoules from '../composants/ConstitutionPoules.svelte';
   import SaisiePoules from '../composants/SaisiePoules.svelte';
+  import AttenteEnvoi from '../composants/AttenteEnvoi.svelte';
   import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
   import type { Accueil } from '../lib/accueil';
   import { prendreEcriture, type Journal } from '../lib/journal';
@@ -166,7 +167,8 @@
       </div>
     {/if}
     {#if motifLectureSeule}<p class="avertissement" role="status">{motifLectureSeule}</p>{/if}
-    {#if pilote && enAttente > 0}<p class="avertissement" role="status">{te.enAttente(enAttente)}</p>{/if}
+    <!-- US-090 : l'attente d'envoi ne décale plus l'écran. -->
+    {#if pilote}<AttenteEnvoi nombre={enAttente} />{/if}
     <p class="invisible" role="status" aria-live="polite">{annonce}</p>
     {#if erreur}<p class="message" role="alert">{erreur}</p>{/if}
 
