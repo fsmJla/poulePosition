@@ -17,6 +17,7 @@ export type Page =
   | 'formuleEpreuve'
   | 'inscriptionsEpreuve'
   | 'emargementEpreuve'
+  | 'poulesEpreuve'
   | 'parametresEpreuve'
   | 'grilleEpreuves'
   | 'manifestation'
@@ -51,7 +52,7 @@ export const CHEMINS = Object.freeze({
     | 'formuleEpreuve'
     | 'inscriptionsEpreuve'
     | 'emargementEpreuve'
-    | 'emargementEpreuve'
+    | 'poulesEpreuve'
     | 'parametresEpreuve'
     | 'grilleEpreuves'
     | 'manifestation'
@@ -145,6 +146,11 @@ export function cheminEmargementEpreuve(epreuveId: string): string {
   return `/epreuves/${epreuveId}/emargement`;
 }
 
+/** US-086 : poules d'une épreuve (constitution, ajustement, saisie). */
+export function cheminPoulesEpreuve(epreuveId: string): string {
+  return `/epreuves/${epreuveId}/poules`;
+}
+
 /** US-032 : paramètres d'une épreuve. */
 export function cheminParametresEpreuve(epreuveId: string): string {
   return `/epreuves/${epreuveId}/parametres`;
@@ -198,6 +204,7 @@ const MOTIF_MODIFICATION = /^\/epreuves\/([^/]+)\/modifier$/;
 const MOTIF_FORMULE = /^\/epreuves\/([^/]+)\/formule$/;
 const MOTIF_INSCRIPTIONS = /^\/epreuves\/([^/]+)\/inscriptions$/;
 const MOTIF_EMARGEMENT = /^\/epreuves\/([^/]+)\/emargement$/;
+const MOTIF_POULES = /^\/epreuves\/([^/]+)\/poules$/;
 const MOTIF_PARAMETRES = /^\/epreuves\/([^/]+)\/parametres$/;
 
 /** Pages réservées : un visiteur non connecté est renvoyé à l'écran de connexion (CA-6). */
@@ -212,6 +219,7 @@ const RESERVEES: readonly Page[] = [
   'formuleEpreuve',
   'inscriptionsEpreuve',
   'emargementEpreuve',
+  'poulesEpreuve',
   'parametresEpreuve',
   'grilleEpreuves',
   'manifestation',
@@ -262,8 +270,7 @@ function pageDe(chemin: string): {
       | 'formuleEpreuve'
       | 'inscriptionsEpreuve'
       | 'emargementEpreuve'
-      | 'emargementEpreuve'
-      | 'emargementEpreuve'
+      | 'poulesEpreuve'
       | 'parametresEpreuve'
       | 'grilleEpreuves'
       | 'manifestation'
@@ -297,6 +304,8 @@ function pageDe(chemin: string): {
   if (emargement) {
     return MOTIF_IDENTIFIANT.test(emargement) ? { page: 'emargementEpreuve', epreuveId: emargement } : null;
   }
+  const poules = MOTIF_POULES.exec(chemin)?.[1];
+  if (poules) return MOTIF_IDENTIFIANT.test(poules) ? { page: 'poulesEpreuve', epreuveId: poules } : null;
   const parametres = MOTIF_PARAMETRES.exec(chemin)?.[1];
   if (parametres) {
     return MOTIF_IDENTIFIANT.test(parametres) ? { page: 'parametresEpreuve', epreuveId: parametres } : null;

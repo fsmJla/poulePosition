@@ -19,6 +19,7 @@
   import type { Accueil } from '../lib/accueil';
   import { inscrireTireur, pointerTireur } from '../lib/inscriptions';
   import { prendreEcriture, type Journal } from '../lib/journal';
+  import { cheminPoulesEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -246,8 +247,8 @@
           ]}
           {naviguer}
         />
-        <!-- CA-6 : l'action principale mène aux poules (E4) : visible, grisée « À venir » d'ici là. -->
-        <button type="button" class="principal" disabled title={t.constituerAVenir}>
+        <!-- CA-6 : l'action principale mène aux poules (US-086). -->
+        <button type="button" class="principal" onclick={() => naviguer(cheminPoulesEpreuve(epreuveId))}>
           <Icone nom="grille" taille={20} />{t.constituer}
         </button>
       </div>

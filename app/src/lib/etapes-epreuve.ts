@@ -4,6 +4,7 @@
 import type { NomIcone } from './icones';
 import {
   cheminEmargementEpreuve,
+  cheminPoulesEpreuve,
   cheminEpreuve,
   cheminFormuleEpreuve,
   cheminInscriptionsEpreuve,
@@ -42,7 +43,8 @@ export const ETAPES_EPREUVE: readonly EtapeEpreuve[] = [
     livree: true,
     chemin: cheminEmargementEpreuve,
   },
-  { id: 'poules', icone: 'grille', groupe: 'deroulement', livree: false },
+  // US-086 : l'étape « Poules » est livrée (constitution, puis ajustement et saisie).
+  { id: 'poules', icone: 'grille', groupe: 'deroulement', livree: true, chemin: cheminPoulesEpreuve },
   { id: 'tableau', icone: 'arbre', groupe: 'deroulement', livree: false },
   { id: 'impressions', icone: 'imprimante', groupe: 'deroulement', livree: false },
   { id: 'formule', icone: 'arbre', groupe: 'reglages', livree: true, chemin: cheminFormuleEpreuve },

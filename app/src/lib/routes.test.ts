@@ -3,6 +3,7 @@ import {
   cheminEpreuve,
   cheminFormuleEpreuve,
   cheminEmargementEpreuve,
+  cheminPoulesEpreuve,
   cheminInscriptionsEpreuve,
   cheminGrilleEpreuves,
   cheminModificationEpreuve,
@@ -193,6 +194,9 @@ describe('émargement d’une épreuve (US-084)', () => {
     const id = '0b6f1c1e-6d1a-4f0a-9a43-2f3c9e5d7b10';
     expect(cheminEmargementEpreuve(id)).toBe(`/epreuves/${id}/emargement`);
     expect(resoudreRoute(`/epreuves/${id}/emargement`, true)).toEqual({ page: 'emargementEpreuve', epreuveId: id });
+    // US-086 : les poules d'une épreuve.
+    expect(cheminPoulesEpreuve(id)).toBe(`/epreuves/${id}/poules`);
+    expect(resoudreRoute(`/epreuves/${id}/poules`, true)).toEqual({ page: 'poulesEpreuve', epreuveId: id });
     expect(resoudreRoute(`/epreuves/${id}/emargement`, false)).toEqual({ redirection: CHEMINS.connexion });
   });
 });

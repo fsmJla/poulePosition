@@ -10,9 +10,9 @@ import type { Journal, ErreurJournal } from './journal';
 
 export type ResultatInscription = { ok: true } | { ok: false; erreur: ErreurJournal };
 
-type Contexte = { clubId?: string | undefined; auteur: string };
+export type Contexte = { clubId?: string | undefined; auteur: string };
 
-async function ecrire(
+export async function ecrire(
   journal: Journal,
   epreuveId: string,
   proposition: Parameters<Journal['enregistrer']>[1],
