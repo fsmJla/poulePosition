@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F7 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-088
-- **Branche / PR :** `us/US-091-saisie-par-boutons-sur-pc` / —
+- **Branche / PR :** `us/US-091-saisie-par-boutons-sur-pc` / #135
 
 ## Récit
 
@@ -105,3 +105,4 @@ Aucune.
 |---|---|
 | 2026-11-18 | Créée (retour de l'utilisateur sur US-088) |
 | 2026-11-18 | Implémentée : `scoreDesBoutons`, boutons de la planche 14 dans la carte de saisie ; passe En revue |
+| 2026-11-18 | Recette OK sur https://poule-position-git-us-us-092-classement-bc21a9-fsmjlas-projects.vercel.app (recette commune d'US-090 à US-092, thème sombre) : deux clics à la souris (V puis 3 : V5 / 3), au temps 4-2 « V4 », deux V et égalité refusés et effacés, correction avec boutons marqués ; passe à Terminée |

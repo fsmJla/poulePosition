@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F9 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-088, US-089
-- **Branche / PR :** `us/US-092-classement-des-poules` / —
+- **Branche / PR :** `us/US-092-classement-des-poules` / #136
 
 ## Récit
 
@@ -93,3 +93,4 @@ Aucune (planche 20 validée le 2026-11-18).
 |---|---|
 | 2026-11-18 | Créée (retour de l'utilisateur), planche 20 proposée puis validée ; passe à Prête |
 | 2026-11-18 | Implémentée : `classementDesPoules`, étape et page « Classement » ; passe En revue |
+| 2026-11-18 | Recette OK sur https://poule-position-git-us-us-092-classement-bc21a9-fsmjlas-projects.vercel.app (recette commune d'US-090 à US-092, thème sombre) : « À venir » avant le lancement puis « provisoire », 12 tireuses classées avec ex aequo, mise à jour sans recharger depuis un second onglet ; passe à Terminée |
