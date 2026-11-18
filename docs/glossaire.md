@@ -26,6 +26,11 @@ l'ajoute ici avant de l'utiliser.
 | Formule | Enchaînement des tours (ex. un tour de poules puis un tableau à élimination directe). | `formule` |
 | Tour | Étape de la formule : tour de poules ou tableau. | `tour` |
 | Poule | Groupe de tireurs qui se rencontrent tous (en général 5 à 7), sur une piste. | `poule` |
+| Serpentin | Répartition des présents dans les poules par classement : 1 → poule 1… N → poule N, puis N+1 → poule N en remontant (US-086). | `serpentin` |
+| Ordre des matchs | Ordre officiel dans lequel les tireurs d'une poule se rencontrent, selon sa taille (US-085). | `ordreDesMatchs` |
+| Lancer les poules | Acte qui fige la composition des poules, passe l'épreuve « En cours » et ouvre la saisie des scores (US-087). | `PoulesLancees` |
+| Victoire au temps | Victoire d'un tireur qui mène sans avoir atteint les touches de la formule quand le temps est écoulé ; notée « V4 » (US-088). | `auTemps` |
+| Retrait des poules | Abandon, forfait ou exclusion d'un tireur pendant les poules : ses matchs restants comptent perdus, il est classé dernier de sa poule (US-089). | `TireurRetireDesPoules` |
 | Match | Rencontre entre deux tireurs (5 touches en poule, 15 en tableau). Aussi appelé assaut. | `match` |
 | Touche | Point marqué. | `touche` |
 | Victoire / défaite | Résultat d'un match (V / D). En poule, le vainqueur est noté V et son score. | `victoire`, `defaite` |
