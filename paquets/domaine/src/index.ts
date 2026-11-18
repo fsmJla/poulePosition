@@ -23,6 +23,7 @@ export * from './publication';
 export * from './publication-lot';
 export * from './reprise-lot';
 export * from './tireurs';
+export * from './poules';
 export * from './import-ffe';
 export * from './lieu-public';
 export * from './prochaine-etape';

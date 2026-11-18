@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F5, F6, F7 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-081
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-085-poules-dans-le-journal` / —
 
 ## Récit
 
@@ -76,6 +76,11 @@ Les événements s'écrivent dans le journal local du PC pilote, sans réseau, e
 
 - Le score d'un match se corrige par une nouvelle saisie, jusqu'au début du tableau (E6).
 - Un tireur retiré des poules n'est pas qualifié pour le tableau (règle d'E6).
+- Implémentation (2026-11-18) : une poule vide est acceptée par `PoulesComposees` (répartition manuelle, US-086 CA-5),
+  le lancement exige 3 à 7 tireurs par poule et aucun présent « à placer » (`TIREURS_A_PLACER`). Un tireur remis absent
+  ou retiré de l'épreuve sort de la composition, au lieu d'un refus `TIREUR_ABSENT` au lancement.
+- Implémentation : `RetraitDesPoulesAnnule` (US-089 CA-4) est livré ici avec les quatre autres événements.
+- Implémentation : deux tireurs retirés d'une même poule perdent tous deux leur match commun (0-0, sans vainqueur).
 
 ## Questions bloquantes
 
@@ -103,3 +108,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-17 | Créée |
+| 2026-11-18 | Implémentée : `paquets/domaine/src/poules.ts`, journal et protocole ; passe En revue |

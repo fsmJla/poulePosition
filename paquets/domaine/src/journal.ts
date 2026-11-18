@@ -36,6 +36,23 @@ import {
   type ErreurTireur,
   type Tireur,
 } from './tireurs';
+import {
+  compositionSans,
+  etatPoulesVide,
+  scoresApres,
+  verifierAnnulationRetrait,
+  verifierComposition,
+  verifierLancement,
+  verifierRetraitDesPoules,
+  verifierScore,
+  type DonneesAnnulationRetrait,
+  type DonneesPoulesComposees,
+  type DonneesPoulesLancees,
+  type DonneesRetraitPoule,
+  type DonneesScorePoule,
+  type ErreurPoules,
+  type EtatPoules,
+} from './poules';
 
 /** Origine d'un événement : le clavier du PC pilote (les saisies smartphone viendront avec E5). */
 export type Source = 'clavier';
@@ -67,7 +84,12 @@ export type Proposition =
   | { type: 'TireurInscrit'; donnees: DonneesTireurInscrit }
   | { type: 'TireurModifie'; donnees: DonneesTireurModifie }
   | { type: 'TireurRetire'; donnees: DonneesTireurRetire }
-  | { type: 'PresenceModifiee'; donnees: DonneesPresence };
+  | { type: 'PresenceModifiee'; donnees: DonneesPresence }
+  | { type: 'PoulesComposees'; donnees: DonneesPoulesComposees }
+  | { type: 'PoulesLancees'; donnees: DonneesPoulesLancees }
+  | { type: 'ScorePouleSaisi'; donnees: DonneesScorePoule }
+  | { type: 'TireurRetireDesPoules'; donnees: DonneesRetraitPoule }
+  | { type: 'RetraitDesPoulesAnnule'; donnees: DonneesAnnulationRetrait };
 
 /** Événement enregistré : la proposition acceptée, avec son en-tête. */
 export type Evenement = {
@@ -104,10 +126,26 @@ export interface Epreuve extends DonneesEpreuve {
    * `tireursDe`).
    */
   tireurs?: Tireur[];
+  /** US-085 : les poules ; absent d'une projection gardée avant cette US (lire avec `poulesDe`). */
+  poules?: EtatPoules;
 }
 
 /** US-081 : les inscrits d'une épreuve, y compris pour une projection gardée avant US-081. */
 export const tireursDe = (epreuve: Pick<Epreuve, 'tireurs'>): Tireur[] => epreuve.tireurs ?? [];
+
+/** US-085 : les poules d'une épreuve, y compris pour une projection gardée avant US-085. */
+export const poulesDe = (epreuve: Pick<Epreuve, 'poules'>): EtatPoules => epreuve.poules ?? etatPoulesVide();
+
+const TYPES_POULES = [
+  'PoulesComposees',
+  'PoulesLancees',
+  'ScorePouleSaisi',
+  'TireurRetireDesPoules',
+  'RetraitDesPoulesAnnule',
+] as const;
+type PropositionPoules = Extract<Proposition, { type: (typeof TYPES_POULES)[number] }>;
+const estPropositionPoules = (p: Proposition): p is PropositionPoules =>
+  (TYPES_POULES as readonly string[]).includes(p.type);
 
 /**
  * Raison pour laquelle la projection s'arrête avant la fin du journal : `seq` manquant (`TROU`), répété
@@ -129,6 +167,7 @@ export type ErreurEvenement =
   | ErreurFormule
   | ErreurParametres
   | ErreurTireur
+  | ErreurPoules
   | 'FORMULE_FIGEE'
   | 'PILOTE_INVALIDE'
   | 'EPREUVE_DEJA_CREEE'
@@ -167,6 +206,7 @@ export function verifierEvenement(projection: Projection, proposition: Propositi
   ) {
     return verifierInscription(epreuve, proposition);
   }
+  if (estPropositionPoules(proposition)) return verifierPoules(epreuve, proposition);
   // US-027 : la modification est validée sur le résultat de la fusion, comme une création.
   if (!epreuve) return 'EPREUVE_INCONNUE';
   if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
@@ -242,6 +282,21 @@ function verifierInscription(
   return validerTireur(proposition.donnees);
 }
 
+/** US-085 : composer, lancer, saisir un score, retirer un tireur et annuler ce retrait. */
+function verifierPoules(epreuve: Epreuve | null, proposition: PropositionPoules): ErreurEvenement | null {
+  if (!epreuve) return 'EPREUVE_INCONNUE';
+  if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
+  const etat = poulesDe(epreuve);
+  const tireurs = tireursDe(epreuve);
+  if (proposition.type === 'PoulesComposees') return verifierComposition(etat, proposition.donnees.poules, tireurs);
+  if (proposition.type === 'PoulesLancees') return verifierLancement(etat, tireurs);
+  if (proposition.type === 'ScorePouleSaisi') {
+    return verifierScore(etat, proposition.donnees, epreuve.formule.touchesPoules);
+  }
+  if (proposition.type === 'TireurRetireDesPoules') return verifierRetraitDesPoules(etat, proposition.donnees);
+  return verifierAnnulationRetrait(etat, proposition.donnees);
+}
+
 const CHAMPS_FORMULE: readonly string[] = ['touchesPoules', 'touchesTableau', 'matchTroisieme'];
 
 /** US-028 : la formule se règle jusqu'à la fin de l’épreuve ; les touches de relais ne se modifient pas. */
@@ -286,9 +341,18 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
     if (!epreuve) return projection;
     return {
       ...projection,
-      epreuve: { ...epreuve, tireurs: tireursApres(tireursDe(epreuve), evenement) },
+      epreuve: {
+        ...epreuve,
+        tireurs: tireursApres(tireursDe(epreuve), evenement),
+        poules: poulesApresInscription(epreuve, evenement),
+      },
       dernierSeq: evenement.seq,
     };
+  }
+  if (estPropositionPoules(evenement)) {
+    const { epreuve } = projection;
+    if (!epreuve) return projection;
+    return { ...projection, epreuve: poulesApres(epreuve, evenement), dernierSeq: evenement.seq };
   }
   if (evenement.type === 'EpreuveArchivee') {
     const { epreuve } = projection;
@@ -339,6 +403,7 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
       formule: formuleParDefaut(donnees.typeEpreuve),
       parametres: parametresParDefaut(),
       tireurs: [],
+      poules: etatPoulesVide(),
     },
     dernierSeq: evenement.seq,
   };
@@ -358,6 +423,43 @@ function tireursApres(
     const { present, heure } = evenement.donnees;
     return { ...tireur, present, heure: present ? (heure ?? null) : null };
   });
+}
+
+/** US-085 : un tireur retiré de l'épreuve ou remis absent sort de la composition des poules (avant leur lancement). */
+function poulesApresInscription(
+  epreuve: Epreuve,
+  evenement: Extract<Evenement, { type: 'TireurInscrit' | 'TireurModifie' | 'TireurRetire' | 'PresenceModifiee' }>,
+): EtatPoules {
+  const etat = poulesDe(epreuve);
+  const sort =
+    evenement.type === 'TireurRetire' || (evenement.type === 'PresenceModifiee' && !evenement.donnees.present);
+  return sort ? compositionSans(etat, evenement.donnees.tireurId) : etat;
+}
+
+/** US-085 : l'épreuve après un événement des poules déjà vérifié ; le lancement la passe « En cours ». */
+function poulesApres(
+  epreuve: Epreuve,
+  evenement: Extract<Evenement, { type: (typeof TYPES_POULES)[number] }>,
+): Epreuve {
+  const etat = poulesDe(epreuve);
+  if (evenement.type === 'PoulesComposees') {
+    const poules = evenement.donnees.poules.map(({ numero, piste, tireurIds }) => ({
+      numero,
+      piste,
+      tireurIds: [...tireurIds],
+    }));
+    return { ...epreuve, poules: { ...etat, poules } };
+  }
+  if (evenement.type === 'PoulesLancees') return { ...epreuve, statut: 'enCours', poules: { ...etat, lancees: true } };
+  if (evenement.type === 'ScorePouleSaisi') {
+    return { ...epreuve, poules: { ...etat, scores: scoresApres(etat.scores, evenement.donnees) } };
+  }
+  if (evenement.type === 'TireurRetireDesPoules') {
+    const { tireurId, motif } = evenement.donnees;
+    return { ...epreuve, poules: { ...etat, retraits: [...etat.retraits, { tireurId, motif }] } };
+  }
+  const retraits = etat.retraits.filter(({ tireurId }) => tireurId !== evenement.donnees.tireurId);
+  return { ...epreuve, poules: { ...etat, retraits } };
 }
 
 /** État de l’épreuve calculé à partir de son journal, arrêté au dernier événement cohérent (CA-2). */

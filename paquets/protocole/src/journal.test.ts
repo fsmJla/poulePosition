@@ -309,3 +309,43 @@ describe('événements d’inscription (US-081)', () => {
     expect(lit('PresenceModifiee', { tireurId: 't1', present: true, autre: 1 })).toBe(false);
   });
 });
+
+describe('US-085 : forme des événements des poules', () => {
+  const lit = (type: string, donnees: unknown) =>
+    lireEvenement({
+      epreuveId: 'e1',
+      clubId: 'c1',
+      seq: 2,
+      version: 1,
+      date: 1,
+      auteur: 'a@b.fr',
+      source: 'clavier',
+      type,
+      donnees,
+    }) !== null;
+  it('CA-1 et CA-2 : PoulesComposees porte les poules, PoulesLancees rien', () => {
+    expect(lit('PoulesComposees', { poules: [{ numero: 1, piste: 2, tireurIds: ['a', 'b'] }] })).toBe(true);
+    expect(lit('PoulesComposees', { poules: [{ numero: 1, piste: '2', tireurIds: [] }] })).toBe(false);
+    expect(lit('PoulesComposees', { poules: [{ numero: 1, piste: 2, tireurIds: [1] }] })).toBe(false);
+    expect(lit('PoulesComposees', { poules: [{ numero: 1, piste: 2, tireurIds: [], autre: 1 }] })).toBe(false);
+    expect(lit('PoulesComposees', { poules: [null] })).toBe(false);
+    expect(lit('PoulesComposees', { poules: 'x' })).toBe(false);
+    expect(lit('PoulesComposees', [])).toBe(false);
+    expect(lit('PoulesLancees', {})).toBe(true);
+    expect(lit('PoulesLancees', { x: 1 })).toBe(false);
+  });
+  it('CA-3 : ScorePouleSaisi porte la poule, les tireurs, les touches et, facultatif, auTemps', () => {
+    const score = { poule: 1, tireurA: 'a', tireurB: 'b', touchesA: 5, touchesB: 3 };
+    expect(lit('ScorePouleSaisi', score)).toBe(true);
+    expect(lit('ScorePouleSaisi', { ...score, auTemps: true })).toBe(true);
+    expect(lit('ScorePouleSaisi', { ...score, auTemps: 'oui' })).toBe(false);
+    expect(lit('ScorePouleSaisi', { ...score, touchesA: '5' })).toBe(false);
+    expect(lit('ScorePouleSaisi', { ...score, autre: 1 })).toBe(false);
+  });
+  it('CA-4 : TireurRetireDesPoules porte le motif ; RetraitDesPoulesAnnule seulement le tireur', () => {
+    expect(lit('TireurRetireDesPoules', { tireurId: 'a', motif: 'abandon' })).toBe(true);
+    expect(lit('TireurRetireDesPoules', { tireurId: 'a' })).toBe(false);
+    expect(lit('RetraitDesPoulesAnnule', { tireurId: 'a' })).toBe(true);
+    expect(lit('RetraitDesPoulesAnnule', { tireurId: 'a', motif: 'abandon' })).toBe(false);
+  });
+});
