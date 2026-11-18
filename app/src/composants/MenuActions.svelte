@@ -70,17 +70,43 @@
     return liste ? [...liste.querySelectorAll<HTMLElement>('[role^="menuitem"]')] : [];
   }
 
+  /**
+   * US-093 : position du menu dans la fenêtre (`position: fixed`), d'après celle du bouton, pour qu'aucun cadre
+   * (`overflow`) ne le coupe. Il s'ouvre sous le bouton, aligné à droite ; à droite du bouton si la gauche manque, au-dessus
+   * si le bas manque.
+   */
+  let place: { haut: number; gauche: number } | null = $state(null);
+  const MARGE = 8;
+
+  function placer() {
+    if (!bouton || !liste) return;
+    const b = bouton.getBoundingClientRect();
+    const { width, height } = liste.getBoundingClientRect();
+    let gauche = b.right - width;
+    if (gauche < MARGE) gauche = Math.max(MARGE, Math.min(b.left, window.innerWidth - width - MARGE));
+    let haut = b.bottom + 4;
+    if (haut + height > window.innerHeight - MARGE) {
+      // Au-dessus s'il y a la place, sinon ramené dans la fenêtre : le menu reste toujours visible en entier.
+      haut = b.top - 4 - height >= MARGE ? b.top - 4 - height : Math.max(MARGE, window.innerHeight - height - MARGE);
+    }
+    place = { haut, gauche };
+  }
+
   function fermer(rendreFocus = false) {
     ouvert = false;
+    place = null;
     if (rendreFocus) bouton?.focus();
   }
 
   async function basculer() {
     ouvert = !ouvert;
-    if (ouvert) {
-      await tick();
-      entrees()[0]?.focus();
+    if (!ouvert) {
+      place = null;
+      return;
     }
+    await tick();
+    placer();
+    entrees()[0]?.focus({ preventScroll: true });
   }
 
   function choisir(action: ActionMenu, evenement: MouseEvent) {
@@ -114,7 +140,7 @@
     const visee = entreeVisee(evenement.key, elements.indexOf(document.activeElement as HTMLElement), elements.length);
     if (visee === null) return;
     evenement.preventDefault();
-    elements[visee]?.focus();
+    elements[visee]?.focus({ preventScroll: true });
   }
 
   onMount(() => {
@@ -122,11 +148,22 @@
       if (ouvert && conteneur && !conteneur.contains(evenement.target as Node)) fermer();
     };
     const surHistorique = () => fermer();
+    // US-093 : le menu est placé dans la fenêtre ; un défilement ou un redimensionnement le replace près du bouton.
+    const surDefilement = (evenement: Event) => {
+      if (ouvert && !(liste && liste.contains(evenement.target as Node))) placer();
+    };
+    const surRedimensionnement = () => {
+      if (ouvert) placer();
+    };
     document.addEventListener('pointerdown', surClicExterieur);
     window.addEventListener('popstate', surHistorique);
+    window.addEventListener('scroll', surDefilement, true);
+    window.addEventListener('resize', surRedimensionnement);
     return () => {
       document.removeEventListener('pointerdown', surClicExterieur);
       window.removeEventListener('popstate', surHistorique);
+      window.removeEventListener('scroll', surDefilement, true);
+      window.removeEventListener('resize', surRedimensionnement);
     };
   });
 </script>
@@ -145,7 +182,16 @@
     onclick={basculer}
   />
   {#if ouvert}
-    <div class="menu" {id} role="menu" aria-label={nomBouton} bind:this={liste}>
+    <div
+      class="menu"
+      class:place={place !== null}
+      style:top={place ? `${place.haut}px` : undefined}
+      style:left={place ? `${place.gauche}px` : undefined}
+      {id}
+      role="menu"
+      aria-label={nomBouton}
+      bind:this={liste}
+    >
       {#each ordonnees as action, rang (rang)}
         {#if rang === separateurAvant}<hr />{/if}
         {@const role = choix ? 'menuitemradio' : 'menuitem'}
@@ -202,10 +248,11 @@
   }
 
   .menu {
-    position: absolute;
-    top: calc(100% + 4px);
-    right: 0;
-    z-index: 20;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 30;
+    visibility: hidden;
     box-sizing: border-box;
     width: max-content;
     min-width: 12rem;
@@ -216,6 +263,11 @@
     background: var(--surface);
     color: var(--texte);
     box-shadow: var(--ombre-flottante);
+  }
+
+  /* Visible une fois placé (US-093), pour ne pas apparaître un instant au coin de la fenêtre. */
+  .menu.place {
+    visibility: visible;
   }
 
   a,
