@@ -17,7 +17,8 @@ const navigation = (page: Page) => page.getByRole('navigation', { name: 'Étapes
 const fil = (page: Page) => page.getByRole('navigation', { name: 'Fil d’Ariane' });
 // US-082, US-084 et US-086 livrent « Inscriptions », « Émargement » et « Poules » : elles ne sont plus à venir.
 const ETAPES_LIVREES_DEROULEMENT = ['Inscriptions', 'Émargement', 'Poules'];
-const ETAPES_A_VENIR = ['Tableau', 'Impressions'];
+// US-092 : « Classement » est grisé tant que les poules ne sont pas lancées.
+const ETAPES_A_VENIR = ['Classement', 'Tableau', 'Impressions'];
 
 /**
  * Crée une épreuve de la planche 3 (M13 Dames, sabre, mercredi 11 novembre 2026, à Pessac, appel 9 h 00, scratch 9 h 15,
@@ -58,7 +59,7 @@ test('US-058 CA-1 : la navigation liste les étapes dans l’ordre, avec Formule
   expect(libelles).toEqual(['Résumé', ...ETAPES_LIVREES_DEROULEMENT, ...ETAPES_A_VENIR, 'Formule', 'Paramètres']);
   await expect(nav.getByRole('separator')).toHaveCount(1);
   await expect(nav.getByRole('link', { name: 'Résumé' })).toHaveAttribute('aria-current', 'page');
-  expect(await nav.locator('svg[data-icone]').count()).toBe(8);
+  expect(await nav.locator('svg[data-icone]').count()).toBe(9);
   // L'étape ouverte est mise en évidence (fond teinté).
   const fond = (lien: ReturnType<typeof page.getByRole>) => lien.evaluate((a) => getComputedStyle(a).backgroundColor);
   expect(await fond(nav.getByRole('link', { name: 'Résumé' }))).not.toBe(

@@ -404,3 +404,52 @@ export function scoreDesBoutons(a: ChoixScore, b: ChoixScore, touches: number): 
 export function boutonsDuScore(touchesA: number, touchesB: number, touches: number): [ChoixScore, ChoixScore] {
   return [touchesA === touches ? 'V' : touchesA, touchesB === touches ? 'V' : touchesB];
 }
+
+/** US-092 : une ligne du classement des poules. */
+export interface LigneClassement extends ResultatPoule {
+  poule: number;
+  /** Rang dans le classement ; null pour un tireur retiré (placé en fin, sans rang). */
+  rangGeneral: number | null;
+  /** Égalité parfaite avec un autre tireur (rang noté « = »). */
+  exaequo: boolean;
+  /** Matchs de ce tireur qui restent à tirer. */
+  aTirer: number;
+}
+
+/**
+ * US-092 CA-2 et CA-3 : tous les tireurs des poules, par V/M décroissant, puis indice, puis TD ; même rang à égalité
+ * parfaite ; les retirés en fin, sans rang, dans l'ordre des retraits.
+ */
+export function classementDesPoules(etat: EtatPoules, touchesFormule: number): LigneClassement[] {
+  const lignes = etat.poules.flatMap((poule) => {
+    const matchs = matchsDePoule(etat, poule, touchesFormule);
+    return resultatsPoule(etat, poule, touchesFormule).map((r) => ({
+      ...r,
+      poule: poule.numero,
+      rangGeneral: null as number | null,
+      exaequo: false,
+      aTirer: matchs.filter((m) => m.touches === null && (m.tireurA === r.tireurId || m.tireurB === r.tireurId)).length,
+    }));
+  });
+  const ordreRetrait = (id: string) => etat.retraits.findIndex((r) => r.tireurId === id);
+  const comparer = (a: LigneClassement, b: LigneClassement) => {
+    if (a.retrait || b.retrait) {
+      if (!a.retrait) return -1;
+      if (!b.retrait) return 1;
+      return ordreRetrait(a.tireurId) - ordreRetrait(b.tireurId);
+    }
+    return b.ratio - a.ratio || b.indice - a.indice || b.touchesDonnees - a.touchesDonnees;
+  };
+  const tries = lignes.sort((a, b) => comparer(a, b) || a.poule - b.poule || a.ordre - b.ordre);
+  tries.forEach((ligne, i) => {
+    if (ligne.retrait) return;
+    const precedent = tries[i - 1];
+    const egal = precedent !== undefined && !precedent.retrait && comparer(precedent, ligne) === 0;
+    ligne.rangGeneral = egal ? precedent.rangGeneral : i + 1;
+    if (egal) {
+      ligne.exaequo = true;
+      precedent.exaequo = true;
+    }
+  });
+  return tries;
+}

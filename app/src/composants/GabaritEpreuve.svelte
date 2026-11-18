@@ -77,8 +77,14 @@
       inscriptions: String(inscrits.length),
       emargement: `${presents}/${inscrits.length}`,
       ...(poules.lancees && { poules: `${regles}/${total}` }),
+      // US-092 CA-1 : le classement est « provisoire » tant qu'un match reste à tirer.
+      ...(poules.lancees && {
+        classement: regles === total ? textes.poules.classementDefinitif : textes.poules.classementProvisoire,
+      }),
     };
   });
+  /** US-092 CA-1 : le classement s'ouvre au lancement des poules. */
+  const indisponibles = $derived<IdEtapeEpreuve[]>(poulesDe(epreuve).lancees ? [] : ['classement']);
   /** Nom court (« M13 Dames ») ; sans catégorie ou sans sexe, le nom complet. */
   const nomCourt = $derived(nomsCourts([epreuve], t.sexes).get(epreuve.id) ?? epreuve.nom);
 </script>
@@ -86,7 +92,7 @@
 <main>
   <FilAriane {niveaux} {naviguer} />
   <div class="corps">
-    <NavigationEpreuve epreuveId={epreuve.id} {courante} {naviguer} comptes={comptesEtapes} />
+    <NavigationEpreuve epreuveId={epreuve.id} {courante} {naviguer} comptes={comptesEtapes} {indisponibles} />
     <div class="colonne">
       <header>
         <!-- US-061 CA-3 : flèche de retour, visible seulement sur smartphone (le fil d'Ariane y est masqué). -->

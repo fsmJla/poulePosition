@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { poulesDe, projeter, verifierEvenement, type Epreuve, type Evenement, type Proposition } from './journal';
 import {
   avancementPoules,
+  classementDesPoules,
   boutonsDuScore,
   scoreDesBoutons,
   matchsDePoule,
@@ -321,5 +322,44 @@ describe('US-091 : le score de deux boutons', () => {
     expect(boutonsDuScore(5, 3, 5)).toEqual(['V', 3]);
     expect(boutonsDuScore(4, 3, 5)).toEqual([4, 3]);
     expect(boutonsDuScore(1, 4, 4)).toEqual([1, 'V']);
+  });
+});
+
+describe('US-092 : le classement des poules', () => {
+  const six = ['a', 'b', 'c', 'd', 'e', 'f'];
+  const deux = composer(['a', 'b', 'c'], ['d', 'e', 'f']);
+  const score2 = (a: string, b: string, ta: number, tb: number): Proposition => ({
+    type: 'ScorePouleSaisi',
+    donnees: { poule: 2, tireurA: a, tireurB: b, touchesA: ta, touchesB: tb },
+  });
+  it('CA-2 et CA-3 : tous les tireurs, V/M, puis indice, puis TD ; ex aequo ; à tirer', () => {
+    const etat = poulesDe(epreuveDe(...presents(...six), deux, lancer, score('a', 'b', 5, 2), score2('d', 'e', 5, 2)));
+    const liste = classementDesPoules(etat, 5);
+    expect(liste.map(({ tireurId, rangGeneral, exaequo }) => [tireurId, rangGeneral, exaequo])).toEqual([
+      ['a', 1, true],
+      ['d', 1, true],
+      ['c', 3, true],
+      ['f', 3, true],
+      ['b', 5, true],
+      ['e', 5, true],
+    ]);
+    expect(liste[0]).toMatchObject({ poule: 1, victoires: 1, aTirer: 1 });
+    expect(liste[2]).toMatchObject({ poule: 1, matchs: 0, aTirer: 2 });
+  });
+  it('CA-3 : les retirés en fin, sans rang, dans l’ordre des retraits', () => {
+    const retirer = (id: string): Proposition => ({
+      type: 'TireurRetireDesPoules',
+      donnees: { tireurId: id, motif: 'abandon' },
+    });
+    const etat = poulesDe(
+      epreuveDe(...presents(...six), deux, lancer, score('a', 'b', 5, 2), retirer('f'), retirer('a')),
+    );
+    const liste = classementDesPoules(etat, 5);
+    expect(liste.slice(-2).map(({ tireurId, rangGeneral }) => [tireurId, rangGeneral])).toEqual([
+      ['f', null],
+      ['a', null],
+    ]);
+    expect(liste[0]!.rangGeneral).toBe(1);
+    expect(liste.slice(0, 4).every(({ retrait }) => retrait === null)).toBe(true);
   });
 });

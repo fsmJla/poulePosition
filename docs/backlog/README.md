@@ -121,7 +121,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-089](US-089-abandon-forfait-exclusion-en-poule.md) | Retirer un tireur des poules (abandon, forfait, exclusion) | E4 | Terminée | US-088 |
 | [US-090](US-090-bandeau-envoi-sans-decalage.md) | Ne plus décaler l'écran quand une saisie part au serveur | E4 | En revue | US-088 |
 | [US-091](US-091-saisie-par-boutons-sur-pc.md) | Saisir un score de poule par boutons sur le PC | E4 | En revue | US-088 |
-| [US-092](US-092-classement-des-poules.md) | Suivre le classement des poules en temps réel | E4 | Prête | US-088, US-089 |
+| [US-092](US-092-classement-des-poules.md) | Suivre le classement des poules en temps réel | E4 | En revue | US-088, US-089 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 

@@ -13,9 +13,11 @@
     naviguer: (chemin: string) => void;
     /** US-082 CA-1 : un nombre après le libellé d'une étape (« 24 » inscrits). */
     comptes?: Partial<Record<IdEtapeEpreuve, string>>;
+    /** US-092 CA-1 : étapes livrées mais pas encore ouvertes pour cette épreuve (grisées « À venir »). */
+    indisponibles?: readonly IdEtapeEpreuve[];
   }
 
-  let { epreuveId, courante, naviguer, comptes = {} }: Proprietes = $props();
+  let { epreuveId, courante, naviguer, comptes = {}, indisponibles = [] }: Proprietes = $props();
 
   const t = textes.pageEpreuve;
 
@@ -30,7 +32,7 @@
 <nav aria-label={t.navigation}>
   <ul>
     {#each ETAPES_EPREUVE as etape, rang (etape.id)}
-      {@const chemin = cheminEtape(etape, epreuveId)}
+      {@const chemin = indisponibles.includes(etape.id) ? null : cheminEtape(etape, epreuveId)}
       {#if etape.groupe === 'reglages' && ETAPES_EPREUVE[rang - 1]?.groupe !== 'reglages'}
         <li class="separateur" role="separator"></li>
       {/if}

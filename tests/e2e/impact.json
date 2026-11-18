@@ -226,13 +226,15 @@
     "inscriptions",
     "emargement",
     "poules-saisie",
-    "poules-retrait"
+    "poules-retrait",
+    "poules-classement"
   ],
   "app/src/composants/NavigationEpreuve.svelte": [
     "epreuve-etapes",
     "prochaine-etape",
     "smartphone-organisateur",
-    "inscriptions"
+    "inscriptions",
+    "poules-classement"
   ],
   "app/src/composants/BarreOngletsEpreuve.svelte": ["epreuve-etapes", "prochaine-etape", "smartphone-organisateur"],
   "app/src/composants/BandeauProchaineEtape.svelte": ["epreuve-etapes", "prochaine-etape", "smartphone-organisateur"],
@@ -257,7 +259,7 @@
   ],
   "app/src/composants/Onglets.svelte": ["manifestation", "plan"],
   "app/src/lib/theme.ts": ["theme", "theme-icones"],
-  "app/src/lib/textes.ts": [],
+  "app/src/lib/textes.ts": ["poules-classement"],
   "app/src/lib/accueil.ts": ["accueil", "accueil-refonte", "filtres-liste"],
   "app/src/lib/archivage.ts": ["archivage"],
   "app/src/lib/etapes-epreuve.ts": [
@@ -268,7 +270,8 @@
     "poules-constituer",
     "poules-ajuster",
     "poules-saisie",
-    "poules-retrait"
+    "poules-retrait",
+    "poules-classement"
   ],
   "app/src/lib/fil-ariane.ts": ["epreuve-etapes", "plan", "manifestation", "smartphone-organisateur"],
   "app/src/lib/plan.ts": ["plan", "manifestation"],
@@ -350,14 +353,23 @@
     "poules-ajuster",
     "poules-saisie",
     "poules-retrait",
-    "poules-envoi"
+    "poules-envoi",
+    "poules-classement"
   ],
   "paquets/domaine/src/repartition.ts": ["poules-constituer", "poules-ajuster", "poules-saisie", "poules-retrait"],
-  "paquets/domaine/src/poules.ts": ["poules-constituer", "poules-ajuster", "poules-saisie", "poules-retrait"],
+  "paquets/domaine/src/poules.ts": [
+    "poules-constituer",
+    "poules-ajuster",
+    "poules-saisie",
+    "poules-retrait",
+    "poules-classement"
+  ],
   "tests/e2e/poules-ajuster.spec.ts": ["poules-ajuster"],
   "app/src/composants/SaisiePoules.svelte": ["poules-saisie", "poules-retrait", "poules-envoi"],
   "tests/e2e/poules-saisie.spec.ts": ["poules-saisie", "poules-retrait"],
   "tests/e2e/poules-retrait.spec.ts": ["poules-retrait"],
   "app/src/composants/AttenteEnvoi.svelte": ["poules-envoi", "emargement", "inscriptions"],
-  "tests/e2e/poules-envoi.spec.ts": ["poules-envoi"]
+  "tests/e2e/poules-envoi.spec.ts": ["poules-envoi"],
+  "app/src/pages/Classement.svelte": ["poules-classement"],
+  "tests/e2e/poules-classement.spec.ts": ["poules-classement"]
 }

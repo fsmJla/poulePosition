@@ -30,6 +30,7 @@
   import Inscriptions from './pages/Inscriptions.svelte';
   import Emargement from './pages/Emargement.svelte';
   import Poules from './pages/Poules.svelte';
+  import Classement from './pages/Classement.svelte';
   import Parametres from './pages/Parametres.svelte';
   import GrilleEpreuves from './pages/GrilleEpreuves.svelte';
   import AideOrganisation from './pages/AideOrganisation.svelte';
@@ -266,6 +267,10 @@
       {:else if route.page === 'poulesEpreuve' && route.epreuveId}
         {#key route.epreuveId}
           <Poules {session} epreuveId={route.epreuveId} {journal} {synchronisation} {accueil} {naviguer} />
+        {/key}
+      {:else if route.page === 'classementEpreuve' && route.epreuveId}
+        {#key route.epreuveId}
+          <Classement {session} epreuveId={route.epreuveId} {journal} {synchronisation} {accueil} {naviguer} />
         {/key}
       {:else if route.page === 'parametresEpreuve' && route.epreuveId}
         {#key route.epreuveId}
