@@ -456,9 +456,19 @@ Aucun autre champ n'est accepté.
 | `TireurModifie` | `{ tireurId, …champs changés }` | Modifie un inscrit (US-081) ; `null` efface le classement ou la licence. |
 | `TireurRetire` | `{ tireurId }` | Retire un inscrit (US-081). |
 | `PresenceModifiee` | `{ tireurId, present, heure? }` | Pointe un inscrit présent, avec l'heure `HH:MM`, ou le remet absent (US-081, US-084). |
+| `PoulesComposees` | `{ poules: [{ numero, piste, tireurIds }] }` | Remplace la composition des poules, avant leur lancement ; une poule peut être vide (US-085, US-086). |
+| `PoulesLancees` | `{}` | Fige la composition et passe l'épreuve « En cours » ; chaque poule a 3 à 7 tireurs et aucun présent n'est à placer (US-085, US-087). |
+| `ScorePouleSaisi` | `{ poule, tireurA, tireurB, touchesA, touchesB, auTemps? }` | Score d'un match de poule ; une nouvelle saisie du même match le remplace (US-085, US-088). |
+| `TireurRetireDesPoules` | `{ tireurId, motif }` | Abandon, forfait ou exclusion (`abandon`, `forfait`, `exclusion`) : ses matchs restants sont perdus, il est classé dernier de sa poule (US-085, US-089). |
+| `RetraitDesPoulesAnnule` | `{ tireurId }` | Annule un retrait fait par erreur (US-089). |
 
 Les quatre événements d'inscription ne s'écrivent que sur une épreuve en préparation (`INSCRIPTIONS_CLOSES` sinon,
 `EPREUVE_ARCHIVEE` pour une épreuve archivée). La page publique n'expose pas les inscrits.
+
+Les événements des poules (US-085) suivent le lancement : la composition se change jusqu'à `PoulesLancees`
+(`POULES_LANCEES` ensuite) ; scores et retraits n'existent qu'après (`POULES_NON_LANCEES` avant). Un tireur remis
+absent ou retiré de l'épreuve sort de la composition. L'ordre des matchs, les résultats et les rangs sont calculés par
+le domaine et ne sont pas écrits.
 
 **Données de `EpreuveCreee`** (US-025) : exactement ces champs ; un champ facultatif non saisi vaut `null`.
 Le format a été complété par US-025 sans changer de version : rien n'était encore en production.

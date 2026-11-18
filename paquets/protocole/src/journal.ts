@@ -122,6 +122,50 @@ function donneesTireurValides(type: unknown, donnees: unknown): boolean {
   );
 }
 
+/** US-085 : forme des données des événements des poules ; les règles sont celles du domaine. */
+const estObjet = (valeur: unknown): valeur is Record<string, unknown> =>
+  valeur !== null && typeof valeur === 'object' && !Array.isArray(valeur);
+const aSeulement = (objet: Record<string, unknown>, permis: readonly string[]) =>
+  Object.keys(objet).every((nom) => permis.includes(nom));
+const estPoule = (valeur: unknown) =>
+  estObjet(valeur) &&
+  aSeulement(valeur, ['numero', 'piste', 'tireurIds']) &&
+  estEntier(valeur.numero) &&
+  estEntier(valeur.piste) &&
+  Array.isArray(valeur.tireurIds) &&
+  valeur.tireurIds.every(estTexte);
+
+function donneesPoulesValides(type: unknown, donnees: unknown): boolean {
+  if (!estObjet(donnees)) return false;
+  if (type === 'PoulesLancees') return Object.keys(donnees).length === 0;
+  if (type === 'PoulesComposees') {
+    return aSeulement(donnees, ['poules']) && Array.isArray(donnees.poules) && donnees.poules.every(estPoule);
+  }
+  if (type === 'ScorePouleSaisi') {
+    return (
+      aSeulement(donnees, ['poule', 'tireurA', 'tireurB', 'touchesA', 'touchesB', 'auTemps']) &&
+      estEntier(donnees.poule) &&
+      estTexte(donnees.tireurA) &&
+      estTexte(donnees.tireurB) &&
+      estEntier(donnees.touchesA) &&
+      estEntier(donnees.touchesB) &&
+      (donnees.auTemps === undefined || estBooleen(donnees.auTemps))
+    );
+  }
+  if (type === 'TireurRetireDesPoules') {
+    return aSeulement(donnees, ['tireurId', 'motif']) && estTexte(donnees.tireurId) && estTexte(donnees.motif);
+  }
+  return aSeulement(donnees, ['tireurId']) && estTexte(donnees.tireurId);
+}
+
+const TYPES_POULES = [
+  'PoulesComposees',
+  'PoulesLancees',
+  'ScorePouleSaisi',
+  'TireurRetireDesPoules',
+  'RetraitDesPoulesAnnule',
+];
+
 const TYPES_TIREUR = ['TireurInscrit', 'TireurModifie', 'TireurRetire', 'PresenceModifiee'];
 
 /**
@@ -134,6 +178,7 @@ function donneesValides(type: unknown, donnees: unknown): boolean {
     return pilote !== null && Object.values(pilote).every(estTexte);
   }
   if (TYPES_TIREUR.includes(type as string)) return donneesTireurValides(type, donnees);
+  if (TYPES_POULES.includes(type as string)) return donneesPoulesValides(type, donnees);
   if (type === 'EpreuveArchivee' || type === 'EpreuveDesarchivee') return aExactementLesChamps(donnees, []) !== null;
   if (type === 'PublicationModifiee') {
     const publication = aExactementLesChamps(donnees, ['publiee']);

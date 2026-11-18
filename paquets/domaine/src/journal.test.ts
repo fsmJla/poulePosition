@@ -46,6 +46,7 @@ describe('journal d’une épreuve (ADR-0001)', () => {
         formule: { touchesPoules: 5, touchesTableau: 15, touchesRelais: null, matchTroisieme: false },
         parametres: parametresParDefaut(),
         tireurs: [],
+        poules: { poules: [], lancees: false, scores: [], retraits: [] },
       },
       dernierSeq: 1,
       anomalie: null,
