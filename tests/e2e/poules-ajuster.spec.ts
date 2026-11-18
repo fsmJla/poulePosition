@@ -69,7 +69,8 @@ test('US-087 CA-2 à CA-4 et CA-6 : placer, glisser, déplacer, changer la piste
   // CA-6 : lancer après confirmation ; la répartition est figée, l'épreuve passe « En cours ».
   await page.getByRole('button', { name: 'Lancer les poules' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Lancer les poules' }).click();
-  await expect(page.getByText('Les poules sont lancées : la répartition est figée.')).toBeVisible();
+  // Depuis US-088, le lancement ouvre la saisie des scores.
+  await expect(page.getByRole('heading', { level: 3, name: /^Feuille de la poule 1/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /^Glisser/ })).toHaveCount(0);
   await expect(page.getByText('En cours').first()).toBeVisible();
   // Les inscriptions se ferment (US-081 CA-7).
@@ -97,8 +98,10 @@ test('US-087 hors ligne : déplacer puis lancer sans réseau', async ({ page, co
   await context.setOffline(true);
   await page.getByRole('button', { name: 'Lancer les poules' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Lancer les poules' }).click();
-  await expect(page.getByText('Les poules sont lancées : la répartition est figée.')).toBeVisible();
+  // Depuis US-088, le lancement ouvre la saisie des scores.
+  await expect(page.getByRole('heading', { level: 3, name: /^Feuille de la poule 1/ })).toBeVisible();
   await context.setOffline(false);
   await ouvrirPoules(page, adresse);
-  await expect(page.getByText('Les poules sont lancées : la répartition est figée.')).toBeVisible();
+  // Depuis US-088, le lancement ouvre la saisie des scores.
+  await expect(page.getByRole('heading', { level: 3, name: /^Feuille de la poule 1/ })).toBeVisible();
 });
