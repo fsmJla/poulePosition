@@ -37,6 +37,8 @@ l'ajoute ici avant de l'utiliser.
 | Touches données / reçues | TD : touches marquées ; TR : touches reçues. | `touchesDonnees`, `touchesRecues` |
 | Indice | TD − TR. Sert à départager les tireurs. | `indice` |
 | Classement après poules | Tri par V / matchs, puis indice, puis TD. | `classementPoules` |
+| Classement des poules | Étape « Classement » : tous les tireurs des poules classés en temps réel, « provisoire » tant qu'un match reste à tirer (US-092). | `classementDesPoules` |
+| Boutons score | Saisie d'un score par deux colonnes de boutons (0 à N−1, « V ») ; le second choix enregistre, sans « V » c'est une victoire au temps (US-091, planche 14). | `scoreDesBoutons` |
 | Tableau | Élimination directe (tableau de 64, 32, 16…), avec exempts si l'effectif n'est pas une puissance de 2. | `tableau` |
 | Exempt | Tireur qualifié d'office pour le tour suivant du tableau, faute d'adversaire. | `exempt` |
 | Piste | Aire de combat numérotée, où se tient une poule ou un match. | `piste` |
