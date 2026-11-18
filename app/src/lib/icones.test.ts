@@ -46,6 +46,9 @@ describe('icônes de la charte (US-054 CA-4)', () => {
       'Archive',
       'Télécharger',
       'Téléverser',
+      'Flèches croisées',
+      'Poignée (six points)',
+      'Lecture (triangle)',
     ])
       expect(vocabulaire).toContain(`| ${libelle} |`);
   });

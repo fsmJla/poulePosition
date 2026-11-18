@@ -87,8 +87,8 @@ test('US-084 CA-4 et CA-6 : inscrire sur place (pointé présent) ; remettre tou
   await expect(ligne(page, 'FAURE Lison')).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByText('1 présent sur 4')).toBeVisible();
 
-  // CA-6 : « Constituer les poules » est l'action principale, grisée jusqu'à E4.
-  await expect(page.getByRole('button', { name: 'Constituer les poules' })).toBeDisabled();
+  // CA-6 : « Constituer les poules » est l'action principale, active depuis US-086.
+  await expect(page.getByRole('button', { name: 'Constituer les poules' })).toBeEnabled();
 
   await page.getByRole('button', { name: 'Autres actions pour Émargement' }).click();
   await page.getByRole('menuitem', { name: /^Remettre tout le monde absent/ }).click();

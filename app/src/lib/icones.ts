@@ -48,6 +48,12 @@ export const ICONES = {
   telecharger: '<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14" />',
   televerser: '<path d="M12 16V5M7.5 9.5 12 5l4.5 4.5M5 19h14" />',
   lien: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />',
+  // US-086 et US-087 (planches 8 et 9).
+  flechesCroisees:
+    '<path d="M3 7h3.5c2 0 3.2 1 4.3 2.6l2.4 4.8c1.1 1.6 2.3 2.6 4.3 2.6H21M3 17h3.5c1.4 0 2.4-.5 3.3-1.4M14.2 8.4c.9-.9 1.9-1.4 3.3-1.4H21M18.5 4.5 21 7l-2.5 2.5M18.5 14.5 21 17l-2.5 2.5" />',
+  poignee:
+    '<circle cx="9" cy="6" r="1.2" fill="currentColor" /><circle cx="15" cy="6" r="1.2" fill="currentColor" /><circle cx="9" cy="12" r="1.2" fill="currentColor" /><circle cx="15" cy="12" r="1.2" fill="currentColor" /><circle cx="9" cy="18" r="1.2" fill="currentColor" /><circle cx="15" cy="18" r="1.2" fill="currentColor" />',
+  lecture: '<path d="M7 4.5v15l12-7.5z" />',
 } as const;
 
 export type NomIcone = keyof typeof ICONES;

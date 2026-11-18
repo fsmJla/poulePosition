@@ -1,0 +1,201 @@
+<script lang="ts">
+  // Poules d'une épreuve : constitution (US-086, planche 8), vérification et ajustement (US-087, planche 9).
+  // Écrit les événements d'US-085 dans le journal local du PC pilote, hors ligne compris.
+  import { onMount } from 'svelte';
+  import { poulesDe, tireursDe, trierTireurs, type Epreuve, type Poule } from '@poule-position/domaine';
+  import CartesPoules from '../composants/CartesPoules.svelte';
+  import ConstitutionPoules from '../composants/ConstitutionPoules.svelte';
+  import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
+  import type { Accueil } from '../lib/accueil';
+  import { prendreEcriture, type Journal } from '../lib/journal';
+  import { composerPoules } from '../lib/poules';
+  import { cheminEmargementEpreuve } from '../lib/routes';
+  import type { SessionAppareil } from '../lib/stockage';
+  import type { Synchronisation } from '../lib/synchronisation';
+  import { textes } from '../lib/textes';
+
+  interface Proprietes {
+    session: SessionAppareil;
+    epreuveId: string;
+    journal: Journal;
+    synchronisation: Synchronisation;
+    accueil: Accueil;
+    naviguer: (chemin: string) => void;
+  }
+
+  let { session, epreuveId, journal, synchronisation, accueil, naviguer }: Proprietes = $props();
+
+  const t = textes.poules;
+  const te = textes.epreuves;
+  const contexte = $derived({ clubId: session.compte.clubId, auteur: session.compte.email });
+
+  let epreuve = $state<Epreuve | null>(null);
+  let chargee = $state(false);
+  let pilote = $state(false);
+  let ecriture = $state(true);
+  let enAttente = $state(0);
+  let annonce = $state('');
+  let erreur: string | null = $state(null);
+  /** CA-7 (US-086) : l'organisateur a demandé à répartir à nouveau. */
+  let refaire = $state(false);
+  /** US-087 CA-1 : la dernière répartition écrite ici était manuelle. */
+  let manuelle = $state(false);
+
+  const tireurs = $derived(epreuve ? trierTireurs(tireursDe(epreuve)) : []);
+  const presents = $derived(tireurs.filter(({ present }) => present));
+  const etat = $derived(epreuve ? poulesDe(epreuve) : null);
+  const motifLectureSeule = $derived(
+    !epreuve ? null : !pilote || !ecriture ? t.lectureSeule : epreuve.statut === 'archivee' ? t.archivee : null,
+  );
+  const modifiable = $derived(epreuve !== null && motifLectureSeule === null);
+  const constitution = $derived(etat !== null && !etat.lancees && modifiable && (etat.poules.length === 0 || refaire));
+
+  async function recharger() {
+    epreuve = (await journal.lire(epreuveId)).epreuve;
+    enAttente = pilote ? await synchronisation.enAttente(epreuveId) : 0;
+  }
+
+  onMount(() => {
+    let liberer: (() => void) | null = null;
+    let demonte = false;
+    const surEnLigne = () => void synchronisation.envoyer(epreuveId).then(() => recharger());
+    const arreterPerte = synchronisation.surPerte(({ epreuveId: id }) => {
+      if (id !== epreuveId) return;
+      pilote = false;
+      liberer?.();
+      void recharger();
+    });
+    void (async () => {
+      await synchronisation.telechargerCopie(epreuveId);
+      pilote = (await journal.etat(epreuveId))?.pilote ?? false;
+      if (pilote) {
+        liberer = await prendreEcriture(epreuveId);
+        if (demonte) liberer?.();
+        ecriture = liberer !== null;
+        window.addEventListener('online', surEnLigne);
+      }
+      await recharger();
+      chargee = true;
+      if (pilote) void synchronisation.envoyer(epreuveId).then(() => recharger());
+    })();
+    return () => {
+      demonte = true;
+      liberer?.();
+      arreterPerte();
+      window.removeEventListener('online', surEnLigne);
+    };
+  });
+
+  /** Écrit une composition (US-086, US-087) ; vrai si elle est enregistrée. */
+  async function ecrireComposition(poules: Poule[]): Promise<boolean> {
+    const resultat = await composerPoules(journal, epreuveId, poules, contexte);
+    await recharger();
+    if (!resultat.ok) {
+      erreur = t.erreurs[resultat.erreur] ?? t.erreurs.AUTRE!;
+      return false;
+    }
+    erreur = null;
+    void synchronisation.envoyer(epreuveId).then(() => recharger());
+    return true;
+  }
+
+  async function constituer(poules: Poule[], estManuelle: boolean) {
+    if (await ecrireComposition(poules)) {
+      manuelle = estManuelle;
+      refaire = false;
+      annonce = t.repartiesAnnonce(poules.length);
+    }
+  }
+</script>
+
+{#snippet etape()}
+  {#if !chargee}
+    <p role="status">{te.chargement}</p>
+  {:else if !epreuve || !etat}
+    <p class="message" role="alert">{te.introuvable}</p>
+  {:else}
+    {#if constitution}
+      <div class="titre-etape">
+        <h2>{t.constituerTitre}</h2>
+        <span class="pastille">{t.tour}</span>
+      </div>
+    {/if}
+    {#if motifLectureSeule}<p class="avertissement" role="status">{motifLectureSeule}</p>{/if}
+    {#if pilote && enAttente > 0}<p class="avertissement" role="status">{te.enAttente(enAttente)}</p>{/if}
+    <p class="invisible" role="status" aria-live="polite">{annonce}</p>
+    {#if erreur}<p class="message" role="alert">{erreur}</p>{/if}
+
+    {#if constitution}
+      <ConstitutionPoules
+        {presents}
+        inscrits={tireurs.length}
+        remplace={etat.poules.length > 0}
+        cheminEmargement={cheminEmargementEpreuve(epreuveId)}
+        {naviguer}
+        valider={constituer}
+        annuler={etat.poules.length > 0 ? () => (refaire = false) : undefined}
+      />
+    {:else if etat.poules.length === 0}
+      <div class="titre-etape"><h2>{t.titre}</h2></div>
+      <p class="discret">{t.pointezDabord}</p>
+    {:else}
+      <CartesPoules {etat} {tireurs} {manuelle} {modifiable} repartirANouveau={() => (refaire = true)} />
+    {/if}
+  {/if}
+{/snippet}
+
+{#if epreuve}
+  <GabaritEpreuve {accueil} {epreuve} courante="poules" suite={t.titre} {naviguer}>
+    {@render etape()}
+  </GabaritEpreuve>
+{:else}
+  <main>{@render etape()}</main>
+{/if}
+
+<style>
+  .titre-etape {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+  }
+
+  h2 {
+    margin: 0;
+    font-family: var(--police-titre, inherit);
+    font-size: 1.6rem;
+  }
+
+  .pastille {
+    padding: 0.15rem 0.75rem;
+    border-radius: 999px;
+    background: var(--accent-teinte);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .discret {
+    margin: 0;
+    color: var(--texte-discret);
+  }
+
+  .message {
+    margin: 0;
+    color: var(--etat-erreur);
+  }
+
+  .avertissement {
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    border-left: 4px solid var(--etat-attente);
+    background: var(--surface);
+  }
+
+  .invisible {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+</style>

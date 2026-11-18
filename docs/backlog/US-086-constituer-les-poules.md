@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F5, F6 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-085, US-084
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-086-constituer-les-poules` / —
 
 ## Récit
 
@@ -86,6 +86,16 @@ réseau. Testé par un E2E réseau coupé.
 
 - Le tirage des sans-classement utilise un aléa de l'appareil ; il n'est pas rejouable (la composition écrite fait foi).
 - Seul le club est séparé (choix de l'utilisateur, 2026-11-17) ; la ligue n'est pas gérée.
+- Implémentation (2026-11-18), écarts à la planche 8 :
+  - la planche propose aussi « 3 poules de 8 » et « 5 poules » ; selon CA-2, seules les répartitions de 5 à 7 sont des
+    cartes, et « Autre nombre de poules » donne les autres, signalées « Hors de 5 à 7 tireurs par poule » ;
+  - comme l'émargement, le titre de la page est celui de l'épreuve (gabarit d'US-058) et « Constituer les poules » est le
+    titre de l'étape ;
+  - l'option « Placer au hasard les tireurs sans classement » n'apparaît que s'il y en a ; décochée, ils suivent l'ordre
+    alphabétique.
+- Implémentation : la piste et le reste de l'ajustement viennent avec US-087 ; ici, les poules s'affichent en cartes,
+  avec leurs alertes, et « Répartir à nouveau ».
+- Implémentation : les icônes Flèches croisées, Poignée et Lecture du vocabulaire sont dessinées.
 
 ## Questions bloquantes
 
@@ -102,3 +112,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-17 | Créée |
+| 2026-11-18 | Implémentée : `repartition.ts`, page « Poules » et `ConstitutionPoules` ; passe En revue |
