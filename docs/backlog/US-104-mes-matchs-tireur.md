@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-103, US-099
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-104-mes-matchs-tireur`
 
 ## Récit
 
@@ -82,6 +82,13 @@ planche 16, US-102). Testé dans US-102 pour le rôle tireur.
   montre que son match : **écart** proposé, une section « Autres matchs de ma poule » sous « Mes matchs terminés »,
   qui liste les matchs à tirer de la poule, chacun ouvrant la saisie. Il faut le dessiner sur la planche 18.
 
+- Implémentation (2026-11-19) : `matchsDuTireur` (domaine) tire de la vue de saisie le prochain match, « C'est à
+  vous » (premier match à tirer de la poule), le nombre de matchs avant, le suivant, les matchs terminés vus de son côté
+  et les autres matchs à tirer (planche 18 bis, visibles seulement si le droit des tireurs est ouvert).
+- Implémentation : le téléphone d'un tireur joint `tireurId` à sa saisie ; la table refuse avec le motif `HORS_POULE`
+  (« Ce match n'est pas dans votre poule. ») un match d'une autre poule, ou une saisie de tireur sans identité.
+- Implémentation : un tireur retiré voit « Vous êtes retirée de la poule (motif) » à la place de la carte.
+
 ## Questions bloquantes
 
 Aucune. La section « Autres matchs de ma poule · à tirer » a été validée le 2026-11-19 (planche 18 bis,
@@ -97,3 +104,5 @@ Aucune. La section « Autres matchs de ma poule · à tirer » a été validée 
 | Date | Événement |
 |---|---|
 | 2026-11-19 | Créée |
+| 2026-11-19 | En cours sur `us/US-104-mes-matchs-tireur` (série, recette groupée) |
+| 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 796 tests, E2E `mes-matchs-tireur`, `acces-tireur`, `saisie-match`) |

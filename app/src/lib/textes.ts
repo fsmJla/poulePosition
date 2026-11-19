@@ -146,6 +146,7 @@ export const textes = {
         CORRECTION_INTERDITE: 'Seul un arbitre corrige un score.',
         CORRECTION_DESACTIVEE: 'La correction par smartphone est désactivée.',
         SCORE_CHANGE: 'Le score a changé entre-temps : voyez la table.',
+        HORS_POULE: 'Ce match n’est pas dans votre poule.',
       },
     },
     /** US-100 : saisies reçues des smartphones, sur le PC (planche 10). */
@@ -181,6 +182,7 @@ export const textes = {
         CORRECTION_INTERDITE: 'seul un arbitre corrige un score',
         CORRECTION_DESACTIVEE: 'correction désactivée (Paramètres)',
         SCORE_CHANGE: 'le score avait changé entre-temps',
+        HORS_POULE: 'match hors de la poule du tireur',
       },
     },
     tireur: {
@@ -195,6 +197,25 @@ export const textes = {
       spectateur: 'Suivre l’épreuve en spectateur',
       choisir: (nom: string) => `Je suis ${nom}`,
       cePasMoi: 'Ce n’est pas moi',
+      aVous: (numero: number) => `C’est à vous · match ${numero}`,
+      prochain: (numero: number) => `Votre prochain match · match ${numero}`,
+      contre: 'contre',
+      dansEnviron: (n: number) => `Dans environ ${n} match${n > 1 ? 's' : ''}.`,
+      ensuite: (numero: number, nom: string, n: number) =>
+        `Ensuite : match ${numero} contre ${nom}, dans environ ${n} match${n > 1 ? 's' : ''}.`,
+      parLArbitre: 'La saisie est faite par l’arbitre.',
+      pouleTerminee: 'Votre poule est terminée.',
+      retire: (dames: boolean, motif: string) => `Vous êtes ${dames ? 'retirée' : 'retiré'} de la poule (${motif}).`,
+      motifs: { abandon: 'abandon', forfait: 'forfait', exclusion: 'exclusion' },
+      classement: 'Ma poule · classement provisoire',
+      tireuse: 'Tireuse',
+      tireurColonne: 'Tireur',
+      mesTermines: 'Mes matchs terminés',
+      autres: 'Autres matchs de ma poule · à tirer',
+      autresExplication: (dames: boolean) =>
+        `Sans arbitre équipé, ${dames ? 'une tireuse' : 'un tireur'} de la poule peut saisir ces matchs. Chaque saisie est signée à votre nom.`,
+      saisir: 'Saisir',
+      saisirMatch: (numero: number, paire: string) => `Saisir le score du match ${numero}, ${paire}`,
       resume: (poule: number, piste: number, club: string) =>
         `Poule ${poule} · piste ${piste}${club ? ` · ${club}` : ''}`,
     },

@@ -1155,6 +1155,6 @@ le lien du QR code est retiré de l'adresse affichée dès la page ouverte.
    de même `id` est déjà au journal). Elle répond `{"type":"accuse","accuse":{…},"appareilId":"t4"}`.
    **Correction** (US-101) : la saisie porte `remplace` (le score remplacé, touches de `tireurA` puis de `tireurB`) ; la
    table ne l'accepte que d'un arbitre, si les Paramètres le permettent, et si ce score est toujours en vigueur (sinon
-   `CORRECTION_INTERDITE`, `CORRECTION_DESACTIVEE` ou `SCORE_CHANGE`).
+   `CORRECTION_INTERDITE`, `CORRECTION_DESACTIVEE` ou `SCORE_CHANGE`, `HORS_POULE` (US-104 : le téléphone d'un tireur joint `tireurId` à sa saisie, et la table refuse un match d'une autre poule)).
 4. Le DO relaie l'accusé au seul téléphone `appareilId` ; le téléphone retire la saisie de ses attentes. Un score accepté
    part au serveur avec le lot suivant, et la vue de saisie republiée (§18) met à jour tous les téléphones.

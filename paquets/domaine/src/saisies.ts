@@ -23,6 +23,8 @@ export interface SaisieScore {
   appareilId: string;
   /** US-101 : une correction porte le score qu'elle remplace (touches de `tireurA` puis de `tireurB`). */
   remplace?: [number, number];
+  /** US-104 CA-5 : le tireur qui saisit (choisi sur « Qui êtes-vous ? »), pour vérifier que le match est de sa poule. */
+  tireurId?: string;
 }
 
 export const MOTIFS_REFUS_SAISIE = [
@@ -36,6 +38,7 @@ export const MOTIFS_REFUS_SAISIE = [
   'CORRECTION_INTERDITE',
   'CORRECTION_DESACTIVEE',
   'SCORE_CHANGE',
+  'HORS_POULE',
 ] as const;
 export type MotifRefusSaisie = (typeof MOTIFS_REFUS_SAISIE)[number];
 
@@ -82,6 +85,10 @@ export function deciderSaisie(epreuve: Epreuve, saisie: SaisieScore): DecisionSa
     return { decision: 'refuse', motif: erreur };
   }
   const poule = etat.poules.find(({ numero }) => numero === saisie.poule)!;
+  // US-104 CA-5 : un tireur ne saisit que les matchs de sa poule.
+  if (saisie.role === 'tireur' && !(saisie.tireurId && poule.tireurIds.includes(saisie.tireurId))) {
+    return { decision: 'refuse', motif: 'HORS_POULE' };
+  }
   const match = matchsDePoule(etat, poule, epreuve.formule.touchesPoules).find(
     ({ tireurA, tireurB }) =>
       (tireurA === saisie.tireurA && tireurB === saisie.tireurB) ||
