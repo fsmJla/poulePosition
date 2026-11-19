@@ -211,6 +211,29 @@ describe('demarrerConnexion', () => {
     expect(FausseSocket.creees).toHaveLength(4);
   });
 
+  it('US-095 : envoie seulement sur une connexion établie, et prévient à chaque (re)connexion', async () => {
+    let connexions = 0;
+    const connexion = demarrerConnexion({
+      adresse: async () => ({ url: 'ws://serveur/connexion' }),
+      surEtat: () => {},
+      surConnecte: () => (connexions += 1),
+      creerSocket: (url) => new FausseSocket(url),
+    });
+    await laisserPasser();
+    expect(connexion.envoyer('a')).toBe(false);
+    await connecter();
+    expect(connexions).toBe(1);
+    expect(connexion.envoyer('b')).toBe(true);
+    expect(derniere().envoyes).toEqual(['b']);
+    derniere().couper();
+    expect(connexion.envoyer('c')).toBe(false);
+    await vi.advanceTimersByTimeAsync(1_000);
+    await connecter();
+    expect(connexions).toBe(2);
+    const sansServeur = demarrerConnexion({ adresse: null, surEtat: () => {} });
+    expect(sansServeur.envoyer('d')).toBe(false);
+  });
+
   it('une adresse en échec compte comme une attente', async () => {
     const { etats } = await demarrer(async () => {
       throw new Error('réseau');

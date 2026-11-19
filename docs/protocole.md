@@ -58,6 +58,7 @@
 | `POST /epreuves/<epreuveId>/evenements` | Envoyer un lot d'événements du PC pilote (§11) |
 | `GET /epreuves/<epreuveId>/pilote`, `POST …/pilote` | Qui pilote et s'il est connecté ; prendre la main (§11, US-029) |
 | `POST /epreuves/<epreuveId>/ticket` | Ticket de 60 s pour ouvrir la WebSocket du pilote (§11, US-094) |
+| `GET /epreuves/<epreuveId>/vue` | Dernière vue de saisie publiée par le pilote (§18, US-095) |
 | `GET /manifestations`, `POST /manifestations` | Lister et créer les manifestations du club (§12, US-023) |
 | `PATCH /manifestations/<id>`, `DELETE /manifestations/<id>` | Modifier ou supprimer une manifestation (§12) |
 | `POST /manifestations/<id>/archivage` | Archiver ou désarchiver une manifestation et ses compétitions (§12, US-033) |
@@ -101,10 +102,15 @@ Ce sont des textes JSON d'au plus **256 Ko** (262 144 octets en UTF-8), avec deu
 | `bienvenue` | `epreuveId` | À chaque connexion acceptée |
 | `erreur` | `code`, `message` (texte lisible en français) | Message client refusé (la connexion reste ouverte) |
 | `pong` | — | Réponse à `ping` (§4.3) |
+| `vue` | `vue` (vue de saisie, §18) | Aux smartphones, à chaque vue publiée par le pilote (US-095) |
 
 ### 4.2 Messages du client
 
-Il n'y a pas encore de message client. Tout autre type que le `ping` exact est refusé (`TYPE_INTERDIT`).
+| Type | Champs | Qui |
+|---|---|---|
+| `vue` | `vue` (vue de saisie, §18) | Le pilote seul, pour son épreuve (US-095) ; sinon `TYPE_INTERDIT`, et `MESSAGE_INVALIDE` pour une vue mal formée |
+
+Tout autre type que le `ping` exact et `vue` est refusé (`TYPE_INTERDIT`).
 
 ### 4.3 Maintien de connexion
 
@@ -1068,3 +1074,25 @@ sa WebSocket de présence n’est pas ouverte (US-094), jusqu'à ce que l'organi
    restent à envoyer ; sinon (CA-6) le journal du serveur est repris et les événements locaux qu'il n'a pas sont mis de côté
    dans la table `ecartes`, consultables et exportables, **sans fusion automatique**.
 4. `PiloteChange` est écrit si la main a changé, puis les événements sont envoyés.
+
+## 18. Vue de saisie (US-095, ADR-0005)
+
+Le pilote calcule la vue de saisie d'une épreuve à partir de son journal (`vueSaisie`, `paquets/domaine`) et la publie sur
+sa WebSocket (`{"v":1,"type":"vue","vue":{…}}`) : à chaque (re)connexion (vue complète), puis après chaque lot accepté par
+le serveur si elle a changé. Le DO la valide (`analyserVueSaisie`), garde la dernière (table `vue`, une ligne) et la
+diffuse aux sockets étiquetées `saisie` (smartphones, US-097) ; il ne la lit ni ne la recalcule.
+
+| Champ | Contenu |
+|---|---|
+| `epreuveId`, `nom`, `arme`, `categorie`, `sexe`, `date` | L'épreuve |
+| `competition` | Nom de sa compétition, s'il est connu du pilote, sinon `null` |
+| `touches` | Touches d'un match de poule (formule) |
+| `droits` | `arbitreSaisitScores`, `tireurSaisitPoule`, `tireurSaisitTableau`, `correctionScore` (US-032) |
+| `lancees` | Faux avant le lancement des poules ; `poules` est alors vide |
+| `poules[]` | `numero`, `piste`, `tireurs[]` (`id`, `nom`, `prenom`, `club`, dans l'ordre de la poule), `matchs[]` (`numero`, `tireurA`, `tireurB`, `touches` `[a, b]` ou `null`, `auTemps`, `forfait`, dans l'ordre officiel), `regles` et `total` (avancement), `classement[]` (`tireurId`, `rang`, `victoires`, `matchs`, `indice`, `retrait`) |
+
+Données personnelles (ADR-0014) : des tireurs, seuls le nom, le prénom, le club et la poule ; ni licence, ni classement,
+ni heure de pointage. Une épreuve de 60 tireurs fait moins de 64 Ko, sous la limite de 256 Ko d'un message.
+
+**`GET /epreuves/<epreuveId>/vue`** (session d'un compte du club) : `200 {"ok":true,"vue":{…}}`, ou `"vue":null` tant que le
+pilote n'en a publié aucune.

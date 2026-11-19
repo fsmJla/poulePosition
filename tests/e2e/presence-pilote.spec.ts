@@ -26,7 +26,8 @@ test('US-094 CA-3 : réseau coupé puis rétabli, le pilote continue seul puis s
   await page.getByRole('link', { name: 'Modifier', exact: true }).click();
   await page.getByLabel('Nom', { exact: true }).fill(`E2E ${crypto.randomUUID().slice(0, 8)}`);
   await page.getByRole('button', { name: 'Enregistrer' }).click();
-  await expect(page.getByText('1 modification en attente d’envoi')).toBeVisible();
+  // La pastille d'attente n'apparaît qu'après 3 s (US-090).
+  await expect(page.getByText('1 modification en attente d’envoi')).toBeVisible({ timeout: 10_000 });
   await expect(page.getByText(HORS_LIGNE)).toBeVisible();
 
   await context.setOffline(false);

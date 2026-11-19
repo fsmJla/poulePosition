@@ -37,6 +37,8 @@ export interface OptionsConnexion {
   surEtat: (etat: EtatConnexion) => void;
   /** Fermeture définitive par le serveur (connexion remplacée, appareil exclu, main prise). */
   surFin?: (code: number) => void;
+  /** US-095 : connexion établie (`bienvenue` reçu), à la première ouverture comme à chaque reconnexion. */
+  surConnecte?: () => void;
   creerSocket?: (url: string) => SocketMinimale;
 }
 
@@ -55,16 +57,19 @@ export function demarrerConnexion({
   adresse,
   surEtat,
   surFin = () => {},
+  surConnecte = () => {},
   // WebSocket fournit ces propriétés ; ses gestionnaires typés (Event…) sont seulement plus précis.
   creerSocket = (url) => new WebSocket(url) as unknown as SocketMinimale,
-}: OptionsConnexion): { arreter: () => void; relancer: () => void } {
+}: OptionsConnexion): { arreter: () => void; relancer: () => void; envoyer: (texte: string) => boolean } {
   if (!adresse) {
     surEtat('non-configure');
-    return { arreter: () => {}, relancer: () => {} };
+    return { arreter: () => {}, relancer: () => {}, envoyer: () => false };
   }
   const obtenir = adresse;
 
   let socket: SocketMinimale | null = null;
+  /** Vrai entre `bienvenue` et la coupure : seule une connexion établie envoie. */
+  let etablie = false;
   let ping: ReturnType<typeof setInterval> | undefined;
   let reconnexion: ReturnType<typeof setTimeout> | undefined;
   let essais = 0;
@@ -80,6 +85,7 @@ export function demarrerConnexion({
   /** Coupure : la socket est abandonnée (ses événements tardifs sont ignorés), puis une nouvelle tentative suit. */
   const couper = (courante: SocketMinimale) => {
     clearInterval(ping);
+    etablie = false;
     courante.onopen = courante.onmessage = courante.onclose = courante.onerror = null;
     if (socket === courante) socket = null;
     try {
@@ -129,13 +135,16 @@ export function demarrerConnexion({
       if (analyse.message.type === 'bienvenue') {
         essais = 0;
         manques = 0;
+        etablie = true;
         surEtat('connecte');
+        surConnecte();
       }
     };
     // Une erreur est toujours suivie d'une fermeture : c'est elle qui est traitée.
     courante.onerror = () => {};
     courante.onclose = ({ code }) => {
       clearInterval(ping);
+      etablie = false;
       if (arretee) return;
       if (SANS_RECONNEXION.includes(code)) {
         socket = null;
@@ -156,6 +165,16 @@ export function demarrerConnexion({
       clearInterval(ping);
       clearTimeout(reconnexion);
       socket?.close();
+    },
+    /** Envoie un message sur la connexion établie ; faux s'il n'y en a pas (il sera republié à la reconnexion). */
+    envoyer: (texte: string) => {
+      if (!etablie || !socket) return false;
+      try {
+        socket.send(texte);
+        return true;
+      } catch {
+        return false;
+      }
     },
     relancer: () => {
       if (arretee) return;

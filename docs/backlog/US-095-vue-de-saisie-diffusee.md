@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-094, US-088, US-092
 - **Branche / PR :** `us/US-095-vue-de-saisie-diffusee`
 
@@ -61,6 +61,15 @@ E2E réseau coupé.
   « Prénom N. » ne s'applique pas ici : il vise le public, pas les arbitres ni les tireurs de l'épreuve.
 - La vue est envoyée entière à chaque changement, pas en différences : elle reste petite (quelques Ko).
 
+- Implémentation (2026-11-19) : la vue est republiée après chaque lot accepté par le serveur (pas à chaque écriture
+  locale) ; une vue identique à la dernière envoyée ne repart pas. Elle porte aussi le nom de la compétition, lu dans la
+  copie locale des compétitions (planche 12), et les droits `arbitreSaisitScores`, `tireurSaisitPoule`,
+  `tireurSaisitTableau` et `correctionScore`.
+- Implémentation : 60 tireurs tiennent sous 64 Ko ; la vue n'est donc pas découpée par poule (le cas limite prévu ne se
+  présente pas avec la limite de 256 Ko d'un message).
+- Implémentation : `GET /epreuves/<id>/vue` (session d'un compte du club) lit la dernière vue gardée ; c'est ce qui rend CA-2
+  vérifiable avant l'arrivée des smartphones (US-097), qui la recevront à leur connexion.
+
 ## Questions bloquantes
 
 Aucune.
@@ -76,3 +85,5 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-19 | Créée |
+| 2026-11-19 | En cours sur `us/US-095-vue-de-saisie-diffusee` (série « maximum d'US ») |
+| 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 728 tests, couverture 94,5 %, E2E `vue-saisie` et `presence-pilote`) |

@@ -85,7 +85,7 @@ describe('vue de saisie dans le protocole (US-095)', () => {
     const poule = (numero: number) => ({
       ...vue().poules[0]!,
       numero,
-      tireurs: Array.from({ length: 6 }, (_, i) => ({
+      tireurs: Array.from({ length: 6 }, () => ({
         id: crypto.randomUUID(),
         nom: 'NOMDEFAMILLE-LONG',
         prenom: 'Prénom-Composé',
