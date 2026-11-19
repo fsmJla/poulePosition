@@ -1,6 +1,6 @@
 // Messages échangés entre l'application et le serveur, partagés par les deux (docs/protocole.md).
 // Enveloppe commune : un objet JSON texte avec `v` (version) et `type`, repris du relais Wireless Fencing.
-import type { VueSaisie } from '@poule-position/domaine';
+import { ROLES_QR, type RoleQr, type VueSaisie } from '@poule-position/domaine';
 import { analyserVueSaisie } from './vue-saisie';
 
 export const VERSION_PROTOCOLE = 1;
@@ -13,7 +13,10 @@ export const MESSAGE_PING = JSON.stringify({ v: VERSION_PROTOCOLE, type: 'ping' 
 export const MESSAGE_PONG = JSON.stringify({ v: VERSION_PROTOCOLE, type: 'pong' });
 
 /** Codes de fermeture WebSocket propres au serveur (repris du relais). */
-/** `MAIN_PRISE` (US-094, ADR-0028) : un autre appareil a pris la main ; l'ancien pilote ne se reconnecte pas. */
+/**
+ * `MAIN_PRISE` (US-094, ADR-0028) : un autre appareil a pris la main ; l'ancien pilote ne se reconnecte pas.
+ * US-097 : pour un smartphone, `REFUS` = trop d'essais, `FERMEE` = épreuve terminée, `EXCLUE` = lien plus valable.
+ */
 export const FERMETURES = Object.freeze({ REFUS: 4000, FERMEE: 4001, REMPLACEE: 4002, EXCLUE: 4003, MAIN_PRISE: 4004 });
 
 /** Codes d'erreur et message lisible associé. */
@@ -51,8 +54,23 @@ export interface MessageVue {
   vue: VueSaisie;
 }
 
+/** US-097 : un smartphone est entré avec le QR code d'un rôle ; son identifiant d'appareil signe ses saisies. */
+export interface MessageAcces {
+  v: typeof VERSION_PROTOCOLE;
+  type: 'acces';
+  role: RoleQr;
+  appareilId: string;
+}
+
+/** US-097 CA-5 : la table (le PC pilote) est-elle connectée ? Envoyé à l'entrée, puis à chaque changement. */
+export interface MessageTable {
+  v: typeof VERSION_PROTOCOLE;
+  type: 'table';
+  connectee: boolean;
+}
+
 /** Messages que le serveur envoie à un client. */
-export type MessageServeur = MessageBienvenue | MessageErreur | MessagePong | MessageVue;
+export type MessageServeur = MessageBienvenue | MessageErreur | MessagePong | MessageVue | MessageAcces | MessageTable;
 
 /** Messages qu'un client envoie au serveur (le `ping` exact mis à part, auto-répondu). */
 export type MessageClient = MessageVue;
@@ -69,6 +87,14 @@ export function messageBienvenue(epreuveId: string): string {
 
 export function messageVue(vue: VueSaisie): string {
   return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'vue', vue } satisfies MessageVue);
+}
+
+export function messageAcces(role: RoleQr, appareilId: string): string {
+  return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'acces', role, appareilId } satisfies MessageAcces);
+}
+
+export function messageTable(connectee: boolean): string {
+  return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'table', connectee } satisfies MessageTable);
 }
 
 export function messageErreur(code: CodeErreur): string {
@@ -120,6 +146,17 @@ export function analyserMessageServeur(brut: unknown): Analyse<{ message: Messag
       return { ok: true, message: { v: VERSION_PROTOCOLE, type: 'pong' } };
     case 'vue':
       return lireVue(contenu);
+    case 'acces':
+      if (!(ROLES_QR as readonly unknown[]).includes(contenu.role) || typeof contenu.appareilId !== 'string') {
+        return { ok: false, erreur: 'MESSAGE_INVALIDE' };
+      }
+      return {
+        ok: true,
+        message: { v: VERSION_PROTOCOLE, type: 'acces', role: contenu.role as RoleQr, appareilId: contenu.appareilId },
+      };
+    case 'table':
+      if (typeof contenu.connectee !== 'boolean') return { ok: false, erreur: 'MESSAGE_INVALIDE' };
+      return { ok: true, message: { v: VERSION_PROTOCOLE, type: 'table', connectee: contenu.connectee } };
     default:
       return { ok: false, erreur: 'TYPE_INTERDIT' };
   }

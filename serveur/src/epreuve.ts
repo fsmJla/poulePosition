@@ -4,11 +4,15 @@
 // US-022 (ADR-0016) : copie du journal envoyée par le pilote, ajoutée lot par lot, et appareil pilote.
 // US-094 (ADR-0028) : WebSocket du pilote, ouverte avec un ticket vérifié par le Worker ; elle fait sa présence.
 import { DurableObject } from 'cloudflare:workers';
+import type { RoleQr } from '@poule-position/domaine';
+import { appareilRepris, prochainAppareil, type RefusAcces } from './saisie';
 import {
   analyserMessageClient,
   FERMETURES,
+  messageAcces,
   messageBienvenue,
   messageErreur,
+  messageTable,
   messageVue,
   MESSAGE_PING,
   MESSAGE_PONG,
@@ -32,11 +36,19 @@ const LIGNE_UNIQUE = 'courante';
 
 /** Ce qu'une WebSocket garde d'elle-même (survit à l'hibernation). */
 interface AttacheSocket {
-  role: 'pilote';
+  /** US-097 : le pilote, ou un smartphone entré avec le QR code d'un rôle. */
+  role: 'pilote' | RoleQr;
   appareil: string;
   epreuveId: string;
   ouverteLe: number;
 }
+
+/** US-097 : code de fermeture d'un smartphone refusé (le téléphone en tire son message). */
+const FERMETURE_REFUS: Record<RefusAcces, number> = {
+  lien: FERMETURES.EXCLUE,
+  terminee: FERMETURES.FERMEE,
+  trop: FERMETURES.REFUS,
+};
 
 /** US-095 : étiquette des sockets qui reçoivent la vue de saisie (smartphones des arbitres et des tireurs, US-097). */
 export const ETIQUETTE_SAISIE = 'saisie';
@@ -58,6 +70,10 @@ export class Epreuve extends DurableObject<Env> {
     const { sql } = this.ctx.storage;
     sql.exec(`CREATE TABLE IF NOT EXISTS evenements (seq INTEGER PRIMARY KEY, contenu TEXT NOT NULL)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS pilote (cle TEXT PRIMARY KEY, appareil TEXT NOT NULL)`);
+    // US-097 : smartphones entrés par QR code, avec leur identifiant (« t1 »…) et leur rôle.
+    sql.exec(
+      `CREATE TABLE IF NOT EXISTS appareils (id TEXT PRIMARY KEY, role TEXT NOT NULL, cree_le INTEGER NOT NULL)`,
+    );
     // US-096 : jetons des QR codes, en clair (le journal n'en garde que l'empreinte), un par rôle.
     sql.exec(`CREATE TABLE IF NOT EXISTS jetons (role TEXT PRIMARY KEY, jeton TEXT NOT NULL)`);
     // US-095 : dernière vue de saisie publiée par le pilote, gardée pour les smartphones qui se connectent.
@@ -127,6 +143,7 @@ export class Epreuve extends DurableObject<Env> {
       // US-094 CA-4 : l'ancien pilote est prévenu tout de suite, par la fermeture de sa WebSocket.
       if (decision.ancienAppareil !== demande.appareilId) {
         this.fermer(etiquettePilote(decision.ancienAppareil), FERMETURES.MAIN_PRISE, 'Main prise');
+        this.diffuser(messageTable(false));
       }
       return { ok: true as const, ancienAppareil: decision.ancienAppareil, ...journal };
     });
@@ -138,10 +155,11 @@ export class Epreuve extends DurableObject<Env> {
   }
 
   /** US-029 CA-4 et US-094 CA-2 : pilote en place et présence par sa WebSocket, ou null si l’épreuve n'a rien reçu. */
-  etatPilote(): { piloteAppareil: string; connecte: boolean } | null {
+  etatPilote(sauf?: WebSocket): { piloteAppareil: string; connecte: boolean } | null {
     const { piloteAppareil } = this.etat();
     if (piloteAppareil === null) return null;
-    const sockets = this.ctx.getWebSockets(etiquettePilote(piloteAppareil)).map((socket) => ({
+    const ouvertes = this.ctx.getWebSockets(etiquettePilote(piloteAppareil)).filter((socket) => socket !== sauf);
+    const sockets = ouvertes.map((socket) => ({
       ouverteLe: (socket.deserializeAttachment() as AttacheSocket | null)?.ouverteLe ?? 0,
       dernierPing: this.ctx.getWebSocketAutoResponseTimestamp(socket)?.getTime() ?? null,
     }));
@@ -184,6 +202,11 @@ export class Epreuve extends DurableObject<Env> {
   override async fetch(requete: Request): Promise<Response> {
     const parametres = new URL(requete.url).searchParams;
     const epreuveId = parametres.get('epreuveId') ?? '';
+    const role = parametres.get('role');
+    const refus = parametres.get('refus') as RefusAcces | null;
+    if (role !== null || refus !== null) {
+      return this.accepterSmartphone(epreuveId, role as RoleQr | null, refus, parametres.get('appareil'));
+    }
     const appareil = parametres.get('appareil') ?? '';
     const [client, serveur] = Object.values(new WebSocketPair()) as [WebSocket, WebSocket];
     const etiquette = etiquettePilote(appareil);
@@ -195,7 +218,62 @@ export class Epreuve extends DurableObject<Env> {
     serveur.serializeAttachment({ role: 'pilote', appareil, epreuveId, ouverteLe: Date.now() } satisfies AttacheSocket);
     this.fermer(etiquette, FERMETURES.REMPLACEE, 'Connexion remplacée', serveur);
     serveur.send(messageBienvenue(epreuveId));
+    // US-097 CA-5 : les smartphones apprennent que la table est connectée.
+    this.diffuser(messageTable(true));
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  /**
+   * US-097 CA-1 à CA-4 : WebSocket d'un smartphone dont le Worker a vérifié le jeton. Refusé, il est fermé avec le code
+   * du motif ; accepté, il reçoit son identifiant d'appareil (repris s'il en présente un de ce rôle), l'état de la table
+   * et la dernière vue de saisie (US-095 CA-2).
+   */
+  private accepterSmartphone(
+    epreuveId: string,
+    role: RoleQr | null,
+    refus: RefusAcces | null,
+    presente: string | null,
+  ): Response {
+    const [client, serveur] = Object.values(new WebSocketPair()) as [WebSocket, WebSocket];
+    if (refus || !role) {
+      this.ctx.acceptWebSocket(serveur, ['refuse']);
+      serveur.close(FERMETURE_REFUS[refus ?? 'lien'], 'Accès refusé');
+      return new Response(null, { status: 101, webSocket: client });
+    }
+    const appareil = this.ctx.storage.transactionSync(() => {
+      const existants = this.ctx.storage.sql
+        .exec<{ id: string; role: string }>('SELECT id, role FROM appareils')
+        .toArray();
+      const repris = appareilRepris(presente, existants, role);
+      if (repris) return repris;
+      const nouveau = prochainAppareil(existants.map(({ id }) => id));
+      this.ctx.storage.sql.exec(
+        'INSERT INTO appareils (id, role, cree_le) VALUES (?, ?, ?)',
+        nouveau,
+        role,
+        Date.now(),
+      );
+      return nouveau;
+    });
+    this.ctx.acceptWebSocket(serveur, [ETIQUETTE_SAISIE, etiquetteQr(role), `appareil:${appareil}`]);
+    serveur.serializeAttachment({ role, appareil, epreuveId, ouverteLe: Date.now() } satisfies AttacheSocket);
+    serveur.send(messageBienvenue(epreuveId));
+    serveur.send(messageAcces(role, appareil));
+    serveur.send(messageTable(this.etatPilote()?.connecte ?? false));
+    const vue = this.derniereVue();
+    if (vue !== null) serveur.send(`{"v":1,"type":"vue","vue":${vue}}`);
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  /** Envoie un message à tous les smartphones de l'épreuve. */
+  private diffuser(message: string): void {
+    for (const socket of this.ctx.getWebSockets(ETIQUETTE_SAISIE)) {
+      try {
+        socket.send(message);
+      } catch {
+        // socket en cours de fermeture
+      }
+    }
   }
 
   /** US-096 CA-1 : jetons des QR codes en service, par rôle (null s'il n'y en a pas). */
@@ -251,14 +329,7 @@ export class Epreuve extends DurableObject<Env> {
     }
     const texte = JSON.stringify(vue);
     this.ctx.storage.sql.exec('INSERT OR REPLACE INTO vue (cle, contenu) VALUES (?, ?)', LIGNE_UNIQUE, texte);
-    const diffusion = messageVue(vue);
-    for (const socket of this.ctx.getWebSockets(ETIQUETTE_SAISIE)) {
-      try {
-        socket.send(diffusion);
-      } catch {
-        // socket en cours de fermeture
-      }
-    }
+    this.diffuser(messageVue(vue));
   }
 
   override async webSocketClose(ws: WebSocket): Promise<void> {
@@ -268,5 +339,8 @@ export class Epreuve extends DurableObject<Env> {
     } catch {
       // déjà fermée
     }
+    // US-097 CA-5 : la table se déconnecte quand la dernière socket du pilote se ferme.
+    const attache = ws.deserializeAttachment() as AttacheSocket | null;
+    if (attache?.role === 'pilote' && !this.etatPilote(ws)?.connecte) this.diffuser(messageTable(false));
   }
 }
