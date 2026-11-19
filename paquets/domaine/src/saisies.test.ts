@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { appliquer, poulesDe, projeter, type Epreuve, type Evenement, type Proposition } from './journal';
-import { deciderSaisie, signatureSaisie, type SaisieScore } from './saisies';
+import { deciderSaisie, lignesSaisies, propositionRefus, signatureSaisie, type SaisieScore } from './saisies';
 
 const enTete = (seq: number) => ({
   epreuveId: 'e1',
@@ -119,5 +119,42 @@ describe('saisies des smartphones (US-099)', () => {
     expect(deciderSaisie(apres, saisie())).toEqual({ decision: 'doublon' });
     const terminee = { ...lancee(), statut: 'terminee' as const };
     expect(deciderSaisie(terminee, saisie())).toEqual({ decision: 'refuse', motif: 'EPREUVE_FERMEE' });
+  });
+});
+
+describe('saisies reçues, sur le PC (US-100)', () => {
+  const score = (a: string, b: string, ta: number, tb: number, par?: string): Proposition => ({
+    type: 'ScorePouleSaisi',
+    donnees: { poule: 1, tireurA: a, tireurB: b, touchesA: ta, touchesB: tb, ...(par && { saisie: { id: par, par } }) },
+  });
+  const avant = [...presents('a', 'b', 'c'), composer, lancer];
+
+  it('CA-2 : une ligne par score (smartphone ou PC) et par refus, la plus récente en tête', () => {
+    const refus = propositionRefus(saisie({ id: 's9', tireurA: 'a', tireurB: 'c' }), 'MATCH_DEJA_SAISI');
+    const evenements = journal(...avant, score('a', 'b', 5, 2, 'arbitre Dupont (t4)'), score('b', 'c', 3, 5), refus);
+    const lignes = lignesSaisies(evenements, projeter(evenements).epreuve);
+    expect(lignes.map(({ resultat }) => resultat)).toEqual(['refusee', 'enregistree', 'acceptee']);
+    expect(lignes[0]).toMatchObject({
+      poule: 1,
+      nomA: 'A',
+      nomB: 'C',
+      par: 'arbitre Dupont (t4)',
+      motif: 'MATCH_DEJA_SAISI',
+    });
+    expect(lignes[1]).toMatchObject({ par: null, nomA: 'B', nomB: 'C', touchesA: 3, touchesB: 5 });
+    expect(lignes[2]).toMatchObject({ numero: 1, touchesA: 5, touchesB: 2, correctionDe: null });
+  });
+
+  it('CA-3 : une correction dit le score qu’elle remplace', () => {
+    const evenements = journal(...avant, score('a', 'b', 5, 2), score('b', 'a', 5, 4, 'arbitre Dupont (t4)'));
+    const [correction] = lignesSaisies(evenements, projeter(evenements).epreuve);
+    expect(correction).toMatchObject({ nomA: 'B', nomB: 'A', touchesA: 5, touchesB: 4, correctionDe: [2, 5] });
+    expect(lignesSaisies([], null)).toEqual([]);
+  });
+
+  it('hypothèse : le refus est au journal ; la même saisie renvoyée reçoit le même refus', () => {
+    const refusee = lancee(propositionRefus(saisie(), 'DROIT_RETIRE'));
+    expect(refusee.saisiesRefusees).toHaveLength(1);
+    expect(deciderSaisie(refusee, saisie())).toEqual({ decision: 'refuse', motif: 'DROIT_RETIRE' });
   });
 });

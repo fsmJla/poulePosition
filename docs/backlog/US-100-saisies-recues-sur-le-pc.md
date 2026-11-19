@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F7, F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-099
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-100-saisies-recues-sur-le-pc`
 
 ## Récit
 
@@ -68,6 +68,14 @@ La liste se lit depuis le journal local : elle reste visible hors ligne. Le nomb
 - Les refus sont inscrits au journal (événement `SaisieRefusee` avec l'auteur et le motif) pour être retrouvés après
   un rechargement ou sur un autre PC ; c'est aussi la trace demandée par l'ADR-0005.
 
+- Implémentation (2026-11-19) : la liste est calculée dans le domaine (`lignesSaisies`) à partir du journal :
+  `ScorePouleSaisi` (avec `saisie` : « Acceptée » ; sans : « saisi sur ce PC », « Enregistrée ») et `SaisieRefusee`
+  (« Refusée : motif »). Une correction se reconnaît à un score précédent du même match.
+- Implémentation : le nombre d'appareils connectés vient du serveur (message `appareils`, à chaque entrée ou sortie d'un
+  smartphone) ; il n'est pas affiché sur un PC qui n'est pas le pilote, et vaut « Hors ligne : aucun appareil » sans
+  connexion au serveur. « Gérer les accès » ouvre la page « Paramètres » (planche 21).
+- Implémentation : une même saisie refusée, renvoyée, reçoit le même refus sans nouvelle trace.
+
 ## Questions bloquantes
 
 Aucune.
@@ -81,3 +89,5 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-19 | Créée |
+| 2026-11-19 | En cours sur `us/US-100-saisies-recues-sur-le-pc` (série, recette groupée) |
+| 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 782 tests, E2E `saisies-recues`, `saisie-match`, `poules-saisie`) |

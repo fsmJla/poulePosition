@@ -2,10 +2,20 @@
   // Poules d'une épreuve : constitution (US-086, planche 8), vérification et ajustement (US-087, planche 9).
   // Écrit les événements d'US-085 dans le journal local du PC pilote, hors ligne compris.
   import { onMount } from 'svelte';
-  import { poulesDe, tireursDe, trierTireurs, type Epreuve, type Poule } from '@poule-position/domaine';
+  import {
+    lignesSaisies,
+    poulesDe,
+    tireursDe,
+    trierTireurs,
+    type Epreuve,
+    type LigneSaisie,
+    type Poule,
+  } from '@poule-position/domaine';
   import CartesPoules from '../composants/CartesPoules.svelte';
   import ConstitutionPoules from '../composants/ConstitutionPoules.svelte';
   import SaisiePoules from '../composants/SaisiePoules.svelte';
+  import SaisiesRecues from '../composants/SaisiesRecues.svelte';
+  import type { PresencePilote } from '../lib/presence-pilote';
   import AttenteEnvoi from '../composants/AttenteEnvoi.svelte';
   import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
   import type { Accueil } from '../lib/accueil';
@@ -13,7 +23,7 @@
   import type { VerdictArchivage } from '../lib/archivage';
   import { annulerRetrait, composerPoules, lancerPoules, retirerDesPoules, saisirScore } from '../lib/poules';
   import type { MotifRetrait } from '@poule-position/domaine';
-  import { cheminEmargementEpreuve } from '../lib/routes';
+  import { cheminEmargementEpreuve, cheminParametresEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -25,9 +35,16 @@
     synchronisation: Synchronisation;
     accueil: Accueil;
     naviguer: (chemin: string) => void;
+    /** US-100 : smartphones connectés (WebSocket du pilote). */
+    presence: PresencePilote;
   }
 
-  let { session, epreuveId, journal, synchronisation, accueil, naviguer }: Proprietes = $props();
+  let { session, epreuveId, journal, synchronisation, accueil, naviguer, presence }: Proprietes = $props();
+
+  // US-100 : les saisies reçues des smartphones (et celles de ce PC), lues dans le journal local.
+  let lignes = $state<LigneSaisie[]>([]);
+  // svelte-ignore state_referenced_locally
+  let appareils = $state<number | null>(presence.appareils(epreuveId));
 
   const t = textes.poules;
   const te = textes.epreuves;
@@ -56,6 +73,8 @@
 
   async function recharger() {
     epreuve = (await journal.lire(epreuveId)).epreuve;
+    lignes = lignesSaisies(await journal.evenements(epreuveId), epreuve);
+    appareils = presence.appareils(epreuveId);
     enAttente = pilote ? await synchronisation.enAttente(epreuveId) : 0;
   }
 
@@ -73,6 +92,11 @@
     const arreterEnvoi = synchronisation.surEnvoi((id) => {
       if (id === epreuveId) void recharger();
     });
+    const arreterAppareils = presence.surAppareils((id, connectes) => {
+      if (id === epreuveId) appareils = connectes;
+    });
+    // Hors ligne (ou de retour), le nombre d'appareils n'est plus connu (ou l'est de nouveau).
+    const arreterEtat = presence.surEtat(() => (appareils = presence.appareils(epreuveId)));
     void (async () => {
       await synchronisation.telechargerCopie(epreuveId);
       pilote = (await journal.etat(epreuveId))?.pilote ?? false;
@@ -91,6 +115,8 @@
       liberer?.();
       arreterPerte();
       arreterEnvoi();
+      arreterAppareils();
+      arreterEtat();
       window.removeEventListener('online', surEnLigne);
     };
   });
@@ -197,6 +223,8 @@
         {retirer}
         annulerRetrait={(id) => retirer(id, null)}
       />
+      <!-- US-100 (planche 10) : sous la feuille, les saisies reçues des smartphones. -->
+      <SaisiesRecues {lignes} {appareils} {pilote} gererLesAcces={() => naviguer(cheminParametresEpreuve(epreuveId))} />
     {:else if etat.poules.length === 0}
       <div class="titre-etape"><h2>{t.titre}</h2></div>
       <p class="discret">{t.pointezDabord}</p>

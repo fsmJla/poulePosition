@@ -99,7 +99,15 @@ export interface MessageAccuse {
   appareilId?: string;
 }
 
+/** US-100 CA-1 : nombre de smartphones connectés à l'épreuve, envoyé à la table à chaque changement. */
+export interface MessageAppareils {
+  v: typeof VERSION_PROTOCOLE;
+  type: 'appareils';
+  connectes: number;
+}
+
 export type MessageServeur =
+  | MessageAppareils
   | MessageBienvenue
   | MessageErreur
   | MessagePong
@@ -140,6 +148,10 @@ export function messageSaisie(saisie: SaisieTelephone | SaisieScore): string {
 
 export function messageAccuse(accuse: Accuse, appareilId?: string): string {
   return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'accuse', accuse, ...(appareilId && { appareilId }) });
+}
+
+export function messageAppareils(connectes: number): string {
+  return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'appareils', connectes } satisfies MessageAppareils);
 }
 
 export function messageErreur(code: CodeErreur): string {
@@ -208,6 +220,9 @@ export function analyserMessageServeur(brut: unknown): Analyse<{ message: Messag
     }
     case 'accuse':
       return lireAccuse(contenu);
+    case 'appareils':
+      if (!Number.isInteger(contenu.connectes) || (contenu.connectes as number) < 0) return invalide;
+      return { ok: true, message: { v: VERSION_PROTOCOLE, type: 'appareils', connectes: contenu.connectes as number } };
     default:
       return { ok: false, erreur: 'TYPE_INTERDIT' };
   }
