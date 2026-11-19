@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F4 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-088, US-100
 - **Branche / PR :** `us/US-107-ecran-poules-compact`
 
@@ -63,3 +63,4 @@ Sans objet : présentation seule ; l'écran garde son comportement hors ligne (U
 |---|---|
 | 2026-11-19 | Créée à la demande de l'utilisateur (capture annotée) ; en cours sur `us/US-107-ecran-poules-compact` |
 | 2026-11-19 | Implémentée ; en revue. Lint, typage, tests app, E2E `poules-saisie`, `epreuve-etapes`, `marque`, `saisies-recues` verts |
+| 2026-11-19 | Recette OK par l'utilisateur sur la preview `poule-position-5uwoqs7du` ; mergée dans `dev` (#153) ; Terminée |
