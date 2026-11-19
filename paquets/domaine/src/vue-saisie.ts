@@ -124,3 +124,42 @@ export function vueSaisie(epreuve: Epreuve, competition: string | null = null): 
     poules,
   };
 }
+
+/** US-098 : un match de la piste, avec sa poule. */
+export interface MatchDeLaPiste extends MatchVue {
+  poule: number;
+}
+
+/** US-098 : ce que l'arbitre voit de sa piste (planche 13). */
+export interface MatchsDeLaPiste {
+  /** Poule en cours sur la piste : la première qui a encore un match à tirer, sinon la dernière. */
+  poule: number | null;
+  /** Toutes les poules de la piste, dans l'ordre. */
+  poules: number[];
+  /** Avancement de la poule en cours. */
+  regles: number;
+  total: number;
+  /** CA-2 : le premier match sans score, dans l'ordre des poules puis l'ordre officiel ; null si tout est saisi. */
+  maintenant: MatchDeLaPiste | null;
+  /** CA-3 : les deux matchs suivants à tirer. */
+  ensuite: MatchDeLaPiste[];
+  /** CA-3 : les matchs réglés (scores et forfaits), du plus avancé dans l'ordre au moins avancé. */
+  termines: MatchDeLaPiste[];
+}
+
+/** US-098 CA-1 à CA-4 et CA-7 : les matchs de la piste d'un arbitre, tirés de la vue de saisie. */
+export function matchsDeLaPiste(vue: VueSaisie | null, piste: number): MatchsDeLaPiste {
+  const poules = (vue?.poules ?? []).filter((p) => p.piste === piste).sort((a, b) => a.numero - b.numero);
+  const tous = poules.flatMap((p) => p.matchs.map((match) => ({ ...match, poule: p.numero })));
+  const aTirer = tous.filter(({ touches }) => touches === null);
+  const enCours = poules.find(({ regles, total }) => regles < total) ?? poules.at(-1) ?? null;
+  return {
+    poule: enCours?.numero ?? null,
+    poules: poules.map(({ numero }) => numero),
+    regles: enCours?.regles ?? 0,
+    total: enCours?.total ?? 0,
+    maintenant: aTirer[0] ?? null,
+    ensuite: aTirer.slice(1, 3),
+    termines: tous.filter(({ touches }) => touches !== null).reverse(),
+  };
+}

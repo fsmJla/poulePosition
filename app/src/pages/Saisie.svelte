@@ -5,12 +5,12 @@
   import { onMount } from 'svelte';
   import AccesArbitre from '../composants/AccesArbitre.svelte';
   import EnteteSaisie from '../composants/EnteteSaisie.svelte';
+  import MatchsPiste from '../composants/MatchsPiste.svelte';
   import {
     creerSaisieSmartphone,
     ecrireMemoire,
     jetonDuFragment,
     lireMemoire,
-    pistesDeLaVue,
     type EtatSaisie,
     type MemoireSaisie,
     type SaisieSmartphone,
@@ -69,7 +69,6 @@
   const enTete = $derived(vue ? t.epreuve(vue.nom, textes.epreuves.armes[vue.arme]) : null);
   const refus = $derived(sansJeton ? 'lien' : (etat?.refus ?? null));
   const arbitrePret = $derived(Boolean(memoire?.nom && memoire.piste !== null) && !changerPiste);
-  const poulesDeLaPiste = $derived(pistesDeLaVue(vue).find(({ piste }) => piste === memoire?.piste)?.poules ?? []);
 
   function commencer(nom: string, piste: number) {
     saisie?.choisir(nom, piste);
@@ -91,14 +90,8 @@
   {:else if !arbitrePret}
     <AccesArbitre {vue} nom={memoire?.nom ?? ''} piste={memoire?.piste ?? null} {commencer} />
   {:else if memoire?.piste !== null && memoire?.piste !== undefined}
-    <!-- US-098 détaille cet écran (planche 13) : match à saisir, matchs suivants et terminés. -->
-    <main class="piste">
-      <div class="titre">
-        <h1>{t.arbitre.titrePiste(memoire.piste, poulesDeLaPiste)}</h1>
-        <p class="discret">{t.arbitre.quiSaisit(memoire.nom ?? '')}</p>
-      </div>
-      <button type="button" class="lien" onclick={() => (changerPiste = true)}>{t.arbitre.changerDePiste}</button>
-    </main>
+    <!-- US-098 (planche 13) : match à saisir, matchs suivants et terminés de la piste. -->
+    <MatchsPiste {vue} piste={memoire.piste} nom={memoire.nom ?? ''} changerDePiste={() => (changerPiste = true)} />
   {/if}
 </div>
 
@@ -119,43 +112,5 @@
   .message p {
     margin: 0;
     font-size: 1.0625rem;
-  }
-
-  .piste {
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    padding: 16px;
-  }
-
-  .titre {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-
-  h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    line-height: 1.2;
-  }
-
-  .discret {
-    margin: 0;
-    color: var(--texte-discret);
-    font-size: 0.875rem;
-  }
-
-  .lien {
-    min-height: 44px;
-    padding: 0;
-    border: none;
-    background: none;
-    color: var(--accent);
-    font: inherit;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    text-decoration: underline;
-    cursor: pointer;
   }
 </style>

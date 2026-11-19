@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { projeter, type Epreuve, type Evenement, type Proposition } from './journal';
-import { vueSaisie } from './vue-saisie';
+import { matchsDeLaPiste, vueSaisie } from './vue-saisie';
 
 const enTete = (seq: number) => ({
   epreuveId: 'e1',
@@ -127,5 +127,66 @@ describe('vue de saisie (US-095)', () => {
     expect(poule!.matchs.filter(({ forfait }) => forfait)).toHaveLength(2);
     expect(poule!.regles).toBe(2);
     expect(poule!.classement.at(-1)).toMatchObject({ tireurId: 'c', retrait: 'abandon' });
+  });
+});
+
+describe('matchs de la piste d’un arbitre (US-098)', () => {
+  const poule = (numero: number, piste: number, scores: (null | [number, number])[]) => ({
+    numero,
+    piste,
+    tireurs: [],
+    matchs: scores.map((touches, i) => ({
+      numero: i + 1,
+      tireurA: `a${numero}-${i}`,
+      tireurB: `b${numero}-${i}`,
+      touches,
+      auTemps: false,
+      forfait: false,
+    })),
+    regles: scores.filter(Boolean).length,
+    total: scores.length,
+    classement: [],
+  });
+  const vueAvec = (...poules: ReturnType<typeof poule>[]) => ({
+    ...vueSaisie(epreuveDe(...TROIS, composer, lancer)),
+    poules,
+  });
+
+  it('CA-1 à CA-3 : avancement, match à saisir maintenant, deux suivants, terminés du plus récent au plus ancien', () => {
+    const vue = vueAvec(poule(2, 2, [[5, 3], [4, 5], null, null, null]), poule(1, 1, [null]));
+    const piste = matchsDeLaPiste(vue, 2);
+    expect(piste).toMatchObject({ poule: 2, poules: [2], regles: 2, total: 5 });
+    expect(piste.maintenant).toMatchObject({ poule: 2, numero: 3 });
+    expect(piste.ensuite.map(({ numero }) => numero)).toEqual([4, 5]);
+    expect(piste.termines.map(({ numero }) => numero)).toEqual([2, 1]);
+  });
+
+  it('CA-4 : plusieurs poules sur la piste ; la suivante enchaîne, puis devient la poule en cours', () => {
+    const avant = matchsDeLaPiste(vueAvec(poule(6, 2, [null, null]), poule(2, 2, [[5, 1], null])), 2);
+    expect(avant).toMatchObject({ poule: 2, poules: [2, 6] });
+    expect(avant.maintenant).toMatchObject({ poule: 2, numero: 2 });
+    expect(avant.ensuite.map(({ poule: p }) => p)).toEqual([6, 6]);
+    const apres = matchsDeLaPiste(
+      vueAvec(
+        poule(2, 2, [
+          [5, 1],
+          [5, 2],
+        ]),
+        poule(6, 2, [null, null]),
+      ),
+      2,
+    );
+    expect(apres).toMatchObject({ poule: 6, regles: 0, total: 2 });
+  });
+
+  it('CA-7 : tout est saisi ; une piste sans poule ou sans vue est vide', () => {
+    const finie = matchsDeLaPiste(vueAvec(poule(1, 1, [[5, 0]])), 1);
+    expect(finie).toMatchObject({ poule: 1, maintenant: null, ensuite: [] });
+    expect(matchsDeLaPiste(vueAvec(poule(1, 1, [null])), 3)).toMatchObject({
+      poule: null,
+      poules: [],
+      maintenant: null,
+    });
+    expect(matchsDeLaPiste(null, 1).termines).toEqual([]);
   });
 });
