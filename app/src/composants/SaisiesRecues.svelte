@@ -181,4 +181,30 @@
       grid-column: 2;
     }
   }
+
+  /* US-107 CA-4 : dans la colonne de droite de l'écran des poules (étroite), chaque saisie tient sur deux lignes :
+     l'heure et le match, puis l'auteur et le résultat. */
+  @container (max-width: 34rem) {
+    li {
+      grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+      gap: 2px 8px;
+      padding: 6px 0;
+    }
+
+    .quoi {
+      grid-column: 2 / 4;
+    }
+
+    .qui {
+      grid-column: 2;
+    }
+
+    .resultat {
+      grid-column: 3;
+    }
+
+    .explication {
+      display: none;
+    }
+  }
 </style>

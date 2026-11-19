@@ -136,6 +136,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-104](US-104-mes-matchs-tireur.md) | Voir « Mes matchs » et saisir les scores de sa poule (tireur) | E5 | Terminée | US-103, US-099 |
 | [US-105](US-105-appareils-connectes.md) | Voir les appareils connectés et en exclure un | E5 | Terminée | US-096, US-097, US-103 |
 | [US-106](US-106-saisir-score-tableau-smartphone.md) | Saisir le score d'un match du tableau sur le smartphone | E5 | À spécifier | US-099, US-104, US d'E6 |
+| [US-107](US-107-ecran-poules-compact.md) | Alléger l'entête et réagencer l'écran des poules | E4 | Terminée | US-088, US-100 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 

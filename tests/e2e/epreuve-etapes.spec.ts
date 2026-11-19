@@ -97,9 +97,12 @@ test('US-058 CA-3 : l’entête montre le fil, le nom court, le statut, la comp�
   await expect(fil(page).locator('[aria-current="page"]')).toHaveText(epreuve);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('M13 Dames');
   await expect(page.getByText('En préparation', { exact: true })).toBeVisible();
-  await expect(page.getByText(`${competition} · Sabre · mercredi 11 novembre 2026`)).toBeVisible();
+  // US-107 CA-1 : l'arme et la date sur la ligne du titre ; la compétition dans le fil d'Ariane, pas répétée dessous.
+  await expect(page.getByText('Sabre · mercredi 11 novembre 2026', { exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: /fil d’Ariane/i })).toContainText(competition);
+  await expect(page.getByText(`${competition} · Sabre`)).toBeHidden();
   // Le carré de couleur de la compétition précède son nom.
-  await expect(page.locator('.sous-titre .carre')).toBeVisible();
+  await expect(page.locator('.complement .carre')).toBeVisible();
   // Sur grand écran, « Modifier » et « ⋯ » sont à droite du titre ; sur écran étroit, l'entête passe sur deux lignes.
   if ((page.viewportSize()?.width ?? 0) >= 900) {
     const titre = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
@@ -253,9 +256,9 @@ test('US-058 CA-8 : conforme à la planche 3 (navigation, entête, cartes du Ré
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 1360, height: 1000 });
   await page.emulateMedia({ colorScheme: 'light' });
-  const { competition } = await creerEpreuvePilote(page);
+  await creerEpreuvePilote(page);
   await expect(fil(page).getByRole('link')).toHaveCount(3, { timeout: 20_000 });
-  await expect(page.getByText(`${competition} · Sabre`)).toBeVisible();
+  await expect(page.getByText(/^Sabre( · |$)/)).toBeVisible();
 
   const boite = async (localisateur: ReturnType<typeof page.locator>) => (await localisateur.boundingBox())!;
   const nav = await boite(navigation(page));

@@ -33,7 +33,10 @@ test('US-088 CA-1 à CA-3, CA-8 et US-091 CA-1, CA-7 : onglets, feuille, boutons
   await lancer(page, adresse);
 
   // CA-1 : l'entête et un onglet par poule, avec sa piste et son avancement.
-  await expect(page.getByText(/^0 match sur 60 · le classement après poules/)).toBeVisible();
+  // US-107 CA-2 : l'étape tient sur une ligne ; l'infobulle de l'avancement dit quand s'ouvre le classement.
+  const avancement = page.getByText(/^0 match sur 60$/);
+  await expect(avancement).toBeVisible();
+  await expect(page.getByTitle(/le classement après poules s’ouvre/)).toBeVisible();
   await expect(page.getByRole('tab')).toHaveCount(4);
   await page.getByRole('tab', { name: /Poule 2/ }).click();
   await expect(page.getByRole('heading', { level: 3, name: 'Feuille de la poule 2 · piste 2' })).toBeVisible();
@@ -108,7 +111,8 @@ test('US-091 CA-2 à CA-6 et US-088 CA-7 : deux clics, au temps, refus, correcti
 
   // US-088 CA-7 : le dernier match saisi, la poule est terminée.
   for (let i = 2; i <= 15; i += 1) await saisir(page, 5, i % 5);
-  await expect(page.getByRole('tab', { name: /Poule 1/ })).toContainText('Terminée · 15/15');
+  // US-107 CA-3 : une seule poule, pas d'onglet ; l'ordre des matchs montre le dernier score.
+  await expect(page.getByRole('tab')).toHaveCount(0);
   await expect(
     page.getByText('Toutes les poules sont terminées : le classement après poules s’ouvre avec le tableau (E6)'),
   ).toBeVisible();
