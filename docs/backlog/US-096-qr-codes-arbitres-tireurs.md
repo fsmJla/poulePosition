@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-094, US-032
 - **Branche / PR :** `us/US-096-qr-codes-arbitres-tireurs`
 
@@ -115,3 +115,4 @@ Aucune. La planche 21 a été validée par l'utilisateur le 2026-11-19 : « Acc�
 | 2026-11-19 | Créée |
 | 2026-11-19 | En cours sur `us/US-096-qr-codes-arbitres-tireurs` (série « maximum d'US ») |
 | 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 745 tests, couverture 94,5 %, E2E `acces-qr`, `parametres`, `epreuve-etapes`, `charte`) |
+| 2026-11-19 | Recette OK sur https://poule-position-git-us-us-096-qr-codes-a-8919f7-fsmjlas-projects.vercel.app (serveur de preview déployé depuis la branche, thème sombre) : deux QR codes créés à la première ouverture, jetons gardés par le serveur et seulement deux JetonQrDefini (empreintes) au journal (CA-1, CA-2) ; page d’impression avec le nom, les deux QR noirs sur blanc et leur mode d’emploi (CA-3) ; régénération après confirmation, seul le lien des arbitres change (CA-4) ; mention des tireurs sans saisie (CA-5) ; hors ligne, « Régénérer… » grisé avec « Nécessite une connexion ». CA-6 côté smartphone avec US-097. Passe à Terminée |
