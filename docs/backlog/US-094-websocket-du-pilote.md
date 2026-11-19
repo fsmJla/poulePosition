@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F8, F12 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-022, US-029 ; **ADR à écrire d'abord** (`/adr` : authentification de la WebSocket du pilote)
 - **Branche / PR :** `us/US-094-websocket-du-pilote`
 
@@ -99,3 +99,4 @@ Aucune.
 | 2026-11-19 | Créée |
 | 2026-11-19 | Plan validé (série « maximum d'US ») ; en cours sur `us/US-094-websocket-du-pilote` |
 | 2026-11-19 | Implémentée (ADR-0028, ticket, WebSocket du pilote, fin des battements) ; en revue. Contrôles locaux verts (lint, typage, 1 711 tests, couverture 94,5 %, build, audit, E2E `presence-pilote` et `prise-de-main`) ; la suite E2E locale complète a été arrêtée faute de mémoire sur le poste : elle tourne en CI |
+| 2026-11-19 | Recette OK sur https://poule-position-git-us-us-094-websocket-06c255-fsmjlas-projects.vercel.app (serveur de preview déployé depuis la branche, thème sombre) : ticket demandé puis WebSocket ouverte et pilote « connecté » vu par le serveur (CA-1, CA-2) ; coupure annoncée par le navigateur : pastille « Hors ligne : la compétition continue sur ce PC » puis reconnexion seule (CA-3) ; `POST …/presence` → 404, ticket sans session et socket sans ticket → 401 (CA-1, CA-5). CA-4 (deux appareils) couvert par le test d’intégration du serveur et l’E2E local à deux contextes ; les E2E @reel de la preview ne se déclenchent plus depuis le 2026-11-14 (workflow à vérifier, hors US). Passe à Terminée |
