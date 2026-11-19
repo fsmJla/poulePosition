@@ -211,3 +211,48 @@ describe('envoi d’une saisie (US-099)', () => {
     expect(gardees.at(-1)?.enAttente).toEqual([]);
   });
 });
+
+describe('saisie suspendue (US-102)', () => {
+  it('CA-6 : une saisie suspendue reste en attente et repart, même identifiant, quand la table revient', async () => {
+    const { saisie, gardees } = demarrer();
+    await vi.advanceTimersByTimeAsync(0);
+    const socket = FausseSocket.creees[0]!;
+    socket.recevoir(messageBienvenue('e1'), messageAcces('arbitre', 't4'), messageTable(false));
+    const saisieTel = {
+      id: 's-9',
+      poule: 1,
+      tireurA: 'a',
+      tireurB: 'b',
+      touchesA: 5,
+      touchesB: 1,
+      auTemps: false,
+      nom: 'D',
+    };
+    saisie.envoyerSaisie(saisieTel);
+    socket.recevoir(messageAccuse({ id: 's-9', decision: 'suspendue' }));
+    expect(gardees.at(-1)?.enAttente).toEqual([saisieTel]);
+    expect(saisie.etat().dernierEchange).not.toBeNull();
+    const avant = socket.envoyes.length;
+    socket.recevoir(messageTable(true));
+    expect(JSON.parse(socket.envoyes[avant]!)).toEqual({ v: 1, type: 'saisie', saisie: saisieTel });
+    socket.recevoir(messageAccuse({ id: 's-9', decision: 'accepte' }));
+    expect(gardees.at(-1)?.enAttente).toEqual([]);
+  });
+
+  it('CA-4 : le navigateur annonce une coupure : connexion abandonnée aussitôt', async () => {
+    const fenetre = new EventTarget();
+    const saisie = creerSaisieSmartphone({
+      urlServeur: 'wss://serveur.test',
+      epreuveId: 'e1',
+      memoire: memoireVide(),
+      garder: () => {},
+      creerSocket: (url) => new FausseSocket(url),
+      cible: fenetre,
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    FausseSocket.creees[0]!.recevoir(messageBienvenue('e1'), messageTable(true));
+    fenetre.dispatchEvent(new Event('offline'));
+    expect(saisie.etat()).toMatchObject({ connexion: 'injoignable', table: false });
+    saisie.arreter();
+  });
+});

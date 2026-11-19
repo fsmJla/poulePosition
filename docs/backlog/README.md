@@ -131,7 +131,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-099](US-099-saisir-score-poule-smartphone.md) | Saisir le score d'un match de poule sur le smartphone et l'envoyer à la table | E5 | En revue | US-098, US-091 |
 | [US-100](US-100-saisies-recues-sur-le-pc.md) | Voir sur le PC les saisies reçues des smartphones | E5 | En revue | US-099 |
 | [US-101](US-101-corriger-score-smartphone.md) | Corriger depuis le smartphone un score déjà enregistré (arbitre) | E5 | En revue | US-099 |
-| [US-102](US-102-saisie-suspendue.md) | Suspendre la saisie quand la table est déconnectée et récupérer les saisies en route | E5 | Prête | US-099 |
+| [US-102](US-102-saisie-suspendue.md) | Suspendre la saisie quand la table est déconnectée et récupérer les saisies en route | E5 | En revue | US-099 |
 | [US-103](US-103-acces-tireur.md) | Ouvrir l'accès tireur par le QR code (« Qui êtes-vous ? ») | E5 | Prête | US-095, US-096 |
 | [US-104](US-104-mes-matchs-tireur.md) | Voir « Mes matchs » et saisir les scores de sa poule (tireur) | E5 | Prête | US-103, US-099 |
 | [US-105](US-105-appareils-connectes.md) | Voir les appareils connectés et en exclure un | E5 | Prête | US-096, US-097, US-103 |

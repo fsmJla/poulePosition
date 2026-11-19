@@ -73,6 +73,8 @@ export class Epreuve extends DurableObject<Env> {
     const { sql } = this.ctx.storage;
     sql.exec(`CREATE TABLE IF NOT EXISTS evenements (seq INTEGER PRIMARY KEY, contenu TEXT NOT NULL)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS pilote (cle TEXT PRIMARY KEY, appareil TEXT NOT NULL)`);
+    // US-102 (ADR-0005) : boîte des saisies relayées à la table et pas encore accusées, livrées au retour du pilote.
+    sql.exec(`CREATE TABLE IF NOT EXISTS boite (id TEXT PRIMARY KEY, contenu TEXT NOT NULL)`);
     // US-097 : smartphones entrés par QR code, avec leur identifiant (« t1 »…) et leur rôle.
     sql.exec(
       `CREATE TABLE IF NOT EXISTS appareils (id TEXT PRIMARY KEY, role TEXT NOT NULL, cree_le INTEGER NOT NULL)`,
@@ -224,6 +226,10 @@ export class Epreuve extends DurableObject<Env> {
     // US-097 CA-5 : les smartphones apprennent que la table est connectée ; la table, combien ils sont (US-100).
     this.diffuser(messageTable(true));
     this.compterAppareils();
+    // US-102 CA-6 : la table reçoit les saisies restées dans la boîte pendant son absence.
+    for (const { contenu } of this.ctx.storage.sql.exec<{ contenu: string }>('SELECT contenu FROM boite').toArray()) {
+      serveur.send(contenu);
+    }
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -354,6 +360,12 @@ export class Epreuve extends DurableObject<Env> {
         return;
       }
       const relayee = messageSaisie({ ...message0.saisie, role: attache.role, appareilId: attache.appareil });
+      // US-102 CA-6 : la saisie attend dans la boîte jusqu'à l'accusé (même identifiant : une seule fois).
+      this.ctx.storage.sql.exec(
+        'INSERT OR REPLACE INTO boite (id, contenu) VALUES (?, ?)',
+        message0.saisie.id,
+        relayee,
+      );
       for (const pilote of this.ctx.getWebSockets(etiquettePilote(piloteAppareil))) pilote.send(relayee);
       return;
     }
@@ -363,6 +375,7 @@ export class Epreuve extends DurableObject<Env> {
         ws.send(messageErreur('TYPE_INTERDIT'));
         return;
       }
+      this.ctx.storage.sql.exec('DELETE FROM boite WHERE id = ?', message0.accuse.id);
       const retour = messageAccuse(message0.accuse);
       for (const telephone of this.ctx.getWebSockets(`appareil:${message0.appareilId}`)) telephone.send(retour);
       return;

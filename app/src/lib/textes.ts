@@ -102,6 +102,13 @@ export const textes = {
       forfait: 'forfait',
       voirTous: (nombre: number) => `Voir les ${nombre} matchs terminés`,
       corriger: (numero: number) => `Corriger le match ${numero}`,
+      suspendue: 'Saisie suspendue',
+      tablePartie:
+        'La table de marque n’est plus connectée. Notez les scores sur la feuille de poule et rapportez-la à la table.',
+      telephoneSansReseau:
+        'Pas de connexion sur ce téléphone. Notez les scores sur la feuille de poule et rapportez-la à la table.',
+      dernierEchange: (heure: string) => `Dernier échange à ${heure} · la saisie reprendra d’elle-même.`,
+      reprise: 'La saisie reprendra d’elle-même.',
       aucunTermine: 'Aucun match terminé pour l’instant.',
     },
     /** US-099 : saisie d'un match de poule (planche 14). */
@@ -158,6 +165,11 @@ export const textes = {
       enregistree: 'Enregistrée',
       refusee: (motif: string) => `Refusée : ${motif}`,
       toutes: (n: number) => `Voir toutes les saisies (${n})`,
+      ecartees: (n: number) => (n > 1 ? `${n} saisies smartphone écartées` : `1 saisie smartphone écartée`),
+      voirEcartees: 'Voir',
+      fermer: 'Fermer',
+      ecarteeLigne: (match: string, propose: string, retenu: string, par: string) =>
+        `${match} : proposé ${propose}, retenu ${retenu} (${par})`,
       motifs: {
         EPREUVE_FERMEE: 'épreuve terminée',
         DROIT_RETIRE: 'saisie non permise (Paramètres)',

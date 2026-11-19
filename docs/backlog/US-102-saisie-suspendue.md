@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F8, F12 (exigences §1 « Scénario de perte totale de connexion »)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-099
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-102-saisie-suspendue`
 
 ## Récit
 
@@ -88,6 +88,18 @@ papier concurrente (ADR-0005).
 - « Dernier échange à… » est l'heure du dernier message reçu de la table par le téléphone.
 - Le bandeau « saisies écartées » du PC se place sous l'entête de l'étape Poules et se ferme une fois consulté.
 
+- Implémentation (2026-11-19) : boîte du DO (table `boite`) : une saisie relayée à la table y reste jusqu'à l'accusé et
+  est livrée de nouveau quand la socket du pilote se rouvre (même identifiant : un doublon est reconnu).
+- Implémentation : sans table connectée, le DO répond `suspendue` ; le téléphone garde la saisie en attente et la
+  renvoie, même identifiant, dès que le serveur annonce « table connectée ». Le téléphone réagit aux événements
+  `offline` et `online` du navigateur (sans attendre deux pongs manqués).
+- Implémentation : la table voit qu'un pilote est parti à la fermeture de sa socket ; un pilote qui disparaît sans
+  fermer (coupure brutale) est vu absent à la saisie suivante (`suspendue`), au plus 30 s après son dernier ping.
+- Implémentation : le bandeau « N saisies smartphone écartées » compte les saisies refusées parce que le match avait
+  déjà un score ; « Voir » ouvre la liste (match, score proposé, score retenu, auteur), « Fermer » le masque jusqu'à la
+  suivante. Le téléphone affiche alors « Ce match a déjà un score : voyez la table. ».
+- Implémentation : l'icône « Pause » est ajoutée à `icones.ts` (déjà au vocabulaire).
+
 ## Questions bloquantes
 
 Aucune.
@@ -103,3 +115,5 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-19 | Créée |
+| 2026-11-19 | En cours sur `us/US-102-saisie-suspendue` (série, recette groupée) |
+| 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 789 tests, E2E `saisie-suspendue`, `matchs-piste`) |

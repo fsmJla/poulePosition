@@ -17,9 +17,26 @@
     corriger?: (match: MatchDeLaPiste) => void;
     /** US-102 : saisie suspendue (table déconnectée) : le crayon est grisé. */
     suspendue?: boolean;
+    /** US-102 CA-1 et CA-4 : pourquoi (table partie, ou téléphone sans réseau), et l'heure du dernier échange. */
+    raison?: 'table' | 'telephone';
+    dernierEchange?: number | null;
   }
 
-  let { vue, piste, nom, changerDePiste, saisir, corriger, suspendue = false }: Proprietes = $props();
+  let {
+    vue,
+    piste,
+    nom,
+    changerDePiste,
+    saisir,
+    corriger,
+    suspendue = false,
+    raison = 'table',
+    dernierEchange = null,
+  }: Proprietes = $props();
+  const heure = (date: number) => {
+    const d = new Date(date);
+    return `${d.getHours()} h ${String(d.getMinutes()).padStart(2, '0')}`;
+  };
   const peutCorriger = $derived(Boolean(corriger) && vue?.droits.correctionScore === 'arbitre');
 
   const t = textes.saisie.arbitre;
@@ -50,7 +67,19 @@
     <button type="button" class="lien" onclick={changerDePiste}>{t.changerDePiste}</button>
   </div>
 
-  <section class="carte" class:active={matchs.maintenant !== null} aria-labelledby="titre-maintenant">
+  {#if suspendue}
+    <!-- US-102 (planche 16) : la saisie est suspendue, la feuille papier prend le relais. -->
+    <div class="suspendue" role="alert">
+      <Icone nom="pause" />
+      <div>
+        <strong>{t.suspendue}</strong>
+        <span>{raison === 'telephone' ? t.telephoneSansReseau : t.tablePartie}</span>
+        <span class="discret">{dernierEchange ? t.dernierEchange(heure(dernierEchange)) : t.reprise}</span>
+      </div>
+    </div>
+  {/if}
+
+  <section class="carte" class:active={matchs.maintenant !== null && !suspendue} aria-labelledby="titre-maintenant">
     {#if matchs.maintenant}
       {@const match = matchs.maintenant}
       <h2 id="titre-maintenant" class="accent">{t.maintenant(match.numero)}</h2>
@@ -63,6 +92,8 @@
       </div>
       {#if !peutSaisir}
         <p class="discret">{t.saisieDesactivee}</p>
+      {:else if suspendue}
+        <button type="button" class="suspendu" disabled>{t.suspendue}</button>
       {:else}
         <button type="button" class="principal" disabled={!saisir} onclick={() => saisir?.(match)}
           >{t.saisirScore}</button
@@ -244,6 +275,39 @@
   }
 
   .score {
+    font-weight: 600;
+  }
+
+  .suspendue {
+    display: flex;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--etat-attente-bordure);
+    border-radius: 12px;
+    background: var(--etat-attente-fond);
+    color: var(--texte);
+  }
+
+  .suspendue > :global(svg) {
+    flex: none;
+    margin-top: 1px;
+    color: var(--sur-etat-attente-fond);
+  }
+
+  .suspendue div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.9375rem;
+  }
+
+  .suspendu {
+    height: 52px;
+    border: none;
+    border-radius: var(--rayon);
+    background: var(--surface-2);
+    color: var(--texte-discret);
+    font: inherit;
     font-weight: 600;
   }
 
