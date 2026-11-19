@@ -163,3 +163,40 @@ export function matchsDeLaPiste(vue: VueSaisie | null, piste: number): MatchsDeL
     termines: tous.filter(({ touches }) => touches !== null).reverse(),
   };
 }
+
+/** US-103 : un tireur de la vue, avec sa poule et sa piste. */
+export interface TireurDeLaVue extends TireurVue {
+  poule: number;
+  piste: number;
+}
+
+/** Texte sans accents ni majuscules, pour chercher un nom. */
+const sansAccents = (texte: string) =>
+  texte
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+/** US-103 CA-2 : les tireurs des poules dont le nom ou le prénom commence par ces lettres, triés par nom. */
+export function chercherTireurs(vue: VueSaisie | null, texte: string): TireurDeLaVue[] {
+  const cherche = sansAccents(texte);
+  const tous = (vue?.poules ?? []).flatMap(({ numero, piste, tireurs }) =>
+    tireurs.map((tireur) => ({ ...tireur, poule: numero, piste })),
+  );
+  return tous
+    .filter(
+      ({ nom, prenom }) => !cherche || sansAccents(nom).startsWith(cherche) || sansAccents(prenom).startsWith(cherche),
+    )
+    .sort((a, b) => a.nom.localeCompare(b.nom, 'fr') || a.prenom.localeCompare(b.prenom, 'fr'));
+}
+
+/** US-103 et US-104 : le tireur choisi sur ce téléphone, tel que la vue le connaît, ou null. */
+export function tireurDeLaVue(vue: VueSaisie | null, tireurId: string | null): TireurDeLaVue | null {
+  if (!tireurId) return null;
+  for (const { numero, piste, tireurs } of vue?.poules ?? []) {
+    const tireur = tireurs.find(({ id }) => id === tireurId);
+    if (tireur) return { ...tireur, poule: numero, piste };
+  }
+  return null;
+}

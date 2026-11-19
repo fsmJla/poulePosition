@@ -2,6 +2,7 @@
 // reçue — droits, épreuve ouverte, poules lancées, match existant et pas encore saisi, score recevable — puis l'accepte
 // (elle devient un `ScorePouleSaisi`), la refuse avec un motif, ou reconnaît un doublon. Logique pure.
 import type { RoleQr } from './acces-qr';
+import type { Sexe } from './epreuve';
 import { accesQrOuvert } from './acces-qr';
 import { poulesDe, tireursDe, type Epreuve, type Evenement, type Proposition } from './journal';
 import { matchsDePoule, ordreDesMatchs, verifierScore, type OrigineSaisie } from './poules';
@@ -43,9 +44,16 @@ export type DecisionSaisie =
   | { decision: 'refuse'; motif: MotifRefusSaisie }
   | { decision: 'doublon' };
 
-/** CA-4 : signature d'une saisie au journal et sur le PC : « arbitre Dupont (t4) ». */
-export function signatureSaisie({ role, nom, appareilId }: Pick<SaisieScore, 'role' | 'nom' | 'appareilId'>): string {
-  return `${role} ${nom} (${appareilId})`;
+/**
+ * CA-4 : signature d'une saisie au journal et sur le PC : « arbitre Dupont (t4) », « tireuse DUBOIS Chloé (t12) »
+ * (US-103 : « tireuse » pour une épreuve Dames).
+ */
+export function signatureSaisie(
+  { role, nom, appareilId }: Pick<SaisieScore, 'role' | 'nom' | 'appareilId'>,
+  sexe: Sexe | null = null,
+): string {
+  const qui = role === 'arbitre' ? 'arbitre' : sexe === 'dames' ? 'tireuse' : 'tireur';
+  return `${qui} ${nom} (${appareilId})`;
 }
 
 /** CA-5 à CA-7 : ce que la table fait d'une saisie reçue, d'après l'état de l'épreuve. */
@@ -98,7 +106,7 @@ export function deciderSaisie(epreuve: Epreuve, saisie: SaisieScore): DecisionSa
     decision: 'accepte',
     proposition: {
       type: 'ScorePouleSaisi',
-      donnees: { ...donnees, saisie: { id: saisie.id, par: signatureSaisie(saisie) } },
+      donnees: { ...donnees, saisie: { id: saisie.id, par: signatureSaisie(saisie, epreuve.sexe) } },
     },
   };
 }
@@ -115,11 +123,11 @@ export interface DonneesSaisieRefusee {
 }
 
 /** US-100 : la proposition qui trace le refus d'une saisie. */
-export function propositionRefus(saisie: SaisieScore, motif: MotifRefusSaisie): Proposition {
+export function propositionRefus(saisie: SaisieScore, motif: MotifRefusSaisie, sexe: Sexe | null = null): Proposition {
   const { id, poule, tireurA, tireurB, touchesA, touchesB } = saisie;
   return {
     type: 'SaisieRefusee',
-    donnees: { saisie: { id, par: signatureSaisie(saisie) }, poule, tireurA, tireurB, touchesA, touchesB, motif },
+    donnees: { saisie: { id, par: signatureSaisie(saisie, sexe) }, poule, tireurA, tireurB, touchesA, touchesB, motif },
   };
 }
 

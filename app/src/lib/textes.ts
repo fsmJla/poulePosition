@@ -184,6 +184,19 @@ export const textes = {
       },
     },
     tireur: {
+      quiEtesVous: 'Qui êtes-vous ?',
+      explication: (dames: boolean) =>
+        `Choisissez votre nom parmi les ${dames ? 'tireuses' : 'tireurs'} de l’épreuve. Vos saisies seront signées à votre nom.`,
+      recherche: 'Votre nom',
+      trouves: (dames: boolean) => (dames ? 'Tireuses trouvées' : 'Tireurs trouvés'),
+      detail: (club: string, poule: number) => `${club ? `${club} · ` : ''}poule ${poule}`,
+      absent: 'Votre nom n’apparaît pas ? Adressez-vous à la table de marque.',
+      pasTireur: 'Vous ne tirez pas ?',
+      spectateur: 'Suivre l’épreuve en spectateur',
+      choisir: (nom: string) => `Je suis ${nom}`,
+      cePasMoi: 'Ce n’est pas moi',
+      resume: (poule: number, piste: number, club: string) =>
+        `Poule ${poule} · piste ${piste}${club ? ` · ${club}` : ''}`,
       bientot: 'L’accès des tireurs arrive bientôt : la table de marque saisit vos scores en attendant.',
     },
   },

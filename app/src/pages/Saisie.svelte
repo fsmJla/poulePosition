@@ -6,6 +6,7 @@
   import AccesArbitre from '../composants/AccesArbitre.svelte';
   import EnteteSaisie from '../composants/EnteteSaisie.svelte';
   import MatchsPiste from '../composants/MatchsPiste.svelte';
+  import QuiEtesVous from '../composants/QuiEtesVous.svelte';
   import SaisieMatch from '../composants/SaisieMatch.svelte';
   import { matchsDeLaPiste, type MatchDeLaPiste } from '@poule-position/domaine';
   import {
@@ -121,6 +122,8 @@
     <main class="message"><p role="status">{t.chargement}</p></main>
   {:else if !vue && !etat.role}
     <main class="message"><p role="alert">{t.pasDeConnexion}</p></main>
+  {:else if etat.role === 'tireur' && !memoire?.tireurId}
+    <QuiEtesVous {vue} {epreuveId} choisir={(id) => saisie?.choisirTireur(id)} />
   {:else if etat.role === 'tireur'}
     <main class="message"><p role="status">{t.tireur.bientot}</p></main>
   {:else if !arbitrePret}

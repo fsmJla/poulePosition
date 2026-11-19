@@ -19,6 +19,8 @@ export interface MemoireSaisie {
   nom: string | null;
   piste: number | null;
   vue: VueSaisie | null;
+  /** US-103 : le tireur choisi sur ce téléphone (« Qui êtes-vous ? »). */
+  tireurId?: string | null;
   /** US-099 CA-4 : saisies envoyées sans accusé de la table (renvoyées à la reconnexion, US-102). */
   enAttente?: SaisieTelephone[];
 }
@@ -184,6 +186,10 @@ export function creerSaisieSmartphone({
       ecouteurs.add(ecouteur);
       ecouteur(etat);
       return () => ecouteurs.delete(ecouteur);
+    },
+    /** US-103 CA-3 : retient le tireur choisi ; null l'oublie (« Ce n'est pas moi », US-104 CA-7). */
+    choisirTireur(tireurId: string | null) {
+      memoriser({ tireurId });
     },
     /** CA-3 et CA-4 : retient le nom et la piste de l'arbitre sur ce téléphone. */
     choisir(nom: string, piste: number) {

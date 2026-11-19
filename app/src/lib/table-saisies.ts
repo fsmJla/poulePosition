@@ -19,7 +19,7 @@ export async function traiterSaisie(
   if (decision.decision === 'refuse') {
     // US-100 : le refus est inscrit au journal (trace, ADR-0005), une seule fois par saisie.
     const dejaTrace = (epreuve.saisiesRefusees ?? []).some(({ saisie: origine }) => origine.id === saisie.id);
-    if (!dejaTrace) await ecrire(journal, epreuveId, propositionRefus(saisie, decision.motif), contexte);
+    if (!dejaTrace) await ecrire(journal, epreuveId, propositionRefus(saisie, decision.motif, epreuve.sexe), contexte);
     return { id: saisie.id, decision: 'refuse', motif: decision.motif };
   }
   if (decision.decision === 'doublon') return { id: saisie.id, decision: 'doublon' };
