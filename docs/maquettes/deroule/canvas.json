@@ -111,6 +111,21 @@
       "title": "19 · Émargement : pointer les présents (US-084)",
       "expand": "fill",
       "is_interactive": true
+    },
+    "ParametresAcces.dc.html": {
+      "x": 4320,
+      "y": 2020,
+      "w": 1360,
+      "h": 1560,
+      "title": "21 · Paramètres : accès par QR code et appareils connectés (US-096, US-105)",
+      "expand": "fill"
+    },
+    "MobileTireurAutres.dc.html": {
+      "x": 3290,
+      "y": 3520,
+      "w": 390,
+      "h": 1240,
+      "title": "18 bis · Smartphone tireur : autres matchs de ma poule (US-104, page déroulée)"
     }
   },
   "order": [
@@ -126,7 +141,9 @@
     "MobileSaisieTableau.dc.html",
     "MobileSuspendue.dc.html",
     "MobileTireurQui.dc.html",
-    "MobileTireurMatchs.dc.html"
+    "MobileTireurMatchs.dc.html",
+    "MobileTireurAutres.dc.html",
+    "ParametresAcces.dc.html"
   ],
   "notes": {
     "titreInscriptionsPoules": {
@@ -148,7 +165,7 @@
       "y": 3220,
       "text": "Saisie sur smartphone : arbitres et tireurs (accès par QR code)",
       "kind": "title1",
-      "maxW": 3210
+      "maxW": 3680
     }
   },
   "designSystems": []

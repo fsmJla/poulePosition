@@ -68,6 +68,12 @@ l'ajoute ici avant de l'utiliser.
 | Accusé | Réponse du pilote à une saisie : acceptée, refusée ou doublon. | `accuse` |
 | Boîte | Saisies stockées par le serveur en attente d'accusé. | `boite` |
 | Jeton QR | Secret de 128 bits contenu dans le lien QR des arbitres ou des tireurs. | `jetonQr` |
+| Table (de marque) | Mot de l'interface des smartphones pour le pilote : « Table connectée », « Envoyer à la table ». Inconnu de l'organisateur, qui dit « pilote » (maquette, choix retenu 6). | — (libellés seulement) |
+| Vue de saisie | Vue publiée par le pilote pour les smartphones : poules, pistes, tireurs, ordre des matchs, scores, classement provisoire, touches et droits (US-095). | `vueSaisie` |
+| Identifiant d'appareil | Nom court (`t1`, `t2`…) attribué par le serveur à un smartphone entré par QR ; il signe ses saisies (« arbitre Dupont (t4) », ADR-0007). | `appareilId` |
+| Saisie suspendue | État d'un smartphone quand la table est déconnectée (ou lui-même sans réseau) : il ne peut plus saisir et renvoie à la feuille papier (US-102). | `SAISIE_SUSPENDUE` |
+| Saisie écartée | Saisie récupérée au retour du pilote mais rejetée car le match avait déjà un score (le papier fait foi, ADR-0005). | `saisieEcartee` |
+| Exclure (un appareil) | Couper l'accès d'un seul smartphone sans régénérer le QR (US-105). | `AppareilExclu` |
 | Publication | Réglage d'une épreuve : publiée, elle est visible du public sur la page d'accueil (affiche, dates…) ; non publiée, seuls les organisateurs la voient. Sans rapport avec le réseau : « en ligne / hors ligne » est réservé à l'état du réseau. | `publiee` |
 | Prendre la main | Faire de ce PC le pilote d'une épreuve (en ligne) ; l'ancien pilote passe en lecture seule (US-029). | `prendreLaMain`, `PiloteChange` |
 | Suppression définitive | Effacement irréversible d'une épreuve sur le serveur et sur les PC, réservé aux administrateurs, interdit pour une épreuve en cours (US-039). Distincte de l'archivage. | `supprimee` |
