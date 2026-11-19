@@ -2,7 +2,7 @@
 // Le serveur peut être absent (non configuré) ou injoignable (hors ligne) : l'application continue (ADR-0001).
 // US-094 (ADR-0028) : l'adresse est redemandée à chaque tentative (elle porte un ticket de 60 s), le ping part toutes
 // les 15 s et deux pongs manqués valent une coupure, même si le navigateur n'a pas encore fermé la socket.
-import { analyserMessageServeur, FERMETURES, MESSAGE_PING } from '@poule-position/protocole';
+import { analyserMessageServeur, FERMETURES, MESSAGE_PING, type MessageServeur } from '@poule-position/protocole';
 
 export type EtatConnexion = 'non-configure' | 'connexion' | 'connecte' | 'injoignable';
 
@@ -16,7 +16,13 @@ export const PONGS_MANQUES_MAX = 2;
 /** Délais successifs avant reconnexion ; le dernier se répète. */
 export const DELAIS_RECONNEXION = [1_000, 2_000, 4_000, 8_000, 16_000, 30_000];
 /** Fermetures après lesquelles il ne faut pas se reconnecter (protocole §4.5). */
-const SANS_RECONNEXION: number[] = [FERMETURES.REMPLACEE, FERMETURES.EXCLUE, FERMETURES.MAIN_PRISE];
+const SANS_RECONNEXION: number[] = [
+  FERMETURES.REFUS,
+  FERMETURES.FERMEE,
+  FERMETURES.REMPLACEE,
+  FERMETURES.EXCLUE,
+  FERMETURES.MAIN_PRISE,
+];
 
 /** Ce qu'utilise la connexion d'une WebSocket (permet une fausse socket dans les tests). */
 export interface SocketMinimale {
@@ -39,6 +45,8 @@ export interface OptionsConnexion {
   surFin?: (code: number) => void;
   /** US-095 : connexion établie (`bienvenue` reçu), à la première ouverture comme à chaque reconnexion. */
   surConnecte?: () => void;
+  /** US-097 : chaque message valide du serveur (accès, état de la table, vue de saisie…). */
+  surMessage?: (message: MessageServeur) => void;
   creerSocket?: (url: string) => SocketMinimale;
 }
 
@@ -58,6 +66,7 @@ export function demarrerConnexion({
   surEtat,
   surFin = () => {},
   surConnecte = () => {},
+  surMessage = () => {},
   // WebSocket fournit ces propriétés ; ses gestionnaires typés (Event…) sont seulement plus précis.
   creerSocket = (url) => new WebSocket(url) as unknown as SocketMinimale,
 }: OptionsConnexion): { arreter: () => void; relancer: () => void; envoyer: (texte: string) => boolean } {
@@ -131,6 +140,7 @@ export function demarrerConnexion({
     courante.onmessage = ({ data }) => {
       const analyse = analyserMessageServeur(data);
       if (!analyse.ok) return;
+      surMessage(analyse.message);
       if (analyse.message.type === 'pong') manques = 0;
       if (analyse.message.type === 'bienvenue') {
         essais = 0;
