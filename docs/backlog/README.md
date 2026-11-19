@@ -123,6 +123,19 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-091](US-091-saisie-par-boutons-sur-pc.md) | Saisir un score de poule par boutons sur le PC | E4 | Terminée | US-088 |
 | [US-092](US-092-classement-des-poules.md) | Suivre le classement des poules en temps réel | E4 | Terminée | US-088, US-089 |
 | [US-093](US-093-correction-menu-coupe-dans-les-cadres.md) | Corriger le menu « ⋯ » coupé par le cadre de la feuille de poule | E4 | Terminée | US-089 |
+| [US-094](US-094-websocket-du-pilote.md) | Ouvrir la WebSocket du pilote et retirer les battements de présence (technique, ADR à écrire d'abord) | E5 | Prête | US-022, US-029 |
+| [US-095](US-095-vue-de-saisie-diffusee.md) | Publier la vue de saisie de l'épreuve pour les smartphones (technique) | E5 | Prête | US-094, US-088, US-092 |
+| [US-096](US-096-qr-codes-arbitres-tireurs.md) | Afficher, imprimer et régénérer les QR codes des arbitres et des tireurs | E5 | Prête | US-094, US-032 |
+| [US-097](US-097-acces-arbitre.md) | Ouvrir l'accès arbitre par le QR code (nom et piste) | E5 | Prête | US-095, US-096 |
+| [US-098](US-098-matchs-de-la-piste.md) | Voir les matchs de sa piste et changer de piste (arbitre) | E5 | Prête | US-097 |
+| [US-099](US-099-saisir-score-poule-smartphone.md) | Saisir le score d'un match de poule sur le smartphone et l'envoyer à la table | E5 | Prête | US-098, US-091 |
+| [US-100](US-100-saisies-recues-sur-le-pc.md) | Voir sur le PC les saisies reçues des smartphones | E5 | Prête | US-099 |
+| [US-101](US-101-corriger-score-smartphone.md) | Corriger depuis le smartphone un score déjà enregistré (arbitre) | E5 | Prête | US-099 |
+| [US-102](US-102-saisie-suspendue.md) | Suspendre la saisie quand la table est déconnectée et récupérer les saisies en route | E5 | Prête | US-099 |
+| [US-103](US-103-acces-tireur.md) | Ouvrir l'accès tireur par le QR code (« Qui êtes-vous ? ») | E5 | Prête | US-095, US-096 |
+| [US-104](US-104-mes-matchs-tireur.md) | Voir « Mes matchs » et saisir les scores de sa poule (tireur) | E5 | Prête | US-103, US-099 |
+| [US-105](US-105-appareils-connectes.md) | Voir les appareils connectés et en exclure un | E5 | Prête | US-096, US-097, US-103 |
+| [US-106](US-106-saisir-score-tableau-smartphone.md) | Saisir le score d'un match du tableau sur le smartphone | E5 | À spécifier | US-099, US-104, US d'E6 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
@@ -152,6 +165,10 @@ d'abord**, via `/adr`) : US-070 → US-071 ; les documents : US-072 → US-073.
 
 **Ordre conseillé pour E4 (poules, planches 8 à 10) :** US-085 → US-086 → US-087 → US-088 → US-089, puis les retours
 de l'utilisateur : US-090 → US-091 → US-092 (planche 20).
+
+**Ordre conseillé pour E5 (saisie smartphone, planches 10, 12 à 18, 18 bis et 21) :** US-094 (ADR de
+l'authentification de la socket d'abord) → US-095 → US-096 → US-097 → US-098 →
+US-099 → US-100 → US-102 → US-101 → US-103 → US-104 → US-105 ; US-106 après les US du tableau (E6).
 
 **Retours ergonomiques du 2026-11-17, indépendants l'un de l'autre :** US-078 (jour des épreuves : grille et
 glisser-déposer sur le plan) et US-079 (filtres « À venir » / « En cours » de l'accueil de l'organisateur,
