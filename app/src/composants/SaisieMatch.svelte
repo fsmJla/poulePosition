@@ -3,6 +3,7 @@
   // vert, et dit en toutes lettres), boutons 0 à N−1 puis « V ». Le score s'envoie à la table, qui l'enregistre ou le
   // refuse avec un motif. La feuille de la poule reste visible sous la saisie, la case du match encadrée.
   import {
+    boutonsDuScore,
     scoreDesBoutons,
     type ChoixScore,
     type MatchDeLaPiste,
@@ -23,18 +24,34 @@
     accuse: Accuse | null;
     /** Envoie le score ; renvoie l'identifiant de la saisie, ou null si rien n'est parti. */
     envoyer: (score: { touchesA: number; touchesB: number; auTemps: boolean }) => string | null;
+    /** US-101 : correction d'un match terminé (les boutons de son score sont marqués). */
+    correction?: boolean;
     retour: () => void;
     /** Le match suivant à saisir, s'il y en a un. */
     suivant: MatchDeLaPiste | null;
     ouvrirSuivant: () => void;
   }
 
-  let { vue, match, piste, table, accuse, envoyer, retour, suivant, ouvrirSuivant }: Proprietes = $props();
+  let {
+    vue,
+    match,
+    piste,
+    table,
+    accuse,
+    envoyer,
+    retour,
+    suivant,
+    ouvrirSuivant,
+    correction = false,
+  }: Proprietes = $props();
 
   const t = textes.saisie.match;
 
-  let choixA = $state<ChoixScore | null>(null);
-  let choixB = $state<ChoixScore | null>(null);
+  // US-101 CA-1 : en correction, les boutons du score actuel sont marqués.
+  // svelte-ignore state_referenced_locally
+  const depart = correction && match.touches ? boutonsDuScore(match.touches[0], match.touches[1], vue.touches) : null;
+  let choixA = $state<ChoixScore | null>(depart?.[0] ?? null);
+  let choixB = $state<ChoixScore | null>(depart?.[1] ?? null);
   let envoyee = $state<string | null>(null);
   let heure = $state('');
 
@@ -69,8 +86,13 @@
     }
   });
 
+  /** US-101 CA-5 : une correction identique au score actuel ne part pas. */
+  const inchange = $derived(
+    correction && score?.ok && match.touches?.[0] === score.touchesA && match.touches?.[1] === score.touchesB,
+  );
+
   function envoyerScore() {
-    if (!score?.ok) return;
+    if (!score?.ok || inchange) return;
     envoyee = envoyer({ touchesA: score.touchesA, touchesB: score.touchesB, auTemps: score.auTemps });
   }
 
@@ -114,7 +136,7 @@
     <Icone nom="flecheGauche" />
   </button>
   <div class="titres">
-    <span class="titre">{t.titre(match.numero, match.poule)}</span>
+    <span class="titre">{correction ? t.titreCorrection(match.numero) : t.titre(match.numero, match.poule)}</span>
     <span class="sous-titre">{t.sousTitre(piste, vue.nom, touches)}</span>
   </div>
   <span
@@ -158,7 +180,8 @@
   {#if etape === 'saisie'}
     <div class="actions">
       <button type="button" class="neutre" onclick={retour}>{t.retour}</button>
-      <button type="button" class="principal" disabled={!score?.ok || !table} onclick={envoyerScore}>{t.envoyer}</button
+      <button type="button" class="principal" disabled={!score?.ok || !table || inchange} onclick={envoyerScore}
+        >{correction ? t.envoyerCorrection : t.envoyer}</button
       >
     </div>
     {#if !table}<p class="note">{t.suspendue}</p>{/if}

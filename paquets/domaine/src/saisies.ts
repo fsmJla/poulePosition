@@ -20,6 +20,8 @@ export interface SaisieScore {
   /** Nom de l'arbitre, ou du tireur, tel que le téléphone l'a donné. */
   nom: string;
   appareilId: string;
+  /** US-101 : une correction porte le score qu'elle remplace (touches de `tireurA` puis de `tireurB`). */
+  remplace?: [number, number];
 }
 
 export const MOTIFS_REFUS_SAISIE = [
@@ -30,6 +32,9 @@ export const MOTIFS_REFUS_SAISIE = [
   'TIREUR_RETIRE',
   'MATCH_DEJA_SAISI',
   'SCORE_INVALIDE',
+  'CORRECTION_INTERDITE',
+  'CORRECTION_DESACTIVEE',
+  'SCORE_CHANGE',
 ] as const;
 export type MotifRefusSaisie = (typeof MOTIFS_REFUS_SAISIE)[number];
 
@@ -74,7 +79,20 @@ export function deciderSaisie(epreuve: Epreuve, saisie: SaisieScore): DecisionSa
       (tireurA === saisie.tireurA && tireurB === saisie.tireurB) ||
       (tireurA === saisie.tireurB && tireurB === saisie.tireurA),
   );
-  if (match?.touches) return { decision: 'refuse', motif: 'MATCH_DEJA_SAISI' };
+  if (saisie.remplace) {
+    // US-101 CA-2 à CA-4 : seul un arbitre corrige, si les paramètres le permettent, un score encore en vigueur.
+    if (saisie.role !== 'arbitre') return { decision: 'refuse', motif: 'CORRECTION_INTERDITE' };
+    if (epreuve.parametres.correctionScore !== 'arbitre') return { decision: 'refuse', motif: 'CORRECTION_DESACTIVEE' };
+    const enVigueur =
+      match?.touches && !match.forfait
+        ? match.tireurA === saisie.tireurA
+          ? match.touches
+          : [match.touches[1], match.touches[0]]
+        : null;
+    if (!enVigueur || enVigueur[0] !== saisie.remplace[0] || enVigueur[1] !== saisie.remplace[1]) {
+      return { decision: 'refuse', motif: 'SCORE_CHANGE' };
+    }
+  } else if (match?.touches) return { decision: 'refuse', motif: 'MATCH_DEJA_SAISI' };
   if (erreur) return { decision: 'refuse', motif: 'SCORE_INVALIDE' };
   return {
     decision: 'accepte',

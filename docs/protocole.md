@@ -1151,5 +1151,8 @@ le lien du QR code est retiré de l'adresse affichée dès la page ouverte.
    `saisie: { id, par }`, `par` = « arbitre Dupont (t4) »), `refuse` avec un motif (`EPREUVE_FERMEE`, `DROIT_RETIRE`,
    `POULES_NON_LANCEES`, `MATCH_INCONNU`, `TIREUR_RETIRE`, `MATCH_DEJA_SAISI`, `SCORE_INVALIDE`), ou `doublon` (une saisie
    de même `id` est déjà au journal). Elle répond `{"type":"accuse","accuse":{…},"appareilId":"t4"}`.
+   **Correction** (US-101) : la saisie porte `remplace` (le score remplacé, touches de `tireurA` puis de `tireurB`) ; la
+   table ne l'accepte que d'un arbitre, si les Paramètres le permettent, et si ce score est toujours en vigueur (sinon
+   `CORRECTION_INTERDITE`, `CORRECTION_DESACTIVEE` ou `SCORE_CHANGE`).
 4. Le DO relaie l'accusé au seul téléphone `appareilId` ; le téléphone retire la saisie de ses attentes. Un score accepté
    part au serveur avec le lot suivant, et la vue de saisie republiée (§18) met à jour tous les téléphones.

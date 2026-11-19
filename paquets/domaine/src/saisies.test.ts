@@ -158,3 +158,38 @@ describe('saisies reçues, sur le PC (US-100)', () => {
     expect(deciderSaisie(refusee, saisie())).toEqual({ decision: 'refuse', motif: 'DROIT_RETIRE' });
   });
 });
+
+describe('correction d’un score par smartphone (US-101)', () => {
+  const avecScore = (...apres: Proposition[]) =>
+    lancee(
+      { type: 'ScorePouleSaisi', donnees: { poule: 1, tireurA: 'a', tireurB: 'b', touchesA: 3, touchesB: 5 } },
+      ...apres,
+    );
+  const correction = (champs: Partial<SaisieScore> = {}) =>
+    saisie({ id: 'c1', touchesA: 5, touchesB: 3, remplace: [3, 5], ...champs });
+
+  it('CA-2 : un arbitre corrige le score encore en vigueur ; le nouveau score le remplace', () => {
+    const decision = deciderSaisie(avecScore(), correction());
+    expect(decision).toMatchObject({ decision: 'accepte', proposition: { donnees: { touchesA: 5, touchesB: 3 } } });
+    // Même match, tireurs dans l'autre ordre : le score remplacé se lit dans cet ordre (b a 5, a a 3).
+    const inverse = correction({ tireurA: 'b', tireurB: 'a', remplace: [5, 3], touchesA: 5, touchesB: 4 });
+    expect(deciderSaisie(avecScore(), inverse).decision).toBe('accepte');
+  });
+
+  it('CA-3 : le score a changé entre-temps', () => {
+    expect(deciderSaisie(avecScore(), correction({ remplace: [4, 5] }))).toEqual({
+      decision: 'refuse',
+      motif: 'SCORE_CHANGE',
+    });
+    expect(deciderSaisie(lancee(), correction())).toEqual({ decision: 'refuse', motif: 'SCORE_CHANGE' });
+  });
+
+  it('CA-4 : un tireur ne corrige pas ; la correction peut être désactivée', () => {
+    expect(deciderSaisie(avecScore(), correction({ role: 'tireur' }))).toEqual({
+      decision: 'refuse',
+      motif: 'CORRECTION_INTERDITE',
+    });
+    const desactivee = avecScore({ type: 'ParametresModifies', donnees: { correctionScore: 'personne' } });
+    expect(deciderSaisie(desactivee, correction())).toEqual({ decision: 'refuse', motif: 'CORRECTION_DESACTIVEE' });
+  });
+});

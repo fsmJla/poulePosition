@@ -4,6 +4,7 @@
   // calcul de classement ici, et la liste se met à jour dès qu'une nouvelle vue arrive.
   import { matchsDeLaPiste, type MatchDeLaPiste, type TireurVue, type VueSaisie } from '@poule-position/domaine';
   import { textes } from '../lib/textes';
+  import Icone from './Icone.svelte';
 
   interface Proprietes {
     vue: VueSaisie | null;
@@ -12,9 +13,14 @@
     changerDePiste: () => void;
     /** US-099 : ouvrir la saisie d'un match ; absent tant que la saisie n'est pas possible. */
     saisir?: (match: MatchDeLaPiste) => void;
+    /** US-101 : corriger un match terminé ; absent si la correction n'est pas permise. */
+    corriger?: (match: MatchDeLaPiste) => void;
+    /** US-102 : saisie suspendue (table déconnectée) : le crayon est grisé. */
+    suspendue?: boolean;
   }
 
-  let { vue, piste, nom, changerDePiste, saisir }: Proprietes = $props();
+  let { vue, piste, nom, changerDePiste, saisir, corriger, suspendue = false }: Proprietes = $props();
+  const peutCorriger = $derived(Boolean(corriger) && vue?.droits.correctionScore === 'arbitre');
 
   const t = textes.saisie.arbitre;
 
@@ -96,6 +102,16 @@
               <span class="discret">{t.forfait}</span>
             {:else}
               <span class="score">{score(match)}</span>
+              {#if peutCorriger}
+                <button
+                  type="button"
+                  class="crayon"
+                  aria-label={t.corriger(match.numero)}
+                  title={t.corriger(match.numero)}
+                  disabled={suspendue}
+                  onclick={() => corriger?.(match)}><Icone nom="crayon" /></button
+                >
+              {/if}
             {/if}
           </li>
         {/each}
@@ -229,6 +245,25 @@
 
   .score {
     font-weight: 600;
+  }
+
+  .crayon {
+    width: 44px;
+    height: 44px;
+    margin-right: -10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--rayon);
+    background: transparent;
+    color: var(--texte);
+    cursor: pointer;
+  }
+
+  .crayon:disabled {
+    color: var(--texte-inactif);
+    cursor: not-allowed;
   }
 
   .principal {

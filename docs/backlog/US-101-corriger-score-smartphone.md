@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-099
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-101-corriger-score-smartphone`
 
 ## Récit
 
@@ -64,6 +64,12 @@ planche 16). Une correction restée en route et récupérée au retour est rejet
 - La correction transporte le score qu'elle remplace : c'est ce qui permet au pilote de détecter un changement
   entre-temps (CA-3).
 
+- Implémentation (2026-11-19) : la saisie d'une correction porte `remplace` (le score remplacé, dans l'ordre de ses
+  tireurs) ; la table la refuse avec un motif propre : `CORRECTION_INTERDITE` (tireur), `CORRECTION_DESACTIVEE`
+  (Paramètres) ou `SCORE_CHANGE`. Le crayon n'apparaît que si la correction par l'arbitre est permise ; il est grisé
+  quand la table est déconnectée.
+- Implémentation : le cas « tour clôturé » attend le tableau (E6).
+
 ## Questions bloquantes
 
 Aucune.
@@ -77,3 +83,5 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-19 | Créée |
+| 2026-11-19 | En cours sur `us/US-101-corriger-score-smartphone` (série, recette groupée) |
+| 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (E2E `correction-score`, `saisie-match`, `matchs-piste`) |
