@@ -49,7 +49,9 @@ export interface SocketPilote {
  * date de moins de 30 s.
  */
 export function piloteConnecte(sockets: readonly SocketPilote[], maintenant: number): boolean {
-  return sockets.some(({ ouverteLe, dernierPing }) => maintenant - Math.max(ouverteLe, dernierPing ?? 0) < DELAI_PRESENCE_MS);
+  return sockets.some(
+    ({ ouverteLe, dernierPing }) => maintenant - Math.max(ouverteLe, dernierPing ?? 0) < DELAI_PRESENCE_MS,
+  );
 }
 
 export type DecisionPriseDeMain =

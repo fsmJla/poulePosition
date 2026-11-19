@@ -108,6 +108,21 @@ describe('envoi du journal au serveur (ADR-0016)', () => {
     expect(serveur.lots).toHaveLength(1);
   });
 
+  it('US-094 CA-1 : un lot accepté le signale (la WebSocket de l’épreuve peut s’ouvrir sans attendre)', async () => {
+    const serveur = fauxServeur();
+    const journal = nouveauJournal();
+    await journal.enregistrer('c1', creation(), contexte);
+    const synchronisation = synchro(journal, serveur);
+    const envois: string[] = [];
+    const arreter = synchronisation.surEnvoi((id) => envois.push(id));
+    expect(await synchronisation.envoyer('c1')).toBe('a-jour');
+    expect(envois).toEqual(['c1']);
+    arreter();
+    await journal.enregistrer('c1', { type: 'EpreuveModifiee', donnees: { nom: 'Autre' } }, contexte);
+    await synchronisation.envoyer('c1');
+    expect(envois).toEqual(['c1']);
+  });
+
   it('US-022 CA-1 : après SEQ_INATTENDU, reprend au dernier seq du serveur', async () => {
     const serveur = fauxServeur();
     const journal = nouveauJournal();

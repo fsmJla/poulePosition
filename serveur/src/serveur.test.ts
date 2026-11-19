@@ -23,7 +23,6 @@ function connecter(origine: string, chemin = '/epreuves/demo/connexion') {
   return worker.fetch(`http://localhost${chemin}`, { headers: { Upgrade: 'websocket', Origin: origine } });
 }
 
-
 describe('serveur', () => {
   it('répond sur /sante', async () => {
     const reponse = await worker.fetch('http://localhost/sante');

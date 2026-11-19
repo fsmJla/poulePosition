@@ -254,7 +254,9 @@ describe('ticket de la WebSocket du pilote (US-094, ADR-0028)', () => {
     expect(await verifierTicket(ticket, SECRET, expireLe)).toBeNull();
     expect(await verifierTicket(ticket, 'autre-secret', MAINTENANT)).toBeNull();
     const [entete, , signature] = ticket.split('.');
-    const autre = encoderBase64Url(new TextEncoder().encode(JSON.stringify({ t: 'pilote', ...lieu, appareil: 'pc-b' })));
+    const autre = encoderBase64Url(
+      new TextEncoder().encode(JSON.stringify({ t: 'pilote', ...lieu, appareil: 'pc-b' })),
+    );
     expect(await verifierTicket(`${entete}.${autre}.${signature}`, SECRET, MAINTENANT)).toBeNull();
     expect(await verifierTicket('a.b', SECRET, MAINTENANT)).toBeNull();
     expect(await verifierTicket(`autre.${ticket.split('.')[1]}.${signature}`, SECRET, MAINTENANT)).toBeNull();

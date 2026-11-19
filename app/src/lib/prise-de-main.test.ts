@@ -3,10 +3,10 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it, vi } from 'vitest';
 import type { Evenement, Proposition } from '@poule-position/domaine';
-import { analyserDemandeEnvoi, analyserDemandePresence, analyserDemandePriseDeMain } from '@poule-position/protocole';
+import { analyserDemandeEnvoi, analyserDemandeTicket, analyserDemandePriseDeMain } from '@poule-position/protocole';
 import { ouvrirJournal, type Contexte, type Journal } from './journal';
 import { contenuExport, libellePilote } from './pilotage';
-import { creerSynchronisation } from './synchronisation';
+import { creerSynchronisation, dateDuJour } from './synchronisation';
 
 const URL_SERVEUR = 'http://serveur.test';
 const creation = (nom = 'Challenge Orpi 2027'): Proposition => ({
@@ -49,7 +49,7 @@ function serveurSimule() {
   const envoyer = vi.fn(async (adresse: string | URL | Request, init?: RequestInit): Promise<Response> => {
     if (!reseau) throw new TypeError('Failed to fetch');
     const chemin = String(adresse).replace(URL_SERVEUR, '');
-    const [, id = '', action] = /^\/epreuves\/([^/]+)\/(evenements|pilote|presence)$/.exec(chemin) ?? [];
+    const [, id = '', action] = /^\/epreuves\/([^/]+)\/(evenements|pilote|ticket)$/.exec(chemin) ?? [];
     const journal = journaux.get(id);
     const corps = init?.body ? JSON.parse(String(init.body)) : undefined;
     if (action === 'pilote' && init?.method === 'GET') {
@@ -73,14 +73,14 @@ function serveurSimule() {
         ancienAppareil,
       });
     }
-    if (action === 'presence') {
-      const analyse = analyserDemandePresence(corps);
+    if (action === 'ticket') {
+      const analyse = analyserDemandeTicket(corps);
       if (!analyse.ok) return repondre(400, { ok: false, erreur: 'DEMANDE_INVALIDE' });
       if (!journal) return repondre(404, { ok: false, erreur: 'EPREUVE_INCONNUE' });
       if (journal.pilote !== analyse.demande.appareilId) {
         return repondre(409, { ok: false, erreur: 'PAS_PILOTE', ...enPlace(journal) });
       }
-      return repondre(200, { ok: true });
+      return repondre(200, { ok: true, ticket: `ticket-${id}`, expireLe: 1_800_000_060_000 });
     }
     if (init?.method === 'GET') {
       if (!journal) return repondre(404, { ok: false, erreur: 'EPREUVE_INCONNUE' });
@@ -167,18 +167,18 @@ describe('prise de main (US-029)', () => {
     expect(await b.synchronisation.envoyer('c1')).toBe('a-jour');
   });
 
-  it('CA-2 : l’ancien pilote en ligne passe en lecture seule au battement suivant et sait qui a la main', async () => {
+  it('US-094 CA-1 : l’ancien pilote apprend à sa demande de ticket qu’il a perdu la main, et qui l’a', async () => {
     const serveur = serveurSimule();
     const a = pc(serveur, 'Julien');
     const b = pc(serveur, 'Marie');
     await creerEtEnvoyer(serveur, a, 'c1');
-    expect(await a.synchronisation.battre('c1')).toEqual({ ok: true });
+    expect(await a.synchronisation.demanderTicket('c1')).toEqual({ ok: true, ticket: 'ticket-c1' });
     serveur.noms.set(await b.appareil(), 'Marie');
     await b.synchronisation.prendreLaMain('c1', await a.appareil(), marie);
 
     const pertes: string[] = [];
     a.synchronisation.surPerte(({ epreuveId, piloteNom }) => pertes.push(`${epreuveId}:${piloteNom}`));
-    const battement = await a.synchronisation.battre('c1');
+    const battement = await a.synchronisation.demanderTicket('c1');
     expect(battement).toEqual({
       ok: false,
       perte: { epreuveId: 'c1', piloteAppareil: await b.appareil(), piloteNom: 'Marie', ecartes: 0 },
@@ -254,8 +254,8 @@ describe('prise de main (US-029)', () => {
         .map(({ epreuveId }) => epreuveId)
         .sort(),
     ).toEqual(['c1', 'c2']);
-    expect(await b.synchronisation.battre('c1')).toEqual({ ok: true });
-    expect(await b.synchronisation.battre('c2')).toEqual({ ok: true });
+    expect(await b.synchronisation.demanderTicket('c1')).toMatchObject({ ok: true });
+    expect(await b.synchronisation.demanderTicket('c2')).toMatchObject({ ok: true });
   });
 
   it('hors ligne : prendre la main exige le réseau et ne change rien', async () => {
@@ -278,12 +278,12 @@ describe('prise de main (US-029)', () => {
     expect(serveur.journaux.get('c1')?.pilote).toBe(await a.appareil());
   });
 
-  it('hors ligne : un pilote qui perd le réseau garde la main, son battement échoue sans le déposséder', async () => {
+  it('hors ligne : un pilote qui perd le réseau garde la main, sa demande de ticket échoue sans le déposséder', async () => {
     const serveur = serveurSimule();
     const a = pc(serveur, 'Julien');
     await creerEtEnvoyer(serveur, a, 'c1');
     serveur.couper();
-    expect(await a.synchronisation.battre('c1')).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    expect(await a.synchronisation.demanderTicket('c1')).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
     expect(await a.journal.etat('c1')).toMatchObject({ pilote: true });
     const ecrit = await a.journal.enregistrer('c1', modification('Seul'), orga);
     expect('projection' in ecrit).toBe(true);
@@ -329,17 +329,53 @@ describe('prise de main (US-029)', () => {
     expect(await b.journal.etat('c1')).toMatchObject({ pilote: true, copieLe: null, confirme: 1 });
   });
 
-  it('CA-2 : le battement général ne concerne que les épreuves pilotées ici', async () => {
+  it('US-094 CA-1 : seules les épreuves pilotées ici ont une WebSocket de présence', async () => {
     const serveur = serveurSimule();
     const a = pc(serveur, 'Julien');
     const b = pc(serveur, 'Marie');
     await creerEtEnvoyer(serveur, a, 'c1');
     await b.synchronisation.telechargerCopie('c1');
-    const avant = serveur.envoyer.mock.calls.length;
-    await b.synchronisation.battreTout();
-    expect(serveur.envoyer.mock.calls.length).toBe(avant);
-    await a.synchronisation.battreTout();
-    expect(serveur.envoyer.mock.calls.length).toBe(avant + 1);
+    expect(await b.synchronisation.epreuvesAPresence()).toEqual([]);
+  });
+
+  it('US-094 CA-1 : la présence vise les épreuves du jour ou sans date (en préparation), pas celles d’un autre jour', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    const aujourdhui = dateDuJour(1_900_000_000_000);
+    expect(aujourdhui).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    await a.journal.enregistrer('du-jour', creation(), orga);
+    await a.journal.enregistrer('du-jour', { type: 'EpreuveModifiee', donnees: { date: aujourdhui } }, orga);
+    await a.journal.enregistrer('sans-date', creation(), orga);
+    await a.journal.enregistrer('sans-date', { type: 'EpreuveModifiee', donnees: { date: null } }, orga);
+    await a.journal.enregistrer('plus-tard', creation(), orga);
+    expect((await a.synchronisation.epreuvesAPresence()).sort()).toEqual(['du-jour', 'sans-date']);
+  });
+
+  it('US-094 CA-4 : une main prise signalée par le serveur fait passer ce PC en lecture seule', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    const b = pc(serveur, 'Marie');
+    await creerEtEnvoyer(serveur, a, 'c1');
+    serveur.noms.set(await b.appareil(), 'Marie');
+    await b.synchronisation.prendreLaMain('c1', await a.appareil(), marie);
+    const pertes: string[] = [];
+    a.synchronisation.surPerte(({ piloteNom }) => pertes.push(piloteNom));
+    expect(await a.synchronisation.perteSignalee('c1')).toMatchObject({ epreuveId: 'c1', piloteNom: 'Marie' });
+    expect(pertes).toEqual(['Marie']);
+    expect(await a.journal.etat('c1')).toMatchObject({ pilote: false });
+    // Déjà en lecture seule : un second signal est sans effet.
+    expect(await a.synchronisation.perteSignalee('c1')).toBeNull();
+  });
+
+  it('US-094 CA-4 : sans réseau pour lire le nouveau pilote, la perte est traitée quand même', async () => {
+    const serveur = serveurSimule();
+    const a = pc(serveur, 'Julien');
+    const b = pc(serveur, 'Marie');
+    await creerEtEnvoyer(serveur, a, 'c1');
+    await b.synchronisation.prendreLaMain('c1', await a.appareil(), marie);
+    serveur.couper();
+    expect(await a.synchronisation.perteSignalee('c1')).toMatchObject({ epreuveId: 'c1', piloteNom: '' });
+    expect(await a.journal.etat('c1')).toMatchObject({ pilote: false });
   });
 });
 
@@ -544,15 +580,13 @@ describe('reprise d’une épreuve importée (US-035)', () => {
     expect(await secours.journal.etat('c1')).toBeNull();
   });
 
-  it('le battement du pilote ignore une épreuve pas encore reprise, qui ne perd pas la main avant d’avoir pu la prendre', async () => {
+  it('la présence du pilote ignore une épreuve pas encore reprise, qui ne perd pas la main avant d’avoir pu la prendre', async () => {
     const serveur = serveurSimule();
     const a = pc(serveur, 'Julien');
     await creerEtEnvoyer(serveur, a, 'c1');
     const secours = secoursDe(serveur);
     await secours.journal.importer('c1', await exportDe(a, 'c1'));
-    serveur.envoyer.mockClear();
-    await secours.synchronisation.battreTout();
-    expect(serveur.envoyer).not.toHaveBeenCalled();
+    expect(await secours.synchronisation.epreuvesAPresence()).toEqual([]);
     expect(await secours.journal.etat('c1')).toMatchObject({ pilote: true, reprise: true });
     expect(await secours.journal.lireEcartes('c1')).toEqual([]);
   });

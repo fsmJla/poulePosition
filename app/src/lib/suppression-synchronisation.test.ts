@@ -168,16 +168,16 @@ describe('suppression définitive d’une épreuve, côté PC (US-039)', () => {
     expect(await journal.aEnvoyer('c1')).toEqual([]);
   });
 
-  it('US-039 CA-5 : un battement ou un téléchargement refusés par EPREUVE_SUPPRIMEE effacent aussi la copie', async () => {
+  it('US-039 CA-5 : un ticket ou un téléchargement refusés par EPREUVE_SUPPRIMEE effacent aussi la copie', async () => {
     const journal = nouveauJournal();
     await pilotee(journal, 'c1', true);
     await pilotee(journal, 'c2', true);
     const envoyer = serveur({
-      'POST /epreuves/c1/presence': () => reponse(410, { ok: false, erreur: 'EPREUVE_SUPPRIMEE' }),
+      'POST /epreuves/c1/ticket': () => reponse(410, { ok: false, erreur: 'EPREUVE_SUPPRIMEE' }),
       'GET /epreuves/c2/evenements': () => reponse(410, { ok: false, erreur: 'EPREUVE_SUPPRIMEE' }),
     });
     const synchronisation = synchro(journal, envoyer);
-    expect(await synchronisation.battre('c1')).toEqual({ ok: false, erreur: 'EPREUVE_SUPPRIMEE' });
+    expect(await synchronisation.demanderTicket('c1')).toEqual({ ok: false, erreur: 'EPREUVE_SUPPRIMEE' });
     expect(await journal.etat('c1')).toBeNull();
     // c2 est pilotée ici : sa copie est son propre journal, jamais téléchargée ; une copie d'un autre PC l'est.
     await journal.remplacerCopie('c3', [], 1);

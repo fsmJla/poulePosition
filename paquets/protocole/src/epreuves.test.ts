@@ -369,7 +369,10 @@ describe('prise de main et présence du pilote (US-029)', () => {
     const accorde = { ok: true, ticket: 'a.b.c', expireLe: 1_800_000_060_000 };
     expect(analyserReponseTicket(accorde)).toEqual(accorde);
     expect(analyserReponseTicket({ ...accorde, ticket: '' })).toEqual({ ok: false, erreur: 'REPONSE_INVALIDE' });
-    expect(analyserReponseTicket({ ...accorde, expireLe: 'demain' })).toEqual({ ok: false, erreur: 'REPONSE_INVALIDE' });
+    expect(analyserReponseTicket({ ...accorde, expireLe: 'demain' })).toEqual({
+      ok: false,
+      erreur: 'REPONSE_INVALIDE',
+    });
     const refus = { ok: false, erreur: 'PAS_PILOTE', piloteAppareil: 'a2', piloteNom: 'Marie Durand' };
     expect(analyserReponseTicket(refus)).toEqual(refus);
     expect(analyserReponseTicket(undefined)).toEqual({ ok: false, erreur: 'REPONSE_INVALIDE' });

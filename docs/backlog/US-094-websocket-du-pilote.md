@@ -70,6 +70,16 @@ retour du réseau, suivie de l'envoi des lots en retard (US-022). Testé par un 
 - Le pilote ouvre une socket pour chaque épreuve qu'il pilote et qui est « En cours », ou « En préparation » le jour même ;
   il n'en ouvre pas pour les autres.
 
+- Implémentation (2026-11-19) : ADR-0028 écrite (ticket HS256 de 60 s signé avec `SECRET_SESSION`, non réutilisable
+  comme session, sans usage unique). « Le jour même » inclut une épreuve en préparation **sans date**.
+- Implémentation : la liste des épreuves à présence est revue toutes les 10 s (lecture locale) et après chaque lot
+  accepté par le serveur, pour qu'une épreuve tout juste créée ouvre sa socket sans attendre.
+- Implémentation : quand le navigateur annonce `offline`, les sockets sont abandonnées aussitôt (le message s'affiche
+  sans attendre deux pongs manqués) ; à `online`, elles se rouvrent. Un `4003` à l'ouverture (plus le pilote) est
+  traité comme un `4004`.
+- Écart sans planche : le message « Hors ligne : la compétition continue sur ce PC » est une pastille flottante en bas à
+  gauche (même style que l'attente d'envoi d'US-090, en bas à droite), sur toutes les pages connectées.
+
 ## Questions bloquantes
 
 Aucune.
@@ -87,3 +97,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-19 | Créée |
+| 2026-11-19 | Plan validé (série « maximum d'US ») ; en cours sur `us/US-094-websocket-du-pilote` |

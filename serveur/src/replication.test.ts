@@ -151,7 +151,9 @@ describe('prise de main et présence du pilote (US-029)', () => {
       true,
     );
     // Deux pings manqués : la socket encore ouverte ne compte plus.
-    expect(piloteConnecte([{ ouverteLe: ouverte, dernierPing: maintenant - DELAI_PRESENCE_MS }], maintenant)).toBe(false);
+    expect(piloteConnecte([{ ouverteLe: ouverte, dernierPing: maintenant - DELAI_PRESENCE_MS }], maintenant)).toBe(
+      false,
+    );
     // Socket qui vient de s'ouvrir, sans ping encore.
     expect(piloteConnecte([{ ouverteLe: maintenant - 5_000, dernierPing: null }], maintenant)).toBe(true);
     expect(piloteConnecte([{ ouverteLe: ouverte, dernierPing: null }], maintenant)).toBe(false);
