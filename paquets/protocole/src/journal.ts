@@ -180,6 +180,10 @@ function donneesValides(type: unknown, donnees: unknown): boolean {
   if (TYPES_TIREUR.includes(type as string)) return donneesTireurValides(type, donnees);
   if (TYPES_POULES.includes(type as string)) return donneesPoulesValides(type, donnees);
   if (type === 'EpreuveArchivee' || type === 'EpreuveDesarchivee') return aExactementLesChamps(donnees, []) !== null;
+  if (type === 'JetonQrDefini') {
+    const jeton = aExactementLesChamps(donnees, ['role', 'empreinte']);
+    return jeton !== null && estTexte(jeton.role) && estTexte(jeton.empreinte);
+  }
   if (type === 'PublicationModifiee') {
     const publication = aExactementLesChamps(donnees, ['publiee']);
     return publication !== null && estBooleen(publication.publiee);

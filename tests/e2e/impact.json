@@ -95,7 +95,7 @@
     "importer-epreuve"
   ],
   "app/src/pages/Formule.svelte": ["formule", "epreuve-etapes"],
-  "app/src/pages/Parametres.svelte": ["parametres", "epreuve-etapes"],
+  "app/src/pages/Parametres.svelte": ["parametres", "epreuve-etapes", "acces-qr"],
   "app/src/composants/Entete.svelte": [
     "entete",
     "menu-compte",
@@ -313,6 +313,12 @@
   "app/src/lib/import-sauvegarde.ts": ["importer-epreuve"],
   "app/src/composants/ConfirmationImport.svelte": ["importer-epreuve"],
   "app/src/lib/synchronisation.ts": ["importer-epreuve", "prise-de-main", "presence-pilote"],
+  "app/src/lib/acces-qr.ts": ["acces-qr"],
+  "app/src/composants/AccesQr.svelte": ["acces-qr"],
+  "app/src/composants/CodeQr.svelte": ["acces-qr"],
+  "app/src/pages/ImpressionAcces.svelte": ["acces-qr"],
+  "paquets/domaine/src/acces-qr.ts": ["acces-qr"],
+  "paquets/protocole/src/acces-qr.ts": ["acces-qr"],
   "app/src/lib/presence-pilote.ts": ["presence-pilote", "prise-de-main", "vue-saisie"],
   "paquets/domaine/src/vue-saisie.ts": ["vue-saisie"],
   "paquets/protocole/src/vue-saisie.ts": ["vue-saisie"],

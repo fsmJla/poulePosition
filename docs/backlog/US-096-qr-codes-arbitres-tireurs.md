@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-094, US-032
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-096-qr-codes-arbitres-tireurs`
 
 ## Récit
 
@@ -80,6 +80,22 @@ n'a encore été généré, l'écran l'indique et propose de revenir en ligne. T
 - L'impression des QR sur les feuilles de poule relève d'E7 (Impressions).
 - Le QR se dessine dans l'application, avec une bibliothèque gratuite et sans réseau (choix noté dans les notes de l'US).
 
+- Implémentation (2026-11-19) : bibliothèque `qrcode-generator` 2.0.4 (MIT, sans dépendance, sans réseau), correction M.
+  Le QR reste noir sur blanc dans les deux thèmes (variables `--qr-encre` et `--qr-fond`).
+- Implémentation : le lien est `/saisie/<epreuveId>#j=<jeton>` (et non `#/saisie/…?j=…`) : l'application route par
+  chemins, et le jeton, dans le fragment, n'est jamais envoyé au serveur ni journalisé par Vercel.
+- Implémentation : le DO garde le jeton en clair (il en a besoin pour qu'un autre PC affiche les mêmes QR), le journal
+  seulement son empreinte SHA-256. Le pilote le garde aussi sur son PC (IndexedDB) pour l'impression hors ligne.
+- Implémentation : « Régénérer… » se confirme dans un encart sous les boutons (pas de fenêtre modale).
+- Écarts à la planche 21 : le titre de page reste « Paramètres de l'épreuve » (comme les autres étapes), les réglages
+  restent des cases à cocher à gauche (et non des interrupteurs à droite), le bouton « Enregistrer les paramètres »
+  (US-032) reste, en neutre (l'action principale est « Imprimer les QR codes ») ; la carte « Appareils connectés » vient
+  avec US-105, le nombre d'appareils connectés sous chaque QR aussi.
+- CA-4 et CA-6 côté smartphone : le DO ferme déjà (`4003`) les sockets étiquetées `qr:<role>` d'un jeton remplacé, et la
+  règle « accès ouvert en préparation et en cours » est dans le domaine (`accesQrOuvert`) ; les messages affichés par le
+  smartphone (« Ce lien n'est plus valable… », « Cette épreuve est terminée ») et leurs tests viennent avec US-097, qui
+  crée ces sockets. Sur le PC, une épreuve terminée ou archivée n'affiche plus ses QR (« ne donnent plus accès »).
+
 ## Questions bloquantes
 
 Aucune. La planche 21 a été validée par l'utilisateur le 2026-11-19 : « Accès par QR code » est une section de la page
@@ -97,3 +113,6 @@ Aucune. La planche 21 a été validée par l'utilisateur le 2026-11-19 : « Acc�
 | Date | Événement |
 |---|---|
 | 2026-11-19 | Créée |
+| 2026-11-19 | En cours sur `us/US-096-qr-codes-arbitres-tireurs` (série « maximum d'US ») |
+| 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 745 tests, couverture 94,5 %, E2E `acces-qr`, `parametres`, `epreuve-etapes`, `charte`) |
+| 2026-11-19 | Recette OK sur https://poule-position-git-us-us-096-qr-codes-a-8919f7-fsmjlas-projects.vercel.app (serveur de preview déployé depuis la branche, thème sombre) : deux QR codes créés à la première ouverture, jetons gardés par le serveur et seulement deux JetonQrDefini (empreintes) au journal (CA-1, CA-2) ; page d’impression avec le nom, les deux QR noirs sur blanc et leur mode d’emploi (CA-3) ; régénération après confirmation, seul le lien des arbitres change (CA-4) ; mention des tireurs sans saisie (CA-5) ; hors ligne, « Régénérer… » grisé avec « Nécessite une connexion ». CA-6 côté smartphone avec US-097. Passe à Terminée |

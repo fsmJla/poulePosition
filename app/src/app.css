@@ -28,6 +28,9 @@
   --sur-marque: #f7f4ef;
   /* Maquette « IHM de l'organisateur » (US-054) : action principale tiffany, teintes d'accent, états et étapes à venir. */
   --sur-tiffany: #0f1716;
+  /* US-096 : un QR code reste noir sur blanc dans les deux thèmes (les lecteurs lisent mal un QR inversé). */
+  --qr-encre: #000000;
+  --qr-fond: #ffffff;
   --accent-survol: #044e4c;
   --accent-teinte: #e3f1f0;
   --accent-teinte-bordure: #b9dcda;

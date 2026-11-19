@@ -41,6 +41,9 @@ interface AttacheSocket {
 /** US-095 : étiquette des sockets qui reçoivent la vue de saisie (smartphones des arbitres et des tireurs, US-097). */
 export const ETIQUETTE_SAISIE = 'saisie';
 
+/** US-096 : étiquette des smartphones entrés avec le QR code d'un rôle (US-097, US-103). */
+export const etiquetteQr = (role: 'arbitre' | 'tireur') => `qr:${role}`;
+
 /** Étiquette des sockets d'un appareil pilote (une seule à la fois). */
 const etiquettePilote = (appareil: string) => `pilote:${appareil}`;
 
@@ -55,6 +58,8 @@ export class Epreuve extends DurableObject<Env> {
     const { sql } = this.ctx.storage;
     sql.exec(`CREATE TABLE IF NOT EXISTS evenements (seq INTEGER PRIMARY KEY, contenu TEXT NOT NULL)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS pilote (cle TEXT PRIMARY KEY, appareil TEXT NOT NULL)`);
+    // US-096 : jetons des QR codes, en clair (le journal n'en garde que l'empreinte), un par rôle.
+    sql.exec(`CREATE TABLE IF NOT EXISTS jetons (role TEXT PRIMARY KEY, jeton TEXT NOT NULL)`);
     // US-095 : dernière vue de saisie publiée par le pilote, gardée pour les smartphones qui se connectent.
     sql.exec(`CREATE TABLE IF NOT EXISTS vue (cle TEXT PRIMARY KEY, contenu TEXT NOT NULL)`);
     // US-094 : la présence vient de la WebSocket du pilote ; la table des battements (US-029) n'existe plus.
@@ -191,6 +196,32 @@ export class Epreuve extends DurableObject<Env> {
     this.fermer(etiquette, FERMETURES.REMPLACEE, 'Connexion remplacée', serveur);
     serveur.send(messageBienvenue(epreuveId));
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  /** US-096 CA-1 : jetons des QR codes en service, par rôle (null s'il n'y en a pas). */
+  jetonsQr(): { arbitre: string | null; tireur: string | null } {
+    const lignes = this.ctx.storage.sql
+      .exec<{ role: string; jeton: string }>('SELECT role, jeton FROM jetons')
+      .toArray();
+    const de = (role: string) => lignes.find((ligne) => ligne.role === role)?.jeton ?? null;
+    return { arbitre: de('arbitre'), tireur: de('tireur') };
+  }
+
+  /**
+   * US-096 CA-2 et CA-4 : le pilote en place confie (ou remplace) le jeton d'un rôle. Les smartphones entrés avec l'ancien
+   * jeton sont fermés (`4003`) : ils doivent scanner le nouveau QR code.
+   */
+  definirJetonQr(appareilId: string, role: 'arbitre' | 'tireur', jeton: string): DecisionTicket {
+    return this.ctx.storage.transactionSync(() => {
+      const decision = deciderTicket(this.etat(), appareilId);
+      if (!decision.ok) return decision;
+      const [ancien] = this.ctx.storage.sql
+        .exec<{ jeton: string }>('SELECT jeton FROM jetons WHERE role = ?', role)
+        .toArray();
+      this.ctx.storage.sql.exec('INSERT OR REPLACE INTO jetons (role, jeton) VALUES (?, ?)', role, jeton);
+      if (ancien && ancien.jeton !== jeton) this.fermer(etiquetteQr(role), FERMETURES.EXCLUE, 'Lien régénéré');
+      return decision;
+    });
   }
 
   /** US-095 CA-2 : dernière vue de saisie publiée (son texte JSON), ou null. */

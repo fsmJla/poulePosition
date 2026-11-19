@@ -11,6 +11,7 @@
   import { estLocale, ouvrirStockage, type SessionAppareil } from './lib/stockage';
   import { creerSynchronisation } from './lib/synchronisation';
   import { creerPresencePilote } from './lib/presence-pilote';
+  import { creerAccesQr } from './lib/acces-qr';
   import { vueSaisie } from '@poule-position/domaine';
   import { creerAccueil } from './lib/accueil';
   import { creerClientCompetitions } from './lib/competitions';
@@ -34,6 +35,7 @@
   import Poules from './pages/Poules.svelte';
   import Classement from './pages/Classement.svelte';
   import Parametres from './pages/Parametres.svelte';
+  import ImpressionAcces from './pages/ImpressionAcces.svelte';
   import GrilleEpreuves from './pages/GrilleEpreuves.svelte';
   import AideOrganisation from './pages/AideOrganisation.svelte';
   import AssistantManifestation from './pages/AssistantManifestation.svelte';
@@ -72,6 +74,12 @@
   /** US-030 : affiches et feuilles de route, jointes en ligne, affichables hors ligne depuis la copie de l'appareil. */
   const fichiers = creerClientFichiers({
     urlServeur: urlHttp(urlServeur),
+    jeton: async () => (session && !estLocale(session) ? session.jeton : null),
+  });
+  /** US-096 : jetons des QR codes (confiés au serveur, gardés sur ce PC pour le hors ligne). */
+  const acces = creerAccesQr({
+    urlServeur: urlHttp(urlServeur),
+    journal,
     jeton: async () => (session && !estLocale(session) ? session.jeton : null),
   });
   /** US-031 : page d'accueil publique et lien public d'une épreuve, lus sans session. */
@@ -308,7 +316,11 @@
         {/key}
       {:else if route.page === 'parametresEpreuve' && route.epreuveId}
         {#key route.epreuveId}
-          <Parametres {session} epreuveId={route.epreuveId} {journal} {synchronisation} {accueil} {naviguer} />
+          <Parametres {session} epreuveId={route.epreuveId} {journal} {synchronisation} {accueil} {acces} {naviguer} />
+        {/key}
+      {:else if route.page === 'impressionAcces' && route.epreuveId}
+        {#key route.epreuveId}
+          <ImpressionAcces epreuveId={route.epreuveId} {journal} {acces} {naviguer} />
         {/key}
       {:else if route.page === 'epreuve' && route.epreuveId}
         {#key route.epreuveId}

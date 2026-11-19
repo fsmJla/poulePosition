@@ -20,6 +20,7 @@ export type Page =
   | 'poulesEpreuve'
   | 'classementEpreuve'
   | 'parametresEpreuve'
+  | 'impressionAcces'
   | 'grilleEpreuves'
   | 'manifestation'
   | 'direct'
@@ -56,6 +57,7 @@ export const CHEMINS = Object.freeze({
     | 'poulesEpreuve'
     | 'classementEpreuve'
     | 'parametresEpreuve'
+    | 'impressionAcces'
     | 'grilleEpreuves'
     | 'manifestation'
     | 'direct'
@@ -163,6 +165,11 @@ export function cheminParametresEpreuve(epreuveId: string): string {
   return `/epreuves/${epreuveId}/parametres`;
 }
 
+/** US-096 CA-3 : page d'impression des QR codes d'une épreuve. */
+export function cheminImpressionAcces(epreuveId: string): string {
+  return `/epreuves/${epreuveId}/acces/imprimer`;
+}
+
 /** US-048 : grille des épreuves d'une compétition. */
 export function cheminGrilleEpreuves(competitionId: string): string {
   return `/competitions/${competitionId}/epreuves`;
@@ -214,6 +221,7 @@ const MOTIF_EMARGEMENT = /^\/epreuves\/([^/]+)\/emargement$/;
 const MOTIF_POULES = /^\/epreuves\/([^/]+)\/poules$/;
 const MOTIF_CLASSEMENT = /^\/epreuves\/([^/]+)\/classement$/;
 const MOTIF_PARAMETRES = /^\/epreuves\/([^/]+)\/parametres$/;
+const MOTIF_IMPRESSION_ACCES = /^\/epreuves\/([^/]+)\/acces\/imprimer$/;
 
 /** Pages réservées : un visiteur non connecté est renvoyé à l'écran de connexion (CA-6). */
 const RESERVEES: readonly Page[] = [
@@ -230,6 +238,7 @@ const RESERVEES: readonly Page[] = [
   'poulesEpreuve',
   'classementEpreuve',
   'parametresEpreuve',
+  'impressionAcces',
   'grilleEpreuves',
   'manifestation',
   'assistantManifestation',
@@ -282,6 +291,7 @@ function pageDe(chemin: string): {
       | 'poulesEpreuve'
       | 'classementEpreuve'
       | 'parametresEpreuve'
+      | 'impressionAcces'
       | 'grilleEpreuves'
       | 'manifestation'
       | 'direct'
@@ -319,6 +329,10 @@ function pageDe(chemin: string): {
   const classement = MOTIF_CLASSEMENT.exec(chemin)?.[1];
   if (classement) {
     return MOTIF_IDENTIFIANT.test(classement) ? { page: 'classementEpreuve', epreuveId: classement } : null;
+  }
+  const impressionAcces = MOTIF_IMPRESSION_ACCES.exec(chemin)?.[1];
+  if (impressionAcces) {
+    return MOTIF_IDENTIFIANT.test(impressionAcces) ? { page: 'impressionAcces', epreuveId: impressionAcces } : null;
   }
   const parametres = MOTIF_PARAMETRES.exec(chemin)?.[1];
   if (parametres) {

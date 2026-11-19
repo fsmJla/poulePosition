@@ -537,3 +537,42 @@ describe('vue de saisie (US-095)', () => {
     expect((await appeler(worker, 'POST', `/epreuves/${id}/vue`, jeton, {})).status).toBe(405);
   });
 });
+
+describe('jetons des QR codes (US-096)', () => {
+  const J1 = 'Q3f9abcdefghijklmnopqr';
+  const J2 = 'k8Tz_abcdefghijklmnop-';
+  const definir = (epreuveId: string, role: string, corps: unknown) =>
+    appeler(worker, 'PUT', `/epreuves/${epreuveId}/jetons/${role}`, jeton, corps);
+  const jetons = async (epreuveId: string) =>
+    (await (await appeler(worker, 'GET', `/epreuves/${epreuveId}/jetons`, jeton)).json()) as Record<string, unknown>;
+
+  it('CA-1 et CA-2 : le pilote confie un jeton par rôle ; les comptes du club les relisent', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    expect(await jetons(id)).toEqual({ ok: true, arbitre: null, tireur: null });
+    expect((await definir(id, 'arbitre', { appareilId: 'pc-a', jeton: J1 })).status).toBe(200);
+    expect((await definir(id, 'tireur', { appareilId: 'pc-a', jeton: J2 })).status).toBe(200);
+    expect(await jetons(id)).toEqual({ ok: true, arbitre: J1, tireur: J2 });
+  });
+
+  it('CA-4 : régénérer remplace le jeton du rôle ; seul le pilote en place le peut', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    await definir(id, 'arbitre', { appareilId: 'pc-a', jeton: J1 });
+    await definir(id, 'arbitre', { appareilId: 'pc-a', jeton: J2 });
+    expect(await jetons(id)).toMatchObject({ arbitre: J2, tireur: null });
+    const autre = await definir(id, 'arbitre', { appareilId: 'pc-b', jeton: J1 });
+    expect(autre.status).toBe(409);
+    expect(await autre.json()).toMatchObject({ ok: false, erreur: 'PAS_PILOTE', piloteAppareil: 'pc-a' });
+    expect(await jetons(id)).toMatchObject({ arbitre: J2 });
+  });
+
+  it('cas limites : jeton mal formé, rôle inconnu, épreuve inconnue, sans session', async () => {
+    const id = crypto.randomUUID();
+    expect((await definir(id, 'arbitre', { appareilId: 'pc-a', jeton: J1 })).status).toBe(404);
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    expect((await definir(id, 'arbitre', { appareilId: 'pc-a', jeton: 'court' })).status).toBe(400);
+    expect((await definir(id, 'spectateur', { appareilId: 'pc-a', jeton: J1 })).status).toBe(404);
+    expect((await appeler(worker, 'GET', `/epreuves/${id}/jetons`, '')).status).toBe(401);
+  });
+});

@@ -5,7 +5,9 @@
   // la saisie smartphone (E5) et l'affichage public (E9) les appliqueront.
   import { onMount } from 'svelte';
   import { CORRECTIONS_SCORE, type Epreuve, type Parametres } from '@poule-position/domaine';
+  import AccesQr from '../composants/AccesQr.svelte';
   import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
+  import type { AccesQrClient } from '../lib/acces-qr';
   import type { Accueil } from '../lib/accueil';
   import { modifierParametres, type ErreurModificationParametres } from '../lib/epreuves';
   import { prendreEcriture, type Journal } from '../lib/journal';
@@ -20,10 +22,12 @@
     synchronisation: Synchronisation;
     /** US-054 : hiérarchie du club pour le fil d'Ariane. */
     accueil: Accueil;
+    /** US-096 : jetons des QR codes. */
+    acces: AccesQrClient;
     naviguer: (chemin: string) => void;
   }
 
-  let { session, epreuveId, journal, synchronisation, accueil, naviguer }: Proprietes = $props();
+  let { session, epreuveId, journal, synchronisation, accueil, acces, naviguer }: Proprietes = $props();
 
   const t = textes.epreuves;
   const tp = t.parametresPage;
@@ -150,37 +154,54 @@
     {#if pilote && enAttente > 0}
       <p class="avertissement" role="status">{t.enAttente(enAttente)}</p>
     {/if}
+    <!-- US-096 (planche 21) : l'accès par QR code, en tête des paramètres. -->
+    <AccesQr
+      {epreuve}
+      {acces}
+      pilote={pilote && ecriture}
+      contexte={{ clubId: session.compte.clubId, auteur: session.compte.email }}
+      apresEcriture={() => void synchronisation.envoyer(epreuveId).then(() => recharger())}
+      {naviguer}
+    />
+
     <p class="mention" role="note">{tp.mention}</p>
 
     <form onsubmit={enregistrer} novalidate>
-      <fieldset>
-        <legend>{tp.arbitres}</legend>
-        {@render casesAcocher(reglagesArbitre)}
-      </fieldset>
-      <fieldset>
-        <legend>{tp.tireurs}</legend>
-        {@render casesAcocher(reglagesTireur)}
-      </fieldset>
-      <div class="champ">
-        <label for="correction-score">{tp.reglages.correctionScore}</label>
-        <select id="correction-score" bind:value={saisie.correctionScore} disabled={lectureSeule || enCours}>
-          {#each CORRECTIONS_SCORE as valeur (valeur)}
-            <option value={valeur}>{tp.corrections[valeur]}</option>
-          {/each}
-        </select>
-      </div>
-      <fieldset>
-        <legend>{tp.affichage}</legend>
-        <label class="case">
-          <input type="checkbox" bind:checked={saisie.prenomInitiale} disabled={lectureSeule || enCours} />
-          {tp.reglages.prenomInitiale}
-        </label>
-      </fieldset>
+      <!-- US-096 (planche 21) : les réglages en cartes, sous l'accès par QR code. -->
+      <section class="carte" aria-labelledby="titre-droits">
+        <h3 id="titre-droits">{tp.droits}</h3>
+        <fieldset>
+          <legend>{tp.arbitres}</legend>
+          {@render casesAcocher(reglagesArbitre)}
+        </fieldset>
+        <fieldset>
+          <legend>{tp.tireurs}</legend>
+          {@render casesAcocher(reglagesTireur)}
+        </fieldset>
+        <div class="champ">
+          <label for="correction-score">{tp.reglages.correctionScore}</label>
+          <select id="correction-score" bind:value={saisie.correctionScore} disabled={lectureSeule || enCours}>
+            {#each CORRECTIONS_SCORE as valeur (valeur)}
+              <option value={valeur}>{tp.corrections[valeur]}</option>
+            {/each}
+          </select>
+        </div>
+      </section>
+      <section class="carte" aria-labelledby="titre-affichage">
+        <h3 id="titre-affichage">{tp.affichage}</h3>
+        <fieldset>
+          <legend class="invisible">{tp.affichage}</legend>
+          <label class="case">
+            <input type="checkbox" bind:checked={saisie.prenomInitiale} disabled={lectureSeule || enCours} />
+            {tp.reglages.prenomInitiale}
+          </label>
+        </fieldset>
+      </section>
 
       {#if erreur}<p class="message" role="alert">{texteErreur(erreur)}</p>{/if}
       {#if enregistre}<p class="succes" role="status">{tp.enregistre}</p>{/if}
       {#if !lectureSeule}
-        <button type="submit" disabled={enCours}>{tp.enregistrer}</button>
+        <button type="submit" class="neutre" disabled={enCours}>{tp.enregistrer}</button>
       {/if}
     </form>
   {/if}
@@ -216,8 +237,35 @@
 
   form {
     display: grid;
-    gap: 1.1rem;
-    width: min(100%, 32rem);
+    gap: 1.25rem;
+    width: 100%;
+  }
+
+  /* US-096 (planche 21) : une carte par groupe de réglages. */
+  .carte {
+    display: grid;
+    gap: 1rem;
+    padding: 1.25rem;
+    border: 1px solid var(--bordure);
+    border-radius: 14px;
+    background: var(--surface);
+  }
+
+  .carte h3 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .invisible {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .etape {
+    width: 100%;
   }
 
   fieldset {
@@ -267,12 +315,15 @@
     color: var(--texte-discret);
   }
 
-  button {
-    padding: 0.7rem;
-    border: none;
+  /* Action neutre : l'action principale de la page est « Imprimer les QR codes » (principe 3). */
+  button.neutre {
+    justify-self: end;
+    min-height: 44px;
+    padding: 0 1.1rem;
+    border: 1px solid var(--bordure-champ);
     border-radius: var(--rayon);
-    background: var(--accent-fond);
-    color: var(--sur-accent);
+    background: var(--surface);
+    color: var(--texte);
     font: inherit;
     font-weight: 600;
     cursor: pointer;

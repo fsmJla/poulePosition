@@ -15,7 +15,8 @@
     "@poule-position/domaine": "*",
     "@poule-position/protocole": "*",
     "dexie": "^4.4.7",
-    "pdfjs-dist": "^6.5.438"
+    "pdfjs-dist": "^6.5.438",
+    "qrcode-generator": "2.0.4"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
