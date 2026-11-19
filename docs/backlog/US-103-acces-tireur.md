@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-095, US-096
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-103-acces-tireur`
 
 ## Récit
 
@@ -72,6 +72,12 @@ fonctionne (la liste vient de la dernière vue du DO), la saisie reste suspendue
   une épreuve mixte ou sans sexe.
 - La recherche porte sur les tireurs des poules (émargés), pas sur les inscrits absents.
 
+- Implémentation (2026-11-19) : la recherche (`chercherTireurs`, domaine) porte sur les tireurs des poules de la vue,
+  début du nom ou du prénom, sans accents ni majuscules ; la liste n'apparaît qu'une fois une lettre tapée. Le choix est
+  gardé sur le téléphone (`tireurId`) ; la signature dit « tireuse » pour une épreuve Dames (`signatureSaisie`).
+- Implémentation : après le choix, l'écran montre le nom, la poule, la piste et le club, et « Ce n'est pas moi » ;
+  ses matchs (planche 18) viennent avec US-104.
+
 ## Questions bloquantes
 
 Aucune.
@@ -85,3 +91,5 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-19 | Créée |
+| 2026-11-19 | En cours sur `us/US-103-acces-tireur` (série, recette groupée) |
+| 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, tests, E2E `acces-tireur`, `smartphone-arbitre`) |

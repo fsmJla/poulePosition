@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { projeter, type Epreuve, type Evenement, type Proposition } from './journal';
-import { matchsDeLaPiste, vueSaisie } from './vue-saisie';
+import { chercherTireurs, matchsDeLaPiste, tireurDeLaVue, vueSaisie } from './vue-saisie';
 
 const enTete = (seq: number) => ({
   epreuveId: 'e1',
@@ -188,5 +188,22 @@ describe('matchs de la piste d’un arbitre (US-098)', () => {
       maintenant: null,
     });
     expect(matchsDeLaPiste(null, 1).termines).toEqual([]);
+  });
+});
+
+describe('accès tireur (US-103)', () => {
+  const vue = () => vueSaisie(epreuveDe(...TROIS, composer, lancer));
+
+  it('CA-2 : cherche par le début du nom ou du prénom, sans accents ni majuscules, trié par nom', () => {
+    expect(chercherTireurs(vue(), 'du').map(({ nom }) => nom)).toEqual(['DUBOIS', 'DURAND']);
+    expect(chercherTireurs(vue(), 'CHLOE')).toMatchObject([{ id: 'a', poule: 1, piste: 2, club: 'Pessac (SPUC)' }]);
+    expect(chercherTireurs(vue(), 'zz')).toEqual([]);
+    expect(chercherTireurs(null, 'du')).toEqual([]);
+  });
+
+  it('CA-3 : retrouve le tireur choisi, avec sa poule et sa piste', () => {
+    expect(tireurDeLaVue(vue(), 'b')).toMatchObject({ nom: 'DURAND', poule: 1, piste: 2 });
+    expect(tireurDeLaVue(vue(), 'inconnu')).toBeNull();
+    expect(tireurDeLaVue(vue(), null)).toBeNull();
   });
 });

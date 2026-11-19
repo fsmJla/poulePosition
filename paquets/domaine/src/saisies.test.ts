@@ -193,3 +193,12 @@ describe('correction d’un score par smartphone (US-101)', () => {
     expect(deciderSaisie(desactivee, correction())).toEqual({ decision: 'refuse', motif: 'CORRECTION_DESACTIVEE' });
   });
 });
+
+describe('signature d’un tireur (US-103)', () => {
+  it('CA-3 : « tireuse » pour une épreuve Dames, « tireur » sinon', () => {
+    const tireuse = { role: 'tireur' as const, nom: 'DUBOIS Chloé', appareilId: 't12' };
+    expect(signatureSaisie(tireuse, 'dames')).toBe('tireuse DUBOIS Chloé (t12)');
+    expect(signatureSaisie(tireuse, 'hommes')).toBe('tireur DUBOIS Chloé (t12)');
+    expect(signatureSaisie({ ...tireuse, role: 'arbitre' }, 'dames')).toBe('arbitre DUBOIS Chloé (t12)');
+  });
+});
