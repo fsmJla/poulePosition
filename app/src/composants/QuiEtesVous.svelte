@@ -38,7 +38,11 @@
       <ul aria-label={t.trouves(dames)}>
         {#each trouves as tireur (tireur.id)}
           <li>
-            <button type="button" aria-label={t.choisir(`${tireur.nom} ${tireur.prenom}`)} onclick={() => choisir(tireur.id)}>
+            <button
+              type="button"
+              aria-label={t.choisir(`${tireur.nom} ${tireur.prenom}`)}
+              onclick={() => choisir(tireur.id)}
+            >
               <span class="identite">
                 <span><strong>{tireur.nom}</strong> {tireur.prenom}</span>
                 <span class="discret">{t.detail(tireur.club, tireur.poule)}</span>

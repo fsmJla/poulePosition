@@ -197,7 +197,6 @@ export const textes = {
       cePasMoi: 'Ce n’est pas moi',
       resume: (poule: number, piste: number, club: string) =>
         `Poule ${poule} · piste ${piste}${club ? ` · ${club}` : ''}`,
-      bientot: 'L’accès des tireurs arrive bientôt : la table de marque saisit vos scores en attendant.',
     },
   },
   planLieu: {
