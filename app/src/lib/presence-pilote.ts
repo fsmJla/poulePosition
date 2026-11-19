@@ -3,7 +3,14 @@
 // sur ce PC et la socket se rouvre d'elle-même au retour du réseau. Quand un autre PC prend la main, le serveur ferme la
 // socket (`4004`) et la perte de main est traitée aussitôt.
 import type { SaisieScore, VueSaisie } from '@poule-position/domaine';
-import { FERMETURES, messageAccuse, messageVue, type Accuse } from '@poule-position/protocole';
+import {
+  FERMETURES,
+  messageAccuse,
+  messageVue,
+  type Accuse,
+  messageExclure,
+  type AppareilConnu,
+} from '@poule-position/protocole';
 import { demarrerConnexion, urlConnexion, type Adresse, type EtatConnexion, type SocketMinimale } from './connexion';
 import type { PerteDeMain } from './synchronisation';
 
@@ -52,6 +59,9 @@ export function creerPresencePilote({
   /** US-100 CA-1 : smartphones connectés, par épreuve (dit par le serveur). */
   const appareils = new Map<string, number>();
   const ecouteursAppareils = new Set<(epreuveId: string, connectes: number) => void>();
+  /** US-105 CA-1 : appareils connus du serveur, par épreuve. */
+  const listes = new Map<string, AppareilConnu[]>();
+  const ecouteursListes = new Set<(epreuveId: string) => void>();
   const ecouteurs = new Set<(horsLigne: boolean) => void>();
   let horsLigne = false;
 
@@ -109,11 +119,15 @@ export function creerPresencePilote({
       surEtat: (etat) => {
         connexion.etat = etat;
         signaler();
+        // US-105 (recette) : la liste des appareils devient connue (ou ne l'est plus) avec la connexion.
+        ecouteursListes.forEach((ecouteur) => ecouteur(epreuveId));
       },
       // US-099 CA-5 à CA-7 : une saisie d'un téléphone, décidée par ce PC ; l'accusé repart au téléphone.
       surMessage: (message) => {
         if (message.type === 'appareils') {
           appareils.set(epreuveId, message.connectes);
+          if (message.liste) listes.set(epreuveId, message.liste);
+          ecouteursListes.forEach((ecouteur) => ecouteur(epreuveId));
           ecouteursAppareils.forEach((ecouteur) => ecouteur(epreuveId, message.connectes));
           return;
         }
@@ -153,6 +167,20 @@ export function creerPresencePilote({
     /** US-100 CA-1 : nombre de smartphones connectés à l'épreuve, ou null s'il n'est pas connu (hors ligne). */
     appareils: (epreuveId: string): number | null =>
       connexions.get(epreuveId)?.etat === 'connecte' ? (appareils.get(epreuveId) ?? 0) : null,
+
+    /** US-105 CA-1 : appareils connus du serveur, ou null hors ligne (la liste n'est alors pas connue). */
+    listeAppareils: (epreuveId: string): AppareilConnu[] | null =>
+      connexions.get(epreuveId)?.etat === 'connecte' ? (listes.get(epreuveId) ?? []) : null,
+
+    /** US-105 CA-2 et CA-4 : demande au serveur d'exclure (ou de réadmettre) un appareil ; faux hors ligne. */
+    exclure: (epreuveId: string, appareilId: string, exclu: boolean): boolean =>
+      connexions.get(epreuveId)?.envoyer(messageExclure(appareilId, exclu)) ?? false,
+
+    /** US-105 : la liste des appareils d'une épreuve a changé, ou la connexion (elle devient connue ou inconnue). */
+    surListeAppareils(ecouteur: (epreuveId: string) => void): () => void {
+      ecouteursListes.add(ecouteur);
+      return () => ecouteursListes.delete(ecouteur);
+    },
 
     surAppareils(ecouteur: (epreuveId: string, connectes: number) => void): () => void {
       ecouteursAppareils.add(ecouteur);

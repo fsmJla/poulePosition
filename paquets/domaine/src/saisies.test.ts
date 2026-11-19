@@ -214,3 +214,16 @@ describe('saisie d’un tireur (US-104)', () => {
     expect(deciderSaisie(lancee(), tireur())).toEqual({ decision: 'refuse', motif: 'HORS_POULE' });
   });
 });
+
+describe('appareil exclu (US-105)', () => {
+  it('CA-2 à CA-4 : l’exclusion est au journal ; une saisie de l’appareil exclu est refusée ; réadmis, il saisit', () => {
+    const exclure = (exclu: boolean): Proposition => ({ type: 'AppareilExclu', donnees: { appareilId: 't4', exclu } });
+    const exclue = lancee(exclure(true));
+    expect(exclue.appareilsExclus).toEqual(['t4']);
+    expect(deciderSaisie(exclue, saisie())).toEqual({ decision: 'refuse', motif: 'APPAREIL_EXCLU' });
+    expect(deciderSaisie(exclue, saisie({ appareilId: 't5' })).decision).toBe('accepte');
+    const readmis = lancee(exclure(true), exclure(true), exclure(false));
+    expect(readmis.appareilsExclus).toEqual([]);
+    expect(deciderSaisie(readmis, saisie()).decision).toBe('accepte');
+  });
+});

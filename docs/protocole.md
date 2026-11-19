@@ -104,7 +104,7 @@ Ce sont des textes JSON d'au plus **256 Ko** (262 144 octets en UTF-8), avec deu
 | `erreur` | `code`, `message` (texte lisible en français) | Message client refusé (la connexion reste ouverte) |
 | `pong` | — | Réponse à `ping` (§4.3) |
 | `vue` | `vue` (vue de saisie, §18) | Aux smartphones, à chaque vue publiée par le pilote (US-095), et à l'entrée d'un smartphone |
-| `appareils` | `connectes` | À la table : nombre de smartphones connectés, à sa connexion puis à chaque entrée ou sortie (US-100) |
+| `appareils` | `connectes`, `liste` | À la table : nombre de smartphones connectés, à sa connexion puis à chaque entrée ou sortie (US-100) ; `liste` : chaque appareil connu (`id`, `role`, `connecte`, `vuLe`, `exclu`) (US-105) |
 | `acces` | `role` (`arbitre` ou `tireur`), `appareilId` (« t1 »…) | À l'entrée d'un smartphone (US-097, §20) |
 | `table` | `connectee` | Aux smartphones : à leur entrée, puis quand la table (le pilote) se connecte ou se déconnecte (US-097) |
 | `saisie` | `saisie` (avec `role` et `appareilId`) | À la table : saisie d'un téléphone (US-099, §21) |
@@ -117,6 +117,7 @@ Ce sont des textes JSON d'au plus **256 Ko** (262 144 octets en UTF-8), avec deu
 | `vue` | `vue` (vue de saisie, §18) | Le pilote seul, pour son épreuve (US-095) ; sinon `TYPE_INTERDIT`, et `MESSAGE_INVALIDE` pour une vue mal formée |
 | `saisie` | `saisie` (`id`, `poule`, `tireurA`, `tireurB`, `touchesA`, `touchesB`, `auTemps`, `nom`) | Un smartphone (US-099, §21) |
 | `accuse` | `accuse`, `appareilId` | Le pilote seul : réponse à une saisie, relayée au téléphone `appareilId` (US-099) |
+| `exclure` | `appareilId`, `exclu` | Le pilote seul : exclut (ou réadmet) un smartphone ; ses sockets sont fermées en `4005` (US-105) |
 
 Tout autre type que le `ping` exact, `vue`, `saisie` et `accuse` est refusé (`TYPE_INTERDIT`).
 
@@ -148,6 +149,7 @@ ouverture) depuis moins de 30 s (US-094 CA-2).
 | `4002` | Connexion remplacée par une autre du même appareil | **Non** |
 | `4003` | Appareil exclu par l'organisateur, pilote qui ne l'est plus à l'ouverture (US-094), ou lien de QR code plus valable : jeton inconnu ou régénéré (US-097) | **Non** |
 | `4004` | Main prise : un autre appareil est devenu le pilote (US-094 CA-4) | **Non** ; l'ancien pilote passe en lecture seule |
+| `4005` | Appareil exclu par la table (US-105) : socket fermée, reconnexions de cet identifiant refusées | **Non** ; le téléphone affiche « Votre accès a été retiré par la table de marque » |
 | autre (`1006`, réseau coupé, veille…) | Coupure | Oui, après 1 s, 2 s, 4 s, 8 s, 16 s, puis toutes les 30 s ; un nouveau ticket à chaque tentative |
 
 ## 5. États affichés par l'application
@@ -1158,3 +1160,12 @@ le lien du QR code est retiré de l'adresse affichée dès la page ouverte.
    `CORRECTION_INTERDITE`, `CORRECTION_DESACTIVEE` ou `SCORE_CHANGE`, `HORS_POULE` (US-104 : le téléphone d'un tireur joint `tireurId` à sa saisie, et la table refuse un match d'une autre poule)).
 4. Le DO relaie l'accusé au seul téléphone `appareilId` ; le téléphone retire la saisie de ses attentes. Un score accepté
    part au serveur avec le lot suivant, et la vue de saisie republiée (§18) met à jour tous les téléphones.
+
+### Exclusion d'un appareil (US-105, ADR-0007)
+
+- La table (le pilote en place seulement) envoie `{ "v": 1, "type": "exclure", "appareilId": "t4", "exclu": true }` après
+  avoir inscrit `AppareilExclu { appareilId, exclu }` à son journal. Le DO marque l'appareil (colonne `exclu` de la
+  table `appareils`), ferme ses sockets (`4005`) et refuse ses reconnexions avec cet identifiant ; `exclu: false` le
+  réadmet. Une saisie d'un appareil exclu reçue par la table (boîte) est refusée avec le motif `APPAREIL_EXCLU`.
+- Un exclu peut rescanner le QR code depuis un autre navigateur (nouvel identifiant) : seule la régénération du QR coupe
+  tout un rôle.

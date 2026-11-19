@@ -140,7 +140,9 @@
   });
 
   // US-094 : la présence du pilote tourne tant qu'une session existe ; une session locale (US-005) attend le réseau.
-  const avecSession = $derived(session !== null);
+  // Recette US-099 à US-105 : la page de saisie d'un smartphone n'est jamais une table, même ouverte sur le PC pilote
+  // (sinon elle ouvre une seconde WebSocket du pilote et tient la table « connectée » à elle seule).
+  const avecSession = $derived(session !== null && !('page' in route && route.page === 'saisie'));
   $effect(() => {
     if (!avecSession) return;
     const arreter = presence.surveiller();
@@ -330,7 +332,16 @@
         {/key}
       {:else if route.page === 'parametresEpreuve' && route.epreuveId}
         {#key route.epreuveId}
-          <Parametres {session} epreuveId={route.epreuveId} {journal} {synchronisation} {accueil} {acces} {naviguer} />
+          <Parametres
+            {session}
+            epreuveId={route.epreuveId}
+            {journal}
+            {synchronisation}
+            {accueil}
+            {acces}
+            {presence}
+            {naviguer}
+          />
         {/key}
       {:else if route.page === 'impressionAcces' && route.epreuveId}
         {#key route.epreuveId}

@@ -26,7 +26,7 @@ export interface MemoireSaisie {
 }
 
 /** CA-2 et US-096 CA-6 : motif d'un refus du serveur. */
-export type RefusSaisie = 'lien' | 'terminee' | 'trop';
+export type RefusSaisie = 'lien' | 'terminee' | 'trop' | 'exclu';
 
 export interface EtatSaisie {
   connexion: EtatConnexion;
@@ -90,6 +90,8 @@ export function pistesDeLaVue(vue: VueSaisie | null): { piste: number; poules: n
 /** Motif d'une fermeture définitive du serveur, ou null pour une coupure ordinaire. */
 export function refusDuCode(code: number): RefusSaisie | null {
   if (code === FERMETURES.EXCLUE) return 'lien';
+  // US-105 CA-2 : la table a exclu cet appareil.
+  if (code === FERMETURES.APPAREIL_EXCLU) return 'exclu';
   if (code === FERMETURES.FERMEE) return 'terminee';
   if (code === FERMETURES.REFUS) return 'trop';
   return null;

@@ -4,11 +4,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { unstable_startWorker } from 'wrangler';
 import type { Evenement } from '@poule-position/domaine';
 import {
+  FERMETURES,
   MESSAGE_PING,
   MESSAGE_PONG,
   messageVue,
   messageSaisie,
   messageAccuse,
+  messageExclure,
   deriverCle,
   preparerDemandeInstallation,
   type EpreuveIndexee,
@@ -403,7 +405,7 @@ describe('WebSocket du pilote (US-094, ADR-0028)', () => {
     await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
     const { socket, prochain } = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
     expect(JSON.parse(await prochain())).toEqual({ v: 1, type: 'bienvenue', epreuveId: id });
-    expect(JSON.parse(await prochain())).toEqual({ v: 1, type: 'appareils', connectes: 0 });
+    expect(JSON.parse(await prochain())).toMatchObject({ v: 1, type: 'appareils', connectes: 0 });
     socket.send(MESSAGE_PING);
     expect(await prochain()).toBe(MESSAGE_PONG);
     socket.send('{"v":1,"type":"inconnu"}');
@@ -791,15 +793,15 @@ describe('appareils connectés (US-100)', () => {
     await appeler(worker, 'PUT', `/epreuves/${id}/jetons/arbitre`, jeton, { appareilId: 'pc-a', jeton: J });
     const pilote = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
     await pilote.prochain(); // bienvenue
-    expect(JSON.parse(await pilote.prochain())).toEqual({ v: 1, type: 'appareils', connectes: 0 });
+    expect(JSON.parse(await pilote.prochain())).toMatchObject({ v: 1, type: 'appareils', connectes: 0 });
     const reponse = await worker.fetch(`http://localhost/epreuves/${id}/connexion?j=${J}`, {
       headers: { Upgrade: 'websocket', Origin: 'http://localhost:4173' },
     });
     const telephone = reponse.webSocket as NonNullable<typeof reponse.webSocket>;
     telephone.accept();
-    expect(JSON.parse(await pilote.prochain())).toEqual({ v: 1, type: 'appareils', connectes: 1 });
+    expect(JSON.parse(await pilote.prochain())).toMatchObject({ v: 1, type: 'appareils', connectes: 1 });
     telephone.close();
-    expect(JSON.parse(await pilote.prochain())).toEqual({ v: 1, type: 'appareils', connectes: 0 });
+    expect(JSON.parse(await pilote.prochain())).toMatchObject({ v: 1, type: 'appareils', connectes: 0 });
     pilote.socket.close();
   });
 });
@@ -849,5 +851,50 @@ describe('boîte des saisies (US-102)', () => {
     expect(suivants).toEqual(['bienvenue', 'appareils']);
     encore.socket.close();
     telephone.close();
+  });
+});
+
+describe('appareils connectés (US-105)', () => {
+  it('CA-1, CA-2 et CA-4 : la table reçoit la liste, exclut un appareil (fermé, reconnexion refusée) puis le réadmet', async () => {
+    const J = 'Arbitreabcdefghijklmn5';
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    await appeler(worker, 'PUT', `/epreuves/${id}/jetons/arbitre`, jeton, { appareilId: 'pc-a', jeton: J });
+    const pilote = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    await pilote.prochain(); // bienvenue
+    await pilote.prochain(); // appareils 0
+    const connecter = async (appareil?: string) => {
+      const reponse = await worker.fetch(
+        `http://localhost/epreuves/${id}/connexion?j=${J}${appareil ? `&appareil=${appareil}` : ''}`,
+        { headers: { Upgrade: 'websocket', Origin: 'http://localhost:4173' } },
+      );
+      const socket = reponse.webSocket as NonNullable<typeof reponse.webSocket>;
+      const fermeture = new Promise<number>((resoudre) => socket.addEventListener('close', (e) => resoudre(e.code)));
+      socket.accept();
+      return { socket, fermeture };
+    };
+    const telephone = await connecter();
+    expect(JSON.parse(await pilote.prochain())).toMatchObject({
+      type: 'appareils',
+      connectes: 1,
+      liste: [{ id: 't1', role: 'arbitre', connecte: true, exclu: false }],
+    });
+    // Un téléphone ne peut pas exclure.
+    telephone.socket.send(messageExclure('t1', true));
+    // CA-2 : la table exclut t1 : sa socket est fermée (4005), sa reconnexion refusée.
+    pilote.socket.send(messageExclure('t1', true));
+    expect(await telephone.fermeture).toBe(FERMETURES.APPAREIL_EXCLU);
+    const listes = [JSON.parse(await pilote.prochain()), JSON.parse(await pilote.prochain())];
+    expect(listes.at(-1)).toMatchObject({ liste: [{ id: 't1', connecte: false, exclu: true }] });
+    expect(listes.at(-1).liste[0].vuLe).toEqual(expect.any(Number));
+    const encore = await connecter('t1');
+    expect(await encore.fermeture).toBe(FERMETURES.APPAREIL_EXCLU);
+    // CA-4 : réadmis, il revient.
+    pilote.socket.send(messageExclure('t1', false));
+    expect(JSON.parse(await pilote.prochain())).toMatchObject({ liste: [{ id: 't1', exclu: false }] });
+    const revenu = await connecter('t1');
+    expect(JSON.parse(await pilote.prochain())).toMatchObject({ connectes: 1, liste: [{ id: 't1', connecte: true }] });
+    revenu.socket.close();
+    pilote.socket.close();
   });
 });

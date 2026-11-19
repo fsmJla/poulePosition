@@ -22,6 +22,7 @@ const SANS_RECONNEXION: number[] = [
   FERMETURES.REMPLACEE,
   FERMETURES.EXCLUE,
   FERMETURES.MAIN_PRISE,
+  FERMETURES.APPAREIL_EXCLU,
 ];
 
 /** Ce qu'utilise la connexion d'une WebSocket (permet une fausse socket dans les tests). */

@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-096, US-097, US-103
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-105-appareils-connectes`
 
 ## Récit
 
@@ -60,6 +60,14 @@ Hors ligne, la liste affiche « Hors ligne : les appareils ne peuvent pas se con
 
 - L'exclusion vise l'identifiant d'appareil gardé par le téléphone ; elle dure jusqu'à la fin de l'épreuve.
 
+- Implémentation (2026-11-19) : le serveur dit quels appareils il connaît (identifiant, rôle, connecté, vu à, exclu,
+  message `appareils` étendu) ; le journal du pilote dit qui ils sont (signature de leurs saisies), leur poule et leurs
+  saisies (`lignesAppareils`, domaine). Un appareil qui n'a rien saisi s'affiche par son rôle (« arbitre »).
+- Implémentation : la colonne « Piste ou poule » de la planche montre la poule de la dernière saisie (« Poule 2 ») : la
+  piste choisie par l'arbitre reste sur son téléphone. Écart à relever à la recette.
+- Implémentation : exclusion par le message `exclure` (pilote en place seulement), code de fermeture `4005`, motif de
+  refus `APPAREIL_EXCLU` ; « Réadmettre » envoie `exclu: false`. L'exclusion vise l'identifiant d'appareil.
+
 ## Questions bloquantes
 
 Aucune (planche 21 validée le 2026-11-19).
@@ -73,3 +81,5 @@ Aucune (planche 21 validée le 2026-11-19).
 | Date | Événement |
 |---|---|
 | 2026-11-19 | Créée |
+| 2026-11-19 | En cours sur `us/US-105-appareils-connectes` (série, recette groupée) |
+| 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 801 tests, E2E `appareils-connectes`, `parametres`, `acces-qr`, `saisies-recues`) |

@@ -194,6 +194,10 @@ function donneesValides(type: unknown, donnees: unknown): boolean {
   if (TYPES_TIREUR.includes(type as string)) return donneesTireurValides(type, donnees);
   if (TYPES_POULES.includes(type as string)) return donneesPoulesValides(type, donnees);
   if (type === 'EpreuveArchivee' || type === 'EpreuveDesarchivee') return aExactementLesChamps(donnees, []) !== null;
+  if (type === 'AppareilExclu') {
+    const exclusion = aExactementLesChamps(donnees, ['appareilId', 'exclu']);
+    return exclusion !== null && estTexte(exclusion.appareilId) && typeof exclusion.exclu === 'boolean';
+  }
   if (type === 'SaisieRefusee') {
     const refus = aExactementLesChamps(donnees, [
       'saisie',

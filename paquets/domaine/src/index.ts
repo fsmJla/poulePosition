@@ -24,6 +24,7 @@ export * from './publication-lot';
 export * from './reprise-lot';
 export * from './tireurs';
 export * from './poules';
+export * from './appareils';
 export * from './repartition';
 export * from './import-ffe';
 export * from './lieu-public';

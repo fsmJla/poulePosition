@@ -25,7 +25,15 @@ export const MESSAGE_PONG = JSON.stringify({ v: VERSION_PROTOCOLE, type: 'pong' 
  * `MAIN_PRISE` (US-094, ADR-0028) : un autre appareil a pris la main ; l'ancien pilote ne se reconnecte pas.
  * US-097 : pour un smartphone, `REFUS` = trop d'essais, `FERMEE` = épreuve terminée, `EXCLUE` = lien plus valable.
  */
-export const FERMETURES = Object.freeze({ REFUS: 4000, FERMEE: 4001, REMPLACEE: 4002, EXCLUE: 4003, MAIN_PRISE: 4004 });
+export const FERMETURES = Object.freeze({
+  REFUS: 4000,
+  FERMEE: 4001,
+  REMPLACEE: 4002,
+  EXCLUE: 4003,
+  MAIN_PRISE: 4004,
+  /** US-105 : cet appareil a été exclu par la table de marque. */
+  APPAREIL_EXCLU: 4005,
+});
 
 /** Codes d'erreur et message lisible associé. */
 export const ERREURS = Object.freeze({
@@ -99,11 +107,30 @@ export interface MessageAccuse {
   appareilId?: string;
 }
 
-/** US-100 CA-1 : nombre de smartphones connectés à l'épreuve, envoyé à la table à chaque changement. */
+/** US-105 CA-1 : un smartphone entré par QR code, tel que le serveur le connaît. */
+export interface AppareilConnu {
+  id: string;
+  role: RoleQr;
+  connecte: boolean;
+  /** Dernière fois que le serveur l'a vu (ms), ou null. */
+  vuLe: number | null;
+  exclu: boolean;
+}
+
+/** US-100 CA-1 : nombre de smartphones connectés à l'épreuve, envoyé à la table à chaque changement (US-105 : et la liste). */
 export interface MessageAppareils {
   v: typeof VERSION_PROTOCOLE;
   type: 'appareils';
   connectes: number;
+  liste?: AppareilConnu[];
+}
+
+/** US-105 CA-2 et CA-4 : la table exclut un appareil, ou le réadmet. */
+export interface MessageExclure {
+  v: typeof VERSION_PROTOCOLE;
+  type: 'exclure';
+  appareilId: string;
+  exclu: boolean;
 }
 
 export type MessageServeur =
@@ -118,7 +145,7 @@ export type MessageServeur =
   | MessageAccuse;
 
 /** Messages qu'un client envoie au serveur (le `ping` exact mis à part, auto-répondu). */
-export type MessageClient = MessageVue | MessageSaisieTelephone | MessageAccuse;
+export type MessageClient = MessageVue | MessageSaisieTelephone | MessageAccuse | MessageExclure;
 
 /** Contenu d'une enveloppe valide : version et type vérifiés, le reste est propre au type. */
 export type Enveloppe = { v: typeof VERSION_PROTOCOLE; type: string } & Record<string, unknown>;
@@ -150,9 +177,30 @@ export function messageAccuse(accuse: Accuse, appareilId?: string): string {
   return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'accuse', accuse, ...(appareilId && { appareilId }) });
 }
 
-export function messageAppareils(connectes: number): string {
-  return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'appareils', connectes } satisfies MessageAppareils);
+export function messageAppareils(connectes: number, liste?: AppareilConnu[]): string {
+  return JSON.stringify({
+    v: VERSION_PROTOCOLE,
+    type: 'appareils',
+    connectes,
+    ...(liste && { liste }),
+  } satisfies MessageAppareils);
 }
+
+export function messageExclure(appareilId: string, exclu: boolean): string {
+  return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'exclure', appareilId, exclu } satisfies MessageExclure);
+}
+
+const appareilConnuValide = (brut: unknown): brut is AppareilConnu => {
+  if (brut === null || typeof brut !== 'object') return false;
+  const { id, role, connecte, vuLe, exclu } = brut as Record<string, unknown>;
+  return (
+    typeof id === 'string' &&
+    (ROLES_QR as readonly unknown[]).includes(role) &&
+    typeof connecte === 'boolean' &&
+    (vuLe === null || Number.isInteger(vuLe)) &&
+    typeof exclu === 'boolean'
+  );
+};
 
 export function messageErreur(code: CodeErreur): string {
   return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'erreur', code, message: ERREURS[code] } satisfies MessageErreur);
@@ -220,9 +268,20 @@ export function analyserMessageServeur(brut: unknown): Analyse<{ message: Messag
     }
     case 'accuse':
       return lireAccuse(contenu);
-    case 'appareils':
+    case 'appareils': {
       if (!Number.isInteger(contenu.connectes) || (contenu.connectes as number) < 0) return invalide;
-      return { ok: true, message: { v: VERSION_PROTOCOLE, type: 'appareils', connectes: contenu.connectes as number } };
+      const { liste } = contenu;
+      if (liste !== undefined && !(Array.isArray(liste) && liste.every(appareilConnuValide))) return invalide;
+      return {
+        ok: true,
+        message: {
+          v: VERSION_PROTOCOLE,
+          type: 'appareils',
+          connectes: contenu.connectes as number,
+          ...(liste !== undefined && { liste: liste as AppareilConnu[] }),
+        },
+      };
+    }
     default:
       return { ok: false, erreur: 'TYPE_INTERDIT' };
   }
@@ -254,6 +313,12 @@ export function analyserMessageClient(brut: unknown): Analyse<{ message: Message
   const { contenu } = enveloppe;
   if (contenu.type === 'vue') return lireVue(contenu);
   if (contenu.type === 'accuse') return lireAccuse(contenu);
+  if (contenu.type === 'exclure') {
+    const { appareilId, exclu } = contenu;
+    if (typeof appareilId !== 'string' || appareilId.length === 0 || appareilId.length > 16) return invalide;
+    if (typeof exclu !== 'boolean') return invalide;
+    return { ok: true, message: { v: VERSION_PROTOCOLE, type: 'exclure', appareilId, exclu } };
+  }
   if (contenu.type === 'saisie') {
     const saisie = analyserSaisieTelephone(contenu.saisie);
     return saisie ? { ok: true, message: { v: VERSION_PROTOCOLE, type: 'saisie', saisie } } : invalide;

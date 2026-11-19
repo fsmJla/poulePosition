@@ -93,7 +93,14 @@ export type Proposition =
   | { type: 'TireurRetireDesPoules'; donnees: DonneesRetraitPoule }
   | { type: 'RetraitDesPoulesAnnule'; donnees: DonneesAnnulationRetrait }
   | { type: 'JetonQrDefini'; donnees: DonneesJetonQr }
-  | { type: 'SaisieRefusee'; donnees: DonneesSaisieRefusee };
+  | { type: 'SaisieRefusee'; donnees: DonneesSaisieRefusee }
+  | { type: 'AppareilExclu'; donnees: DonneesAppareilExclu };
+
+/** US-105 CA-2 et CA-4 : la table exclut un smartphone (`exclu: true`) ou le réadmet. */
+export interface DonneesAppareilExclu {
+  appareilId: string;
+  exclu: boolean;
+}
 
 /** Événement enregistré : la proposition acceptée, avec son en-tête. */
 export type Evenement = {
@@ -136,6 +143,8 @@ export interface Epreuve extends DonneesEpreuve {
   acces?: AccesQr;
   /** US-100 : saisies des smartphones refusées par la table (trace) ; absent avant cette US. */
   saisiesRefusees?: DonneesSaisieRefusee[];
+  /** US-105 : identifiants des smartphones exclus par la table ; absent avant cette US. */
+  appareilsExclus?: string[];
 }
 
 /** US-081 : les inscrits d'une épreuve, y compris pour une projection gardée avant US-081. */
@@ -210,7 +219,7 @@ export function verifierEvenement(projection: Projection, proposition: Propositi
   if (proposition.type === 'PublicationModifiee') return verifierPublication(epreuve, proposition.donnees);
   if (proposition.type === 'JetonQrDefini') return verifierJetonQr(epreuve, proposition.donnees);
   // US-100 : le refus d'une saisie se trace à tout moment, sauf une fois l'épreuve archivée.
-  if (proposition.type === 'SaisieRefusee') {
+  if (proposition.type === 'SaisieRefusee' || proposition.type === 'AppareilExclu') {
     if (!epreuve) return 'EPREUVE_INCONNUE';
     return epreuve.statut === 'archivee' ? 'EPREUVE_ARCHIVEE' : null;
   }
@@ -358,6 +367,14 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
     if (!epreuve) return projection;
     const saisiesRefusees = [...(epreuve.saisiesRefusees ?? []), evenement.donnees];
     return { ...projection, epreuve: { ...epreuve, saisiesRefusees }, dernierSeq: evenement.seq };
+  }
+  if (evenement.type === 'AppareilExclu') {
+    const { epreuve } = projection;
+    if (!epreuve) return projection;
+    const { appareilId, exclu } = evenement.donnees;
+    const autres = (epreuve.appareilsExclus ?? []).filter((id) => id !== appareilId);
+    const appareilsExclus = exclu ? [...autres, appareilId] : autres;
+    return { ...projection, epreuve: { ...epreuve, appareilsExclus }, dernierSeq: evenement.seq };
   }
   if (evenement.type === 'JetonQrDefini') {
     const { epreuve } = projection;
