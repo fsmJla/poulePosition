@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-099
 - **Branche / PR :** `us/US-101-corriger-score-smartphone`
 
@@ -85,3 +85,4 @@ Aucune.
 | 2026-11-19 | Créée |
 | 2026-11-19 | En cours sur `us/US-101-corriger-score-smartphone` (série, recette groupée) |
 | 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (E2E `correction-score`, `saisie-match`, `matchs-piste`) |
+| 2026-11-19 | Recette groupée OK (preview `poule-position-7m49hwv8b`, serveur de preview déployé depuis `us/US-105-appareils-connectes`) : crayon du match 9, « Envoyer la correction », la table enregistre « correction de 5–2 en 5–3 » et la feuille du téléphone montre 5–3. Mergée dans `dev` (#147) ; Terminée |

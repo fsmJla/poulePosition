@@ -128,13 +128,13 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-096](US-096-qr-codes-arbitres-tireurs.md) | Afficher, imprimer et régénérer les QR codes des arbitres et des tireurs | E5 | Terminée | US-094, US-032 |
 | [US-097](US-097-acces-arbitre.md) | Ouvrir l'accès arbitre par le QR code (nom et piste) | E5 | Terminée | US-095, US-096 |
 | [US-098](US-098-matchs-de-la-piste.md) | Voir les matchs de sa piste et changer de piste (arbitre) | E5 | Terminée | US-097 |
-| [US-099](US-099-saisir-score-poule-smartphone.md) | Saisir le score d'un match de poule sur le smartphone et l'envoyer à la table | E5 | En revue | US-098, US-091 |
-| [US-100](US-100-saisies-recues-sur-le-pc.md) | Voir sur le PC les saisies reçues des smartphones | E5 | En revue | US-099 |
-| [US-101](US-101-corriger-score-smartphone.md) | Corriger depuis le smartphone un score déjà enregistré (arbitre) | E5 | En revue | US-099 |
-| [US-102](US-102-saisie-suspendue.md) | Suspendre la saisie quand la table est déconnectée et récupérer les saisies en route | E5 | En revue | US-099 |
-| [US-103](US-103-acces-tireur.md) | Ouvrir l'accès tireur par le QR code (« Qui êtes-vous ? ») | E5 | En revue | US-095, US-096 |
-| [US-104](US-104-mes-matchs-tireur.md) | Voir « Mes matchs » et saisir les scores de sa poule (tireur) | E5 | En revue | US-103, US-099 |
-| [US-105](US-105-appareils-connectes.md) | Voir les appareils connectés et en exclure un | E5 | En revue | US-096, US-097, US-103 |
+| [US-099](US-099-saisir-score-poule-smartphone.md) | Saisir le score d'un match de poule sur le smartphone et l'envoyer à la table | E5 | Terminée | US-098, US-091 |
+| [US-100](US-100-saisies-recues-sur-le-pc.md) | Voir sur le PC les saisies reçues des smartphones | E5 | Terminée | US-099 |
+| [US-101](US-101-corriger-score-smartphone.md) | Corriger depuis le smartphone un score déjà enregistré (arbitre) | E5 | Terminée | US-099 |
+| [US-102](US-102-saisie-suspendue.md) | Suspendre la saisie quand la table est déconnectée et récupérer les saisies en route | E5 | Terminée | US-099 |
+| [US-103](US-103-acces-tireur.md) | Ouvrir l'accès tireur par le QR code (« Qui êtes-vous ? ») | E5 | Terminée | US-095, US-096 |
+| [US-104](US-104-mes-matchs-tireur.md) | Voir « Mes matchs » et saisir les scores de sa poule (tireur) | E5 | Terminée | US-103, US-099 |
+| [US-105](US-105-appareils-connectes.md) | Voir les appareils connectés et en exclure un | E5 | Terminée | US-096, US-097, US-103 |
 | [US-106](US-106-saisir-score-tableau-smartphone.md) | Saisir le score d'un match du tableau sur le smartphone | E5 | À spécifier | US-099, US-104, US d'E6 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.

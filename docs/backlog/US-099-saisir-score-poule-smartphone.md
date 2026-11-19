@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-098, US-091
 - **Branche / PR :** `us/US-099-saisir-score-poule-smartphone`
 
@@ -136,3 +136,4 @@ Aucune.
 | 2026-11-19 | Créée |
 | 2026-11-19 | En cours sur `us/US-099-saisir-score-poule-smartphone` (série « maximum d'US ») |
 | 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 776 tests, E2E `saisie-match`, `matchs-piste`, `smartphone-arbitre`) |
+| 2026-11-19 | Recette OK (preview de la branche US-099) : un 5–3 saisi sur le téléphone est enregistré par la table et apparaît sur la feuille du PC ; revérifiée à la recette groupée (match 9, 5–2, « Enregistré par la table à 20 h 29 »). Mergée dans `dev` ; Terminée |

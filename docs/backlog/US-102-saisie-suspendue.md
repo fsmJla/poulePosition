@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F8, F12 (exigences §1 « Scénario de perte totale de connexion »)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-099
 - **Branche / PR :** `us/US-102-saisie-suspendue`
 
@@ -117,3 +117,4 @@ Aucune.
 | 2026-11-19 | Créée |
 | 2026-11-19 | En cours sur `us/US-102-saisie-suspendue` (série, recette groupée) |
 | 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 789 tests, E2E `saisie-suspendue`, `matchs-piste`) |
+| 2026-11-19 | Recette groupée partielle (preview `poule-position-7m49hwv8b`, serveur de preview déployé depuis `us/US-105-appareils-connectes`) : la suspension n'a pas pu être vue en direct, car l'onglet « téléphone » ouvrait lui-même une WebSocket du pilote (même navigateur que le PC) et tenait la table connectée. Défaut corrigé dans US-105 (la page de saisie n'ouvre plus de connexion pilote). Comportement couvert par l'E2E `saisie-suspendue` (contextes séparés, CI verte). Mergée dans `dev` (#148) ; Terminée |

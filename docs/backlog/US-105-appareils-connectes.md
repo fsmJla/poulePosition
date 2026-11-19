@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-096, US-097, US-103
 - **Branche / PR :** `us/US-105-appareils-connectes`
 
@@ -83,3 +83,4 @@ Aucune (planche 21 validée le 2026-11-19).
 | 2026-11-19 | Créée |
 | 2026-11-19 | En cours sur `us/US-105-appareils-connectes` (série, recette groupée) |
 | 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 801 tests, E2E `appareils-connectes`, `parametres`, `acces-qr`, `saisies-recues`) |
+| 2026-11-19 | Recette groupée OK (preview `poule-position-7m49hwv8b`, serveur de preview déployé depuis `us/US-105-appareils-connectes`) : liste en direct (qui, poule, « Vu à 20 h 38 », saisies), exclusion confirmée (« Votre accès a été retiré par la table de marque », refus au rechargement), réadmission (le téléphone revient, « C'est à vous · match 14 »). Défauts trouvés et corrigés pendant la recette (E2E verts) : liste « Hors ligne » au chargement direct de Paramètres ; page de saisie ouverte sur le PC pilote qui ouvrait une seconde connexion pilote ; PC non pilote qui affichait « Hors ligne » (désormais « Seul le PC pilote voit les appareils connectés. »). Mergée dans `dev` (#151) ; Terminée |
