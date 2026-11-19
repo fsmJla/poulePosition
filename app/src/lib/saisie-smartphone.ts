@@ -36,6 +36,8 @@ export interface EtatSaisie {
   refus: RefusSaisie | null;
   /** US-099 : accusés reçus de la table, par identifiant de saisie. */
   accuses: Record<string, Accuse>;
+  /** US-102 CA-1 : heure (ms) du dernier message reçu du serveur, ou null. */
+  dernierEchange: number | null;
 }
 
 /** Longueur maximale du nom d'un arbitre (CA-3). */
@@ -99,10 +101,19 @@ export interface OptionsSaisie {
   /** Garde la mémoire à chaque changement (identifiant, vue). */
   garder: (memoire: MemoireSaisie) => void;
   creerSocket?: (url: string) => SocketMinimale;
+  /** US-102 CA-4 : le navigateur annonce une coupure ou le retour du réseau (`offline`, `online`). */
+  cible?: EventTarget;
 }
 
 /** Ouvre la connexion du téléphone et la tient ; renvoie de quoi suivre son état et l'arrêter. */
-export function creerSaisieSmartphone({ urlServeur, epreuveId, memoire, garder, creerSocket }: OptionsSaisie) {
+export function creerSaisieSmartphone({
+  urlServeur,
+  epreuveId,
+  memoire,
+  garder,
+  creerSocket,
+  cible = typeof window === 'undefined' ? undefined : window,
+}: OptionsSaisie) {
   let courante = { ...memoire };
   const ecouteurs = new Set<(etat: EtatSaisie) => void>();
   let etat: EtatSaisie = {
@@ -113,6 +124,7 @@ export function creerSaisieSmartphone({ urlServeur, epreuveId, memoire, garder, 
     vue: memoire.vue,
     refus: null,
     accuses: {},
+    dernierEchange: null,
   };
   const changer = (modif: Partial<EtatSaisie>) => {
     etat = { ...etat, ...modif };
@@ -124,7 +136,11 @@ export function creerSaisieSmartphone({ urlServeur, epreuveId, memoire, garder, 
   };
 
   const base = urlConnexion(urlServeur, epreuveId);
-  const { arreter, envoyer } = demarrerConnexion({
+  const {
+    arreter: fermer,
+    envoyer,
+    relancer,
+  } = demarrerConnexion({
     adresse: base
       ? async () => {
           const appareil = courante.appareilId ? `&appareil=${encodeURIComponent(courante.appareilId)}` : '';
@@ -135,21 +151,32 @@ export function creerSaisieSmartphone({ urlServeur, epreuveId, memoire, garder, 
     surEtat: (connexion) => changer({ connexion, ...(connexion !== 'connecte' && { table: false }) }),
     surFin: (code) => changer({ refus: refusDuCode(code) ?? 'lien', table: false }),
     surMessage: (message: MessageServeur) => {
+      changer({ dernierEchange: Date.now() });
       if (message.type === 'acces') {
         memoriser({ role: message.role, appareilId: message.appareilId });
         changer({ role: message.role, appareilId: message.appareilId });
-      } else if (message.type === 'table') changer({ table: message.connectee });
-      else if (message.type === 'vue') {
+      } else if (message.type === 'table') {
+        changer({ table: message.connectee });
+        // US-102 CA-6 : la table revient, les saisies restées en attente repartent avec le même identifiant.
+        if (message.connectee) for (const saisie of courante.enAttente ?? []) envoyer(messageSaisie(saisie));
+      } else if (message.type === 'vue') {
         memoriser({ vue: message.vue });
         changer({ vue: message.vue });
       } else if (message.type === 'accuse') {
         const { accuse } = message;
-        // Une saisie suspendue reste à faire sur papier ; les autres réponses closent la saisie.
-        memoriser({ enAttente: (courante.enAttente ?? []).filter(({ id }) => id !== accuse.id) });
+        // US-102 : une saisie suspendue reste en attente (elle repartira au retour de la table) ; les autres réponses la
+        // closent.
+        if (accuse.decision !== 'suspendue') {
+          memoriser({ enAttente: (courante.enAttente ?? []).filter(({ id }) => id !== accuse.id) });
+        }
         changer({ accuses: { ...etat.accuses, [accuse.id]: accuse } });
       }
     },
   });
+
+  // US-102 CA-4 : sans réseau, le téléphone le dit aussitôt ; au retour, il se reconnecte sans attendre.
+  cible?.addEventListener('offline', relancer);
+  cible?.addEventListener('online', relancer);
 
   return {
     etat: () => etat,
@@ -172,7 +199,11 @@ export function creerSaisieSmartphone({ urlServeur, epreuveId, memoire, garder, 
       memoriser({ enAttente: [...(courante.enAttente ?? []), saisie] });
       return true;
     },
-    arreter,
+    arreter: () => {
+      cible?.removeEventListener('offline', relancer);
+      cible?.removeEventListener('online', relancer);
+      fermer();
+    },
   };
 }
 

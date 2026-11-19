@@ -151,6 +151,8 @@
         saisir={(match) => ouvrir(match)}
         corriger={(match) => ouvrir(match, true)}
         suspendue={!etat.table}
+        raison={etat.connexion === 'connecte' ? 'table' : 'telephone'}
+        dernierEchange={etat.dernierEchange}
       />
     {/if}
   {/if}

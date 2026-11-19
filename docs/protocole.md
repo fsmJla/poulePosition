@@ -1146,7 +1146,9 @@ le lien du QR code est retiré de l'adresse affichée dès la page ouverte.
 1. Le téléphone crée une saisie (`id` UUID, poule, tireurs, touches, au temps, nom), la garde « en attente » et
    l'envoie : `{"v":1,"type":"saisie","saisie":{…}}`.
 2. Le DO la relaie à la socket du pilote en y ajoutant le `role` et l'`appareilId` du téléphone. Sans pilote connecté, il
-   répond aussitôt au téléphone `accuse` avec `decision: "suspendue"` (la boîte et la reprise viennent avec US-102).
+   répond aussitôt au téléphone `accuse` avec `decision: "suspendue"` ; le téléphone garde la saisie et la renvoie (même
+   `id`) quand le serveur annonce `table` connectée (US-102). Une saisie relayée reste dans la **boîte** du DO jusqu'à
+   l'accusé, et la boîte est livrée de nouveau à la table à l'ouverture de sa socket.
 3. La table décide (`deciderSaisie`, domaine) : `accepte` (le score est écrit comme `ScorePouleSaisi`, avec
    `saisie: { id, par }`, `par` = « arbitre Dupont (t4) »), `refuse` avec un motif (`EPREUVE_FERMEE`, `DROIT_RETIRE`,
    `POULES_NON_LANCEES`, `MATCH_INCONNU`, `TIREUR_RETIRE`, `MATCH_DEJA_SAISI`, `SCORE_INVALIDE`), ou `doublon` (une saisie

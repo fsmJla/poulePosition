@@ -803,3 +803,51 @@ describe('appareils connectés (US-100)', () => {
     pilote.socket.close();
   });
 });
+
+describe('boîte des saisies (US-102)', () => {
+  it('CA-6 : une saisie relayée sans accusé est livrée de nouveau à la table qui revient ; l’accusé la retire', async () => {
+    const J = 'Arbitreabcdefghijklmno';
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    await appeler(worker, 'PUT', `/epreuves/${id}/jetons/arbitre`, jeton, { appareilId: 'pc-a', jeton: J });
+    const pilote = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    await pilote.prochain(); // bienvenue
+    await pilote.prochain(); // appareils 0
+    const reponse = await worker.fetch(`http://localhost/epreuves/${id}/connexion?j=${J}`, {
+      headers: { Upgrade: 'websocket', Origin: 'http://localhost:4173' },
+    });
+    const telephone = reponse.webSocket as NonNullable<typeof reponse.webSocket>;
+    telephone.accept();
+    await pilote.prochain(); // appareils 1
+    const saisie = {
+      id: 'b-1',
+      poule: 1,
+      tireurA: 'a',
+      tireurB: 'b',
+      touchesA: 5,
+      touchesB: 2,
+      auTemps: false,
+      nom: 'D',
+    };
+    telephone.send(messageSaisie(saisie));
+    expect(JSON.parse(await pilote.prochain())).toMatchObject({ type: 'saisie', saisie: { id: 'b-1' } });
+    // La table disparaît avant d'avoir répondu, puis revient : la saisie lui est livrée de nouveau.
+    pilote.socket.close();
+    await attendre(100);
+    const retour = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    const messages = [await retour.prochain(), await retour.prochain(), await retour.prochain()].map((m) =>
+      JSON.parse(m),
+    );
+    expect(messages.find((m) => m.type === 'saisie')).toMatchObject({ saisie: { id: 'b-1', appareilId: 't1' } });
+    retour.socket.send(messageAccuse({ id: 'b-1', decision: 'accepte' }, 't1'));
+    await attendre(100);
+    retour.socket.close();
+    await attendre(100);
+    // Accusée, elle n'est plus livrée.
+    const encore = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    const suivants = [await encore.prochain(), await encore.prochain()].map((m) => JSON.parse(m).type);
+    expect(suivants).toEqual(['bienvenue', 'appareils']);
+    encore.socket.close();
+    telephone.close();
+  });
+});

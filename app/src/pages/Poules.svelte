@@ -15,6 +15,7 @@
   import ConstitutionPoules from '../composants/ConstitutionPoules.svelte';
   import SaisiePoules from '../composants/SaisiePoules.svelte';
   import SaisiesRecues from '../composants/SaisiesRecues.svelte';
+  import BandeauEcartees from '../composants/BandeauEcartees.svelte';
   import type { PresencePilote } from '../lib/presence-pilote';
   import AttenteEnvoi from '../composants/AttenteEnvoi.svelte';
   import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
@@ -214,6 +215,13 @@
         annuler={etat.poules.length > 0 ? () => (refaire = false) : undefined}
       />
     {:else if etat.lancees}
+      <!-- US-102 CA-7 : les saisies smartphone écartées au retour de la table (le papier fait foi). -->
+      <BandeauEcartees
+        {lignes}
+        {etat}
+        touches={epreuve.formule.touchesPoules}
+        nomsVersIds={new Map(tireursDe(epreuve).map((x) => [x.nom, x.id]))}
+      />
       <SaisiePoules
         {etat}
         {tireurs}
