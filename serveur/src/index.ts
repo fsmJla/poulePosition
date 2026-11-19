@@ -16,7 +16,7 @@ import {
   analyserDemandeInstallation,
   analyserDemandeSel,
   analyserDemandeEnvoi,
-  analyserDemandePresence,
+  analyserDemandeTicket,
   analyserDemandePriseDeMain,
   analyserDemandeCompetition,
   analyserDemandeManifestation,
@@ -29,7 +29,7 @@ import {
   type ReponseJournal,
   type ReponseSuppressionEpreuve,
   type ReponsePilote,
-  type ReponsePresence,
+  type ReponseTicket,
   type ReponsePriseDeMain,
   type ReponseCompetition,
   type ReponseSuppressionContenu,
@@ -69,6 +69,8 @@ import {
   origineAutorisee,
   secretsEgaux,
   signerSession,
+  signerTicket,
+  verifierTicket,
   verificateurServeur,
   verifierSession,
   REGLE_INSTALLATION,
@@ -122,9 +124,16 @@ export default {
     if (!origineAutorisee(requete.headers.get('Origin'), env.ORIGINES)) {
       return new Response('Origine refusée', { status: 403 });
     }
+    // US-094 CA-1 (ADR-0028) : seule la WebSocket du pilote existe, ouverte avec un ticket signé de cette épreuve.
+    const ticket = new URL(requete.url).searchParams.get('ticket') ?? '';
+    const charge = env.SECRET_SESSION ? await verifierTicket(ticket, env.SECRET_SESSION, Date.now()) : null;
+    if (!charge || charge.club !== env.CLUB_ID || charge.epreuve !== route.epreuveId) {
+      return new Response('Ticket refusé', { status: 401 });
+    }
     const epreuve = objetEpreuve(env, route.epreuveId);
     const url = new URL('https://epreuve/connexion');
     url.searchParams.set('epreuveId', route.epreuveId);
+    url.searchParams.set('appareil', charge.appareil);
     return epreuve.fetch(new Request(url, requete));
   },
 } satisfies ExportedHandler<Env>;
@@ -224,7 +233,7 @@ type RouteSession = Extract<
       | 'epreuve'
       | 'evenements'
       | 'pilote'
-      | 'presence'
+      | 'ticket'
       | 'manifestations'
       | 'manifestation'
       | 'archivage-manifestation'
@@ -249,7 +258,7 @@ const METHODES_SESSION = {
   epreuve: ['DELETE'],
   evenements: ['GET', 'POST'],
   pilote: ['GET', 'POST'],
-  presence: ['POST'],
+  ticket: ['POST'],
   manifestations: ['GET', 'POST'],
   manifestation: ['PATCH', 'DELETE'],
   'archivage-manifestation': ['POST'],
@@ -350,7 +359,7 @@ async function traiterSession(
     route.route === 'epreuve' ||
     route.route === 'evenements' ||
     route.route === 'pilote' ||
-    route.route === 'presence'
+    route.route === 'ticket'
   ) {
     // US-022 : tout compte du club au mot de passe définitif (administrateur ou organisateur).
     if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
@@ -856,7 +865,7 @@ function objetEpreuve(env: Env, epreuveId: string): DurableObjectStub<Epreuve> {
  * journal. Un lot accepté met à jour l'index avec le résumé fourni par le pilote ; le serveur ne calcule rien.
  */
 async function gererEpreuves(
-  route: Extract<RouteSession, { route: 'epreuves' | 'epreuve' | 'evenements' | 'pilote' | 'presence' }>,
+  route: Extract<RouteSession, { route: 'epreuves' | 'epreuve' | 'evenements' | 'pilote' | 'ticket' }>,
   requete: Request,
   env: Env,
   club: DurableObjectStub<Club>,
@@ -871,7 +880,7 @@ async function gererEpreuves(
   // US-039 CA-4 : une épreuve supprimée ne se lit, ne s'écrit et ne se reprend plus.
   if (await club.supprimee(route.epreuveId)) return refuserSession(410, 'EPREUVE_SUPPRIMEE');
   if (route.route === 'pilote') return gererPilote(route.epreuveId, requete, epreuve, club, compte);
-  if (route.route === 'presence') return gererPresence(route.epreuveId, requete, epreuve, club);
+  if (route.route === 'ticket') return accorderTicket(route.epreuveId, requete, env, epreuve, club);
   if (requete.method === 'GET') {
     const journal = await epreuve.lire();
     if (!journal) return refuserSession(404, 'EPREUVE_INCONNUE');
@@ -951,20 +960,28 @@ async function gererPilote(
   return Response.json(decision satisfies ReponsePriseDeMain);
 }
 
-/** US-029 CA-2 : battement du pilote ; un ancien pilote reçoit `PAS_PILOTE` et le nom de celui qui a pris la main. */
-async function gererPresence(
+/**
+ * US-094 CA-1 (ADR-0028) : ticket de 60 s pour ouvrir la WebSocket du pilote, accordé au seul pilote en place ; un
+ * ancien pilote reçoit `PAS_PILOTE` et le nom de celui qui a pris la main.
+ */
+async function accorderTicket(
   epreuveId: string,
   requete: Request,
+  env: Env,
   epreuve: DurableObjectStub<Epreuve>,
   club: DurableObjectStub<Club>,
 ): Promise<Response> {
-  const analyse = analyserDemandePresence(await lireJson(requete));
+  const analyse = analyserDemandeTicket(await lireJson(requete));
   if (!analyse.ok) return refuserSession(400, 'DEMANDE_INVALIDE');
-  const decision = await epreuve.battement(analyse.demande.appareilId);
-  if (decision.ok) return Response.json({ ok: true } satisfies ReponsePresence);
-  const { statut, ...refus } = decision;
-  const pilote = refus.erreur === 'PAS_PILOTE' ? await piloteEnPlace(club, epreuveId) : {};
-  return Response.json({ ...refus, ...pilote, ok: false } satisfies ReponsePresence, { status: statut });
+  const decision = await epreuve.decisionTicket(analyse.demande.appareilId);
+  if (!decision.ok) {
+    const { statut, ...refus } = decision;
+    const pilote = refus.erreur === 'PAS_PILOTE' ? await piloteEnPlace(club, epreuveId) : {};
+    return Response.json({ ...refus, ...pilote, ok: false } satisfies ReponseTicket, { status: statut });
+  }
+  const lieu = { club: env.CLUB_ID, epreuve: epreuveId, appareil: analyse.demande.appareilId };
+  const { ticket, expireLe } = await signerTicket(lieu, env.SECRET_SESSION as string, Date.now());
+  return Response.json({ ok: true, ticket, expireLe } satisfies ReponseTicket);
 }
 
 /** Compte tel que la liste le décrit : jamais le sel ni le vérificateur. */

@@ -149,7 +149,7 @@ describe('routes du serveur après l’inversion du vocabulaire (US-044)', () =>
       ['GET', 'evenements'],
       ['POST', 'evenements'],
       ['POST', 'pilote'],
-      ['GET', 'presence'],
+      ['GET', 'ticket'],
       ['GET', 'connexion'],
     ] as const) {
       const reponse = await appeler(methode, `/competitions/${id}/${suite}`, methode === 'POST' ? lot(id) : undefined);

@@ -2,18 +2,19 @@
 // US-001 : accepte les connexions et souhaite la bienvenue. WebSockets en hibernation : une épreuve
 // silencieuse ne consomme pas de durée, et le ping reçoit son pong sans réveiller l'objet (ADR-0004).
 // US-022 (ADR-0016) : copie du journal envoyée par le pilote, ajoutée lot par lot, et appareil pilote.
+// US-094 (ADR-0028) : WebSocket du pilote, ouverte avec un ticket vérifié par le Worker ; elle fait sa présence.
 import { DurableObject } from 'cloudflare:workers';
-import { messageBienvenue, messageErreur, MESSAGE_PING, MESSAGE_PONG } from '@poule-position/protocole';
+import { FERMETURES, messageBienvenue, messageErreur, MESSAGE_PING, MESSAGE_PONG } from '@poule-position/protocole';
 import type { DemandeEnvoi, DemandePriseDeMain } from '@poule-position/protocole';
 import type { Evenement } from '@poule-position/domaine';
 import { erreurMessageClient } from './logique';
 import {
   deciderAjout,
-  deciderPresence,
   deciderPriseDeMain,
+  deciderTicket,
   piloteConnecte,
   type DecisionAjout,
-  type DecisionPresence,
+  type DecisionTicket,
   type DecisionPriseDeMain,
   type EtatJournal,
 } from './replication';
@@ -21,6 +22,16 @@ import type { Env } from './index';
 
 /** Clé de l'unique ligne de la table `pilote`. */
 const LIGNE_UNIQUE = 'courante';
+
+/** Ce qu'une WebSocket garde d'elle-même (survit à l'hibernation). */
+interface AttacheSocket {
+  role: 'pilote';
+  appareil: string;
+  ouverteLe: number;
+}
+
+/** Étiquette des sockets d'un appareil pilote (une seule à la fois). */
+const etiquettePilote = (appareil: string) => `pilote:${appareil}`;
 
 export class Epreuve extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
@@ -33,8 +44,8 @@ export class Epreuve extends DurableObject<Env> {
     const { sql } = this.ctx.storage;
     sql.exec(`CREATE TABLE IF NOT EXISTS evenements (seq INTEGER PRIMARY KEY, contenu TEXT NOT NULL)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS pilote (cle TEXT PRIMARY KEY, appareil TEXT NOT NULL)`);
-    // US-029 : dernier signe de vie du pilote (lot ou battement), pour savoir s'il est connecté.
-    sql.exec(`CREATE TABLE IF NOT EXISTS presence (cle TEXT PRIMARY KEY, vu_le INTEGER NOT NULL)`);
+    // US-094 : la présence vient de la WebSocket du pilote ; la table des battements (US-029) n'existe plus.
+    sql.exec(`DROP TABLE IF EXISTS presence`);
   }
 
   private etat(): EtatJournal {
@@ -47,8 +58,16 @@ export class Epreuve extends DurableObject<Env> {
     return { dernierSeq: dernier?.seq ?? 0, piloteAppareil: pilote?.appareil ?? null };
   }
 
-  private noterPresence(maintenant: number): void {
-    this.ctx.storage.sql.exec('INSERT OR REPLACE INTO presence (cle, vu_le) VALUES (?, ?)', LIGNE_UNIQUE, maintenant);
+  /** Ferme les sockets d'une étiquette (déjà fermées : sans effet). */
+  private fermer(etiquette: string, code: number, raison: string, sauf?: WebSocket): void {
+    for (const socket of this.ctx.getWebSockets(etiquette)) {
+      if (socket === sauf) continue;
+      try {
+        socket.close(code, raison);
+      } catch {
+        // déjà fermée
+      }
+    }
   }
 
   /** Ajoute un lot s'il vient du pilote et suit le dernier seq (ADR-0016) ; le premier lot fixe le pilote. */
@@ -68,7 +87,6 @@ export class Epreuve extends DurableObject<Env> {
         LIGNE_UNIQUE,
         demande.appareilId,
       );
-      this.noterPresence(Date.now());
       return decision;
     });
   }
@@ -87,29 +105,29 @@ export class Epreuve extends DurableObject<Env> {
         LIGNE_UNIQUE,
         demande.appareilId,
       );
-      this.noterPresence(Date.now());
       const journal = this.lire() as NonNullable<ReturnType<Epreuve['lire']>>;
+      // US-094 CA-4 : l'ancien pilote est prévenu tout de suite, par la fermeture de sa WebSocket.
+      if (decision.ancienAppareil !== demande.appareilId) {
+        this.fermer(etiquettePilote(decision.ancienAppareil), FERMETURES.MAIN_PRISE, 'Main prise');
+      }
       return { ok: true as const, ancienAppareil: decision.ancienAppareil, ...journal };
     });
   }
 
-  /** US-029 CA-2 : battement du pilote ; un autre appareil reçoit `PAS_PILOTE`. */
-  battement(appareilId: string): DecisionPresence {
-    return this.ctx.storage.transactionSync(() => {
-      const decision = deciderPresence(this.etat(), appareilId);
-      if (decision.ok) this.noterPresence(Date.now());
-      return decision;
-    });
+  /** US-094 CA-1 : un ticket n'est accordé qu'au pilote en place ; un ancien pilote reçoit `PAS_PILOTE`. */
+  decisionTicket(appareilId: string): DecisionTicket {
+    return deciderTicket(this.etat(), appareilId);
   }
 
-  /** US-029 CA-4 : pilote en place et présence, ou null si l’épreuve n'a encore rien reçu. */
+  /** US-029 CA-4 et US-094 CA-2 : pilote en place et présence par sa WebSocket, ou null si l’épreuve n'a rien reçu. */
   etatPilote(): { piloteAppareil: string; connecte: boolean } | null {
     const { piloteAppareil } = this.etat();
     if (piloteAppareil === null) return null;
-    const [ligne] = this.ctx.storage.sql
-      .exec<{ vu_le: number }>('SELECT vu_le FROM presence WHERE cle = ?', LIGNE_UNIQUE)
-      .toArray();
-    return { piloteAppareil, connecte: piloteConnecte(ligne?.vu_le ?? null, Date.now()) };
+    const sockets = this.ctx.getWebSockets(etiquettePilote(piloteAppareil)).map((socket) => ({
+      ouverteLe: (socket.deserializeAttachment() as AttacheSocket | null)?.ouverteLe ?? 0,
+      dernierPing: this.ctx.getWebSocketAutoResponseTimestamp(socket)?.getTime() ?? null,
+    }));
+    return { piloteAppareil, connecte: piloteConnecte(sockets, Date.now()) };
   }
 
   /** Journal complet, ou null si l’épreuve n'a encore rien reçu. */
@@ -140,10 +158,24 @@ export class Epreuve extends DurableObject<Env> {
     this.creerTables();
   }
 
+  /**
+   * US-094 CA-1 : WebSocket du pilote, dont le Worker a vérifié le ticket. L'appareil doit être encore le pilote (une
+   * prise de main a pu avoir lieu depuis le ticket) : sinon la socket est fermée (`4003`). Une nouvelle socket du même
+   * appareil remplace l'ancienne (`4002`).
+   */
   override async fetch(requete: Request): Promise<Response> {
-    const epreuveId = new URL(requete.url).searchParams.get('epreuveId') ?? '';
+    const parametres = new URL(requete.url).searchParams;
+    const epreuveId = parametres.get('epreuveId') ?? '';
+    const appareil = parametres.get('appareil') ?? '';
     const [client, serveur] = Object.values(new WebSocketPair()) as [WebSocket, WebSocket];
-    this.ctx.acceptWebSocket(serveur);
+    const etiquette = etiquettePilote(appareil);
+    this.ctx.acceptWebSocket(serveur, ['pilote', etiquette]);
+    if (!appareil || this.etat().piloteAppareil !== appareil) {
+      serveur.close(FERMETURES.EXCLUE, 'Pas le pilote');
+      return new Response(null, { status: 101, webSocket: client });
+    }
+    serveur.serializeAttachment({ role: 'pilote', appareil, ouverteLe: Date.now() } satisfies AttacheSocket);
+    this.fermer(etiquette, FERMETURES.REMPLACEE, 'Connexion remplacée', serveur);
     serveur.send(messageBienvenue(epreuveId));
     return new Response(null, { status: 101, webSocket: client });
   }

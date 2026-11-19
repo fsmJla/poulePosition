@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F8, F12 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-022, US-029 ; **ADR à écrire d'abord** (`/adr` : authentification de la WebSocket du pilote)
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-094-websocket-du-pilote`
 
 ## Récit
 

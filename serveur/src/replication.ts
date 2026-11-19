@@ -35,11 +35,21 @@ export function deciderAjout(
   return { ok: true };
 }
 
-/** US-029 : le pilote est connecté tant que son dernier signe (lot ou battement) date de moins d'une minute. */
-export const DELAI_PRESENCE_MS = 60_000;
+/** US-094 (ADR-0028) : deux pings manqués, à 15 s d'intervalle, font perdre la présence. */
+export const DELAI_PRESENCE_MS = 30_000;
 
-export function piloteConnecte(vuLe: number | null, maintenant: number): boolean {
-  return vuLe !== null && maintenant - vuLe < DELAI_PRESENCE_MS;
+/** Une WebSocket ouverte du pilote : son heure d'ouverture et celle de son dernier ping (null s'il n'y en a pas eu). */
+export interface SocketPilote {
+  ouverteLe: number;
+  dernierPing: number | null;
+}
+
+/**
+ * US-094 CA-2 : le pilote est connecté s'il a une WebSocket ouverte dont le dernier signe (ping, ou l'ouverture elle-même)
+ * date de moins de 30 s.
+ */
+export function piloteConnecte(sockets: readonly SocketPilote[], maintenant: number): boolean {
+  return sockets.some(({ ouverteLe, dernierPing }) => maintenant - Math.max(ouverteLe, dernierPing ?? 0) < DELAI_PRESENCE_MS);
 }
 
 export type DecisionPriseDeMain =
@@ -59,13 +69,16 @@ export function deciderPriseDeMain(etat: EtatJournal, demande: DemandePriseDeMai
   return { ok: true, ancienAppareil: etat.piloteAppareil };
 }
 
-export type DecisionPresence =
+export type DecisionTicket =
   | { ok: true }
   | { ok: false; statut: 404; erreur: 'EPREUVE_INCONNUE' }
   | { ok: false; statut: 409; erreur: 'PAS_PILOTE' };
 
-/** US-029 CA-2 : seul le pilote en place bat ; un ancien pilote apprend ainsi qu'il a perdu la main. */
-export function deciderPresence(etat: EtatJournal, appareilId: string): DecisionPresence {
+/**
+ * US-094 CA-1 : seul le pilote en place obtient un ticket pour ouvrir sa WebSocket ; un ancien pilote apprend ainsi
+ * qu'il a perdu la main (`PAS_PILOTE`), comme pour un lot.
+ */
+export function deciderTicket(etat: EtatJournal, appareilId: string): DecisionTicket {
   if (etat.piloteAppareil === null) return { ok: false, statut: 404, erreur: 'EPREUVE_INCONNUE' };
   return etat.piloteAppareil === appareilId ? { ok: true } : { ok: false, statut: 409, erreur: 'PAS_PILOTE' };
 }

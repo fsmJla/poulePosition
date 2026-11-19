@@ -4,6 +4,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { unstable_startWorker } from 'wrangler';
 import type { Evenement } from '@poule-position/domaine';
 import {
+  MESSAGE_PING,
+  MESSAGE_PONG,
   deriverCle,
   preparerDemandeInstallation,
   type EpreuveIndexee,
@@ -225,8 +227,8 @@ describe('réplication du journal (ADR-0016)', () => {
 
 const prendreLaMain = (epreuveId: string, demande: unknown, jetonSession = jeton) =>
   appeler(worker, 'POST', `/epreuves/${epreuveId}/pilote`, jetonSession, demande);
-const battement = (epreuveId: string, appareilId: string) =>
-  appeler(worker, 'POST', `/epreuves/${epreuveId}/presence`, jeton, { appareilId });
+const demanderTicket = (epreuveId: string, appareilId: string) =>
+  appeler(worker, 'POST', `/epreuves/${epreuveId}/ticket`, jeton, { appareilId });
 const piloteDe = (epreuveId: string) => appeler(worker, 'GET', `/epreuves/${epreuveId}/pilote`, jeton);
 
 describe('prise de main (US-029)', () => {
@@ -266,12 +268,12 @@ describe('prise de main (US-029)', () => {
     expect(epreuves.find((c) => c.id === id)).toMatchObject({ piloteAppareil: 'pc-b', piloteNom: ADMIN.nom });
   });
 
-  it('CA-2 : le battement de l’ancien pilote reçoit PAS_PILOTE avec le nom du nouveau', async () => {
+  it('US-094 CA-1 : la demande de ticket de l’ancien pilote reçoit PAS_PILOTE avec le nom du nouveau', async () => {
     const id = crypto.randomUUID();
     await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
-    expect((await battement(id, 'pc-a')).status).toBe(200);
+    expect((await demanderTicket(id, 'pc-a')).status).toBe(200);
     await prendreLaMain(id, { appareilId: 'pc-b', piloteAttendu: 'pc-a' });
-    const ancien = await battement(id, 'pc-a');
+    const ancien = await demanderTicket(id, 'pc-a');
     expect(ancien.status).toBe(409);
     expect(await ancien.json()).toEqual({
       ok: false,
@@ -279,20 +281,7 @@ describe('prise de main (US-029)', () => {
       piloteAppareil: 'pc-b',
       piloteNom: ADMIN.nom,
     });
-    expect((await battement(id, 'pc-b')).status).toBe(200);
-  });
-
-  it('CA-4 : le pilote qui vient d’envoyer ou de reprendre la main est connecté', async () => {
-    const id = crypto.randomUUID();
-    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
-    expect(await (await piloteDe(id)).json()).toEqual({
-      ok: true,
-      piloteAppareil: 'pc-a',
-      piloteNom: ADMIN.nom,
-      connecte: true,
-    });
-    await prendreLaMain(id, { appareilId: 'pc-b', piloteAttendu: 'pc-a' });
-    expect(await (await piloteDe(id)).json()).toMatchObject({ piloteAppareil: 'pc-b', connecte: true });
+    expect((await demanderTicket(id, 'pc-b')).status).toBe(200);
   });
 
   it('cas limite : la seconde de deux demandes simultanées reçoit MAIN_DEJA_PRISE et le pilote en place', async () => {
@@ -317,7 +306,7 @@ describe('prise de main (US-029)', () => {
     const id = crypto.randomUUID();
     expect((await prendreLaMain(id, { appareilId: 'pc-b', piloteAttendu: 'pc-a' })).status).toBe(404);
     expect((await piloteDe(id)).status).toBe(404);
-    expect((await battement(id, 'pc-a')).status).toBe(404);
+    expect((await demanderTicket(id, 'pc-a')).status).toBe(404);
     expect((await prendreLaMain(id, { appareilId: 'pc-b' })).status).toBe(400);
     expect((await prendreLaMain(id, '{pas du json')).status).toBe(400);
     expect((await prendreLaMain(id, { appareilId: 'pc-b', piloteAttendu: 'pc-a' }, '')).status).toBe(401);
@@ -362,5 +351,128 @@ describe('liste de l’index gardée en mémoire (US-038)', () => {
     expect(apres.find((ligne) => ligne.id === autre)).toMatchObject({ piloteAppareil: 'pc-a' });
     // La ligne désignée par son seul identifiant donne le bon pilote.
     expect(await (await piloteDe(id)).json()).toMatchObject({ piloteAppareil: 'pc-b', piloteNom: ADMIN.nom });
+  });
+});
+
+/** US-094 : ouvre la WebSocket du pilote avec un ticket ; file des messages reçus et code de fermeture. */
+async function ouvrirSocket(epreuveId: string, ticket: string) {
+  const reponse = await worker.fetch(
+    `http://localhost/epreuves/${epreuveId}/connexion?ticket=${encodeURIComponent(ticket)}`,
+    { headers: { Upgrade: 'websocket', Origin: 'http://localhost:4173' } },
+  );
+  expect(reponse.status).toBe(101);
+  const socket = reponse.webSocket as NonNullable<typeof reponse.webSocket>;
+  const recus: string[] = [];
+  const attentes: ((message: string) => void)[] = [];
+  let resoudreFermeture: (code: number) => void = () => {};
+  const fermeture = new Promise<number>((resoudre) => (resoudreFermeture = resoudre));
+  socket.addEventListener('message', (evenement) => {
+    const message = String(evenement.data);
+    const attente = attentes.shift();
+    if (attente) attente(message);
+    else recus.push(message);
+  });
+  socket.addEventListener('close', (evenement) => resoudreFermeture(evenement.code));
+  socket.accept();
+  const prochain = () =>
+    new Promise<string>((resoudre) => {
+      const deja = recus.shift();
+      if (deja !== undefined) resoudre(deja);
+      else attentes.push(resoudre);
+    });
+  return { socket, prochain, fermeture };
+}
+
+async function ticketDe(epreuveId: string, appareilId: string): Promise<string> {
+  const reponse = await demanderTicket(epreuveId, appareilId);
+  expect(reponse.status).toBe(200);
+  const corps = (await reponse.json()) as { ok: boolean; ticket: string; expireLe: number };
+  expect(corps.ok).toBe(true);
+  expect(corps.expireLe).toBeGreaterThan(Date.now());
+  return corps.ticket;
+}
+
+const attendre = (ms: number) => new Promise((resoudre) => setTimeout(resoudre, ms));
+
+describe('WebSocket du pilote (US-094, ADR-0028)', () => {
+  it('CA-1 : le pilote ouvre sa WebSocket avec un ticket, reçoit bienvenue, et pong au ping', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    const { socket, prochain } = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    expect(JSON.parse(await prochain())).toEqual({ v: 1, type: 'bienvenue', epreuveId: id });
+    socket.send(MESSAGE_PING);
+    expect(await prochain()).toBe(MESSAGE_PONG);
+    socket.send('{"v":1,"type":"saisie"}');
+    expect(JSON.parse(await prochain())).toMatchObject({ type: 'erreur', code: 'TYPE_INTERDIT' });
+    socket.close();
+  });
+
+  it('CA-1 : un ticket d’une autre épreuve, faux ou absent est refusé (401)', async () => {
+    const id = crypto.randomUUID();
+    const autre = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    const ticket = await ticketDe(id, 'pc-a');
+    const ouvrir = (epreuveId: string, suite: string) =>
+      worker.fetch(`http://localhost/epreuves/${epreuveId}/connexion${suite}`, {
+        headers: { Upgrade: 'websocket', Origin: 'http://localhost:4173' },
+      });
+    expect((await ouvrir(autre, `?ticket=${ticket}`)).status).toBe(401);
+    expect((await ouvrir(id, '?ticket=faux')).status).toBe(401);
+    expect((await ouvrir(id, '')).status).toBe(401);
+  });
+
+  it('CA-1 : un appareil qui n’est plus le pilote depuis son ticket est fermé (4003)', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    const ticket = await ticketDe(id, 'pc-a');
+    await prendreLaMain(id, { appareilId: 'pc-b', piloteAttendu: 'pc-a' });
+    const { fermeture } = await ouvrirSocket(id, ticket);
+    expect(await fermeture).toBe(4003);
+  });
+
+  it('CA-2 : le pilote est connecté tant que sa WebSocket est ouverte, absent sans elle', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    expect(await (await piloteDe(id)).json()).toEqual({
+      ok: true,
+      piloteAppareil: 'pc-a',
+      piloteNom: ADMIN.nom,
+      connecte: false,
+    });
+    const { socket, prochain } = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    await prochain();
+    expect(await (await piloteDe(id)).json()).toMatchObject({ piloteAppareil: 'pc-a', connecte: true });
+    socket.close();
+    await attendre(200);
+    expect(await (await piloteDe(id)).json()).toMatchObject({ connecte: false });
+  });
+
+  it('CA-4 : la prise de main ferme aussitôt la WebSocket de l’ancien pilote (4004)', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    const { prochain, fermeture } = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    await prochain();
+    await prendreLaMain(id, { appareilId: 'pc-b', piloteAttendu: 'pc-a' });
+    expect(await fermeture).toBe(4004);
+    expect(await (await piloteDe(id)).json()).toMatchObject({ piloteAppareil: 'pc-b', connecte: false });
+  });
+
+  it('cas limite : une seconde WebSocket du même appareil remplace la première (4002)', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    const premiere = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    await premiere.prochain();
+    const seconde = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    await seconde.prochain();
+    expect(await premiere.fermeture).toBe(4002);
+    expect(await (await piloteDe(id)).json()).toMatchObject({ connecte: true });
+    seconde.socket.close();
+  });
+
+  it('CA-5 : les battements n’existent plus', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    const battement = await appeler(worker, 'POST', `/epreuves/${id}/presence`, jeton, { appareilId: 'pc-a' });
+    expect(battement.status).toBe(404);
   });
 });

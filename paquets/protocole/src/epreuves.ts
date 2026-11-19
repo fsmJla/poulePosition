@@ -112,8 +112,8 @@ export interface DemandePriseDeMain {
   piloteAttendu: string;
 }
 
-/** Corps de `POST /epreuves/<id>/presence` (US-029) : battement du pilote. */
-export interface DemandePresence {
+/** Corps de `POST /epreuves/<id>/ticket` (US-094, ADR-0028) : l'appareil pilote qui veut ouvrir sa WebSocket. */
+export interface DemandeTicket {
   appareilId: string;
 }
 
@@ -125,7 +125,9 @@ export type ReponsePriseDeMain =
 export type ReponsePilote =
   { ok: true; piloteAppareil: string; piloteNom: string; connecte: boolean } | { ok: false; erreur: ErreurReponse };
 
-export type ReponsePresence = { ok: true } | ({ ok: false; erreur: ErreurReponse } & PiloteEnPlace);
+/** Ticket de la WebSocket du pilote, valable 60 s (`expireLe` en millisecondes). */
+export type ReponseTicket =
+  { ok: true; ticket: string; expireLe: number } | ({ ok: false; erreur: ErreurReponse } & PiloteEnPlace);
 
 export type ReponseJournal =
   | { ok: true; evenements: Evenement[]; dernierSeq: number; piloteAppareil: string }
@@ -228,7 +230,7 @@ export function analyserDemandePriseDeMain(brut: unknown): { ok: true; demande: 
     : { ok: false };
 }
 
-export function analyserDemandePresence(brut: unknown): { ok: true; demande: DemandePresence } | { ok: false } {
+export function analyserDemandeTicket(brut: unknown): { ok: true; demande: DemandeTicket } | { ok: false } {
   const objet = analyserDemandeAppareil(brut, ['appareilId']);
   return objet ? { ok: true, demande: { appareilId: objet.appareilId! } } : { ok: false };
 }
@@ -252,8 +254,13 @@ export function analyserReponsePilote(brut: unknown): ReponsePilote {
   return { ok: true, piloteAppareil, piloteNom, connecte };
 }
 
-export function analyserReponsePresence(brut: unknown): ReponsePresence {
-  return estObjet(brut) && brut.ok === true ? { ok: true } : refusDe(brut);
+export function analyserReponseTicket(brut: unknown): ReponseTicket {
+  if (!estObjet(brut) || brut.ok !== true) return refusDe(brut);
+  const { ticket, expireLe } = brut;
+  if (typeof ticket !== 'string' || ticket === '' || !estEntierPositif(expireLe)) {
+    return { ok: false, erreur: 'REPONSE_INVALIDE' };
+  }
+  return { ok: true, ticket, expireLe };
 }
 
 export function analyserReponseJournal(brut: unknown): ReponseJournal {

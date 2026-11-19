@@ -11,7 +11,8 @@ export const MESSAGE_PING = JSON.stringify({ v: VERSION_PROTOCOLE, type: 'ping' 
 export const MESSAGE_PONG = JSON.stringify({ v: VERSION_PROTOCOLE, type: 'pong' });
 
 /** Codes de fermeture WebSocket propres au serveur (repris du relais). */
-export const FERMETURES = Object.freeze({ REFUS: 4000, FERMEE: 4001, REMPLACEE: 4002, EXCLUE: 4003 });
+/** `MAIN_PRISE` (US-094, ADR-0028) : un autre appareil a pris la main ; l'ancien pilote ne se reconnecte pas. */
+export const FERMETURES = Object.freeze({ REFUS: 4000, FERMEE: 4001, REMPLACEE: 4002, EXCLUE: 4003, MAIN_PRISE: 4004 });
 
 /** Codes d'erreur et message lisible associé. */
 export const ERREURS = Object.freeze({

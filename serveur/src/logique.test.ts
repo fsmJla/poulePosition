@@ -9,6 +9,9 @@ import {
   fauxSel,
   decisionSession,
   signerSession,
+  signerTicket,
+  verifierTicket,
+  DUREE_TICKET_MS,
   verifierSession,
   erreurMessageClient,
   extraireJetonBearer,
@@ -111,10 +114,11 @@ describe('analyserChemin', () => {
     expect(analyserChemin('/epreuves/Demo')).toBeNull();
   });
 
-  it('US-029 : reconnaît le pilote et la présence d’une épreuve', () => {
+  it('US-029 et US-094 : reconnaît le pilote et le ticket d’une épreuve ; la présence n’existe plus', () => {
     const id = '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c';
     expect(analyserChemin(`/epreuves/${id}/pilote`)).toEqual({ route: 'pilote', epreuveId: id });
-    expect(analyserChemin(`/epreuves/${id}/presence`)).toEqual({ route: 'presence', epreuveId: id });
+    expect(analyserChemin(`/epreuves/${id}/ticket`)).toEqual({ route: 'ticket', epreuveId: id });
+    expect(analyserChemin(`/epreuves/${id}/presence`)).toBeNull();
     expect(analyserChemin('/epreuves/Demo/pilote')).toBeNull();
   });
 
@@ -226,6 +230,42 @@ describe('routes de session (US-003)', () => {
     expect(analyserChemin('/session/autre')).toBeNull();
     expect(analyserChemin('/compte/mot-de-passe')).toEqual({ route: 'mot-de-passe' });
     expect(analyserChemin('/compte')).toEqual({ route: 'profil' });
+  });
+});
+
+describe('ticket de la WebSocket du pilote (US-094, ADR-0028)', () => {
+  const SECRET = 'secret-de-session-de-test';
+  const MAINTENANT = Date.UTC(2026, 10, 19, 10);
+  const lieu = { club: 'club-principal', epreuve: 'epreuve-1', appareil: 'pc-a' };
+
+  it('CA-1 : signe un ticket de 60 s, relu à l’identique', async () => {
+    const { ticket, expireLe } = await signerTicket(lieu, SECRET, MAINTENANT);
+    expect(DUREE_TICKET_MS).toBe(60_000);
+    expect(expireLe).toBe(MAINTENANT + DUREE_TICKET_MS);
+    expect(await verifierTicket(ticket, SECRET, MAINTENANT + 59_000)).toEqual({
+      t: 'pilote',
+      ...lieu,
+      exp: expireLe / 1000,
+    });
+  });
+
+  it('CA-1 : refuse un ticket expiré, falsifié, signé avec un autre secret ou mal formé', async () => {
+    const { ticket, expireLe } = await signerTicket(lieu, SECRET, MAINTENANT);
+    expect(await verifierTicket(ticket, SECRET, expireLe)).toBeNull();
+    expect(await verifierTicket(ticket, 'autre-secret', MAINTENANT)).toBeNull();
+    const [entete, , signature] = ticket.split('.');
+    const autre = encoderBase64Url(new TextEncoder().encode(JSON.stringify({ t: 'pilote', ...lieu, appareil: 'pc-b' })));
+    expect(await verifierTicket(`${entete}.${autre}.${signature}`, SECRET, MAINTENANT)).toBeNull();
+    expect(await verifierTicket('a.b', SECRET, MAINTENANT)).toBeNull();
+    expect(await verifierTicket(`autre.${ticket.split('.')[1]}.${signature}`, SECRET, MAINTENANT)).toBeNull();
+  });
+
+  it('CA-1 : une session ne vaut pas ticket, et un ticket ne vaut pas session', async () => {
+    const compte = { sub: 'compte-1', club: 'club-principal', role: 'organisateur' as const, v: 0 };
+    const { jeton } = await signerSession(compte, SECRET, MAINTENANT);
+    expect(await verifierTicket(jeton, SECRET, MAINTENANT)).toBeNull();
+    const { ticket } = await signerTicket(lieu, SECRET, MAINTENANT);
+    expect(await verifierSession(ticket, SECRET, MAINTENANT)).toBeNull();
   });
 });
 

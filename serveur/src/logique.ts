@@ -48,7 +48,7 @@ export type Route =
   | { route: 'epreuve'; epreuveId: string }
   | { route: 'evenements'; epreuveId: string }
   | { route: 'pilote'; epreuveId: string }
-  | { route: 'presence'; epreuveId: string }
+  | { route: 'ticket'; epreuveId: string }
   | { route: 'connexion'; epreuveId: string }
   | { route: 'fichiers' }
   | { route: 'fichier'; proprietaire: ProprietaireFichier; id: string; sorte: SorteFichier }
@@ -97,9 +97,9 @@ export function analyserChemin(chemin: string): Route | null {
     if (!connu || !MOTIF_EPREUVE.test(id) || !(SORTES_FICHIER as readonly string[]).includes(sorte)) return null;
     return { route: 'fichier', proprietaire: proprietaire as ProprietaireFichier, id, sorte: sorte as SorteFichier };
   }
-  const morceaux = /^\/epreuves\/([^/]+)\/(connexion|evenements|pilote|presence)$/.exec(chemin);
+  const morceaux = /^\/epreuves\/([^/]+)\/(connexion|evenements|pilote|ticket)$/.exec(chemin);
   if (!morceaux?.[1] || !MOTIF_EPREUVE.test(morceaux[1])) return null;
-  const route = { connexion: 'connexion', evenements: 'evenements', pilote: 'pilote', presence: 'presence' } as const;
+  const route = { connexion: 'connexion', evenements: 'evenements', pilote: 'pilote', ticket: 'ticket' } as const;
   return { route: route[morceaux[2] as keyof typeof route], epreuveId: morceaux[1] };
 }
 
@@ -288,6 +288,52 @@ export async function verifierSession(
   const lue = lireCharge(charge);
   if (!lue || sessionExpiree(lue.exp * 1000, maintenant)) return null;
   return lue;
+}
+
+/** US-094 (ADR-0028) : durée de validité du ticket d'ouverture de la WebSocket du pilote. */
+export const DUREE_TICKET_MS = 60_000;
+
+/** Ce que porte un ticket : le club, l'épreuve et l'appareil pilote qui ouvrira la WebSocket. */
+export interface ChargeTicket {
+  /** Marque qui distingue un ticket d'une session : l'un ne vaut jamais pour l'autre. */
+  t: 'pilote';
+  club: string;
+  epreuve: string;
+  appareil: string;
+  exp: number;
+}
+
+/** US-094 CA-1 : signe un ticket de 60 s pour ouvrir la WebSocket du pilote ; `expireLe` est en millisecondes. */
+export async function signerTicket(
+  lieu: { club: string; epreuve: string; appareil: string },
+  secret: string,
+  maintenant: number,
+): Promise<{ ticket: string; expireLe: number }> {
+  const charge: ChargeTicket = { t: 'pilote', ...lieu, exp: Math.floor((maintenant + DUREE_TICKET_MS) / 1000) };
+  const corps = `${ENTETE_JWT}.${encoderJson(charge)}`;
+  return { ticket: `${corps}.${encoderBase64Url(await hmac(secret, corps))}`, expireLe: charge.exp * 1000 };
+}
+
+/** Charge d'un ticket correctement signé, non expiré et de la bonne forme ; sinon null. */
+export async function verifierTicket(ticket: string, secret: string, maintenant: number): Promise<ChargeTicket | null> {
+  const morceaux = ticket.split('.');
+  if (morceaux.length !== 3) return null;
+  const [entete, charge, signature] = morceaux as [string, string, string];
+  if (entete !== ENTETE_JWT) return null;
+  if (!(await secretsEgaux(signature, encoderBase64Url(await hmac(secret, `${entete}.${charge}`))))) return null;
+  let lue: unknown;
+  try {
+    lue = JSON.parse(new TextDecoder().decode(decoderBase64Url(charge)));
+  } catch {
+    return null;
+  }
+  if (lue === null || typeof lue !== 'object' || Array.isArray(lue)) return null;
+  const { t, club, epreuve, appareil, exp } = lue as Record<string, unknown>;
+  if (t !== 'pilote' || typeof club !== 'string' || typeof epreuve !== 'string' || typeof appareil !== 'string') {
+    return null;
+  }
+  if (typeof exp !== 'number' || exp * 1000 <= maintenant) return null;
+  return { t, club, epreuve, appareil, exp };
 }
 
 /** En-têtes CORS d'une réponse à une origine autorisée ; null si l'origine est absente ou refusée. */

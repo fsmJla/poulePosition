@@ -3,7 +3,7 @@ import type { Evenement } from '@poule-position/domaine';
 import type { DemandeEnvoi, ResumeEpreuve } from '@poule-position/protocole';
 import {
   deciderAjout,
-  deciderPresence,
+  deciderTicket,
   deciderPriseDeMain,
   deciderSuppression,
   DELAI_PRESENCE_MS,
@@ -132,22 +132,31 @@ describe('prise de main et présence du pilote (US-029)', () => {
     ).toEqual({ ok: false, statut: 404, erreur: 'EPREUVE_INCONNUE' });
   });
 
-  it('CA-2 : le battement du pilote est accepté, celui d’un ancien pilote reçoit PAS_PILOTE', () => {
-    expect(deciderPresence(etat, 'pc-a')).toEqual({ ok: true });
-    expect(deciderPresence(etat, 'pc-b')).toEqual({ ok: false, statut: 409, erreur: 'PAS_PILOTE' });
-    expect(deciderPresence({ dernierSeq: 0, piloteAppareil: null }, 'pc-a')).toEqual({
+  it('US-094 CA-1 : le pilote obtient un ticket, un ancien pilote reçoit PAS_PILOTE', () => {
+    expect(deciderTicket(etat, 'pc-a')).toEqual({ ok: true });
+    expect(deciderTicket(etat, 'pc-b')).toEqual({ ok: false, statut: 409, erreur: 'PAS_PILOTE' });
+    expect(deciderTicket({ dernierSeq: 0, piloteAppareil: null }, 'pc-a')).toEqual({
       ok: false,
       statut: 404,
       erreur: 'EPREUVE_INCONNUE',
     });
   });
 
-  it('CA-4 : le pilote est connecté tant que son dernier signe date de moins d’une minute', () => {
+  it('US-094 CA-2 : le pilote est connecté tant qu’une socket a donné signe de vie depuis moins de 30 s', () => {
     const maintenant = 1_800_000_000_000;
-    expect(piloteConnecte(maintenant - 1_000, maintenant)).toBe(true);
-    expect(piloteConnecte(maintenant - DELAI_PRESENCE_MS + 1, maintenant)).toBe(true);
-    expect(piloteConnecte(maintenant - DELAI_PRESENCE_MS, maintenant)).toBe(false);
-    expect(piloteConnecte(null, maintenant)).toBe(false);
+    const ouverte = maintenant - 120_000;
+    expect(DELAI_PRESENCE_MS).toBe(30_000);
+    expect(piloteConnecte([{ ouverteLe: ouverte, dernierPing: maintenant - 1_000 }], maintenant)).toBe(true);
+    expect(piloteConnecte([{ ouverteLe: ouverte, dernierPing: maintenant - DELAI_PRESENCE_MS + 1 }], maintenant)).toBe(
+      true,
+    );
+    // Deux pings manqués : la socket encore ouverte ne compte plus.
+    expect(piloteConnecte([{ ouverteLe: ouverte, dernierPing: maintenant - DELAI_PRESENCE_MS }], maintenant)).toBe(false);
+    // Socket qui vient de s'ouvrir, sans ping encore.
+    expect(piloteConnecte([{ ouverteLe: maintenant - 5_000, dernierPing: null }], maintenant)).toBe(true);
+    expect(piloteConnecte([{ ouverteLe: ouverte, dernierPing: null }], maintenant)).toBe(false);
+    // Sans socket : absent.
+    expect(piloteConnecte([], maintenant)).toBe(false);
   });
 });
 
