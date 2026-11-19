@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-095, US-096
 - **Branche / PR :** `us/US-097-acces-arbitre`
 
@@ -106,3 +106,4 @@ Aucune.
 | 2026-11-19 | Créée |
 | 2026-11-19 | En cours sur `us/US-097-acces-arbitre` (série « maximum d'US ») |
 | 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 760 tests, couverture 94,4 %, E2E `smartphone-arbitre` : entrée, piste, retour sur le lien, lien faux, hors ligne) |
+| 2026-11-19 | Recette OK sur https://poule-position-git-us-us-097-acces-arbitre-fsmjlas-projects.vercel.app (serveur de preview déployé depuis la branche) : lien des arbitres ouvert, jeton retiré de l’adresse, « Accès arbitre », entête « Recette US-097 arbitre · Sabre » et « Table connectée » (CA-1, CA-5), identifiant t1 attribué puis repris au rechargement (CA-3, CA-4), poules pas encore lancées signalées ; lien faux : « Ce lien n’est plus valable… » (CA-2). Choix de la piste, Commencer et hors ligne couverts par l’E2E à 390 × 844 (CA-6). Passe à Terminée |
