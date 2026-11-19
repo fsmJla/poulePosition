@@ -30,6 +30,7 @@ import {
   type ReponseSuppressionEpreuve,
   type ReponsePilote,
   type ReponseTicket,
+  type ReponseVue,
   type ReponsePriseDeMain,
   type ReponseCompetition,
   type ReponseSuppressionContenu,
@@ -234,6 +235,7 @@ type RouteSession = Extract<
       | 'evenements'
       | 'pilote'
       | 'ticket'
+      | 'vue'
       | 'manifestations'
       | 'manifestation'
       | 'archivage-manifestation'
@@ -259,6 +261,7 @@ const METHODES_SESSION = {
   evenements: ['GET', 'POST'],
   pilote: ['GET', 'POST'],
   ticket: ['POST'],
+  vue: ['GET'],
   manifestations: ['GET', 'POST'],
   manifestation: ['PATCH', 'DELETE'],
   'archivage-manifestation': ['POST'],
@@ -359,7 +362,8 @@ async function traiterSession(
     route.route === 'epreuve' ||
     route.route === 'evenements' ||
     route.route === 'pilote' ||
-    route.route === 'ticket'
+    route.route === 'ticket' ||
+    route.route === 'vue'
   ) {
     // US-022 : tout compte du club au mot de passe définitif (administrateur ou organisateur).
     if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
@@ -865,7 +869,7 @@ function objetEpreuve(env: Env, epreuveId: string): DurableObjectStub<Epreuve> {
  * journal. Un lot accepté met à jour l'index avec le résumé fourni par le pilote ; le serveur ne calcule rien.
  */
 async function gererEpreuves(
-  route: Extract<RouteSession, { route: 'epreuves' | 'epreuve' | 'evenements' | 'pilote' | 'ticket' }>,
+  route: Extract<RouteSession, { route: 'epreuves' | 'epreuve' | 'evenements' | 'pilote' | 'ticket' | 'vue' }>,
   requete: Request,
   env: Env,
   club: DurableObjectStub<Club>,
@@ -881,6 +885,11 @@ async function gererEpreuves(
   if (await club.supprimee(route.epreuveId)) return refuserSession(410, 'EPREUVE_SUPPRIMEE');
   if (route.route === 'pilote') return gererPilote(route.epreuveId, requete, epreuve, club, compte);
   if (route.route === 'ticket') return accorderTicket(route.epreuveId, requete, env, epreuve, club);
+  // US-095 CA-2 : dernière vue de saisie publiée par le pilote (null tant qu'il n'en a publié aucune).
+  if (route.route === 'vue') {
+    const texte = await epreuve.derniereVue();
+    return Response.json({ ok: true, vue: texte === null ? null : JSON.parse(texte) } satisfies ReponseVue);
+  }
   if (requete.method === 'GET') {
     const journal = await epreuve.lire();
     if (!journal) return refuserSession(404, 'EPREUVE_INCONNUE');

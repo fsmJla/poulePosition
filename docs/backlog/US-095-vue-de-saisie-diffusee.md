@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-094, US-088, US-092
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-095-vue-de-saisie-diffusee`
 
 ## Récit
 

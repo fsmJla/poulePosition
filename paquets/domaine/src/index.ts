@@ -33,3 +33,4 @@ export * from './recherche';
 export * from './archivage';
 export * from './filtres-liste';
 export * from './reprise';
+export * from './vue-saisie';

@@ -1,5 +1,7 @@
 // Messages échangés entre l'application et le serveur, partagés par les deux (docs/protocole.md).
 // Enveloppe commune : un objet JSON texte avec `v` (version) et `type`, repris du relais Wireless Fencing.
+import type { VueSaisie } from '@poule-position/domaine';
+import { analyserVueSaisie } from './vue-saisie';
 
 export const VERSION_PROTOCOLE = 1;
 
@@ -42,8 +44,18 @@ export interface MessagePong {
   type: 'pong';
 }
 
+/** US-095 : vue de saisie, publiée par le pilote (client) puis diffusée aux smartphones (serveur). */
+export interface MessageVue {
+  v: typeof VERSION_PROTOCOLE;
+  type: 'vue';
+  vue: VueSaisie;
+}
+
 /** Messages que le serveur envoie à un client. */
-export type MessageServeur = MessageBienvenue | MessageErreur | MessagePong;
+export type MessageServeur = MessageBienvenue | MessageErreur | MessagePong | MessageVue;
+
+/** Messages qu'un client envoie au serveur (le `ping` exact mis à part, auto-répondu). */
+export type MessageClient = MessageVue;
 
 /** Contenu d'une enveloppe valide : version et type vérifiés, le reste est propre au type. */
 export type Enveloppe = { v: typeof VERSION_PROTOCOLE; type: string } & Record<string, unknown>;
@@ -53,6 +65,10 @@ export type Refus = { ok: false; erreur: CodeErreur };
 
 export function messageBienvenue(epreuveId: string): string {
   return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'bienvenue', epreuveId } satisfies MessageBienvenue);
+}
+
+export function messageVue(vue: VueSaisie): string {
+  return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'vue', vue } satisfies MessageVue);
 }
 
 export function messageErreur(code: CodeErreur): string {
@@ -102,7 +118,24 @@ export function analyserMessageServeur(brut: unknown): Analyse<{ message: Messag
       };
     case 'pong':
       return { ok: true, message: { v: VERSION_PROTOCOLE, type: 'pong' } };
+    case 'vue':
+      return lireVue(contenu);
     default:
       return { ok: false, erreur: 'TYPE_INTERDIT' };
   }
+}
+
+function lireVue(contenu: Enveloppe): Analyse<{ message: MessageVue }> | Refus {
+  const vue = analyserVueSaisie(contenu.vue);
+  return vue
+    ? { ok: true, message: { v: VERSION_PROTOCOLE, type: 'vue', vue } }
+    : { ok: false, erreur: 'MESSAGE_INVALIDE' };
+}
+
+/** US-095 : analyse un message reçu d'un client (côté serveur) ; le serveur décide ensuite si ce client peut l'envoyer. */
+export function analyserMessageClient(brut: unknown): Analyse<{ message: MessageClient }> | Refus {
+  const enveloppe = analyserEnveloppe(brut);
+  if (!enveloppe.ok) return enveloppe;
+  if (enveloppe.contenu.type !== 'vue') return { ok: false, erreur: 'TYPE_INTERDIT' };
+  return lireVue(enveloppe.contenu);
 }
