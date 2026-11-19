@@ -1,7 +1,13 @@
 // Saisie par smartphone (US-097, ADR-0005 et ADR-0007) : un téléphone entre par le lien d'un QR code, sans compte. Il
 // garde sur lui le jeton, son identifiant d'appareil, le nom et la piste de l'arbitre, et la dernière vue de saisie
 // reçue de la table : il retrouve ainsi son écran au retour sur le lien, même sans réseau.
-import { FERMETURES, type MessageServeur } from '@poule-position/protocole';
+import {
+  FERMETURES,
+  messageSaisie,
+  type Accuse,
+  type MessageServeur,
+  type SaisieTelephone,
+} from '@poule-position/protocole';
 import type { RoleQr, VueSaisie } from '@poule-position/domaine';
 import { demarrerConnexion, urlConnexion, type EtatConnexion, type SocketMinimale } from './connexion';
 
@@ -13,6 +19,8 @@ export interface MemoireSaisie {
   nom: string | null;
   piste: number | null;
   vue: VueSaisie | null;
+  /** US-099 CA-4 : saisies envoyées sans accusé de la table (renvoyées à la reconnexion, US-102). */
+  enAttente?: SaisieTelephone[];
 }
 
 /** CA-2 et US-096 CA-6 : motif d'un refus du serveur. */
@@ -26,6 +34,8 @@ export interface EtatSaisie {
   appareilId: string | null;
   vue: VueSaisie | null;
   refus: RefusSaisie | null;
+  /** US-099 : accusés reçus de la table, par identifiant de saisie. */
+  accuses: Record<string, Accuse>;
 }
 
 /** Longueur maximale du nom d'un arbitre (CA-3). */
@@ -102,6 +112,7 @@ export function creerSaisieSmartphone({ urlServeur, epreuveId, memoire, garder, 
     appareilId: memoire.appareilId,
     vue: memoire.vue,
     refus: null,
+    accuses: {},
   };
   const changer = (modif: Partial<EtatSaisie>) => {
     etat = { ...etat, ...modif };
@@ -113,7 +124,7 @@ export function creerSaisieSmartphone({ urlServeur, epreuveId, memoire, garder, 
   };
 
   const base = urlConnexion(urlServeur, epreuveId);
-  const { arreter } = demarrerConnexion({
+  const { arreter, envoyer } = demarrerConnexion({
     adresse: base
       ? async () => {
           const appareil = courante.appareilId ? `&appareil=${encodeURIComponent(courante.appareilId)}` : '';
@@ -131,6 +142,11 @@ export function creerSaisieSmartphone({ urlServeur, epreuveId, memoire, garder, 
       else if (message.type === 'vue') {
         memoriser({ vue: message.vue });
         changer({ vue: message.vue });
+      } else if (message.type === 'accuse') {
+        const { accuse } = message;
+        // Une saisie suspendue reste à faire sur papier ; les autres réponses closent la saisie.
+        memoriser({ enAttente: (courante.enAttente ?? []).filter(({ id }) => id !== accuse.id) });
+        changer({ accuses: { ...etat.accuses, [accuse.id]: accuse } });
       }
     },
   });
@@ -147,6 +163,15 @@ export function creerSaisieSmartphone({ urlServeur, epreuveId, memoire, garder, 
       memoriser({ nom: nom.trim().slice(0, LONGUEUR_MAX_NOM), piste });
     },
     memoire: () => courante,
+    /**
+     * US-099 CA-4 : envoie une saisie à la table et la garde « en attente » jusqu'à l'accusé ; faux si la connexion
+     * n'est pas établie (rien n'est alors envoyé).
+     */
+    envoyerSaisie(saisie: SaisieTelephone): boolean {
+      if (!envoyer(messageSaisie(saisie))) return false;
+      memoriser({ enAttente: [...(courante.enAttente ?? []), saisie] });
+      return true;
+    },
     arreter,
   };
 }

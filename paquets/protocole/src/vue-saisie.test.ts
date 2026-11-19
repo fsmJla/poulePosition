@@ -70,7 +70,7 @@ describe('vue de saisie dans le protocole (US-095)', () => {
   });
 
   it('CA-4 : un message client inconnu, mal formé ou trop gros est refusé', () => {
-    expect(analyserMessageClient('{"v":1,"type":"saisie"}')).toEqual({ ok: false, erreur: 'TYPE_INTERDIT' });
+    expect(analyserMessageClient('{"v":1,"type":"inconnu"}')).toEqual({ ok: false, erreur: 'TYPE_INTERDIT' });
     expect(analyserMessageClient('{"v":1,"type":"vue","vue":{}}')).toEqual({ ok: false, erreur: 'MESSAGE_INVALIDE' });
     expect(analyserMessageClient('pas du json')).toEqual({ ok: false, erreur: 'MESSAGE_INVALIDE' });
     const enorme = messageVue({ ...vue(), nom: 'x'.repeat(TAILLE_MAX_MESSAGE) });

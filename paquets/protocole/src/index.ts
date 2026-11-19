@@ -14,3 +14,4 @@ export * from './suppression-contenu';
 export * from './sauvegarde';
 export * from './vue-saisie';
 export * from './acces-qr';
+export * from './saisies';

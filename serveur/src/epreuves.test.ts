@@ -7,6 +7,8 @@ import {
   MESSAGE_PING,
   MESSAGE_PONG,
   messageVue,
+  messageSaisie,
+  messageAccuse,
   deriverCle,
   preparerDemandeInstallation,
   type EpreuveIndexee,
@@ -403,7 +405,7 @@ describe('WebSocket du pilote (US-094, ADR-0028)', () => {
     expect(JSON.parse(await prochain())).toEqual({ v: 1, type: 'bienvenue', epreuveId: id });
     socket.send(MESSAGE_PING);
     expect(await prochain()).toBe(MESSAGE_PONG);
-    socket.send('{"v":1,"type":"saisie"}');
+    socket.send('{"v":1,"type":"inconnu"}');
     expect(JSON.parse(await prochain())).toMatchObject({ type: 'erreur', code: 'TYPE_INTERDIT' });
     socket.close();
   });
@@ -701,5 +703,78 @@ describe('WebSocket des smartphones (US-097)', () => {
       jeton: 'Nouveauabcdefghijklmno',
     });
     expect(await telephone.fermeture).toBe(4003);
+  });
+});
+
+describe('saisies des smartphones (US-099)', () => {
+  const J = 'Arbitreabcdefghijklmno';
+  const saisieTelephone = {
+    id: 's-1',
+    poule: 1,
+    tireurA: 'a',
+    tireurB: 'b',
+    touchesA: 5,
+    touchesB: 2,
+    auTemps: false,
+    nom: 'Dupont',
+  };
+  async function prete() {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    await appeler(worker, 'PUT', `/epreuves/${id}/jetons/arbitre`, jeton, { appareilId: 'pc-a', jeton: J });
+    return id;
+  }
+  async function smartphone(epreuveId: string) {
+    const reponse = await worker.fetch(`http://localhost/epreuves/${epreuveId}/connexion?j=${J}`, {
+      headers: { Upgrade: 'websocket', Origin: 'http://localhost:4173' },
+    });
+    const socket = reponse.webSocket as NonNullable<typeof reponse.webSocket>;
+    const recus: Record<string, unknown>[] = [];
+    const attentes: ((m: Record<string, unknown>) => void)[] = [];
+    socket.addEventListener('message', (e) => {
+      const m = JSON.parse(String(e.data)) as Record<string, unknown>;
+      const attente = attentes.shift();
+      if (attente) attente(m);
+      else recus.push(m);
+    });
+    socket.accept();
+    const prochain = () =>
+      new Promise<Record<string, unknown>>((ok) => {
+        const deja = recus.shift();
+        if (deja) ok(deja);
+        else attentes.push(ok);
+      });
+    return { socket, prochain };
+  }
+
+  it('CA-4 et CA-5 : la saisie part à la table avec le rôle et l’appareil ; l’accusé revient au téléphone', async () => {
+    const id = await prete();
+    const pilote = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    await pilote.prochain();
+    const telephone = await smartphone(id);
+    for (let i = 0; i < 3; i++) await telephone.prochain(); // bienvenue, acces, table
+    telephone.socket.send(messageSaisie(saisieTelephone));
+    expect(JSON.parse(await pilote.prochain())).toEqual({
+      v: 1,
+      type: 'saisie',
+      saisie: { ...saisieTelephone, role: 'arbitre', appareilId: 't1' },
+    });
+    pilote.socket.send(messageAccuse({ id: 's-1', decision: 'accepte' }, 't1'));
+    expect(await telephone.prochain()).toEqual({ v: 1, type: 'accuse', accuse: { id: 's-1', decision: 'accepte' } });
+    pilote.socket.close();
+    telephone.socket.close();
+  });
+
+  it('cas limite : sans table connectée, la saisie est suspendue ; un téléphone ne peut ni accuser ni publier', async () => {
+    const id = await prete();
+    const telephone = await smartphone(id);
+    for (let i = 0; i < 3; i++) await telephone.prochain();
+    telephone.socket.send(messageSaisie(saisieTelephone));
+    expect(await telephone.prochain()).toEqual({ v: 1, type: 'accuse', accuse: { id: 's-1', decision: 'suspendue' } });
+    telephone.socket.send(messageAccuse({ id: 's-1', decision: 'accepte' }, 't1'));
+    expect(await telephone.prochain()).toMatchObject({ type: 'erreur', code: 'TYPE_INTERDIT' });
+    telephone.socket.send('{"v":1,"type":"saisie","saisie":{"id":"x"}}');
+    expect(await telephone.prochain()).toMatchObject({ type: 'erreur', code: 'MESSAGE_INVALIDE' });
+    telephone.socket.close();
   });
 });

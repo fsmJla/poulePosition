@@ -106,14 +106,18 @@ Ce sont des textes JSON d'au plus **256 Ko** (262 144 octets en UTF-8), avec deu
 | `vue` | `vue` (vue de saisie, §18) | Aux smartphones, à chaque vue publiée par le pilote (US-095), et à l'entrée d'un smartphone |
 | `acces` | `role` (`arbitre` ou `tireur`), `appareilId` (« t1 »…) | À l'entrée d'un smartphone (US-097, §20) |
 | `table` | `connectee` | Aux smartphones : à leur entrée, puis quand la table (le pilote) se connecte ou se déconnecte (US-097) |
+| `saisie` | `saisie` (avec `role` et `appareilId`) | À la table : saisie d'un téléphone (US-099, §21) |
+| `accuse` | `accuse` (`id`, `decision`, `motif`) | Au téléphone : réponse de la table, ou `suspendue` sans table connectée (US-099) |
 
 ### 4.2 Messages du client
 
 | Type | Champs | Qui |
 |---|---|---|
 | `vue` | `vue` (vue de saisie, §18) | Le pilote seul, pour son épreuve (US-095) ; sinon `TYPE_INTERDIT`, et `MESSAGE_INVALIDE` pour une vue mal formée |
+| `saisie` | `saisie` (`id`, `poule`, `tireurA`, `tireurB`, `touchesA`, `touchesB`, `auTemps`, `nom`) | Un smartphone (US-099, §21) |
+| `accuse` | `accuse`, `appareilId` | Le pilote seul : réponse à une saisie, relayée au téléphone `appareilId` (US-099) |
 
-Tout autre type que le `ping` exact et `vue` est refusé (`TYPE_INTERDIT`).
+Tout autre type que le `ping` exact, `vue`, `saisie` et `accuse` est refusé (`TYPE_INTERDIT`).
 
 ### 4.3 Maintien de connexion
 
@@ -1131,6 +1135,19 @@ adresses : 20 essais en 15 minutes). Le DO accepte toujours la socket, puis :
   table `appareils`), l'étiquette `saisie`, `qr:<role>` et `appareil:<id>`, et lui envoie `bienvenue`, `acces`, `table` et
   la dernière vue de saisie (§18), s'il y en a une.
 
-Un smartphone n'envoie encore aucun message (la saisie vient avec US-099). Le téléphone garde, par épreuve, le jeton, son
+Un smartphone envoie ses saisies (§21). Le téléphone garde, par épreuve, le jeton, son
 identifiant, son rôle, le nom et la piste de l'arbitre et la dernière vue (`localStorage`, clé `saisie:<epreuveId>`) ;
 le lien du QR code est retiré de l'adresse affichée dès la page ouverte.
+
+## 21. Saisie d'un score de poule par smartphone (US-099, ADR-0005)
+
+1. Le téléphone crée une saisie (`id` UUID, poule, tireurs, touches, au temps, nom), la garde « en attente » et
+   l'envoie : `{"v":1,"type":"saisie","saisie":{…}}`.
+2. Le DO la relaie à la socket du pilote en y ajoutant le `role` et l'`appareilId` du téléphone. Sans pilote connecté, il
+   répond aussitôt au téléphone `accuse` avec `decision: "suspendue"` (la boîte et la reprise viennent avec US-102).
+3. La table décide (`deciderSaisie`, domaine) : `accepte` (le score est écrit comme `ScorePouleSaisi`, avec
+   `saisie: { id, par }`, `par` = « arbitre Dupont (t4) »), `refuse` avec un motif (`EPREUVE_FERMEE`, `DROIT_RETIRE`,
+   `POULES_NON_LANCEES`, `MATCH_INCONNU`, `TIREUR_RETIRE`, `MATCH_DEJA_SAISI`, `SCORE_INVALIDE`), ou `doublon` (une saisie
+   de même `id` est déjà au journal). Elle répond `{"type":"accuse","accuse":{…},"appareilId":"t4"}`.
+4. Le DO relaie l'accusé au seul téléphone `appareilId` ; le téléphone retire la saisie de ses attentes. Un score accepté
+   part au serveur avec le lot suivant, et la vue de saisie republiée (§18) met à jour tous les téléphones.

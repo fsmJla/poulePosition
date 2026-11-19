@@ -2,6 +2,14 @@
 // Enveloppe commune : un objet JSON texte avec `v` (version) et `type`, repris du relais Wireless Fencing.
 import { ROLES_QR, type RoleQr, type VueSaisie } from '@poule-position/domaine';
 import { analyserVueSaisie } from './vue-saisie';
+import {
+  analyserAccuse,
+  analyserSaisieScore,
+  analyserSaisieTelephone,
+  type Accuse,
+  type SaisieTelephone,
+} from './saisies';
+import type { SaisieScore } from '@poule-position/domaine';
 
 export const VERSION_PROTOCOLE = 1;
 
@@ -70,10 +78,39 @@ export interface MessageTable {
 }
 
 /** Messages que le serveur envoie à un client. */
-export type MessageServeur = MessageBienvenue | MessageErreur | MessagePong | MessageVue | MessageAcces | MessageTable;
+/** US-099 : une saisie, du téléphone au serveur (`SaisieTelephone`), puis du serveur à la table (`SaisieScore`). */
+export interface MessageSaisieTelephone {
+  v: typeof VERSION_PROTOCOLE;
+  type: 'saisie';
+  saisie: SaisieTelephone;
+}
+export interface MessageSaisieTable {
+  v: typeof VERSION_PROTOCOLE;
+  type: 'saisie';
+  saisie: SaisieScore;
+}
+
+/** US-099 : accusé d'une saisie, de la table au serveur (avec l'appareil du téléphone), puis au téléphone. */
+export interface MessageAccuse {
+  v: typeof VERSION_PROTOCOLE;
+  type: 'accuse';
+  accuse: Accuse;
+  /** Présent de la table au serveur : le téléphone à qui le relayer. */
+  appareilId?: string;
+}
+
+export type MessageServeur =
+  | MessageBienvenue
+  | MessageErreur
+  | MessagePong
+  | MessageVue
+  | MessageAcces
+  | MessageTable
+  | MessageSaisieTable
+  | MessageAccuse;
 
 /** Messages qu'un client envoie au serveur (le `ping` exact mis à part, auto-répondu). */
-export type MessageClient = MessageVue;
+export type MessageClient = MessageVue | MessageSaisieTelephone | MessageAccuse;
 
 /** Contenu d'une enveloppe valide : version et type vérifiés, le reste est propre au type. */
 export type Enveloppe = { v: typeof VERSION_PROTOCOLE; type: string } & Record<string, unknown>;
@@ -95,6 +132,14 @@ export function messageAcces(role: RoleQr, appareilId: string): string {
 
 export function messageTable(connectee: boolean): string {
   return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'table', connectee } satisfies MessageTable);
+}
+
+export function messageSaisie(saisie: SaisieTelephone | SaisieScore): string {
+  return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'saisie', saisie });
+}
+
+export function messageAccuse(accuse: Accuse, appareilId?: string): string {
+  return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'accuse', accuse, ...(appareilId && { appareilId }) });
 }
 
 export function messageErreur(code: CodeErreur): string {
@@ -157,6 +202,12 @@ export function analyserMessageServeur(brut: unknown): Analyse<{ message: Messag
     case 'table':
       if (typeof contenu.connectee !== 'boolean') return { ok: false, erreur: 'MESSAGE_INVALIDE' };
       return { ok: true, message: { v: VERSION_PROTOCOLE, type: 'table', connectee: contenu.connectee } };
+    case 'saisie': {
+      const saisie = analyserSaisieScore(contenu.saisie);
+      return saisie ? { ok: true, message: { v: VERSION_PROTOCOLE, type: 'saisie', saisie } } : invalide;
+    }
+    case 'accuse':
+      return lireAccuse(contenu);
     default:
       return { ok: false, erreur: 'TYPE_INTERDIT' };
   }
@@ -170,9 +221,27 @@ function lireVue(contenu: Enveloppe): Analyse<{ message: MessageVue }> | Refus {
 }
 
 /** US-095 : analyse un message reçu d'un client (côté serveur) ; le serveur décide ensuite si ce client peut l'envoyer. */
+const invalide: Refus = { ok: false, erreur: 'MESSAGE_INVALIDE' };
+
+function lireAccuse(contenu: Enveloppe): Analyse<{ message: MessageAccuse }> | Refus {
+  const accuse = analyserAccuse(contenu.accuse);
+  const appareilId = contenu.appareilId;
+  if (!accuse || (appareilId !== undefined && typeof appareilId !== 'string')) return invalide;
+  return {
+    ok: true,
+    message: { v: VERSION_PROTOCOLE, type: 'accuse', accuse, ...(typeof appareilId === 'string' && { appareilId }) },
+  };
+}
+
 export function analyserMessageClient(brut: unknown): Analyse<{ message: MessageClient }> | Refus {
   const enveloppe = analyserEnveloppe(brut);
   if (!enveloppe.ok) return enveloppe;
-  if (enveloppe.contenu.type !== 'vue') return { ok: false, erreur: 'TYPE_INTERDIT' };
-  return lireVue(enveloppe.contenu);
+  const { contenu } = enveloppe;
+  if (contenu.type === 'vue') return lireVue(contenu);
+  if (contenu.type === 'accuse') return lireAccuse(contenu);
+  if (contenu.type === 'saisie') {
+    const saisie = analyserSaisieTelephone(contenu.saisie);
+    return saisie ? { ok: true, message: { v: VERSION_PROTOCOLE, type: 'saisie', saisie } } : invalide;
+  }
+  return { ok: false, erreur: 'TYPE_INTERDIT' };
 }

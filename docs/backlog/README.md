@@ -128,7 +128,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-096](US-096-qr-codes-arbitres-tireurs.md) | Afficher, imprimer et régénérer les QR codes des arbitres et des tireurs | E5 | Terminée | US-094, US-032 |
 | [US-097](US-097-acces-arbitre.md) | Ouvrir l'accès arbitre par le QR code (nom et piste) | E5 | Terminée | US-095, US-096 |
 | [US-098](US-098-matchs-de-la-piste.md) | Voir les matchs de sa piste et changer de piste (arbitre) | E5 | Terminée | US-097 |
-| [US-099](US-099-saisir-score-poule-smartphone.md) | Saisir le score d'un match de poule sur le smartphone et l'envoyer à la table | E5 | Prête | US-098, US-091 |
+| [US-099](US-099-saisir-score-poule-smartphone.md) | Saisir le score d'un match de poule sur le smartphone et l'envoyer à la table | E5 | En revue | US-098, US-091 |
 | [US-100](US-100-saisies-recues-sur-le-pc.md) | Voir sur le PC les saisies reçues des smartphones | E5 | Prête | US-099 |
 | [US-101](US-101-corriger-score-smartphone.md) | Corriger depuis le smartphone un score déjà enregistré (arbitre) | E5 | Prête | US-099 |
 | [US-102](US-102-saisie-suspendue.md) | Suspendre la saisie quand la table est déconnectée et récupérer les saisies en route | E5 | Prête | US-099 |

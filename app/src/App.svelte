@@ -12,6 +12,7 @@
   import { creerSynchronisation } from './lib/synchronisation';
   import { creerPresencePilote } from './lib/presence-pilote';
   import { creerAccesQr } from './lib/acces-qr';
+  import { traiterSaisie } from './lib/table-saisies';
   import { vueSaisie } from '@poule-position/domaine';
   import { creerAccueil } from './lib/accueil';
   import { creerClientCompetitions } from './lib/competitions';
@@ -97,6 +98,15 @@
       const copie = await competitions.copie();
       const competition = copie?.competitions.find(({ id }) => id === epreuve.rattachement.competitionId);
       return vueSaisie(epreuve, competition?.nom ?? null);
+    },
+    // US-099 : une saisie d'un smartphone, décidée par ce PC ; un score accepté part au serveur (et la vue suit).
+    surSaisie: async (epreuveId, saisie) => {
+      const accuse = await traiterSaisie(journal, epreuveId, saisie, {
+        clubId: session?.compte.clubId,
+        auteur: session?.compte.email ?? '',
+      });
+      if (accuse.decision === 'accepte') void synchronisation.envoyer(epreuveId);
+      return accuse;
     },
   });
   let horsLignePilote = $state(false);

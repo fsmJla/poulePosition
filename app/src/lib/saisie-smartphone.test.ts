@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FERMETURES, messageAcces, messageBienvenue, messageTable, messageVue } from '@poule-position/protocole';
+import {
+  FERMETURES,
+  messageAcces,
+  messageAccuse,
+  messageBienvenue,
+  messageTable,
+  messageVue,
+} from '@poule-position/protocole';
 import type { VueSaisie } from '@poule-position/domaine';
 import type { SocketMinimale } from './connexion';
 import {
@@ -175,5 +182,32 @@ describe('saisie par smartphone (US-097)', () => {
     } as unknown as Storage;
     expect(lireMemoire('e1', refuse)).toBeNull();
     expect(() => ecrireMemoire('e1', memoireVide(), refuse)).not.toThrow();
+  });
+});
+
+describe('envoi d’une saisie (US-099)', () => {
+  const saisieTel = {
+    id: 's-1',
+    poule: 1,
+    tireurA: 'a',
+    tireurB: 'b',
+    touchesA: 5,
+    touchesB: 2,
+    auTemps: false,
+    nom: 'Dupont',
+  };
+
+  it('CA-4 et CA-5 : la saisie part et reste en attente jusqu’à l’accusé, qui est retenu', async () => {
+    const { saisie, gardees } = demarrer();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(saisie.envoyerSaisie(saisieTel)).toBe(false);
+    const socket = FausseSocket.creees[0]!;
+    socket.recevoir(messageBienvenue('e1'), messageAcces('arbitre', 't4'));
+    expect(saisie.envoyerSaisie(saisieTel)).toBe(true);
+    expect(JSON.parse(socket.envoyes.at(-1)!)).toEqual({ v: 1, type: 'saisie', saisie: saisieTel });
+    expect(gardees.at(-1)?.enAttente).toEqual([saisieTel]);
+    socket.recevoir(messageAccuse({ id: 's-1', decision: 'accepte' }));
+    expect(saisie.etat().accuses['s-1']).toEqual({ id: 's-1', decision: 'accepte' });
+    expect(gardees.at(-1)?.enAttente).toEqual([]);
   });
 });

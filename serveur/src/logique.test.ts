@@ -168,7 +168,7 @@ describe('erreurMessageClient', () => {
   });
 
   it('refuse tout type tant qu’aucun message client n’est défini (TYPE_INTERDIT)', () => {
-    expect(erreurMessageClient('{"v":1,"type":"saisie"}')).toBe('TYPE_INTERDIT');
+    expect(erreurMessageClient('{"v":1,"type":"inconnu"}')).toBe('TYPE_INTERDIT');
   });
 });
 

@@ -10,6 +10,8 @@ import {
   analyserMessageClient,
   FERMETURES,
   messageAcces,
+  messageAccuse,
+  messageSaisie,
   messageBienvenue,
   messageErreur,
   messageTable,
@@ -321,8 +323,35 @@ export class Epreuve extends DurableObject<Env> {
       return;
     }
     const attache = ws.deserializeAttachment() as AttacheSocket | null;
-    const { vue } = analyse.message;
-    const duPilote = attache?.role === 'pilote' && attache.appareil === this.etat().piloteAppareil;
+    const { piloteAppareil } = this.etat();
+    const duPilote = attache?.role === 'pilote' && attache.appareil === piloteAppareil;
+    const message0 = analyse.message;
+    // US-099 : la saisie d'un téléphone part à la table, avec le rôle et l'appareil de ce téléphone ; sans table
+    // connectée, elle est suspendue (ADR-0005).
+    if (message0.type === 'saisie') {
+      if (!attache || attache.role === 'pilote') {
+        ws.send(messageErreur('TYPE_INTERDIT'));
+        return;
+      }
+      if (!this.etatPilote()?.connecte || !piloteAppareil) {
+        ws.send(messageAccuse({ id: message0.saisie.id, decision: 'suspendue' }));
+        return;
+      }
+      const relayee = messageSaisie({ ...message0.saisie, role: attache.role, appareilId: attache.appareil });
+      for (const pilote of this.ctx.getWebSockets(etiquettePilote(piloteAppareil))) pilote.send(relayee);
+      return;
+    }
+    // US-099 : l'accusé de la table revient au téléphone qui a saisi.
+    if (message0.type === 'accuse') {
+      if (!duPilote || !message0.appareilId) {
+        ws.send(messageErreur('TYPE_INTERDIT'));
+        return;
+      }
+      const retour = messageAccuse(message0.accuse);
+      for (const telephone of this.ctx.getWebSockets(`appareil:${message0.appareilId}`)) telephone.send(retour);
+      return;
+    }
+    const { vue } = message0;
     if (!duPilote || vue.epreuveId !== attache.epreuveId) {
       ws.send(messageErreur('TYPE_INTERDIT'));
       return;

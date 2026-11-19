@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FERMETURES, MESSAGE_PING, messageBienvenue } from '@poule-position/protocole';
+import { FERMETURES, MESSAGE_PING, messageBienvenue, messageSaisie } from '@poule-position/protocole';
 import type { VueSaisie } from '@poule-position/domaine';
 import type { SocketMinimale } from './connexion';
 import { creerPresencePilote, INTERVALLE_REVUE, type SynchronisationPresence } from './presence-pilote';
@@ -261,5 +261,44 @@ describe('publication de la vue de saisie (US-095)', () => {
     socketDe('e1').accueillir('e1');
     await vi.advanceTimersByTimeAsync(0);
     expect(vuesEnvoyees(socketDe('e1'))).toEqual(['Version 1']);
+  });
+});
+
+describe('saisies reçues par la table (US-099)', () => {
+  it('CA-5 : une saisie reçue sur la socket du pilote est traitée et son accusé repart, adressé au téléphone', async () => {
+    const { synchronisation } = synchronisationSimulee(['e1']);
+    const recues: string[] = [];
+    const pilote = creerPresencePilote({
+      urlServeur: 'wss://serveur.test',
+      synchronisation,
+      creerSocket: (url) => new FausseSocket(url),
+      surSaisie: async (epreuveId, saisie) => {
+        recues.push(`${epreuveId}:${saisie.id}`);
+        return { id: saisie.id, decision: 'accepte' };
+      },
+    });
+    pilote.surveiller(new EventTarget());
+    await vi.advanceTimersByTimeAsync(0);
+    const socket = socketDe('e1');
+    socket.accueillir('e1');
+    const saisie = {
+      id: 's-1',
+      poule: 1,
+      tireurA: 'a',
+      tireurB: 'b',
+      touchesA: 5,
+      touchesB: 2,
+      auTemps: false,
+      nom: 'D',
+    };
+    socket.onmessage?.({ data: messageSaisie({ ...saisie, role: 'arbitre', appareilId: 't4' }) });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(recues).toEqual(['e1:s-1']);
+    expect(JSON.parse(socket.envoyes.at(-1)!)).toEqual({
+      v: 1,
+      type: 'accuse',
+      accuse: { id: 's-1', decision: 'accepte' },
+      appareilId: 't4',
+    });
   });
 });
