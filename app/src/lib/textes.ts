@@ -101,11 +101,14 @@ export const textes = {
       deLaPoule: (poule: number) => `poule ${poule}`,
       forfait: 'forfait',
       voirTous: (nombre: number) => `Voir les ${nombre} matchs terminés`,
+      corriger: (numero: number) => `Corriger le match ${numero}`,
       aucunTermine: 'Aucun match terminé pour l’instant.',
     },
     /** US-099 : saisie d'un match de poule (planche 14). */
     match: {
       titre: (numero: number, poule: number) => `Match ${numero} · Poule ${poule}`,
+      titreCorrection: (numero: number) => `Corriger le match ${numero}`,
+      envoyerCorrection: 'Envoyer la correction',
       sousTitre: (piste: number, epreuve: string, touches: number) =>
         `Piste ${piste} · ${epreuve} · en ${touches} touches`,
       retourAuxMatchs: 'Retour aux matchs de la piste',
@@ -133,6 +136,9 @@ export const textes = {
         TIREUR_RETIRE: 'Un tireur de ce match est retiré : voyez la table.',
         MATCH_DEJA_SAISI: 'Ce match a déjà un score : voyez la table.',
         SCORE_INVALIDE: 'Ce score n’est pas valable : voyez la table.',
+        CORRECTION_INTERDITE: 'Seul un arbitre corrige un score.',
+        CORRECTION_DESACTIVEE: 'La correction par smartphone est désactivée.',
+        SCORE_CHANGE: 'Le score a changé entre-temps : voyez la table.',
       },
     },
     /** US-100 : saisies reçues des smartphones, sur le PC (planche 10). */
@@ -160,6 +166,9 @@ export const textes = {
         TIREUR_RETIRE: 'tireur retiré',
         MATCH_DEJA_SAISI: 'match déjà saisi',
         SCORE_INVALIDE: 'score non valable',
+        CORRECTION_INTERDITE: 'seul un arbitre corrige un score',
+        CORRECTION_DESACTIVEE: 'correction désactivée (Paramètres)',
+        SCORE_CHANGE: 'le score avait changé entre-temps',
       },
     },
     tireur: {

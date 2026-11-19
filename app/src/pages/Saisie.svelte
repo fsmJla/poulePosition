@@ -79,6 +79,8 @@
 
   // US-099 : le match en cours de saisie, et l'identifiant de la saisie envoyée (pour suivre son accusé).
   let enSaisie = $state<MatchDeLaPiste | null>(null);
+  /** US-101 : le match ouvert l'est pour être corrigé. */
+  let enCorrection = $state(false);
   let idEnvoye = $state<string | null>(null);
   const accuse = $derived(idEnvoye ? (etat?.accuses[idEnvoye] ?? null) : null);
   const suivant = $derived.by(() => {
@@ -87,8 +89,9 @@
     return prochain && !(prochain.poule === enSaisie.poule && prochain.numero === enSaisie.numero) ? prochain : null;
   });
 
-  function ouvrir(match: MatchDeLaPiste | null) {
+  function ouvrir(match: MatchDeLaPiste | null, corriger = false) {
     enSaisie = match;
+    enCorrection = corriger;
     idEnvoye = null;
   }
 
@@ -101,6 +104,8 @@
       tireurB: match.tireurB,
       ...score,
       nom: memoire?.nom ?? '',
+      // US-101 : une correction porte le score qu'elle remplace.
+      ...(enCorrection && match.touches && { remplace: [match.touches[0], match.touches[1]] as [number, number] }),
     });
     idEnvoye = parti ? id : null;
     return idEnvoye;
@@ -134,6 +139,7 @@
           retour={() => ouvrir(null)}
           {suivant}
           ouvrirSuivant={() => ouvrir(suivant)}
+          correction={enCorrection}
         />
       {/key}
     {:else}
@@ -143,6 +149,8 @@
         nom={memoire.nom ?? ''}
         changerDePiste={() => (changerPiste = true)}
         saisir={(match) => ouvrir(match)}
+        corriger={(match) => ouvrir(match, true)}
+        suspendue={!etat.table}
       />
     {/if}
   {/if}

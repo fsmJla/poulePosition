@@ -29,12 +29,28 @@ const entier = (valeur: unknown, min = 0): valeur is number => Number.isInteger(
 /** CA-4 : une saisie de téléphone bien formée, sinon null. */
 export function analyserSaisieTelephone(brut: unknown): SaisieTelephone | null {
   if (!estObjet(brut)) return null;
-  const { id, poule, tireurA, tireurB, touchesA, touchesB, auTemps, nom } = brut;
-  const champs = Object.keys(brut).sort().join(',');
+  const { id, poule, tireurA, tireurB, touchesA, touchesB, auTemps, nom, remplace } = brut;
+  const champs = Object.keys(brut)
+    .filter((champ) => champ !== 'remplace')
+    .sort()
+    .join(',');
   if (champs !== 'auTemps,id,nom,poule,tireurA,tireurB,touchesA,touchesB') return null;
+  // US-101 : une correction porte le score qu'elle remplace.
+  const correction = Array.isArray(remplace) && remplace.length === 2 && remplace.every((t) => entier(t));
+  if (remplace !== undefined && !correction) return null;
   if (!texteBorne(id, 64) || !entier(poule, 1) || !texteBorne(tireurA, 64) || !texteBorne(tireurB, 64)) return null;
   if (!entier(touchesA) || !entier(touchesB) || typeof auTemps !== 'boolean' || !texteBorne(nom, 80)) return null;
-  return { id, poule, tireurA, tireurB, touchesA, touchesB, auTemps, nom };
+  return {
+    id,
+    poule,
+    tireurA,
+    tireurB,
+    touchesA,
+    touchesB,
+    auTemps,
+    nom,
+    ...(correction && { remplace: [remplace[0], remplace[1]] as [number, number] }),
+  };
 }
 
 /** Saisie relayée à la table : celle du téléphone, avec le rôle et l'appareil. */

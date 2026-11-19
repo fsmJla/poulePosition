@@ -94,3 +94,12 @@ describe('appareils connectés (US-100)', () => {
     });
   });
 });
+
+describe('correction (US-101)', () => {
+  it('CA-2 : une correction porte le score qu’elle remplace, bien formé', () => {
+    const correction = { ...telephone, remplace: [3, 5] };
+    expect(analyserSaisieTelephone(correction)).toEqual(correction);
+    expect(analyserSaisieTelephone({ ...telephone, remplace: [3] })).toBeNull();
+    expect(analyserSaisieTelephone({ ...telephone, remplace: 'non' })).toBeNull();
+  });
+});
