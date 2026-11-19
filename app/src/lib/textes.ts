@@ -135,6 +135,33 @@ export const textes = {
         SCORE_INVALIDE: 'Ce score n’est pas valable : voyez la table.',
       },
     },
+    /** US-100 : saisies reçues des smartphones, sur le PC (planche 10). */
+    recues: {
+      titre: 'Saisies reçues des smartphones',
+      appareils: (n: number) => (n > 1 ? `${n} appareils connectés` : `${n} appareil connecté`),
+      horsLigne: 'Hors ligne : aucun appareil',
+      gerer: 'Gérer les accès',
+      explication:
+        'Ce PC applique les droits réglés dans les Paramètres : une saisie permise est acceptée d’office et s’inscrit dans la feuille.',
+      aucune: 'Aucune saisie reçue pour l’instant.',
+      poule: (poule: number) => `Poule ${poule}`,
+      match: (poule: number, numero: number) => `Poule ${poule} · match ${numero}`,
+      correction: (avant: string, apres: string) => `correction de ${avant} en ${apres}`,
+      surCePc: 'saisi sur ce PC',
+      acceptee: 'Acceptée',
+      enregistree: 'Enregistrée',
+      refusee: (motif: string) => `Refusée : ${motif}`,
+      toutes: (n: number) => `Voir toutes les saisies (${n})`,
+      motifs: {
+        EPREUVE_FERMEE: 'épreuve terminée',
+        DROIT_RETIRE: 'saisie non permise (Paramètres)',
+        POULES_NON_LANCEES: 'poules non lancées',
+        MATCH_INCONNU: 'match inconnu',
+        TIREUR_RETIRE: 'tireur retiré',
+        MATCH_DEJA_SAISI: 'match déjà saisi',
+        SCORE_INVALIDE: 'score non valable',
+      },
+    },
     tireur: {
       bientot: 'L’accès des tireurs arrive bientôt : la table de marque saisit vos scores en attendant.',
     },

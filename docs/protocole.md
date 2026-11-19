@@ -104,6 +104,7 @@ Ce sont des textes JSON d'au plus **256 Ko** (262 144 octets en UTF-8), avec deu
 | `erreur` | `code`, `message` (texte lisible en français) | Message client refusé (la connexion reste ouverte) |
 | `pong` | — | Réponse à `ping` (§4.3) |
 | `vue` | `vue` (vue de saisie, §18) | Aux smartphones, à chaque vue publiée par le pilote (US-095), et à l'entrée d'un smartphone |
+| `appareils` | `connectes` | À la table : nombre de smartphones connectés, à sa connexion puis à chaque entrée ou sortie (US-100) |
 | `acces` | `role` (`arbitre` ou `tireur`), `appareilId` (« t1 »…) | À l'entrée d'un smartphone (US-097, §20) |
 | `table` | `connectee` | Aux smartphones : à leur entrée, puis quand la table (le pilote) se connecte ou se déconnecte (US-097) |
 | `saisie` | `saisie` (avec `role` et `appareilId`) | À la table : saisie d'un téléphone (US-099, §21) |
@@ -475,6 +476,7 @@ Aucun autre champ n'est accepté.
 | `PiloteChange` | `{ ancienAppareil, nouvelAppareil }` | Un autre PC a pris la main (US-029). |
 | `ParametresModifies` | un ou plusieurs paramètres de l’épreuve | Modifie les droits et l'affichage des noms (US-032), seulement ce qui a changé. |
 | `PublicationModifiee` | `{ publiee }` | Publie ou dépublie l’épreuve (US-031). |
+| `SaisieRefusee` | `{ saisie: { id, par }, poule, tireurA, tireurB, touchesA, touchesB, motif }` | Saisie d’un smartphone refusée par la table, avec son motif (US-100, §21) : la trace d’un refus ; une même saisie renvoyée reçoit le même refus, sans nouvelle trace. |
 | `JetonQrDefini` | `{ role, empreinte }` | Jeton du QR code d’un rôle (`arbitre`, `tireur`) créé ou régénéré : seule son empreinte SHA-256 (64 caractères hexadécimaux) est au journal, jamais le jeton (US-096, §19). Refusé une fois l’épreuve archivée, ou pour la même empreinte. |
 | `EpreuveArchivee` | `{}` | Archive l’épreuve (US-033) : statut « Archivée », lecture seule. |
 | `EpreuveDesarchivee` | `{}` | Désarchive l’épreuve (US-033) : elle retrouve son statut d’avant, non publiée. |

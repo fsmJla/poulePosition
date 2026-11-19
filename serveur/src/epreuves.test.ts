@@ -403,6 +403,7 @@ describe('WebSocket du pilote (US-094, ADR-0028)', () => {
     await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
     const { socket, prochain } = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
     expect(JSON.parse(await prochain())).toEqual({ v: 1, type: 'bienvenue', epreuveId: id });
+    expect(JSON.parse(await prochain())).toEqual({ v: 1, type: 'appareils', connectes: 0 });
     socket.send(MESSAGE_PING);
     expect(await prochain()).toBe(MESSAGE_PONG);
     socket.send('{"v":1,"type":"inconnu"}');
@@ -524,7 +525,8 @@ describe('vue de saisie (US-095)', () => {
     const id = crypto.randomUUID();
     await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
     const { socket, prochain } = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
-    await prochain();
+    await prochain(); // bienvenue
+    await prochain(); // appareils (US-100)
     socket.send(JSON.stringify({ v: 1, type: 'vue', vue: { epreuveId: id } }));
     expect(JSON.parse(await prochain())).toMatchObject({ type: 'erreur', code: 'MESSAGE_INVALIDE' });
     socket.send(messageVue(vueDe('autre-epreuve')));
@@ -753,6 +755,8 @@ describe('saisies des smartphones (US-099)', () => {
     await pilote.prochain();
     const telephone = await smartphone(id);
     for (let i = 0; i < 3; i++) await telephone.prochain(); // bienvenue, acces, table
+    await pilote.prochain(); // appareils : 0 (US-100)
+    await pilote.prochain(); // appareils : 1
     telephone.socket.send(messageSaisie(saisieTelephone));
     expect(JSON.parse(await pilote.prochain())).toEqual({
       v: 1,
@@ -776,5 +780,26 @@ describe('saisies des smartphones (US-099)', () => {
     telephone.socket.send('{"v":1,"type":"saisie","saisie":{"id":"x"}}');
     expect(await telephone.prochain()).toMatchObject({ type: 'erreur', code: 'MESSAGE_INVALIDE' });
     telephone.socket.close();
+  });
+});
+
+describe('appareils connectés (US-100)', () => {
+  it('CA-1 : la table apprend le nombre de smartphones à chaque entrée et sortie', async () => {
+    const J = 'Arbitreabcdefghijklmno';
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    await appeler(worker, 'PUT', `/epreuves/${id}/jetons/arbitre`, jeton, { appareilId: 'pc-a', jeton: J });
+    const pilote = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    await pilote.prochain(); // bienvenue
+    expect(JSON.parse(await pilote.prochain())).toEqual({ v: 1, type: 'appareils', connectes: 0 });
+    const reponse = await worker.fetch(`http://localhost/epreuves/${id}/connexion?j=${J}`, {
+      headers: { Upgrade: 'websocket', Origin: 'http://localhost:4173' },
+    });
+    const telephone = reponse.webSocket as NonNullable<typeof reponse.webSocket>;
+    telephone.accept();
+    expect(JSON.parse(await pilote.prochain())).toEqual({ v: 1, type: 'appareils', connectes: 1 });
+    telephone.close();
+    expect(JSON.parse(await pilote.prochain())).toEqual({ v: 1, type: 'appareils', connectes: 0 });
+    pilote.socket.close();
   });
 });

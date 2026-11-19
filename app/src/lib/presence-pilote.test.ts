@@ -302,3 +302,21 @@ describe('saisies reçues par la table (US-099)', () => {
     });
   });
 });
+
+describe('appareils connectés (US-100)', () => {
+  it('CA-1 : la table retient le nombre de smartphones connectés ; inconnu hors ligne', async () => {
+    const { pilote } = presence(['e1']);
+    const vus: number[] = [];
+    pilote.surAppareils((_id, n) => vus.push(n));
+    pilote.surveiller(new EventTarget());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(pilote.appareils('e1')).toBeNull();
+    socketDe('e1').accueillir('e1');
+    expect(pilote.appareils('e1')).toBe(0);
+    socketDe('e1').onmessage?.({ data: '{"v":1,"type":"appareils","connectes":3}' });
+    expect(pilote.appareils('e1')).toBe(3);
+    expect(vus).toEqual([3]);
+    socketDe('e1').couper();
+    expect(pilote.appareils('e1')).toBeNull();
+  });
+});

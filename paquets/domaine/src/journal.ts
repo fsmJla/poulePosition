@@ -23,6 +23,7 @@ import {
   type Parametres,
   type Statut,
 } from './epreuve';
+import type { DonneesSaisieRefusee } from './saisies';
 import { accesQrVide, verifierDonneesJetonQr, type AccesQr, type DonneesJetonQr, type ErreurAccesQr } from './acces-qr';
 import {
   heureValide,
@@ -91,7 +92,8 @@ export type Proposition =
   | { type: 'ScorePouleSaisi'; donnees: DonneesScorePoule }
   | { type: 'TireurRetireDesPoules'; donnees: DonneesRetraitPoule }
   | { type: 'RetraitDesPoulesAnnule'; donnees: DonneesAnnulationRetrait }
-  | { type: 'JetonQrDefini'; donnees: DonneesJetonQr };
+  | { type: 'JetonQrDefini'; donnees: DonneesJetonQr }
+  | { type: 'SaisieRefusee'; donnees: DonneesSaisieRefusee };
 
 /** Événement enregistré : la proposition acceptée, avec son en-tête. */
 export type Evenement = {
@@ -132,6 +134,8 @@ export interface Epreuve extends DonneesEpreuve {
   poules?: EtatPoules;
   /** US-096 : empreintes des jetons QR en service ; absent d'une projection gardée avant cette US (lire avec `accesDe`). */
   acces?: AccesQr;
+  /** US-100 : saisies des smartphones refusées par la table (trace) ; absent avant cette US. */
+  saisiesRefusees?: DonneesSaisieRefusee[];
 }
 
 /** US-081 : les inscrits d'une épreuve, y compris pour une projection gardée avant US-081. */
@@ -205,6 +209,11 @@ export function verifierEvenement(projection: Projection, proposition: Propositi
   if (proposition.type === 'FormuleModifiee') return verifierFormule(epreuve, proposition.donnees);
   if (proposition.type === 'PublicationModifiee') return verifierPublication(epreuve, proposition.donnees);
   if (proposition.type === 'JetonQrDefini') return verifierJetonQr(epreuve, proposition.donnees);
+  // US-100 : le refus d'une saisie se trace à tout moment, sauf une fois l'épreuve archivée.
+  if (proposition.type === 'SaisieRefusee') {
+    if (!epreuve) return 'EPREUVE_INCONNUE';
+    return epreuve.statut === 'archivee' ? 'EPREUVE_ARCHIVEE' : null;
+  }
   if (proposition.type === 'EpreuveArchivee') return verifierArchivage(epreuve);
   if (proposition.type === 'EpreuveDesarchivee') return verifierDesarchivage(epreuve);
   if (
@@ -343,6 +352,12 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
     if (!epreuve) return projection;
     const parametres = { ...epreuve.parametres, ...evenement.donnees };
     return { ...projection, epreuve: { ...epreuve, parametres }, dernierSeq: evenement.seq };
+  }
+  if (evenement.type === 'SaisieRefusee') {
+    const { epreuve } = projection;
+    if (!epreuve) return projection;
+    const saisiesRefusees = [...(epreuve.saisiesRefusees ?? []), evenement.donnees];
+    return { ...projection, epreuve: { ...epreuve, saisiesRefusees }, dernierSeq: evenement.seq };
   }
   if (evenement.type === 'JetonQrDefini') {
     const { epreuve } = projection;

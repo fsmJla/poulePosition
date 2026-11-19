@@ -105,7 +105,7 @@
         clubId: session?.compte.clubId,
         auteur: session?.compte.email ?? '',
       });
-      if (accuse.decision === 'accepte') void synchronisation.envoyer(epreuveId);
+      if (accuse.decision === 'accepte' || accuse.decision === 'refuse') void synchronisation.envoyer(epreuveId);
       return accuse;
     },
   });
@@ -322,7 +322,7 @@
         {/key}
       {:else if route.page === 'poulesEpreuve' && route.epreuveId}
         {#key route.epreuveId}
-          <Poules {session} epreuveId={route.epreuveId} {journal} {synchronisation} {accueil} {naviguer} />
+          <Poules {session} epreuveId={route.epreuveId} {journal} {synchronisation} {accueil} {naviguer} {presence} />
         {/key}
       {:else if route.page === 'classementEpreuve' && route.epreuveId}
         {#key route.epreuveId}

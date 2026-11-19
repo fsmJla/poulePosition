@@ -49,6 +49,9 @@ export function creerPresencePilote({
   >();
   /** US-095 : dernière vue envoyée par épreuve ; une vue identique n'est pas renvoyée (une écriture de moins au serveur). */
   const publiees = new Map<string, string>();
+  /** US-100 CA-1 : smartphones connectés, par épreuve (dit par le serveur). */
+  const appareils = new Map<string, number>();
+  const ecouteursAppareils = new Set<(epreuveId: string, connectes: number) => void>();
   const ecouteurs = new Set<(horsLigne: boolean) => void>();
   let horsLigne = false;
 
@@ -109,6 +112,11 @@ export function creerPresencePilote({
       },
       // US-099 CA-5 à CA-7 : une saisie d'un téléphone, décidée par ce PC ; l'accusé repart au téléphone.
       surMessage: (message) => {
+        if (message.type === 'appareils') {
+          appareils.set(epreuveId, message.connectes);
+          ecouteursAppareils.forEach((ecouteur) => ecouteur(epreuveId, message.connectes));
+          return;
+        }
         if (message.type !== 'saisie' || !surSaisie) return;
         void surSaisie(epreuveId, message.saisie).then((accuse) =>
           connexion.envoyer(messageAccuse(accuse, message.saisie.appareilId)),
@@ -141,6 +149,15 @@ export function creerPresencePilote({
     actualiser,
 
     publier,
+
+    /** US-100 CA-1 : nombre de smartphones connectés à l'épreuve, ou null s'il n'est pas connu (hors ligne). */
+    appareils: (epreuveId: string): number | null =>
+      connexions.get(epreuveId)?.etat === 'connecte' ? (appareils.get(epreuveId) ?? 0) : null,
+
+    surAppareils(ecouteur: (epreuveId: string, connectes: number) => void): () => void {
+      ecouteursAppareils.add(ecouteur);
+      return () => ecouteursAppareils.delete(ecouteur);
+    },
 
     /** CA-3 : vrai quand une épreuve pilotée ici n'a plus sa connexion au serveur (« la compétition continue »). */
     horsLigne: () => horsLigne,

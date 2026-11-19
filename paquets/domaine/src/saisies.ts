@@ -3,8 +3,8 @@
 // (elle devient un `ScorePouleSaisi`), la refuse avec un motif, ou reconnaît un doublon. Logique pure.
 import type { RoleQr } from './acces-qr';
 import { accesQrOuvert } from './acces-qr';
-import { poulesDe, type Epreuve, type Proposition } from './journal';
-import { matchsDePoule, verifierScore } from './poules';
+import { poulesDe, tireursDe, type Epreuve, type Evenement, type Proposition } from './journal';
+import { matchsDePoule, ordreDesMatchs, verifierScore, type OrigineSaisie } from './poules';
 
 /** Une saisie de score de poule, telle que la table la reçoit (le serveur ajoute le rôle et l'appareil). */
 export interface SaisieScore {
@@ -48,6 +48,9 @@ export function deciderSaisie(epreuve: Epreuve, saisie: SaisieScore): DecisionSa
   const etat = poulesDe(epreuve);
   // CA-7 : une saisie déjà appliquée (renvoyée avec le même identifiant) n'écrit rien de plus.
   if (etat.scores.some((score) => score.saisie?.id === saisie.id)) return { decision: 'doublon' };
+  // US-100 : une saisie déjà refusée, renvoyée, reçoit le même refus (sans nouvelle trace).
+  const refusee = (epreuve.saisiesRefusees ?? []).find(({ saisie: origine }) => origine.id === saisie.id);
+  if (refusee) return { decision: 'refuse', motif: refusee.motif };
   if (!accesQrOuvert(epreuve.statut)) return { decision: 'refuse', motif: 'EPREUVE_FERMEE' };
   const { arbitreSaisitScores, tireurSaisitPoule } = epreuve.parametres;
   if (saisie.role === 'arbitre' ? !arbitreSaisitScores : !tireurSaisitPoule) {
@@ -80,4 +83,93 @@ export function deciderSaisie(epreuve: Epreuve, saisie: SaisieScore): DecisionSa
       donnees: { ...donnees, saisie: { id: saisie.id, par: signatureSaisie(saisie) } },
     },
   };
+}
+
+/** US-100 : données de `SaisieRefusee` : la saisie refusée par la table, avec son motif (trace, ADR-0005). */
+export interface DonneesSaisieRefusee {
+  saisie: OrigineSaisie;
+  poule: number;
+  tireurA: string;
+  tireurB: string;
+  touchesA: number;
+  touchesB: number;
+  motif: MotifRefusSaisie;
+}
+
+/** US-100 : la proposition qui trace le refus d'une saisie. */
+export function propositionRefus(saisie: SaisieScore, motif: MotifRefusSaisie): Proposition {
+  const { id, poule, tireurA, tireurB, touchesA, touchesB } = saisie;
+  return {
+    type: 'SaisieRefusee',
+    donnees: { saisie: { id, par: signatureSaisie(saisie) }, poule, tireurA, tireurB, touchesA, touchesB, motif },
+  };
+}
+
+/** US-100 : une ligne de la liste « Saisies reçues des smartphones » (planche 10). */
+export interface LigneSaisie {
+  date: number;
+  poule: number;
+  /** Numéro du match dans l'ordre officiel de la poule, s'il est connu. */
+  numero: number | null;
+  nomA: string;
+  nomB: string;
+  touchesA: number;
+  touchesB: number;
+  /** CA-3 : score remplacé par une correction (touches de A puis de B), ou null. */
+  correctionDe: [number, number] | null;
+  /** Signature du téléphone ; null pour un score saisi sur ce PC. */
+  par: string | null;
+  resultat: 'acceptee' | 'enregistree' | 'refusee';
+  motif: MotifRefusSaisie | null;
+}
+
+/** US-100 CA-2 et CA-3 : les scores saisis et les saisies refusées, de la plus récente à la plus ancienne. */
+export function lignesSaisies(evenements: readonly Evenement[], epreuve: Epreuve | null): LigneSaisie[] {
+  const noms = new Map(tireursDe(epreuve ?? {}).map((t) => [t.id, t.nom]));
+  const poules = poulesDe(epreuve ?? {}).poules;
+  const numeroDe = (poule: number, a: string, b: string): number | null => {
+    const composition = poules.find(({ numero }) => numero === poule);
+    if (!composition) return null;
+    const i = composition.tireurIds.indexOf(a) + 1;
+    const j = composition.tireurIds.indexOf(b) + 1;
+    const rang = ordreDesMatchs(composition.tireurIds.length).findIndex(
+      ([x, y]) => (x === i && y === j) || (x === j && y === i),
+    );
+    return rang < 0 ? null : rang + 1;
+  };
+  const derniers = new Map<string, { a: string; touchesA: number; touchesB: number }>();
+  const cle = (poule: number, a: string, b: string) => `${poule}:${[a, b].sort().join('|')}`;
+  const lignes: LigneSaisie[] = [];
+  for (const evenement of evenements) {
+    if (evenement.type !== 'ScorePouleSaisi' && evenement.type !== 'SaisieRefusee') continue;
+    const { poule, tireurA, tireurB, touchesA, touchesB } = evenement.donnees;
+    const base = {
+      date: evenement.date,
+      poule,
+      numero: numeroDe(poule, tireurA, tireurB),
+      nomA: noms.get(tireurA) ?? tireurA,
+      nomB: noms.get(tireurB) ?? tireurB,
+      touchesA,
+      touchesB,
+      par: evenement.donnees.saisie?.par ?? null,
+    };
+    if (evenement.type === 'SaisieRefusee') {
+      lignes.push({ ...base, correctionDe: null, resultat: 'refusee', motif: evenement.donnees.motif });
+      continue;
+    }
+    const precedent = derniers.get(cle(poule, tireurA, tireurB));
+    const correctionDe: [number, number] | null = precedent
+      ? precedent.a === tireurA
+        ? [precedent.touchesA, precedent.touchesB]
+        : [precedent.touchesB, precedent.touchesA]
+      : null;
+    derniers.set(cle(poule, tireurA, tireurB), { a: tireurA, touchesA, touchesB });
+    lignes.push({
+      ...base,
+      correctionDe,
+      resultat: evenement.donnees.saisie ? 'acceptee' : 'enregistree',
+      motif: null,
+    });
+  }
+  return lignes.reverse();
 }

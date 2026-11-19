@@ -1,7 +1,7 @@
 // Format du journal d'une épreuve (docs/protocole.md, US-021) : enveloppe versionnée des événements, partagée par
 // le PC pilote (IndexedDB) et le serveur (réplication, US-022). Un ancien format est migré à la lecture, sans réécrire
 // le journal (ADR-0001).
-import type { Evenement } from '@poule-position/domaine';
+import { MOTIFS_REFUS_SAISIE, type Evenement } from '@poule-position/domaine';
 import { aExactementLesChamps, estRattachement, estTexteOuNull } from './validation';
 
 /** Version courante du format des événements. */
@@ -194,6 +194,27 @@ function donneesValides(type: unknown, donnees: unknown): boolean {
   if (TYPES_TIREUR.includes(type as string)) return donneesTireurValides(type, donnees);
   if (TYPES_POULES.includes(type as string)) return donneesPoulesValides(type, donnees);
   if (type === 'EpreuveArchivee' || type === 'EpreuveDesarchivee') return aExactementLesChamps(donnees, []) !== null;
+  if (type === 'SaisieRefusee') {
+    const refus = aExactementLesChamps(donnees, [
+      'saisie',
+      'poule',
+      'tireurA',
+      'tireurB',
+      'touchesA',
+      'touchesB',
+      'motif',
+    ]);
+    return (
+      refus !== null &&
+      origineSaisieValide(refus.saisie) &&
+      estEntier(refus.poule) &&
+      estTexte(refus.tireurA) &&
+      estTexte(refus.tireurB) &&
+      estEntier(refus.touchesA) &&
+      estEntier(refus.touchesB) &&
+      (MOTIFS_REFUS_SAISIE as readonly unknown[]).includes(refus.motif)
+    );
+  }
   if (type === 'JetonQrDefini') {
     const jeton = aExactementLesChamps(donnees, ['role', 'empreinte']);
     return jeton !== null && estTexte(jeton.role) && estTexte(jeton.empreinte);

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { analyserMessageClient, analyserMessageServeur, messageAccuse, messageSaisie } from './messages';
+import {
+  analyserMessageClient,
+  analyserMessageServeur,
+  messageAccuse,
+  messageAppareils,
+  messageSaisie,
+} from './messages';
 import { analyserAccuse, analyserSaisieScore, analyserSaisieTelephone } from './saisies';
 
 const telephone = {
@@ -70,6 +76,19 @@ describe('saisies dans le protocole (US-099)', () => {
     expect(
       analyserMessageServeur('{"v":1,"type":"accuse","accuse":{"id":"x","decision":"accepte"},"appareilId":3}'),
     ).toEqual({
+      ok: false,
+      erreur: 'MESSAGE_INVALIDE',
+    });
+  });
+});
+
+describe('appareils connectés (US-100)', () => {
+  it('CA-1 : le serveur dit à la table combien de smartphones sont connectés', () => {
+    expect(analyserMessageServeur(messageAppareils(7))).toEqual({
+      ok: true,
+      message: { v: 1, type: 'appareils', connectes: 7 },
+    });
+    expect(analyserMessageServeur('{"v":1,"type":"appareils","connectes":-1}')).toEqual({
       ok: false,
       erreur: 'MESSAGE_INVALIDE',
     });

@@ -10,6 +10,7 @@ import {
   analyserMessageClient,
   FERMETURES,
   messageAcces,
+  messageAppareils,
   messageAccuse,
   messageSaisie,
   messageBienvenue,
@@ -220,8 +221,9 @@ export class Epreuve extends DurableObject<Env> {
     serveur.serializeAttachment({ role: 'pilote', appareil, epreuveId, ouverteLe: Date.now() } satisfies AttacheSocket);
     this.fermer(etiquette, FERMETURES.REMPLACEE, 'Connexion remplacée', serveur);
     serveur.send(messageBienvenue(epreuveId));
-    // US-097 CA-5 : les smartphones apprennent que la table est connectée.
+    // US-097 CA-5 : les smartphones apprennent que la table est connectée ; la table, combien ils sont (US-100).
     this.diffuser(messageTable(true));
+    this.compterAppareils();
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -264,7 +266,21 @@ export class Epreuve extends DurableObject<Env> {
     serveur.send(messageTable(this.etatPilote()?.connecte ?? false));
     const vue = this.derniereVue();
     if (vue !== null) serveur.send(`{"v":1,"type":"vue","vue":${vue}}`);
+    this.compterAppareils();
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  /** US-100 CA-1 : dit à la table combien de smartphones sont connectés (sans compter une socket qui se ferme). */
+  private compterAppareils(sauf?: WebSocket): void {
+    const connectes = this.ctx.getWebSockets(ETIQUETTE_SAISIE).filter((socket) => socket !== sauf).length;
+    const message = messageAppareils(connectes);
+    for (const pilote of this.ctx.getWebSockets('pilote')) {
+      try {
+        pilote.send(message);
+      } catch {
+        // socket en cours de fermeture
+      }
+    }
   }
 
   /** Envoie un message à tous les smartphones de l'épreuve. */
@@ -371,5 +387,6 @@ export class Epreuve extends DurableObject<Env> {
     // US-097 CA-5 : la table se déconnecte quand la dernière socket du pilote se ferme.
     const attache = ws.deserializeAttachment() as AttacheSocket | null;
     if (attache?.role === 'pilote' && !this.etatPilote(ws)?.connecte) this.diffuser(messageTable(false));
+    if (attache && attache.role !== 'pilote') this.compterAppareils(ws);
   }
 }
