@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-097
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-098-matchs-de-la-piste`
 
 ## Récit
 
@@ -81,6 +81,14 @@ suspendue » (US-102). Testé dans US-102.
 - Le droit « Arbitre : déplacer une poule ou un match de piste » (ADR-0007) n'a pas de planche : il n'est pas
   traité dans E5 et fera l'objet d'une US ultérieure si besoin.
 
+- Implémentation (2026-11-19) : la règle est pure, dans le domaine (`matchsDeLaPiste`, à partir de la vue de saisie) :
+  poule en cours = la première de la piste qui a encore un match à tirer ; « Terminés » = du dernier match réglé dans
+  l'ordre officiel au premier (la vue ne porte pas l'heure des scores).
+- Implémentation : tant qu'US-099 n'est pas livrée, « Saisir le score » est affiché mais grisé ; le crayon « Corriger le
+  match N » des terminés vient avec US-101 (il n'est pas affiché avant).
+- Implémentation : sans aucun match réglé, « Terminés » dit « Aucun match terminé pour l'instant. » ; un match de la poule
+  suivante de la piste porte, dans « Ensuite », la mention « poule N ».
+
 ## Questions bloquantes
 
 Aucune.
@@ -94,3 +102,5 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-19 | Créée |
+| 2026-11-19 | En cours sur `us/US-098-matchs-de-la-piste` (série « maximum d'US ») |
+| 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, tests, build, E2E `matchs-piste` et `smartphone-arbitre`) |
