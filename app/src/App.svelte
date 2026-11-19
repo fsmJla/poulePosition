@@ -23,6 +23,7 @@
   import Entete from './composants/Entete.svelte';
   import Accueil from './pages/Accueil.svelte';
   import Direct from './pages/Direct.svelte';
+  import Saisie from './pages/Saisie.svelte';
   import Epreuve from './pages/Epreuve.svelte';
   import Comptes from './pages/Comptes.svelte';
   import Connexion from './pages/Connexion.svelte';
@@ -202,6 +203,9 @@
   {:else if route.page === 'direct' && route.epreuveId}
     <BarreOutils />
     <Direct client={publication} epreuveId={route.epreuveId} {naviguer} />
+  {:else if route.page === 'saisie' && route.epreuveId}
+    <!-- US-097 : page d'un smartphone entré par QR code, sans compte ni entête de l'organisateur. -->
+    <Saisie epreuveId={route.epreuveId} {urlServeur} />
   {:else if route.page === 'connexion'}
     <BarreOutils />
     <Connexion {client} {surConnexion} {naviguer} />

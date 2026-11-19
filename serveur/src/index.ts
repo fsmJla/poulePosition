@@ -61,6 +61,7 @@ import type { Club, CompteStocke } from './club';
 import type { Epreuve } from './epreuve';
 import type { Limiteur } from './limiteur';
 import { ligneIndex } from './replication';
+import { deciderAccesQr } from './saisie';
 import type { Route } from './logique';
 import {
   analyserChemin,
@@ -128,8 +129,13 @@ export default {
     if (!origineAutorisee(requete.headers.get('Origin'), env.ORIGINES)) {
       return new Response('Origine refusée', { status: 403 });
     }
-    // US-094 CA-1 (ADR-0028) : seule la WebSocket du pilote existe, ouverte avec un ticket signé de cette épreuve.
-    const ticket = new URL(requete.url).searchParams.get('ticket') ?? '';
+    // US-097 : un smartphone entre avec le jeton du QR code d'un rôle (`j`).
+    const parametres = new URL(requete.url).searchParams;
+    const jetonQr = parametres.get('j');
+    if (jetonQr !== null)
+      return connecterSmartphone(route.epreuveId, jetonQr, parametres.get('appareil'), requete, env);
+    // US-094 CA-1 (ADR-0028) : la WebSocket du pilote s'ouvre avec un ticket signé de cette épreuve.
+    const ticket = parametres.get('ticket') ?? '';
     const charge = env.SECRET_SESSION ? await verifierTicket(ticket, env.SECRET_SESSION, Date.now()) : null;
     if (!charge || charge.club !== env.CLUB_ID || charge.epreuve !== route.epreuveId) {
       return new Response('Ticket refusé', { status: 401 });
@@ -141,6 +147,38 @@ export default {
     return epreuve.fetch(new Request(url, requete));
   },
 } satisfies ExportedHandler<Env>;
+
+/**
+ * US-097 CA-1 et CA-2 (ADR-0007) : la WebSocket d'un smartphone. Le jeton doit être celui d'un rôle en service et
+ * l'épreuve ouverte (US-096 CA-6) ; un jeton faux compte pour le limiteur de l'adresse. Le DO accepte la socket puis,
+ * en cas de refus, la ferme avec un code que le téléphone traduit (lien plus valable, épreuve terminée, trop d'essais).
+ */
+async function connecterSmartphone(
+  epreuveId: string,
+  jeton: string,
+  appareil: string | null,
+  requete: Request,
+  env: Env,
+): Promise<Response> {
+  const limiteur = env.LIMITEUR.get(env.LIMITEUR.idFromName(`qr:${adresseIp(requete)}`));
+  const club = env.CLUB.get(env.CLUB.idFromName(`club:${env.CLUB_ID}`));
+  const epreuve = objetEpreuve(env, epreuveId);
+  const [bloque, jetons, ligne, supprimee] = await Promise.all([
+    limiteur.estBloque(),
+    epreuve.jetonsQr(),
+    club.ligneEpreuve(epreuveId),
+    club.supprimee(epreuveId),
+  ]);
+  const decision = deciderAccesQr({ jeton, jetons, statut: supprimee ? null : (ligne?.statut ?? null), bloque });
+  if (!decision.ok && decision.refus === 'lien') await limiteur.enregistrerEchec(REGLE_ADRESSE);
+  const url = new URL('https://epreuve/connexion');
+  url.searchParams.set('epreuveId', epreuveId);
+  if (decision.ok) {
+    url.searchParams.set('role', decision.role);
+    if (appareil) url.searchParams.set('appareil', appareil);
+  } else url.searchParams.set('refus', decision.refus);
+  return epreuve.fetch(new Request(url, requete));
+}
 
 function repondre(statut: number, corps: ReponseInstallation): Response {
   return Response.json(corps, { status: statut });

@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-095, US-096
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-097-acces-arbitre`
 
 ## Récit
 
@@ -77,6 +77,19 @@ E2E réseau coupé côté téléphone.
 - La PWA sert aussi aux smartphones : la route `#/saisie/<epreuveId>?j=<jeton>` ne demande aucun compte.
 - Le jeton est gardé sur le téléphone (stockage local) pour le retour sur le lien ; il n'apparaît dans aucun journal.
 
+- Implémentation (2026-11-19) : le lien est `/saisie/<epreuveId>#j=<jeton>` (US-096) ; le jeton est retiré de l'adresse
+  affichée dès l'ouverture. Le téléphone garde jeton, identifiant, rôle, nom, piste et dernière vue dans `localStorage`.
+- Implémentation : la socket d'un refus est acceptée puis fermée avec un code (`4003` lien, `4001` terminée, `4000` trop
+  d'essais) : un navigateur ne lit pas le statut HTTP d'un refus de WebSocket. Le limiteur est propre aux liens QR
+  (`qr:<ip>`, 20 essais en 15 minutes, règle des adresses).
+- Implémentation : le serveur dit l'état de la table (`table`) à l'entrée, puis à l'ouverture et à la fermeture de la
+  socket du pilote ; un pilote qui disparaît sans fermer sa socket est traité avec la suspension (US-102).
+- Implémentation : après « Commencer », l'écran montre seulement « Piste N · Poule M », le nom et « Changer de piste » :
+  la liste des matchs (planche 13) vient avec US-098. Un téléphone entré avec le QR des tireurs voit un message
+  d'attente jusqu'à US-103.
+- Implémentation : l'entête montre l'épreuve et l'arme (« M13 Dames · Sabre ») ; le sous-titre, la compétition et la date
+  longue, s'ils sont connus.
+
 ## Questions bloquantes
 
 Aucune.
@@ -91,3 +104,6 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-19 | Créée |
+| 2026-11-19 | En cours sur `us/US-097-acces-arbitre` (série « maximum d'US ») |
+| 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 760 tests, couverture 94,4 %, E2E `smartphone-arbitre` : entrée, piste, retour sur le lien, lien faux, hors ligne) |
+| 2026-11-19 | Recette OK sur https://poule-position-git-us-us-097-acces-arbitre-fsmjlas-projects.vercel.app (serveur de preview déployé depuis la branche) : lien des arbitres ouvert, jeton retiré de l’adresse, « Accès arbitre », entête « Recette US-097 arbitre · Sabre » et « Table connectée » (CA-1, CA-5), identifiant t1 attribué puis repris au rechargement (CA-3, CA-4), poules pas encore lancées signalées ; lien faux : « Ce lien n’est plus valable… » (CA-2). Choix de la piste, Commencer et hors ligne couverts par l’E2E à 390 × 844 (CA-6). Passe à Terminée |

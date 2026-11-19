@@ -24,6 +24,7 @@ export type Page =
   | 'grilleEpreuves'
   | 'manifestation'
   | 'direct'
+  | 'saisie'
   | 'assistantManifestation'
   | 'creer'
   | 'aideOrganisation';
@@ -61,6 +62,7 @@ export const CHEMINS = Object.freeze({
     | 'grilleEpreuves'
     | 'manifestation'
     | 'direct'
+    | 'saisie'
   >,
   string
 >);
@@ -211,6 +213,7 @@ export function copieEpreuve(recherche: string): { epreuveId: string; arme: stri
 }
 
 const MOTIF_DIRECT = /^\/direct\/([^/]+)$/;
+const MOTIF_SAISIE = /^\/saisie\/([^/]+)$/;
 const MOTIF_MANIFESTATION = /^\/manifestations\/([^/]+)(?:\/(plan|documents))?$/;
 const MOTIF_GRILLE = /^\/competitions\/([^/]+)\/epreuves$/;
 const MOTIF_EPREUVE = /^\/epreuves\/([^/]+)$/;
@@ -295,9 +298,13 @@ function pageDe(chemin: string): {
       | 'grilleEpreuves'
       | 'manifestation'
       | 'direct'
+      | 'saisie'
     >[]
   ).find((candidate) => CHEMINS[candidate] === chemin);
   if (page) return { page };
+  // US-097 : page publique du lien d'un QR code (le jeton est dans le fragment, jamais dans le chemin).
+  const saisie = MOTIF_SAISIE.exec(chemin)?.[1];
+  if (saisie) return MOTIF_IDENTIFIANT.test(saisie) ? { page: 'saisie', epreuveId: saisie } : null;
   const direct = MOTIF_DIRECT.exec(chemin)?.[1];
   if (direct) return MOTIF_IDENTIFIANT.test(direct) ? { page: 'direct', epreuveId: direct } : null;
   const manifestation = MOTIF_MANIFESTATION.exec(chemin);

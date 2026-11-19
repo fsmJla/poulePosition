@@ -576,3 +576,130 @@ describe('jetons des QR codes (US-096)', () => {
     expect((await appeler(worker, 'GET', `/epreuves/${id}/jetons`, '')).status).toBe(401);
   });
 });
+
+describe('WebSocket des smartphones (US-097)', () => {
+  const J_ARBITRE = 'Arbitreabcdefghijklmno';
+  const J_TIREUR = 'Tireurabcdefghijklmnop';
+  async function epreuveAvecJetons(resume = RESUME) {
+    const id = crypto.randomUUID();
+    await envoyer(id, { ...lot(id, 0, [evenement(id, 1)], 'pc-a'), resume });
+    for (const [role, jetonQr] of [
+      ['arbitre', J_ARBITRE],
+      ['tireur', J_TIREUR],
+    ] as const) {
+      await appeler(worker, 'PUT', `/epreuves/${id}/jetons/${role}`, jeton, { appareilId: 'pc-a', jeton: jetonQr });
+    }
+    return id;
+  }
+  async function ouvrirSmartphone(epreuveId: string, jetonQr: string, appareil?: string) {
+    const suite = `?j=${jetonQr}${appareil ? `&appareil=${appareil}` : ''}`;
+    const reponse = await worker.fetch(`http://localhost/epreuves/${epreuveId}/connexion${suite}`, {
+      headers: { Upgrade: 'websocket', Origin: 'http://localhost:4173' },
+    });
+    expect(reponse.status).toBe(101);
+    const socket = reponse.webSocket as NonNullable<typeof reponse.webSocket>;
+    const recus: string[] = [];
+    const attentes: ((message: string) => void)[] = [];
+    let resoudreFermeture: (code: number) => void = () => {};
+    const fermeture = new Promise<number>((resoudre) => (resoudreFermeture = resoudre));
+    socket.addEventListener('message', (evenement) => {
+      const message = String(evenement.data);
+      const attente = attentes.shift();
+      if (attente) attente(message);
+      else recus.push(message);
+    });
+    socket.addEventListener('close', (evenement) => resoudreFermeture(evenement.code));
+    socket.accept();
+    const prochain = async () =>
+      JSON.parse(
+        await new Promise<string>((resoudre) => {
+          const deja = recus.shift();
+          if (deja !== undefined) resoudre(deja);
+          else attentes.push(resoudre);
+        }),
+      ) as Record<string, unknown>;
+    return { socket, prochain, fermeture };
+  }
+
+  it('CA-1 et CA-3 : le jeton des arbitres ouvre l’accès, avec un identifiant d’appareil et l’état de la table', async () => {
+    const id = await epreuveAvecJetons();
+    const telephone = await ouvrirSmartphone(id, J_ARBITRE);
+    expect(await telephone.prochain()).toMatchObject({ type: 'bienvenue', epreuveId: id });
+    expect(await telephone.prochain()).toEqual({ v: 1, type: 'acces', role: 'arbitre', appareilId: 't1' });
+    expect(await telephone.prochain()).toEqual({ v: 1, type: 'table', connectee: false });
+    const second = await ouvrirSmartphone(id, J_TIREUR);
+    await second.prochain();
+    expect(await second.prochain()).toMatchObject({ role: 'tireur', appareilId: 't2' });
+    telephone.socket.close();
+    second.socket.close();
+  });
+
+  it('CA-4 : un téléphone qui revient garde son identifiant', async () => {
+    const id = await epreuveAvecJetons();
+    const premier = await ouvrirSmartphone(id, J_ARBITRE);
+    await premier.prochain();
+    await premier.prochain();
+    premier.socket.close();
+    const retour = await ouvrirSmartphone(id, J_ARBITRE, 't1');
+    await retour.prochain();
+    expect(await retour.prochain()).toMatchObject({ appareilId: 't1' });
+    retour.socket.close();
+  });
+
+  it('CA-2 : un jeton inconnu est refusé (4003) ; une épreuve terminée, 4001 (US-096 CA-6)', async () => {
+    const id = await epreuveAvecJetons();
+    expect(await (await ouvrirSmartphone(id, 'Inconnuabcdefghijklmno')).fermeture).toBe(4003);
+    const terminee = await epreuveAvecJetons({ ...RESUME, statut: 'terminee' });
+    expect(await (await ouvrirSmartphone(terminee, J_ARBITRE)).fermeture).toBe(4001);
+  });
+
+  it('CA-5 et US-095 CA-2 : la table se connecte et se déconnecte ; la vue publiée arrive au téléphone', async () => {
+    const id = await epreuveAvecJetons();
+    const telephone = await ouvrirSmartphone(id, J_ARBITRE);
+    await telephone.prochain();
+    await telephone.prochain();
+    expect(await telephone.prochain()).toMatchObject({ type: 'table', connectee: false });
+    const pilote = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    await pilote.prochain();
+    expect(await telephone.prochain()).toEqual({ v: 1, type: 'table', connectee: true });
+    const vue = {
+      epreuveId: id,
+      nom: 'M13 Dames',
+      arme: 'sabre' as const,
+      categorie: null,
+      sexe: null,
+      date: null,
+      competition: null,
+      touches: 5,
+      droits: {
+        arbitreSaisitScores: true,
+        tireurSaisitPoule: true,
+        tireurSaisitTableau: true,
+        correctionScore: 'arbitre' as const,
+      },
+      lancees: false,
+      poules: [],
+    };
+    pilote.socket.send(messageVue(vue));
+    expect(await telephone.prochain()).toEqual({ v: 1, type: 'vue', vue });
+    pilote.socket.close();
+    expect(await telephone.prochain()).toEqual({ v: 1, type: 'table', connectee: false });
+    // Un téléphone qui arrive ensuite reçoit la dernière vue.
+    const autre = await ouvrirSmartphone(id, J_TIREUR);
+    for (let i = 0; i < 3; i++) await autre.prochain();
+    expect(await autre.prochain()).toEqual({ v: 1, type: 'vue', vue });
+    telephone.socket.close();
+    autre.socket.close();
+  });
+
+  it('US-096 CA-4 : régénérer le jeton des arbitres ferme leurs téléphones (4003)', async () => {
+    const id = await epreuveAvecJetons();
+    const telephone = await ouvrirSmartphone(id, J_ARBITRE);
+    await telephone.prochain();
+    await appeler(worker, 'PUT', `/epreuves/${id}/jetons/arbitre`, jeton, {
+      appareilId: 'pc-a',
+      jeton: 'Nouveauabcdefghijklmno',
+    });
+    expect(await telephone.fermeture).toBe(4003);
+  });
+});

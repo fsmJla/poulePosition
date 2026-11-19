@@ -103,7 +103,9 @@ Ce sont des textes JSON d'au plus **256 Ko** (262 144 octets en UTF-8), avec deu
 | `bienvenue` | `epreuveId` | À chaque connexion acceptée |
 | `erreur` | `code`, `message` (texte lisible en français) | Message client refusé (la connexion reste ouverte) |
 | `pong` | — | Réponse à `ping` (§4.3) |
-| `vue` | `vue` (vue de saisie, §18) | Aux smartphones, à chaque vue publiée par le pilote (US-095) |
+| `vue` | `vue` (vue de saisie, §18) | Aux smartphones, à chaque vue publiée par le pilote (US-095), et à l'entrée d'un smartphone |
+| `acces` | `role` (`arbitre` ou `tireur`), `appareilId` (« t1 »…) | À l'entrée d'un smartphone (US-097, §20) |
+| `table` | `connectee` | Aux smartphones : à leur entrée, puis quand la table (le pilote) se connecte ou se déconnecte (US-097) |
 
 ### 4.2 Messages du client
 
@@ -136,10 +138,10 @@ ouverture) depuis moins de 30 s (US-094 CA-2).
 
 | Code | Sens | Reconnexion automatique |
 |---|---|---|
-| `4000` | Connexion refusée | — |
-| `4001` | Épreuve fermée | — |
+| `4000` | Connexion refusée ; pour un smartphone, trop d'essais de liens faux (US-097) | **Non** |
+| `4001` | Épreuve fermée ; pour un smartphone, épreuve terminée ou archivée (US-097) | **Non** |
 | `4002` | Connexion remplacée par une autre du même appareil | **Non** |
-| `4003` | Appareil exclu par l'organisateur, ou qui n'est plus le pilote à l'ouverture (US-094) | **Non** |
+| `4003` | Appareil exclu par l'organisateur, pilote qui ne l'est plus à l'ouverture (US-094), ou lien de QR code plus valable : jeton inconnu ou régénéré (US-097) | **Non** |
 | `4004` | Main prise : un autre appareil est devenu le pilote (US-094 CA-4) | **Non** ; l'ancien pilote passe en lecture seule |
 | autre (`1006`, réseau coupé, veille…) | Coupure | Oui, après 1 s, 2 s, 4 s, 8 s, 16 s, puis toutes les 30 s ; un nouveau ticket à chaque tentative |
 
@@ -1116,3 +1118,19 @@ club (lecture seule, ou après une prise de main) affiche ainsi les mêmes QR co
 Côté application (`acces-qr.ts`) : à la première ouverture de « Paramètres » en ligne, le pilote génère les jetons
 manquants, les confie au serveur, puis écrit `JetonQrDefini` et le garde sur ce PC (table IndexedDB `jetonsQr`) pour
 afficher et imprimer les QR codes hors ligne. « Régénérer » demande une connexion.
+
+## 20. WebSocket des smartphones (US-097, ADR-0007)
+
+Un smartphone ouvre `/epreuves/<epreuveId>/connexion?j=<jeton>`, avec `&appareil=<id>` s'il en a déjà reçu un. Le Worker
+vérifie l'origine, puis le jeton : il doit être celui d'un rôle en service (§19) et l'épreuve, d'après l'index du club,
+doit être « En préparation » ou « En cours ». Un jeton faux compte pour un limiteur par adresse IP (`qr:<ip>`, règle des
+adresses : 20 essais en 15 minutes). Le DO accepte toujours la socket, puis :
+
+- en cas de refus, la ferme : `4003` (lien plus valable), `4001` (épreuve terminée), `4000` (trop d'essais) ;
+- sinon, lui attribue un identifiant d'appareil (« t1 », « t2 »… ; celui présenté est repris s'il existe pour ce rôle,
+  table `appareils`), l'étiquette `saisie`, `qr:<role>` et `appareil:<id>`, et lui envoie `bienvenue`, `acces`, `table` et
+  la dernière vue de saisie (§18), s'il y en a une.
+
+Un smartphone n'envoie encore aucun message (la saisie vient avec US-099). Le téléphone garde, par épreuve, le jeton, son
+identifiant, son rôle, le nom et la piste de l'arbitre et la dernière vue (`localStorage`, clé `saisie:<epreuveId>`) ;
+le lien du QR code est retiré de l'adresse affichée dès la page ouverte.

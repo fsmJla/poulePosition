@@ -46,6 +46,54 @@ export const textes = {
   nomApplication: 'Poule Position',
   sousTitre: 'Gestion de compétitions d’escrime',
   /** US-071 : plan du lieu (tuiles OpenStreetMap). */
+  /** US-097 : saisie par smartphone (arbitres et tireurs, accès par QR code ; planches 12 à 18). */
+  saisie: {
+    marque: 'Poule Position',
+    tableConnectee: 'Table connectée',
+    tableDeconnectee: 'Table déconnectée',
+    epreuve: (nom: string, arme: string) => `${nom} · ${arme}`,
+    contexte: (competition: string | null, date: string | null) =>
+      [
+        competition,
+        date
+          ? new Intl.DateTimeFormat('fr-FR', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              timeZone: 'UTC',
+            }).format(new Date(`${date}T00:00:00Z`))
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    chargement: 'Connexion à la table…',
+    refus: {
+      lien: 'Ce lien n’est plus valable : scannez le QR code affiché dans la salle.',
+      terminee: 'Cette épreuve est terminée.',
+      trop: 'Trop d’essais, réessayez plus tard.',
+    },
+    pasDeConnexion: 'Pas de connexion : réessayez dès que le réseau revient.',
+    poulesNonLancees: 'Les poules ne sont pas encore lancées : revenez dans un instant.',
+    arbitre: {
+      titre: 'Accès arbitre',
+      nom: 'Votre nom',
+      piste: 'Votre piste',
+      nomPiste: (piste: number) => `Piste ${piste}`,
+      poules: (poules: number[]) =>
+        poules.length > 1 ? `Poules ${poules.slice(0, -1).join(', ')} et ${poules.at(-1)}` : `Poule ${poules[0]}`,
+      changerPlusTard: 'Vous pourrez changer de piste à tout moment, par exemple pour arbitrer un match du tableau.',
+      signature: (nom: string) =>
+        `Vos saisies seront signées « arbitre ${nom || '…'} ». La table de marque les enregistre et vous confirme chaque score.`,
+      commencer: 'Commencer',
+      titrePiste: (piste: number, poules: number[]) =>
+        `Piste ${piste} · ${poules.length > 1 ? `Poules ${poules.join(', ')}` : `Poule ${poules[0] ?? '—'}`}`,
+      quiSaisit: (nom: string) => `arbitre ${nom}`,
+      changerDePiste: 'Changer de piste',
+    },
+    tireur: {
+      bientot: 'L’accès des tireurs arrive bientôt : la table de marque saisit vos scores en attendant.',
+    },
+  },
   planLieu: {
     libelle: (lieu: string) => `Plan du lieu : ${lieu}`,
     ouvrir: 'Ouvrir dans une application de cartes',
