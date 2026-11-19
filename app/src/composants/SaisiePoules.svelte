@@ -2,7 +2,7 @@
   // Saisie des scores des poules sur le PC (US-088, planche 10) : un onglet par poule, la feuille de poule (V5, touches,
   // V, V/M, TD, TR, indice, rang), la carte du match en cours (Entrée valide et passe au suivant), l'ordre des matchs.
   // Une case de la feuille ouvre son match pour le corriger. Le retrait d'un tireur (US-089) passe par sa ligne.
-  import { untrack } from 'svelte';
+  import { untrack, type Snippet } from 'svelte';
   import {
     avancementPoules,
     matchsDePoule,
@@ -41,9 +41,11 @@
     /** US-089 : retire un tireur des poules, ou annule ce retrait. */
     retirer: (tireurId: string, motif: MotifRetrait) => Promise<VerdictArchivage>;
     annulerRetrait: (tireurId: string) => Promise<VerdictArchivage>;
+    /** US-107 CA-4 : contenu ajouté sous la saisie, dans la colonne de droite (les saisies reçues). */
+    cote?: Snippet;
   }
 
-  let { etat, tireurs, touches, modifiable, saisir, retirer, annulerRetrait }: Proprietes = $props();
+  let { etat, tireurs, touches, modifiable, saisir, retirer, annulerRetrait, cote }: Proprietes = $props();
 
   /** US-089 : le retrait demandé (ou son annulation, motif null), en attente de confirmation. */
   let demande: { tireurId: string; motif: MotifRetrait | null } | null = $state(null);
@@ -145,18 +147,19 @@
   }
 </script>
 
+<!-- US-107 CA-2 : l'étape tient sur une ligne : titre, avancement (l'infobulle dit quand s'ouvre le classement), « ⋯ ». -->
 <div class="titre-etape">
-  <div class="identite">
-    <div class="ligne">
-      <h2>{t.titre}</h2>
-      <span class="pastille">{t.enCours}</span>
-    </div>
-    <p class="discret">
-      {avancement.regles === avancement.total
-        ? t.toutesTerminees
-        : `${t.avancement(avancement.regles, avancement.total)} · ${t.classementApres}`}
+  <h2>{t.titre}</h2>
+  {#if avancement.regles === avancement.total}
+    <p class="discret avancement">{t.toutesTerminees}</p>
+  {:else}
+    <p class="discret avancement" title={t.classementApres}>
+      <span class="barre" aria-hidden="true"
+        ><span style:width="{(100 * avancement.regles) / Math.max(1, avancement.total)}%"></span></span
+      >
+      <span>{t.avancement(avancement.regles, avancement.total)}</span>
     </p>
-  </div>
+  {/if}
   <MenuActions
     id="menu-poules"
     nom={t.titre}
@@ -164,32 +167,33 @@
   />
 </div>
 
-<!-- CA-1 : un onglet par poule, avec sa piste et son avancement. -->
-<div class="onglets" role="tablist" aria-label={t.titre}>
-  {#each etat.poules as p (p.numero)}
-    {@const ms = matchsDePoule(etat, p, touches)}
-    {@const regles = ms.filter(({ touches: tt }) => tt !== null).length}
-    {@const finie = regles === ms.length}
-    <button
-      type="button"
-      role="tab"
-      class="onglet"
-      aria-selected={p.numero === poule.numero}
-      aria-controls="feuille"
-      onclick={() => choisirPoule(p.numero)}
-    >
-      <span class="haut"
-        ><strong>{t.poule(p.numero)}</strong>
-        {#if finie}<Icone nom="coche" taille={16} />{/if}
-        <span class="discret">{t.pisteN(p.piste)}</span></span
+<!-- CA-1 : un onglet par poule, avec sa piste et son avancement ; US-107 CA-3 : sur une ligne, et aucun pour une poule. -->
+{#if etat.poules.length > 1}
+  <div class="onglets" role="tablist" aria-label={t.titre}>
+    {#each etat.poules as p (p.numero)}
+      {@const ms = matchsDePoule(etat, p, touches)}
+      {@const regles = ms.filter(({ touches: tt }) => tt !== null).length}
+      {@const finie = regles === ms.length}
+      <button
+        type="button"
+        role="tab"
+        class="onglet"
+        aria-selected={p.numero === poule.numero}
+        aria-controls="feuille"
+        onclick={() => choisirPoule(p.numero)}
       >
-      <span class="barre" aria-hidden="true"
-        ><span style:width="{(100 * regles) / Math.max(1, ms.length)}%"></span></span
-      >
-      <span class="discret">{t.ongletAvancement(regles, ms.length, finie)}</span>
-    </button>
-  {/each}
-</div>
+        <span class="haut"
+          ><strong>{t.poule(p.numero)}</strong>
+          {#if finie}<Icone nom="coche" taille={16} />{/if}
+          <span class="discret">· {t.pisteN(p.piste)} · {t.ongletAvancement(regles, ms.length, finie)}</span></span
+        >
+        <span class="barre" aria-hidden="true"
+          ><span style:width="{(100 * regles) / Math.max(1, ms.length)}%"></span></span
+        >
+      </button>
+    {/each}
+  </div>
+{/if}
 
 <div class="corps">
   <div class="carte feuille" id="feuille" role="tabpanel" aria-labelledby="titre-feuille">
@@ -272,6 +276,23 @@
     <p class="legende">{t.legende}</p>
   </div>
 
+  <!-- US-107 CA-4 : l'ordre des matchs sous la feuille, en trois colonnes. -->
+  <section class="carte ordre" aria-labelledby="titre-ordre">
+    <header><h3 id="titre-ordre">{t.ordreDesMatchs}</h3></header>
+    <ol style:grid-template-rows="repeat({Math.ceil(matchs.length / 3)}, auto)">
+      {#each matchs as m (m.numero)}
+        <li class:courant={modifiable && courant?.numero === m.numero}>
+          <span class="numero">{m.numero}.</span>
+          <span>{nomCourt(m.tireurA)} – {nomCourt(m.tireurB)}</span>
+          <span class="resultat"
+            >{#if m.forfait}{t.forfait}{:else if m.touches}{m.touches[0]}–{m
+                .touches[1]}{:else if modifiable && courant?.numero === m.numero}{t.enCoursDeSaisie}{/if}</span
+          >
+        </li>
+      {/each}
+    </ol>
+  </section>
+
   <div class="cote">
     {#if modifiable}
       <section class="carte saisie" aria-labelledby="titre-saisie">
@@ -308,21 +329,7 @@
       </section>
     {/if}
 
-    <section class="carte ordre" aria-labelledby="titre-ordre">
-      <header><h3 id="titre-ordre">{t.ordreDesMatchs}</h3></header>
-      <ol style:grid-template-rows="repeat({Math.ceil(matchs.length / 2)}, auto)">
-        {#each matchs as m (m.numero)}
-          <li class:courant={modifiable && courant?.numero === m.numero}>
-            <span class="numero">{m.numero}.</span>
-            <span>{nomCourt(m.tireurA)} – {nomCourt(m.tireurB)}</span>
-            <span class="resultat"
-              >{#if m.forfait}{t.forfait}{:else if m.touches}{m.touches[0]}–{m
-                  .touches[1]}{:else if modifiable && courant?.numero === m.numero}{t.enCoursDeSaisie}{/if}</span
-            >
-          </li>
-        {/each}
-      </ol>
-    </section>
+    {#if cote}<div class="cote-suite">{@render cote()}</div>{/if}
   </div>
 </div>
 
@@ -341,21 +348,25 @@
   .titre-etape {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 0.75rem 1rem;
   }
 
-  .identite {
-    display: grid;
-    gap: 0.25rem;
+  .avancement {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 12rem;
   }
 
-  .ligne {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 0.75rem;
+  .avancement .barre {
+    flex: 0 1 14rem;
+  }
+
+  .avancement span:last-child {
+    white-space: nowrap;
   }
 
   h2 {
@@ -392,8 +403,8 @@
 
   .onglet {
     display: grid;
-    gap: 0.5rem;
-    padding: 0.75rem;
+    gap: 0.4rem;
+    padding: 0.5rem 0.75rem;
     border: 1px solid var(--bordure);
     border-radius: 14px;
     background: var(--surface);
@@ -414,10 +425,6 @@
     gap: 0.4rem;
   }
 
-  .haut .discret {
-    margin-left: auto;
-  }
-
   .barre {
     height: 0.35rem;
     border-radius: 999px;
@@ -431,16 +438,31 @@
     background: var(--marque);
   }
 
+  /* US-107 CA-4 : feuille puis ordre des matchs à gauche ; saisie puis saisies reçues à droite, sur toute la hauteur. */
   .corps {
     display: grid;
     grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
+    grid-template-areas:
+      'feuille cote'
+      'ordre cote';
+    grid-template-rows: auto 1fr;
     gap: 1rem;
     align-items: start;
   }
 
+  .feuille {
+    grid-area: feuille;
+  }
+
+  .ordre {
+    grid-area: ordre;
+  }
+
   .cote {
+    grid-area: cote;
     display: grid;
     gap: 1rem;
+    container-type: inline-size;
   }
 
   .carte {
@@ -637,7 +659,7 @@
 
   .ordre ol {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-auto-flow: column;
     margin: 0;
     padding: 0.25rem 0;
@@ -682,10 +704,29 @@
   @media (max-width: 60rem) {
     .corps {
       grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        'saisie'
+        'feuille'
+        'ordre'
+        'suite';
+      grid-template-rows: auto;
     }
 
+    .ordre ol {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* Sur écran étroit : la saisie, la feuille, l'ordre des matchs, puis les saisies reçues. */
     .cote {
-      order: -1;
+      display: contents;
+    }
+
+    .saisie {
+      grid-area: saisie;
+    }
+
+    .cote-suite {
+      grid-area: suite;
     }
   }
 </style>

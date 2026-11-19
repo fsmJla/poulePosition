@@ -110,6 +110,11 @@
           <div class="titre">
             <h1>{nomCourt}</h1>
             <span class="pastille {epreuve.statut}">{t.statuts[epreuve.statut]}</span>
+            <!-- US-107 CA-1 : l'arme (et la date) sur la ligne du titre ; la compétition est dans le fil d'Ariane. -->
+            <span class="complement"
+              >{#if competition}<span class="carre" style="--couleur: var(--plan-{couleur})" aria-hidden="true"
+                ></span>{/if}{t.armes[epreuve.arme]}{#if epreuve.date}{` · ${t.dateLongue(epreuve.date)}`}{/if}</span
+            >
           </div>
           <p class="sous-titre">
             {#if competition}<span class="carre" style="--couleur: var(--plan-{couleur})" aria-hidden="true"
@@ -185,8 +190,16 @@
     color: var(--sur-etat-ok-fond);
   }
 
+  .complement {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--texte-discret);
+  }
+
+  /* US-107 CA-1 : sur grand écran, le fil d'Ariane nomme déjà la compétition. */
   .sous-titre {
-    display: flex;
+    display: none;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.4rem;
@@ -244,6 +257,14 @@
   /* Smartphone (US-061, planche 6, sous 40 rem) : l'entête devient un bandeau de la couleur de la marque (retour, nom court,
      compétition et arme, actions), sans fil d'Ariane ; la barre d'onglets du bas remplace la navigation. */
   @media (max-width: 39.99rem) {
+    .sous-titre {
+      display: flex;
+    }
+
+    .complement {
+      display: none;
+    }
+
     main {
       width: 100%;
       gap: 0;

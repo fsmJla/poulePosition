@@ -230,9 +230,17 @@
         {saisir}
         {retirer}
         annulerRetrait={(id) => retirer(id, null)}
-      />
-      <!-- US-100 (planche 10) : sous la feuille, les saisies reçues des smartphones. -->
-      <SaisiesRecues {lignes} {appareils} {pilote} gererLesAcces={() => naviguer(cheminParametresEpreuve(epreuveId))} />
+      >
+        {#snippet cote()}
+          <!-- US-100 (planche 10), US-107 CA-4 : les saisies reçues des smartphones, sous la saisie du match. -->
+          <SaisiesRecues
+            {lignes}
+            {appareils}
+            {pilote}
+            gererLesAcces={() => naviguer(cheminParametresEpreuve(epreuveId))}
+          />
+        {/snippet}
+      </SaisiePoules>
     {:else if etat.poules.length === 0}
       <div class="titre-etape"><h2>{t.titre}</h2></div>
       <p class="discret">{t.pointezDabord}</p>
