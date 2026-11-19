@@ -54,6 +54,8 @@ export const ICONES = {
   poignee:
     '<circle cx="9" cy="6" r="1.2" fill="currentColor" /><circle cx="15" cy="6" r="1.2" fill="currentColor" /><circle cx="9" cy="12" r="1.2" fill="currentColor" /><circle cx="15" cy="12" r="1.2" fill="currentColor" /><circle cx="9" cy="18" r="1.2" fill="currentColor" /><circle cx="15" cy="18" r="1.2" fill="currentColor" />',
   lecture: '<path d="M7 4.5v15l12-7.5z" />',
+  /** US-099 : envoyé, en attente de la table (avion en papier, planches 14 et 15). */
+  avion: '<path d="M4 12l16-8-6 16-3-7-7-1z" />',
 } as const;
 
 export type NomIcone = keyof typeof ICONES;

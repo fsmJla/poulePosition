@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-098, US-091
 - **Branche / PR :** `us/US-099-saisir-score-poule-smartphone`
 
@@ -104,6 +104,18 @@ comme les autres scores. Testé par un E2E avec coupure du pilote.
   refus pour hors ordre).
 - La liste des saisies reçues sur le PC est l'objet de l'US-100.
 
+- Implémentation (2026-11-19) : la règle de la table est pure (`deciderSaisie`, domaine). Le score accepté garde
+  l'identifiant de la saisie et sa signature (`ScorePouleSaisi.saisie = { id, par }`) ; c'est ce qui reconnaît un doublon.
+  L'auteur de l'événement reste le compte du PC pilote (c'est lui qui écrit le journal).
+- Implémentation : sans table connectée, le DO répond `suspendue` ; la mise en boîte et la reprise au retour du pilote
+  sont l'objet d'US-102. Le téléphone garde la saisie « en attente » jusqu'à l'accusé.
+- Implémentation : « Envoyer à la table » est grisé quand la table n'est pas connectée, avec la mention de la feuille
+  papier ; une fois enregistré, « Match suivant : X – Y » ouvre le match suivant de la piste.
+- Implémentation : pendant la saisie, l'écran n'a que l'entête du match (flèche de retour, match, piste, point d'état de
+  la table), comme la planche 14. L'icône « Avion en papier » est ajoutée à `icones.ts` (déjà au vocabulaire).
+- Implémentation : la page « Poules » du PC se recharge à chaque lot envoyé (CA-9 : un score venu d'un téléphone y
+  apparaît).
+
 ## Questions bloquantes
 
 Aucune.
@@ -122,3 +134,5 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-19 | Créée |
+| 2026-11-19 | En cours sur `us/US-099-saisir-score-poule-smartphone` (série « maximum d'US ») |
+| 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 776 tests, E2E `saisie-match`, `matchs-piste`, `smartphone-arbitre`) |

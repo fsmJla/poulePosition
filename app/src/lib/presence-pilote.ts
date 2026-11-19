@@ -2,8 +2,8 @@
 // se tire aujourd'hui ; le serveur sait ainsi s'il est connecté. Hors ligne, rien ne s'arrête : la compétition continue
 // sur ce PC et la socket se rouvre d'elle-même au retour du réseau. Quand un autre PC prend la main, le serveur ferme la
 // socket (`4004`) et la perte de main est traitée aussitôt.
-import type { VueSaisie } from '@poule-position/domaine';
-import { FERMETURES, messageVue } from '@poule-position/protocole';
+import type { SaisieScore, VueSaisie } from '@poule-position/domaine';
+import { FERMETURES, messageAccuse, messageVue, type Accuse } from '@poule-position/protocole';
 import { demarrerConnexion, urlConnexion, type Adresse, type EtatConnexion, type SocketMinimale } from './connexion';
 import type { PerteDeMain } from './synchronisation';
 
@@ -25,6 +25,8 @@ export interface OptionsPresence {
   intervalle?: number;
   /** US-095 : vue de saisie actuelle d'une épreuve, calculée à partir du journal local ; null si elle est inconnue. */
   vueDe?: (epreuveId: string) => Promise<VueSaisie | null>;
+  /** US-099 : la table traite une saisie reçue d'un smartphone et renvoie son accusé. */
+  surSaisie?: (epreuveId: string, saisie: SaisieScore) => Promise<Accuse>;
 }
 
 /** Revue de la liste des épreuves à présence : locale, sans requête. */
@@ -39,6 +41,7 @@ export function creerPresencePilote({
   creerSocket,
   intervalle = INTERVALLE_REVUE,
   vueDe = async () => null,
+  surSaisie,
 }: OptionsPresence) {
   const connexions = new Map<
     string,
@@ -103,6 +106,13 @@ export function creerPresencePilote({
       surEtat: (etat) => {
         connexion.etat = etat;
         signaler();
+      },
+      // US-099 CA-5 à CA-7 : une saisie d'un téléphone, décidée par ce PC ; l'accusé repart au téléphone.
+      surMessage: (message) => {
+        if (message.type !== 'saisie' || !surSaisie) return;
+        void surSaisie(epreuveId, message.saisie).then((accuse) =>
+          connexion.envoyer(messageAccuse(accuse, message.saisie.appareilId)),
+        );
       },
       // US-095 CA-3 : à chaque (re)connexion, la vue complète est republiée.
       surConnecte: () => {

@@ -6,6 +6,8 @@
   import AccesArbitre from '../composants/AccesArbitre.svelte';
   import EnteteSaisie from '../composants/EnteteSaisie.svelte';
   import MatchsPiste from '../composants/MatchsPiste.svelte';
+  import SaisieMatch from '../composants/SaisieMatch.svelte';
+  import { matchsDeLaPiste, type MatchDeLaPiste } from '@poule-position/domaine';
   import {
     creerSaisieSmartphone,
     ecrireMemoire,
@@ -74,10 +76,39 @@
     saisie?.choisir(nom, piste);
     changerPiste = false;
   }
+
+  // US-099 : le match en cours de saisie, et l'identifiant de la saisie envoyée (pour suivre son accusé).
+  let enSaisie = $state<MatchDeLaPiste | null>(null);
+  let idEnvoye = $state<string | null>(null);
+  const accuse = $derived(idEnvoye ? (etat?.accuses[idEnvoye] ?? null) : null);
+  const suivant = $derived.by(() => {
+    if (!enSaisie || memoire?.piste == null) return null;
+    const prochain = matchsDeLaPiste(vue, memoire.piste).maintenant;
+    return prochain && !(prochain.poule === enSaisie.poule && prochain.numero === enSaisie.numero) ? prochain : null;
+  });
+
+  function ouvrir(match: MatchDeLaPiste | null) {
+    enSaisie = match;
+    idEnvoye = null;
+  }
+
+  function envoyer(match: MatchDeLaPiste, score: { touchesA: number; touchesB: number; auTemps: boolean }) {
+    const id = crypto.randomUUID();
+    const parti = saisie?.envoyerSaisie({
+      id,
+      poule: match.poule,
+      tireurA: match.tireurA,
+      tireurB: match.tireurB,
+      ...score,
+      nom: memoire?.nom ?? '',
+    });
+    idEnvoye = parti ? id : null;
+    return idEnvoye;
+  }
 </script>
 
 <div class="saisie">
-  <EnteteSaisie epreuve={enTete} table={etat?.table ?? false} />
+  {#if !enSaisie}<EnteteSaisie epreuve={enTete} table={etat?.table ?? false} />{/if}
 
   {#if refus}
     <main class="message"><p role="alert">{t.refus[refus]}</p></main>
@@ -91,7 +122,29 @@
     <AccesArbitre {vue} nom={memoire?.nom ?? ''} piste={memoire?.piste ?? null} {commencer} />
   {:else if memoire?.piste !== null && memoire?.piste !== undefined}
     <!-- US-098 (planche 13) : match à saisir, matchs suivants et terminés de la piste. -->
-    <MatchsPiste {vue} piste={memoire.piste} nom={memoire.nom ?? ''} changerDePiste={() => (changerPiste = true)} />
+    {#if enSaisie && vue}
+      {#key `${enSaisie.poule}-${enSaisie.numero}`}
+        <SaisieMatch
+          {vue}
+          match={enSaisie}
+          piste={memoire.piste}
+          table={etat.table}
+          {accuse}
+          envoyer={(score) => envoyer(enSaisie as MatchDeLaPiste, score)}
+          retour={() => ouvrir(null)}
+          {suivant}
+          ouvrirSuivant={() => ouvrir(suivant)}
+        />
+      {/key}
+    {:else}
+      <MatchsPiste
+        {vue}
+        piste={memoire.piste}
+        nom={memoire.nom ?? ''}
+        changerDePiste={() => (changerPiste = true)}
+        saisir={(match) => ouvrir(match)}
+      />
+    {/if}
   {/if}
 </div>
 

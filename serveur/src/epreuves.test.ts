@@ -405,7 +405,7 @@ describe('WebSocket du pilote (US-094, ADR-0028)', () => {
     expect(JSON.parse(await prochain())).toEqual({ v: 1, type: 'bienvenue', epreuveId: id });
     socket.send(MESSAGE_PING);
     expect(await prochain()).toBe(MESSAGE_PONG);
-    socket.send('{"v":1,"type":"saisie"}');
+    socket.send('{"v":1,"type":"inconnu"}');
     expect(JSON.parse(await prochain())).toMatchObject({ type: 'erreur', code: 'TYPE_INTERDIT' });
     socket.close();
   });

@@ -69,6 +69,10 @@
       liberer?.();
       void recharger();
     });
+    // US-099 CA-9 : un score accepté d'un smartphone (écrit hors de cette page) s'affiche dans la feuille.
+    const arreterEnvoi = synchronisation.surEnvoi((id) => {
+      if (id === epreuveId) void recharger();
+    });
     void (async () => {
       await synchronisation.telechargerCopie(epreuveId);
       pilote = (await journal.etat(epreuveId))?.pilote ?? false;
@@ -86,6 +90,7 @@
       demonte = true;
       liberer?.();
       arreterPerte();
+      arreterEnvoi();
       window.removeEventListener('online', surEnLigne);
     };
   });
