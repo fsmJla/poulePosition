@@ -125,7 +125,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-093](US-093-correction-menu-coupe-dans-les-cadres.md) | Corriger le menu « ⋯ » coupé par le cadre de la feuille de poule | E4 | Terminée | US-089 |
 | [US-094](US-094-websocket-du-pilote.md) | Ouvrir la WebSocket du pilote et retirer les battements de présence (technique, ADR à écrire d'abord) | E5 | Terminée | US-022, US-029 |
 | [US-095](US-095-vue-de-saisie-diffusee.md) | Publier la vue de saisie de l'épreuve pour les smartphones (technique) | E5 | Terminée | US-094, US-088, US-092 |
-| [US-096](US-096-qr-codes-arbitres-tireurs.md) | Afficher, imprimer et régénérer les QR codes des arbitres et des tireurs | E5 | Prête | US-094, US-032 |
+| [US-096](US-096-qr-codes-arbitres-tireurs.md) | Afficher, imprimer et régénérer les QR codes des arbitres et des tireurs | E5 | En cours | US-094, US-032 |
 | [US-097](US-097-acces-arbitre.md) | Ouvrir l'accès arbitre par le QR code (nom et piste) | E5 | Prête | US-095, US-096 |
 | [US-098](US-098-matchs-de-la-piste.md) | Voir les matchs de sa piste et changer de piste (arbitre) | E5 | Prête | US-097 |
 | [US-099](US-099-saisir-score-poule-smartphone.md) | Saisir le score d'un match de poule sur le smartphone et l'envoyer à la table | E5 | Prête | US-098, US-091 |

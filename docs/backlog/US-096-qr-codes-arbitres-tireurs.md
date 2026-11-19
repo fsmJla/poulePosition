@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-094, US-032
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-096-qr-codes-arbitres-tireurs`
 
 ## Récit
 

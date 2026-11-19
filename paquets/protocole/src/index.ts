@@ -13,3 +13,4 @@ export * from './session';
 export * from './suppression-contenu';
 export * from './sauvegarde';
 export * from './vue-saisie';
+export * from './acces-qr';

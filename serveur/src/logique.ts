@@ -11,6 +11,8 @@ import {
   sessionExpiree,
   validerEmail,
   ROLES,
+  ROLES_QR,
+  type RoleQr,
   type RegleEssais,
   type Role,
 } from '@poule-position/domaine';
@@ -50,6 +52,8 @@ export type Route =
   | { route: 'pilote'; epreuveId: string }
   | { route: 'ticket'; epreuveId: string }
   | { route: 'vue'; epreuveId: string }
+  | { route: 'jetons'; epreuveId: string }
+  | { route: 'jeton'; epreuveId: string; role: RoleQr }
   | { route: 'connexion'; epreuveId: string }
   | { route: 'fichiers' }
   | { route: 'fichier'; proprietaire: ProprietaireFichier; id: string; sorte: SorteFichier }
@@ -98,7 +102,14 @@ export function analyserChemin(chemin: string): Route | null {
     if (!connu || !MOTIF_EPREUVE.test(id) || !(SORTES_FICHIER as readonly string[]).includes(sorte)) return null;
     return { route: 'fichier', proprietaire: proprietaire as ProprietaireFichier, id, sorte: sorte as SorteFichier };
   }
-  const morceaux = /^\/epreuves\/([^/]+)\/(connexion|evenements|pilote|ticket|vue)$/.exec(chemin);
+  // US-096 : jeton du QR code d'un rôle.
+  const jeton = /^\/epreuves\/([^/]+)\/jetons\/([^/]+)$/.exec(chemin);
+  if (jeton) {
+    const [, epreuveId = '', role = ''] = jeton;
+    if (!MOTIF_EPREUVE.test(epreuveId) || !(ROLES_QR as readonly string[]).includes(role)) return null;
+    return { route: 'jeton', epreuveId, role: role as RoleQr };
+  }
+  const morceaux = /^\/epreuves\/([^/]+)\/(connexion|evenements|pilote|ticket|vue|jetons)$/.exec(chemin);
   if (!morceaux?.[1] || !MOTIF_EPREUVE.test(morceaux[1])) return null;
   const route = {
     connexion: 'connexion',
@@ -106,6 +117,7 @@ export function analyserChemin(chemin: string): Route | null {
     pilote: 'pilote',
     ticket: 'ticket',
     vue: 'vue',
+    jetons: 'jetons',
   } as const;
   return { route: route[morceaux[2] as keyof typeof route], epreuveId: morceaux[1] };
 }

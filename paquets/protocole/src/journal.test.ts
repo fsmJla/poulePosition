@@ -302,6 +302,13 @@ describe('événements d’inscription (US-081)', () => {
     expect(lit('TireurRetire', { tireurId: 't1', nom: 'X' })).toBe(false);
   });
 
+  it('US-096 CA-2 : JetonQrDefini porte le rôle et l’empreinte, jamais le jeton', () => {
+    expect(lit('JetonQrDefini', { role: 'arbitre', empreinte: 'a'.repeat(64) })).toBe(true);
+    expect(lit('JetonQrDefini', { role: 'arbitre' })).toBe(false);
+    expect(lit('JetonQrDefini', { role: 'arbitre', empreinte: 'a'.repeat(64), jeton: 'secret' })).toBe(false);
+    expect(lit('JetonQrDefini', { role: 1, empreinte: 'a'.repeat(64) })).toBe(false);
+  });
+
   it('CA-4 : PresenceModifiee porte la présence et, facultative, l’heure', () => {
     expect(lit('PresenceModifiee', { tireurId: 't1', present: true, heure: '08:41' })).toBe(true);
     expect(lit('PresenceModifiee', { tireurId: 't1', present: false })).toBe(true);
