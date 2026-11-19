@@ -8,6 +8,8 @@
   import AccesQr from '../composants/AccesQr.svelte';
   import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
   import type { AccesQrClient } from '../lib/acces-qr';
+  import type { PresencePilote } from '../lib/presence-pilote';
+  import AppareilsConnectes from '../composants/AppareilsConnectes.svelte';
   import type { Accueil } from '../lib/accueil';
   import { modifierParametres, type ErreurModificationParametres } from '../lib/epreuves';
   import { prendreEcriture, type Journal } from '../lib/journal';
@@ -24,10 +26,12 @@
     accueil: Accueil;
     /** US-096 : jetons des QR codes. */
     acces: AccesQrClient;
+    /** US-105 : appareils connectés (liste et exclusion). */
+    presence: PresencePilote;
     naviguer: (chemin: string) => void;
   }
 
-  let { session, epreuveId, journal, synchronisation, accueil, acces, naviguer }: Proprietes = $props();
+  let { session, epreuveId, journal, synchronisation, accueil, acces, presence, naviguer }: Proprietes = $props();
 
   const t = textes.epreuves;
   const tp = t.parametresPage;
@@ -162,6 +166,17 @@
       contexte={{ clubId: session.compte.clubId, auteur: session.compte.email }}
       apresEcriture={() => void synchronisation.envoyer(epreuveId).then(() => recharger())}
       {naviguer}
+    />
+
+    <!-- US-105 (planche 21) : les appareils connectés, sous l'accès par QR code. -->
+    <AppareilsConnectes
+      {epreuveId}
+      dames={epreuve.sexe === 'dames'}
+      {journal}
+      {presence}
+      pilote={pilote && ecriture && !archivee}
+      contexte={{ clubId: session.compte.clubId, auteur: session.compte.email }}
+      apresEcriture={() => void synchronisation.envoyer(epreuveId).then(() => recharger())}
     />
 
     <p class="mention" role="note">{tp.mention}</p>

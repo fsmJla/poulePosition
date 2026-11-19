@@ -330,7 +330,16 @@
         {/key}
       {:else if route.page === 'parametresEpreuve' && route.epreuveId}
         {#key route.epreuveId}
-          <Parametres {session} epreuveId={route.epreuveId} {journal} {synchronisation} {accueil} {acces} {naviguer} />
+          <Parametres
+            {session}
+            epreuveId={route.epreuveId}
+            {journal}
+            {synchronisation}
+            {accueil}
+            {acces}
+            {presence}
+            {naviguer}
+          />
         {/key}
       {:else if route.page === 'impressionAcces' && route.epreuveId}
         {#key route.epreuveId}

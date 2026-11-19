@@ -4,6 +4,7 @@ import {
   analyserMessageServeur,
   messageAccuse,
   messageAppareils,
+  messageExclure,
   messageSaisie,
 } from './messages';
 import { analyserAccuse, analyserSaisieScore, analyserSaisieTelephone } from './saisies';
@@ -104,5 +105,32 @@ describe('correction (US-101)', () => {
     // US-104 : un tireur dit qui il est.
     expect(analyserSaisieTelephone({ ...telephone, tireurId: 'a' })).toEqual({ ...telephone, tireurId: 'a' });
     expect(analyserSaisieTelephone({ ...telephone, tireurId: '' })).toBeNull();
+  });
+});
+
+describe('appareils connectés (US-105)', () => {
+  const appareil = { id: 't4', role: 'arbitre', connecte: true, vuLe: 12, exclu: false };
+
+  it('CA-1 : la liste des appareils accompagne le nombre ; une liste mal formée est refusée', () => {
+    expect(analyserMessageServeur(messageAppareils(1, [appareil as never]))).toEqual({
+      ok: true,
+      message: { v: 1, type: 'appareils', connectes: 1, liste: [appareil] },
+    });
+    const mal = (liste: unknown) =>
+      analyserMessageServeur(JSON.stringify({ v: 1, type: 'appareils', connectes: 1, liste }));
+    expect(mal([{ ...appareil, role: 'pirate' }]).ok).toBe(false);
+    expect(mal([{ ...appareil, vuLe: 'hier' }]).ok).toBe(false);
+    expect(mal([null]).ok).toBe(false);
+    expect(mal('non').ok).toBe(false);
+  });
+
+  it('CA-2 et CA-4 : la table exclut ou réadmet un appareil', () => {
+    expect(analyserMessageClient(messageExclure('t4', true))).toEqual({
+      ok: true,
+      message: { v: 1, type: 'exclure', appareilId: 't4', exclu: true },
+    });
+    const mal = (corps: object) => analyserMessageClient(JSON.stringify({ v: 1, type: 'exclure', ...corps })).ok;
+    expect(mal({ appareilId: '', exclu: true })).toBe(false);
+    expect(mal({ appareilId: 't4', exclu: 'oui' })).toBe(false);
   });
 });

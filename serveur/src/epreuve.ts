@@ -79,6 +79,14 @@ export class Epreuve extends DurableObject<Env> {
     sql.exec(
       `CREATE TABLE IF NOT EXISTS appareils (id TEXT PRIMARY KEY, role TEXT NOT NULL, cree_le INTEGER NOT NULL)`,
     );
+    // US-105 : dernière fois vu, et exclusion par la table (colonnes ajoutées aux tables existantes).
+    for (const colonne of ['vu_le INTEGER', 'exclu INTEGER NOT NULL DEFAULT 0']) {
+      try {
+        sql.exec(`ALTER TABLE appareils ADD COLUMN ${colonne}`);
+      } catch {
+        // colonne déjà là
+      }
+    }
     // US-096 : jetons des QR codes, en clair (le journal n'en garde que l'empreinte), un par rôle.
     sql.exec(`CREATE TABLE IF NOT EXISTS jetons (role TEXT PRIMARY KEY, jeton TEXT NOT NULL)`);
     // US-095 : dernière vue de saisie publiée par le pilote, gardée pour les smartphones qui se connectent.
@@ -265,6 +273,16 @@ export class Epreuve extends DurableObject<Env> {
       );
       return nouveau;
     });
+    // US-105 CA-2 : un appareil exclu ne se reconnecte pas avec son identifiant.
+    const [exclusion] = this.ctx.storage.sql
+      .exec<{ exclu: number }>('SELECT exclu FROM appareils WHERE id = ?', appareil)
+      .toArray();
+    if (exclusion?.exclu) {
+      this.ctx.acceptWebSocket(serveur, ['refuse']);
+      serveur.close(FERMETURES.APPAREIL_EXCLU, 'Appareil exclu');
+      return new Response(null, { status: 101, webSocket: client });
+    }
+    this.ctx.storage.sql.exec('UPDATE appareils SET vu_le = ? WHERE id = ?', Date.now(), appareil);
     this.ctx.acceptWebSocket(serveur, [ETIQUETTE_SAISIE, etiquetteQr(role), `appareil:${appareil}`]);
     serveur.serializeAttachment({ role, appareil, epreuveId, ouverteLe: Date.now() } satisfies AttacheSocket);
     serveur.send(messageBienvenue(epreuveId));
@@ -276,10 +294,28 @@ export class Epreuve extends DurableObject<Env> {
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  /** US-100 CA-1 : dit à la table combien de smartphones sont connectés (sans compter une socket qui se ferme). */
+  /**
+   * US-100 CA-1 : dit à la table combien de smartphones sont connectés (sans compter une socket qui se ferme) ;
+   * US-105 CA-1 : et la liste des appareils connus, connectés ou non, exclus ou non.
+   */
   private compterAppareils(sauf?: WebSocket): void {
-    const connectes = this.ctx.getWebSockets(ETIQUETTE_SAISIE).filter((socket) => socket !== sauf).length;
-    const message = messageAppareils(connectes);
+    const sockets = this.ctx.getWebSockets(ETIQUETTE_SAISIE).filter((socket) => socket !== sauf);
+    const enLigne = new Set(
+      sockets.map((socket) => (socket.deserializeAttachment() as AttacheSocket | null)?.appareil),
+    );
+    const liste = this.ctx.storage.sql
+      .exec<{ id: string; role: string; vu_le: number | null; exclu: number }>(
+        'SELECT id, role, vu_le, exclu FROM appareils ORDER BY cree_le',
+      )
+      .toArray()
+      .map(({ id, role, vu_le, exclu }) => ({
+        id,
+        role: role as RoleQr,
+        connecte: enLigne.has(id),
+        vuLe: vu_le,
+        exclu: exclu === 1,
+      }));
+    const message = messageAppareils(sockets.length, liste);
     for (const pilote of this.ctx.getWebSockets('pilote')) {
       try {
         pilote.send(message);
@@ -369,6 +405,21 @@ export class Epreuve extends DurableObject<Env> {
       for (const pilote of this.ctx.getWebSockets(etiquettePilote(piloteAppareil))) pilote.send(relayee);
       return;
     }
+    // US-105 CA-2 et CA-4 : le pilote exclut un appareil (sa socket est fermée, ses reconnexions refusées) ou le réadmet.
+    if (message0.type === 'exclure') {
+      if (!duPilote) {
+        ws.send(messageErreur('TYPE_INTERDIT'));
+        return;
+      }
+      this.ctx.storage.sql.exec(
+        'UPDATE appareils SET exclu = ? WHERE id = ?',
+        message0.exclu ? 1 : 0,
+        message0.appareilId,
+      );
+      if (message0.exclu) this.fermer(`appareil:${message0.appareilId}`, FERMETURES.APPAREIL_EXCLU, 'Appareil exclu');
+      this.compterAppareils();
+      return;
+    }
     // US-099 : l'accusé de la table revient au téléphone qui a saisi.
     if (message0.type === 'accuse') {
       if (!duPilote || !message0.appareilId) {
@@ -400,6 +451,10 @@ export class Epreuve extends DurableObject<Env> {
     // US-097 CA-5 : la table se déconnecte quand la dernière socket du pilote se ferme.
     const attache = ws.deserializeAttachment() as AttacheSocket | null;
     if (attache?.role === 'pilote' && !this.etatPilote(ws)?.connecte) this.diffuser(messageTable(false));
-    if (attache && attache.role !== 'pilote') this.compterAppareils(ws);
+    if (attache && attache.role !== 'pilote') {
+      // US-105 CA-1 : « vu à 10 h 46 ».
+      this.ctx.storage.sql.exec('UPDATE appareils SET vu_le = ? WHERE id = ?', Date.now(), attache.appareil);
+      this.compterAppareils(ws);
+    }
   }
 }

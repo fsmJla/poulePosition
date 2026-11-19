@@ -39,6 +39,7 @@ export const MOTIFS_REFUS_SAISIE = [
   'CORRECTION_DESACTIVEE',
   'SCORE_CHANGE',
   'HORS_POULE',
+  'APPAREIL_EXCLU',
 ] as const;
 export type MotifRefusSaisie = (typeof MOTIFS_REFUS_SAISIE)[number];
 
@@ -68,6 +69,9 @@ export function deciderSaisie(epreuve: Epreuve, saisie: SaisieScore): DecisionSa
   const refusee = (epreuve.saisiesRefusees ?? []).find(({ saisie: origine }) => origine.id === saisie.id);
   if (refusee) return { decision: 'refuse', motif: refusee.motif };
   if (!accesQrOuvert(epreuve.statut)) return { decision: 'refuse', motif: 'EPREUVE_FERMEE' };
+  // US-105 CA-3 : une saisie d'un appareil exclu (encore dans la boîte, par exemple) est refusée.
+  if ((epreuve.appareilsExclus ?? []).includes(saisie.appareilId))
+    return { decision: 'refuse', motif: 'APPAREIL_EXCLU' };
   const { arbitreSaisitScores, tireurSaisitPoule } = epreuve.parametres;
   if (saisie.role === 'arbitre' ? !arbitreSaisitScores : !tireurSaisitPoule) {
     return { decision: 'refuse', motif: 'DROIT_RETIRE' };

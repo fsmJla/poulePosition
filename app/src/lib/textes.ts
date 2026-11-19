@@ -69,6 +69,7 @@ export const textes = {
     chargement: 'Connexion à la table…',
     refus: {
       lien: 'Ce lien n’est plus valable : scannez le QR code affiché dans la salle.',
+      exclu: 'Votre accès a été retiré par la table de marque.',
       terminee: 'Cette épreuve est terminée.',
       trop: 'Trop d’essais, réessayez plus tard.',
     },
@@ -147,6 +148,7 @@ export const textes = {
         CORRECTION_DESACTIVEE: 'La correction par smartphone est désactivée.',
         SCORE_CHANGE: 'Le score a changé entre-temps : voyez la table.',
         HORS_POULE: 'Ce match n’est pas dans votre poule.',
+        APPAREIL_EXCLU: 'Votre accès a été retiré par la table de marque.',
       },
     },
     /** US-100 : saisies reçues des smartphones, sur le PC (planche 10). */
@@ -183,6 +185,7 @@ export const textes = {
         CORRECTION_DESACTIVEE: 'correction désactivée (Paramètres)',
         SCORE_CHANGE: 'le score avait changé entre-temps',
         HORS_POULE: 'match hors de la poule du tireur',
+        APPAREIL_EXCLU: 'appareil exclu',
       },
     },
     tireur: {
@@ -986,6 +989,42 @@ export const textes = {
         : `${matchs} matchs déjà joués ne changent pas : la nouvelle formule s’applique aux matchs restants`,
     /** US-032 : page « Paramètres » d'une épreuve. */
     lienParametres: 'Paramètres',
+    /** US-105 (planche 21) : appareils connectés. */
+    appareils: {
+      titre: 'Appareils connectés',
+      resume: (enLigne: number, exclus: number) =>
+        `${enLigne} en ligne${exclus > 0 ? ` · ${exclus} exclu${exclus > 1 ? 's' : ''}` : ''}`,
+      aide: '« Exclure » coupe un seul appareil. Pour couper tout un rôle, régénérez son QR code.',
+      horsLigne: 'Hors ligne : les appareils ne peuvent pas se connecter.',
+      aucun: 'Aucun appareil n’est encore entré par QR code.',
+      colonnes: {
+        appareil: 'Appareil',
+        qui: 'Qui',
+        ou: 'Poule',
+        etat: 'État',
+        saisies: 'Saisies',
+        actions: 'Actions',
+      },
+      arbitre: 'arbitre',
+      tireur: 'tireur',
+      tireuse: 'tireuse',
+      poule: (n: number) => `Poule ${n}`,
+      connecte: 'Connecté',
+      connectee: 'Connectée',
+      exclu: 'Exclu',
+      exclue: 'Exclue',
+      vuA: (heure: string) => `Vu à ${heure}`,
+      jamaisVu: 'Déconnecté',
+      saisies: (n: number, refusees: number) =>
+        refusees > 0 ? `${n} (${refusees} refusée${refusees > 1 ? 's' : ''})` : `${n}`,
+      exclure: 'Exclure cet appareil…',
+      readmettre: 'Réadmettre',
+      confirmerTitre: (qui: string) => `Exclure ${qui} ?`,
+      confirmerDetail:
+        'Sa connexion est coupée et il ne peut plus revenir avec cet appareil. Depuis un autre navigateur, il pourrait rescanner le QR code : pour couper tout un rôle, régénérez son QR code.',
+      annuler: 'Annuler',
+      exclureConfirmer: 'Exclure',
+    },
     parametresPage: {
       titre: 'Paramètres de l’épreuve',
       mention:
