@@ -59,6 +59,7 @@
 | `GET /epreuves/<epreuveId>/pilote`, `POST …/pilote` | Qui pilote et s'il est connecté ; prendre la main (§11, US-029) |
 | `POST /epreuves/<epreuveId>/ticket` | Ticket de 60 s pour ouvrir la WebSocket du pilote (§11, US-094) |
 | `GET /epreuves/<epreuveId>/vue` | Dernière vue de saisie publiée par le pilote (§18, US-095) |
+| `GET /epreuves/<epreuveId>/jetons`, `PUT …/jetons/<role>` | Jetons des QR codes : les lire, en confier un nouveau (§19, US-096) |
 | `GET /manifestations`, `POST /manifestations` | Lister et créer les manifestations du club (§12, US-023) |
 | `PATCH /manifestations/<id>`, `DELETE /manifestations/<id>` | Modifier ou supprimer une manifestation (§12) |
 | `POST /manifestations/<id>/archivage` | Archiver ou désarchiver une manifestation et ses compétitions (§12, US-033) |
@@ -468,6 +469,7 @@ Aucun autre champ n'est accepté.
 | `PiloteChange` | `{ ancienAppareil, nouvelAppareil }` | Un autre PC a pris la main (US-029). |
 | `ParametresModifies` | un ou plusieurs paramètres de l’épreuve | Modifie les droits et l'affichage des noms (US-032), seulement ce qui a changé. |
 | `PublicationModifiee` | `{ publiee }` | Publie ou dépublie l’épreuve (US-031). |
+| `JetonQrDefini` | `{ role, empreinte }` | Jeton du QR code d’un rôle (`arbitre`, `tireur`) créé ou régénéré : seule son empreinte SHA-256 (64 caractères hexadécimaux) est au journal, jamais le jeton (US-096, §19). Refusé une fois l’épreuve archivée, ou pour la même empreinte. |
 | `EpreuveArchivee` | `{}` | Archive l’épreuve (US-033) : statut « Archivée », lecture seule. |
 | `EpreuveDesarchivee` | `{}` | Désarchive l’épreuve (US-033) : elle retrouve son statut d’avant, non publiée. |
 | `TireurInscrit` | `{ tireurId, nom, prenom, club, classement?, licence? }` | Inscrit un tireur (US-081), absent ; nom et prénom non vides, 60 caractères au plus par champ, classement entier de 1 à 99 999. |
@@ -1096,3 +1098,21 @@ ni heure de pointage. Une épreuve de 60 tireurs fait moins de 64 Ko, sous la li
 
 **`GET /epreuves/<epreuveId>/vue`** (session d'un compte du club) : `200 {"ok":true,"vue":{…}}`, ou `"vue":null` tant que le
 pilote n'en a publié aucune.
+
+## 19. Jetons des QR codes (US-096, ADR-0007)
+
+Un jeton par rôle (`arbitre`, `tireur`) : 128 bits aléatoires, écrits en base64url (22 caractères), générés par le PC
+pilote. Le lien d'un QR code est `<application>/saisie/<epreuveId>#j=<jeton>` : le jeton est dans le fragment, que le
+navigateur n'envoie jamais au serveur (ni aux journaux de Vercel). Le journal ne garde que l'empreinte (`JetonQrDefini`).
+
+**`PUT /epreuves/<epreuveId>/jetons/<role>`** (session) — corps `{ "appareilId": "…", "jeton": "…" }`. Le DO garde le jeton
+en clair (table `jetons`) si l'appareil est le pilote en place : `200 {"ok":true}` ; sinon `409 PAS_PILOTE` avec le
+pilote en place, `404 EPREUVE_INCONNUE` si rien n'a encore été reçu, `400 DEMANDE_INVALIDE` pour un jeton mal formé. Un
+jeton remplacé ferme (`4003`) les sockets des smartphones entrés avec l'ancien (étiquette `qr:<role>`, US-097).
+
+**`GET /epreuves/<epreuveId>/jetons`** (session) — `200 {"ok":true,"arbitre":"…"|null,"tireur":"…"|null}` : un autre PC du
+club (lecture seule, ou après une prise de main) affiche ainsi les mêmes QR codes.
+
+Côté application (`acces-qr.ts`) : à la première ouverture de « Paramètres » en ligne, le pilote génère les jetons
+manquants, les confie au serveur, puis écrit `JetonQrDefini` et le garde sur ce PC (table IndexedDB `jetonsQr`) pour
+afficher et imprimer les QR codes hors ligne. « Régénérer » demande une connexion.

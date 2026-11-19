@@ -819,6 +819,7 @@ export const textes = {
       arbitres: 'Arbitres',
       tireurs: 'Tireurs',
       affichage: 'Affichage public',
+      droits: 'Droits des smartphones',
       reglages: {
         arbitreSaisitScores: 'Saisir les scores de poule et de tableau',
         arbitreDeplace: 'Déplacer une poule ou un match de piste',
@@ -835,6 +836,51 @@ export const textes = {
       erreurs: {
         PARAMETRE_INVALIDE: 'Un réglage a une valeur invalide',
         CORRECTION_SCORE_INVALIDE: 'Choisissez qui peut corriger un score',
+      },
+    },
+    /** US-096 : accès par QR code (planche 21), section de la page « Paramètres », et page d'impression. */
+    accesQr: {
+      titre: 'Accès par QR code',
+      explication:
+        'Un QR code par rôle, valable pour toute l’épreuve, sans compte. Affichez-les dans la salle ou imprimez-les : les arbitres choisissent leur piste, les tireurs leur nom.',
+      imprimer: 'Imprimer les QR codes',
+      copier: 'Copier le lien',
+      copie: 'Lien copié',
+      regenerer: 'Régénérer…',
+      roles: { arbitre: 'Arbitres', tireur: 'Tireurs' },
+      droits: {
+        arbitre: 'Saisissent les scores de poule et de tableau de leur piste ; corrigent un score.',
+        tireur: 'Saisissent les matchs de leur poule et leurs matchs de tableau.',
+      },
+      qrDe: (role: string, epreuve: string) => `QR code des ${role.toLowerCase()} de ${epreuve}`,
+      lienDe: (role: string) => `Lien des ${role.toLowerCase()}`,
+      tireursSansSaisie: 'Les tireurs ne peuvent pas saisir (Paramètres)',
+      horsLigne: 'Nécessite une connexion',
+      sansJeton: 'Les QR codes se créent en ligne : reconnectez ce PC pour les obtenir.',
+      sansJetonLecture: 'Le pilote n’a pas encore créé les QR codes de cette épreuve.',
+      termine: 'Cette épreuve est terminée : ses QR codes ne donnent plus accès.',
+      confirmation: {
+        titre: (role: string) => `Régénérer le QR code des ${role.toLowerCase()} ?`,
+        texte:
+          'L’ancien QR code cessera aussitôt de donner accès : les appareils entrés avec lui devront scanner le nouveau.',
+        confirmer: 'Régénérer',
+        annuler: 'Annuler',
+      },
+      erreurs: {
+        HORS_LIGNE: 'Nécessite une connexion',
+        PAS_PILOTE: 'Seul le PC pilote peut régénérer un QR code',
+        SESSION_INVALIDE: 'Votre session a expiré : reconnectez-vous',
+        ERREUR_INATTENDUE: 'Le QR code n’a pas pu être régénéré, réessayez',
+      },
+      impression: {
+        titre: 'QR codes de l’épreuve',
+        modeEmploi: {
+          arbitre: 'Arbitres : scannez pour saisir les scores de votre piste.',
+          tireur: 'Tireurs : scannez pour suivre vos matchs et saisir vos scores.',
+        },
+        imprimer: 'Imprimer',
+        retour: 'Retour aux paramètres',
+        aucun: 'Aucun QR code à imprimer : ouvrez d’abord les paramètres de l’épreuve en ligne.',
       },
     },
     /** US-028 : page « Formule » d'une épreuve. */

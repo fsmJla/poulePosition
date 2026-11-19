@@ -138,6 +138,13 @@ export interface ContenuFichier {
 }
 
 /** Base IndexedDB de l'appareil, partagée par le stockage de session et le journal des épreuves (US-021). */
+/** US-096 : jetons en clair des QR codes d'une épreuve (null pour un rôle sans jeton). */
+export interface JetonsQrLocaux {
+  epreuveId: string;
+  arbitre: string | null;
+  tireur: string | null;
+}
+
 export class Base extends Dexie {
   session!: EntityTable<LigneSession, 'cle'>;
   appareilConnu!: EntityTable<AppareilConnu, 'email'>;
@@ -159,6 +166,8 @@ export class Base extends Dexie {
   copieFichiers!: EntityTable<CopieFichiers & { cle: typeof LIGNE_UNIQUE }, 'cle'>;
   /** Contenu des fichiers joints gardés pour le hors ligne, par nom à empreinte (US-030 CA-6). */
   contenusFichiers!: EntityTable<ContenuFichier, 'nom'>;
+  /** US-096 : jetons des QR codes d'une épreuve, gardés pour les afficher et les imprimer hors ligne. */
+  jetonsQr!: EntityTable<JetonsQrLocaux, 'epreuveId'>;
 
   constructor(nom: string) {
     super(nom);
@@ -244,6 +253,8 @@ export class Base extends Dexie {
       copieFichiers: 'cle',
       contenusFichiers: 'nom',
     });
+    // Version 12 (US-096) : jetons des QR codes, par épreuve. Rien d'existant ne bouge.
+    this.version(12).stores({ jetonsQr: 'epreuveId' });
   }
 }
 
