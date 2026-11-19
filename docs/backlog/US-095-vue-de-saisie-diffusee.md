@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-094, US-088, US-092
 - **Branche / PR :** `us/US-095-vue-de-saisie-diffusee`
 
@@ -87,3 +87,4 @@ Aucune.
 | 2026-11-19 | Créée |
 | 2026-11-19 | En cours sur `us/US-095-vue-de-saisie-diffusee` (série « maximum d'US ») |
 | 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 728 tests, couverture 94,5 %, E2E `vue-saisie` et `presence-pilote`) |
+| 2026-11-19 | Recette OK sur https://poule-position-git-us-us-095-vue-de-sai-af78ff-fsmjlas-projects.vercel.app (serveur de preview déployé depuis la branche) : vue publiée dès la création (sans poule, avec le nom de la compétition, les touches et les droits) et gardée par le serveur (CA-1, CA-2) ; droit « tireurs : saisir » retiré, la vue suit (CA-1) ; reconnexion, la vue republiée reste à jour (CA-3). CA-4 couvert par les tests du protocole et du serveur. Passe à Terminée |
