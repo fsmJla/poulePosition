@@ -200,3 +200,68 @@ export function tireurDeLaVue(vue: VueSaisie | null, tireurId: string | null): T
   }
   return null;
 }
+
+/** US-104 : un match terminé du tireur, vu de son côté. */
+export interface MatchTermineDuTireur {
+  numero: number;
+  adversaire: string;
+  victoire: boolean;
+  /** Touches du tireur, puis de l'adversaire. */
+  score: [number, number];
+  forfait: boolean;
+}
+
+/** US-104 : ce que le tireur voit de sa poule (planches 18 et 18 bis). */
+export interface MatchsDuTireur {
+  poule: PouleVue;
+  /** CA-2 : son prochain match à tirer, ou null. */
+  prochain: MatchDeLaPiste | null;
+  /** Vrai si son prochain match est le premier de la poule qui reste à tirer (« C'est à vous »). */
+  aVous: boolean;
+  /** Matchs à tirer de la poule avant son prochain (« dans environ N matchs »). */
+  avant: number;
+  /** Le match qui suit le prochain, pour lui. */
+  ensuite: MatchDeLaPiste | null;
+  /** Matchs à tirer avant celui qui suit (pour « Ensuite… dans environ N matchs »). */
+  avantEnsuite: number;
+  termines: MatchTermineDuTireur[];
+  /** Planche 18 bis : les matchs à tirer de la poule où il ne tire pas. */
+  autres: MatchDeLaPiste[];
+  retrait: MotifRetrait | null;
+}
+
+/** US-104 CA-2 à CA-5 : les matchs d'un tireur dans sa poule, tirés de la vue de saisie. */
+export function matchsDuTireur(vue: VueSaisie | null, tireurId: string): MatchsDuTireur | null {
+  const poule = vue?.poules.find(({ tireurs }) => tireurs.some(({ id }) => id === tireurId));
+  if (!poule) return null;
+  const avecPoule = poule.matchs.map((m) => ({ ...m, poule: poule.numero }));
+  const aTirer = avecPoule.filter(({ touches }) => touches === null);
+  const miens = aTirer.filter(({ tireurA, tireurB }) => tireurA === tireurId || tireurB === tireurId);
+  const prochain = miens[0] ?? null;
+  const ensuite = miens[1] ?? null;
+  const rang = (m: MatchDeLaPiste | null) => (m ? aTirer.indexOf(m) : 0);
+  const noms = new Map(poule.tireurs.map((t) => [t.id, `${t.nom} ${t.prenom}`]));
+  return {
+    poule,
+    prochain,
+    aVous: prochain !== null && aTirer[0] === prochain,
+    avant: rang(prochain),
+    ensuite,
+    avantEnsuite: rang(ensuite),
+    termines: avecPoule
+      .filter(({ touches, tireurA, tireurB }) => touches !== null && (tireurA === tireurId || tireurB === tireurId))
+      .map(({ numero, tireurA, tireurB, touches, forfait }) => {
+        const moiA = tireurA === tireurId;
+        const [moi, lui] = moiA ? touches! : [touches![1], touches![0]];
+        return {
+          numero,
+          adversaire: noms.get(moiA ? tireurB : tireurA) ?? '',
+          victoire: moi > lui,
+          score: [moi, lui],
+          forfait,
+        };
+      }),
+    autres: aTirer.filter(({ tireurA, tireurB }) => tireurA !== tireurId && tireurB !== tireurId),
+    retrait: poule.classement.find((c) => c.tireurId === tireurId)?.retrait ?? null,
+  };
+}

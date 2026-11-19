@@ -9,7 +9,7 @@
   import QuiEtesVous from '../composants/QuiEtesVous.svelte';
   import MesMatchs from '../composants/MesMatchs.svelte';
   import SaisieMatch from '../composants/SaisieMatch.svelte';
-  import { matchsDeLaPiste, type MatchDeLaPiste } from '@poule-position/domaine';
+  import { matchsDeLaPiste, tireurDeLaVue, type MatchDeLaPiste } from '@poule-position/domaine';
   import {
     creerSaisieSmartphone,
     ecrireMemoire,
@@ -79,6 +79,10 @@
     changerPiste = false;
   }
 
+  const tireurChoisi = $derived(tireurDeLaVue(vue, memoire?.tireurId ?? null));
+  const nomDeLaSaisie = $derived(
+    etat?.role === 'tireur' && tireurChoisi ? `${tireurChoisi.nom} ${tireurChoisi.prenom}` : (memoire?.nom ?? ''),
+  );
   // US-099 : le match en cours de saisie, et l'identifiant de la saisie envoyée (pour suivre son accusé).
   let enSaisie = $state<MatchDeLaPiste | null>(null);
   /** US-101 : le match ouvert l'est pour être corrigé. */
@@ -105,7 +109,9 @@
       tireurA: match.tireurA,
       tireurB: match.tireurB,
       ...score,
-      nom: memoire?.nom ?? '',
+      // US-104 : un tireur signe de son nom (« DUBOIS Chloé »), un arbitre du nom qu'il a donné.
+      nom: nomDeLaSaisie,
+      ...(etat?.role === 'tireur' && memoire?.tireurId && { tireurId: memoire.tireurId }),
       // US-101 : une correction porte le score qu'elle remplace.
       ...(enCorrection && match.touches && { remplace: [match.touches[0], match.touches[1]] as [number, number] }),
     });
@@ -126,7 +132,29 @@
   {:else if etat.role === 'tireur' && !memoire?.tireurId}
     <QuiEtesVous {vue} {epreuveId} choisir={(id) => saisie?.choisirTireur(id)} />
   {:else if etat.role === 'tireur' && memoire?.tireurId}
-    <MesMatchs {vue} tireurId={memoire.tireurId} oublier={() => saisie?.choisirTireur(null)} />
+    {#if enSaisie && vue}
+      {#key `${enSaisie.poule}-${enSaisie.numero}`}
+        <SaisieMatch
+          {vue}
+          match={enSaisie}
+          piste={vue.poules.find(({ numero }) => numero === enSaisie?.poule)?.piste ?? 0}
+          table={etat.table}
+          {accuse}
+          envoyer={(score) => envoyer(enSaisie as MatchDeLaPiste, score)}
+          retour={() => ouvrir(null)}
+          suivant={null}
+          ouvrirSuivant={() => ouvrir(null)}
+        />
+      {/key}
+    {:else}
+      <MesMatchs
+        {vue}
+        tireurId={memoire.tireurId}
+        oublier={() => saisie?.choisirTireur(null)}
+        saisir={(match) => ouvrir(match)}
+        suspendue={!etat.table}
+      />
+    {/if}
   {:else if !arbitrePret}
     <AccesArbitre {vue} nom={memoire?.nom ?? ''} piste={memoire?.piste ?? null} {commencer} />
   {:else if memoire?.piste !== null && memoire?.piste !== undefined}

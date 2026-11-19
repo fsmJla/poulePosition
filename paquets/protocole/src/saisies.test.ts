@@ -101,5 +101,8 @@ describe('correction (US-101)', () => {
     expect(analyserSaisieTelephone(correction)).toEqual(correction);
     expect(analyserSaisieTelephone({ ...telephone, remplace: [3] })).toBeNull();
     expect(analyserSaisieTelephone({ ...telephone, remplace: 'non' })).toBeNull();
+    // US-104 : un tireur dit qui il est.
+    expect(analyserSaisieTelephone({ ...telephone, tireurId: 'a' })).toEqual({ ...telephone, tireurId: 'a' });
+    expect(analyserSaisieTelephone({ ...telephone, tireurId: '' })).toBeNull();
   });
 });

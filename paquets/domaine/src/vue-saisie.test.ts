@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { projeter, type Epreuve, type Evenement, type Proposition } from './journal';
-import { chercherTireurs, matchsDeLaPiste, tireurDeLaVue, vueSaisie } from './vue-saisie';
+import { chercherTireurs, matchsDeLaPiste, matchsDuTireur, tireurDeLaVue, vueSaisie } from './vue-saisie';
 
 const enTete = (seq: number) => ({
   epreuveId: 'e1',
@@ -205,5 +205,42 @@ describe('accès tireur (US-103)', () => {
     expect(tireurDeLaVue(vue(), 'b')).toMatchObject({ nom: 'DURAND', poule: 1, piste: 2 });
     expect(tireurDeLaVue(vue(), 'inconnu')).toBeNull();
     expect(tireurDeLaVue(vue(), null)).toBeNull();
+  });
+});
+
+describe('mes matchs, côté tireur (US-104)', () => {
+  const vue = (...scores: Proposition[]) => vueSaisie(epreuveDe(...TROIS, composer, lancer, ...scores));
+  const score = (a: string, b: string, ta: number, tb: number): Proposition => ({
+    type: 'ScorePouleSaisi',
+    donnees: { poule: 1, tireurA: a, tireurB: b, touchesA: ta, touchesB: tb },
+  });
+
+  it('CA-2 : « C’est à vous » quand son match est le premier à tirer ; sinon le nombre de matchs avant', () => {
+    // Poule de 3 : 1-2 (a-b), 2-3 (b-c), 3-1 (c-a).
+    const a = matchsDuTireur(vue(), 'a')!;
+    expect(a).toMatchObject({ aVous: true, avant: 0, prochain: { tireurA: 'a', tireurB: 'b' } });
+    expect(a.ensuite).toMatchObject({ tireurA: 'c', tireurB: 'a' });
+    expect(a.avantEnsuite).toBe(2);
+    const c = matchsDuTireur(vue(), 'c')!;
+    expect(c).toMatchObject({ aVous: false, avant: 1, prochain: { tireurA: 'b', tireurB: 'c' } });
+  });
+
+  it('CA-4 et 18 bis : ses matchs terminés vus de son côté, et les autres matchs de sa poule à tirer', () => {
+    const b = matchsDuTireur(vue(score('a', 'b', 5, 3)), 'b')!;
+    expect(b.termines).toEqual([
+      { numero: 1, adversaire: 'DUBOIS Chloé', victoire: false, score: [3, 5], forfait: false },
+    ]);
+    expect(b.autres.map(({ tireurA, tireurB }) => `${tireurA}-${tireurB}`)).toEqual(['c-a']);
+  });
+
+  it('cas limites : tireur hors des poules ; tireur retiré', () => {
+    expect(matchsDuTireur(vue(), 'inconnu')).toBeNull();
+    const retire = vueSaisie(
+      epreuveDe(...TROIS, composer, lancer, {
+        type: 'TireurRetireDesPoules',
+        donnees: { tireurId: 'c', motif: 'abandon' },
+      }),
+    );
+    expect(matchsDuTireur(retire, 'c')).toMatchObject({ retrait: 'abandon', prochain: null });
   });
 });

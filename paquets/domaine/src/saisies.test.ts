@@ -185,7 +185,7 @@ describe('correction d’un score par smartphone (US-101)', () => {
   });
 
   it('CA-4 : un tireur ne corrige pas ; la correction peut être désactivée', () => {
-    expect(deciderSaisie(avecScore(), correction({ role: 'tireur' }))).toEqual({
+    expect(deciderSaisie(avecScore(), correction({ role: 'tireur', tireurId: 'a' }))).toEqual({
       decision: 'refuse',
       motif: 'CORRECTION_INTERDITE',
     });
@@ -200,5 +200,17 @@ describe('signature d’un tireur (US-103)', () => {
     expect(signatureSaisie(tireuse, 'dames')).toBe('tireuse DUBOIS Chloé (t12)');
     expect(signatureSaisie(tireuse, 'hommes')).toBe('tireur DUBOIS Chloé (t12)');
     expect(signatureSaisie({ ...tireuse, role: 'arbitre' }, 'dames')).toBe('arbitre DUBOIS Chloé (t12)');
+  });
+});
+
+describe('saisie d’un tireur (US-104)', () => {
+  it('CA-5 : un tireur saisit un match de sa poule, même sans y tirer ; pas celui d’une autre poule', () => {
+    const tireur = (tireurId?: string) => saisie({ role: 'tireur', nom: 'C P', ...(tireurId && { tireurId }) });
+    expect(deciderSaisie(lancee(), tireur('c'))).toMatchObject({
+      decision: 'accepte',
+      proposition: { donnees: { saisie: { par: 'tireuse C P (t4)' } } },
+    });
+    expect(deciderSaisie(lancee(), tireur('z'))).toEqual({ decision: 'refuse', motif: 'HORS_POULE' });
+    expect(deciderSaisie(lancee(), tireur())).toEqual({ decision: 'refuse', motif: 'HORS_POULE' });
   });
 });
