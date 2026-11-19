@@ -1,0 +1,60 @@
+// Saisies des smartphones (US-099, ADR-0005, docs/protocole.md §21) : le téléphone envoie `saisie`, le serveur la relaie
+// à la table avec le rôle et l'appareil du téléphone, la table répond `accuse`, que le serveur relaie au téléphone.
+import {
+  MOTIFS_REFUS_SAISIE,
+  ROLES_QR,
+  type MotifRefusSaisie,
+  type RoleQr,
+  type SaisieScore,
+} from '@poule-position/domaine';
+
+/** Ce que le téléphone envoie : le serveur y ajoute le rôle et l'identifiant de l'appareil. */
+export type SaisieTelephone = Omit<SaisieScore, 'role' | 'appareilId'>;
+
+/** Réponse de la table ; `suspendue` vient du serveur quand la table n'est pas connectée (US-102). */
+export type DecisionAccuse = 'accepte' | 'refuse' | 'doublon' | 'suspendue';
+
+export interface Accuse {
+  id: string;
+  decision: DecisionAccuse;
+  motif?: MotifRefusSaisie;
+}
+
+const estObjet = (brut: unknown): brut is Record<string, unknown> =>
+  brut !== null && typeof brut === 'object' && !Array.isArray(brut);
+const texteBorne = (valeur: unknown, max: number): valeur is string =>
+  typeof valeur === 'string' && valeur.length > 0 && valeur.length <= max;
+const entier = (valeur: unknown, min = 0): valeur is number => Number.isInteger(valeur) && (valeur as number) >= min;
+
+/** CA-4 : une saisie de téléphone bien formée, sinon null. */
+export function analyserSaisieTelephone(brut: unknown): SaisieTelephone | null {
+  if (!estObjet(brut)) return null;
+  const { id, poule, tireurA, tireurB, touchesA, touchesB, auTemps, nom } = brut;
+  const champs = Object.keys(brut).sort().join(',');
+  if (champs !== 'auTemps,id,nom,poule,tireurA,tireurB,touchesA,touchesB') return null;
+  if (!texteBorne(id, 64) || !entier(poule, 1) || !texteBorne(tireurA, 64) || !texteBorne(tireurB, 64)) return null;
+  if (!entier(touchesA) || !entier(touchesB) || typeof auTemps !== 'boolean' || !texteBorne(nom, 80)) return null;
+  return { id, poule, tireurA, tireurB, touchesA, touchesB, auTemps, nom };
+}
+
+/** Saisie relayée à la table : celle du téléphone, avec le rôle et l'appareil. */
+export function analyserSaisieScore(brut: unknown): SaisieScore | null {
+  if (!estObjet(brut)) return null;
+  const { role, appareilId, ...reste } = brut;
+  const saisie = analyserSaisieTelephone(reste);
+  if (!saisie || !(ROLES_QR as readonly unknown[]).includes(role) || !texteBorne(appareilId, 16)) return null;
+  return { ...saisie, role: role as RoleQr, appareilId };
+}
+
+/** Accusé d'une saisie (de la table, ou du serveur pour `suspendue`). */
+export function analyserAccuse(brut: unknown): Accuse | null {
+  if (!estObjet(brut)) return null;
+  const { id, decision, motif } = brut;
+  if (!texteBorne(id, 64) || !['accepte', 'refuse', 'doublon', 'suspendue'].includes(decision as string)) return null;
+  if (decision === 'refuse') {
+    return (MOTIFS_REFUS_SAISIE as readonly unknown[]).includes(motif)
+      ? { id, decision, motif: motif as MotifRefusSaisie }
+      : null;
+  }
+  return motif === undefined ? { id, decision: decision as DecisionAccuse } : null;
+}

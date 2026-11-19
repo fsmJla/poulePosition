@@ -21,6 +21,15 @@ export interface ScorePoule {
   touchesA: number;
   touchesB: number;
   auTemps: boolean;
+  /** US-099 : score venu d'un smartphone, accepté par la table. */
+  saisie?: OrigineSaisie;
+}
+
+/** US-099 : d'où vient un score saisi sur smartphone : l'identifiant de la saisie et sa signature. */
+export interface OrigineSaisie {
+  id: string;
+  /** « arbitre Dupont (t4) », « tireuse DUBOIS Chloé (t12) ». */
+  par: string;
 }
 
 export interface RetraitPoule {
@@ -50,6 +59,8 @@ export interface DonneesScorePoule {
   touchesA: number;
   touchesB: number;
   auTemps?: boolean;
+  /** US-099 : présent quand le score vient d'un smartphone. */
+  saisie?: OrigineSaisie;
 }
 export interface DonneesRetraitPoule {
   tireurId: string;

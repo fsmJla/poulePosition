@@ -143,7 +143,8 @@ function donneesPoulesValides(type: unknown, donnees: unknown): boolean {
   }
   if (type === 'ScorePouleSaisi') {
     return (
-      aSeulement(donnees, ['poule', 'tireurA', 'tireurB', 'touchesA', 'touchesB', 'auTemps']) &&
+      aSeulement(donnees, ['poule', 'tireurA', 'tireurB', 'touchesA', 'touchesB', 'auTemps', 'saisie']) &&
+      (donnees.saisie === undefined || origineSaisieValide(donnees.saisie)) &&
       estEntier(donnees.poule) &&
       estTexte(donnees.tireurA) &&
       estTexte(donnees.tireurB) &&
@@ -172,6 +173,19 @@ const TYPES_TIREUR = ['TireurInscrit', 'TireurModifie', 'TireurRetire', 'Presenc
  * Forme des données : tous les champs pour `EpreuveCreee` ; pour `EpreuveModifiee` (US-027) et
  * `FormuleModifiee` (US-028), un ou plusieurs champs parmi les leurs, ceux qui ont changé.
  */
+/** US-099 : origine d'un score venu d'un smartphone. */
+function origineSaisieValide(brut: unknown): boolean {
+  const origine = aExactementLesChamps(brut, ['id', 'par']);
+  return (
+    origine !== null &&
+    typeof origine.id === 'string' &&
+    origine.id.length > 0 &&
+    origine.id.length <= 64 &&
+    typeof origine.par === 'string' &&
+    origine.par.length <= 120
+  );
+}
+
 function donneesValides(type: unknown, donnees: unknown): boolean {
   if (type === 'PiloteChange') {
     const pilote = aExactementLesChamps(donnees, ['ancienAppareil', 'nouvelAppareil']);

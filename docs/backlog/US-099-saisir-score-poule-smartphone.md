@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-098, US-091
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-099-saisir-score-poule-smartphone`
 
 ## Récit
 
