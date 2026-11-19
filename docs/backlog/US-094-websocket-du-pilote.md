@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F8, F12 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** En cours
+- **Statut :** En revue
 - **Dépend de :** US-022, US-029 ; **ADR à écrire d'abord** (`/adr` : authentification de la WebSocket du pilote)
 - **Branche / PR :** `us/US-094-websocket-du-pilote`
 
@@ -98,3 +98,4 @@ Aucune.
 |---|---|
 | 2026-11-19 | Créée |
 | 2026-11-19 | Plan validé (série « maximum d'US ») ; en cours sur `us/US-094-websocket-du-pilote` |
+| 2026-11-19 | Implémentée (ADR-0028, ticket, WebSocket du pilote, fin des battements) ; en revue. Contrôles locaux verts (lint, typage, 1 711 tests, couverture 94,5 %, build, audit, E2E `presence-pilote` et `prise-de-main`) ; la suite E2E locale complète a été arrêtée faute de mémoire sur le poste : elle tourne en CI |
