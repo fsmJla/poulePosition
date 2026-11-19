@@ -55,7 +55,7 @@
   onMount(() => {
     liste = presence.listeAppareils(epreuveId);
     void relireJournal();
-    const arreter = presence.surAppareils((id) => {
+    const arreter = presence.surListeAppareils((id) => {
       if (id !== epreuveId) return;
       liste = presence.listeAppareils(epreuveId);
       void relireJournal();
@@ -96,7 +96,9 @@
   </div>
   <p class="discret aide">{t.aide}</p>
 
-  {#if liste === null}
+  {#if !pilote}
+    <p class="discret aide" role="status">{t.pasPilote}</p>
+  {:else if liste === null}
     <p class="discret aide" role="status">{t.horsLigne}</p>
   {:else if lignes.length === 0}
     <p class="discret aide" role="status">{t.aucun}</p>

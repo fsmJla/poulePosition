@@ -996,6 +996,7 @@ export const textes = {
         `${enLigne} en ligne${exclus > 0 ? ` · ${exclus} exclu${exclus > 1 ? 's' : ''}` : ''}`,
       aide: '« Exclure » coupe un seul appareil. Pour couper tout un rôle, régénérez son QR code.',
       horsLigne: 'Hors ligne : les appareils ne peuvent pas se connecter.',
+      pasPilote: 'Seul le PC pilote voit les appareils connectés.',
       aucun: 'Aucun appareil n’est encore entré par QR code.',
       colonnes: {
         appareil: 'Appareil',

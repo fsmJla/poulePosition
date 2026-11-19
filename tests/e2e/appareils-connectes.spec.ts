@@ -23,6 +23,10 @@ test('US-105 CA-1, CA-2, CA-4, CA-5 et hors ligne : voir les appareils, exclure,
     const ligne = section.getByRole('row').filter({ hasText: 't1' });
     await expect(ligne).toContainText('arbitre');
     await expect(ligne).toContainText('Connecté');
+    // Recette : rechargée, la page retrouve la liste dès que la connexion s'ouvre.
+    await page.reload();
+    await expect(section).toContainText('1 en ligne', { timeout: 20_000 });
+    await expect(ligne).toContainText('Connecté');
     await testInfo.attach('planche-21', { body: await section.screenshot(), contentType: 'image/png' });
 
     // CA-2 : « ⋯ › Exclure cet appareil… », confirmé.

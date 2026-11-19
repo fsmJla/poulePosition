@@ -61,6 +61,7 @@ export function creerPresencePilote({
   const ecouteursAppareils = new Set<(epreuveId: string, connectes: number) => void>();
   /** US-105 CA-1 : appareils connus du serveur, par épreuve. */
   const listes = new Map<string, AppareilConnu[]>();
+  const ecouteursListes = new Set<(epreuveId: string) => void>();
   const ecouteurs = new Set<(horsLigne: boolean) => void>();
   let horsLigne = false;
 
@@ -118,12 +119,15 @@ export function creerPresencePilote({
       surEtat: (etat) => {
         connexion.etat = etat;
         signaler();
+        // US-105 (recette) : la liste des appareils devient connue (ou ne l'est plus) avec la connexion.
+        ecouteursListes.forEach((ecouteur) => ecouteur(epreuveId));
       },
       // US-099 CA-5 à CA-7 : une saisie d'un téléphone, décidée par ce PC ; l'accusé repart au téléphone.
       surMessage: (message) => {
         if (message.type === 'appareils') {
           appareils.set(epreuveId, message.connectes);
           if (message.liste) listes.set(epreuveId, message.liste);
+          ecouteursListes.forEach((ecouteur) => ecouteur(epreuveId));
           ecouteursAppareils.forEach((ecouteur) => ecouteur(epreuveId, message.connectes));
           return;
         }
@@ -171,6 +175,12 @@ export function creerPresencePilote({
     /** US-105 CA-2 et CA-4 : demande au serveur d'exclure (ou de réadmettre) un appareil ; faux hors ligne. */
     exclure: (epreuveId: string, appareilId: string, exclu: boolean): boolean =>
       connexions.get(epreuveId)?.envoyer(messageExclure(appareilId, exclu)) ?? false,
+
+    /** US-105 : la liste des appareils d'une épreuve a changé, ou la connexion (elle devient connue ou inconnue). */
+    surListeAppareils(ecouteur: (epreuveId: string) => void): () => void {
+      ecouteursListes.add(ecouteur);
+      return () => ecouteursListes.delete(ecouteur);
+    },
 
     surAppareils(ecouteur: (epreuveId: string, connectes: number) => void): () => void {
       ecouteursAppareils.add(ecouteur);
