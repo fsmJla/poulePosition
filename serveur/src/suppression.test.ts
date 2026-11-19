@@ -200,8 +200,8 @@ describe('suppression définitive d’une épreuve (US-039)', () => {
       piloteAttendu: 'pc-a',
     });
     expect(prise.status).toBe(410);
-    const battement = await appeler('POST', `/epreuves/${id}/presence`, jetonAdmin, { appareilId: 'pc-a' });
-    expect(battement.status).toBe(410);
+    const ticket = await appeler('POST', `/epreuves/${id}/ticket`, jetonAdmin, { appareilId: 'pc-a' });
+    expect(ticket.status).toBe(410);
     const pilote = await appeler('GET', `/epreuves/${id}/pilote`, jetonAdmin);
     expect(pilote.status).toBe(410);
     const journal = await appeler('GET', `/epreuves/${id}/evenements`, jetonAdmin);

@@ -1,5 +1,7 @@
 // Connexion WebSocket au serveur : état affiché, ping de maintien, reconnexion automatique.
 // Le serveur peut être absent (non configuré) ou injoignable (hors ligne) : l'application continue (ADR-0001).
+// US-094 (ADR-0028) : l'adresse est redemandée à chaque tentative (elle porte un ticket de 60 s), le ping part toutes
+// les 15 s et deux pongs manqués valent une coupure, même si le navigateur n'a pas encore fermé la socket.
 import { analyserMessageServeur, FERMETURES, MESSAGE_PING } from '@poule-position/protocole';
 
 export type EtatConnexion = 'non-configure' | 'connexion' | 'connecte' | 'injoignable';
@@ -7,12 +9,14 @@ export type EtatConnexion = 'non-configure' | 'connexion' | 'connecte' | 'injoig
 /** Adresse du serveur local (`wrangler dev`), utilisée par défaut en développement. */
 export const URL_SERVEUR_LOCAL = 'ws://localhost:8790';
 
-/** Intervalle du ping de maintien (réseaux mobiles, proxys), comme le relais. */
-const DELAI_PING = 30_000;
+/** Intervalle du ping de maintien (ADR-0028). */
+export const DELAI_PING = 15_000;
+/** Pings restés sans pong au-delà desquels la connexion est tenue pour perdue. */
+export const PONGS_MANQUES_MAX = 2;
 /** Délais successifs avant reconnexion ; le dernier se répète. */
-const DELAIS_RECONNEXION = [1_000, 2_000, 5_000, 10_000];
-/** Fermetures après lesquelles il ne faut pas se reconnecter (protocole, codes 4002 et 4003). */
-const SANS_RECONNEXION: number[] = [FERMETURES.REMPLACEE, FERMETURES.EXCLUE];
+export const DELAIS_RECONNEXION = [1_000, 2_000, 4_000, 8_000, 16_000, 30_000];
+/** Fermetures après lesquelles il ne faut pas se reconnecter (protocole §4.5). */
+const SANS_RECONNEXION: number[] = [FERMETURES.REMPLACEE, FERMETURES.EXCLUE, FERMETURES.MAIN_PRISE];
 
 /** Ce qu'utilise la connexion d'une WebSocket (permet une fausse socket dans les tests). */
 export interface SocketMinimale {
@@ -24,10 +28,15 @@ export interface SocketMinimale {
   onerror: (() => void) | null;
 }
 
+/** Adresse d'une tentative : à ouvrir, à redemander plus tard (réseau, serveur), ou plus jamais (plus le pilote). */
+export type Adresse = { url: string } | { attendre: true } | { arreter: true };
+
 export interface OptionsConnexion {
-  /** Adresse complète de connexion (voir urlConnexion) ; null si le serveur n'est pas configuré. */
-  url: string | null;
+  /** Adresse de chaque tentative ; null si le serveur n'est pas configuré. */
+  adresse: (() => Promise<Adresse>) | null;
   surEtat: (etat: EtatConnexion) => void;
+  /** Fermeture définitive par le serveur (connexion remplacée, appareil exclu, main prise). */
+  surFin?: (code: number) => void;
   creerSocket?: (url: string) => SocketMinimale;
 }
 
@@ -38,17 +47,22 @@ export function urlConnexion(urlServeur: string | undefined, epreuveId: string):
   return `${base}/epreuves/${encodeURIComponent(epreuveId)}/connexion`;
 }
 
-/** Ouvre la connexion et la maintient jusqu'à `arreter()`. */
+/**
+ * Ouvre la connexion et la maintient jusqu'à `arreter()`. `relancer()` abandonne la socket en cours (le navigateur
+ * annonce une coupure, ou le retour du réseau) et repart du premier délai de reconnexion.
+ */
 export function demarrerConnexion({
-  url,
+  adresse,
   surEtat,
+  surFin = () => {},
   // WebSocket fournit ces propriétés ; ses gestionnaires typés (Event…) sont seulement plus précis.
-  creerSocket = (adresse) => new WebSocket(adresse) as unknown as SocketMinimale,
-}: OptionsConnexion): { arreter: () => void } {
-  if (!url) {
+  creerSocket = (url) => new WebSocket(url) as unknown as SocketMinimale,
+}: OptionsConnexion): { arreter: () => void; relancer: () => void } {
+  if (!adresse) {
     surEtat('non-configure');
-    return { arreter: () => {} };
+    return { arreter: () => {}, relancer: () => {} };
   }
+  const obtenir = adresse;
 
   let socket: SocketMinimale | null = null;
   let ping: ReturnType<typeof setInterval> | undefined;
@@ -56,16 +70,65 @@ export function demarrerConnexion({
   let essais = 0;
   let arretee = false;
 
-  const ouvrir = () => {
-    const courante = creerSocket(url);
+  const reessayer = () => {
+    if (arretee) return;
+    const delai = DELAIS_RECONNEXION[Math.min(essais, DELAIS_RECONNEXION.length - 1)];
+    essais += 1;
+    reconnexion = setTimeout(() => void ouvrir(), delai);
+  };
+
+  /** Coupure : la socket est abandonnée (ses événements tardifs sont ignorés), puis une nouvelle tentative suit. */
+  const couper = (courante: SocketMinimale) => {
+    clearInterval(ping);
+    courante.onopen = courante.onmessage = courante.onclose = courante.onerror = null;
+    if (socket === courante) socket = null;
+    try {
+      courante.close();
+    } catch {
+      // déjà fermée
+    }
+    surEtat('injoignable');
+    reessayer();
+  };
+
+  const ouvrir = async () => {
+    if (arretee) return;
+    let cible: Adresse;
+    try {
+      cible = await obtenir();
+    } catch {
+      cible = { attendre: true };
+    }
+    if (arretee) return;
+    if ('arreter' in cible) {
+      surEtat('injoignable');
+      return;
+    }
+    if ('attendre' in cible) {
+      surEtat('injoignable');
+      reessayer();
+      return;
+    }
+    const courante = creerSocket(cible.url);
     socket = courante;
+    let manques = 0;
     courante.onopen = () => {
-      ping = setInterval(() => courante.send(MESSAGE_PING), DELAI_PING);
+      ping = setInterval(() => {
+        if (manques >= PONGS_MANQUES_MAX) {
+          couper(courante);
+          return;
+        }
+        manques += 1;
+        courante.send(MESSAGE_PING);
+      }, DELAI_PING);
     };
     courante.onmessage = ({ data }) => {
       const analyse = analyserMessageServeur(data);
-      if (analyse.ok && analyse.message.type === 'bienvenue') {
+      if (!analyse.ok) return;
+      if (analyse.message.type === 'pong') manques = 0;
+      if (analyse.message.type === 'bienvenue') {
         essais = 0;
+        manques = 0;
         surEtat('connecte');
       }
     };
@@ -74,16 +137,18 @@ export function demarrerConnexion({
     courante.onclose = ({ code }) => {
       clearInterval(ping);
       if (arretee) return;
-      surEtat('injoignable');
-      if (SANS_RECONNEXION.includes(code)) return;
-      const delai = DELAIS_RECONNEXION[Math.min(essais, DELAIS_RECONNEXION.length - 1)];
-      essais += 1;
-      reconnexion = setTimeout(ouvrir, delai);
+      if (SANS_RECONNEXION.includes(code)) {
+        socket = null;
+        surEtat('injoignable');
+        surFin(code);
+        return;
+      }
+      couper(courante);
     };
   };
 
   surEtat('connexion');
-  ouvrir();
+  void ouvrir();
 
   return {
     arreter: () => {
@@ -91,6 +156,13 @@ export function demarrerConnexion({
       clearInterval(ping);
       clearTimeout(reconnexion);
       socket?.close();
+    },
+    relancer: () => {
+      if (arretee) return;
+      clearTimeout(reconnexion);
+      essais = 0;
+      if (socket) couper(socket);
+      else reessayer();
     },
   };
 }

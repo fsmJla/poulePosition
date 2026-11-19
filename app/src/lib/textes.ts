@@ -771,6 +771,8 @@ export const textes = {
       },
     },
     pasEncoreEnvoyee: 'Pas encore envoyée',
+    /** US-094 CA-3 : la WebSocket d'une épreuve pilotée ici est perdue ; rien ne s'arrête sur ce PC. */
+    horsLignePilote: 'Hors ligne : la compétition continue sur ce PC',
     enAttente: (nombre: number) =>
       nombre > 1 ? `${nombre} modifications en attente d’envoi` : `${nombre} modification en attente d’envoi`,
     /** US-022 : date de la copie d'une épreuve pilotée par un autre PC (« Copie du 28/10 à 14 h 05 »). */

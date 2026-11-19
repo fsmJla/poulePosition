@@ -2,10 +2,8 @@
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { unstable_startWorker } from 'wrangler';
-import { MESSAGE_PING, MESSAGE_PONG } from '@poule-position/protocole';
 
 type Worker = Awaited<ReturnType<typeof unstable_startWorker>>;
-type SocketServeur = NonNullable<Awaited<ReturnType<Worker['fetch']>>['webSocket']>;
 
 let worker: Worker;
 const ORIGINE_LOCALE = 'http://localhost:4173';
@@ -23,29 +21,6 @@ afterAll(async () => {
 
 function connecter(origine: string, chemin = '/epreuves/demo/connexion') {
   return worker.fetch(`http://localhost${chemin}`, { headers: { Upgrade: 'websocket', Origin: origine } });
-}
-
-/** Ouvre une connexion acceptée et renvoie la socket avec une file des messages reçus. */
-async function ouvrir() {
-  const reponse = await connecter(ORIGINE_LOCALE);
-  expect(reponse.status).toBe(101);
-  const socket = reponse.webSocket as SocketServeur;
-  const recus: string[] = [];
-  const attentes: ((message: string) => void)[] = [];
-  socket.addEventListener('message', (evenement) => {
-    const message = String(evenement.data);
-    const attente = attentes.shift();
-    if (attente) attente(message);
-    else recus.push(message);
-  });
-  socket.accept();
-  const prochain = () =>
-    new Promise<string>((resoudre) => {
-      const deja = recus.shift();
-      if (deja !== undefined) resoudre(deja);
-      else attentes.push(resoudre);
-    });
-  return { socket, prochain };
 }
 
 describe('serveur', () => {
@@ -69,7 +44,8 @@ describe('serveur', () => {
   // Ce Worker tourne avec la configuration de production (wrangler.toml, environnement par défaut).
   it('US-020 CA-2 : la production accepte le domaine du club (WebSocket et routes de session)', async () => {
     const club = 'https://poule-position.pessac-escrime.fr';
-    expect((await connecter(club)).status).toBe(101);
+    // L'origine passe ; sans ticket (US-094), la WebSocket est ensuite refusée (401), pas pour son origine (403).
+    expect((await connecter(club)).status).toBe(401);
     const preflight = await worker.fetch('http://localhost/session/sel', {
       method: 'OPTIONS',
       headers: { Origin: club, 'Access-Control-Request-Method': 'POST' },
@@ -88,19 +64,10 @@ describe('serveur', () => {
     expect(preflight.status).toBe(403);
   });
 
-  it('US-001 CA-8 : la connexion reçoit bienvenue avec l’épreuve', async () => {
-    const { socket, prochain } = await ouvrir();
-    expect(JSON.parse(await prochain())).toEqual({ v: 1, type: 'bienvenue', epreuveId: 'demo' });
-    socket.close();
-  });
-
-  it('répond pong au ping, et TYPE_INTERDIT à un message inconnu', async () => {
-    const { socket, prochain } = await ouvrir();
-    await prochain(); // bienvenue
-    socket.send(MESSAGE_PING);
-    expect(await prochain()).toBe(MESSAGE_PONG);
-    socket.send('{"v":1,"type":"saisie"}');
-    expect(JSON.parse(await prochain())).toMatchObject({ type: 'erreur', code: 'TYPE_INTERDIT' });
-    socket.close();
+  it('US-094 CA-1 : sans ticket, la WebSocket est refusée (401)', async () => {
+    const reponse = await connecter(ORIGINE_LOCALE);
+    expect(reponse.status).toBe(401);
+    expect(reponse.webSocket).toBeFalsy();
+    expect((await connecter(ORIGINE_LOCALE, '/epreuves/demo/connexion?ticket=faux')).status).toBe(401);
   });
 });

@@ -8,7 +8,7 @@ import {
   analyserReponseEnvoi,
   analyserReponseJournal,
   analyserReponsePilote,
-  analyserReponsePresence,
+  analyserReponseTicket,
   analyserReponsePriseDeMain,
   analyserReponseSuppressionEpreuve,
   preparerLots,
@@ -39,8 +39,12 @@ export interface SuppressionLocale {
   abandonnees: number;
 }
 
-/** Intervalle entre deux battements du pilote (US-029, ADR-0016 : présence provisoire en attendant la WebSocket). */
-export const INTERVALLE_BATTEMENT = 30_000;
+/** Date du jour au format des épreuves (AAAA-MM-JJ), à l'heure locale. */
+export function dateDuJour(instant: number): string {
+  const jour = new Date(instant);
+  const deux = (n: number) => String(n).padStart(2, '0');
+  return `${jour.getFullYear()}-${deux(jour.getMonth() + 1)}-${deux(jour.getDate())}`;
+}
 
 export type ErreurSynchronisation =
   | 'HORS_LIGNE'
@@ -134,6 +138,7 @@ export function creerSynchronisation({
         }
         if (reponse.ok) {
           await journal.confirmer(epreuveId, reponse.dernierSeq);
+          ecouteursEnvoi.forEach((ecouteur) => ecouteur(epreuveId));
           continue;
         }
         if (reponse.erreur === 'PAS_PILOTE') {
@@ -172,6 +177,8 @@ export function creerSynchronisation({
   }
 
   const ecouteursPerte = new Set<(perte: PerteDeMain) => void>();
+  /** US-094 : un lot vient d'être accepté par le serveur (l'épreuve y existe : sa WebSocket peut s'ouvrir). */
+  const ecouteursEnvoi = new Set<(epreuveId: string) => void>();
   const ecouteursSuppression = new Set<(suppression: SuppressionLocale) => void>();
 
   /**
@@ -257,37 +264,65 @@ export function creerSynchronisation({
   type Refus = { ok: false; erreur: ErreurSynchronisation };
   const sansReseau = (): Refus => ({ ok: false, erreur: enLigne() && urlServeur ? 'SESSION_INVALIDE' : 'HORS_LIGNE' });
 
-  /** US-029 CA-2 : battement du pilote ; s'il n'est plus le pilote, la perte de main est traitée et renvoyée. */
-  async function battre(epreuveId: string): Promise<{ ok: true } | Refus | { ok: false; perte: PerteDeMain }> {
+  /**
+   * US-094 CA-1 (ADR-0028) : ticket de 60 s pour ouvrir la WebSocket du pilote. Un ancien pilote apprend ainsi qu'il a
+   * perdu la main : la perte est traitée et renvoyée.
+   */
+  async function demanderTicket(
+    epreuveId: string,
+  ): Promise<{ ok: true; ticket: string } | Refus | { ok: false; perte: PerteDeMain }> {
     const jetonSession = await jetonEnLigne();
     if (!jetonSession) return sansReseau();
     let reponse;
     try {
       const corps = { appareilId: await journal.appareil() };
-      reponse = analyserReponsePresence(await requete(`/epreuves/${epreuveId}/presence`, jetonSession, corps));
+      reponse = analyserReponseTicket(await requete(`/epreuves/${epreuveId}/ticket`, jetonSession, corps));
     } catch {
       return { ok: false, erreur: 'HORS_LIGNE' };
     }
-    if (reponse.ok) return { ok: true };
+    if (reponse.ok) return { ok: true, ticket: reponse.ticket };
     if (reponse.erreur === 'PAS_PILOTE') return { ok: false, perte: await perdre(epreuveId, reponse) };
     if (reponse.erreur === 'EPREUVE_SUPPRIMEE') await effacerSupprimee(epreuveId);
     return { ok: false, erreur: erreurDe(reponse.erreur) };
   }
 
-  /** US-029 : une épreuve pas encore terminée, pilotée ici, doit battre. */
-  async function battreTout(): Promise<void> {
+  /**
+   * US-094 (ADR-0028) : épreuves dont ce PC ouvre la WebSocket : pilotées ici, pas reprises d'un fichier (US-035 : elles
+   * perdraient la main avant d'avoir pu la prendre), « En cours », ou « En préparation » datées du jour ou sans date.
+   */
+  async function epreuvesAPresence(): Promise<string[]> {
+    const aujourdhui = dateDuJour(maintenant());
     const locales = await journal.epreuvesLocales();
-    await Promise.all(
+    const retenues = await Promise.all(
       locales
-        // US-035 : une épreuve reprise d'un fichier ne bat pas avant la prise de main, sinon le serveur lui ferait perdre la main.
         .filter(({ pilote, reprise }) => pilote && !reprise)
         .map(async ({ epreuveId }) => {
           const { epreuve } = await journal.lire(epreuveId);
-          if (epreuve && epreuve.statut !== 'terminee' && epreuve.statut !== 'archivee') {
-            await battre(epreuveId);
-          }
+          if (!epreuve) return null;
+          const duJour = epreuve.date === null || epreuve.date === aujourdhui;
+          return epreuve.statut === 'enCours' || (epreuve.statut === 'preparation' && duJour) ? epreuveId : null;
         }),
     );
+    return retenues.filter((id): id is string => id !== null);
+  }
+
+  /**
+   * US-094 CA-4 : le serveur a fermé la WebSocket parce qu'un autre PC a pris la main : la perte est traitée comme pour
+   * un lot refusé, avec le pilote en place lu sur le serveur.
+   */
+  async function perteSignalee(epreuveId: string): Promise<PerteDeMain | null> {
+    if ((await journal.etat(epreuveId))?.pilote !== true) return null;
+    const jetonSession = await jetonEnLigne();
+    let pilote: { piloteAppareil?: string; piloteNom?: string } = {};
+    if (jetonSession) {
+      try {
+        const reponse = analyserReponsePilote(await requete(`/epreuves/${epreuveId}/pilote`, jetonSession));
+        if (reponse.ok) pilote = reponse;
+      } catch {
+        // Le nom du nouveau pilote manquera ; la perte est traitée quand même.
+      }
+    }
+    return perdre(epreuveId, pilote);
   }
 
   return {
@@ -499,18 +534,26 @@ export function creerSynchronisation({
       return { ok: true, ecartes };
     },
 
-    battre,
+    demanderTicket,
 
-    battreTout,
+    epreuvesAPresence,
+
+    perteSignalee,
 
     /** US-029 CA-2 : avertit quand un autre PC prend la main ; renvoie de quoi arrêter d'écouter. */
+    /** US-094 : prévient à chaque lot accepté par le serveur ; renvoie de quoi arrêter d'écouter. */
+    surEnvoi(ecouteur: (epreuveId: string) => void): () => void {
+      ecouteursEnvoi.add(ecouteur);
+      return () => ecouteursEnvoi.delete(ecouteur);
+    },
+
     surPerte(ecouteur: (perte: PerteDeMain) => void): () => void {
       ecouteursPerte.add(ecouteur);
       return () => ecouteursPerte.delete(ecouteur);
     },
 
     /** US-022 CA-2 : envoie ce qui attend maintenant, puis à chaque retour du réseau ; renvoie de quoi arrêter. */
-    surveiller(cible: EventTarget = window, intervalle = INTERVALLE_BATTEMENT): () => void {
+    surveiller(cible: EventTarget = window): () => void {
       // US-039 CA-5 : lire l'index du club suffit à effacer les copies des épreuves supprimées.
       const auRetour = () => {
         void envoyerTout();
@@ -518,12 +561,8 @@ export function creerSynchronisation({
       };
       cible.addEventListener('online', auRetour);
       auRetour();
-      // US-029 : le pilote en ligne signale sa présence ; un ancien pilote apprend ainsi qu'il a perdu la main.
-      const minuteur = setInterval(() => void battreTout(), intervalle);
-      return () => {
-        cible.removeEventListener('online', auRetour);
-        clearInterval(minuteur);
-      };
+      // US-094 : la présence du pilote passe par sa WebSocket (presence-pilote.ts) ; il n'y a plus de battement.
+      return () => cible.removeEventListener('online', auRetour);
     },
   };
 }

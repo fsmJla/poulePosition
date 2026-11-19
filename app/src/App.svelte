@@ -10,6 +10,7 @@
   import { creerClientSession, urlHttp } from './lib/session';
   import { estLocale, ouvrirStockage, type SessionAppareil } from './lib/stockage';
   import { creerSynchronisation } from './lib/synchronisation';
+  import { creerPresencePilote } from './lib/presence-pilote';
   import { creerAccueil } from './lib/accueil';
   import { creerClientCompetitions } from './lib/competitions';
   import { creerClientManifestations } from './lib/manifestations';
@@ -75,6 +76,10 @@
   /** US-031 : page d'accueil publique et lien public d'une épreuve, lus sans session. */
   const publication = creerClientPublic({ urlServeur: urlHttp(urlServeur) });
   const accueil = creerAccueil({ journal, synchronisation, manifestations, competitions });
+  /** US-094 : WebSocket du pilote, une par épreuve pilotée ici qui se tire aujourd'hui (ADR-0028). */
+  const presence = creerPresencePilote({ urlServeur, synchronisation });
+  let horsLignePilote = $state(false);
+  presence.surEtat((horsLigne) => (horsLignePilote = horsLigne));
   /** Faux tant que la session gardée n'est pas relue : évite d'afficher une page puis d'en changer. */
   let pret = $state(false);
   let chemin = $state(location.pathname + location.search);
@@ -101,6 +106,20 @@
   // US-022 CA-2 : une session en ligne (connexion, revalidation) envoie ce qui attendait.
   $effect(() => {
     if (session && !estLocale(session)) void synchronisation.envoyerTout();
+  });
+
+  // US-094 : la présence du pilote tourne tant qu'une session existe ; une session locale (US-005) attend le réseau.
+  const avecSession = $derived(session !== null);
+  $effect(() => {
+    if (!avecSession) return;
+    const arreter = presence.surveiller();
+    // Une épreuve qui vient d'arriver sur le serveur ouvre sa WebSocket sans attendre la revue suivante.
+    const arreterEnvoi = synchronisation.surEnvoi(() => void presence.actualiser());
+    return () => {
+      arreter();
+      arreterEnvoi();
+      horsLignePilote = false;
+    };
   });
 
   onMount(() => {
@@ -294,6 +313,11 @@
   {/if}
 {/if}
 
+<!-- US-094 CA-3 : la connexion au serveur d'une épreuve pilotée ici est perdue ; la compétition continue. -->
+<p class="hors-ligne-pilote" class:visible={horsLignePilote} role="status" aria-live="polite">
+  {horsLignePilote ? textes.epreuves.horsLignePilote : ''}
+</p>
+
 <!-- US-039 CA-5 et CA-6 : ce PC vient d'effacer la copie d'une épreuve supprimée par un administrateur. -->
 {#if annonces.length > 0}
   <div class="annonces">
@@ -309,6 +333,28 @@
 {/if}
 
 <style>
+  /* Pastille flottante, comme l'attente d'envoi (US-090) : elle ne pousse pas le contenu. */
+  .hors-ligne-pilote {
+    position: fixed;
+    left: 1rem;
+    bottom: 1rem;
+    z-index: 20;
+    margin: 0;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--etat-attente-bordure);
+    border-radius: 999px;
+    background: var(--etat-attente-fond);
+    color: var(--sur-etat-attente-fond);
+    box-shadow: var(--ombre-flottante);
+    font-size: 0.875rem;
+    font-weight: 600;
+    visibility: hidden;
+  }
+
+  .hors-ligne-pilote.visible {
+    visibility: visible;
+  }
+
   .annonces {
     position: fixed;
     inset: auto 1rem 1rem;

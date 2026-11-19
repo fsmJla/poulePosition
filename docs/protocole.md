@@ -56,6 +56,8 @@
 | `DELETE /epreuves/<epreuveId>` | Supprimer définitivement une épreuve, administrateur seulement (§14, US-039) |
 | `GET /epreuves/<epreuveId>/evenements` | Télécharger le journal d'une épreuve (§11) |
 | `POST /epreuves/<epreuveId>/evenements` | Envoyer un lot d'événements du PC pilote (§11) |
+| `GET /epreuves/<epreuveId>/pilote`, `POST …/pilote` | Qui pilote et s'il est connecté ; prendre la main (§11, US-029) |
+| `POST /epreuves/<epreuveId>/ticket` | Ticket de 60 s pour ouvrir la WebSocket du pilote (§11, US-094) |
 | `GET /manifestations`, `POST /manifestations` | Lister et créer les manifestations du club (§12, US-023) |
 | `PATCH /manifestations/<id>`, `DELETE /manifestations/<id>` | Modifier ou supprimer une manifestation (§12) |
 | `POST /manifestations/<id>/archivage` | Archiver ou désarchiver une manifestation et ses compétitions (§12, US-033) |
@@ -65,20 +67,25 @@
 | `PUT /fichiers/<élément>/<id>/<sorte>`, `DELETE …` | Joindre, remplacer ou retirer un fichier (§15) |
 | `GET /fichiers/<nom>` | Lire le contenu d'un fichier, **sans session** (§15) |
 | `OPTIONS` sur ces routes | Requête CORS préalable (§7) ; méthodes `GET, POST, PUT, PATCH, DELETE` |
-| WebSocket `/epreuves/<epreuveId>/connexion` | Connexion à une épreuve (§3) |
+| WebSocket `/epreuves/<epreuveId>/connexion?ticket=…` | WebSocket du pilote d'une épreuve (§3, US-094) |
 | Tout autre chemin | `404` |
 
 `epreuveId` : des minuscules, des chiffres et des tirets, 64 caractères au plus, sans tiret au début. La
 page minimale d'US-001 utilise `demo`.
 
 Refus HTTP avant la WebSocket : `426` si ce n'est pas une demande de WebSocket, `403` si l'origine n'est pas
-autorisée.
+autorisée, `401` si le ticket manque, est faux, expiré, ou vaut pour une autre épreuve ou un autre club (US-094).
 
 ## 3. Connexion
 
-1. Le client ouvre la WebSocket.
-2. Le serveur (Durable Object `Epreuve`, une instance par épreuve) l'accepte et envoie aussitôt
-   `{"v":1,"type":"bienvenue","epreuveId":"demo"}`.
+Depuis US-094 (ADR-0028), la seule WebSocket est celle du **PC pilote** d'une épreuve ; elle fait sa présence.
+
+1. Le pilote demande un ticket : `POST /epreuves/<epreuveId>/ticket` (§11), valable 60 s.
+2. Il ouvre la WebSocket sur `/epreuves/<epreuveId>/connexion?ticket=<ticket>`. Le Worker vérifie l'origine, la
+   signature, l'expiration, le club et l'épreuve du ticket.
+3. Le serveur (Durable Object `Epreuve`, une instance par épreuve) l'accepte et vérifie que l'appareil du ticket est
+   **encore** le pilote ; sinon il la ferme aussitôt (`4003`). Une nouvelle socket du même appareil remplace l'ancienne
+   (`4002`). Puis il envoie `{"v":1,"type":"bienvenue","epreuveId":"…"}`.
 3. L'application considère la connexion comme établie à la réception de `bienvenue`, pas seulement à
    l'ouverture de la socket.
 
@@ -101,9 +108,13 @@ Il n'y a pas encore de message client. Tout autre type que le `ping` exact est r
 
 ### 4.3 Maintien de connexion
 
-Toutes les 30 s, le client envoie **exactement** `{"v":1,"type":"ping"}`. Le serveur répond
+Toutes les **15 s** (US-094), le client envoie **exactement** `{"v":1,"type":"ping"}`. Le serveur répond
 `{"v":1,"type":"pong"}` par réponse automatique, sans réveiller le Durable Object, donc sans aucun coût. Une autre
 écriture (espaces, ordre des champs) est traitée comme un message ordinaire et refusée.
+
+Deux pings restés sans pong valent une coupure : le client abandonne la socket et se reconnecte, sans attendre que le
+navigateur la ferme. Côté serveur, le pilote est « connecté » tant qu'une socket ouverte a donné signe de vie (ping ou
+ouverture) depuis moins de 30 s (US-094 CA-2).
 
 ### 4.4 Codes d'erreur
 
@@ -121,8 +132,9 @@ Toutes les 30 s, le client envoie **exactement** `{"v":1,"type":"ping"}`. Le ser
 | `4000` | Connexion refusée | — |
 | `4001` | Épreuve fermée | — |
 | `4002` | Connexion remplacée par une autre du même appareil | **Non** |
-| `4003` | Appareil exclu par l'organisateur | **Non** |
-| autre (`1006`, réseau coupé, veille…) | Coupure | Oui, après 1 s, 2 s, 5 s, puis toutes les 10 s |
+| `4003` | Appareil exclu par l'organisateur, ou qui n'est plus le pilote à l'ouverture (US-094) | **Non** |
+| `4004` | Main prise : un autre appareil est devenu le pilote (US-094 CA-4) | **Non** ; l'ancien pilote passe en lecture seule |
+| autre (`1006`, réseau coupé, veille…) | Coupure | Oui, après 1 s, 2 s, 4 s, 8 s, 16 s, puis toutes les 30 s ; un nouveau ticket à chaque tentative |
 
 ## 5. États affichés par l'application
 
@@ -665,11 +677,13 @@ Mêmes contrôles de session que ci-dessus. `appareilId` et `piloteAttendu` suiv
 - `404 EPREUVE_INCONNUE` si rien n'a encore été reçu ; `400 DEMANDE_INVALIDE` pour un corps mal formé.
 
 **`GET /epreuves/<epreuveId>/pilote`** — `200 {"ok":true,"piloteAppareil":"…","piloteNom":"…","connecte":true}`.
-`connecte` vaut vrai si le pilote a envoyé un lot ou un battement depuis moins de 60 s (`DELAI_PRESENCE_MS`).
+`connecte` vaut vrai si le pilote a une WebSocket ouverte qui a donné signe de vie depuis moins de 30 s
+(`DELAI_PRESENCE_MS`, US-094). Un lot ne compte plus comme signe de vie.
 
-**`POST /epreuves/<epreuveId>/presence`** — battement du pilote. Corps : `{ "appareilId": "…" }`. `200 {"ok":true}`
-pour le pilote en place ; sinon `409 {"ok":false,"erreur":"PAS_PILOTE","piloteAppareil":"…","piloteNom":"…"}`.
-Ces deux routes sont provisoires : la WebSocket du pilote (E5) les remplacera (ADR-0017).
+**`POST /epreuves/<epreuveId>/ticket`** — ticket de la WebSocket du pilote (US-094, ADR-0028). Corps :
+`{ "appareilId": "…" }`. `200 {"ok":true,"ticket":"…","expireLe":<ms>}` pour le pilote en place (jeton HS256 signé avec
+`SECRET_SESSION`, valable 60 s, qui ne vaut jamais session) ; sinon `409 {"ok":false,"erreur":"PAS_PILOTE","piloteAppareil":"…","piloteNom":"…"}`,
+`404 EPREUVE_INCONNUE` si rien n'a encore été reçu. La route `POST …/presence` (battements, ADR-0017) n'existe plus.
 
 Un refus `PAS_PILOTE` d'un lot porte aussi `piloteAppareil` et `piloteNom` : l'ancien pilote sait qui a pris la main.
 `piloteNom` est le nom du compte ; l'application l'affiche suivi du début de l'identifiant de l'appareil
@@ -687,8 +701,12 @@ Un refus `PAS_PILOTE` d'un lot porte aussi `piloteAppareil` et `piloteNom` : l'a
   s'il est connecté, puis demande la main, remplace la copie par le journal reçu, devient pilote, écrit `PiloteChange`
   et l'envoie. Si elle s'interrompt entre-temps, le téléchargement suivant reconnaît que le serveur la désigne comme
   pilote et rend le journal modifiable.
-- **Perdre la main** : le pilote bat toutes les 30 s (`INTERVALLE_BATTEMENT`) pour chaque épreuve en préparation ou en
-  cours qu'il pilote. Sur `PAS_PILOTE` (battement ou lot), il met de côté ses événements non envoyés dans la table
+- **Présence** (US-094) : le PC garde une WebSocket ouverte (`presence-pilote.ts`) pour chaque épreuve qu'il pilote, non
+  reprise d'un fichier, « En cours », ou « En préparation » datée du jour ou sans date ; la liste est revue toutes les
+  10 s et après chaque lot accepté. Quand une socket est perdue (deux pongs manqués, ou le navigateur annonce
+  `offline`), une pastille dit « Hors ligne : la compétition continue sur ce PC » ; tout continue en local.
+- **Perdre la main** : la prise de main ferme la WebSocket de l'ancien pilote (`4004`) ; il lit `GET …/pilote` pour savoir
+  qui a la main. Sur `PAS_PILOTE` (demande de ticket ou lot), ou sur `4004`, il met de côté ses événements non envoyés dans la table
   IndexedDB `ecartes` (jamais reprise dans le journal), cesse d'être le pilote et télécharge la copie du nouveau
   pilote. La page affiche « <nom> a pris la main depuis un autre PC » et « n modifications faites hors ligne n'ont pas été
   reprises », avec « Exporter en JSON » : un fichier `{ epreuveId, evenements }` au format du journal.
@@ -859,7 +877,7 @@ serveur ne décide d'aucune règle d'escrime, il lit ce statut).
 épreuve supprimée, retire sa ligne de l'index, puis le DO `Epreuve` efface son stockage (journal, pilote,
 présence) et ferme ses WebSocket. L'identifiant n'est jamais réutilisé. Tant que la pierre tombale existe, toute route
 sur cette épreuve répond `410 EPREUVE_SUPPRIMEE` : `GET` et `POST /epreuves/<id>/evenements`,
-`GET` et `POST /epreuves/<id>/pilote`, `POST /epreuves/<id>/presence`. Un lot en cours pendant la suppression ne
+`GET` et `POST /epreuves/<id>/pilote`, `POST /epreuves/<id>/ticket`. Un lot en cours pendant la suppression ne
 recrée pas la ligne d'index.
 
 **Index.** `GET /epreuves` ajoute `supprimees` : les identifiants des épreuves supprimées. Un serveur antérieur à
@@ -874,7 +892,7 @@ US-039 ne l'envoie pas, et l'application lit alors une liste vide.
 - L'administrateur voit « Supprimer définitivement… » sur la page d'une épreuve. Le bouton est grisé hors ligne
   (« Connexion requise pour supprimer ») et pour une épreuve en cours ; la confirmation exige de saisir le nom exact.
 - À chaque lecture de l'index (démarrage, retour du réseau, accueil), et à chaque `410 EPREUVE_SUPPRIMEE` reçu pour un
-  lot, un battement ou un téléchargement, le PC efface sa copie locale (journal, ligne locale, modifications écartées) et
+  lot, une demande de ticket ou un téléchargement, le PC efface sa copie locale (journal, ligne locale, modifications écartées) et
   annonce une fois : « L’épreuve <nom> a été supprimée par un administrateur » (suivi de « Des saisies non envoyées
   ont été abandonnées » s'il y en avait). La suppression prime sur les saisies hors ligne.
 - Le PC qui a lui-même demandé la suppression efface sa copie sans annonce.
@@ -1038,8 +1056,8 @@ l'appareil (`planifierImport`, domaine) :
 Les fichiers joints du fichier sont gardés sur l'appareil (contenu et description) pour rester affichables hors ligne ; le
 serveur n'en est pas informé.
 
-Une épreuve importée porte `reprise` dans `epreuvesLocales` : **rien n'est envoyé** (`envoyer` répond `reprise-requise`) et son
-battement de présence est suspendu, jusqu'à ce que l'organisateur demande « Prendre la main et envoyer » au retour en ligne
+Une épreuve importée porte `reprise` dans `epreuvesLocales` : **rien n'est envoyé** (`envoyer` répond `reprise-requise`) et
+sa WebSocket de présence n’est pas ouverte (US-094), jusqu'à ce que l'organisateur demande « Prendre la main et envoyer » au retour en ligne
 (`reprendreApresImport`) :
 
 1. `GET /epreuves/<id>/evenements` : si le serveur ne connaît pas l'épreuve (`EPREUVE_INCONNUE`), les événements partent tels

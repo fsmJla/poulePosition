@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F8, F12 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-022, US-029 ; **ADR à écrire d'abord** (`/adr` : authentification de la WebSocket du pilote)
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-094-websocket-du-pilote`
 
 ## Récit
 
@@ -70,6 +70,16 @@ retour du réseau, suivie de l'envoi des lots en retard (US-022). Testé par un 
 - Le pilote ouvre une socket pour chaque épreuve qu'il pilote et qui est « En cours », ou « En préparation » le jour même ;
   il n'en ouvre pas pour les autres.
 
+- Implémentation (2026-11-19) : ADR-0028 écrite (ticket HS256 de 60 s signé avec `SECRET_SESSION`, non réutilisable
+  comme session, sans usage unique). « Le jour même » inclut une épreuve en préparation **sans date**.
+- Implémentation : la liste des épreuves à présence est revue toutes les 10 s (lecture locale) et après chaque lot
+  accepté par le serveur, pour qu'une épreuve tout juste créée ouvre sa socket sans attendre.
+- Implémentation : quand le navigateur annonce `offline`, les sockets sont abandonnées aussitôt (le message s'affiche
+  sans attendre deux pongs manqués) ; à `online`, elles se rouvrent. Un `4003` à l'ouverture (plus le pilote) est
+  traité comme un `4004`.
+- Écart sans planche : le message « Hors ligne : la compétition continue sur ce PC » est une pastille flottante en bas à
+  gauche (même style que l'attente d'envoi d'US-090, en bas à droite), sur toutes les pages connectées.
+
 ## Questions bloquantes
 
 Aucune.
@@ -87,3 +97,6 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-19 | Créée |
+| 2026-11-19 | Plan validé (série « maximum d'US ») ; en cours sur `us/US-094-websocket-du-pilote` |
+| 2026-11-19 | Implémentée (ADR-0028, ticket, WebSocket du pilote, fin des battements) ; en revue. Contrôles locaux verts (lint, typage, 1 711 tests, couverture 94,5 %, build, audit, E2E `presence-pilote` et `prise-de-main`) ; la suite E2E locale complète a été arrêtée faute de mémoire sur le poste : elle tourne en CI |
+| 2026-11-19 | Recette OK sur https://poule-position-git-us-us-094-websocket-06c255-fsmjlas-projects.vercel.app (serveur de preview déployé depuis la branche, thème sombre) : ticket demandé puis WebSocket ouverte et pilote « connecté » vu par le serveur (CA-1, CA-2) ; coupure annoncée par le navigateur : pastille « Hors ligne : la compétition continue sur ce PC » puis reconnexion seule (CA-3) ; `POST …/presence` → 404, ticket sans session et socket sans ticket → 401 (CA-1, CA-5). CA-4 (deux appareils) couvert par le test d’intégration du serveur et l’E2E local à deux contextes ; les E2E @reel de la preview ne se déclenchent plus depuis le 2026-11-14 (workflow à vérifier, hors US). Passe à Terminée |

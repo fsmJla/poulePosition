@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { projeter, type DonneesEpreuve, type Evenement } from '@poule-position/domaine';
 import {
   analyserDemandeEnvoi,
-  analyserDemandePresence,
+  analyserDemandeTicket,
   analyserDemandePriseDeMain,
   analyserReponseEpreuves,
   analyserReponseEnvoi,
   analyserReponseJournal,
   analyserReponsePilote,
-  analyserReponsePresence,
+  analyserReponseTicket,
   analyserReponsePriseDeMain,
   analyserReponseSuppressionEpreuve,
   preparerLots,
@@ -363,13 +363,19 @@ describe('prise de main et présence du pilote (US-029)', () => {
     });
   });
 
-  it('CA-2 : le battement du pilote est lu, et le refus PAS_PILOTE dit qui a pris la main', () => {
-    expect(analyserDemandePresence({ appareilId: 'a1' })).toEqual({ ok: true, demande: { appareilId: 'a1' } });
-    expect(analyserDemandePresence({})).toEqual({ ok: false });
-    expect(analyserReponsePresence({ ok: true })).toEqual({ ok: true });
+  it('US-094 CA-1 : la demande de ticket est lue, et le refus PAS_PILOTE dit qui a pris la main', () => {
+    expect(analyserDemandeTicket({ appareilId: 'a1' })).toEqual({ ok: true, demande: { appareilId: 'a1' } });
+    expect(analyserDemandeTicket({})).toEqual({ ok: false });
+    const accorde = { ok: true, ticket: 'a.b.c', expireLe: 1_800_000_060_000 };
+    expect(analyserReponseTicket(accorde)).toEqual(accorde);
+    expect(analyserReponseTicket({ ...accorde, ticket: '' })).toEqual({ ok: false, erreur: 'REPONSE_INVALIDE' });
+    expect(analyserReponseTicket({ ...accorde, expireLe: 'demain' })).toEqual({
+      ok: false,
+      erreur: 'REPONSE_INVALIDE',
+    });
     const refus = { ok: false, erreur: 'PAS_PILOTE', piloteAppareil: 'a2', piloteNom: 'Marie Durand' };
-    expect(analyserReponsePresence(refus)).toEqual(refus);
-    expect(analyserReponsePresence(undefined)).toEqual({ ok: false, erreur: 'REPONSE_INVALIDE' });
+    expect(analyserReponseTicket(refus)).toEqual(refus);
+    expect(analyserReponseTicket(undefined)).toEqual({ ok: false, erreur: 'REPONSE_INVALIDE' });
   });
 
   it('CA-3 : un lot refusé PAS_PILOTE porte aussi le pilote en place', () => {

@@ -70,12 +70,11 @@ test('US-029 CA-1 et CA-4 : un autre PC prend la main, après avoir été averti
   }
 });
 
-test('US-029 CA-2 : l’ancien pilote en ligne passe en lecture seule et sait qui a pris la main @reel', async ({
+test('US-029 CA-2 et US-094 CA-4 : l’ancien pilote en ligne passe aussitôt en lecture seule et sait qui a pris la main @reel', async ({
   page,
   browser,
   baseURL,
 }) => {
-  test.setTimeout(120_000);
   await seConnecter(page);
   await creerEpreuve(page, nomUnique());
   const adresse = new URL(page.url()).pathname;
@@ -85,8 +84,8 @@ test('US-029 CA-2 : l’ancien pilote en ligne passe en lecture seule et sait qu
     await prendreLaMain(autre);
     await expect(autre.getByText('Ce PC est le pilote', { exact: true })).toBeVisible({ timeout: 20_000 });
 
-    // Le battement du pilote arrive toutes les 30 s : l'ancien pilote le découvre au suivant.
-    await expect(page.getByText(/a pris la main depuis un autre PC/)).toBeVisible({ timeout: 60_000 });
+    // US-094 CA-4 : le serveur ferme la WebSocket de l'ancien pilote dès la prise de main (plus de battement de 30 s).
+    await expect(page.getByText(/a pris la main depuis un autre PC/)).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText(LIBELLE_PC)).toBeVisible();
     await expect(page.getByText('Lecture seule : cette épreuve est pilotée par un autre PC')).toBeVisible();
     await expect(page.getByRole('link', { name: 'Modifier', exact: true })).toHaveCount(0);

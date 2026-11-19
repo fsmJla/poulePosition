@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FERMETURES, MESSAGE_PING, messageBienvenue } from '@poule-position/protocole';
-import { demarrerConnexion, urlConnexion, type EtatConnexion, type SocketMinimale } from './connexion';
+import { FERMETURES, MESSAGE_PING, MESSAGE_PONG, messageBienvenue } from '@poule-position/protocole';
+import {
+  DELAI_PING,
+  DELAIS_RECONNEXION,
+  demarrerConnexion,
+  urlConnexion,
+  type Adresse,
+  type EtatConnexion,
+  type SocketMinimale,
+} from './connexion';
 
 /** Fausse WebSocket pilotée par le test. */
 class FausseSocket implements SocketMinimale {
@@ -35,14 +43,25 @@ class FausseSocket implements SocketMinimale {
 
 const derniere = () => FausseSocket.creees.at(-1) as FausseSocket;
 
-function demarrer(url: string | null = 'ws://serveur/epreuves/demo/connexion') {
+/** Laisse passer les promesses en attente (demande d'adresse asynchrone). */
+const laisserPasser = () => vi.advanceTimersByTimeAsync(0);
+
+async function demarrer(adresse: (() => Promise<Adresse>) | null = async () => ({ url: 'ws://serveur/connexion' })) {
   const etats: EtatConnexion[] = [];
+  const fins: number[] = [];
   const connexion = demarrerConnexion({
-    url,
+    adresse,
     surEtat: (etat) => etats.push(etat),
-    creerSocket: (adresse) => new FausseSocket(adresse),
+    surFin: (code) => fins.push(code),
+    creerSocket: (url) => new FausseSocket(url),
   });
-  return { etats, connexion };
+  await laisserPasser();
+  return { etats, fins, connexion };
+}
+
+async function connecter() {
+  derniere().ouvrir();
+  derniere().recevoir(messageBienvenue('demo'));
 }
 
 beforeEach(() => {
@@ -68,70 +87,134 @@ describe('urlConnexion', () => {
 });
 
 describe('demarrerConnexion', () => {
-  it('US-001 : sans adresse, l’état est « non configuré » et aucune connexion n’est tentée', () => {
-    const { etats } = demarrer(null);
+  it('US-001 : sans adresse, l’état est « non configuré » et aucune connexion n’est tentée', async () => {
+    const { etats } = await demarrer(null);
     expect(etats).toEqual(['non-configure']);
     expect(FausseSocket.creees).toHaveLength(0);
   });
 
-  it('US-001 CA-8 : passe de « connexion » à « connecté » à la réception de bienvenue', () => {
-    const { etats } = demarrer();
+  it('US-094 CA-1 : ouvre l’adresse obtenue et passe à « connecté » à la réception de bienvenue', async () => {
+    const { etats } = await demarrer(async () => ({ url: 'ws://serveur/connexion?ticket=t1' }));
+    expect(derniere().url).toBe('ws://serveur/connexion?ticket=t1');
     expect(etats).toEqual(['connexion']);
-    derniere().ouvrir();
-    derniere().recevoir(messageBienvenue('demo'));
+    await connecter();
     expect(etats).toEqual(['connexion', 'connecte']);
   });
 
-  it('US-001 hors ligne : une coupure donne « injoignable » puis une reconnexion avec délai croissant', () => {
-    const { etats } = demarrer();
-    derniere().couper();
-    expect(etats.at(-1)).toBe('injoignable');
-    expect(FausseSocket.creees).toHaveLength(1);
-    vi.advanceTimersByTime(1000);
-    expect(FausseSocket.creees).toHaveLength(2);
-    derniere().couper();
-    vi.advanceTimersByTime(1000);
-    expect(FausseSocket.creees).toHaveLength(2);
-    vi.advanceTimersByTime(1000);
-    expect(FausseSocket.creees).toHaveLength(3);
-    derniere().ouvrir();
-    derniere().recevoir(messageBienvenue('demo'));
+  it('US-094 CA-3 : une coupure donne « injoignable » puis des reconnexions à 1, 2, 4, 8, 16 puis 30 s', async () => {
+    const adresses: string[] = [];
+    const { etats } = await demarrer(async () => {
+      adresses.push(`ticket-${adresses.length + 1}`);
+      return { url: `ws://serveur/connexion?ticket=${adresses.at(-1)}` };
+    });
+    expect(DELAIS_RECONNEXION).toEqual([1_000, 2_000, 4_000, 8_000, 16_000, 30_000]);
+    for (const [rang, delai] of [1_000, 2_000, 4_000, 8_000, 16_000, 30_000, 30_000].entries()) {
+      derniere().couper();
+      expect(etats.at(-1)).toBe('injoignable');
+      await vi.advanceTimersByTimeAsync(delai - 1);
+      expect(FausseSocket.creees).toHaveLength(rang + 1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(FausseSocket.creees).toHaveLength(rang + 2);
+    }
+    // Chaque tentative redemande une adresse : le ticket de 60 s n'est jamais réutilisé.
+    expect(new Set(FausseSocket.creees.map(({ url }) => url)).size).toBe(FausseSocket.creees.length);
+    await connecter();
     expect(etats.at(-1)).toBe('connecte');
-  });
-
-  it('envoie un ping toutes les 30 s tant que la connexion est ouverte', () => {
-    demarrer();
-    derniere().ouvrir();
-    vi.advanceTimersByTime(30_000);
-    vi.advanceTimersByTime(30_000);
-    expect(derniere().envoyes).toEqual([MESSAGE_PING, MESSAGE_PING]);
     derniere().couper();
-    vi.advanceTimersByTime(30_000);
-    expect(FausseSocket.creees[0]?.envoyes).toHaveLength(2);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(FausseSocket.creees).toHaveLength(9);
   });
 
-  it('ne se reconnecte pas après une connexion remplacée ou exclue', () => {
-    const { etats } = demarrer();
-    derniere().couper(FERMETURES.REMPLACEE);
-    vi.advanceTimersByTime(60_000);
-    expect(FausseSocket.creees).toHaveLength(1);
+  it('US-094 CA-3 : envoie un ping toutes les 15 s ; deux pongs manqués coupent la connexion', async () => {
+    const { etats } = await demarrer();
+    await connecter();
+    const socket = derniere();
+    await vi.advanceTimersByTimeAsync(DELAI_PING);
+    socket.recevoir(MESSAGE_PONG);
+    await vi.advanceTimersByTimeAsync(DELAI_PING);
+    expect(socket.envoyes).toEqual([MESSAGE_PING, MESSAGE_PING]);
+    // Plus de pong : le ping suivant part, puis la connexion est tenue pour perdue.
+    await vi.advanceTimersByTimeAsync(DELAI_PING);
+    expect(etats.at(-1)).toBe('connecte');
+    await vi.advanceTimersByTimeAsync(DELAI_PING);
     expect(etats.at(-1)).toBe('injoignable');
+    expect(socket.fermee).toBe(true);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(FausseSocket.creees).toHaveLength(2);
+    // La vieille socket peut se fermer plus tard : sans effet.
+    socket.couper();
+    expect(FausseSocket.creees).toHaveLength(2);
   });
 
-  it('ignore un message invalide sans changer d’état', () => {
-    const { etats } = demarrer();
+  it('US-094 : sans adresse pour l’instant (hors ligne), réessaie plus tard ; plus pilote, arrête', async () => {
+    let reponse: Adresse = { attendre: true };
+    const { etats } = await demarrer(async () => reponse);
+    expect(etats.at(-1)).toBe('injoignable');
+    expect(FausseSocket.creees).toHaveLength(0);
+    reponse = { url: 'ws://serveur/connexion' };
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(FausseSocket.creees).toHaveLength(1);
+    reponse = { arreter: true };
+    derniere().couper();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(FausseSocket.creees).toHaveLength(1);
+  });
+
+  it('US-094 CA-4 : ne se reconnecte pas après une connexion remplacée, exclue ou une main prise, et le signale', async () => {
+    for (const code of [FERMETURES.REMPLACEE, FERMETURES.EXCLUE, FERMETURES.MAIN_PRISE]) {
+      FausseSocket.creees = [];
+      const { etats, fins } = await demarrer();
+      derniere().couper(code);
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(FausseSocket.creees).toHaveLength(1);
+      expect(etats.at(-1)).toBe('injoignable');
+      expect(fins).toEqual([code]);
+    }
+  });
+
+  it('ignore un message invalide sans changer d’état', async () => {
+    const { etats } = await demarrer();
     derniere().ouvrir();
     derniere().recevoir('pas du json');
     expect(etats).toEqual(['connexion']);
   });
 
-  it('arreter ferme la socket et annule toute reconnexion', () => {
-    const { connexion } = demarrer();
+  it('arreter ferme la socket et annule toute reconnexion', async () => {
+    const { connexion } = await demarrer();
     const socket = derniere();
     connexion.arreter();
     expect(socket.fermee).toBe(true);
     socket.couper();
-    vi.advanceTimersByTime(60_000);
+    await vi.advanceTimersByTimeAsync(60_000);
     expect(FausseSocket.creees).toHaveLength(1);
+  });
+
+  it('US-094 CA-3 : relancer abandonne la socket et repart du premier délai', async () => {
+    const { etats, connexion } = await demarrer();
+    await connecter();
+    derniere().couper();
+    await vi.advanceTimersByTimeAsync(1_000);
+    derniere().couper();
+    // Deuxième coupure : le délai suivant serait de 2 s ; relancer revient à 1 s.
+    connexion.relancer();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(FausseSocket.creees).toHaveLength(3);
+    const courante = derniere();
+    connexion.relancer();
+    expect(courante.fermee).toBe(true);
+    expect(etats.at(-1)).toBe('injoignable');
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(FausseSocket.creees).toHaveLength(4);
+    connexion.arreter();
+    connexion.relancer();
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(FausseSocket.creees).toHaveLength(4);
+  });
+
+  it('une adresse en échec compte comme une attente', async () => {
+    const { etats } = await demarrer(async () => {
+      throw new Error('réseau');
+    });
+    expect(etats.at(-1)).toBe('injoignable');
   });
 });
