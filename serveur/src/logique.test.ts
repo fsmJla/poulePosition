@@ -118,6 +118,7 @@ describe('analyserChemin', () => {
     const id = '0b5e2c1a-9f3d-4c7e-8a21-5d6f7e8a9b0c';
     expect(analyserChemin(`/epreuves/${id}/pilote`)).toEqual({ route: 'pilote', epreuveId: id });
     expect(analyserChemin(`/epreuves/${id}/ticket`)).toEqual({ route: 'ticket', epreuveId: id });
+    expect(analyserChemin(`/epreuves/${id}/vue`)).toEqual({ route: 'vue', epreuveId: id });
     expect(analyserChemin(`/epreuves/${id}/presence`)).toBeNull();
     expect(analyserChemin('/epreuves/Demo/pilote')).toBeNull();
   });

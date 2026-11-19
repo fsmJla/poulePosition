@@ -4,10 +4,17 @@
 // US-022 (ADR-0016) : copie du journal envoyée par le pilote, ajoutée lot par lot, et appareil pilote.
 // US-094 (ADR-0028) : WebSocket du pilote, ouverte avec un ticket vérifié par le Worker ; elle fait sa présence.
 import { DurableObject } from 'cloudflare:workers';
-import { FERMETURES, messageBienvenue, messageErreur, MESSAGE_PING, MESSAGE_PONG } from '@poule-position/protocole';
+import {
+  analyserMessageClient,
+  FERMETURES,
+  messageBienvenue,
+  messageErreur,
+  messageVue,
+  MESSAGE_PING,
+  MESSAGE_PONG,
+} from '@poule-position/protocole';
 import type { DemandeEnvoi, DemandePriseDeMain } from '@poule-position/protocole';
 import type { Evenement } from '@poule-position/domaine';
-import { erreurMessageClient } from './logique';
 import {
   deciderAjout,
   deciderPriseDeMain,
@@ -27,8 +34,12 @@ const LIGNE_UNIQUE = 'courante';
 interface AttacheSocket {
   role: 'pilote';
   appareil: string;
+  epreuveId: string;
   ouverteLe: number;
 }
+
+/** US-095 : étiquette des sockets qui reçoivent la vue de saisie (smartphones des arbitres et des tireurs, US-097). */
+export const ETIQUETTE_SAISIE = 'saisie';
 
 /** Étiquette des sockets d'un appareil pilote (une seule à la fois). */
 const etiquettePilote = (appareil: string) => `pilote:${appareil}`;
@@ -44,6 +55,8 @@ export class Epreuve extends DurableObject<Env> {
     const { sql } = this.ctx.storage;
     sql.exec(`CREATE TABLE IF NOT EXISTS evenements (seq INTEGER PRIMARY KEY, contenu TEXT NOT NULL)`);
     sql.exec(`CREATE TABLE IF NOT EXISTS pilote (cle TEXT PRIMARY KEY, appareil TEXT NOT NULL)`);
+    // US-095 : dernière vue de saisie publiée par le pilote, gardée pour les smartphones qui se connectent.
+    sql.exec(`CREATE TABLE IF NOT EXISTS vue (cle TEXT PRIMARY KEY, contenu TEXT NOT NULL)`);
     // US-094 : la présence vient de la WebSocket du pilote ; la table des battements (US-029) n'existe plus.
     sql.exec(`DROP TABLE IF EXISTS presence`);
   }
@@ -174,14 +187,47 @@ export class Epreuve extends DurableObject<Env> {
       serveur.close(FERMETURES.EXCLUE, 'Pas le pilote');
       return new Response(null, { status: 101, webSocket: client });
     }
-    serveur.serializeAttachment({ role: 'pilote', appareil, ouverteLe: Date.now() } satisfies AttacheSocket);
+    serveur.serializeAttachment({ role: 'pilote', appareil, epreuveId, ouverteLe: Date.now() } satisfies AttacheSocket);
     this.fermer(etiquette, FERMETURES.REMPLACEE, 'Connexion remplacée', serveur);
     serveur.send(messageBienvenue(epreuveId));
     return new Response(null, { status: 101, webSocket: client });
   }
 
+  /** US-095 CA-2 : dernière vue de saisie publiée (son texte JSON), ou null. */
+  derniereVue(): string | null {
+    const [ligne] = this.ctx.storage.sql
+      .exec<{ contenu: string }>('SELECT contenu FROM vue WHERE cle = ?', LIGNE_UNIQUE)
+      .toArray();
+    return ligne?.contenu ?? null;
+  }
+
+  /**
+   * US-095 CA-1, CA-2 et CA-4 : seul le pilote en place publie la vue de saisie de son épreuve ; le DO la garde (sans la
+   * lire ni la recalculer) et la diffuse aux smartphones connectés. Tout autre message est refusé.
+   */
   override async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
-    ws.send(messageErreur(erreurMessageClient(message)));
+    const analyse = analyserMessageClient(message);
+    if (!analyse.ok) {
+      ws.send(messageErreur(analyse.erreur));
+      return;
+    }
+    const attache = ws.deserializeAttachment() as AttacheSocket | null;
+    const { vue } = analyse.message;
+    const duPilote = attache?.role === 'pilote' && attache.appareil === this.etat().piloteAppareil;
+    if (!duPilote || vue.epreuveId !== attache.epreuveId) {
+      ws.send(messageErreur('TYPE_INTERDIT'));
+      return;
+    }
+    const texte = JSON.stringify(vue);
+    this.ctx.storage.sql.exec('INSERT OR REPLACE INTO vue (cle, contenu) VALUES (?, ?)', LIGNE_UNIQUE, texte);
+    const diffusion = messageVue(vue);
+    for (const socket of this.ctx.getWebSockets(ETIQUETTE_SAISIE)) {
+      try {
+        socket.send(diffusion);
+      } catch {
+        // socket en cours de fermeture
+      }
+    }
   }
 
   override async webSocketClose(ws: WebSocket): Promise<void> {

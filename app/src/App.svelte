@@ -11,6 +11,7 @@
   import { estLocale, ouvrirStockage, type SessionAppareil } from './lib/stockage';
   import { creerSynchronisation } from './lib/synchronisation';
   import { creerPresencePilote } from './lib/presence-pilote';
+  import { vueSaisie } from '@poule-position/domaine';
   import { creerAccueil } from './lib/accueil';
   import { creerClientCompetitions } from './lib/competitions';
   import { creerClientManifestations } from './lib/manifestations';
@@ -77,7 +78,18 @@
   const publication = creerClientPublic({ urlServeur: urlHttp(urlServeur) });
   const accueil = creerAccueil({ journal, synchronisation, manifestations, competitions });
   /** US-094 : WebSocket du pilote, une par épreuve pilotée ici qui se tire aujourd'hui (ADR-0028). */
-  const presence = creerPresencePilote({ urlServeur, synchronisation });
+  const presence = creerPresencePilote({
+    urlServeur,
+    synchronisation,
+    // US-095 : vue de saisie publiée pour les smartphones, calculée à partir du journal local.
+    vueDe: async (epreuveId) => {
+      const { epreuve } = await journal.lire(epreuveId);
+      if (!epreuve) return null;
+      const copie = await competitions.copie();
+      const competition = copie?.competitions.find(({ id }) => id === epreuve.rattachement.competitionId);
+      return vueSaisie(epreuve, competition?.nom ?? null);
+    },
+  });
   let horsLignePilote = $state(false);
   presence.surEtat((horsLigne) => (horsLignePilote = horsLigne));
   /** Faux tant que la session gardée n'est pas relue : évite d'afficher une page puis d'en changer. */
@@ -114,7 +126,10 @@
     if (!avecSession) return;
     const arreter = presence.surveiller();
     // Une épreuve qui vient d'arriver sur le serveur ouvre sa WebSocket sans attendre la revue suivante.
-    const arreterEnvoi = synchronisation.surEnvoi(() => void presence.actualiser());
+    // US-095 CA-1 : un lot accepté (score, retrait…) republie la vue de saisie de son épreuve.
+    const arreterEnvoi = synchronisation.surEnvoi((epreuveId) => {
+      void presence.actualiser().then(() => presence.publier(epreuveId));
+    });
     return () => {
       arreter();
       arreterEnvoi();

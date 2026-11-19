@@ -6,6 +6,7 @@ import type { Evenement } from '@poule-position/domaine';
 import {
   MESSAGE_PING,
   MESSAGE_PONG,
+  messageVue,
   deriverCle,
   preparerDemandeInstallation,
   type EpreuveIndexee,
@@ -474,5 +475,65 @@ describe('WebSocket du pilote (US-094, ADR-0028)', () => {
     await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
     const battement = await appeler(worker, 'POST', `/epreuves/${id}/presence`, jeton, { appareilId: 'pc-a' });
     expect(battement.status).toBe(404);
+  });
+});
+
+describe('vue de saisie (US-095)', () => {
+  const vueDe = (epreuveId: string, nom = 'M13 Dames') => ({
+    epreuveId,
+    nom,
+    arme: 'sabre' as const,
+    categorie: 'M13',
+    sexe: 'dames' as const,
+    date: null,
+    competition: null,
+    touches: 5,
+    droits: {
+      arbitreSaisitScores: true,
+      tireurSaisitPoule: true,
+      tireurSaisitTableau: true,
+      correctionScore: 'arbitre' as const,
+    },
+    lancees: false,
+    poules: [],
+  });
+  const lireVue = async (epreuveId: string) =>
+    (
+      (await (await appeler(worker, 'GET', `/epreuves/${epreuveId}/vue`, jeton)).json()) as {
+        ok: boolean;
+        vue: unknown;
+      }
+    ).vue;
+
+  it('CA-1 et CA-2 : le pilote publie la vue, le DO garde la dernière', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    expect(await lireVue(id)).toBeNull();
+    const { socket, prochain } = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    await prochain();
+    socket.send(messageVue(vueDe(id)));
+    socket.send(messageVue(vueDe(id, 'Nom changé')));
+    await attendre(200);
+    expect(await lireVue(id)).toEqual(vueDe(id, 'Nom changé'));
+    socket.close();
+  });
+
+  it('CA-4 : une vue mal formée, ou d’une autre épreuve, est refusée et n’est pas gardée', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    const { socket, prochain } = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    await prochain();
+    socket.send(JSON.stringify({ v: 1, type: 'vue', vue: { epreuveId: id } }));
+    expect(JSON.parse(await prochain())).toMatchObject({ type: 'erreur', code: 'MESSAGE_INVALIDE' });
+    socket.send(messageVue(vueDe('autre-epreuve')));
+    expect(JSON.parse(await prochain())).toMatchObject({ type: 'erreur', code: 'TYPE_INTERDIT' });
+    expect(await lireVue(id)).toBeNull();
+    socket.close();
+  });
+
+  it('CA-2 : la lecture de la vue demande une session', async () => {
+    const id = crypto.randomUUID();
+    expect((await appeler(worker, 'GET', `/epreuves/${id}/vue`, '')).status).toBe(401);
+    expect((await appeler(worker, 'POST', `/epreuves/${id}/vue`, jeton, {})).status).toBe(405);
   });
 });

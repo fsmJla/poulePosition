@@ -49,6 +49,7 @@ export type Route =
   | { route: 'evenements'; epreuveId: string }
   | { route: 'pilote'; epreuveId: string }
   | { route: 'ticket'; epreuveId: string }
+  | { route: 'vue'; epreuveId: string }
   | { route: 'connexion'; epreuveId: string }
   | { route: 'fichiers' }
   | { route: 'fichier'; proprietaire: ProprietaireFichier; id: string; sorte: SorteFichier }
@@ -97,9 +98,15 @@ export function analyserChemin(chemin: string): Route | null {
     if (!connu || !MOTIF_EPREUVE.test(id) || !(SORTES_FICHIER as readonly string[]).includes(sorte)) return null;
     return { route: 'fichier', proprietaire: proprietaire as ProprietaireFichier, id, sorte: sorte as SorteFichier };
   }
-  const morceaux = /^\/epreuves\/([^/]+)\/(connexion|evenements|pilote|ticket)$/.exec(chemin);
+  const morceaux = /^\/epreuves\/([^/]+)\/(connexion|evenements|pilote|ticket|vue)$/.exec(chemin);
   if (!morceaux?.[1] || !MOTIF_EPREUVE.test(morceaux[1])) return null;
-  const route = { connexion: 'connexion', evenements: 'evenements', pilote: 'pilote', ticket: 'ticket' } as const;
+  const route = {
+    connexion: 'connexion',
+    evenements: 'evenements',
+    pilote: 'pilote',
+    ticket: 'ticket',
+    vue: 'vue',
+  } as const;
   return { route: route[morceaux[2] as keyof typeof route], epreuveId: morceaux[1] };
 }
 

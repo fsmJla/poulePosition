@@ -2,7 +2,8 @@
 // se tire aujourd'hui ; le serveur sait ainsi s'il est connecté. Hors ligne, rien ne s'arrête : la compétition continue
 // sur ce PC et la socket se rouvre d'elle-même au retour du réseau. Quand un autre PC prend la main, le serveur ferme la
 // socket (`4004`) et la perte de main est traitée aussitôt.
-import { FERMETURES } from '@poule-position/protocole';
+import type { VueSaisie } from '@poule-position/domaine';
+import { FERMETURES, messageVue } from '@poule-position/protocole';
 import { demarrerConnexion, urlConnexion, type Adresse, type EtatConnexion, type SocketMinimale } from './connexion';
 import type { PerteDeMain } from './synchronisation';
 
@@ -22,6 +23,8 @@ export interface OptionsPresence {
   creerSocket?: (url: string) => SocketMinimale;
   /** Intervalle entre deux revues de la liste des épreuves (locale, sans réseau). */
   intervalle?: number;
+  /** US-095 : vue de saisie actuelle d'une épreuve, calculée à partir du journal local ; null si elle est inconnue. */
+  vueDe?: (epreuveId: string) => Promise<VueSaisie | null>;
 }
 
 /** Revue de la liste des épreuves à présence : locale, sans requête. */
@@ -35,8 +38,14 @@ export function creerPresencePilote({
   synchronisation,
   creerSocket,
   intervalle = INTERVALLE_REVUE,
+  vueDe = async () => null,
 }: OptionsPresence) {
-  const connexions = new Map<string, { arreter: () => void; relancer: () => void; etat: EtatConnexion }>();
+  const connexions = new Map<
+    string,
+    { arreter: () => void; relancer: () => void; envoyer: (texte: string) => boolean; etat: EtatConnexion }
+  >();
+  /** US-095 : dernière vue envoyée par épreuve ; une vue identique n'est pas renvoyée (une écriture de moins au serveur). */
+  const publiees = new Map<string, string>();
   const ecouteurs = new Set<(horsLigne: boolean) => void>();
   let horsLigne = false;
 
@@ -50,8 +59,20 @@ export function creerPresencePilote({
   const arreter = (epreuveId: string) => {
     connexions.get(epreuveId)?.arreter();
     connexions.delete(epreuveId);
+    publiees.delete(epreuveId);
     signaler();
   };
+
+  /** US-095 CA-1 : publie la vue de saisie de l'épreuve sur sa WebSocket, si elle a changé depuis le dernier envoi. */
+  async function publier(epreuveId: string): Promise<void> {
+    const connexion = connexions.get(epreuveId);
+    if (!connexion) return;
+    const vue = await vueDe(epreuveId);
+    if (!vue) return;
+    const texte = messageVue(vue);
+    if (publiees.get(epreuveId) === texte) return;
+    if (connexion.envoyer(texte)) publiees.set(epreuveId, texte);
+  }
 
   function ouvrir(epreuveId: string) {
     const base = urlConnexion(urlServeur, epreuveId);
@@ -65,14 +86,28 @@ export function creerPresencePilote({
       }
       return { attendre: true };
     };
-    const connexion = { arreter: () => {}, relancer: () => {}, etat: 'connexion' as EtatConnexion };
+    const connexion = {
+      arreter: () => {},
+      relancer: () => {},
+      envoyer: (() => false) as (texte: string) => boolean,
+      etat: 'connexion' as EtatConnexion,
+    };
     connexions.set(epreuveId, connexion);
-    const { arreter: fermer, relancer } = demarrerConnexion({
+    const {
+      arreter: fermer,
+      relancer,
+      envoyer,
+    } = demarrerConnexion({
       adresse: base ? adresse : null,
       creerSocket,
       surEtat: (etat) => {
         connexion.etat = etat;
         signaler();
+      },
+      // US-095 CA-3 : à chaque (re)connexion, la vue complète est republiée.
+      surConnecte: () => {
+        publiees.delete(epreuveId);
+        void publier(epreuveId);
       },
       surFin: (code) => {
         arreter(epreuveId);
@@ -82,6 +117,7 @@ export function creerPresencePilote({
     });
     connexion.arreter = fermer;
     connexion.relancer = relancer;
+    connexion.envoyer = envoyer;
   }
 
   /** Ouvre les sockets des épreuves devenues concernées, ferme celles qui ne le sont plus. */
@@ -93,6 +129,8 @@ export function creerPresencePilote({
 
   return {
     actualiser,
+
+    publier,
 
     /** CA-3 : vrai quand une épreuve pilotée ici n'a plus sa connexion au serveur (« la compétition continue »). */
     horsLigne: () => horsLigne,

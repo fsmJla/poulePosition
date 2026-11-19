@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FERMETURES, MESSAGE_PING, messageBienvenue } from '@poule-position/protocole';
+import type { VueSaisie } from '@poule-position/domaine';
 import type { SocketMinimale } from './connexion';
 import { creerPresencePilote, INTERVALLE_REVUE, type SynchronisationPresence } from './presence-pilote';
 
@@ -186,5 +187,79 @@ describe('présence du pilote (US-094, ADR-0028)', () => {
     pilote.surveiller(new EventTarget());
     await vi.advanceTimersByTimeAsync(0);
     expect(FausseSocket.creees).toHaveLength(0);
+  });
+});
+
+describe('publication de la vue de saisie (US-095)', () => {
+  const vueDe = (nom: string): VueSaisie => ({
+    epreuveId: 'e1',
+    nom,
+    arme: 'sabre',
+    categorie: null,
+    sexe: null,
+    date: null,
+    competition: null,
+    touches: 5,
+    droits: {
+      arbitreSaisitScores: true,
+      tireurSaisitPoule: true,
+      tireurSaisitTableau: true,
+      correctionScore: 'arbitre',
+    },
+    lancees: false,
+    poules: [],
+  });
+  const vuesEnvoyees = (socket: FausseSocket) =>
+    socket.envoyes.filter((m) => m.includes('"type":"vue"')).map((m) => (JSON.parse(m) as { vue: VueSaisie }).vue.nom);
+
+  function avecVue() {
+    let nom = 'Version 1';
+    const { synchronisation } = synchronisationSimulee(['e1']);
+    const pilote = creerPresencePilote({
+      urlServeur: 'wss://serveur.test',
+      synchronisation,
+      creerSocket: (url) => new FausseSocket(url),
+      vueDe: async (id) => (id === 'e1' ? vueDe(nom) : null),
+    });
+    return { pilote, changer: (autre: string) => (nom = autre) };
+  }
+
+  it('CA-3 : la vue complète part dès que la connexion est établie, et de nouveau à chaque reconnexion', async () => {
+    const { pilote } = avecVue();
+    pilote.surveiller(new EventTarget());
+    await vi.advanceTimersByTimeAsync(0);
+    const premiere = socketDe('e1');
+    premiere.accueillir('e1');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(vuesEnvoyees(premiere)).toEqual(['Version 1']);
+    premiere.couper();
+    await vi.advanceTimersByTimeAsync(1_000);
+    socketDe('e1').accueillir('e1');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(vuesEnvoyees(socketDe('e1'))).toEqual(['Version 1']);
+  });
+
+  it('CA-1 : un changement republie la vue ; une vue identique ne repart pas', async () => {
+    const { pilote, changer } = avecVue();
+    pilote.surveiller(new EventTarget());
+    await vi.advanceTimersByTimeAsync(0);
+    socketDe('e1').accueillir('e1');
+    await vi.advanceTimersByTimeAsync(0);
+    await pilote.publier('e1');
+    changer('Version 2');
+    await pilote.publier('e1');
+    expect(vuesEnvoyees(socketDe('e1'))).toEqual(['Version 1', 'Version 2']);
+  });
+
+  it('hors ligne : rien ne part sans connexion ; la vue attend la reconnexion', async () => {
+    const { pilote } = avecVue();
+    pilote.surveiller(new EventTarget());
+    await vi.advanceTimersByTimeAsync(0);
+    await pilote.publier('e1');
+    expect(vuesEnvoyees(socketDe('e1'))).toEqual([]);
+    await pilote.publier('inconnue');
+    socketDe('e1').accueillir('e1');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(vuesEnvoyees(socketDe('e1'))).toEqual(['Version 1']);
   });
 });
