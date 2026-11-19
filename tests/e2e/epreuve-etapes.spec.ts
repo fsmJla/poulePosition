@@ -256,7 +256,7 @@ test('US-058 CA-8 : conforme à la planche 3 (navigation, entête, cartes du Ré
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 1360, height: 1000 });
   await page.emulateMedia({ colorScheme: 'light' });
-  const { competition } = await creerEpreuvePilote(page);
+  await creerEpreuvePilote(page);
   await expect(fil(page).getByRole('link')).toHaveCount(3, { timeout: 20_000 });
   await expect(page.getByText(/^Sabre( · |$)/)).toBeVisible();
 
