@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-103, US-099
 - **Branche / PR :** `us/US-104-mes-matchs-tireur`
 
@@ -106,3 +106,4 @@ Aucune. La section « Autres matchs de ma poule · à tirer » a été validée 
 | 2026-11-19 | Créée |
 | 2026-11-19 | En cours sur `us/US-104-mes-matchs-tireur` (série, recette groupée) |
 | 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 796 tests, E2E `mes-matchs-tireur`, `acces-tireur`, `saisie-match`) |
+| 2026-11-19 | Recette groupée OK (preview `poule-position-7m49hwv8b`, serveur de preview déployé depuis `us/US-105-appareils-connectes`) : prochain match (« Votre prochain match · match 14 », « Dans environ 1 match »), classement provisoire avec sa ligne surlignée, matchs terminés vus de son côté (V 5–4, D 4–5…), « Autres matchs de ma poule » ; saisie du match 12 signée « tireur DUBOIS Chloé (t5) ». Mergée dans `dev` (#150) ; Terminée |

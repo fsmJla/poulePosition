@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F7, F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-099
 - **Branche / PR :** `us/US-100-saisies-recues-sur-le-pc`
 
@@ -91,3 +91,4 @@ Aucune.
 | 2026-11-19 | Créée |
 | 2026-11-19 | En cours sur `us/US-100-saisies-recues-sur-le-pc` (série, recette groupée) |
 | 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, 1 782 tests, E2E `saisies-recues`, `saisie-match`, `poules-saisie`) |
+| 2026-11-19 | Recette groupée OK (preview `poule-position-7m49hwv8b`, serveur de preview déployé depuis `us/US-105-appareils-connectes`) : la saisie du téléphone s'inscrit « Acceptée », signée « arbitre Recette (t4) », compteur « 1 appareil connecté », mise à jour en direct. Remarque : après une navigation interne vers Poules, une correction n'est apparue qu'au rechargement (non reproduit sur une page chargée ; à surveiller). Mergée dans `dev` (#146) ; Terminée |

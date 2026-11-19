@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F8 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-095, US-096
 - **Branche / PR :** `us/US-103-acces-tireur`
 
@@ -93,3 +93,4 @@ Aucune.
 | 2026-11-19 | Créée |
 | 2026-11-19 | En cours sur `us/US-103-acces-tireur` (série, recette groupée) |
 | 2026-11-19 | Implémentée ; en revue. Contrôles locaux verts (lint, typage, tests, E2E `acces-tireur`, `smartphone-arbitre`) |
+| 2026-11-19 | Recette groupée OK (preview `poule-position-7m49hwv8b`, serveur de preview déployé depuis `us/US-105-appareils-connectes`) : « Qui êtes-vous ? », recherche « dub » → « DUBOIS Chloé · SPUC · poule 1 », choix gardé au rechargement. Mergée dans `dev` (#149) ; Terminée |
