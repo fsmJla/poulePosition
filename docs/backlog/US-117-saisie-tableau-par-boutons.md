@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F10 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-111, US-112, US-091
 - **Branche / PR :** `us/US-117-saisie-tableau-par-boutons`
 
@@ -96,3 +96,4 @@ Aucune.
 | 2026-11-20 | Créée (retour de l'utilisateur sur la carte de saisie du tableau) ; passe En cours |
 | 2026-11-20 | Implémentée : boutons de score, 0 présélectionné, pastilles de piste ; passe En revue |
 | 2026-11-20 | Revue sur le canevas : variante 1 bis retenue (afficheur et pavé à la demande, deux choix = enregistré, actions en boutons) ; réimplémentée |
+| 2026-11-20 | Recette OK (groupée avec US-118) sur https://poule-position-git-us-us-118-saisies-ha-30c59b-fsmjlas-projects.vercel.app ; passe Terminée |

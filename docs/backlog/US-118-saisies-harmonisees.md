@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F7, F8 et F10 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-117, US-091, US-099, US-101, US-106
 - **Branche / PR :** `us/US-118-saisies-harmonisees`
 
@@ -110,3 +110,4 @@ Aucune.
 |---|---|
 | 2026-11-20 | Créée (harmonisation demandée par l'utilisateur, planches validées sur le canevas) ; Prête |
 | 2026-11-20 | Implémentée : `PaveScore` dans la saisie des poules sur PC (format « carte »), de poule et du tableau sur smartphone (format « téléphone ») ; le pavé dizaine + unité (`scoreDuPave`, `chiffrePermis`) disparaît ; passe En revue |
+| 2026-11-20 | Recette OK (groupée avec US-117) sur https://poule-position-git-us-us-118-saisies-ha-30c59b-fsmjlas-projects.vercel.app ; passe Terminée |
