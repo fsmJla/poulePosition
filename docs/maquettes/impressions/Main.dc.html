@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Étape Impressions</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#066f6c}a:hover{color:#044e4c}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 1360px; height: 1180px; box-sizing: border-box; background: #f7f4ef; color: #1c2b2a; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+
+<header style="display: flex; align-items: center; gap: 16px; height: 60px; padding: 0 24px; background: #2f4b4a; color: #f7f4ef">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 21px">Poule Position</span>
+<span style="flex: 0 1 440px; height: 40px; margin-left: 24px; display: flex; align-items: center; padding: 0 12px; border-radius: 10px; background: #f7f4ef; color: #55615f; font-size: 15px">Rechercher une épreuve, une compétition…</span>
+<span style="margin-left: auto; display: inline-flex; align-items: center; height: 44px; padding: 0 18px; border-radius: 10px; background: #0abab5; color: #0f1716; font-weight: 600">+ Créer</span>
+<span style="width: 40px; height: 40px; border-radius: 999px; background: #f7f4ef; color: #2f4b4a; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">JL</span>
+</header>
+
+<nav aria-label="Fil d'Ariane" style="padding: 18px 60px 0; font-size: 15px"><a href="#">Accueil</a> › <a href="#">Grand week-end du SPUC</a> › <a href="#">Championnats de Nouvelle-Aquitaine</a> › M13 Dames</nav>
+
+<div style="display: grid; grid-template-columns: 232px minmax(0, 1fr); gap: 24px; padding: 18px 60px 40px">
+<nav aria-label="Étapes de l'épreuve" style="align-self: start; display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid #e2dbd0; border-radius: 14px; background: #ffffff">
+<sc-for list="{{etapes}}" as="e" hint-placeholder-count="9">
+<a href="#" style="{{e.style}}"><span>{{e.nom}}</span><span style="font-size: 13px; color: #55615f">{{e.compte}}</span></a>
+</sc-for>
+</nav>
+
+<main style="display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 12px">
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 32px">M13 Dames</h1>
+<span style="padding: 2px 12px; border-radius: 999px; background: #dcefe5; color: #14573a; font-size: 14px; font-weight: 600">En cours</span>
+</div>
+<div>
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px">Impressions</h2>
+<p style="margin: 2px 0 0; color: #55615f">Tout s'imprime depuis ce PC, avec ou sans internet. Pour un PDF, choisissez « Enregistrer en PDF » dans la fenêtre d'impression.</p>
+</div>
+
+<sc-for list="{{groupes}}" as="g" hint-placeholder-count="3">
+<section style="border: 1px solid #e2dbd0; border-radius: 14px; background: #ffffff; overflow: hidden">
+<h3 style="margin: 0; padding: 10px 18px; border-bottom: 1px solid #e2dbd0; font-size: 15px; color: #55615f; font-weight: 600">{{g.titre}}</h3>
+<sc-for list="{{g.docs}}" as="d" hint-placeholder-count="3">
+<div style="{{d.ligneStyle}}">
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<p style="margin: 0; font-weight: 600">{{d.nom}}</p>
+<p style="margin: 0; font-size: 14px; color: #55615f">{{d.detail}}</p>
+</div>
+<div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end">
+<sc-for list="{{d.choix}}" as="c" hint-placeholder-count="0">
+<button type="button" aria-pressed="{{c.presse}}" style="{{c.style}}">{{c.nom}}</button>
+</sc-for>
+</div>
+<button type="button" disabled="{{d.indisponible}}" style="{{d.boutonStyle}}">{{d.bouton}}</button>
+</div>
+</sc-for>
+</section>
+</sc-for>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const etape = (nom, compte, active) => ({
+      nom, compte,
+      style: 'display: flex; justify-content: space-between; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px; text-decoration: none; color: #1c2b2a;' + (active ? 'background: #e3f1f0; font-weight: 600;' : '')
+    });
+    const etapes = [
+      etape('Résumé', ''), etape('Inscriptions', '24'), etape('Émargement', '16/24'), etape('Poules', '42/60'),
+      etape('Classement', 'provisoire'), etape('Tableau', ''), etape('Impressions', '', true), etape('Formule', ''), etape('Paramètres', '')
+    ];
+    const pastille = (nom, presse) => ({
+      nom, presse: presse ? 'true' : 'false',
+      style: 'min-height: 36px; padding: 0 12px; border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer;' +
+        (presse ? 'border: 1px solid #2f4b4a; background: #2f4b4a; color: #f7f4ef;' : 'border: 1px solid #7d8886; background: #ffffff; color: #1c2b2a;')
+    });
+    const doc = (nom, detail, choix, indisponible, bouton) => ({
+      nom, detail, choix: choix || [], indisponible: !!indisponible, bouton: bouton || 'Imprimer',
+      ligneStyle: 'display: grid; grid-template-columns: minmax(0, 1fr) auto 140px; align-items: center; gap: 16px; padding: 12px 18px; border-top: 1px solid #efe9e0;' + (indisponible ? 'color: #8d9694;' : ''),
+      boutonStyle: 'min-height: 44px; padding: 0 16px; border-radius: 10px; font-size: 15px; font-weight: 600;' +
+        (indisponible ? 'border: 1px dashed #b9b0a3; background: #ffffff; color: #6b7472; cursor: not-allowed;' : 'border: 1px solid #7d8886; background: #ffffff; color: #1c2b2a; cursor: pointer;')
+    });
+    const poules = [pastille('Toutes', true), pastille('1'), pastille('2'), pastille('3'), pastille('4')];
+    return {
+      etapes,
+      groupes: [
+        { titre: 'Avant les poules', docs: [
+          doc('Feuille de présence', '24 inscrites, pointées à l’émargement · case « Présente » et signature · 1 page'),
+          doc('QR codes des arbitres et des tireuses', 'Une page à afficher près des pistes (US-096)')
+        ] },
+        { titre: 'Poules', docs: [
+          doc('Feuilles de poule à remplir', 'Pour les arbitres : une page par poule, ordre des matchs, signature, QR code des arbitres', poules),
+          doc('Feuilles de poule avec résultats', 'À afficher : scores, victoires, indices et rangs provisoires', [pastille('Toutes', true), pastille('1'), pastille('2'), pastille('3'), pastille('4')]),
+          doc('Poules par piste', 'À afficher dans la salle : les 4 poules, leur piste et leurs tireuses sur une page'),
+          doc('Classement des poules', 'Provisoire · 42 matchs sur 60')
+        ] },
+        { titre: 'Tableau', docs: [
+          doc('Feuilles de match', 'Pour les arbitres : 2 par page, à couper ; les matchs à tirer du tour choisi', [pastille('Tableau de 32', true), pastille('de 16'), pastille('Quarts'), pastille('Demies'), pastille('Finale')]),
+          doc('Tableau', 'À afficher : l’arbre, de son premier tour à la finale, scores compris', [pastille('A4 paysage', true), pastille('A3 paysage')]),
+          doc('Classement final', 'Disponible après la finale', [], true)
+        ] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

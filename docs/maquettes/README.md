@@ -9,6 +9,7 @@ des écrans. Les couleurs et les polices restent celles de la charte « Calme r�
 | **IHM de l'organisateur** | Accueil, manifestation, épreuve, mode sélection, smartphone | 2026-11-11 | https://claude.ai/artifact/2PXJVMFmMrZGxb4X9aoc4V | [`ihm/`](ihm/) |
 | **Déroulé de l'épreuve** | Inscriptions, poules (constitution, ajustement, saisie), tableau, saisie sur smartphone | 2026-11-17 | https://claude.ai/artifact/Xb4Vs7ftyoEGUWXvDKJoBv | [`deroule/`](deroule/) |
 | **Saisie des scores** | Afficheur et pavé à la demande : tableau et poules sur le PC, poule et tableau sur smartphone (US-117, US-118) | 2026-11-20 | https://claude.ai/artifact/8u3AY5FxxKCkULtwobhd8b | [`deroule/`](deroule/) (sources `Saisie*.dc.html`) |
+| **Impressions** | Étape « Impressions » et les huit documents imprimés de l'épreuve (Epic 7, US-120 à US-128) | 2026-11-20 | https://claude.ai/artifact/G2APfbhZzKQFy4PCi2NQ3P | [`impressions/`](impressions/) |
 
 Les canevas sont privés (compte de l'utilisateur). Les dossiers `ihm/` et `deroule/` en gardent deux copies :
 
@@ -344,6 +345,28 @@ Principes communs :
 
 Les captures de référence de ces artboards ne sont pas dans le dépôt (le canevas n'est pas accessible au navigateur
 de test) : la recette compare l'écran au canevas ouvert par l'utilisateur.
+
+## Maquette « Impressions » (2026-11-20)
+
+Les documents imprimés de l'épreuve (F11, ADR-0009), avec les données de l'exemple « M13 Dames ». Les documents sont
+dessinés à la taille du papier (96 ppp : A4 portrait 794 × 1123, A4 paysage 1123 × 794), noir sur blanc. Les planches
+poursuivent la numérotation. Les captures ne sont pas dans le dépôt (le canevas n'est pas accessible au navigateur de
+test) : la recette compare l'écran ou l'aperçu d'impression au canevas.
+
+| N° | Planche | Source | Taille | Ce qu'elle fixe |
+|---|---|---|---|---|
+| 22 | Étape « Impressions » | `impressions/Main.dc.html` | 1360 × 1180 | Trois groupes (Avant les poules, Poules, Tableau), une ligne par document : nom, description, choix (poules, tour, format), « Imprimer » ; document indisponible grisé avec sa raison |
+| 23 | Feuille de présence | `impressions/Presence.dc.html` | A4 | Tri alphabétique ; n°, tireur, club, classement, case « Présente » (cochée si pointé), signature |
+| 24 | Feuille de poule à remplir | `impressions/PouleVierge.dc.html` | A4 | « Poule N · Piste P », QR code des arbitres, grille vide, ordre des matchs avec cases de score, cadres Arbitre et Fin de poule ; une page par poule |
+| 25 | Feuille de poule avec résultats | `impressions/PouleResultats.dc.html` | A4 | Grille remplie, V, V/M, TD, TR, Ind, Rg, « Provisoire · n matchs sur N », scores de l'ordre des matchs |
+| 26 | Poules par piste | `impressions/PoulesPistes.dc.html` | A4 | Un cadre par poule (« Poule N · Piste P »), ses tireurs, en gros caractères, pour la salle |
+| 27 | Classement des poules | `impressions/ClassementPoules.dc.html` | A4 | Colonnes de la planche 20, « Provisoire » ou « Définitif » |
+| 28 | Feuilles de match du tableau | `impressions/FeuillesMatch.dc.html` | A4 | Deux feuilles par page, « couper ici » ; match, piste, tireurs gauche et droite, cases de touches, vainqueur, au temps, priorité, trois signatures |
+| 29 | Tableau à afficher | `impressions/TableauImprime.dc.html` | A4 paysage | Colonnes de tours, scores, vainqueur en gras, état des matchs ; 4 tours par page (A3 : une page jusqu'au tableau de 32) |
+| 30 | Classement final | `impressions/ClassementFinal.dc.html` | A4 | Podium, puis place, tireur, club, tour d'élimination, rang après poules |
+
+Principes : chaque document porte le même en-tête (Poule Position, épreuve, arme, compétition, date) et le même pied
+(« Imprimé le … à … », page n / N) ; il reste noir sur blanc quel que soit le thème ; il s'imprime sans internet.
 
 ## Règle pour les nouvelles US
 

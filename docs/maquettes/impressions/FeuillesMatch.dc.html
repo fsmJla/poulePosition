@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Feuilles de match du tableau</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 794px; height: 1123px; box-sizing: border-box; padding: 36px 48px 28px; background: #ffffff; color: #111111; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.35; display: flex; flex-direction: column">
+<sc-for list="{{feuilles}}" as="f" hint-placeholder-count="2">
+<section style="{{f.style}}">
+<header style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-bottom: 8px; border-bottom: 2px solid #2f4b4a">
+<div>
+<p style="margin: 0; font-size: 12px; color: #555555">Poule Position · M13 Dames · Sabre · Championnats de Nouvelle-Aquitaine · 22/11/2026</p>
+<h1 style="margin: 2px 0 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; color: #2f4b4a">{{f.titre}}</h1>
+</div>
+<p style="margin: 0; font-size: 18px; font-weight: 700">{{f.piste}}</p>
+</header>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-top: 14px">
+<sc-for list="{{f.tireuses}}" as="t" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<p style="margin: 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #444444">{{t.cote}}</p>
+<p style="margin: 0; font-size: 18px"><span style="color: #444444">({{t.rang}})</span> <strong>{{t.nom}}</strong> {{t.prenom}}</p>
+<p style="margin: 0; font-size: 13px; color: #444444">{{t.club}}</p>
+<div style="display: flex; align-items: center; gap: 10px; margin-top: 6px">
+<span style="font-size: 13px">Touches</span>
+<span style="width: 72px; height: 52px; border: 2px solid #111111"></span>
+</div>
+</div>
+</sc-for>
+</div>
+
+<div style="display: flex; gap: 24px; margin-top: 14px; font-size: 13px">
+<span>Vainqueur : ………………………………………………</span>
+<span>☐ au temps</span>
+<span>☐ à égalité, priorité à : ………………………</span>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px">
+<sc-for list="{{signatures}}" as="s" hint-placeholder-count="3">
+<div style="height: 64px; box-sizing: border-box; padding: 6px 8px; border: 1px solid #555555; font-size: 12px; font-weight: 700">{{s}}</div>
+</sc-for>
+</div>
+<p style="margin: 10px 0 0; font-size: 12px; color: #444444">Rapportez la feuille à la table de marque dès la fin du match. Le vainqueur va au {{f.suite}}.</p>
+</section>
+<sc-if value="{{f.coupe}}" hint-placeholder-val="{{ true }}">
+<p style="margin: 0; padding: 6px 0; border-bottom: 2px dashed #777777; text-align: center; font-size: 12px; color: #555555">couper ici</p>
+</sc-if>
+</sc-for>
+<footer style="margin-top: auto; display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid #888888; font-size: 12px; color: #444444">
+<span>Imprimé le 22/11/2026 à 12 h 31 · tableau de 32 · matchs à tirer</span>
+<span>Page 3 / 8</span>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":794,"height":1123}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const f = (titre, piste, a, b, coupe) => ({
+      titre, piste, coupe, suite: 'tableau de 16',
+      style: 'display: flex; flex-direction: column; height: 500px; box-sizing: border-box; padding: 16px 0;',
+      tireuses: [Object.assign({ cote: 'À gauche' }, a), Object.assign({ cote: 'À droite' }, b)]
+    });
+    return {
+      signatures: ['Arbitre', 'Tireuse à gauche', 'Tireuse à droite'],
+      feuilles: [
+        f('Tableau de 32 · match 5', 'Piste 3 · ___ h ___', { rang: 12, nom: 'GIRARD', prenom: 'Léna', club: 'Bayonne' }, { rang: 21, nom: 'ANDRE', prenom: 'Juliette', club: 'Bayonne' }, true),
+        f('Tableau de 32 · match 6', 'Piste 4 · ___ h ___', { rang: 14, nom: 'GARCIA', prenom: 'Lou', club: 'Mérignac' }, { rang: 19, nom: 'FAURE', prenom: 'Camille', club: 'Bordeaux BEC' }, false)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
