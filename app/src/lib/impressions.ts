@@ -25,7 +25,8 @@ export const CATALOGUE_IMPRESSIONS: readonly LigneImpression[] = [
   { document: 'poulesResultats', groupe: 'poules', choix: 'poules', livre: true },
   // US-124 : les poules par piste.
   { document: 'poulesPistes', groupe: 'poules', choix: null, livre: true },
-  { document: 'classementPoules', groupe: 'poules', choix: null, livre: false },
+  // US-125 : le classement après les poules.
+  { document: 'classementPoules', groupe: 'poules', choix: null, livre: true },
   { document: 'feuillesMatch', groupe: 'tableau', choix: 'tours', livre: false },
   { document: 'tableau', groupe: 'tableau', choix: 'format', livre: false },
   { document: 'classementFinal', groupe: 'tableau', choix: null, livre: false },

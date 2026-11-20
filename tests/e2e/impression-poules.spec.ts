@@ -140,3 +140,32 @@ test('US-124 CA-1 : les poules par piste, une page pour 4 poules, sans réseau',
   await page.screenshot({ path: 'test-results/impression-poules-pistes.png', fullPage: true });
   await context.setOffline(false);
 });
+
+test('US-125 CA-1 et CA-2 : le classement après les poules, depuis le menu « ⋯ » du Classement', async ({ page }) => {
+  test.setTimeout(120_000);
+  await compterImpressions(page);
+  await seConnecter(page);
+  await importerEpreuve(page, [
+    ...poulesJouees({ aTirer: 6 }),
+    { type: 'TireurRetireDesPoules', donnees: { tireurId: 't4', motif: 'abandon' } },
+  ]);
+  await page
+    .getByRole('navigation', { name: 'Étapes de l’épreuve' })
+    .getByRole('link', { name: /^Classement/ })
+    .click();
+  await page
+    .getByRole('button', { name: /^Autres actions pour / })
+    .first()
+    .click();
+  await page.getByRole('menuitem', { name: /Imprimer le classement/ }).click();
+  const feuille = page.getByRole('region', { name: 'Classement après les poules · Page 1 / 1' });
+  await expect(feuille).toBeVisible();
+  await expect.poll(() => impressions(page)).toBe(1);
+  // CA-1 : une ligne par tireur, « Provisoire » tant qu'un match reste à tirer.
+  await expect(feuille.getByRole('rowheader')).toHaveCount(24);
+  await expect(feuille).toContainText(/Provisoire · \d+ matchs sur 60/);
+  // CA-2 : le tireur retiré est en fin de liste, sans rang, avec son motif.
+  await expect(feuille.getByRole('row').last()).toContainText('—');
+  await expect(feuille.getByRole('row').last()).toContainText('Abandon');
+  await page.screenshot({ path: 'test-results/impression-classement-poules.png', fullPage: true });
+});

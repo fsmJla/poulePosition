@@ -2150,6 +2150,11 @@ export const textes = {
       pied: (presents: number, total: number) =>
         `${presents} présent${presents > 1 ? 's' : ''} sur ${total} au moment de l’impression`,
     },
+    // US-125 : classement après les poules (planche 27).
+    classementPoules: {
+      titre: 'Classement après les poules',
+      definitif: (total: number) => `Définitif · ${total} matchs sur ${total}`,
+    },
     // US-124 : poules par piste (planche 26).
     poulesPistes: {
       titre: 'Les poules',

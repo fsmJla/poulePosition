@@ -19,6 +19,7 @@
   import ImpressionPoulesVierges from '../composants/impressions/ImpressionPoulesVierges.svelte';
   import ImpressionPoulesResultats from '../composants/impressions/ImpressionPoulesResultats.svelte';
   import ImpressionPoulesPistes from '../composants/impressions/ImpressionPoulesPistes.svelte';
+  import ImpressionClassementPoules from '../composants/impressions/ImpressionClassementPoules.svelte';
   import type { AccesQrClient } from '../lib/acces-qr';
   import type { Accueil } from '../lib/accueil';
   import { documentLivre } from '../lib/impressions';
@@ -135,6 +136,14 @@
           />
         {:else if document === 'poulesPistes'}
           <ImpressionPoulesPistes poules={source.poules.poules} tireurs={parId} {contexte} {imprimeLe} />
+        {:else if document === 'classementPoules' && epreuve}
+          <ImpressionClassementPoules
+            etat={source.poules}
+            tireurs={parId}
+            touches={epreuve.formule.touchesPoules}
+            {contexte}
+            {imprimeLe}
+          />
         {/if}
         <!-- Les documents de l'Epic 7 (US-121 à US-128) se branchent ici. -->
       </div>

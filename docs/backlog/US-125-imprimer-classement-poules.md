@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F11 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-120, US-092
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-125-imprimer-classement-poules`
 
 ## Récit
 
@@ -58,3 +58,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (Epic 7, planches 22 à 30 validées par l'utilisateur) ; Prête |
+| 2026-11-20 | Implémentée : `ImpressionClassementPoules` (34 lignes par page), menu « ⋯ » du Classement ; passe En revue |

@@ -453,7 +453,7 @@
   "tests/e2e/poules-retrait.spec.ts": ["poules-retrait"],
   "app/src/composants/AttenteEnvoi.svelte": ["poules-envoi", "emargement", "inscriptions"],
   "tests/e2e/poules-envoi.spec.ts": ["poules-envoi"],
-  "app/src/pages/Classement.svelte": ["poules-classement"],
+  "app/src/pages/Classement.svelte": ["poules-classement", "impression-poules"],
   "tests/e2e/poules-classement.spec.ts": ["poules-classement"],
   "app/src/composants/PaveScore.svelte": [
     "tableau-saisir",
@@ -475,5 +475,6 @@
   "app/src/composants/impressions/ImpressionPresence.svelte": ["impression-presence"],
   "app/src/composants/impressions/ImpressionPoulesVierges.svelte": ["impression-poules"],
   "app/src/composants/impressions/ImpressionPoulesResultats.svelte": ["impression-poules"],
-  "app/src/composants/impressions/ImpressionPoulesPistes.svelte": ["impression-poules"]
+  "app/src/composants/impressions/ImpressionPoulesPistes.svelte": ["impression-poules"],
+  "app/src/composants/impressions/ImpressionClassementPoules.svelte": ["impression-poules"]
 }
