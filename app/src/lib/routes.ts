@@ -19,6 +19,7 @@ export type Page =
   | 'emargementEpreuve'
   | 'poulesEpreuve'
   | 'classementEpreuve'
+  | 'tableauEpreuve'
   | 'parametresEpreuve'
   | 'impressionAcces'
   | 'grilleEpreuves'
@@ -57,6 +58,7 @@ export const CHEMINS = Object.freeze({
     | 'emargementEpreuve'
     | 'poulesEpreuve'
     | 'classementEpreuve'
+    | 'tableauEpreuve'
     | 'parametresEpreuve'
     | 'impressionAcces'
     | 'grilleEpreuves'
@@ -162,6 +164,11 @@ export function cheminClassementEpreuve(epreuveId: string): string {
   return `/epreuves/${epreuveId}/classement`;
 }
 
+/** US-109 : tableau d'une épreuve. */
+export function cheminTableauEpreuve(epreuveId: string): string {
+  return `/epreuves/${epreuveId}/tableau`;
+}
+
 /** US-032 : paramètres d'une épreuve. */
 export function cheminParametresEpreuve(epreuveId: string): string {
   return `/epreuves/${epreuveId}/parametres`;
@@ -223,6 +230,7 @@ const MOTIF_INSCRIPTIONS = /^\/epreuves\/([^/]+)\/inscriptions$/;
 const MOTIF_EMARGEMENT = /^\/epreuves\/([^/]+)\/emargement$/;
 const MOTIF_POULES = /^\/epreuves\/([^/]+)\/poules$/;
 const MOTIF_CLASSEMENT = /^\/epreuves\/([^/]+)\/classement$/;
+const MOTIF_TABLEAU = new RegExp('^/epreuves/([^/]+)/tableau$');
 const MOTIF_PARAMETRES = /^\/epreuves\/([^/]+)\/parametres$/;
 const MOTIF_IMPRESSION_ACCES = /^\/epreuves\/([^/]+)\/acces\/imprimer$/;
 
@@ -240,6 +248,7 @@ const RESERVEES: readonly Page[] = [
   'emargementEpreuve',
   'poulesEpreuve',
   'classementEpreuve',
+  'tableauEpreuve',
   'parametresEpreuve',
   'impressionAcces',
   'grilleEpreuves',
@@ -293,6 +302,7 @@ function pageDe(chemin: string): {
       | 'emargementEpreuve'
       | 'poulesEpreuve'
       | 'classementEpreuve'
+      | 'tableauEpreuve'
       | 'parametresEpreuve'
       | 'impressionAcces'
       | 'grilleEpreuves'
@@ -337,6 +347,8 @@ function pageDe(chemin: string): {
   if (classement) {
     return MOTIF_IDENTIFIANT.test(classement) ? { page: 'classementEpreuve', epreuveId: classement } : null;
   }
+  const tableau = MOTIF_TABLEAU.exec(chemin)?.[1];
+  if (tableau) return MOTIF_IDENTIFIANT.test(tableau) ? { page: 'tableauEpreuve', epreuveId: tableau } : null;
   const impressionAcces = MOTIF_IMPRESSION_ACCES.exec(chemin)?.[1];
   if (impressionAcces) {
     return MOTIF_IDENTIFIANT.test(impressionAcces) ? { page: 'impressionAcces', epreuveId: impressionAcces } : null;

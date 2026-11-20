@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F9 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-108, US-092, US-058, US-064
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-109-creer-le-tableau`
 
 ## Récit
 
@@ -91,6 +91,14 @@ rechargement).
 - Pas d'annulation du tableau en P1 : la confirmation de CA-5 prévient que les poules sont figées ; une US « Supprimer
   le tableau » pourra suivre si le besoin apparaît.
 
+- Implémentation (2026-11-20) : libellés au masculin générique (« 24 qualifiés, 8 exempts »), comme la colonne « Tireur »
+  d'US-092 ; la planche dit « qualifiées, exemptes » d'après son exemple. Le sous-titre nomme le premier tour (« Tableau de
+  32 », ou « Quarts de finale » pour un tableau de 8).
+- Implémentation : une fois le tableau créé, l'étape montre la carte « Premier tour » sans action, en attendant l'arbre
+  d'US-110 ; la barre d'onglets du smartphone grise elle aussi « Tableau » avant le lancement des poules.
+- Implémentation : les E2E importent une épreuve aux poules jouées par un fichier `.poule.json` (US-035), fabriqué par
+  `tests/e2e/tableau-outils.ts`, au lieu de saisir 60 matchs par l'interface.
+
 ## Questions bloquantes
 
 Aucune.
@@ -106,3 +114,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (spécification de l'Epic 6) ; hypothèses et écarts validés par l'utilisateur, passe à Prête |
+| 2026-11-20 | Implémentée : page « Tableau » (aperçu, ex aequo, création), poules figées, prochaine étape ; passe En revue |

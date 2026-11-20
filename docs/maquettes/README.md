@@ -223,6 +223,11 @@ ouvre leur liste (ou le mode sélection, d'office), avec un choix de compétitio
 **Livré par US-063 (filtres de la liste) :** sous le titre de l'accueil, quatre filtres en pilules (999 px) : « À venir et en cours » (par défaut),
 « Terminées », « Archivées », « Toutes », chacun avec son nombre d'épreuves ; le filtre choisi est en `--marque`. Ils remplacent la case « Afficher les archives ».
 
+**Livré par US-109 (créer le tableau) :** l'étape « Tableau » (icône Arbre de tableau), grisée jusqu'au lancement des poules ;
+un avis tant que des matchs de poule restent à tirer, puis l'aperçu du premier tour (rangs entre parenthèses, exempts, ex aequo
+signalés par un Triangle d'alerte) et l'action principale « Créer le tableau ». L'état « avant création » n'a pas de planche :
+écart validé, déclaré dans l'US.
+
 ## Maquette « Déroulé de l'épreuve » (2026-11-17)
 
 Elle prolonge la maquette « IHM de l'organisateur » (mêmes entête, fil d'Ariane, navigation par étapes, charte et

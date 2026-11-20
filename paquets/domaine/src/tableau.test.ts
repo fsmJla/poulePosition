@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { projeter, tableauDe, verifierEvenement, type Epreuve, type Evenement, type Proposition } from './journal';
+import {
+  contexteTableau,
+  projeter,
+  tableauDe,
+  verifierEvenement,
+  type Epreuve,
+  type Evenement,
+  type Proposition,
+} from './journal';
 import { etatPoulesVide } from './poules';
 import {
   classementFinal,
@@ -9,6 +17,7 @@ import {
   pisteProposee,
   placementFIE,
   qualifiesDesPoules,
+  situationDuTableau,
   structureTableau,
   tableauTermine,
   tailleTableau,
@@ -487,6 +496,33 @@ describe('US-108 CA-10 : classement final', () => {
     );
     const lignes = classementFinal(epreuve.poules!, tableauDe(epreuve), 5, false);
     expect(lignes[0]).toMatchObject({ tireurId: 'a', place: 1, etat: 'classe' });
+  });
+});
+
+describe('US-109 CA-6 et US-115 CA-6 : situation du tableau pour la prochaine étape', () => {
+  const situation = (...p: Proposition[]) => situationDuTableau(contexteTableau(epreuveDe(...p)));
+  it('CA-6 : rien tant que les poules ne sont pas terminées, puis « à créer », puis « à terminer »', () => {
+    expect(situation(...poulesJouees(CINQ, { aTirer: 1 }))).toBeNull();
+    expect(situation(...poulesJouees(CINQ))).toBe('aCreer');
+    expect(situation(...avecTableau)).toBeNull();
+    const fini = [
+      ...avecTableau,
+      score('8-2', 'd', 'e', 15, 3),
+      score('4-1', 'a', 'd', 15, 3),
+      score('4-2', 'c', 'b', 15, 10),
+      score('2-1', 'a', 'c', 15, 14),
+    ];
+    expect(situation(...fini)).toBe('aTerminer');
+    expect(situation(...fini, { type: 'EpreuveTerminee', donnees: {} })).toBeNull();
+  });
+  it('CA-6 : un seul qualifié, l’épreuve est à terminer sans tableau', () => {
+    expect(
+      situation(
+        ...poulesJouees(['a', 'b', 'c']),
+        { type: 'TireurRetireDesPoules', donnees: { tireurId: 'b', motif: 'abandon' } },
+        { type: 'TireurRetireDesPoules', donnees: { tireurId: 'c', motif: 'abandon' } },
+      ),
+    ).toBe('aTerminer');
   });
 });
 

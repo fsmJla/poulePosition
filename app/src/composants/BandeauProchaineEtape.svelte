@@ -13,6 +13,8 @@
     enCours?: boolean;
     surPublier: () => void;
     surCopier: () => void;
+    /** US-109 et US-115 : « Créer le tableau » et « Terminer l'épreuve » ouvrent l'étape « Tableau ». */
+    surTableau?: () => void;
     /** Retour de la copie : « Lien copié » ou le motif de l'échec. */
     retourCopie?: { ok: boolean; message: string } | null;
     /** Erreur de l'action (publier), avec le message d'US-031 (cas limite). */
@@ -25,6 +27,7 @@
     enCours = false,
     surPublier,
     surCopier,
+    surTableau = () => undefined,
     retourCopie = null,
     erreur = null,
   }: Proprietes = $props();
@@ -40,7 +43,9 @@
   </div>
   {#if peutAgir}
     <div class="action">
-      {#if etape === 'publier'}
+      {#if etape === 'creerTableau' || etape === 'terminer'}
+        <button type="button" onclick={surTableau}><Icone nom="arbre" />{t.boutons[etape]}</button>
+      {:else if etape === 'publier'}
         <button type="button" onclick={surPublier} disabled={enCours}>
           <Icone nom="oeil" />{enCours ? textes.publication.enCours : t.boutons.publier}
         </button>

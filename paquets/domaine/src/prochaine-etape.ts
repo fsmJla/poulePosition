@@ -3,11 +3,16 @@
 import type { Statut } from './epreuve';
 
 /** Étapes que le bandeau « Prochaine étape » sait proposer. Un Epic qui livre une étape ajoute la sienne ici. */
-export type ProchaineEtape = 'publier' | 'partager';
+export type ProchaineEtape = 'creerTableau' | 'terminer' | 'publier' | 'partager';
 
 export interface SituationEpreuve {
   statut: Statut;
   publiee: boolean;
+  /**
+   * US-109 et US-115 : où en est le tableau : `aCreer` (poules terminées, pas de tableau), `aTerminer` (tous les matchs
+   * réglés), sinon absent.
+   */
+  tableau?: 'aCreer' | 'aTerminer' | null;
 }
 
 /**
@@ -18,8 +23,10 @@ export interface SituationEpreuve {
  * dans le déroulement (avant « partager »), avec leurs tests. « Partager » n'est proposé que tant qu'aucune étape
  * suivante n'est livrée : c'est la dernière de la liste.
  */
-export function prochaineEtape({ statut, publiee }: SituationEpreuve): ProchaineEtape | null {
+export function prochaineEtape({ statut, publiee, tableau }: SituationEpreuve): ProchaineEtape | null {
   if (statut === 'terminee' || statut === 'archivee') return null;
+  if (tableau === 'aCreer') return 'creerTableau';
+  if (tableau === 'aTerminer') return 'terminer';
   if (!publiee) return 'publier';
   return 'partager';
 }

@@ -34,6 +34,7 @@ describe('étapes de l’épreuve (US-058)', () => {
       'emargement',
       'poules',
       'classement',
+      'tableau',
       'formule',
       'parametres',
     ]);
@@ -45,7 +46,8 @@ describe('étapes de l’épreuve (US-058)', () => {
     expect(par.emargement).toBe(`/epreuves/${id}/emargement`);
     expect(par.classement).toBe(`/epreuves/${id}/classement`);
     expect(par.inscriptions).toBe(`/epreuves/${id}/inscriptions`);
-    expect(par.tableau).toBeNull();
+    expect(par.tableau).toBe(`/epreuves/${id}/tableau`);
+    expect(par.impressions).toBeNull();
     expect(par.resume).toBe(`/epreuves/${id}`);
     expect(par.formule).toBe(`/epreuves/${id}/formule`);
     expect(par.parametres).toBe(`/epreuves/${id}/parametres`);

@@ -16,6 +16,16 @@ describe('prochaineEtape (US-064)', () => {
     expect(prochaineEtape({ statut: 'enCours', publiee: true })).toBe('partager');
   });
 
+  it('US-109 CA-6 : des poules terminées sans tableau proposent de créer le tableau', () => {
+    expect(prochaineEtape({ statut: 'enCours', publiee: true, tableau: 'aCreer' })).toBe('creerTableau');
+    expect(prochaineEtape({ statut: 'enCours', publiee: false, tableau: 'aCreer' })).toBe('creerTableau');
+  });
+
+  it('US-115 CA-6 : tous les matchs réglés proposent de terminer l’épreuve', () => {
+    expect(prochaineEtape({ statut: 'enCours', publiee: true, tableau: 'aTerminer' })).toBe('terminer');
+    expect(prochaineEtape({ statut: 'terminee', publiee: true, tableau: 'aTerminer' })).toBeNull();
+  });
+
   it('US-064 CA-5 : une épreuve terminée ou archivée n’a pas de prochaine étape', () => {
     for (const publiee of [false, true]) {
       expect(prochaineEtape({ statut: 'terminee', publiee })).toBeNull();

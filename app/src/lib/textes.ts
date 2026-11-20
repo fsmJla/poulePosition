@@ -41,6 +41,14 @@ function decompteTexte({ manifestations, competitions, epreuves }: Decompte): st
   return parties.filter((partie) => partie !== null).join(', ');
 }
 
+/** Nom d'un tour du tableau (US-109) : « Tableau de 32 », « Quarts de finale », « Demi-finales », « Finale ». */
+function nomDuTour(taille: number): string {
+  if (taille === 2) return 'Finale';
+  if (taille === 4) return 'Demi-finales';
+  if (taille === 8) return 'Quarts de finale';
+  return `Tableau de ${taille}`;
+}
+
 export const textes = {
   /** Nom affiché de l'application (US-014) ; le nom technique reste poulePosition. */
   nomApplication: 'Poule Position',
@@ -1514,10 +1522,17 @@ export const textes = {
     prochaineEtape: {
       titre: 'Prochaine étape',
       phrases: {
+        creerTableau: 'Les poules sont terminées : créer le tableau',
+        terminer: 'Tous les matchs du tableau sont tirés : terminer l’épreuve',
         publier: 'Publier l’épreuve pour ouvrir le suivi en direct',
         partager: 'Partager le lien public',
       },
-      boutons: { publier: 'Publier', copier: 'Copier le lien' },
+      boutons: {
+        publier: 'Publier',
+        copier: 'Copier le lien',
+        creerTableau: 'Créer le tableau',
+        terminer: 'Terminer l’épreuve',
+      },
       /** Lecture seule : l'étape est annoncée sans bouton (CA-4). */
       depuisLePilote: 'À faire depuis le PC pilote.',
       lienCopie: 'Lien copié',
@@ -1902,6 +1917,8 @@ export const textes = {
     pouleVide: 'Aucun tireur : glissez-en un ici, ou « ⋯ › Déplacer vers… »',
     lectureSeule: 'Lecture seule : un autre PC est le pilote',
     archivee: 'Épreuve archivée : lecture seule',
+    /** US-109 CA-5 : une fois le tableau créé, les poules sont figées. */
+    tableauCree: 'Le tableau est créé : les poules sont en lecture seule',
     repartiesAnnonce: (n: number) => `${n} poule${n > 1 ? 's' : ''} constituée${n > 1 ? 's' : ''}`,
     repartirANouveau: 'Répartir à nouveau',
     // US-087 (planche 9).
@@ -2030,6 +2047,69 @@ export const textes = {
       TIREUR_RETIRE: 'Ce tireur est retiré des poules',
       EPREUVE_ARCHIVEE: 'L’épreuve est archivée',
       AUTRE: 'Les poules n’ont pas pu être enregistrées sur cet appareil',
+    } as Record<string, string>,
+  },
+  /** US-109 à US-115 : l'étape « Tableau » (planche 11). */
+  tableau: {
+    titre: 'Tableau',
+    etats: { aCreer: 'À créer', enCours: 'En cours', termine: 'Terminé' },
+    /** CA-3 (US-109) : « Tableau de 32 · 24 qualifiés, 8 exempts · pas de match pour la 3e place ». */
+    sousTitre: (taille: number, qualifies: number, troisieme: boolean) => {
+      const exempts = taille - qualifies;
+      const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
+      const effectif =
+        exempts > 0
+          ? `${pluriel(qualifies, 'qualifié')}, ${pluriel(exempts, 'exempt')}`
+          : pluriel(qualifies, 'qualifié');
+      return `${nomDuTour(taille)} · ${effectif} · ${troisieme ? 'match pour la 3e place' : 'pas de match pour la 3e place'}`;
+    },
+    nomDuTour,
+    /** Libellé court d'un tour, dans les pilules (planche 11 : « Quarts », « Demies »). */
+    pilule: (taille: number) =>
+      taille === 8 ? 'Quarts' : taille === 4 ? 'Demies' : taille === 2 ? 'Finale' : `Tableau de ${taille}`,
+    troisiemePlace: '3e place',
+    poulesEnCours: (regles: number, total: number) =>
+      `Le tableau se crée quand toutes les poules sont terminées · ${regles} match${regles > 1 ? 's' : ''} sur ${total}`,
+    voirPoules: 'Voir les poules',
+    unSeulQualifie: 'Un seul tireur qualifié : il remporte l’épreuve.',
+    premierTour: 'Premier tour',
+    exempt: 'Exempt',
+    contre: 'contre',
+    exaequo: (rang: number, noms: string) =>
+      `${rang === 1 ? '1er' : `${rang}e`} ex aequo : ${noms} · départagés par tirage au sort à la création du tableau`,
+    nonQualifies: 'Non qualifiés',
+    nonQualifiesDetail: 'retirés des poules',
+    creer: 'Créer le tableau',
+    confirmerCreation: 'Créer le tableau ?',
+    detailCreation:
+      'Les ex aequo sont tirés au sort et les scores des poules ne pourront plus être modifiés. Le tableau se joue ensuite match par match.',
+    creeAnnonce: 'Tableau créé',
+    legende:
+      '(n) : rang au classement après poules. Le vainqueur passe au tour suivant dès que le score est validé ; le classement final s’affiche après la finale.',
+    lectureSeule: 'Lecture seule : un autre PC est le pilote',
+    poulesFigees: 'Le tableau est créé : les poules sont figées.',
+    imprimer: 'Imprimer le tableau',
+    imprimerAVenir: 'À venir (impressions, E7)',
+    menu: 'Tableau',
+    erreurs: {
+      POULES_NON_TERMINEES: 'Toutes les poules ne sont pas terminées',
+      TABLEAU_EXISTE: 'Le tableau est déjà créé',
+      TABLEAU_ABSENT: 'Le tableau n’est pas encore créé',
+      QUALIFIES_INVALIDES: 'Les qualifiés ont changé : rechargez la page',
+      QUALIFIES_INSUFFISANTS: 'Il faut au moins deux qualifiés pour un tableau',
+      TABLEAU_TROP_GRAND: 'Un tableau compte au plus 256 tireurs',
+      MATCH_INCONNU: 'Ce match n’existe pas dans le tableau',
+      MATCH_NON_PRET: 'Ce match attend encore un tireur',
+      MATCH_REGLE: 'Ce match est déjà réglé',
+      MATCH_SUIVANT_REGLE: 'Le match suivant est déjà réglé : corrigez-le d’abord',
+      PISTE_INVALIDE: 'Piste invalide (1 à 99)',
+      SCORE_INVALIDE: 'Score invalide',
+      MOTIF_INVALIDE: 'Motif invalide',
+      RETRAIT_ABSENT: 'Aucun retrait à annuler sur ce match',
+      MATCHS_A_REGLER: 'Des matchs restent à régler',
+      EPREUVE_TERMINEE: 'L’épreuve est terminée',
+      EPREUVE_ARCHIVEE: 'L’épreuve est archivée',
+      AUTRE: 'Le tableau n’a pas pu être enregistré sur cet appareil',
     } as Record<string, string>,
   },
   /** US-083 : import du fichier d'inscription de la Fédération (XML Engarde / BellePoule). */

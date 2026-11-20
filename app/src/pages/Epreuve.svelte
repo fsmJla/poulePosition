@@ -3,7 +3,7 @@
   // le PC pilote, l'écriture est réservée à un seul onglet (US-021) et les modifications en attente d'envoi sont
   // comptées (US-022) ; sur un autre PC, c'est une copie en lecture seule, datée.
   import { onMount } from 'svelte';
-  import { prochaineEtape, type Epreuve } from '@poule-position/domaine';
+  import { contexteTableau, prochaineEtape, situationDuTableau, type Epreuve } from '@poule-position/domaine';
   import FichiersJoints from '../composants/FichiersJoints.svelte';
   import Lien from '../composants/Lien.svelte';
   import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
@@ -25,6 +25,7 @@
     cheminDupliquerEpreuve,
     cheminFormuleEpreuve,
     cheminModificationEpreuve,
+    cheminTableauEpreuve,
     CHEMINS,
   } from '../lib/routes';
   import { nomConfirme, peutSupprimer } from '../lib/suppression';
@@ -363,7 +364,13 @@
   const etapeSuivante = $derived(etapeDe());
 
   function etapeDe() {
-    return epreuve ? prochaineEtape({ statut: epreuve.statut, publiee: epreuve.publiee }) : null;
+    return epreuve
+      ? prochaineEtape({
+          statut: epreuve.statut,
+          publiee: epreuve.publiee,
+          tableau: situationDuTableau(contexteTableau(epreuve)),
+        })
+      : null;
   }
   let retourCopie: { ok: boolean; message: string } | null = $state(null);
 
@@ -480,6 +487,7 @@
         enCours={publicationEnCours}
         surPublier={() => changerPublication(true)}
         surCopier={copierLien}
+        surTableau={() => naviguer(cheminTableauEpreuve(epreuveId))}
         {retourCopie}
         erreur={erreurPublication}
       />
