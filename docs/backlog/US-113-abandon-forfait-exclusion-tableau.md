@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F10 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-111
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-113-abandon-forfait-exclusion-tableau`
 
 ## Récit
 
@@ -59,6 +59,10 @@ Disponible sur le PC pilote sans réseau (journal local). Testé par un test uni
 - Les touches portées avant un abandon ne sont pas enregistrées (comme dans Engarde, le match est noté « abandon »).
 - Le retrait se déclare sur le PC seulement ; un arbitre le signale à la table (pas de retrait par smartphone en P1).
 
+- Implémentation (2026-11-20) : « Annuler le retrait » est dans le menu « ⋯ » de la carte d'un match réglé par un retrait,
+  grisé avec son motif quand le match suivant est réglé ; la carte et l'arbre écrivent le motif à la place du score
+  (« Forfait de … »). Le classement final (CA-3) est vérifié par US-115.
+
 ## Questions bloquantes
 
 Aucune.
@@ -72,3 +76,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (spécification de l'Epic 6) ; hypothèses et écarts validés par l'utilisateur, passe à Prête |
+| 2026-11-20 | Implémentée : fenêtre `RetraitTableau`, annulation du retrait ; passe En revue |
