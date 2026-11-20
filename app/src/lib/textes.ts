@@ -2129,6 +2129,24 @@ export const textes = {
     appelAnnonce: (match: string, piste: number) => `${match} appelé sur la piste ${piste}`,
     pisteRetireeAnnonce: (match: string) => `${match} : piste retirée`,
     menuMatch: (match: string) => match,
+    /** US-113 : abandon, forfait, exclusion dans le tableau. */
+    retraitTitre: (match: string) => `Abandon, forfait, exclusion · ${match}`,
+    retraitQui: 'Tireur retiré',
+    retraitConstat: (motif: string, nom: string) => `${motif} de ${nom}`,
+    retraitMotif: 'Motif',
+    retraitEffet: (nom: string, suite: string) => `${nom} ${suite}`,
+    suiteDuVainqueur: (tourSuivant: number | null, troisieme: boolean) => {
+      if (troisieme) return 'est 3e';
+      if (tourSuivant === null) return 'remporte l’épreuve';
+      if (tourSuivant === 2) return 'passe en finale';
+      if (tourSuivant === 4) return 'passe en demi-finale';
+      if (tourSuivant === 8) return 'passe en quart de finale';
+      return `passe au tableau de ${tourSuivant}`;
+    },
+    retirer: 'Retirer',
+    annulerRetrait: 'Annuler le retrait',
+    retraitAnnonce: (nom: string, motif: string) => `${nom} : ${motif.toLowerCase()} enregistré`,
+    retraitAnnuleAnnonce: (match: string) => `${match} : retrait annulé`,
     poulesEnCours: (regles: number, total: number) =>
       `Le tableau se crée quand toutes les poules sont terminées · ${regles} match${regles > 1 ? 's' : ''} sur ${total}`,
     voirPoules: 'Voir les poules',

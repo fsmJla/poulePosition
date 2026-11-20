@@ -16,6 +16,9 @@
     tireursDe,
     tirerAuSort,
     tousLesMatchs,
+    matchsSuivants,
+    placesAffichees,
+    type MotifRetrait,
     pisteProposee,
     type DonneesScoreTableau,
     type Epreuve,
@@ -34,7 +37,8 @@
   import { cheminPoulesEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
-  import { appelerMatch, creerTableau, saisirScoreTableau } from '../lib/tableau';
+  import { appelerMatch, creerTableau, retirerDuTableau, saisirScoreTableau } from '../lib/tableau';
+  import RetraitTableau from '../composants/RetraitTableau.svelte';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
@@ -215,6 +219,34 @@
     void synchronisation.envoyer(epreuveId).then(() => recharger());
   }
 
+  /** US-113 : la fenêtre « Abandon, forfait, exclusion… » est ouverte. */
+  let retraitOuvert = $state(false);
+
+  /** US-113 CA-2 : retire un tireur du match de la carte ; renvoie le motif d'un refus, ou null. */
+  async function retirer(tireurId: string, motif: MotifRetrait): Promise<string | null> {
+    if (!matchCarte) return null;
+    const resultat = await retirerDuTableau(journal, epreuveId, matchCarte.id, { tireurId, motif }, contexte);
+    await recharger();
+    if (!resultat.ok) return t.erreurs[resultat.erreur] ?? t.erreurs.AUTRE!;
+    annonce = t.retraitAnnonce(nom(tireurId), t.motifCourt(motif));
+    void synchronisation.envoyer(epreuveId).then(() => recharger());
+    return null;
+  }
+
+  /** US-113 CA-4 : annule le retrait du match de la carte. */
+  async function annulerLeRetrait() {
+    if (!matchCarte) return;
+    const resultat = await retirerDuTableau(journal, epreuveId, matchCarte.id, null, contexte);
+    await recharger();
+    if (!resultat.ok) {
+      erreur = t.erreurs[resultat.erreur] ?? t.erreurs.AUTRE!;
+      return;
+    }
+    erreur = null;
+    annonce = t.retraitAnnuleAnnonce(t.titreMatch(matchCarte.tour, matchCarte.numero));
+    void synchronisation.envoyer(epreuveId).then(() => recharger());
+  }
+
   /** US-111 CA-2 et CA-6 : écrit le score ; la carte passe au match suivant à saisir. */
   async function saisirScore(donnees: DonneesScoreTableau): Promise<boolean> {
     const resultat = await saisirScoreTableau(journal, epreuveId, donnees, contexte);
@@ -339,7 +371,43 @@
               </div>
             {/if}
           {/snippet}
+          {#snippet actions()}
+            {#if matchCarte && modifiable && matchCarte.etat === 'aTirer'}
+              <button type="button" class="lien" onclick={() => (retraitOuvert = true)}>{t.retrait}</button>
+            {:else if matchCarte && modifiable && matchCarte.retrait}
+              {@const suivant = matchsSuivants(structure, matchCarte.id).find((m) => m.etat === 'regle')}
+              <MenuActions
+                id="menu-retrait"
+                nom={t.titreMatch(matchCarte.tour, matchCarte.numero)}
+                actions={[
+                  {
+                    libelle: t.annulerRetrait,
+                    surChoix: () => void annulerLeRetrait(),
+                    ...(suivant
+                      ? { indisponible: t.corrigerDabord(t.titreMatch(suivant.tour, suivant.numero).toLowerCase()) }
+                      : {}),
+                  },
+                ]}
+              />
+            {/if}
+          {/snippet}
         </CarteSaisieTableau>
+        {#if retraitOuvert && matchCarte.haut.tireurId && matchCarte.bas.tireurId}
+          {@const [p1, p2] = placesAffichees(matchCarte).places}
+          <RetraitTableau
+            match={t.titreMatch(matchCarte.tour, matchCarte.numero)}
+            tireurs={[
+              { id: p1.tireurId!, nom: nom(p1.tireurId) },
+              { id: p2.tireurId!, nom: nom(p2.tireurId) },
+            ]}
+            suite={t.suiteDuVainqueur(
+              matchsSuivants(structure, matchCarte.id).find((m) => m.tour !== 0)?.tour ?? null,
+              matchCarte.tour === 0,
+            )}
+            valider={retirer}
+            fermer={() => (retraitOuvert = false)}
+          />
+        {/if}
       {/if}
       <ArbreTableau
         {structure}
@@ -668,6 +736,17 @@
     background: var(--surface);
     color: var(--texte);
     font: inherit;
+  }
+
+  .lien {
+    min-height: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--accent);
+    font-size: 0.875rem;
+    font-weight: 400;
+    text-decoration: underline;
   }
 
   .message {

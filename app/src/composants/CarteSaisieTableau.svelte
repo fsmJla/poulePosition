@@ -119,6 +119,9 @@
           : t.provenance(...(haut.provenance!.split('-').map(Number) as [number, number]), match.tour === 0),
       )}
     </p>
+  {:else if match.retrait}
+    <p class="attente">{t.retraitConstat(t.motifCourt(match.retrait.motif), nom(match.retrait.tireurId))}</p>
+    <div class="actions">{@render actions?.()}</div>
   {:else}
     <form id="saisie-tableau" class="score" onsubmit={valider} novalidate>
       <label class="tireur">

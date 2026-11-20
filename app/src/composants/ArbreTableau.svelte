@@ -70,7 +70,7 @@
     <span class="score">
       {#if match.retrait?.tireurId === place.tireurId && place.tireurId}{t.motifCourt(
           match.retrait.motif,
-        )}{:else}{score ?? ''}{/if}
+        )}{:else if !match.retrait}{score ?? ''}{/if}
     </span>
   </span>
 {/snippet}
