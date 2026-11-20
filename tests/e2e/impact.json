@@ -473,5 +473,6 @@
   "app/src/lib/impressions.ts": ["impressions"],
   "paquets/domaine/src/impressions.ts": ["impressions", "impression-presence"],
   "app/src/composants/impressions/ImpressionPresence.svelte": ["impression-presence"],
-  "app/src/composants/impressions/ImpressionPoulesVierges.svelte": ["impression-poules"]
+  "app/src/composants/impressions/ImpressionPoulesVierges.svelte": ["impression-poules"],
+  "app/src/composants/impressions/ImpressionPoulesResultats.svelte": ["impression-poules"]
 }

@@ -21,7 +21,8 @@ export const CATALOGUE_IMPRESSIONS: readonly LigneImpression[] = [
   { document: 'qrCodes', groupe: 'avant', choix: null, livre: true },
   // US-122 : les feuilles de poule à remplir.
   { document: 'poulesVierges', groupe: 'poules', choix: 'poules', livre: true },
-  { document: 'poulesResultats', groupe: 'poules', choix: 'poules', livre: false },
+  // US-123 : les feuilles de poule avec résultats.
+  { document: 'poulesResultats', groupe: 'poules', choix: 'poules', livre: true },
   { document: 'poulesPistes', groupe: 'poules', choix: null, livre: false },
   { document: 'classementPoules', groupe: 'poules', choix: null, livre: false },
   { document: 'feuillesMatch', groupe: 'tableau', choix: 'tours', livre: false },

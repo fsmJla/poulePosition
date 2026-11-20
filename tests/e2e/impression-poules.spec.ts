@@ -92,3 +92,32 @@ test('US-122 : « ⋯ › Imprimer les feuilles de poule » des Poules ; sans r�
   await expect.poll(() => impressions(page)).toBe(1);
   await context.setOffline(false);
 });
+
+test('US-123 CA-1 à CA-3 : les feuilles de poule avec résultats, provisoires ou terminées, et un retrait', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  await compterImpressions(page);
+  await seConnecter(page);
+  // 6 matchs de la poule 4 restent à tirer ; t4 (poule 4) abandonne.
+  await importerEpreuve(page, [
+    ...poulesJouees({ aTirer: 6 }),
+    { type: 'TireurRetireDesPoules', donnees: { tireurId: 't4', motif: 'abandon' } },
+  ]);
+  await ouvrirImpressions(page);
+  await page.getByRole('button', { name: 'Imprimer : Feuilles de poule avec résultats' }).click();
+  await expect(feuilles(page)).toHaveCount(4);
+  await expect.poll(() => impressions(page)).toBe(1);
+
+  // CA-1 : la grille remplie (V5), V, V/M, TD, TR, Ind, Rg, l'ordre des matchs avec les scores, la légende.
+  const premiere = feuilles(page).first();
+  await expect(premiere.getByRole('cell', { name: 'V5' }).first()).toBeVisible();
+  await expect(premiere.getByRole('region', { name: 'Ordre des matchs' })).toContainText(/\d–\d/);
+  await expect(premiere).toContainText('Ind : indice (TD − TR)');
+  // CA-2 : terminée, ou provisoire.
+  await expect(premiere).toContainText('Terminée');
+  await expect(feuilles(page).last()).toContainText(/Provisoire · \d+ matchs sur 15/);
+  // CA-3 : le motif du tireur retiré.
+  await expect(feuilles(page).last().getByRole('rowheader').filter({ hasText: 'abandon' })).toHaveCount(1);
+  await page.screenshot({ path: 'test-results/impression-poules-resultats.png', fullPage: true });
+});

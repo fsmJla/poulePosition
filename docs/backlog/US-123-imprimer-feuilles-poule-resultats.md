@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F11 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-120, US-088
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-123-imprimer-feuilles-poule-resultats`
 
 ## Récit
 
@@ -63,3 +63,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (Epic 7, planches 22 à 30 validées par l'utilisateur) ; Prête |
+| 2026-11-20 | Implémentée : `ImpressionPoulesResultats` (grille de la feuille du PC, résultats, Provisoire / Terminée, motif des retraits) ; passe En revue |

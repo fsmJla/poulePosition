@@ -17,6 +17,7 @@
   import Icone from '../composants/Icone.svelte';
   import ImpressionPresence from '../composants/impressions/ImpressionPresence.svelte';
   import ImpressionPoulesVierges from '../composants/impressions/ImpressionPoulesVierges.svelte';
+  import ImpressionPoulesResultats from '../composants/impressions/ImpressionPoulesResultats.svelte';
   import type { AccesQrClient } from '../lib/acces-qr';
   import type { Accueil } from '../lib/accueil';
   import { documentLivre } from '../lib/impressions';
@@ -119,6 +120,15 @@
             tireurs={parId}
             touches={epreuve.formule.touchesPoules}
             lienArbitres={jetonArbitres ? lienQr(location.origin, epreuveId, jetonArbitres) : null}
+            {contexte}
+            {imprimeLe}
+          />
+        {:else if document === 'poulesResultats' && epreuve}
+          <ImpressionPoulesResultats
+            etat={source.poules}
+            poules={poulesChoisies}
+            tireurs={parId}
+            touches={epreuve.formule.touchesPoules}
             {contexte}
             {imprimeLe}
           />
