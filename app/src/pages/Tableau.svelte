@@ -196,10 +196,22 @@
   /** US-112 CA-5 : les pistes de l'épreuve, celles des poules. */
   const pistes = $derived([...new Set((poules?.poules ?? []).map(({ piste }) => piste))].sort((a, b) => a - b));
   const proposee = $derived(structure && cree ? pisteProposee(structure, pistes) : null);
-  /** US-112 CA-1 : la piste saisie par l'organisateur ; sinon, la piste proposée. */
+  /** US-117 CA-1 : « Autre… » ouvre un champ pour une piste hors de la liste. */
   let pisteSaisie = $state<number | null>(null);
-  const pisteChoisie = $derived(
-    typeof pisteSaisie === 'number' && pisteSaisie >= 1 ? pisteSaisie : (proposee?.piste ?? null),
+  let autrePiste = $state(false);
+  /** Les pastilles : les pistes des poules, et la piste du match si elle n'en est pas. */
+  const pistesProposees = $derived(
+    [...new Set([...pistes, ...(matchCarte?.piste ? [matchCarte.piste] : [])])].sort((a, b) => a - b),
+  );
+  /** Les pistes où un match appelé n'est pas réglé. */
+  const pistesOccupees = $derived(
+    new Set(
+      structure && cree
+        ? tousLesMatchs(structure)
+            .filter((m) => m.piste !== null && m.etat === 'aTirer')
+            .map((m) => m.piste!)
+        : [],
+    ),
   );
   let matchDeLaPiste = '';
   $effect(() => {
@@ -207,6 +219,7 @@
     if (id === matchDeLaPiste) return;
     matchDeLaPiste = id;
     pisteSaisie = null;
+    autrePiste = false;
   });
 
   /** US-112 CA-2 et CA-4 : appelle le match de la carte sur une piste, ou lui retire sa piste. */
@@ -221,6 +234,7 @@
     }
     erreur = null;
     pisteSaisie = null;
+    autrePiste = false;
     annonce = piste === null ? t.pisteRetireeAnnonce(titre) : t.appelAnnonce(titre, piste);
     void synchronisation.envoyer(epreuveId).then(() => recharger());
   }
@@ -412,38 +426,52 @@
           >
             {#snippet appel()}
               {#if matchCarte}
-                {@const titreMatch = t.titreMatch(matchCarte.tour, matchCarte.numero)}
-                <div class="appel">
-                  <label class="champ-piste"
-                    >{t.piste}
+                {@const actuelle = matchCarte.piste}
+                <!-- US-117 CA-1 : un clic sur une pastille appelle le match sur cette piste, ou l'y change. -->
+                <div class="appel" role="group" aria-label={t.piste}>
+                  <span class="libelle-piste" aria-hidden="true">{t.piste}</span>
+                  {#each pistesProposees as piste (piste)}
+                    {@const occupee = pistesOccupees.has(piste) && piste !== actuelle}
+                    {@const libelle =
+                      piste === actuelle
+                        ? t.pisteDuMatch(piste)
+                        : `${actuelle === null ? t.appeler(piste) : t.changerPiste(piste)}${occupee ? ` (${t.pisteOccupee})` : ''}`}
+                    <button
+                      type="button"
+                      class="pastille-piste"
+                      class:proposee={actuelle === null && piste === proposee?.piste}
+                      class:occupee
+                      aria-pressed={piste === actuelle}
+                      aria-label={libelle}
+                      title={libelle}
+                      onclick={() => piste !== actuelle && void appelerSur(piste)}>{piste}</button
+                    >
+                  {/each}
+                  {#if autrePiste}
                     <input
+                      class="autre-piste"
                       type="number"
                       inputmode="numeric"
                       min="1"
                       max="99"
-                      list="pistes-epreuve"
+                      aria-label={t.autrePiste}
                       bind:value={pisteSaisie}
+                      onkeydown={(e) => {
+                        if (e.key === 'Enter' && typeof pisteSaisie === 'number') void appelerSur(pisteSaisie);
+                      }}
                     />
-                  </label>
-                  <datalist id="pistes-epreuve">
-                    {#each pistes as piste (piste)}<option value={piste}></option>{/each}
-                  </datalist>
-                  <button
-                    type="button"
-                    class="neutre"
-                    disabled={pisteChoisie === null}
-                    onclick={() => appelerSur(pisteChoisie)}
-                  >
-                    {matchCarte.piste === null ? t.appeler(pisteChoisie) : t.changerPiste(pisteChoisie)}
-                  </button>
-                  {#if proposee?.occupee && pisteChoisie === proposee.piste}<span class="discret">{t.pisteOccupee}</span
-                    >{/if}
-                  {#if matchCarte.piste !== null}
-                    <MenuActions
-                      id="menu-match"
-                      nom={titreMatch}
-                      actions={[{ libelle: t.retirerPiste, surChoix: () => void appelerSur(null) }]}
-                    />
+                    <button
+                      type="button"
+                      class="lien"
+                      disabled={typeof pisteSaisie !== 'number' || pisteSaisie < 1 || pisteSaisie > 99}
+                      onclick={() => typeof pisteSaisie === 'number' && void appelerSur(pisteSaisie)}
+                      >{t.appeler(typeof pisteSaisie === 'number' ? pisteSaisie : null)}</button
+                    >
+                  {:else}
+                    <button type="button" class="lien" onclick={() => (autrePiste = true)}>{t.autrePiste}</button>
+                  {/if}
+                  {#if actuelle !== null}
+                    <button type="button" class="lien" onclick={() => void appelerSur(null)}>{t.retirerPiste}</button>
                   {/if}
                 </div>
               {/if}
@@ -807,30 +835,6 @@
     margin-top: 8px;
   }
 
-  .champ-piste {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.875rem;
-  }
-
-  .champ-piste input {
-    width: 4.5rem;
-    min-height: 44px;
-    box-sizing: border-box;
-    padding: 0 8px;
-    border: 1px solid var(--bordure-champ);
-    border-radius: 10px;
-    background: var(--surface);
-    color: var(--texte);
-    font: inherit;
-  }
-
-  .fin {
-    display: flex;
-    justify-content: flex-end;
-  }
-
   .lien {
     min-height: 0;
     padding: 0;
@@ -840,6 +844,54 @@
     font-size: 0.875rem;
     font-weight: 400;
     text-decoration: underline;
+  }
+
+  .lien:disabled {
+    color: var(--texte-inactif);
+    cursor: default;
+  }
+
+  .libelle-piste {
+    color: var(--texte-discret);
+    font-size: 0.875rem;
+  }
+
+  .pastille-piste {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0 8px;
+    border: 1px solid var(--bordure-champ);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--texte);
+    font-size: 0.9rem;
+  }
+
+  .pastille-piste.proposee {
+    border: 2px solid var(--accent);
+  }
+
+  .pastille-piste.occupee {
+    border-style: dashed;
+    color: var(--texte-discret);
+  }
+
+  .pastille-piste[aria-pressed='true'] {
+    border-color: var(--marque);
+    background: var(--marque);
+    color: var(--sur-marque);
+  }
+
+  .autre-piste {
+    width: 4rem;
+    min-height: 36px;
+    box-sizing: border-box;
+    padding: 0 8px;
+    border: 1px solid var(--bordure-champ);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--texte);
+    font: inherit;
   }
 
   .message {

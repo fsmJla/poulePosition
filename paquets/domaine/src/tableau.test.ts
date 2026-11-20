@@ -16,6 +16,7 @@ import {
   matchDuTableau,
   pisteProposee,
   placesAffichees,
+  scoreTableauDesBoutons,
   placementFIE,
   qualifiesDesPoules,
   situationDuTableau,
@@ -321,6 +322,15 @@ describe('US-108 CA-6 : saisir un score', () => {
     expect(controleScoreTableau(9, 9, 15, null)).toEqual({ ok: false, raison: 'PRIORITE_MANQUANTE' });
     expect(controleScoreTableau(9, 8, 15, 'A')).toEqual({ ok: false, raison: 'PRIORITE_EN_TROP' });
     expect(controleScoreTableau(9, 1.5, 15, null)).toEqual({ ok: false, raison: 'HORS_BORNES' });
+  });
+});
+
+describe('US-117 : score des boutons du PC', () => {
+  it('CA-2 et CA-4 : « V » vaut les touches du tableau, deux « V » sont refusés', () => {
+    expect(scoreTableauDesBoutons('V', 0, 15)).toEqual({ ok: true, touchesA: 15, touchesB: 0 });
+    expect(scoreTableauDesBoutons(8, 6, 15)).toEqual({ ok: true, touchesA: 8, touchesB: 6 });
+    expect(scoreTableauDesBoutons(3, 'V', 10)).toEqual({ ok: true, touchesA: 3, touchesB: 10 });
+    expect(scoreTableauDesBoutons('V', 'V', 15)).toEqual({ ok: false, raison: 'DEUX_VAINQUEURS' });
   });
 });
 

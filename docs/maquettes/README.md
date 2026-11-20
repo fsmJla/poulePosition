@@ -243,6 +243,11 @@ exclusion… » (fenêtre `RetraitTableau`) ; la pilule « 3e place » et ce mat
 final » (composant `ClassementFinal`, gabarit de la planche 20) avec l'action principale « Terminer l'épreuve », et la
 carte « Podium » du Résumé. Aucune planche pour ces écrans : écarts déclarés dans les US.
 
+**Livré par US-117 (retour de l'utilisateur, 2026-11-20) :** dans la carte de saisie du tableau, les deux champs de touches
+sont remplacés par les boutons de score des poules (0 à N−1 et « V », 0 présélectionné) et le champ « Piste » par des
+pastilles de piste (un clic appelle le match ; la proposée soulignée, les occupées en pointillés ; « Autre… » et « Retirer »
+en liens).
+
 ## Maquette « Déroulé de l'épreuve » (2026-11-17)
 
 Elle prolonge la maquette « IHM de l'organisateur » (mêmes entête, fil d'Ariane, navigation par étapes, charte et

@@ -10,6 +10,7 @@ import {
   ouvrirTableau,
   poulesJouees,
   resultatsPlanche11,
+  saisirScoreTableau,
 } from './tableau-outils';
 
 const carte = (page: Page) => page.getByRole('region', { name: 'Saisie du match' });
@@ -27,16 +28,11 @@ async function epreuvePlanche11(page: Page) {
   return { adresse, nom: (rang: number) => nomDe(qualifies[rang - 1]!) };
 }
 
-async function saisir(page: Page, haut: string, bas: string) {
-  await carte(page)
-    .getByRole('spinbutton', { name: /^Touches de/ })
-    .first()
-    .fill(haut);
-  await carte(page)
-    .getByRole('spinbutton', { name: /^Touches de/ })
-    .last()
-    .fill(bas);
-}
+const saisir = (page: Page, haut: string, bas: string) => saisirScoreTableau(page, Number(haut), Number(bas));
+const colonne = (page: Page, i: 0 | 1) =>
+  carte(page)
+    .getByRole('group', { name: /^Score de / })
+    .nth(i);
 
 test('US-111 CA-1, CA-2, CA-6 et CA-9 : la carte du match choisi, valider, corriger (planche 11)', async ({
   page,
@@ -59,7 +55,11 @@ test('US-111 CA-1, CA-2, CA-6 et CA-9 : la carte du match choisi, valider, corri
   await expect(carte(page).getByRole('heading', { name: 'Tableau de 16 · match 5' })).toBeVisible();
   await expect(carte(page)).toContainText('(3)');
   await expect(carte(page)).toContainText('(14)');
-  await expect(carte(page).getByRole('spinbutton', { name: `Touches de ${nom(3)}` })).toBeVisible();
+  await expect(carte(page).getByRole('group', { name: `Score de ${nom(3)}` })).toBeVisible();
+  // US-117 CA-3 : 0 est présélectionné des deux côtés.
+  await expect(colonne(page, 0).getByRole('button', { name: /^0 pour / })).toHaveAttribute('aria-pressed', 'true');
+  await expect(colonne(page, 1).getByRole('button', { name: /^0 pour / })).toHaveAttribute('aria-pressed', 'true');
+  await expect(carte(page).getByRole('button', { name: 'Valider le score' })).toBeDisabled();
   await saisir(page, '15', '11');
   await page.screenshot({ path: 'test-results/tableau-saisir.png', fullPage: true });
 
@@ -77,11 +77,7 @@ test('US-111 CA-1, CA-2, CA-6 et CA-9 : la carte du match choisi, valider, corri
   await arbre(page)
     .getByRole('button', { name: `${nom(3)} contre ${nom(14)}, Terminé` })
     .click();
-  await expect(
-    carte(page)
-      .getByRole('spinbutton', { name: /^Touches de/ })
-      .first(),
-  ).toHaveValue('15');
+  await expect(colonne(page, 0).getByRole('button', { name: /^V pour / })).toHaveAttribute('aria-pressed', 'true');
   await saisir(page, '13', '15');
   await carte(page).getByRole('button', { name: 'Valider le score' }).click();
   await expect(
@@ -96,10 +92,11 @@ test('US-111 CA-3 à CA-5 : victoire au temps, égalité départagée par la pri
   await ouvrirTableau(page);
   await expect(carte(page).getByRole('heading', { name: 'Tableau de 16 · match 4' })).toBeVisible();
 
-  // CA-5 : au-delà des touches du tableau, refusé.
-  await saisir(page, '16', '3');
-  await carte(page).getByRole('button', { name: 'Valider le score' }).click();
-  await expect(carte(page).getByRole('alert')).toHaveText('Entre 0 et 15 touches');
+  // CA-5 et US-117 CA-4 : deux « V » sont refusés ; aucun score ne dépasse les touches du tableau.
+  await saisir(page, '15', '15');
+  await expect(carte(page).getByRole('alert')).toHaveText('Un seul vainqueur : choisissez « V » d’un seul côté');
+  await expect(carte(page).getByRole('button', { name: 'Valider le score' })).toBeDisabled();
+  await expect(colonne(page, 0).getByRole('button')).toHaveCount(16);
 
   // CA-3 : victoire au temps.
   await saisir(page, '8', '6');
@@ -127,11 +124,7 @@ test('US-111 CA-7 : un match dont le match suivant est réglé ne se corrige plu
     .click();
   await expect(carte(page)).toContainText('Corrigez d’abord le match suivant (tableau de 16 · match 1)');
   await expect(carte(page).getByRole('button', { name: 'Valider le score' })).toHaveCount(0);
-  await expect(
-    carte(page)
-      .getByRole('spinbutton', { name: /^Touches de/ })
-      .first(),
-  ).toBeDisabled();
+  await expect(colonne(page, 0).getByRole('button', { name: /^0 pour / })).toBeDisabled();
   await carte(page).getByRole('button', { name: 'Tableau de 16 · match 1' }).click();
   await expect(carte(page).getByRole('heading', { name: 'Tableau de 16 · match 1' })).toBeVisible();
 });

@@ -207,3 +207,12 @@ export async function ouvrirTableau(page: Page) {
     .click();
   await expect(page.getByRole('heading', { level: 2, name: 'Tableau' })).toBeVisible({ timeout: 20_000 });
 }
+
+/** US-117 : touche les boutons de score de la carte du tableau (15 = « V »), à gauche puis à droite. */
+export async function saisirScoreTableau(page: Page, gauche: number, droite: number, touches = 15) {
+  const colonnes = page.getByRole('region', { name: 'Saisie du match' }).getByRole('group', { name: /^Score de / });
+  const bouton = (cote: 0 | 1, valeur: number) =>
+    colonnes.nth(cote).getByRole('button', { name: new RegExp(`^${valeur === touches ? 'V' : valeur} pour `) });
+  await bouton(0, gauche).click();
+  await bouton(1, droite).click();
+}

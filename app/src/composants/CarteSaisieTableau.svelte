@@ -1,9 +1,13 @@
 <script lang="ts">
-  // Carte de saisie d'un match du tableau (US-111, planche 11) : le match choisi, sa piste, les deux tireurs avec leur
-  // rang, leurs touches et l'action principale « Valider le score ». Une égalité demande le vainqueur par priorité ; un
-  // vainqueur qui n'atteint pas les touches du tableau gagne au temps. Le contrôle est celui du domaine.
+  // Carte de saisie d'un match du tableau (US-111, planche 11 ; US-117) : le match choisi, sa piste, et pour chaque
+  // tireur une colonne de boutons de score (0 à N−1 et « V », comme les poules, US-091), 0 présélectionné ; l'action
+  // principale « Valider le score ». Une égalité demande le vainqueur par priorité ; un vainqueur qui n'atteint pas les
+  // touches du tableau gagne au temps. Le contrôle est celui du domaine.
   import {
+    boutonsDuScore,
     controleScoreTableau,
+    scoreTableauDesBoutons,
+    type ChoixScore,
     matchsSuivants,
     placesAffichees,
     type DonneesScoreTableau,
@@ -41,10 +45,9 @@
   };
   const nomCourt = (id: string | null) => (id ? (tireurs.get(id)?.nom.toUpperCase() ?? '') : '');
 
-  let touchesHaut = $state<number | null>(null);
-  let touchesBas = $state<number | null>(null);
+  let choixHaut = $state<ChoixScore>(0);
+  let choixBas = $state<ChoixScore>(0);
   let priorite = $state<'haut' | 'bas' | null>(null);
-  let essaye = $state(false);
   let envoi = $state(false);
   let matchAffiche = '';
 
@@ -53,24 +56,32 @@
     const cle = `${match.id}|${match.touches?.join('-') ?? ''}|${match.vainqueur ?? ''}`;
     if (cle === matchAffiche) return;
     matchAffiche = cle;
-    touchesHaut = places.touches ? places.touches[0] : null;
-    touchesBas = places.touches ? places.touches[1] : null;
+    // US-117 CA-3 : un match à tirer part de 0 à 0 ; un match terminé reprend son score.
+    const [a, b] = places.touches ? boutonsDuScore(places.touches[0], places.touches[1], touches) : [0, 0];
+    choixHaut = a;
+    choixBas = b;
     priorite = match.parPriorite ? (match.vainqueur === haut.tireurId ? 'haut' : 'bas') : null;
-    essaye = false;
   });
 
-  const nombre = (valeur: number | null | undefined) => (typeof valeur === 'number' ? valeur : Number.NaN);
-  const egalite = $derived(typeof touchesHaut === 'number' && touchesHaut === touchesBas);
+  const boutons = $derived<ChoixScore[]>([...Array.from({ length: touches }, (_, i) => i), 'V']);
+  const brut = $derived(scoreTableauDesBoutons(choixHaut, choixBas, touches));
+  const touchesHaut = $derived(brut.ok ? brut.touchesA : null);
+  const touchesBas = $derived(brut.ok ? brut.touchesB : null);
+  /** 0 à 0 : rien de saisi encore (pas d'égalité à départager). */
+  const vierge = $derived(touchesHaut === 0 && touchesBas === 0);
+  const egalite = $derived(brut.ok && !vierge && touchesHaut === touchesBas);
   const controle = $derived(
-    controleScoreTableau(
-      nombre(touchesHaut),
-      nombre(touchesBas),
-      touches,
-      egalite ? (priorite === 'haut' ? 'A' : priorite === 'bas' ? 'B' : null) : null,
-    ),
+    brut.ok && !vierge
+      ? controleScoreTableau(
+          touchesHaut!,
+          touchesBas!,
+          touches,
+          egalite ? (priorite === 'haut' ? 'A' : priorite === 'bas' ? 'B' : null) : null,
+        )
+      : null,
   );
-  const auTemps = $derived(controle.ok && controle.auTemps);
-  const vainqueur = $derived(controle.ok ? (controle.vainqueur === 'A' ? haut.tireurId : bas.tireurId) : null);
+  const auTemps = $derived(controle?.ok === true && controle.auTemps);
+  const vainqueur = $derived(controle?.ok ? (controle.vainqueur === 'A' ? haut.tireurId : bas.tireurId) : null);
   /** CA-7 : un match réglé dont le match suivant est réglé ne se corrige plus. */
   const suivantRegle = $derived(
     match.etat === 'regle' ? (matchsSuivants(structure, match.id).find((m) => m.etat === 'regle') ?? null) : null,
@@ -88,15 +99,15 @@
 
   async function valider(evenement: SubmitEvent) {
     evenement.preventDefault();
-    essaye = true;
-    if (!controle.ok || envoi || !haut.tireurId || !bas.tireurId) return;
+    if (!controle?.ok || envoi || !haut.tireurId || !bas.tireurId || touchesHaut === null || touchesBas === null)
+      return;
     envoi = true;
     const donnees: DonneesScoreTableau = {
       match: match.id,
       tireurA: haut.tireurId,
       tireurB: bas.tireurId,
-      touchesA: nombre(touchesHaut),
-      touchesB: nombre(touchesBas),
+      touchesA: touchesHaut,
+      touchesB: touchesBas,
       ...(egalite && vainqueur ? { parPriorite: vainqueur } : {}),
     };
     await saisir(donnees);
@@ -124,37 +135,35 @@
     <div class="actions">{@render actions?.()}</div>
   {:else}
     <form id="saisie-tableau" class="score" onsubmit={valider} novalidate>
-      <label class="tireur">
-        <span class="rang">({haut.rang})</span>
-        <strong>{nomCourt(haut.tireurId)}</strong>
-        <span>{tireurs.get(haut.tireurId ?? '')?.prenom}</span>
-        <input
-          type="number"
-          inputmode="numeric"
-          min="0"
-          max={touches}
-          class:fort={vainqueur === haut.tireurId}
-          aria-label={t.touchesDe(nom(haut.tireurId))}
-          bind:value={touchesHaut}
-          disabled={!saisissable}
-        />
-      </label>
-      <span class="tiret" aria-hidden="true">–</span>
-      <label class="tireur">
-        <input
-          type="number"
-          inputmode="numeric"
-          min="0"
-          max={touches}
-          class:fort={vainqueur === bas.tireurId}
-          aria-label={t.touchesDe(nom(bas.tireurId))}
-          bind:value={touchesBas}
-          disabled={!saisissable}
-        />
-        <strong>{nomCourt(bas.tireurId)}</strong>
-        <span>{tireurs.get(bas.tireurId ?? '')?.prenom}</span>
-        <span class="rang">({bas.rang})</span>
-      </label>
+      {#each [{ place: haut, choix: choixHaut, cote: 'gauche' }, { place: bas, choix: choixBas, cote: 'droite' }] as colonne (colonne.cote)}
+        <div
+          class="colonne {colonne.cote}"
+          role="group"
+          aria-label={textes.poules.boutonsDe(nom(colonne.place.tireurId))}
+        >
+          <p class="tireur">
+            <span class="rang">({colonne.place.rang})</span>
+            <strong>{nomCourt(colonne.place.tireurId)}</strong>
+            {tireurs.get(colonne.place.tireurId ?? '')?.prenom}
+            <span class="grand" class:fort={vainqueur !== null && vainqueur === colonne.place.tireurId}
+              >{colonne.cote === 'gauche' ? (touchesHaut ?? '–') : (touchesBas ?? '–')}</span
+            >
+          </p>
+          <div class="boutons" style:--colonnes={Math.ceil(boutons.length / 2)}>
+            {#each boutons as valeur (valeur)}
+              <button
+                type="button"
+                class="bouton-score"
+                aria-pressed={colonne.choix === valeur}
+                aria-label={textes.poules.boutonPour(String(valeur), nom(colonne.place.tireurId))}
+                disabled={!saisissable || envoi}
+                onclick={() => (colonne.cote === 'gauche' ? (choixHaut = valeur) : (choixBas = valeur))}
+                >{valeur}</button
+              >
+            {/each}
+          </div>
+        </div>
+      {/each}
       {#if saisissable && egalite}
         <fieldset class="priorite">
           <legend>{t.priorite}</legend>
@@ -164,14 +173,12 @@
       {:else if match.parPriorite && !saisissable}
         <span class="discret">{t.prioriteMention} : {nomCourt(match.vainqueur)}</span>
       {/if}
+      {#if !brut.ok}<p class="erreur" role="alert">{textes.poules.unSeulVainqueur}</p>{/if}
       {#if auTemps && vainqueur}<p class="info" role="status">{t.victoireAuTemps(nomCourt(vainqueur))}</p>{/if}
-      {#if essaye && !controle.ok && controle.raison === 'HORS_BORNES'}
-        <p class="erreur" role="alert">{t.horsBornes(touches)}</p>
-      {/if}
     </form>
     <div class="actions">
       {#if saisissable}
-        <button type="submit" form="saisie-tableau" class="principal" disabled={envoi || (egalite && !priorite)}
+        <button type="submit" form="saisie-tableau" class="principal" disabled={envoi || !controle?.ok}
           >{t.valider}</button
         >
       {/if}
@@ -190,10 +197,12 @@
 
 <style>
   .carte {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px 20px;
+    /* US-117 : des touchers rapprochés (boutons de score, puis « Valider ») ne sont pas un double-toucher de zoom. */
+    touch-action: manipulation;
+    display: grid;
+    grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+    align-items: start;
+    gap: 12px 24px;
     padding: 16px;
     border: 2px solid var(--accent);
     border-radius: 14px;
@@ -201,7 +210,7 @@
   }
 
   .identite {
-    flex: 0 1 200px;
+    grid-row: span 2;
     display: flex;
     flex-direction: column;
   }
@@ -218,47 +227,93 @@
   }
 
   .attente {
-    flex: 1;
+    margin: 0;
+    align-self: center;
   }
 
   .score {
-    flex: 1 1 460px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 10px 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 20px;
     margin: 0;
+  }
+
+  .colonne {
+    display: grid;
+    gap: 6px;
+    align-content: start;
+  }
+
+  .gauche {
+    --cote: var(--cote-gauche);
+  }
+
+  .droite {
+    --cote: var(--cote-droit);
   }
 
   .tireur {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    align-items: baseline;
+    gap: 6px;
+    margin: 0;
     font-size: 0.95rem;
   }
 
-  .rang,
-  .tiret {
+  .tireur strong {
+    color: var(--cote);
+  }
+
+  .rang {
     color: var(--texte-discret);
   }
 
-  input[type='number'] {
-    width: 64px;
-    height: 52px;
-    box-sizing: border-box;
-    border: 1px solid var(--bordure-champ);
-    border-radius: 10px;
+  .grand {
+    margin-left: auto;
+    font-family: var(--police-titre, inherit);
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--texte-discret);
+  }
+
+  .grand.fort {
+    color: var(--cote);
+  }
+
+  .boutons {
+    display: grid;
+    grid-template-columns: repeat(var(--colonnes), minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .bouton-score {
+    min-height: 36px;
+    padding: 0;
+    border: 2px solid var(--cote);
+    border-radius: 999px;
     background: var(--surface);
     color: var(--texte);
     font: inherit;
-    font-size: 1.5rem;
+    font-size: 0.95rem;
     font-weight: 600;
-    text-align: center;
+    cursor: pointer;
   }
 
-  input.fort {
-    border: 2px solid var(--accent);
+  .bouton-score[aria-pressed='true'] {
+    background: var(--cote);
+    color: var(--sur-cote);
+  }
+
+  .bouton-score:disabled:not([aria-pressed='true']) {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .priorite,
+  .info,
+  .erreur {
+    grid-column: 1 / -1;
   }
 
   .priorite {
@@ -290,11 +345,29 @@
     color: var(--etat-erreur);
   }
 
+  /* L'action principale en bas à droite, sous les boutons de score ; le lien de retrait à côté. */
   .actions {
+    grid-column: 2;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
+    flex-wrap: wrap;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 8px 16px;
+  }
+
+  /* Sur un écran étroit, une seule colonne. */
+  @media (max-width: 40rem) {
+    .carte {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .identite {
+      grid-row: auto;
+    }
+
+    .actions {
+      grid-column: 1;
+    }
   }
 
   .principal {

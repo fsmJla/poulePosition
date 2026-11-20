@@ -2158,7 +2158,10 @@ export const textes = {
     appeler: (piste: number | null) => (piste ? `Appeler sur la piste ${piste}` : 'Appeler'),
     changerPiste: (piste: number | null) => (piste ? `Changer pour la piste ${piste}` : 'Changer de piste'),
     pisteOccupee: 'occupée',
-    retirerPiste: 'Retirer la piste',
+    /** US-117 : la pastille de la piste du match. */
+    pisteDuMatch: (piste: number) => `Piste ${piste} : le match y est appelé`,
+    autrePiste: 'Autre…',
+    retirerPiste: 'Retirer',
     appelAnnonce: (match: string, piste: number) => `${match} appelé sur la piste ${piste}`,
     pisteRetireeAnnonce: (match: string) => `${match} : piste retirée`,
     menuMatch: (match: string) => match,
