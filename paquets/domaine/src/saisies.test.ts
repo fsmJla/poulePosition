@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { appliquer, poulesDe, projeter, type Epreuve, type Evenement, type Proposition } from './journal';
-import { deciderSaisie, lignesSaisies, propositionRefus, signatureSaisie, type SaisieScore } from './saisies';
+import {
+  deciderSaisie,
+  lignesSaisies,
+  lignesSaisiesTableau,
+  propositionRefus,
+  signatureSaisie,
+  type SaisieScore,
+} from './saisies';
 
 const enTete = (seq: number) => ({
   epreuveId: 'e1',
@@ -330,5 +337,50 @@ describe('US-106 : saisies d’un match du tableau', () => {
     expect(refus).toMatchObject({ type: 'SaisieRefusee', donnees: { match: '4-2', poule: 0 } });
     const evenements = journal(...presents('a', 'b', 'c'), composer, lancer, refus);
     expect(lignesSaisies(evenements, projeter(evenements).epreuve)).toEqual([]);
+  });
+});
+
+describe('saisies reçues sur l’écran du tableau (US-119)', () => {
+  const score = (match: string, a: string, b: string, ta: number, tb: number, par?: string): Proposition =>
+    ({
+      type: 'ScoreTableauSaisi',
+      donnees: { match, tireurA: a, tireurB: b, touchesA: ta, touchesB: tb, ...(par && { saisie: { id: par, par } }) },
+    }) as Proposition;
+  const refus: Proposition = {
+    type: 'SaisieRefusee',
+    donnees: {
+      saisie: { id: 's1', par: 'arbitre Martin (t1)' },
+      poule: 0,
+      tireurA: 'a',
+      tireurB: 'c',
+      touchesA: 15,
+      touchesB: 3,
+      motif: 'MATCH_SUIVANT_REGLE',
+      match: '2-1',
+    },
+  } as Proposition;
+
+  it('CA-2 : scores du tableau (PC, smartphone), refus et corrections, sans les saisies des poules', () => {
+    const poule: Proposition = {
+      type: 'ScorePouleSaisi',
+      donnees: { poule: 1, tireurA: 'a', tireurB: 'b', touchesA: 5, touchesB: 2 },
+    };
+    const evenements = journal(
+      ...presents('a', 'b', 'c'),
+      poule,
+      score('16-5', 'a', 'b', 15, 11),
+      score('16-5', 'b', 'a', 15, 13, 'arbitre Martin (t1)'),
+      score('3e', 'b', 'c', 15, 9),
+      refus,
+    );
+    const lignes = lignesSaisiesTableau(evenements, projeter(evenements).epreuve);
+    expect(lignes.map(({ resultat }) => resultat)).toEqual(['refusee', 'enregistree', 'acceptee', 'enregistree']);
+    expect(lignes[0]).toMatchObject({ match: { tour: 2, numero: 1 }, motif: 'MATCH_SUIVANT_REGLE', nomB: 'C' });
+    expect(lignes[1]).toMatchObject({ match: { tour: 0, numero: 1 }, par: null, correctionDe: null });
+    expect(lignes[2]).toMatchObject({ match: { tour: 16, numero: 5 }, nomA: 'B', correctionDe: [11, 15] });
+    expect(lignes[3]).toMatchObject({ poule: 0, numero: null, touchesA: 15, touchesB: 11, correctionDe: null });
+    expect(lignesSaisiesTableau([], null)).toEqual([]);
+    // Les lignes des poules ne reprennent pas le tableau.
+    expect(lignesSaisies(evenements, projeter(evenements).epreuve).map((l) => l.match)).toEqual([null]);
   });
 });

@@ -233,7 +233,10 @@ export function propositionRefus(saisie: SaisieScore, motif: MotifRefusSaisie, s
 /** US-100 : une ligne de la liste « Saisies reçues des smartphones » (planche 10). */
 export interface LigneSaisie {
   date: number;
+  /** Poule du match ; 0 pour un match du tableau. */
   poule: number;
+  /** US-119 : le match du tableau (taille du tour, numéro ; tour 0 : match pour la 3e place), ou null en poule. */
+  match: { tour: number; numero: number } | null;
   /** Numéro du match dans l'ordre officiel de la poule, s'il est connu. */
   numero: number | null;
   nomA: string;
@@ -273,6 +276,7 @@ export function lignesSaisies(evenements: readonly Evenement[], epreuve: Epreuve
     const base = {
       date: evenement.date,
       poule,
+      match: null,
       numero: numeroDe(poule, tireurA, tireurB),
       nomA: noms.get(tireurA) ?? tireurA,
       nomB: noms.get(tireurB) ?? tireurB,
@@ -291,6 +295,60 @@ export function lignesSaisies(evenements: readonly Evenement[], epreuve: Epreuve
         : [precedent.touchesB, precedent.touchesA]
       : null;
     derniers.set(cle(poule, tireurA, tireurB), { a: tireurA, touchesA, touchesB });
+    lignes.push({
+      ...base,
+      correctionDe,
+      resultat: evenement.donnees.saisie ? 'acceptee' : 'enregistree',
+      motif: null,
+    });
+  }
+  return lignes.reverse();
+}
+
+/** US-119 : le tour et le numéro d'un identifiant de match du tableau (« 16-5 », « 3e »). */
+function tourEtNumero(id: string): { tour: number; numero: number } {
+  if (id === '3e') return { tour: 0, numero: 1 };
+  const [tour, numero] = id.split('-').map(Number);
+  return { tour: tour ?? 0, numero: numero ?? 0 };
+}
+
+/**
+ * US-119 CA-2 : les scores du tableau (saisis sur ce PC ou acceptés d'un smartphone) et les saisies du tableau refusées,
+ * de la plus récente à la plus ancienne ; une correction dit le score qu'elle remplace.
+ */
+export function lignesSaisiesTableau(evenements: readonly Evenement[], epreuve: Epreuve | null): LigneSaisie[] {
+  const noms = new Map(tireursDe(epreuve ?? {}).map((t) => [t.id, t.nom]));
+  const derniers = new Map<string, { a: string; touchesA: number; touchesB: number }>();
+  const lignes: LigneSaisie[] = [];
+  for (const evenement of evenements) {
+    const tableau =
+      evenement.type === 'ScoreTableauSaisi' ||
+      (evenement.type === 'SaisieRefusee' && evenement.donnees.match !== undefined);
+    if (!tableau) continue;
+    const { tireurA, tireurB, touchesA, touchesB } = evenement.donnees;
+    const id = evenement.donnees.match as string;
+    const base = {
+      date: evenement.date,
+      poule: 0,
+      match: tourEtNumero(id),
+      numero: null,
+      nomA: noms.get(tireurA) ?? tireurA,
+      nomB: noms.get(tireurB) ?? tireurB,
+      touchesA,
+      touchesB,
+      par: evenement.donnees.saisie?.par ?? null,
+    };
+    if (evenement.type === 'SaisieRefusee') {
+      lignes.push({ ...base, correctionDe: null, resultat: 'refusee', motif: evenement.donnees.motif });
+      continue;
+    }
+    const precedent = derniers.get(id);
+    const correctionDe: [number, number] | null = precedent
+      ? precedent.a === tireurA
+        ? [precedent.touchesA, precedent.touchesB]
+        : [precedent.touchesB, precedent.touchesA]
+      : null;
+    derniers.set(id, { a: tireurA, touchesA, touchesB });
     lignes.push({
       ...base,
       correctionDe,

@@ -79,6 +79,13 @@ test('US-106 CA-1, CA-2, CA-4 et CA-6 : le match de la piste se saisit en 15 tou
       timeout: 15_000,
     });
     await expect(arbre(page).getByRole('button', { name: new RegExp(`^${nom(1)} contre ${nom(4)}, `) })).toBeVisible();
+    // US-119 CA-2 et CA-3 : sur le PC, la carte des saisies reçues montre le score accepté du téléphone, sans recharger.
+    const recue = page.getByRole('region', { name: 'Saisies reçues des smartphones' }).getByRole('listitem').first();
+    await expect(recue).toContainText(
+      `Quarts de finale · match 2 : ${nom(4).split(' ')[0]} 15 – 9 ${nom(5).split(' ')[0]}`,
+    );
+    await expect(recue).toContainText('arbitre Martin');
+    await expect(recue).toContainText('Acceptée');
   } finally {
     await contexte.close();
   }
