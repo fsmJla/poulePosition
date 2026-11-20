@@ -135,16 +135,16 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-103](US-103-acces-tireur.md) | Ouvrir l'accès tireur par le QR code (« Qui êtes-vous ? ») | E5 | Terminée | US-095, US-096 |
 | [US-104](US-104-mes-matchs-tireur.md) | Voir « Mes matchs » et saisir les scores de sa poule (tireur) | E5 | Terminée | US-103, US-099 |
 | [US-105](US-105-appareils-connectes.md) | Voir les appareils connectés et en exclure un | E5 | Terminée | US-096, US-097, US-103 |
-| [US-106](US-106-saisir-score-tableau-smartphone.md) | Saisir le score d'un match du tableau sur le smartphone | E5 | En revue | US-099, US-104, US-108, US-111, US-112 |
+| [US-106](US-106-saisir-score-tableau-smartphone.md) | Saisir le score d'un match du tableau sur le smartphone | E5 | Terminée | US-099, US-104, US-108, US-111, US-112 |
 | [US-107](US-107-ecran-poules-compact.md) | Alléger l'entête et réagencer l'écran des poules | E4 | Terminée | US-088, US-100 |
-| [US-108](US-108-tableau-dans-le-journal.md) | Tenir le tableau d'une épreuve dans son journal (technique) | E6 | En revue | US-085, US-089, US-092, US-028 |
-| [US-109](US-109-creer-le-tableau.md) | Créer le tableau à partir du classement des poules | E6 | En revue | US-108, US-092, US-058, US-064 |
-| [US-110](US-110-voir-le-tableau.md) | Voir le tableau : tours et arbre | E6 | En revue | US-109 |
-| [US-111](US-111-saisir-score-tableau-pc.md) | Saisir et corriger le score d'un match du tableau sur le PC | E6 | En revue | US-110 |
-| [US-112](US-112-appeler-match-sur-piste.md) | Appeler un match du tableau sur une piste | E6 | En revue | US-111 |
-| [US-113](US-113-abandon-forfait-exclusion-tableau.md) | Retirer un tireur du tableau (abandon, forfait, exclusion) | E6 | En revue | US-111 |
-| [US-114](US-114-match-troisieme-place.md) | Tirer le match pour la 3e place | E6 | En revue | US-111, US-112, US-028 |
-| [US-115](US-115-classement-final-terminer.md) | Afficher le classement final et terminer l'épreuve | E6 | En revue | US-111, US-113, US-114, US-064 |
+| [US-108](US-108-tableau-dans-le-journal.md) | Tenir le tableau d'une épreuve dans son journal (technique) | E6 | Terminée | US-085, US-089, US-092, US-028 |
+| [US-109](US-109-creer-le-tableau.md) | Créer le tableau à partir du classement des poules | E6 | Terminée | US-108, US-092, US-058, US-064 |
+| [US-110](US-110-voir-le-tableau.md) | Voir le tableau : tours et arbre | E6 | Terminée | US-109 |
+| [US-111](US-111-saisir-score-tableau-pc.md) | Saisir et corriger le score d'un match du tableau sur le PC | E6 | Terminée | US-110 |
+| [US-112](US-112-appeler-match-sur-piste.md) | Appeler un match du tableau sur une piste | E6 | Terminée | US-111 |
+| [US-113](US-113-abandon-forfait-exclusion-tableau.md) | Retirer un tireur du tableau (abandon, forfait, exclusion) | E6 | Terminée | US-111 |
+| [US-114](US-114-match-troisieme-place.md) | Tirer le match pour la 3e place | E6 | Terminée | US-111, US-112, US-028 |
+| [US-115](US-115-classement-final-terminer.md) | Afficher le classement final et terminer l'épreuve | E6 | Terminée | US-111, US-113, US-114, US-064 |
 | [US-116](US-116-separer-clubs-tableau.md) | Séparer les tireurs d'un même club au premier tour du tableau (P2) | E6 | À spécifier | US-109 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
