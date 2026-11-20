@@ -157,7 +157,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-125](US-125-imprimer-classement-poules.md) | Imprimer le classement après les poules | E7 | En revue | US-120, US-092 |
 | [US-126](US-126-imprimer-feuilles-match-tableau.md) | Imprimer les feuilles de match du tableau | E7 | En revue | US-120, US-110, US-112 |
 | [US-127](US-127-imprimer-tableau.md) | Imprimer le tableau à afficher | E7 | En revue | US-120, US-110 |
-| [US-128](US-128-imprimer-classement-final.md) | Imprimer le classement final | E7 | Prête | US-120, US-115 |
+| [US-128](US-128-imprimer-classement-final.md) | Imprimer le classement final | E7 | En revue | US-120, US-115 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 

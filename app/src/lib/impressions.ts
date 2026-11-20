@@ -31,7 +31,8 @@ export const CATALOGUE_IMPRESSIONS: readonly LigneImpression[] = [
   { document: 'feuillesMatch', groupe: 'tableau', choix: 'tours', livre: true },
   // US-127 : le tableau à afficher.
   { document: 'tableau', groupe: 'tableau', choix: 'format', livre: true },
-  { document: 'classementFinal', groupe: 'tableau', choix: null, livre: false },
+  // US-128 : le classement final.
+  { document: 'classementFinal', groupe: 'tableau', choix: null, livre: true },
 ];
 
 export const GROUPES_IMPRESSION: readonly GroupeImpression[] = ['avant', 'poules', 'tableau'];

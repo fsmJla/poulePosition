@@ -2150,6 +2150,12 @@ export const textes = {
       pied: (presents: number, total: number) =>
         `${presents} présent${presents > 1 ? 's' : ''} sur ${total} au moment de l’impression`,
     },
+    // US-128 : classement final (planche 30).
+    classementFinal: {
+      titre: 'Classement final',
+      podium: 'Podium',
+      place: (place: number) => (place === 1 ? '1re' : `${place}e`),
+    },
     // US-127 : tableau à afficher (planche 29).
     tableau: {
       titre: (premier: string) => `Tableau, du ${premier.toLowerCase()} à la finale`,

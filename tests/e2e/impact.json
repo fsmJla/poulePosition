@@ -484,5 +484,6 @@
   "app/src/composants/impressions/ImpressionPoulesPistes.svelte": ["impression-poules"],
   "app/src/composants/impressions/ImpressionClassementPoules.svelte": ["impression-poules"],
   "app/src/composants/impressions/ImpressionFeuillesMatch.svelte": ["impression-tableau"],
-  "app/src/composants/impressions/ImpressionTableau.svelte": ["impression-tableau"]
+  "app/src/composants/impressions/ImpressionTableau.svelte": ["impression-tableau"],
+  "app/src/composants/impressions/ImpressionClassementFinal.svelte": ["impression-tableau"]
 }

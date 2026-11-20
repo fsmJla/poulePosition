@@ -378,7 +378,12 @@
             icone: 'imprimante',
             surChoix: () => naviguer(cheminImprimer(epreuveId, { document: 'tableau', format: 'a4' })),
           },
-          { libelle: t.imprimerClassement, icone: 'imprimante', indisponible: t.imprimerAVenir },
+          // US-128 : le classement final s'imprime.
+          {
+            libelle: t.imprimerClassement,
+            icone: 'imprimante',
+            surChoix: () => naviguer(cheminImprimer(epreuveId, { document: 'classementFinal' })),
+          },
         ]}
       />
     </div>

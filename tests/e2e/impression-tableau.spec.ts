@@ -1,7 +1,7 @@
 // Documents imprimés du tableau (US-126 à US-128, planches 28 à 30) : feuilles de match d'un tour, deux par page ;
 // le tableau à afficher ; le classement final. Depuis l'étape « Impressions » et les menus « ⋯ », sans réseau aussi.
 import { expect, test, type Page } from '@playwright/test';
-import type { Proposition } from '@poule-position/domaine';
+import { structureTableau, tousLesMatchs, type Proposition } from '@poule-position/domaine';
 import { seConnecter } from './compte';
 import {
   importerEpreuve,
@@ -152,4 +152,59 @@ test('US-127 : « ⋯ › Imprimer le tableau » de l’étape Tableau ; sans r�
   ).toBeVisible();
   await expect.poll(() => impressions(page)).toBe(1);
   await context.setOffline(false);
+});
+
+/** Joue tout le tableau : le meilleur rang gagne 15-5, tour par tour. */
+function tableauJoue(qualifies: readonly string[]): Proposition[] {
+  const resultats: unknown[] = [];
+  const propositions: Proposition[] = [];
+  for (;;) {
+    const etat = { qualifies: [...qualifies], resultats, appels: [] } as unknown as Parameters<
+      typeof structureTableau
+    >[0];
+    const match = tousLesMatchs(structureTableau(etat, false)!).find((m) => m.etat === 'aTirer');
+    if (!match) return propositions;
+    const [a, b] = [match.haut.tireurId!, match.bas.tireurId!];
+    resultats.push({
+      match: match.id,
+      tireurA: a,
+      tireurB: b,
+      touchesA: 15,
+      touchesB: 5,
+      vainqueur: a,
+      parPriorite: false,
+      retrait: null,
+    });
+    propositions.push({
+      type: 'ScoreTableauSaisi',
+      donnees: { match: match.id, tireurA: a, tireurB: b, touchesA: 15, touchesB: 5 },
+    });
+  }
+}
+
+test('US-128 CA-1 et CA-2 : le classement final, podium compris, depuis le menu « ⋯ » du Tableau', async ({ page }) => {
+  test.setTimeout(150_000);
+  await compterImpressions(page);
+  await seConnecter(page);
+  const poules = poulesJouees({ nombre: 6 });
+  const qualifies = ordreDesQualifiees(poules);
+  const nom = (rang: number) => nomDe(qualifies[rang - 1]!);
+  await importerEpreuve(page, [...poules, { type: 'TableauCree', donnees: { qualifies } }, ...tableauJoue(qualifies)]);
+  await page
+    .getByRole('navigation', { name: 'Étapes de l’épreuve' })
+    .getByRole('link', { name: /^Tableau/ })
+    .click();
+  await page.getByRole('button', { name: 'Autres actions pour Tableau' }).click();
+  await page.getByRole('menuitem', { name: 'Imprimer le classement final' }).click();
+  const feuille = page.getByRole('region', { name: 'Classement final · Page 1 / 1' });
+  await expect(feuille).toBeVisible();
+  await expect.poll(() => impressions(page)).toBe(1);
+  // CA-1 : le podium (deux 3es sans match pour la 3e place), puis une ligne par tireur ; définitif.
+  const podium = feuille.getByRole('list', { name: 'Podium' }).getByRole('listitem');
+  await expect(podium).toHaveCount(4);
+  await expect(podium.first()).toContainText(`1re ${nom(1)}`);
+  await expect(feuille.getByRole('rowheader')).toHaveCount(6);
+  await expect(feuille).toContainText('Définitif');
+  await expect(feuille.getByRole('row').nth(1)).toContainText('Vainqueur');
+  await page.screenshot({ path: 'test-results/impression-classement-final.png', fullPage: true });
 });
