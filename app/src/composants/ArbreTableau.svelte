@@ -119,6 +119,13 @@
               </div>
             {/each}
           </div>
+          {#if colonne.taille === 2 && structure.troisieme}
+            <!-- US-114 CA-2 : le match pour la 3e place, sous la finale. -->
+            <div class="troisieme">
+              <h4>{t.titreMatch(0, 1)}</h4>
+              {@render carte(structure.troisieme)}
+            </div>
+          {/if}
         </div>
       {/each}
     </div>
@@ -186,6 +193,12 @@
   .matchs {
     display: flex;
     flex-direction: column;
+  }
+
+  .troisieme {
+    display: flex;
+    flex-direction: column;
+    margin-top: 16px;
   }
 
   .paire {

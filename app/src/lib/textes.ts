@@ -1134,6 +1134,8 @@ export const textes = {
         TOUCHES_TABLEAU_INVALIDES: 'Le tableau se joue en 10 ou 15 touches',
         MATCH_TROISIEME_INVALIDE: 'Choisissez si le match pour la 3e place est joué',
         FORMULE_FIGEE: 'Cette épreuve est terminée : sa formule n’est plus modifiable',
+        /** US-114 CA-5 : le match pour la 3e place ne se retire plus une fois tiré. */
+        TROISIEME_PLACE_REGLEE: 'Le match pour la 3e place est déjà tiré',
       },
     },
     chargement: 'Chargement de l’épreuve…',

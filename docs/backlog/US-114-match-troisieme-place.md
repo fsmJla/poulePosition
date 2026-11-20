@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F10 (exigences §3), US-028 CA-5
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-111, US-112, US-028
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-114-match-troisieme-place`
 
 ## Récit
 
@@ -62,6 +62,10 @@ Disponible sur le PC pilote sans réseau (journal local).
 - Le perdant d'une demie retiré pour abandon ou forfait déclare forfait pour la 3e place (Hypothèse à vérifier dans le
   règlement de la FIE).
 
+- Implémentation (2026-11-20) : la pilule « 3e place » porte « 0/1 » puis « terminé » ; le match s'affiche sous la finale,
+  titré « Match pour la 3e place ». Le cas limite du tableau de 2 (option sans effet) n'est pas encore annoncé sur la page
+  « Formule » : la règle du domaine l'ignore simplement (pas de demi-finale, pas de match).
+
 ## Questions bloquantes
 
 Aucune.
@@ -76,3 +80,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (spécification de l'Epic 6) ; hypothèses et écarts validés par l'utilisateur, passe à Prête |
+| 2026-11-20 | Implémentée : pilule et match sous la finale, refus de le retirer une fois tiré ; passe En revue |
