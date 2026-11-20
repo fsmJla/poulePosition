@@ -261,8 +261,21 @@
   ],
   "app/src/composants/Onglets.svelte": ["manifestation", "plan"],
   "app/src/lib/theme.ts": ["theme", "theme-icones"],
-  "app/src/lib/textes.ts": ["poules-classement", "tableau-creer", "tableau-voir", "tableau-saisir", "tableau-appeler", "tableau-retrait"],
-  "app/src/pages/Tableau.svelte": ["tableau-creer", "tableau-voir", "tableau-saisir", "tableau-appeler", "tableau-retrait"],
+  "app/src/lib/textes.ts": [
+    "poules-classement",
+    "tableau-creer",
+    "tableau-voir",
+    "tableau-saisir",
+    "tableau-appeler",
+    "tableau-retrait"
+  ],
+  "app/src/pages/Tableau.svelte": [
+    "tableau-creer",
+    "tableau-voir",
+    "tableau-saisir",
+    "tableau-appeler",
+    "tableau-retrait"
+  ],
   "app/src/composants/ArbreTableau.svelte": ["tableau-voir", "tableau-saisir"],
   "app/src/composants/CarteSaisieTableau.svelte": ["tableau-saisir", "tableau-appeler", "tableau-retrait"],
   "app/src/composants/RetraitTableau.svelte": ["tableau-retrait"],
@@ -343,8 +356,20 @@
   "app/src/composants/CodeQr.svelte": ["acces-qr"],
   "app/src/pages/ImpressionAcces.svelte": ["acces-qr"],
   "paquets/domaine/src/acces-qr.ts": ["acces-qr"],
-  "paquets/domaine/src/tableau.ts": ["tableau-creer", "tableau-voir", "tableau-saisir", "tableau-appeler", "tableau-retrait"],
-  "tests/e2e/tableau-outils.ts": ["tableau-creer", "tableau-voir", "tableau-saisir", "tableau-appeler", "tableau-retrait"],
+  "paquets/domaine/src/tableau.ts": [
+    "tableau-creer",
+    "tableau-voir",
+    "tableau-saisir",
+    "tableau-appeler",
+    "tableau-retrait"
+  ],
+  "tests/e2e/tableau-outils.ts": [
+    "tableau-creer",
+    "tableau-voir",
+    "tableau-saisir",
+    "tableau-appeler",
+    "tableau-retrait"
+  ],
   "paquets/protocole/src/acces-qr.ts": ["acces-qr"],
   "app/src/lib/presence-pilote.ts": ["presence-pilote", "prise-de-main", "vue-saisie"],
   "paquets/domaine/src/vue-saisie.ts": ["vue-saisie", "matchs-piste"],
