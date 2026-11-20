@@ -24,6 +24,7 @@ export * from './publication-lot';
 export * from './reprise-lot';
 export * from './tireurs';
 export * from './poules';
+export * from './pave-score';
 export * from './tableau';
 export * from './appareils';
 export * from './repartition';

@@ -196,10 +196,22 @@
   /** US-112 CA-5 : les pistes de l'épreuve, celles des poules. */
   const pistes = $derived([...new Set((poules?.poules ?? []).map(({ piste }) => piste))].sort((a, b) => a - b));
   const proposee = $derived(structure && cree ? pisteProposee(structure, pistes) : null);
-  /** US-112 CA-1 : la piste saisie par l'organisateur ; sinon, la piste proposée. */
+  /** US-117 CA-1 : « Autre… » ouvre un champ pour une piste hors de la liste. */
   let pisteSaisie = $state<number | null>(null);
-  const pisteChoisie = $derived(
-    typeof pisteSaisie === 'number' && pisteSaisie >= 1 ? pisteSaisie : (proposee?.piste ?? null),
+  let autrePiste = $state(false);
+  /** Les pastilles : les pistes des poules, et la piste du match si elle n'en est pas. */
+  const pistesProposees = $derived(
+    [...new Set([...pistes, ...(matchCarte?.piste ? [matchCarte.piste] : [])])].sort((a, b) => a - b),
+  );
+  /** Les pistes où un match appelé n'est pas réglé. */
+  const pistesOccupees = $derived(
+    new Set(
+      structure && cree
+        ? tousLesMatchs(structure)
+            .filter((m) => m.piste !== null && m.etat === 'aTirer')
+            .map((m) => m.piste!)
+        : [],
+    ),
   );
   let matchDeLaPiste = '';
   $effect(() => {
@@ -207,6 +219,7 @@
     if (id === matchDeLaPiste) return;
     matchDeLaPiste = id;
     pisteSaisie = null;
+    autrePiste = false;
   });
 
   /** US-112 CA-2 et CA-4 : appelle le match de la carte sur une piste, ou lui retire sa piste. */
@@ -221,6 +234,7 @@
     }
     erreur = null;
     pisteSaisie = null;
+    autrePiste = false;
     annonce = piste === null ? t.pisteRetireeAnnonce(titre) : t.appelAnnonce(titre, piste);
     void synchronisation.envoyer(epreuveId).then(() => recharger());
   }
@@ -412,45 +426,71 @@
           >
             {#snippet appel()}
               {#if matchCarte}
-                {@const titreMatch = t.titreMatch(matchCarte.tour, matchCarte.numero)}
-                <div class="appel">
-                  <label class="champ-piste"
-                    >{t.piste}
+                {@const actuelle = matchCarte.piste}
+                <!-- US-117 CA-1 : un clic sur une pastille appelle le match sur cette piste, ou l'y change. -->
+                <div class="appel" role="group" aria-label={t.piste}>
+                  <span class="libelle-piste" aria-hidden="true">{t.piste}</span>
+                  {#each pistesProposees as piste (piste)}
+                    {@const occupee = pistesOccupees.has(piste) && piste !== actuelle}
+                    {@const libelle =
+                      piste === actuelle
+                        ? t.pisteDuMatch(piste)
+                        : `${actuelle === null ? t.appeler(piste) : t.changerPiste(piste)}${occupee ? ` (${t.pisteOccupee})` : ''}`}
+                    {#if piste === actuelle}
+                      <!-- US-117 : la piste du match, avec sa croix pour la retirer. -->
+                      <span class="puce-piste" title={libelle}
+                        ><span aria-label={libelle}>{piste}</span><button
+                          type="button"
+                          class="retirer-piste"
+                          aria-label={t.retirerPiste(piste)}
+                          title={t.retirerPiste(piste)}
+                          onclick={() => void appelerSur(null)}><Icone nom="croix" taille={18} /></button
+                        ></span
+                      >
+                    {:else}
+                      <button
+                        type="button"
+                        class="pastille-piste"
+                        class:proposee={actuelle === null && piste === proposee?.piste}
+                        class:occupee
+                        aria-pressed="false"
+                        aria-label={libelle}
+                        title={libelle}
+                        onclick={() => void appelerSur(piste)}>{piste}</button
+                      >
+                    {/if}
+                  {/each}
+                  {#if autrePiste}
                     <input
+                      class="autre-piste"
                       type="number"
                       inputmode="numeric"
                       min="1"
                       max="99"
-                      list="pistes-epreuve"
+                      aria-label={t.autrePiste}
                       bind:value={pisteSaisie}
+                      onkeydown={(e) => {
+                        if (e.key === 'Enter' && typeof pisteSaisie === 'number') void appelerSur(pisteSaisie);
+                      }}
                     />
-                  </label>
-                  <datalist id="pistes-epreuve">
-                    {#each pistes as piste (piste)}<option value={piste}></option>{/each}
-                  </datalist>
-                  <button
-                    type="button"
-                    class="neutre"
-                    disabled={pisteChoisie === null}
-                    onclick={() => appelerSur(pisteChoisie)}
-                  >
-                    {matchCarte.piste === null ? t.appeler(pisteChoisie) : t.changerPiste(pisteChoisie)}
-                  </button>
-                  {#if proposee?.occupee && pisteChoisie === proposee.piste}<span class="discret">{t.pisteOccupee}</span
-                    >{/if}
-                  {#if matchCarte.piste !== null}
-                    <MenuActions
-                      id="menu-match"
-                      nom={titreMatch}
-                      actions={[{ libelle: t.retirerPiste, surChoix: () => void appelerSur(null) }]}
-                    />
+                    <button
+                      type="button"
+                      class="pastille-piste texte"
+                      disabled={typeof pisteSaisie !== 'number' || pisteSaisie < 1 || pisteSaisie > 99}
+                      onclick={() => typeof pisteSaisie === 'number' && void appelerSur(pisteSaisie)}
+                      >{t.appeler(typeof pisteSaisie === 'number' ? pisteSaisie : null)}</button
+                    >
+                  {:else}
+                    <button type="button" class="pastille-piste texte" onclick={() => (autrePiste = true)}
+                      >{t.autrePiste}</button
+                    >
                   {/if}
                 </div>
               {/if}
             {/snippet}
             {#snippet actions()}
               {#if matchCarte && modifiable && matchCarte.etat === 'aTirer'}
-                <button type="button" class="lien" onclick={() => (retraitOuvert = true)}>{t.retrait}</button>
+                <button type="button" class="secondaire" onclick={() => (retraitOuvert = true)}>{t.retrait}</button>
               {:else if matchCarte && modifiable && matchCarte.retrait}
                 {@const suivant = matchsSuivants(structure, matchCarte.id).find((m) => m.etat === 'regle')}
                 <MenuActions
@@ -804,42 +844,97 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 6px 8px;
-    margin-top: 8px;
   }
 
-  .champ-piste {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+  .libelle-piste {
+    color: var(--texte-discret);
     font-size: 0.875rem;
   }
 
-  .champ-piste input {
-    width: 4.5rem;
+  .pastille-piste {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--bordure-champ);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--texte);
+    font-size: 0.9rem;
+  }
+
+  .pastille-piste.proposee {
+    border: 2px solid var(--accent);
+  }
+
+  .pastille-piste.occupee {
+    border-style: dashed;
+    color: var(--texte-discret);
+  }
+
+  .pastille-piste {
+    font-weight: 600;
+  }
+
+  .pastille-piste.texte {
+    padding: 0 16px;
+  }
+
+  .pastille-piste:disabled {
+    color: var(--texte-inactif);
+    cursor: default;
+  }
+
+  /* US-117 : la piste du match, foncée, avec sa croix « Retirer la piste ». */
+  .puce-piste {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
     min-height: 44px;
     box-sizing: border-box;
-    padding: 0 8px;
+    padding: 0 4px 0 16px;
+    border-radius: 999px;
+    background: var(--marque);
+    color: var(--sur-marque);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .retirer-piste {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--sur-marque);
+    cursor: pointer;
+  }
+
+  .secondaire {
+    min-height: 44px;
+    padding: 0 16px;
     border: 1px solid var(--bordure-champ);
     border-radius: 10px;
     background: var(--surface);
     color: var(--texte);
     font: inherit;
+    font-weight: 600;
+    cursor: pointer;
   }
 
-  .fin {
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .lien {
-    min-height: 0;
-    padding: 0;
-    border: none;
-    background: none;
-    color: var(--accent);
-    font-size: 0.875rem;
-    font-weight: 400;
-    text-decoration: underline;
+  .autre-piste {
+    width: 4.5rem;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 0 8px;
+    border: 2px solid var(--focus);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--texte);
+    font: inherit;
   }
 
   .message {

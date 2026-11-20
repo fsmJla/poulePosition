@@ -1,6 +1,7 @@
 // Tableau d'une épreuve (US-108) : création, appels sur les pistes, scores, retraits et classement final, tenus par le
 // journal de l'épreuve. Les calculs (taille, placement de la FIE, avancement, classement) sont purs ; l'écran affiche.
 import {
+  type ChoixScore,
   avancementPoules,
   classementDesPoules,
   MOTIFS_RETRAIT,
@@ -404,6 +405,19 @@ export function controleScoreTableau(
   if (priorite) return { ok: false, raison: 'PRIORITE_EN_TROP' };
   const vainqueur = touchesA > touchesB ? 'A' : 'B';
   return { ok: true, vainqueur, auTemps: Math.max(touchesA, touchesB) < touches };
+}
+
+/**
+ * US-117 CA-2 et CA-4 : le score de deux boutons choisis sur le PC (0 à N−1, ou « V » = N touches). Deux « V » sont
+ * refusés ; une égalité ou une victoire au temps se règlent ensuite par `controleScoreTableau`.
+ */
+export function scoreTableauDesBoutons(
+  a: ChoixScore,
+  b: ChoixScore,
+  touches: number,
+): { ok: true; touchesA: number; touchesB: number } | { ok: false; raison: 'DEUX_VAINQUEURS' } {
+  if (a === 'V' && b === 'V') return { ok: false, raison: 'DEUX_VAINQUEURS' };
+  return { ok: true, touchesA: a === 'V' ? touches : a, touchesB: b === 'V' ? touches : b };
 }
 
 /** Contexte des vérifications : l'état des poules, du tableau et la formule en vigueur. */

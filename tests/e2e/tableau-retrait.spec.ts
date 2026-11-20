@@ -9,6 +9,7 @@ import {
   ouvrirTableau,
   poulesJouees,
   resultatsPlanche11,
+  saisirScoreTableau,
 } from './tableau-outils';
 
 const carte = (page: Page) => page.getByRole('region', { name: 'Saisie du match' });
@@ -79,15 +80,7 @@ test('US-113 CA-4 : l’annulation est grisée une fois le match suivant réglé
   await arbre(page)
     .getByRole('button', { name: new RegExp(`^${nom(12)} contre ${nom(13)}, `) })
     .click();
-  await carte(page)
-    .getByRole('spinbutton', { name: /^Touches de/ })
-    .first()
-    .fill('15');
-  await carte(page)
-    .getByRole('spinbutton', { name: /^Touches de/ })
-    .last()
-    .fill('7');
-  await carte(page).getByRole('button', { name: 'Valider le score' }).click();
+  await saisirScoreTableau(page, 15, 7);
   await expect(
     arbre(page).getByRole('button', { name: new RegExp(`^${nom(12)} contre ${nom(13)}, Terminé`) }),
   ).toBeVisible();

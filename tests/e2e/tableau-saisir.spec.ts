@@ -1,6 +1,6 @@
-// Saisir et corriger un score du tableau sur le PC (US-111, planche 11) : carte de saisie, victoire au temps, égalité
-// départagée par la priorité, scores invalides, correction, correction impossible, lecture seule, temps réel (US-110
-// CA-5) et hors ligne.
+// Saisir et corriger un score du tableau sur le PC (US-111, planche 11 ; US-117, afficheur et pavé à la demande) :
+// carte de saisie, deux choix enregistrent, égalité départagée par la priorité, deux « V » refusés, victoire au temps,
+// correction, correction impossible, lecture seule, temps réel (US-110 CA-5) et hors ligne.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
 import {
@@ -10,6 +10,7 @@ import {
   ouvrirTableau,
   poulesJouees,
   resultatsPlanche11,
+  saisirScoreTableau,
 } from './tableau-outils';
 
 const carte = (page: Page) => page.getByRole('region', { name: 'Saisie du match' });
@@ -27,18 +28,11 @@ async function epreuvePlanche11(page: Page) {
   return { adresse, nom: (rang: number) => nomDe(qualifies[rang - 1]!) };
 }
 
-async function saisir(page: Page, haut: string, bas: string) {
-  await carte(page)
-    .getByRole('spinbutton', { name: /^Touches de/ })
-    .first()
-    .fill(haut);
-  await carte(page)
-    .getByRole('spinbutton', { name: /^Touches de/ })
-    .last()
-    .fill(bas);
-}
+const saisir = (page: Page, haut: number, bas: number) => saisirScoreTableau(page, haut, bas);
+const pave = (page: Page) => carte(page).getByRole('group', { name: /^Score de / });
+const cases = (page: Page) => carte(page).getByRole('button', { name: /^Score de .* : / });
 
-test('US-111 CA-1, CA-2, CA-6 et CA-9 : la carte du match choisi, valider, corriger (planche 11)', async ({
+test('US-111 CA-1, CA-2, CA-6 et CA-9 : la carte du match choisi, deux choix enregistrent, corriger (planche 11)', async ({
   page,
 }, info) => {
   test.skip(info.project.name !== 'pc', 'La planche est à 1360 px : projet « pc » seulement');
@@ -59,12 +53,21 @@ test('US-111 CA-1, CA-2, CA-6 et CA-9 : la carte du match choisi, valider, corri
   await expect(carte(page).getByRole('heading', { name: 'Tableau de 16 · match 5' })).toBeVisible();
   await expect(carte(page)).toContainText('(3)');
   await expect(carte(page)).toContainText('(14)');
-  await expect(carte(page).getByRole('spinbutton', { name: `Touches de ${nom(3)}` })).toBeVisible();
-  await saisir(page, '15', '11');
+  // US-117 : deux cases vides, le pavé ouvert sur le tireur de gauche ; pas de bouton « Valider ».
+  await expect(cases(page)).toHaveText(['–', '–']);
+  await expect(carte(page).getByRole('group', { name: `Score de ${nom(3)}` })).toBeVisible();
+  await expect(carte(page).getByRole('button', { name: 'Valider le score' })).toHaveCount(0);
+  await carte(page)
+    .getByRole('button', { name: /^V pour / })
+    .click();
+  // Le pavé passe à droite.
+  await expect(carte(page).getByRole('group', { name: `Score de ${nom(14)}` })).toBeVisible();
   await page.screenshot({ path: 'test-results/tableau-saisir.png', fullPage: true });
 
-  // CA-2 : le score est enregistré, le vainqueur passe en quart.
-  await carte(page).getByRole('button', { name: 'Valider le score' }).click();
+  // CA-2 : le second choix enregistre ; le vainqueur passe en quart.
+  await carte(page)
+    .getByRole('button', { name: /^11 pour / })
+    .click();
   const [court3, court14] = [nom(3).split(' ')[0], nom(14).split(' ')[0]];
   await expect(page.getByText(`${court3} 15–11 ${court14} enregistré`)).toBeVisible();
   await expect(arbre(page).getByRole('button', { name: `${nom(3)} contre ${nom(14)}, Terminé` })).toBeVisible();
@@ -77,43 +80,42 @@ test('US-111 CA-1, CA-2, CA-6 et CA-9 : la carte du match choisi, valider, corri
   await arbre(page)
     .getByRole('button', { name: `${nom(3)} contre ${nom(14)}, Terminé` })
     .click();
-  await expect(
-    carte(page)
-      .getByRole('spinbutton', { name: /^Touches de/ })
-      .first(),
-  ).toHaveValue('15');
-  await saisir(page, '13', '15');
-  await carte(page).getByRole('button', { name: 'Valider le score' }).click();
+  await expect(cases(page)).toHaveText(['15', '11']);
+  await expect(pave(page)).toHaveCount(0);
+  await saisir(page, 13, 15);
   await expect(
     arbre(page).getByRole('button', { name: `${nom(14)} contre Vainqueur du match 6, En attente` }),
   ).toBeVisible();
 });
 
-test('US-111 CA-3 à CA-5 : victoire au temps, égalité départagée par la priorité, score invalide', async ({ page }) => {
+test('US-111 CA-3 à CA-5 : deux « V » refusés, égalité départagée par la priorité, victoire au temps', async ({
+  page,
+}) => {
   test.setTimeout(150_000);
   await seConnecter(page);
   const { nom } = await epreuvePlanche11(page);
   await ouvrirTableau(page);
   await expect(carte(page).getByRole('heading', { name: 'Tableau de 16 · match 4' })).toBeVisible();
 
-  // CA-5 : au-delà des touches du tableau, refusé.
-  await saisir(page, '16', '3');
-  await carte(page).getByRole('button', { name: 'Valider le score' }).click();
-  await expect(carte(page).getByRole('alert')).toHaveText('Entre 0 et 15 touches');
+  // CA-5 et US-117 : deux « V » sont refusés, la saisie recommence ; aucun score ne dépasse les touches du tableau.
+  await expect(pave(page).getByRole('button')).toHaveCount(16);
+  await saisir(page, 15, 15);
+  await expect(carte(page).getByRole('alert')).toHaveText('Un seul vainqueur : choisissez « V » d’un seul côté');
+  await expect(cases(page)).toHaveText(['–', '–']);
+  await expect(carte(page).getByRole('group', { name: `Score de ${nom(4)}` })).toBeVisible();
 
-  // CA-3 : victoire au temps.
-  await saisir(page, '8', '6');
-  await expect(carte(page).getByText(`Victoire au temps de ${nom(4).split(' ')[0]}`)).toBeVisible();
-
-  // CA-4 : égalité, le vainqueur se désigne par la priorité.
-  await saisir(page, '9', '9');
+  // CA-4 : égalité, le vainqueur se désigne par la priorité, et ce choix enregistre.
+  await saisir(page, 9, 9);
   const priorite = carte(page).getByRole('group', { name: 'Vainqueur par priorité' });
   await expect(priorite).toBeVisible();
-  await expect(carte(page).getByRole('button', { name: 'Valider le score' })).toBeDisabled();
-  await priorite.getByRole('radio', { name: nom(13) }).check();
-  await carte(page).getByRole('button', { name: 'Valider le score' }).click();
+  await priorite.getByRole('button', { name: nom(13) }).click();
   await expect(arbre(page).getByRole('button', { name: `${nom(4)} contre ${nom(13)}, Terminé` })).toBeVisible();
   await expect(arbre(page).getByRole('button', { name: new RegExp(`^${nom(12)} contre ${nom(13)}`) })).toBeVisible();
+
+  // CA-3 : victoire au temps, sur le match suivant de la carte.
+  await expect(cases(page)).toHaveText(['–', '–']);
+  await saisir(page, 8, 6);
+  await expect(page.getByText(/ 8–6 .* enregistré$/)).toBeVisible();
 });
 
 test('US-111 CA-7 : un match dont le match suivant est réglé ne se corrige plus', async ({ page }) => {
@@ -126,12 +128,8 @@ test('US-111 CA-7 : un match dont le match suivant est réglé ne se corrige plu
     .getByRole('button', { name: `${nom(16)} contre ${nom(17)}, Terminé` })
     .click();
   await expect(carte(page)).toContainText('Corrigez d’abord le match suivant (tableau de 16 · match 1)');
-  await expect(carte(page).getByRole('button', { name: 'Valider le score' })).toHaveCount(0);
-  await expect(
-    carte(page)
-      .getByRole('spinbutton', { name: /^Touches de/ })
-      .first(),
-  ).toBeDisabled();
+  await expect(pave(page)).toHaveCount(0);
+  await expect(cases(page).first()).toBeDisabled();
   await carte(page).getByRole('button', { name: 'Tableau de 16 · match 1' }).click();
   await expect(carte(page).getByRole('heading', { name: 'Tableau de 16 · match 1' })).toBeVisible();
 });
@@ -143,7 +141,7 @@ test('US-111 CA-8 et US-110 CA-5 : un second onglet est en lecture seule et suit
   await seConnecter(page);
   const { adresse, nom } = await epreuvePlanche11(page);
   await ouvrirTableau(page);
-  await expect(carte(page).getByRole('button', { name: 'Valider le score' })).toBeVisible();
+  await expect(pave(page)).toBeVisible();
 
   const second = await page.context().newPage();
   await second.goto(`${adresse}/tableau`);
@@ -151,11 +149,11 @@ test('US-111 CA-8 et US-110 CA-5 : un second onglet est en lecture seule et suit
     timeout: 20_000,
   });
   // CA-8 : pas de saisie hors de l'onglet qui tient l'écriture.
-  await expect(carte(second).getByRole('button', { name: 'Valider le score' })).toHaveCount(0);
+  await expect(pave(second)).toHaveCount(0);
+  await expect(cases(second).first()).toBeDisabled();
 
   // US-110 CA-5 : un score saisi dans le premier onglet apparaît dans le second.
-  await saisir(page, '15', '10');
-  await carte(page).getByRole('button', { name: 'Valider le score' }).click();
+  await saisir(page, 15, 10);
   await expect(arbre(second).getByRole('button', { name: `${nom(4)} contre ${nom(13)}, Terminé` })).toBeVisible({
     timeout: 10_000,
   });
@@ -174,9 +172,9 @@ test('US-111 hors ligne : les matchs se saisissent sans réseau jusqu’à la fi
   await context.setOffline(true);
   // Quarts (4-5 et 3-6), demies, finale : le meilleur rang gagne 15-5.
   for (let i = 0; i < 5; i += 1) {
-    await expect(carte(page).getByRole('button', { name: 'Valider le score' })).toBeVisible();
-    await saisir(page, '15', '5');
-    await carte(page).getByRole('button', { name: 'Valider le score' }).click();
+    await expect(pave(page)).toBeVisible();
+    await expect(cases(page)).toHaveText(['–', '–']);
+    await saisir(page, 15, 5);
     await expect(page.getByText(/enregistré$/)).toBeVisible();
   }
   await pilules(page)

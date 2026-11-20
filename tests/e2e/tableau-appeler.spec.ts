@@ -9,6 +9,7 @@ import {
   ouvrirTableau,
   poulesJouees,
   resultatsPlanche11,
+  saisirScoreTableau,
 } from './tableau-outils';
 
 const carte = (page: Page) => page.getByRole('region', { name: 'Saisie du match' });
@@ -37,15 +38,17 @@ test('US-112 CA-1 à CA-4 : piste proposée, file d’une piste occupée, change
     .click();
   await expect(carte(page).getByRole('heading', { name: 'Quarts de finale · match 1' })).toBeVisible();
   await expect(carte(page)).toContainText('Piste à attribuer');
-  await expect(carte(page).getByRole('button', { name: 'Appeler sur la piste 4' })).toBeVisible();
-  await expect(carte(page).getByText('occupée', { exact: true })).toBeVisible();
-  // Un autre numéro se saisit.
-  await carte(page).getByLabel('Piste').fill('7');
-  await expect(carte(page).getByRole('button', { name: 'Appeler sur la piste 7' })).toBeVisible();
-  await carte(page).getByLabel('Piste').fill('');
+  // US-117 CA-1 : une pastille par piste ; la piste proposée est soulignée, les occupées marquées.
+  const pistes = carte(page).getByRole('group', { name: 'Piste' });
+  await expect(pistes.getByRole('button', { name: /^Appeler sur la piste [0-9]/ })).toHaveCount(4);
+  await expect(pistes.getByRole('button', { name: 'Appeler sur la piste 4 (occupée)' })).toHaveClass(/proposee/);
+  // Un autre numéro se saisit par « Autre… ».
+  await pistes.getByRole('button', { name: 'Autre…' }).click();
+  await pistes.getByLabel('Autre…').fill('7');
+  await expect(pistes.getByRole('button', { name: 'Appeler sur la piste 7' })).toBeEnabled();
 
   // CA-2 et CA-3 : appelé sur la piste 4, encore occupée : le match attend.
-  await carte(page).getByRole('button', { name: 'Appeler sur la piste 4' }).click();
+  await pistes.getByRole('button', { name: 'Appeler sur la piste 4 (occupée)' }).click();
   await expect(page.getByText('Quarts de finale · match 1 appelé sur la piste 4')).toBeVisible();
   await expect(
     arbre(page).getByRole('button', { name: `${nom(1)} contre ${nom(8)}, À tirer · piste 4` }),
@@ -56,15 +59,7 @@ test('US-112 CA-1 à CA-4 : piste proposée, file d’une piste occupée, change
   await arbre(page)
     .getByRole('button', { name: `${nom(4)} contre ${nom(13)}, En piste 4` })
     .click();
-  await carte(page)
-    .getByRole('spinbutton', { name: /^Touches de/ })
-    .first()
-    .fill('15');
-  await carte(page)
-    .getByRole('spinbutton', { name: /^Touches de/ })
-    .last()
-    .fill('9');
-  await carte(page).getByRole('button', { name: 'Valider le score' }).click();
+  await saisirScoreTableau(page, 15, 9);
   await expect(arbre(page).getByRole('button', { name: `${nom(1)} contre ${nom(8)}, En piste 4` })).toBeVisible();
 
   // CA-4 : changer de piste, puis la retirer.
@@ -72,11 +67,14 @@ test('US-112 CA-1 à CA-4 : piste proposée, file d’une piste occupée, change
     .getByRole('button', { name: `${nom(1)} contre ${nom(8)}, En piste 4` })
     .click();
   await expect(carte(page)).toContainText(/Piste 4 · appelé à \d+ h \d\d/);
-  await carte(page).getByLabel('Piste').fill('5');
-  await carte(page).getByRole('button', { name: 'Changer pour la piste 5' }).click();
+  // US-117 : la piste du match est une puce, avec sa croix pour la retirer.
+  await expect(pistes.getByLabel('Piste 4 : le match y est appelé')).toBeVisible();
+  await expect(pistes.getByRole('button', { name: 'Retirer la piste 4' })).toBeVisible();
+  await pistes.getByRole('button', { name: 'Autre…' }).click();
+  await pistes.getByLabel('Autre…').fill('5');
+  await pistes.getByRole('button', { name: 'Appeler sur la piste 5' }).click();
   await expect(arbre(page).getByRole('button', { name: `${nom(1)} contre ${nom(8)}, En piste 5` })).toBeVisible();
-  await carte(page).getByRole('button', { name: 'Autres actions pour Quarts de finale · match 1' }).click();
-  await page.getByRole('menuitem', { name: 'Retirer la piste' }).click();
+  await pistes.getByRole('button', { name: 'Retirer la piste 5' }).click();
   await expect(
     arbre(page).getByRole('button', { name: `${nom(1)} contre ${nom(8)}, À tirer · piste à attribuer` }),
   ).toBeVisible();

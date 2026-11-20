@@ -2083,6 +2083,16 @@ export const textes = {
     } as Record<string, string>,
   },
   /** US-109 à US-115 : l'étape « Tableau » (planche 11). */
+  /** US-117, US-118 : afficheur et pavé de score à la demande, communs aux saisies du PC et du smartphone. */
+  pave: {
+    scoreDe: (nom: string) => 'Score de ' + nom,
+    case: (nom: string, valeur: string | null, ouverte: boolean) =>
+      'Score de ' + nom + ' : ' + (valeur ?? 'à choisir') + (ouverte ? '' : ', toucher pour modifier'),
+    bouton: (valeur: string, nom: string) => valeur + ' pour ' + nom,
+    corriger: 'Touchez un score pour le corriger.',
+    priorite: 'Égalité : qui a la priorité ?',
+    prioriteGroupe: 'Vainqueur par priorité',
+  },
   tableau: {
     titre: 'Tableau',
     etats: { aCreer: 'À créer', enCours: 'En cours', termine: 'Terminé' },
@@ -2158,7 +2168,10 @@ export const textes = {
     appeler: (piste: number | null) => (piste ? `Appeler sur la piste ${piste}` : 'Appeler'),
     changerPiste: (piste: number | null) => (piste ? `Changer pour la piste ${piste}` : 'Changer de piste'),
     pisteOccupee: 'occupée',
-    retirerPiste: 'Retirer la piste',
+    /** US-117 : la pastille de la piste du match. */
+    pisteDuMatch: (piste: number) => `Piste ${piste} : le match y est appelé`,
+    autrePiste: 'Autre…',
+    retirerPiste: (piste: number) => `Retirer la piste ${piste}`,
     appelAnnonce: (match: string, piste: number) => `${match} appelé sur la piste ${piste}`,
     pisteRetireeAnnonce: (match: string) => `${match} : piste retirée`,
     menuMatch: (match: string) => match,
