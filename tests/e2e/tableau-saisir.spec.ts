@@ -75,6 +75,13 @@ test('US-111 CA-1, CA-2, CA-6 et CA-9 : la carte du match choisi, deux choix enr
     arbre(page).getByRole('button', { name: `${nom(3)} contre Vainqueur du match 6, En attente` }),
   ).toBeVisible();
   await expect(pilules(page).nth(1)).toHaveText('Tableau de 165/8');
+  // US-119 CA-1 et CA-2 : la carte des saisies reçues, sous l'arbre, note le score saisi sur ce PC.
+  const recues = page.getByRole('region', { name: 'Saisies reçues des smartphones' });
+  await expect(recues.getByRole('listitem').first()).toContainText(
+    `Tableau de 16 · match 5 : ${court3} 15 – 11 ${court14}`,
+  );
+  await expect(recues.getByRole('listitem').first()).toContainText('saisi sur ce PC');
+  await expect(recues.getByRole('listitem').first()).toContainText('Enregistrée');
 
   // CA-6 : correction d'un match terminé dont le match suivant n'est pas réglé ; le vainqueur change.
   await arbre(page)
@@ -86,6 +93,10 @@ test('US-111 CA-1, CA-2, CA-6 et CA-9 : la carte du match choisi, deux choix enr
   await expect(
     arbre(page).getByRole('button', { name: `${nom(14)} contre Vainqueur du match 6, En attente` }),
   ).toBeVisible();
+  // US-119 CA-2 : la correction dit le score qu'elle remplace.
+  await expect(recues.getByRole('listitem').first()).toContainText(
+    'Tableau de 16 · match 5 : correction de 15–11 en 13–15',
+  );
 });
 
 test('US-111 CA-3 à CA-5 : deux « V » refusés, égalité départagée par la priorité, victoire au temps', async ({
@@ -177,6 +188,10 @@ test('US-111 hors ligne : les matchs se saisissent sans réseau jusqu’à la fi
     await saisir(page, 15, 5);
     await expect(page.getByText(/enregistré$/)).toBeVisible();
   }
+  // US-119 hors ligne : la liste se lit dans le journal local ; plus d'appareils connus.
+  const recues = page.getByRole('region', { name: 'Saisies reçues des smartphones' });
+  await expect(recues).toContainText('Hors ligne : aucun appareil');
+  await expect(recues.getByRole('listitem')).toHaveCount(5);
   await pilules(page)
     .filter({ hasText: /^Finale/ })
     .click();

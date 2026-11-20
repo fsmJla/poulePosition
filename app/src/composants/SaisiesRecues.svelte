@@ -25,7 +25,12 @@
     return `${d.getHours()} h ${String(d.getMinutes()).padStart(2, '0')}`;
   };
   const quoi = (l: LigneSaisie) => {
-    const match = l.numero === null ? t.poule(l.poule) : t.match(l.poule, l.numero);
+    // US-119 : une ligne du tableau se nomme comme son match (« Tableau de 16 · match 5 », « Finale »).
+    const match = l.match
+      ? textes.tableau.titreMatch(l.match.tour, l.match.numero)
+      : l.numero === null
+        ? t.poule(l.poule)
+        : t.match(l.poule, l.numero);
     return l.correctionDe
       ? `${match} : ${t.correction(`${l.correctionDe[0]}–${l.correctionDe[1]}`, `${l.touchesA}–${l.touchesB}`)}`
       : `${match} : ${l.nomA} ${l.touchesA} – ${l.touchesB} ${l.nomB}`;

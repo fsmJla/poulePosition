@@ -333,7 +333,7 @@
         {/key}
       {:else if route.page === 'tableauEpreuve' && route.epreuveId}
         {#key route.epreuveId}
-          <Tableau {session} epreuveId={route.epreuveId} {journal} {synchronisation} {accueil} {naviguer} />
+          <Tableau {session} epreuveId={route.epreuveId} {journal} {synchronisation} {accueil} {naviguer} {presence} />
         {/key}
       {:else if route.page === 'parametresEpreuve' && route.epreuveId}
         {#key route.epreuveId}

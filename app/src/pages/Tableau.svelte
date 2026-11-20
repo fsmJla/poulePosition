@@ -6,6 +6,7 @@
   import { onMount } from 'svelte';
   import {
     avancementTour,
+    lignesSaisiesTableau,
     avancementPoules,
     classementDesPoules,
     poulesDe,
@@ -25,6 +26,7 @@
     pisteProposee,
     type DonneesScoreTableau,
     type Epreuve,
+    type LigneSaisie,
     type MatchTableau,
     type PlaceTableau,
   } from '@poule-position/domaine';
@@ -37,12 +39,14 @@
   import type { Accueil } from '../lib/accueil';
   import type { VerdictArchivage } from '../lib/archivage';
   import { prendreEcriture, type Journal } from '../lib/journal';
-  import { cheminPoulesEpreuve } from '../lib/routes';
+  import { cheminParametresEpreuve, cheminPoulesEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { appelerMatch, creerTableau, retirerDuTableau, saisirScoreTableau, terminerEpreuve } from '../lib/tableau';
   import ClassementFinal from '../composants/ClassementFinal.svelte';
   import RetraitTableau from '../composants/RetraitTableau.svelte';
+  import SaisiesRecues from '../composants/SaisiesRecues.svelte';
+  import type { PresencePilote } from '../lib/presence-pilote';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
@@ -52,6 +56,8 @@
     synchronisation: Synchronisation;
     accueil: Accueil;
     naviguer: (chemin: string) => void;
+    /** US-119 : les smartphones connectés, pour la carte des saisies reçues. */
+    presence: PresencePilote;
     /** Intervalles de relecture (journal local, copie du pilote), en millisecondes. */
     relecture?: number;
     copie?: number;
@@ -64,6 +70,7 @@
     synchronisation,
     accueil,
     naviguer,
+    presence,
     relecture = 2000,
     copie = 30_000,
   }: Proprietes = $props();
@@ -73,6 +80,9 @@
   const contexte = $derived({ clubId: session.compte.clubId, auteur: session.compte.email });
 
   let epreuve = $state<Epreuve | null>(null);
+  /** US-119 : les saisies du tableau reçues des smartphones et saisies sur ce PC, et les appareils connectés. */
+  let lignes = $state<LigneSaisie[]>([]);
+  let appareils = $state<number | null>(null);
   let chargee = $state(false);
   let pilote = $state(false);
   let ecriture = $state(true);
@@ -115,6 +125,8 @@
 
   async function recharger() {
     epreuve = (await journal.lire(epreuveId)).epreuve;
+    lignes = lignesSaisiesTableau(await journal.evenements(epreuveId), epreuve);
+    appareils = presence.appareils(epreuveId);
   }
 
   onMount(() => {
@@ -132,6 +144,14 @@
       liberer?.();
       void recharger();
     });
+    // US-119 CA-3 : une saisie d'un smartphone (écrite hors de cette page) et les appareils, sans attendre la relecture.
+    const arreterEnvoi = synchronisation.surEnvoi((id) => {
+      if (id === epreuveId) void recharger();
+    });
+    const arreterAppareils = presence.surAppareils((id, connectes) => {
+      if (id === epreuveId) appareils = connectes;
+    });
+    const arreterEtat = presence.surEtat(() => (appareils = presence.appareils(epreuveId)));
     void (async () => {
       await synchronisation.telechargerCopie(epreuveId);
       pilote = (await journal.etat(epreuveId))?.pilote ?? false;
@@ -151,6 +171,9 @@
       clearInterval(relire);
       clearInterval(retelecharger);
       arreterPerte();
+      arreterEnvoi();
+      arreterAppareils();
+      arreterEtat();
     };
   });
 
@@ -533,6 +556,13 @@
           choisi={matchCarte?.id ?? null}
           choisir={(id) => (choisi = id)}
           {modifiable}
+        />
+        <!-- US-119 : les saisies du tableau reçues des smartphones, sous l'arbre (carte de la planche 10). -->
+        <SaisiesRecues
+          {lignes}
+          {appareils}
+          {pilote}
+          gererLesAcces={() => naviguer(cheminParametresEpreuve(epreuveId))}
         />
       {/if}
     {:else}

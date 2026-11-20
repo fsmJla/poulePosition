@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F8 et F10 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-100, US-106, US-111
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-119-saisies-recues-tableau`
 
 ## Récit
 
@@ -72,3 +72,5 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (retour de recette d'US-117 et d'US-118) ; Prête |
+| 2026-11-20 | Implémentée : `lignesSaisiesTableau` (domaine), carte `SaisiesRecues` sous l'arbre, temps réel et hors ligne ; passe En revue |
+| 2026-11-20 | Recette OK sur https://poule-position-git-us-us-119-saisies-re-69ec00-fsmjlas-projects.vercel.app ; passe Terminée |

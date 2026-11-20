@@ -349,7 +349,7 @@
   "app/src/composants/MesMatchs.svelte": ["acces-tireur", "mes-matchs-tireur"],
   "app/src/composants/SaisieMatch.svelte": ["saisie-match", "correction-score", "mes-matchs-tireur", "saisies-recues"],
   "app/src/lib/table-saisies.ts": ["saisie-match", "saisies-recues"],
-  "app/src/composants/SaisiesRecues.svelte": ["saisies-recues"],
+  "app/src/composants/SaisiesRecues.svelte": ["saisies-recues", "tableau-saisir", "saisie-tableau"],
   "app/src/composants/BandeauEcartees.svelte": ["saisies-recues", "saisie-suspendue"],
   "paquets/domaine/src/saisies.ts": ["saisie-match", "saisies-recues", "correction-score", "saisie-tableau"],
   "paquets/protocole/src/saisies.ts": ["saisie-match", "saisie-tableau"],
