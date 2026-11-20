@@ -467,14 +467,20 @@
     "saisies-recues",
     "saisie-tableau"
   ],
-  "app/src/pages/Impressions.svelte": ["impressions"],
-  "app/src/pages/Imprimer.svelte": ["impressions", "impression-presence", "impression-poules"],
+  "app/src/pages/Impressions.svelte": ["impressions", "impression-tableau", "impression-poules", "impression-presence"],
+  "app/src/pages/Imprimer.svelte": ["impressions", "impression-presence", "impression-poules", "impression-tableau"],
   "app/src/composants/FeuilleImprimee.svelte": ["impressions", "impression-presence", "impression-poules"],
   "app/src/lib/impressions.ts": ["impressions"],
-  "paquets/domaine/src/impressions.ts": ["impressions", "impression-presence"],
+  "paquets/domaine/src/impressions.ts": [
+    "impressions",
+    "impression-presence",
+    "impression-tableau",
+    "impression-poules"
+  ],
   "app/src/composants/impressions/ImpressionPresence.svelte": ["impression-presence"],
   "app/src/composants/impressions/ImpressionPoulesVierges.svelte": ["impression-poules"],
   "app/src/composants/impressions/ImpressionPoulesResultats.svelte": ["impression-poules"],
   "app/src/composants/impressions/ImpressionPoulesPistes.svelte": ["impression-poules"],
-  "app/src/composants/impressions/ImpressionClassementPoules.svelte": ["impression-poules"]
+  "app/src/composants/impressions/ImpressionClassementPoules.svelte": ["impression-poules"],
+  "app/src/composants/impressions/ImpressionFeuillesMatch.svelte": ["impression-tableau"]
 }

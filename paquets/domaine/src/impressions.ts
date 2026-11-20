@@ -2,7 +2,7 @@
 // l'épreuve, et ce que chaque document imprime. Tout se calcule à partir de la projection locale : hors ligne compris.
 import type { EtatPoules } from './poules';
 import type { EtatTableau } from './tableau';
-import { structureTableau, tousLesMatchs } from './tableau';
+import { structureTableau, tousLesMatchs, type MatchTableau, type StructureTableau } from './tableau';
 import type { Tireur } from './tireurs';
 
 /** Les documents imprimables d'une épreuve, dans l'ordre de l'étape « Impressions » (planche 22). */
@@ -69,4 +69,20 @@ export function lignesPresence(tireurs: readonly Tireur[]): (Tireur & { numero: 
   return [...tireurs]
     .sort((a, b) => ordre.compare(a.nom, b.nom) || ordre.compare(a.prenom, b.prenom))
     .map((tireur, i) => ({ ...tireur, numero: i + 1 }));
+}
+
+/**
+ * US-126 CA-1 et CA-4 : les matchs à tirer d'un tour (les deux tireurs connus), dans l'ordre du tableau ; au tour de la
+ * finale (2), le match pour la 3e place suit la finale.
+ */
+export function matchsAImprimer(structure: StructureTableau, tour: number): MatchTableau[] {
+  const pret = (m: MatchTableau) => m.etat === 'aTirer' && m.haut.tireurId !== null && m.bas.tireurId !== null;
+  const matchs = structure.tours.find((t) => t.taille === tour)?.matchs ?? [];
+  const troisieme = tour === 2 && structure.troisieme ? [structure.troisieme] : [];
+  return [...matchs, ...troisieme].filter(pret);
+}
+
+/** US-126 : les tours dont au moins un match est à tirer, à proposer dans l'étape « Impressions ». */
+export function toursAImprimer(structure: StructureTableau): number[] {
+  return structure.tours.map((t) => t.taille).filter((tour) => matchsAImprimer(structure, tour).length > 0);
 }

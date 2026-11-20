@@ -2150,6 +2150,22 @@ export const textes = {
       pied: (presents: number, total: number) =>
         `${presents} présent${presents > 1 ? 's' : ''} sur ${total} au moment de l’impression`,
     },
+    // US-126 : feuilles de match du tableau (planche 28).
+    feuillesMatch: {
+      titre: (tour: string) => `Feuilles de match · ${tour}`,
+      piste: (piste: number | null) => `${piste ? `Piste ${piste}` : 'Piste ____'} · ___ h ___`,
+      cotes: { gauche: 'À gauche', droite: 'À droite' },
+      touches: 'Touches',
+      vainqueur: 'Vainqueur : ………………………………………………',
+      auTemps: '☐ au temps',
+      priorite: '☐ à égalité, priorité à : ………………………',
+      signatures: ['Arbitre', 'Tireur à gauche', 'Tireur à droite'],
+      rapporter: 'Rapportez la feuille à la table de marque dès la fin du match.',
+      suite: (tour: string) => `Le vainqueur passe au tour suivant : ${tour}.`,
+      finale: 'Le vainqueur remporte l’épreuve.',
+      couper: 'couper ici',
+      pied: 'matchs à tirer',
+    },
     // US-125 : classement après les poules (planche 27).
     classementPoules: {
       titre: 'Classement après les poules',

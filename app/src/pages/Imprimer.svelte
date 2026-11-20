@@ -6,6 +6,8 @@
   import {
     DOCUMENTS_IMPRIMES,
     lienQr,
+    structureTableau,
+    toursAImprimer,
     poulesDe,
     raisonIndisponible,
     tableauDe,
@@ -20,6 +22,7 @@
   import ImpressionPoulesResultats from '../composants/impressions/ImpressionPoulesResultats.svelte';
   import ImpressionPoulesPistes from '../composants/impressions/ImpressionPoulesPistes.svelte';
   import ImpressionClassementPoules from '../composants/impressions/ImpressionClassementPoules.svelte';
+  import ImpressionFeuillesMatch from '../composants/impressions/ImpressionFeuillesMatch.svelte';
   import type { AccesQrClient } from '../lib/acces-qr';
   import type { Accueil } from '../lib/accueil';
   import { documentLivre } from '../lib/impressions';
@@ -67,6 +70,9 @@
   const poulesChoisies = $derived(
     (source?.poules.poules ?? []).filter((p) => options?.poule === undefined || p.numero === options.poule),
   );
+  /** US-126, US-127 : le tableau, et le tour choisi (par défaut, le premier qui a un match à tirer). */
+  const structure = $derived(source ? structureTableau(source.tableau, source.matchTroisieme) : null);
+  const tour = $derived(options?.tour ?? (structure ? (toursAImprimer(structure)[0] ?? 0) : 0));
   const raison = $derived(document && source ? raisonIndisponible(document, source) : null);
   const pret = $derived(document !== null && documentLivre(document) && source !== null && raison === null);
   /** En-tête des feuilles : épreuve, arme, compétition, date. */
@@ -144,6 +150,8 @@
             {contexte}
             {imprimeLe}
           />
+        {:else if document === 'feuillesMatch' && structure}
+          <ImpressionFeuillesMatch {structure} {tour} tireurs={parId} {contexte} {imprimeLe} />
         {/if}
         <!-- Les documents de l'Epic 7 (US-121 à US-128) se branchent ici. -->
       </div>

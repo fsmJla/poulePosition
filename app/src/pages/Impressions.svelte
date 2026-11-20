@@ -7,6 +7,7 @@
     poulesDe,
     raisonIndisponible,
     structureTableau,
+    toursAImprimer,
     tableauDe,
     tireursDe,
     type Epreuve,
@@ -63,9 +64,7 @@
   const numerosPoules = $derived(source ? source.poules.poules.map(({ numero }) => numero) : []);
   const structure = $derived(source ? structureTableau(source.tableau, source.matchTroisieme) : null);
   /** Les tours du tableau qui ont un match à tirer (feuilles de match). */
-  const tours = $derived(
-    structure ? structure.tours.filter((x) => x.matchs.some((m) => m.etat === 'aTirer')).map((x) => x.taille) : [],
-  );
+  const tours = $derived(structure ? toursAImprimer(structure) : []);
   const tourChoisi = $derived(tour !== null && tours.includes(tour) ? tour : (tours[0] ?? null));
 
   const raison = (ligne: LigneImpression) =>
