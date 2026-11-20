@@ -233,6 +233,11 @@ signalés par un Triangle d'alerte) et l'action principale « Créer le tableau 
 par deux par une accolade `--accent-teinte-bordure` ; l'état de chaque match en bas de sa carte. À 390 px, pilules et arbre
 défilent dans leur cadre.
 
+**Livré par US-111 (saisie du tableau sur le PC) :** la carte de saisie au-dessus de l'arbre (bordure `--accent` de 2 px) :
+match, piste et heure d'appel, tireurs avec leur rang, deux champs de touches, action principale « Valider le score ». Une
+égalité ouvre « Vainqueur par priorité » (deux boutons radio, bordure `--etat-attente-bordure`) : aucune planche, écart
+déclaré dans l'US.
+
 ## Maquette « Déroulé de l'épreuve » (2026-11-17)
 
 Elle prolonge la maquette « IHM de l'organisateur » (mêmes entête, fil d'Ariane, navigation par étapes, charte et

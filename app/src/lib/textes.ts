@@ -2100,6 +2100,26 @@ export const textes = {
     avancementTour: (regles: number, total: number) =>
       total > 0 && regles === total ? 'terminé' : `${regles}/${total}`,
     tours: 'Tours du tableau',
+    /** US-111 : carte de saisie du match choisi. */
+    titreMatch: (tour: number, numero: number) =>
+      tour === 0 ? 'Match pour la 3e place' : tour === 2 ? 'Finale' : `${nomDuTour(tour)} · match ${numero}`,
+    appele: (piste: number, heure: number) => {
+      const date = new Date(heure);
+      return `Piste ${piste} · appelé à ${date.getHours()} h ${String(date.getMinutes()).padStart(2, '0')}`;
+    },
+    enFile: (piste: number) => `Piste ${piste} · en attente de la piste`,
+    pisteAAttribuer: 'Piste à attribuer',
+    touchesDe: (nom: string) => `Touches de ${nom}`,
+    valider: 'Valider le score',
+    victoireAuTemps: (nom: string) => `Victoire au temps de ${nom}`,
+    priorite: 'Vainqueur par priorité',
+    prioriteMention: 'priorité',
+    horsBornes: (touches: number) => `Entre 0 et ${touches} touches`,
+    scoreEnregistre: (a: string, ta: number, tb: number, b: string) => `${a} ${ta}–${tb} ${b} enregistré`,
+    enAttenteDe: (provenance: string) => `En attente : ${provenance.charAt(0).toLowerCase()}${provenance.slice(1)}`,
+    corrigerDabord: (suivant: string) => `Corrigez d’abord le match suivant (${suivant})`,
+    retrait: 'Abandon, forfait, exclusion…',
+    carteSaisie: 'Saisie du match',
     poulesEnCours: (regles: number, total: number) =>
       `Le tableau se crée quand toutes les poules sont terminées · ${regles} match${regles > 1 ? 's' : ''} sur ${total}`,
     voirPoules: 'Voir les poules',

@@ -15,11 +15,14 @@
     tableauDe,
     tireursDe,
     tirerAuSort,
+    tousLesMatchs,
+    type DonneesScoreTableau,
     type Epreuve,
     type MatchTableau,
     type PlaceTableau,
   } from '@poule-position/domaine';
   import ArbreTableau from '../composants/ArbreTableau.svelte';
+  import CarteSaisieTableau from '../composants/CarteSaisieTableau.svelte';
   import ConfirmationArchivage from '../composants/ConfirmationArchivage.svelte';
   import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
   import Icone from '../composants/Icone.svelte';
@@ -30,7 +33,7 @@
   import { cheminPoulesEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
-  import { creerTableau } from '../lib/tableau';
+  import { creerTableau, saisirScoreTableau } from '../lib/tableau';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
@@ -66,6 +69,7 @@
   let ecriture = $state(true);
   let confirmer = $state(false);
   let annonce = $state('');
+  let erreur = $state<string | null>(null);
   /** US-110 CA-1 : le tour choisi par l'organisateur ; sinon, le premier tour pas terminé. */
   let tourManuel = $state<number | null>(null);
   /** US-110 CA-4 : le match choisi dans l'arbre. */
@@ -164,6 +168,35 @@
     return indice === -1 ? Math.max(0, tours.length - 1) : indice;
   });
   const tourChoisi = $derived(tourManuel ?? tourEnCours);
+  /**
+   * US-111 CA-1 : le match de la carte de saisie : celui choisi dans l'arbre, sinon le premier match en piste du tour en
+   * cours, sinon son premier match à tirer.
+   */
+  const matchCarte = $derived.by(() => {
+    if (!structure || !cree) return null;
+    const tous = tousLesMatchs(structure);
+    const choix = choisi ? tous.find((m) => m.id === choisi) : undefined;
+    if (choix && choix.etat !== 'exempt') return choix;
+    const tour = structure.tours[tourEnCours]?.matchs ?? [];
+    const aTirer = [...tour, ...(structure.troisieme ? [structure.troisieme] : [])].filter((m) => m.etat === 'aTirer');
+    return aTirer.find((m) => m.enPiste) ?? aTirer[0] ?? null;
+  });
+
+  /** US-111 CA-2 et CA-6 : écrit le score ; la carte passe au match suivant à saisir. */
+  async function saisirScore(donnees: DonneesScoreTableau): Promise<boolean> {
+    const resultat = await saisirScoreTableau(journal, epreuveId, donnees, contexte);
+    await recharger();
+    if (!resultat.ok) {
+      erreur = t.erreurs[resultat.erreur] ?? t.erreurs.AUTRE!;
+      return false;
+    }
+    erreur = null;
+    const court = (id: string) => tireurs.get(id)?.nom.toUpperCase() ?? '';
+    annonce = t.scoreEnregistre(court(donnees.tireurA), donnees.touchesA, donnees.touchesB, court(donnees.tireurB));
+    choisi = null;
+    void synchronisation.envoyer(epreuveId).then(() => recharger());
+    return true;
+  }
   const etatDuTableau = $derived(
     !cree ? t.etats.aCreer : epreuve?.statut === 'terminee' ? t.etats.termine : t.etats.enCours,
   );
@@ -201,6 +234,7 @@
       />
     </div>
     <p class="annonce" role="status" aria-live="polite">{annonce}</p>
+    {#if erreur}<p class="message" role="alert">{erreur}</p>{/if}
     {#if !modifiable && pilote === false}<p class="avertissement" role="status">{t.lectureSeule}</p>{/if}
 
     {#if !terminees}
@@ -224,7 +258,25 @@
           </button>
         {/each}
       </div>
-      <ArbreTableau {structure} {tireurs} tour={tourChoisi} {choisi} choisir={(id) => (choisi = id)} {modifiable} />
+      {#if matchCarte}
+        <CarteSaisieTableau
+          match={matchCarte}
+          {structure}
+          {tireurs}
+          touches={epreuve.formule.touchesTableau}
+          {modifiable}
+          saisir={saisirScore}
+          choisir={(id) => (choisi = id)}
+        />
+      {/if}
+      <ArbreTableau
+        {structure}
+        {tireurs}
+        tour={tourChoisi}
+        choisi={matchCarte?.id ?? null}
+        choisir={(id) => (choisi = id)}
+        {modifiable}
+      />
     {:else}
       {#each exaequo as [rang, ids] (rang)}
         <p class="alerte" role="note">
