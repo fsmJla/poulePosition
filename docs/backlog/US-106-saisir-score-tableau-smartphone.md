@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F8, F10 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-099, US-104, US-108, US-111, US-112
 - **Branche / PR :** `us/US-106-saisir-score-tableau-smartphone`
 
@@ -97,3 +97,4 @@ Aucune (US d'E6 écrites le 2026-11-20 : US-108 à US-115).
 | 2026-11-19 | Créée |
 | 2026-11-20 | Complétée avec les US d'E6 (égalité par priorité, matchs du tableau dans les listes) ; passe à Prête |
 | 2026-11-20 | Implémentée : décision de la table, protocole, `MatchsTableau`, `SaisieMatchTableau` ; passe En revue |
+| 2026-11-20 | Recette OK sur https://poule-position-git-us-us-106-saisir-sco-528a26-fsmjlas-projects.vercel.app (recette groupée d'US-108 à US-115 et US-106, PC 1360 px, téléphone 390 × 844, hors ligne, thème sombre) ; mergée dans `dev` ; passe à Terminée |
