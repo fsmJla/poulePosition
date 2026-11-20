@@ -4,8 +4,8 @@
 - **Fonctionnalité :** F8, F10 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** À spécifier (attend les US du tableau, E6)
-- **Dépend de :** US-099, US-104 ; US d'E6 (tableau, saisie des matchs sur le PC), pas encore écrites
+- **Statut :** Prête
+- **Dépend de :** US-099, US-104, US-108, US-111, US-112
 - **Branche / PR :** —
 
 ## Récit
@@ -18,31 +18,39 @@ source `deroule/MobileSaisieTableau.dc.html`), choix retenu 4.
 
 ## Critères d'acceptation
 
-**CA-1 — Écran de saisie en 15 touches**
-- **Étant donné** un match du tableau à tirer sur la piste de l'arbitre
+**CA-1 — Les matchs du tableau sur le smartphone**
+- **Étant donné** un tableau créé et des matchs appelés sur des pistes (US-112)
+- **Quand** l'arbitre ouvre les matchs de sa piste (US-098), ou le tireur « Mes matchs » (US-104)
+- **Alors** les matchs du tableau appelés sur la piste (pour l'arbitre) ou ceux du tireur (pour le tireur) s'ajoutent à
+  la liste, avec le tour (« Match 5 · Tableau de 16 »), la piste et l'état ; un match « En attente » n'est pas
+  saisissable.
+
+**CA-2 — Écran de saisie**
+- **Étant donné** un match du tableau à tirer
 - **Quand** « Saisir le score » est touché
 - **Alors** l'écran montre le score en grand, pour chaque tireur la dizaine (0 ou 10) puis l'unité sur un pavé 1–9 / 0,
-  les unités au-delà de 15 désactivées, et en dessous l'extrait du tableau (match voisin et tour suivant, où le
-  vainqueur s'inscrit).
+  les scores au-delà des touches du tableau désactivés (15, ou 10 selon la formule), et en dessous l'extrait du tableau
+  (match voisin et tour suivant, où le vainqueur s'inscrit).
 
-**CA-2 — Contrôle**
+**CA-3 — Contrôle**
 - **Étant donné** un score choisi
-- **Quand** les deux tireurs ont le même score
-- **Alors** l'envoi est impossible (« Pas d'égalité ») ; un vainqueur à moins de 15 touches est signalé « Victoire au
-  temps de X ».
+- **Quand** il s'affiche
+- **Alors** un vainqueur à moins des touches du tableau est signalé « Victoire au temps de X » ; à égalité, l'écran
+  demande « Vainqueur par priorité » (un choix par tireur) et l'envoi est impossible tant qu'il n'est pas choisi.
 
-**CA-3 — Envoi et accusé**
+**CA-4 — Envoi et accusé**
 - **Étant donné** un score valide
 - **Quand** « Envoyer à la table » est touché
 - **Alors** la saisie, l'accusé, le refus motivé, le doublon et la suspension suivent US-099 et US-102 ; une fois le
   score accepté, le vainqueur apparaît au tour suivant de l'extrait.
 
-**CA-4 — Droits du tableau**
+**CA-5 — Droits du tableau**
 - **Étant donné** les droits « Arbitre : saisir… » et « Tireur : saisir le score de ses matchs de tableau » (US-032)
 - **Quand** une saisie arrive
-- **Alors** le pilote les applique : un tireur ne saisit que ses propres matchs du tableau.
+- **Alors** le pilote les applique : un tireur ne saisit que ses propres matchs du tableau ; une saisie d'un match déjà
+  réglé dont le match suivant est réglé est refusée avec le motif « match suivant déjà tiré ».
 
-**CA-5 — Conforme à la planche 15**
+**CA-6 — Conforme à la planche 15**
 - **Étant donné** la capture de la planche 15
 - **Quand** un test E2E affiche l'écran à 390 × 844 avec les données de la planche
 - **Alors** sa structure suit la planche ; la recette liste les écarts.
@@ -53,25 +61,29 @@ Comme US-099 et US-102 : saisie suspendue quand la table est déconnectée, sais
 
 ## Cas limites et erreurs
 
-- Matchs du tableau en 10 touches (catégories jeunes) : à confirmer avec la formule (US-028) lors des US d'E6.
 - Exempt : pas de match à saisir.
+- Correction par l'arbitre d'un match du tableau déjà enregistré : comme US-101, tant que le match suivant n'est pas
+  réglé.
 
 ## Hypothèses
 
-- Les matchs du tableau s'ajoutent à la liste de la piste de l'arbitre (US-098) et à « Mes matchs » du tireur
-  (US-104), une fois le tableau lancé.
+- **Écart à la planche 15, validé par l'utilisateur le 2026-11-20 :** une égalité est permise si le vainqueur est
+  désigné par la priorité (la planche affiche « Pas d'égalité »).
+- Les matchs en 10 touches (formule, US-028) limitent le pavé : la dizaine « 10 » n'autorise que l'unité 0.
 
 ## Questions bloquantes
 
-- Dépend des US d'E6 (génération du tableau, affectation des matchs aux pistes, saisie au PC) : à écrire avant de
-  rendre cette US « Prête ».
+Aucune (US d'E6 écrites le 2026-11-20 : US-108 à US-115).
 
 ## Notes techniques
 
-- La règle « dizaine + unité → score » est pure (domaine), comme `scoreDesBoutons` (US-091).
+- La règle « dizaine + unité → score » est pure (domaine), comme `scoreDesBoutons` (US-091) ; les contrôles sont ceux
+  de `controleScoreTableau` (US-111).
+- La vue de saisie diffusée (US-095) porte les matchs du tableau appelés (US-112 CA-6).
 
 ## Suivi
 
 | Date | Événement |
 |---|---|
 | 2026-11-19 | Créée |
+| 2026-11-20 | Complétée avec les US d'E6 (égalité par priorité, matchs du tableau dans les listes) ; passe à Prête |
