@@ -97,7 +97,8 @@ test('US-048 CA-1, CA-3, CA-4, CA-5 et CA-6 : cocher, régler, créer le lot et 
   await page.getByRole('link', { name: `Ouvrir l’épreuve ${competition} M13 Hommes`, exact: true }).click();
   await expect(page.getByText('Ce PC est le pilote', { exact: true })).toBeVisible();
   await expect(page.getByText('Équipes de 2')).toBeVisible();
-  await expect(page.getByText('dimanche 14 mars 2027')).toBeVisible();
+  // Depuis US-107, la date est dans le complément de l'entête, et en entier sur écran large.
+  await expect(page.getByText('dimanche 14 mars 2027').first()).toBeVisible();
   await expect(page.getByText('Salle Bellegrave')).toBeVisible();
 });
 
