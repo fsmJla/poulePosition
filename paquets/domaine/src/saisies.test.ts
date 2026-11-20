@@ -227,3 +227,108 @@ describe('appareil exclu (US-105)', () => {
     expect(deciderSaisie(readmis, saisie()).decision).toBe('accepte');
   });
 });
+
+describe('US-106 : saisies d’un match du tableau', () => {
+  const score = (a: string, b: string): Proposition => ({
+    type: 'ScorePouleSaisi',
+    donnees: { poule: 1, tireurA: a, tireurB: b, touchesA: 5, touchesB: 1 },
+  });
+  // Poule terminée a, b, c ; tableau de 4 : a exempt, b contre c (4-2), puis la finale.
+  const avecTableau = (...apres: Proposition[]) =>
+    lancee(
+      score('a', 'b'),
+      score('a', 'c'),
+      score('b', 'c'),
+      { type: 'TableauCree', donnees: { qualifies: ['a', 'b', 'c'] } },
+      ...apres,
+    );
+  const duTableau = (champs: Partial<SaisieScore> = {}) =>
+    saisie({ poule: 0, match: '4-2', tireurA: 'b', tireurB: 'c', touchesA: 15, touchesB: 9, ...champs });
+  const parametres = (donnees: Record<string, unknown>): Proposition =>
+    ({ type: 'ParametresModifies', donnees }) as Proposition;
+
+  it('CA-4 : une saisie permise devient un score du tableau, signé', () => {
+    expect(deciderSaisie(avecTableau(), duTableau())).toEqual({
+      decision: 'accepte',
+      proposition: {
+        type: 'ScoreTableauSaisi',
+        donnees: {
+          match: '4-2',
+          tireurA: 'b',
+          tireurB: 'c',
+          touchesA: 15,
+          touchesB: 9,
+          saisie: { id: 's1', par: 'arbitre Dupont (t4)' },
+        },
+      },
+    });
+    const egalite = deciderSaisie(avecTableau(), duTableau({ touchesA: 9, parPriorite: 'c' }));
+    expect(egalite).toMatchObject({ decision: 'accepte', proposition: { donnees: { parPriorite: 'c' } } });
+  });
+
+  it('CA-4 : doublon, refus du tableau absent, du match inconnu ou pas prêt, du score invalide', () => {
+    const accepte = deciderSaisie(avecTableau(), duTableau());
+    const apres = avecTableau((accepte as { proposition: Proposition }).proposition);
+    expect(deciderSaisie(apres, duTableau())).toEqual({ decision: 'doublon' });
+    expect(deciderSaisie(apres, duTableau({ id: 's2' }))).toEqual({ decision: 'refuse', motif: 'MATCH_DEJA_SAISI' });
+    expect(deciderSaisie(lancee(), duTableau())).toEqual({ decision: 'refuse', motif: 'TABLEAU_NON_CREE' });
+    const refus = (champs: Partial<SaisieScore>) => deciderSaisie(avecTableau(), duTableau(champs));
+    expect(refus({ match: '2-1' })).toEqual({ decision: 'refuse', motif: 'MATCH_INCONNU' });
+    expect(refus({ match: '4-1' })).toEqual({ decision: 'refuse', motif: 'MATCH_INCONNU' });
+    expect(refus({ tireurB: 'a' })).toEqual({ decision: 'refuse', motif: 'MATCH_INCONNU' });
+    expect(refus({ touchesA: 9 })).toEqual({ decision: 'refuse', motif: 'SCORE_INVALIDE' });
+  });
+
+  it('CA-5 : droits du tableau ; un tireur ne saisit que ses matchs', () => {
+    const tireur = { role: 'tireur' as const, tireurId: 'b' };
+    expect(deciderSaisie(avecTableau(), duTableau(tireur))).toMatchObject({ decision: 'accepte' });
+    expect(deciderSaisie(avecTableau(), duTableau({ ...tireur, tireurId: 'a' }))).toEqual({
+      decision: 'refuse',
+      motif: 'HORS_MATCH',
+    });
+    const sansTableau = avecTableau(parametres({ tireurSaisitTableau: false }));
+    expect(deciderSaisie(sansTableau, duTableau(tireur))).toEqual({ decision: 'refuse', motif: 'DROIT_RETIRE' });
+    const sansArbitre = avecTableau(parametres({ arbitreSaisitScores: false }));
+    expect(deciderSaisie(sansArbitre, duTableau())).toEqual({ decision: 'refuse', motif: 'DROIT_RETIRE' });
+  });
+
+  it('CA-5 et US-101 : correction par un arbitre, tant que le match suivant n’est pas tiré', () => {
+    const regle: Proposition = {
+      type: 'ScoreTableauSaisi',
+      donnees: { match: '4-2', tireurA: 'b', tireurB: 'c', touchesA: 15, touchesB: 9 },
+    };
+    const correction = duTableau({ id: 's3', touchesA: 15, touchesB: 12, remplace: [15, 9] });
+    expect(deciderSaisie(avecTableau(regle), correction)).toMatchObject({ decision: 'accepte' });
+    expect(deciderSaisie(avecTableau(regle), { ...correction, remplace: [15, 8] })).toEqual({
+      decision: 'refuse',
+      motif: 'SCORE_CHANGE',
+    });
+    expect(deciderSaisie(avecTableau(regle), { ...correction, role: 'tireur', tireurId: 'b' })).toEqual({
+      decision: 'refuse',
+      motif: 'CORRECTION_INTERDITE',
+    });
+    const finale: Proposition = {
+      type: 'ScoreTableauSaisi',
+      donnees: { match: '2-1', tireurA: 'a', tireurB: 'b', touchesA: 15, touchesB: 3 },
+    };
+    expect(deciderSaisie(avecTableau(regle, finale), correction)).toEqual({
+      decision: 'refuse',
+      motif: 'MATCH_SUIVANT_REGLE',
+    });
+    const retrait: Proposition = {
+      type: 'TireurRetireDuTableau',
+      donnees: { match: '4-2', tireurId: 'c', motif: 'abandon' },
+    };
+    expect(deciderSaisie(avecTableau(retrait), duTableau({ id: 's4' }))).toEqual({
+      decision: 'refuse',
+      motif: 'TIREUR_RETIRE',
+    });
+  });
+
+  it('US-100 : le refus d’une saisie du tableau porte le match et ne s’affiche pas dans les saisies de poule', () => {
+    const refus = propositionRefus(duTableau(), 'MATCH_INCONNU', 'dames');
+    expect(refus).toMatchObject({ type: 'SaisieRefusee', donnees: { match: '4-2', poule: 0 } });
+    const evenements = journal(...presents('a', 'b', 'c'), composer, lancer, refus);
+    expect(lignesSaisies(evenements, projeter(evenements).epreuve)).toEqual([]);
+  });
+});

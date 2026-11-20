@@ -9,7 +9,18 @@
   import QuiEtesVous from '../composants/QuiEtesVous.svelte';
   import MesMatchs from '../composants/MesMatchs.svelte';
   import SaisieMatch from '../composants/SaisieMatch.svelte';
-  import { matchsDeLaPiste, tireurDeLaVue, type MatchDeLaPiste } from '@poule-position/domaine';
+  import MatchsTableau from '../composants/MatchsTableau.svelte';
+  import SaisieMatchTableau, { type ScoreTableau } from '../composants/SaisieMatchTableau.svelte';
+  import {
+    matchsDeLaPiste,
+    matchsTableauDeLaPiste,
+    matchsTableauDuTireur,
+    placesAffichees,
+    tireurDeLaVue,
+    type MatchDeLaPiste,
+    type MatchTableauVue,
+    type TireurVue,
+  } from '@poule-position/domaine';
   import {
     creerSaisieSmartphone,
     ecrireMemoire,
@@ -101,6 +112,42 @@
     idEnvoye = null;
   }
 
+  // US-106 : le match du tableau en cours de saisie (ou de correction).
+  let enTableau = $state<MatchTableauVue | null>(null);
+  const tireursVue = $derived(
+    new Map<string, TireurVue>((vue?.poules ?? []).flatMap((p) => p.tireurs.map((x) => [x.id, x] as const))),
+  );
+
+  function ouvrirTableau(match: MatchTableauVue | null, corriger = false) {
+    enTableau = match;
+    enCorrection = corriger;
+    idEnvoye = null;
+  }
+
+  /** US-106 CA-4 : la saisie d'un match du tableau, dans l'ordre affiché (gauche, puis droite). */
+  function envoyerTableau(match: MatchTableauVue, score: ScoreTableau) {
+    const { places, touches } = placesAffichees(match);
+    const [gauche, droite] = [places[0].tireurId, places[1].tireurId];
+    if (!gauche || !droite) return null;
+    const id = crypto.randomUUID();
+    const parti = saisie?.envoyerSaisie({
+      id,
+      poule: 0,
+      match: match.id,
+      tireurA: gauche,
+      tireurB: droite,
+      touchesA: score.touchesA,
+      touchesB: score.touchesB,
+      auTemps: score.auTemps,
+      nom: nomDeLaSaisie,
+      ...(score.priorite && { parPriorite: score.priorite === 'A' ? gauche : droite }),
+      ...(etat?.role === 'tireur' && memoire?.tireurId && { tireurId: memoire.tireurId }),
+      ...(enCorrection && touches && { remplace: [touches[0], touches[1]] as [number, number] }),
+    });
+    idEnvoye = parti ? id : null;
+    return idEnvoye;
+  }
+
   function envoyer(match: MatchDeLaPiste, score: { touchesA: number; touchesB: number; auTemps: boolean }) {
     const id = crypto.randomUUID();
     const parti = saisie?.envoyerSaisie({
@@ -121,7 +168,7 @@
 </script>
 
 <div class="saisie">
-  {#if !enSaisie}<EnteteSaisie epreuve={enTete} table={etat?.table ?? false} />{/if}
+  {#if !enSaisie && !enTableau}<EnteteSaisie epreuve={enTete} table={etat?.table ?? false} />{/if}
 
   {#if refus}
     <main class="message"><p role="alert">{t.refus[refus]}</p></main>
@@ -131,6 +178,19 @@
     <main class="message"><p role="alert">{t.pasDeConnexion}</p></main>
   {:else if etat.role === 'tireur' && !memoire?.tireurId}
     <QuiEtesVous {vue} {epreuveId} choisir={(id) => saisie?.choisirTireur(id)} />
+  {:else if enTableau && vue}
+    <!-- US-106 (planche 15) : saisie d'un match du tableau. -->
+    {#key enTableau.id}
+      <SaisieMatchTableau
+        {vue}
+        match={enTableau}
+        table={etat.table}
+        {accuse}
+        envoyer={(score) => envoyerTableau(enTableau as MatchTableauVue, score)}
+        retour={() => ouvrirTableau(null)}
+        correction={enCorrection}
+      />
+    {/key}
   {:else if etat.role === 'tireur' && memoire?.tireurId}
     {#if enSaisie && vue}
       {#key `${enSaisie.poule}-${enSaisie.numero}`}
@@ -154,6 +214,14 @@
         saisir={(match) => ouvrir(match)}
         suspendue={!etat.table}
       />
+      {#if vue?.tableau}
+        <MatchsTableau
+          matchs={matchsTableauDuTireur(vue, memoire.tireurId)}
+          tireurs={tireursVue}
+          saisir={vue.droits.tireurSaisitTableau ? (match) => ouvrirTableau(match) : undefined}
+          suspendue={!etat.table}
+        />
+      {/if}
     {/if}
   {:else if !arbitrePret}
     <AccesArbitre {vue} nom={memoire?.nom ?? ''} piste={memoire?.piste ?? null} {commencer} />
@@ -186,6 +254,15 @@
         raison={etat.connexion === 'connecte' ? 'table' : 'telephone'}
         dernierEchange={etat.dernierEchange}
       />
+      {#if vue?.tableau}
+        <MatchsTableau
+          matchs={matchsTableauDeLaPiste(vue, memoire.piste)}
+          tireurs={tireursVue}
+          saisir={vue.droits.arbitreSaisitScores ? (match) => ouvrirTableau(match) : undefined}
+          corriger={vue.droits.correctionScore === 'arbitre' ? (match) => ouvrirTableau(match, true) : undefined}
+          suspendue={!etat.table}
+        />
+      {/if}
     {/if}
   {/if}
 </div>

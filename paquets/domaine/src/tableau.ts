@@ -319,7 +319,7 @@ const memePaire = (r: Pick<ResultatTableau, 'tireurA' | 'tireurB'>, a: string, b
  * US-110 : les deux places d'un match dans l'ordre d'affichage de la planche 11 : le meilleur rang en haut quand les deux
  * tireurs sont connus, sinon l'ordre du tableau ; les touches suivent.
  */
-export function placesAffichees(match: MatchTableau): {
+export function placesAffichees(match: Pick<MatchTableau, 'haut' | 'bas' | 'touches'>): {
   places: readonly [PlaceTableau, PlaceTableau];
   touches: readonly [number, number] | null;
 } {

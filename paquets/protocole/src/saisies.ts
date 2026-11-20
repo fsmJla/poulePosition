@@ -29,9 +29,11 @@ const entier = (valeur: unknown, min = 0): valeur is number => Number.isInteger(
 /** CA-4 : une saisie de téléphone bien formée, sinon null. */
 export function analyserSaisieTelephone(brut: unknown): SaisieTelephone | null {
   if (!estObjet(brut)) return null;
-  const { id, poule, tireurA, tireurB, touchesA, touchesB, auTemps, nom, remplace, tireurId } = brut;
+  const { id, poule, tireurA, tireurB, touchesA, touchesB, auTemps, nom, remplace, tireurId, match, parPriorite } =
+    brut;
+  const facultatifs = ['remplace', 'tireurId', 'match', 'parPriorite'];
   const champs = Object.keys(brut)
-    .filter((champ) => champ !== 'remplace' && champ !== 'tireurId')
+    .filter((champ) => !facultatifs.includes(champ))
     .sort()
     .join(',');
   if (champs !== 'auTemps,id,nom,poule,tireurA,tireurB,touchesA,touchesB') return null;
@@ -40,11 +42,15 @@ export function analyserSaisieTelephone(brut: unknown): SaisieTelephone | null {
   if (remplace !== undefined && !correction) return null;
   // US-104 : un tireur dit qui il est.
   if (tireurId !== undefined && !texteBorne(tireurId, 64)) return null;
-  if (!texteBorne(id, 64) || !entier(poule, 1) || !texteBorne(tireurA, 64) || !texteBorne(tireurB, 64)) return null;
+  // US-106 : une saisie du tableau porte son match (« 16-5 ») et la poule 0 ; à égalité, le vainqueur par priorité.
+  if (match !== undefined && !texteBorne(match, 16)) return null;
+  if (parPriorite !== undefined && (match === undefined || !texteBorne(parPriorite, 64))) return null;
+  const pouleValide = match === undefined ? entier(poule, 1) : poule === 0;
+  if (!texteBorne(id, 64) || !pouleValide || !texteBorne(tireurA, 64) || !texteBorne(tireurB, 64)) return null;
   if (!entier(touchesA) || !entier(touchesB) || typeof auTemps !== 'boolean' || !texteBorne(nom, 80)) return null;
   return {
     id,
-    poule,
+    poule: poule as number,
     tireurA,
     tireurB,
     touchesA,
@@ -53,6 +59,8 @@ export function analyserSaisieTelephone(brut: unknown): SaisieTelephone | null {
     nom,
     ...(correction && { remplace: [remplace[0], remplace[1]] as [number, number] }),
     ...(typeof tireurId === 'string' && { tireurId }),
+    ...(typeof match === 'string' && { match }),
+    ...(typeof parPriorite === 'string' && { parPriorite }),
   };
 }
 

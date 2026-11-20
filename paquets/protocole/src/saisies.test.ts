@@ -134,3 +134,26 @@ describe('appareils connectés (US-105)', () => {
     expect(mal({ appareilId: 't4', exclu: 'oui' })).toBe(false);
   });
 });
+
+describe('US-106 : saisie d’un match du tableau', () => {
+  const tableau = {
+    id: 's1',
+    poule: 0,
+    match: '16-5',
+    tireurA: 'a',
+    tireurB: 'b',
+    touchesA: 9,
+    touchesB: 9,
+    auTemps: false,
+    nom: 'Dupont',
+    parPriorite: 'a',
+  };
+  it('CA-4 : le match et la priorité passent ; la poule vaut 0', () => {
+    expect(analyserSaisieTelephone(tableau)).toEqual(tableau);
+    expect(analyserSaisieTelephone({ ...tableau, poule: 1 })).toBeNull();
+    expect(analyserSaisieTelephone({ ...tableau, match: '' })).toBeNull();
+    expect(analyserSaisieTelephone({ ...tableau, parPriorite: 3 })).toBeNull();
+    // La priorité sans match (saisie de poule) est refusée.
+    expect(analyserSaisieTelephone({ ...tableau, match: undefined, poule: 1 })).toBeNull();
+  });
+});

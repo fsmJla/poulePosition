@@ -159,6 +159,10 @@ function donneesPoulesValides(type: unknown, donnees: unknown): boolean {
   return aSeulement(donnees, ['tireurId']) && estTexte(donnees.tireurId);
 }
 
+/** Les données sans un champ facultatif, pour vérifier les autres champs exactement. */
+const sansLeChamp = (objet: Record<string, unknown>, champ: string) =>
+  Object.fromEntries(Object.entries(objet).filter(([nom]) => nom !== champ));
+
 const TYPES_POULES = [
   'PoulesComposees',
   'PoulesLancees',
@@ -248,7 +252,10 @@ function donneesValides(type: unknown, donnees: unknown): boolean {
     return exclusion !== null && estTexte(exclusion.appareilId) && typeof exclusion.exclu === 'boolean';
   }
   if (type === 'SaisieRefusee') {
-    const refus = aExactementLesChamps(donnees, [
+    // US-106 : un refus d'une saisie du tableau porte aussi le match.
+    const avecMatch = estObjet(donnees) && 'match' in donnees;
+    if (avecMatch && !estTexte(donnees.match)) return false;
+    const refus = aExactementLesChamps(avecMatch ? sansLeChamp(donnees, 'match') : donnees, [
       'saisie',
       'poule',
       'tireurA',

@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { projeter, type Epreuve, type Evenement, type Proposition } from './journal';
-import { chercherTireurs, matchsDeLaPiste, matchsDuTireur, tireurDeLaVue, vueSaisie } from './vue-saisie';
+import {
+  chercherTireurs,
+  chiffrePermis,
+  matchsDeLaPiste,
+  matchsDuTireur,
+  matchsTableauDeLaPiste,
+  matchsTableauDuTireur,
+  scoreDuPave,
+  tireurDeLaVue,
+  vueSaisie,
+} from './vue-saisie';
 
 const enTete = (seq: number) => ({
   epreuveId: 'e1',
@@ -272,5 +282,40 @@ describe('US-112 CA-6 : le tableau dans la vue de saisie', () => {
     });
     expect(tableau.matchs[1]!.appeleA).toBeGreaterThan(0);
     expect(tableau.matchs[2]!.haut).toEqual({ tireurId: 'a', rang: 1, provenance: '4-1' });
+  });
+});
+
+describe('US-106 CA-1 et CA-2 : matchs du tableau sur le smartphone, pavé de 15 touches', () => {
+  const score = (a: string, b: string): Proposition => ({
+    type: 'ScorePouleSaisi',
+    donnees: { poule: 1, tireurA: a, tireurB: b, touchesA: 5, touchesB: 1 },
+  });
+  const vue = vueSaisie(
+    epreuveDe(
+      ...TROIS,
+      composer,
+      lancer,
+      score('a', 'b'),
+      score('a', 'c'),
+      score('b', 'c'),
+      { type: 'TableauCree', donnees: { qualifies: ['a', 'b', 'c'] } },
+      { type: 'MatchTableauAppele', donnees: { match: '4-2', piste: 2 } },
+    ),
+  );
+  it('CA-1 : les matchs appelés sur la piste, et ceux du tireur', () => {
+    expect(matchsTableauDeLaPiste(vue, 2).map((m) => m.id)).toEqual(['4-2']);
+    expect(matchsTableauDeLaPiste(vue, 1)).toEqual([]);
+    expect(matchsTableauDuTireur(vue, 'b').map((m) => m.id)).toEqual(['4-2']);
+    // a est exempt : sa finale attend son adversaire, elle est listée mais pas saisissable.
+    expect(matchsTableauDuTireur(vue, 'a').map((m) => [m.id, m.etat])).toEqual([['2-1', 'attente']]);
+    expect(matchsTableauDeLaPiste(null, 2)).toEqual([]);
+  });
+  it('CA-2 : dizaine et unité, bornées par les touches du tableau', () => {
+    expect(scoreDuPave(10, 5)).toBe(15);
+    expect(scoreDuPave(null, 5)).toBeNull();
+    expect(chiffrePermis(10, 6, 15)).toBe(false);
+    expect(chiffrePermis(10, 5, 15)).toBe(true);
+    expect(chiffrePermis(10, 1, 10)).toBe(false);
+    expect(chiffrePermis(null, 9, 15)).toBe(true);
   });
 });

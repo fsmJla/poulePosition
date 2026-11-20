@@ -1191,6 +1191,13 @@ le lien du QR code est retiré de l'adresse affichée dès la page ouverte.
 4. Le DO relaie l'accusé au seul téléphone `appareilId` ; le téléphone retire la saisie de ses attentes. Un score accepté
    part au serveur avec le lot suivant, et la vue de saisie republiée (§18) met à jour tous les téléphones.
 
+**Match du tableau** (US-106) : la saisie porte `match` (l'identifiant du match, « 16-5 ») et `poule: 0`, et, à égalité de
+touches, `parPriorite` (le tireur désigné vainqueur). La table applique les droits « Arbitre : saisir… » et « Tireur :
+saisir le score de ses matchs de tableau » ; acceptée, elle devient un `ScoreTableauSaisi` avec `saisie: { id, par }`.
+Motifs propres au tableau : `TABLEAU_NON_CREE`, `MATCH_SUIVANT_REGLE` (correction d'un match dont le suivant est tiré),
+`HORS_MATCH` (un tireur saisit le match d'un autre). Un refus trace `SaisieRefusee` avec `match` ; il n'apparaît pas dans
+les saisies reçues des poules.
+
 ### Exclusion d'un appareil (US-105, ADR-0007)
 
 - La table (le pilote en place seulement) envoie `{ "v": 1, "type": "exclure", "appareilId": "t4", "exclu": true }` après

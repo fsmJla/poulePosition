@@ -189,6 +189,37 @@ function tableauVue(epreuve: Epreuve): TableauVue | null {
   };
 }
 
+/**
+ * US-106 CA-1 : les matchs du tableau d'une piste (arbitre) : ceux appelés sur la piste, en piste d'abord, puis à tirer,
+ * puis réglés ; les matchs en attente d'un tireur ne se saisissent pas.
+ */
+export function matchsTableauDeLaPiste(vue: VueSaisie | null, piste: number): MatchTableauVue[] {
+  const matchs = (vue?.tableau?.matchs ?? []).filter((m) => m.piste === piste && m.etat !== 'exempt');
+  const rang = (m: MatchTableauVue) => (m.etat === 'aTirer' ? (m.enPiste ? 0 : 1) : 2);
+  return matchs.sort((a, b) => rang(a) - rang(b) || (a.appeleA ?? 0) - (b.appeleA ?? 0));
+}
+
+/** US-106 CA-1 : les matchs du tableau d'un tireur, à tirer d'abord, du plus récent tour au premier. */
+export function matchsTableauDuTireur(vue: VueSaisie | null, tireurId: string): MatchTableauVue[] {
+  const matchs = (vue?.tableau?.matchs ?? []).filter(
+    (m) => m.etat !== 'exempt' && (m.haut.tireurId === tireurId || m.bas.tireurId === tireurId),
+  );
+  const rang = (m: MatchTableauVue) => (m.etat === 'aTirer' ? 0 : 1);
+  return matchs.sort((a, b) => rang(a) - rang(b) || (a.tour || 1) - (b.tour || 1));
+}
+
+/**
+ * US-106 CA-2 : le score d'un tireur sur le pavé de 15 touches : dizaine (0 ou 10) et unité ; null tant que l'une manque.
+ * `permis` dit si une unité (ou une dizaine) peut se toucher sans dépasser `touches`.
+ */
+export function scoreDuPave(dizaine: number | null, unite: number | null): number | null {
+  return dizaine === null || unite === null ? null : dizaine + unite;
+}
+
+export function chiffrePermis(dizaine: number | null, unite: number, touches: number): boolean {
+  return (dizaine ?? 0) + unite <= touches;
+}
+
 /** US-098 : un match de la piste, avec sa poule. */
 export interface MatchDeLaPiste extends MatchVue {
   poule: number;
