@@ -41,6 +41,11 @@ l'ajoute ici avant de l'utiliser.
 | Boutons score | Saisie d'un score par deux colonnes de boutons (0 à N−1, « V ») ; le second choix enregistre, sans « V » c'est une victoire au temps (US-091, planche 14). | `scoreDesBoutons` |
 | Tableau | Élimination directe (tableau de 64, 32, 16…), avec exempts si l'effectif n'est pas une puissance de 2. | `tableau` |
 | Exempt | Tireur qualifié d'office pour le tour suivant du tableau, faute d'adversaire. | `exempt` |
+| Tête de série | Rang d'un tireur au classement après poules, qui fixe sa place dans le tableau ; affiché « (3) » à côté de son nom (US-108). | `rang` |
+| Placement de la FIE | Ordre des places du tableau : au premier tour, le rang r rencontre le rang T + 1 − r, et les meilleurs rangs ne se rencontrent qu'aux derniers tours (US-108). | `placementFIE` |
+| Appel (d'un match) | Attribution d'une piste à un match du tableau, avec l'heure ; « En piste N » quand la piste est libre, « À tirer · piste N » quand elle est encore occupée (US-112). | `MatchTableauAppele` |
+| Victoire par priorité | Victoire désignée à égalité de touches au tireur qui a la priorité à la fin de la minute supplémentaire (US-108). | `parPriorite` |
+| Classement final | Classement de l'épreuve après le tableau : 1er, 2e, 3es (ex aequo sans match pour la 3e place), puis les éliminés de chaque tour par rang après poules (US-115). | `classementFinal` |
 | Piste | Aire de combat numérotée, où se tient une poule ou un match. | `piste` |
 | Arbitre | Personne qui dirige les matchs d'une piste et note les scores. | `arbitre` |
 | Feuille de poule | Grille imprimée des matchs et résultats d'une poule. | `feuillePoule` |
