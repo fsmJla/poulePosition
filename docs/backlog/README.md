@@ -148,6 +148,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-116](US-116-separer-clubs-tableau.md) | Séparer les tireurs d'un même club au premier tour du tableau (P2) | E6 | À spécifier | US-109 |
 | [US-117](US-117-saisie-tableau-par-boutons.md) | Saisir le score du tableau sur un afficheur et un pavé, et appeler d'un clic sur le PC | E6 | Terminée | US-111, US-112, US-091 |
 | [US-118](US-118-saisies-harmonisees.md) | Saisir tous les scores sur l'afficheur et le pavé à la demande (poules PC, smartphone) | E4, E5 | Terminée | US-117, US-091, US-099, US-101, US-106 |
+| [US-119](US-119-saisies-recues-tableau.md) | Voir les saisies reçues des smartphones sur l'écran du tableau | E6 | Prête | US-100, US-106, US-111 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
