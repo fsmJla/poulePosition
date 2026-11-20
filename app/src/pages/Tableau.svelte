@@ -39,7 +39,7 @@
   import type { Accueil } from '../lib/accueil';
   import type { VerdictArchivage } from '../lib/archivage';
   import { prendreEcriture, type Journal } from '../lib/journal';
-  import { cheminParametresEpreuve, cheminPoulesEpreuve } from '../lib/routes';
+  import { cheminImprimer, cheminParametresEpreuve, cheminPoulesEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { appelerMatch, creerTableau, retirerDuTableau, saisirScoreTableau, terminerEpreuve } from '../lib/tableau';
@@ -372,7 +372,12 @@
         id="menu-tableau"
         nom={t.menu}
         actions={[
-          { libelle: t.imprimer, icone: 'imprimante', indisponible: t.imprimerAVenir },
+          // US-127 : le tableau s'imprime.
+          {
+            libelle: t.imprimer,
+            icone: 'imprimante',
+            surChoix: () => naviguer(cheminImprimer(epreuveId, { document: 'tableau', format: 'a4' })),
+          },
           { libelle: t.imprimerClassement, icone: 'imprimante', indisponible: t.imprimerAVenir },
         ]}
       />

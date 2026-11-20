@@ -23,6 +23,7 @@
   import ImpressionPoulesPistes from '../composants/impressions/ImpressionPoulesPistes.svelte';
   import ImpressionClassementPoules from '../composants/impressions/ImpressionClassementPoules.svelte';
   import ImpressionFeuillesMatch from '../composants/impressions/ImpressionFeuillesMatch.svelte';
+  import ImpressionTableau from '../composants/impressions/ImpressionTableau.svelte';
   import type { AccesQrClient } from '../lib/acces-qr';
   import type { Accueil } from '../lib/accueil';
   import { documentLivre } from '../lib/impressions';
@@ -152,6 +153,8 @@
           />
         {:else if document === 'feuillesMatch' && structure}
           <ImpressionFeuillesMatch {structure} {tour} tireurs={parId} {contexte} {imprimeLe} />
+        {:else if document === 'tableau' && structure}
+          <ImpressionTableau {structure} format={options?.format ?? 'a4'} tireurs={parId} {contexte} {imprimeLe} />
         {/if}
         <!-- Les documents de l'Epic 7 (US-121 à US-128) se branchent ici. -->
       </div>

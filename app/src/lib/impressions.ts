@@ -29,7 +29,8 @@ export const CATALOGUE_IMPRESSIONS: readonly LigneImpression[] = [
   { document: 'classementPoules', groupe: 'poules', choix: null, livre: true },
   // US-126 : les feuilles de match du tableau.
   { document: 'feuillesMatch', groupe: 'tableau', choix: 'tours', livre: true },
-  { document: 'tableau', groupe: 'tableau', choix: 'format', livre: false },
+  // US-127 : le tableau à afficher.
+  { document: 'tableau', groupe: 'tableau', choix: 'format', livre: true },
   { document: 'classementFinal', groupe: 'tableau', choix: null, livre: false },
 ];
 

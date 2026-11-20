@@ -276,7 +276,8 @@
     "tableau-voir",
     "tableau-saisir",
     "tableau-appeler",
-    "tableau-retrait"
+    "tableau-retrait",
+    "impression-tableau"
   ],
   "app/src/composants/ArbreTableau.svelte": ["tableau-voir", "tableau-saisir"],
   "app/src/composants/CarteSaisieTableau.svelte": [
@@ -482,5 +483,6 @@
   "app/src/composants/impressions/ImpressionPoulesResultats.svelte": ["impression-poules"],
   "app/src/composants/impressions/ImpressionPoulesPistes.svelte": ["impression-poules"],
   "app/src/composants/impressions/ImpressionClassementPoules.svelte": ["impression-poules"],
-  "app/src/composants/impressions/ImpressionFeuillesMatch.svelte": ["impression-tableau"]
+  "app/src/composants/impressions/ImpressionFeuillesMatch.svelte": ["impression-tableau"],
+  "app/src/composants/impressions/ImpressionTableau.svelte": ["impression-tableau"]
 }

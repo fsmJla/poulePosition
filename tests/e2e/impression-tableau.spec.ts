@@ -3,7 +3,14 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { Proposition } from '@poule-position/domaine';
 import { seConnecter } from './compte';
-import { importerEpreuve, matchEntre, nomDe, ordreDesQualifiees, poulesJouees } from './tableau-outils';
+import {
+  importerEpreuve,
+  matchEntre,
+  nomDe,
+  ordreDesQualifiees,
+  poulesJouees,
+  resultatsPlanche11,
+} from './tableau-outils';
 
 /** La fenêtre d'impression ne s'ouvre pas pendant les tests : on compte ses appels. */
 async function compterImpressions(page: Page) {
@@ -85,5 +92,64 @@ test('US-126 hors ligne : les feuilles de match s’impriment sans réseau', asy
   await ouvrirImpressions(page);
   await page.getByRole('button', { name: 'Imprimer : Feuilles de match' }).click();
   await expect(page.getByRole('region', { name: /^Feuilles de match · Tableau de 32 · Page/ })).toHaveCount(4);
+  await context.setOffline(false);
+});
+
+test('US-127 CA-1 à CA-3 : le tableau en A4 paysage (2 pages) ou en A3 (1 page), scores et places à remplir', async ({
+  page,
+}) => {
+  test.setTimeout(150_000);
+  await compterImpressions(page);
+  await seConnecter(page);
+  const poules = poulesJouees();
+  const qualifies = ordreDesQualifiees(poules);
+  await importerEpreuve(page, [
+    ...poules,
+    { type: 'TableauCree', donnees: { qualifies } },
+    ...resultatsPlanche11(qualifies),
+  ]);
+  const nom = (rang: number) => nomDe(qualifies[rang - 1]!);
+  await ouvrirImpressions(page);
+  const ligne = page.getByRole('listitem').filter({ hasText: /^Tableau/ });
+  await expect(ligne.getByRole('button', { name: 'A4 paysage' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Imprimer : Tableau', exact: true }).click();
+
+  // CA-1 : A4 paysage, le tableau de 32 puis du tableau de 16 à la finale.
+  await expect(page.getByRole('region', { name: 'Tableau de 32 · Page 1 / 2' })).toBeVisible();
+  const page2 = page.getByRole('region', { name: 'Tableau, du tableau de 16 à la finale · Page 2 / 2' });
+  await expect(page2).toBeVisible();
+  await expect.poll(() => impressions(page)).toBe(1);
+  for (const tour of ['Tableau de 16', 'Quarts de finale', 'Demi-finales', 'Finale']) {
+    await expect(page2.getByRole('region', { name: tour, exact: true })).toBeVisible();
+  }
+  // Scores et vainqueur en gras ; état des matchs ; CA-3 : places à venir à remplir.
+  await expect(page2.getByRole('region', { name: 'Tableau de 16' })).toContainText(`(1) ${nom(1)} 15`);
+  await expect(page2.getByRole('region', { name: 'Tableau de 16' })).toContainText('Terminé');
+  await expect(page2.getByRole('region', { name: 'Finale', exact: true })).toContainText('……………………………');
+  await page.screenshot({ path: 'test-results/impression-tableau.png', fullPage: true });
+
+  // CA-2 : A3 paysage, une seule page.
+  await page.getByRole('button', { name: 'Retour aux impressions' }).click();
+  await ligne.getByRole('button', { name: 'A3 paysage' }).click();
+  await page.getByRole('button', { name: 'Imprimer : Tableau', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Tableau, du tableau de 32 à la finale · Page 1 / 1' })).toBeVisible();
+});
+
+test('US-127 : « ⋯ › Imprimer le tableau » de l’étape Tableau ; sans réseau', async ({ page, context }) => {
+  test.setTimeout(120_000);
+  await compterImpressions(page);
+  await seConnecter(page);
+  await importerEpreuve(page, tableauDe32().propositions);
+  await page
+    .getByRole('navigation', { name: 'Étapes de l’épreuve' })
+    .getByRole('link', { name: /^Tableau/ })
+    .click();
+  await context.setOffline(true);
+  await page.getByRole('button', { name: 'Autres actions pour Tableau' }).click();
+  await page.getByRole('menuitem', { name: 'Imprimer le tableau' }).click();
+  await expect(
+    page.getByRole('region', { name: /^Tableau, du tableau de 16 à la finale · Page 2 \/ 2$/ }),
+  ).toBeVisible();
+  await expect.poll(() => impressions(page)).toBe(1);
   await context.setOffline(false);
 });

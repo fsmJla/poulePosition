@@ -86,3 +86,31 @@ export function matchsAImprimer(structure: StructureTableau, tour: number): Matc
 export function toursAImprimer(structure: StructureTableau): number[] {
   return structure.tours.map((t) => t.taille).filter((tour) => matchsAImprimer(structure, tour).length > 0);
 }
+
+/** US-127 : une page du tableau imprimé : des colonnes de tours, et le match pour la 3e place sous la finale. */
+export interface PageTableau {
+  colonnes: { taille: number; matchs: MatchTableau[] }[];
+  troisieme: MatchTableau | null;
+}
+
+/** Matchs d'une colonne au plus : au-delà, le premier tour se découpe en plusieurs pages. */
+const MATCHS_PAR_COLONNE = 16;
+
+/**
+ * US-127 CA-1 et CA-2 : les pages du tableau imprimé. En A4 paysage, les 4 derniers tours (jusqu'à la finale) tiennent
+ * sur la dernière page ; chaque tour d'avant a sa page, découpée par 16 matchs. En A3 paysage, un tableau jusqu'à 32
+ * (5 tours) tient sur une page ; au-delà, il est paginé comme en A4.
+ */
+export function pagesTableau(structure: StructureTableau, format: 'a4' | 'a3'): PageTableau[] {
+  const tours = structure.tours.map((t) => ({ taille: t.taille, matchs: t.matchs }));
+  const parPage = format === 'a3' && tours.length <= 5 ? tours.length : 4;
+  const fin = tours.slice(-parPage);
+  const debut = tours.slice(0, tours.length - fin.length);
+  const pages: PageTableau[] = debut.flatMap((tour) =>
+    decouperEnPages(tour.matchs, MATCHS_PAR_COLONNE).map((matchs) => ({
+      colonnes: [{ taille: tour.taille, matchs }],
+      troisieme: null,
+    })),
+  );
+  return [...pages, { colonnes: fin, troisieme: structure.troisieme }];
+}

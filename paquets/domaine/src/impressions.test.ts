@@ -4,6 +4,7 @@ import {
   decouperEnPages,
   lignesPresence,
   matchsAImprimer,
+  pagesTableau,
   toursAImprimer,
   raisonIndisponible,
   type SourceImpression,
@@ -111,5 +112,27 @@ describe('feuilles de match du tableau (US-126)', () => {
     const structure = structureTableau(etat, true)!;
     expect(matchsAImprimer(structure, 2).map((m) => m.id)).toEqual(['2-1', '3e']);
     expect(toursAImprimer(structure)).toEqual([2]);
+  });
+});
+
+describe('tableau imprimé (US-127)', () => {
+  const tableau = (n: number, troisieme = false) =>
+    structureTableau({ ...etatTableauVide(), qualifies: Array.from({ length: n }, (_, i) => `t${i + 1}`) }, troisieme)!;
+  const forme = (pages: ReturnType<typeof pagesTableau>) =>
+    pages.map((p) => p.colonnes.map((c) => `${c.taille}:${c.matchs.length}`).join(' '));
+
+  it('CA-1 : en A4, le tableau de 32 sur 2 pages ; un tableau de 16 sur une', () => {
+    expect(forme(pagesTableau(tableau(24), 'a4'))).toEqual(['32:16', '16:8 8:4 4:2 2:1']);
+    expect(forme(pagesTableau(tableau(12), 'a4'))).toEqual(['16:8 8:4 4:2 2:1']);
+  });
+
+  it('CA-2 : en A3, jusqu’à 32 sur une page ; au-delà, comme en A4, le premier tour découpé par 16 matchs', () => {
+    expect(forme(pagesTableau(tableau(24), 'a3'))).toEqual(['32:16 16:8 8:4 4:2 2:1']);
+    expect(forme(pagesTableau(tableau(40), 'a3'))).toEqual(['64:16', '64:16', '32:16', '16:8 8:4 4:2 2:1']);
+  });
+
+  it('CA-4 : le match pour la 3e place va avec la finale', () => {
+    const pages = pagesTableau(tableau(8, true), 'a4');
+    expect(pages.map((p) => p.troisieme?.id ?? null)).toEqual(['3e']);
   });
 });
