@@ -228,6 +228,11 @@ un avis tant que des matchs de poule restent à tirer, puis l'aperçu du premier
 signalés par un Triangle d'alerte) et l'action principale « Créer le tableau ». L'état « avant création » n'a pas de planche :
 écart validé, déclaré dans l'US.
 
+**Livré par US-110 (voir le tableau) :** les tours en pilules avec leur avancement (« terminé », « 4/8 »), le tour en cours en
+`--marque` ; l'arbre (composant `ArbreTableau`) du tour choisi à la finale, quatre colonnes au plus, les matchs reliés deux
+par deux par une accolade `--accent-teinte-bordure` ; l'état de chaque match en bas de sa carte. À 390 px, pilules et arbre
+défilent dans leur cadre.
+
 ## Maquette « Déroulé de l'épreuve » (2026-11-17)
 
 Elle prolonge la maquette « IHM de l'organisateur » (mêmes entête, fil d'Ariane, navigation par étapes, charte et

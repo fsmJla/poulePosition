@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F10 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-109
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-110-voir-le-tableau`
 
 ## Récit
 
@@ -85,6 +85,12 @@ pilote. Sur un autre appareil, il garde la dernière copie reçue. Testé par un
 - Le smartphone de l'organisateur n'a pas de planche pour le tableau (point ouvert de la maquette) : il suit la
   planche 6 (barre d'onglets) et l'arbre défile dans son cadre.
 
+- Implémentation (2026-11-20) : comme sur la planche, le meilleur rang est en haut d'un match quand les deux tireurs
+  sont connus (`placesAffichees`) ; sinon l'ordre du tableau (le vainqueur du match du haut en haut).
+- Implémentation : l'arbre montre quatre colonnes au plus à partir du tour choisi ; son titre suit (« Du tableau de 32 aux
+  demi-finales »). Le temps réel (CA-5) reprend la relecture d'US-092 (journal local toutes les 2 s, copie du pilote toutes
+  les 30 s) ; son E2E (saisie dans un onglet, mise à jour dans un autre) vient avec la saisie d'US-111.
+
 ## Questions bloquantes
 
 Aucune.
@@ -100,3 +106,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (spécification de l'Epic 6) ; hypothèses et écarts validés par l'utilisateur, passe à Prête |
+| 2026-11-20 | Implémentée : pilules des tours, composant `ArbreTableau`, états des matchs ; passe En revue |

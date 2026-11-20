@@ -2068,6 +2068,38 @@ export const textes = {
     pilule: (taille: number) =>
       taille === 8 ? 'Quarts' : taille === 4 ? 'Demies' : taille === 2 ? 'Finale' : `Tableau de ${taille}`,
     troisiemePlace: '3e place',
+    /** US-110 : titre de l'arbre (« Du tableau de 16 à la finale »). */
+    arbreTitre: (debut: string, fin: string) => {
+      const du = debut.startsWith('Tableau') ? `Du ${debut.toLowerCase()}` : `Des ${debut.toLowerCase()}`;
+      const a =
+        fin === 'Finale'
+          ? 'à la finale'
+          : fin.startsWith('Tableau')
+            ? `au ${fin.toLowerCase()}`
+            : `aux ${fin.toLowerCase()}`;
+      return `${du} ${a}`;
+    },
+    cliquezUnMatch: 'Cliquez un match pour saisir ou corriger son score',
+    /** US-110 CA-3 : « Vainqueur du match 4 », « Vainqueur du quart 1 », « Perdant de la demie 2 ». */
+    provenance: (taille: number, numero: number, perdant: boolean) => {
+      const qui = perdant ? 'Perdant' : 'Vainqueur';
+      if (taille === 8) return `${qui} du quart ${numero}`;
+      if (taille === 4) return `${qui} de la demie ${numero}`;
+      return `${qui} du match ${numero}`;
+    },
+    /** US-110 CA-3 : l'état d'un match. */
+    etatMatch: (match: { etat: string; piste: number | null; enPiste: boolean }) => {
+      if (match.etat === 'regle') return 'Terminé';
+      if (match.etat === 'exempt') return 'Exempt';
+      if (match.etat === 'attente') return 'En attente';
+      if (match.piste === null) return 'À tirer · piste à attribuer';
+      return match.enPiste ? `En piste ${match.piste}` : `À tirer · piste ${match.piste}`;
+    },
+    motifCourt: (motif: string) => ({ abandon: 'Abandon', forfait: 'Forfait', exclusion: 'Exclusion' })[motif] ?? motif,
+    /** US-110 CA-1 : avancement d'un tour dans sa pilule (« terminé », « 4/8 »). */
+    avancementTour: (regles: number, total: number) =>
+      total > 0 && regles === total ? 'terminé' : `${regles}/${total}`,
+    tours: 'Tours du tableau',
     poulesEnCours: (regles: number, total: number) =>
       `Le tableau se crée quand toutes les poules sont terminées · ${regles} match${regles > 1 ? 's' : ''} sur ${total}`,
     voirPoules: 'Voir les poules',
