@@ -167,6 +167,54 @@ const TYPES_POULES = [
   'RetraitDesPoulesAnnule',
 ];
 
+/** US-108 : forme des données des événements du tableau ; les règles sont celles du domaine. */
+function donneesTableauValides(type: unknown, donnees: unknown): boolean {
+  if (!estObjet(donnees)) return false;
+  switch (type) {
+    case 'TableauCree':
+      return (
+        aSeulement(donnees, ['qualifies']) && Array.isArray(donnees.qualifies) && donnees.qualifies.every(estTexte)
+      );
+    case 'MatchTableauAppele':
+      return (
+        aSeulement(donnees, ['match', 'piste']) &&
+        estTexte(donnees.match) &&
+        (donnees.piste === null || estEntier(donnees.piste))
+      );
+    case 'ScoreTableauSaisi':
+      return (
+        aSeulement(donnees, ['match', 'tireurA', 'tireurB', 'touchesA', 'touchesB', 'parPriorite', 'saisie']) &&
+        estTexte(donnees.match) &&
+        estTexte(donnees.tireurA) &&
+        estTexte(donnees.tireurB) &&
+        estEntier(donnees.touchesA) &&
+        estEntier(donnees.touchesB) &&
+        (donnees.parPriorite === undefined || estTexte(donnees.parPriorite)) &&
+        (donnees.saisie === undefined || origineSaisieValide(donnees.saisie))
+      );
+    case 'TireurRetireDuTableau':
+      return (
+        aSeulement(donnees, ['match', 'tireurId', 'motif']) &&
+        estTexte(donnees.match) &&
+        estTexte(donnees.tireurId) &&
+        estTexte(donnees.motif)
+      );
+    case 'RetraitDuTableauAnnule':
+      return aSeulement(donnees, ['match']) && estTexte(donnees.match);
+    default:
+      return Object.keys(donnees).length === 0;
+  }
+}
+
+const TYPES_TABLEAU = [
+  'TableauCree',
+  'MatchTableauAppele',
+  'ScoreTableauSaisi',
+  'TireurRetireDuTableau',
+  'RetraitDuTableauAnnule',
+  'EpreuveTerminee',
+];
+
 const TYPES_TIREUR = ['TireurInscrit', 'TireurModifie', 'TireurRetire', 'PresenceModifiee'];
 
 /**
@@ -193,6 +241,7 @@ function donneesValides(type: unknown, donnees: unknown): boolean {
   }
   if (TYPES_TIREUR.includes(type as string)) return donneesTireurValides(type, donnees);
   if (TYPES_POULES.includes(type as string)) return donneesPoulesValides(type, donnees);
+  if (TYPES_TABLEAU.includes(type as string)) return donneesTableauValides(type, donnees);
   if (type === 'EpreuveArchivee' || type === 'EpreuveDesarchivee') return aExactementLesChamps(donnees, []) !== null;
   if (type === 'AppareilExclu') {
     const exclusion = aExactementLesChamps(donnees, ['appareilId', 'exclu']);

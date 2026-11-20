@@ -491,6 +491,12 @@ Aucun autre champ n'est accepté.
 | `ScorePouleSaisi` | `{ poule, tireurA, tireurB, touchesA, touchesB, auTemps? }` | Score d'un match de poule ; une nouvelle saisie du même match le remplace (US-085, US-088). |
 | `TireurRetireDesPoules` | `{ tireurId, motif }` | Abandon, forfait ou exclusion (`abandon`, `forfait`, `exclusion`) : ses matchs restants sont perdus, il est classé dernier de sa poule (US-085, US-089). |
 | `RetraitDesPoulesAnnule` | `{ tireurId }` | Annule un retrait fait par erreur (US-089). |
+| `TableauCree` | `{ qualifies }` | Crée le tableau (US-108) : les qualifiés dans l'ordre du classement après poules, ex aequo tirés au sort. Fige les poules. |
+| `MatchTableauAppele` | `{ match, piste }` | Appelle un match du tableau sur une piste (`null` la retire) ; l'heure d'appel est la date de l'en-tête (US-108, US-112). |
+| `ScoreTableauSaisi` | `{ match, tireurA, tireurB, touchesA, touchesB, parPriorite?, saisie? }` | Score d'un match du tableau, ou sa correction ; `parPriorite` désigne le vainqueur d'une égalité (US-108). |
+| `TireurRetireDuTableau` | `{ match, tireurId, motif }` | Abandon, forfait ou exclusion dans un match du tableau : l'adversaire passe (US-108, US-113). |
+| `RetraitDuTableauAnnule` | `{ match }` | Annule un retrait du tableau fait par erreur (US-113). |
+| `EpreuveTerminee` | `{}` | Termine l'épreuve une fois tous les matchs réglés : statut « Terminée » (US-108, US-115). |
 
 Les quatre événements d'inscription ne s'écrivent que sur une épreuve en préparation (`INSCRIPTIONS_CLOSES` sinon,
 `EPREUVE_ARCHIVEE` pour une épreuve archivée). La page publique n'expose pas les inscrits.
@@ -614,6 +620,29 @@ le garde dans `avantArchivage` ; `EpreuveDesarchivee` rend ce statut, remet `pub
 - `EPREUVE_NON_ARCHIVEE` (désarchiver) : l'épreuve n'est pas archivée.
 
 Le format est inchangé (`VERSION_JOURNAL` reste à 1) : un journal écrit avant US-033 n'a pas besoin de migration.
+
+**Données des événements du tableau** (US-108) : un match s'identifie par la taille de son tour et son numéro dans le
+tour, de haut en bas (`16-5` : tableau de 16, match 5 ; `2-1` : la finale), ou `3e` pour le match pour la 3e place.
+Le tableau a la taille de la plus petite puissance de 2 qui contient les qualifiés (2 à 256) ; ses places suivent l'ordre
+de la FIE (rangs r et T + 1 − r au premier tour), les meilleurs rangs exempts. La projection porte `epreuve.tableau`
+(`{ qualifies, resultats, appels }`) ; le tableau tour par tour est calculé par `structureTableau`. Règles du domaine
+(`verifierEvenement`) :
+
+- `TableauCree` : `POULES_NON_TERMINEES` (un match de poule à tirer), `TABLEAU_EXISTE`, `QUALIFIES_INSUFFISANTS`
+  (moins de 2), `TABLEAU_TROP_GRAND` (plus de 256), `QUALIFIES_INVALIDES` (pas exactement les qualifiés, ou un ordre
+  qui ne suit pas le classement) ; ensuite, tout événement des poules est refusé (`TABLEAU_CREE`) ;
+- `MatchTableauAppele` : `TABLEAU_ABSENT`, `MATCH_INCONNU` (ou exempt), `MATCH_NON_PRET` (un tireur inconnu),
+  `MATCH_REGLE`, `PISTE_INVALIDE` (1 à 99) ;
+- `ScoreTableauSaisi` : `MATCH_INCONNU` (les tireurs ne sont pas ceux du match), `MATCH_NON_PRET`, `MATCH_REGLE`
+  (réglé par un retrait), `MATCH_SUIVANT_REGLE` (correction alors que le match suivant, ou la 3e place, est réglé),
+  `SCORE_INVALIDE` (touches hors de 0 à `touchesTableau`, égalité sans `parPriorite`, `parPriorite` sans égalité) ;
+- `TireurRetireDuTableau` : `MOTIF_INVALIDE`, `MATCH_INCONNU`, `MATCH_NON_PRET`, `MATCH_REGLE` ;
+  `RetraitDuTableauAnnule` : `RETRAIT_ABSENT`, `MATCH_SUIVANT_REGLE` ;
+- `EpreuveTerminee` : `MATCHS_A_REGLER` (un match à régler, 3e place comprise ; sans tableau, plus d'un qualifié) ;
+  ensuite, tout événement du tableau est refusé (`EPREUVE_TERMINEE`) ;
+- `FormuleModifiee` : `TROISIEME_PLACE_REGLEE` pour retirer le match pour la 3e place une fois tiré.
+
+Le format est inchangé (`VERSION_JOURNAL` reste à 1) : un journal écrit avant US-108 n'a pas de tableau.
 
 ### Règles d'écriture et de lecture
 

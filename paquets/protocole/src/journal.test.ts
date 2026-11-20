@@ -356,3 +356,49 @@ describe('US-085 : forme des événements des poules', () => {
     expect(lit('RetraitDesPoulesAnnule', { tireurId: 'a', motif: 'abandon' })).toBe(false);
   });
 });
+
+describe('US-108 : forme des événements du tableau', () => {
+  const lit = (type: string, donnees: unknown) =>
+    lireEvenement({
+      epreuveId: 'e1',
+      clubId: 'c1',
+      seq: 2,
+      version: 1,
+      date: 1,
+      auteur: 'a@b.fr',
+      source: 'clavier',
+      type,
+      donnees,
+    }) !== null;
+  it('CA-2 : TableauCree porte l’ordre des qualifiés', () => {
+    expect(lit('TableauCree', { qualifies: ['a', 'b'] })).toBe(true);
+    expect(lit('TableauCree', { qualifies: [1] })).toBe(false);
+    expect(lit('TableauCree', { qualifies: 'a' })).toBe(false);
+    expect(lit('TableauCree', { qualifies: [], autre: 1 })).toBe(false);
+    expect(lit('TableauCree', [])).toBe(false);
+  });
+  it('CA-5 : MatchTableauAppele porte le match et la piste, ou null', () => {
+    expect(lit('MatchTableauAppele', { match: '16-5', piste: 3 })).toBe(true);
+    expect(lit('MatchTableauAppele', { match: '16-5', piste: null })).toBe(true);
+    expect(lit('MatchTableauAppele', { match: '16-5', piste: '3' })).toBe(false);
+    expect(lit('MatchTableauAppele', { match: 5, piste: 3 })).toBe(false);
+  });
+  it('CA-6 : ScoreTableauSaisi porte le match, les tireurs, les touches et, facultatifs, la priorité et la saisie', () => {
+    const score = { match: '16-5', tireurA: 'a', tireurB: 'b', touchesA: 15, touchesB: 11 };
+    expect(lit('ScoreTableauSaisi', score)).toBe(true);
+    expect(lit('ScoreTableauSaisi', { ...score, parPriorite: 'a' })).toBe(true);
+    expect(lit('ScoreTableauSaisi', { ...score, saisie: { id: 's1', par: 'arbitre' } })).toBe(true);
+    expect(lit('ScoreTableauSaisi', { ...score, saisie: { id: '', par: 'arbitre' } })).toBe(false);
+    expect(lit('ScoreTableauSaisi', { ...score, parPriorite: 1 })).toBe(false);
+    expect(lit('ScoreTableauSaisi', { ...score, touchesA: '15' })).toBe(false);
+    expect(lit('ScoreTableauSaisi', { ...score, autre: 1 })).toBe(false);
+  });
+  it('CA-8 et CA-11 : retrait, annulation et fin de l’épreuve', () => {
+    expect(lit('TireurRetireDuTableau', { match: '16-5', tireurId: 'a', motif: 'abandon' })).toBe(true);
+    expect(lit('TireurRetireDuTableau', { match: '16-5', tireurId: 'a' })).toBe(false);
+    expect(lit('RetraitDuTableauAnnule', { match: '16-5' })).toBe(true);
+    expect(lit('RetraitDuTableauAnnule', { match: '16-5', tireurId: 'a' })).toBe(false);
+    expect(lit('EpreuveTerminee', {})).toBe(true);
+    expect(lit('EpreuveTerminee', { x: 1 })).toBe(false);
+  });
+});

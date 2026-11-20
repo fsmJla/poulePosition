@@ -83,6 +83,21 @@ describe('analyserSauvegarde', () => {
     expect(lue.fichiers[0]?.contenu).toBe('AAECAw==');
   });
 
+  it('US-108 : les événements du tableau passent l’aller-retour du fichier', () => {
+    const tableau = [
+      ['TableauCree', { qualifies: ['a', 'b'] }],
+      ['MatchTableauAppele', { match: '2-1', piste: 1 }],
+      ['ScoreTableauSaisi', { match: '2-1', tireurA: 'a', tireurB: 'b', touchesA: 9, touchesB: 9, parPriorite: 'a' }],
+      ['TireurRetireDuTableau', { match: '2-1', tireurId: 'b', motif: 'abandon' }],
+      ['RetraitDuTableauAnnule', { match: '2-1' }],
+      ['EpreuveTerminee', {}],
+    ].map(([type, donnees], i) => evenement(i + 3, { type, donnees }));
+    const fichier = JSON.parse(JSON.stringify(sauvegarde({ journal: [evenement(1), evenement(2), ...tableau] })));
+    const resultat = analyserSauvegarde(fichier);
+    expect(resultat.ok).toBe(true);
+    expect((resultat as { ok: true; sauvegarde: SauvegardeEpreuve }).sauvegarde.journal).toHaveLength(8);
+  });
+
   it('accepte une épreuve sans rattachement connu et sans fichier', () => {
     expect(analyserSauvegarde(sauvegarde({ competition: null, manifestation: null, fichiers: [] })).ok).toBe(true);
   });
