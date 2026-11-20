@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Feuille de présence</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 794px; height: 1123px; box-sizing: border-box; padding: 44px 48px 36px; background: #ffffff; color: #111111; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.35; display: flex; flex-direction: column; gap: 14px">
+
+<header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding-bottom: 10px; border-bottom: 2px solid #2f4b4a">
+<div>
+<p style="margin: 0; font-size: 12px; color: #555555">Poule Position</p>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px; color: #2f4b4a">Feuille de présence</h1>
+</div>
+<div style="text-align: right; font-size: 13px">
+<p style="margin: 0; font-weight: 700; font-size: 15px">M13 Dames · Sabre</p>
+<p style="margin: 0">Championnats de Nouvelle-Aquitaine</p>
+<p style="margin: 0">Samedi 22 novembre 2026 · Pessac</p>
+</div>
+</header>
+
+<p style="margin: 0">24 inscrites · cochez la case à l'arrivée et faites signer. Les cases déjà cochées viennent de l'émargement sur le PC.</p>
+
+<table style="width: 100%; border-collapse: collapse">
+<thead>
+<tr style="background: #eef2f1">
+<th scope="col" style="width: 32px; padding: 6px; border: 1px solid #888888; text-align: right">N°</th>
+<th scope="col" style="padding: 6px; border: 1px solid #888888; text-align: left">Tireuse</th>
+<th scope="col" style="padding: 6px; border: 1px solid #888888; text-align: left">Club</th>
+<th scope="col" style="width: 48px; padding: 6px; border: 1px solid #888888; text-align: right">Class.</th>
+<th scope="col" style="width: 64px; padding: 6px; border: 1px solid #888888">Présente</th>
+<th scope="col" style="width: 170px; padding: 6px; border: 1px solid #888888">Signature</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{lignes}}" as="l" hint-placeholder-count="24">
+<tr style="height: 30px">
+<td style="padding: 4px 6px; border: 1px solid #888888; text-align: right">{{l.n}}</td>
+<td style="padding: 4px 6px; border: 1px solid #888888"><strong>{{l.nom}}</strong> {{l.prenom}}</td>
+<td style="padding: 4px 6px; border: 1px solid #888888">{{l.club}}</td>
+<td style="padding: 4px 6px; border: 1px solid #888888; text-align: right">{{l.classement}}</td>
+<td style="padding: 4px 6px; border: 1px solid #888888; text-align: center"><span style="{{l.caseStyle}}">{{l.coche}}</span></td>
+<td style="padding: 4px 6px; border: 1px solid #888888"></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+
+<footer style="margin-top: auto; display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid #888888; font-size: 12px; color: #444444">
+<span>Imprimé le 22/11/2026 à 8 h 05 · 16 présentes sur 24 au moment de l'impression</span>
+<span>Page 1 / 1</span>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":794,"height":1123}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const t = [
+      ['ANDRE', 'Juliette', 'Bayonne', 21], ['BERNARD', 'Inès', 'Mérignac', 3], ['BLANC', 'Lucie', 'Libourne', ''], ['BONNET', 'Clara', 'Talence', 18],
+      ['DAVID', 'Agathe', 'Pessac (SPUC)', 13], ['DUBOIS', 'Chloé', 'Pessac (SPUC)', 1], ['DURAND', 'Emma', 'Talence', 8], ['FAURE', 'Camille', 'Bordeaux BEC', 19],
+      ['GARCIA', 'Lou', 'Mérignac', 14], ['GIRARD', 'Léna', 'Bayonne', 12], ['LAURENT', 'Anna', 'Libourne', 9], ['LEFEBVRE', 'Mia', 'Bordeaux BEC', 16],
+      ['LEROY', 'Alice', 'Talence', 5], ['MARTIN', 'Léa', 'Libourne', 4], ['MERCIER', 'Eva', 'Mérignac', ''], ['MICHEL', 'Julia', 'Bordeaux BEC', 15],
+      ['MOREAU', 'Lina', 'Bordeaux BEC', 11], ['PETIT', 'Louise', 'Pessac (SPUC)', 7], ['RICHARD', 'Zoé', 'Bayonne', 6], ['ROBERT', 'Manon', 'Mérignac', 2],
+      ['ROUX', 'Romane', 'Libourne', 17], ['SIMON', 'Rose', 'Talence', 10], ['THOMAS', 'Jade', 'Pessac (SPUC)', 20], ['VINCENT', 'Sarah', 'Bayonne', 22]
+    ];
+    const presentes = [1, 2, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 17, 18, 19, 20];
+    return {
+      lignes: t.map(([nom, prenom, club, classement], i) => {
+        const coche = presentes.indexOf(i) >= 0;
+        return {
+          n: i + 1, nom, prenom, club, classement,
+          coche: coche ? '✕' : '',
+          caseStyle: 'display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border: 1.5px solid #222222; font-size: 12px; font-weight: 700'
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

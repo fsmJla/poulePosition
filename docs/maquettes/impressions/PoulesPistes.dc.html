@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Poules par piste</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 794px; height: 1123px; box-sizing: border-box; padding: 44px 48px 36px; background: #ffffff; color: #111111; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 16px; line-height: 1.35; display: flex; flex-direction: column; gap: 22px">
+
+<header style="padding-bottom: 10px; border-bottom: 2px solid #2f4b4a">
+<p style="margin: 0; font-size: 12px; color: #555555">Poule Position · Championnats de Nouvelle-Aquitaine · 22/11/2026</p>
+<h1 style="margin: 4px 0 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 40px; color: #2f4b4a">M13 Dames · Les poules</h1>
+<p style="margin: 2px 0 0; font-size: 18px">4 poules de 6 · début à 9 h 30 · rendez-vous sur votre piste</p>
+</header>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px">
+<sc-for list="{{poules}}" as="p" hint-placeholder-count="4">
+<section style="border: 2px solid #2f4b4a; border-radius: 10px; overflow: hidden">
+<h2 style="margin: 0; padding: 10px 16px; background: #2f4b4a; color: #ffffff; font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px">{{p.titre}}</h2>
+<ol style="margin: 0; padding: 8px 16px 12px; list-style: none">
+<sc-for list="{{p.tireuses}}" as="t" hint-placeholder-count="6">
+<li style="display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 6px; padding: 7px 0; border-bottom: 1px solid #cccccc">
+<span style="font-weight: 700">{{t.n}}</span>
+<span><strong>{{t.nom}}</strong> {{t.prenom}}<br><span style="font-size: 13px; color: #444444">{{t.club}}</span></span>
+</li>
+</sc-for>
+</ol>
+</section>
+</sc-for>
+</div>
+
+<footer style="margin-top: auto; display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid #888888; font-size: 12px; color: #444444">
+<span>Imprimé le 22/11/2026 à 9 h 05 · à afficher dans la salle</span>
+<span>Page 1 / 1</span>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":794,"height":1123}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = [
+      [['ROBERT', 'Manon', 'Mérignac'], ['PETIT', 'Louise', 'Pessac (SPUC)'], ['LAURENT', 'Anna', 'Libourne'], ['DAVID', 'Agathe', 'Pessac (SPUC)'], ['LEFEBVRE', 'Mia', 'Bordeaux BEC'], ['ANDRE', 'Juliette', 'Bayonne']],
+      [['DUBOIS', 'Chloé', 'Pessac (SPUC)'], ['DURAND', 'Emma', 'Talence'], ['MOREAU', 'Lina', 'Bordeaux BEC'], ['GARCIA', 'Lou', 'Mérignac'], ['ROUX', 'Romane', 'Libourne'], ['VINCENT', 'Sarah', 'Bayonne']],
+      [['BERNARD', 'Inès', 'Mérignac'], ['RICHARD', 'Zoé', 'Bayonne'], ['SIMON', 'Rose', 'Talence'], ['GIRARD', 'Léna', 'Bayonne'], ['MICHEL', 'Julia', 'Bordeaux BEC'], ['FAURE', 'Camille', 'Bordeaux BEC']],
+      [['MARTIN', 'Léa', 'Libourne'], ['LEROY', 'Alice', 'Talence'], ['THOMAS', 'Jade', 'Pessac (SPUC)'], ['BONNET', 'Clara', 'Talence'], ['MERCIER', 'Eva', 'Mérignac'], ['BLANC', 'Lucie', 'Libourne']]
+    ];
+    return {
+      poules: p.map((ts, i) => ({
+        titre: 'Poule ' + (i + 1) + ' · Piste ' + (i + 1),
+        tireuses: ts.map(([nom, prenom, club], j) => ({ n: j + 1, nom, prenom, club }))
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

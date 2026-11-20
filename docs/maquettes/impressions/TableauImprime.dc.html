@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Tableau à afficher</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1123px; height: 794px; box-sizing: border-box; padding: 32px 40px 24px; background: #ffffff; color: #111111; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 12px; line-height: 1.25; display: flex; flex-direction: column; gap: 12px">
+
+<header style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding-bottom: 8px; border-bottom: 2px solid #2f4b4a">
+<div>
+<p style="margin: 0; font-size: 12px; color: #555555">Poule Position · Championnats de Nouvelle-Aquitaine · 22/11/2026</p>
+<h1 style="margin: 2px 0 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 28px; color: #2f4b4a">M13 Dames · Tableau, du tableau de 16 à la finale</h1>
+</div>
+<p style="margin: 0; font-size: 13px">(n) : rang après les poules · en gras : vainqueur</p>
+</header>
+
+<div style="flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px">
+<sc-for list="{{tours}}" as="t" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column">
+<h2 style="margin: 0 0 6px; font-size: 14px; color: #2f4b4a">{{t.nom}}</h2>
+<div style="flex: 1; display: flex; flex-direction: column; justify-content: space-around">
+<sc-for list="{{t.matchs}}" as="m" hint-placeholder-count="8">
+<div style="border: 1px solid #555555">
+<sc-for list="{{m.lignes}}" as="l" hint-placeholder-count="2">
+<div style="{{l.style}}"><span style="color: #444444; width: 26px">{{l.rang}}</span><span style="flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">{{l.nom}}</span><span style="width: 20px; text-align: right">{{l.score}}</span></div>
+</sc-for>
+<p style="margin: 0; padding: 1px 6px; font-size: 11px; color: #444444; border-top: 1px solid #cccccc">{{m.etat}}</p>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+
+<footer style="display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid #888888; font-size: 12px; color: #444444">
+<span>Imprimé le 22/11/2026 à 14 h 02 · le tableau de 32 est sur la page 1</span>
+<span>Page 2 / 2</span>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1123,"height":794}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const l = (rang, nom, score, gagne) => ({
+      rang: rang ? '(' + rang + ')' : '', nom, score: score === undefined ? '' : String(score),
+      style: 'display: flex; gap: 4px; padding: 3px 6px; border-bottom: 1px solid #dddddd;' + (gagne ? 'font-weight: 700;' : '')
+    });
+    const m = (a, b, etat) => ({ lignes: [a, b], etat });
+    return {
+      tours: [
+        { nom: 'Tableau de 16', matchs: [
+          m(l(1, 'THOMAS Jade', 15, true), l(16, 'LEFEBVRE Mia', 8), 'Terminé'),
+          m(l(8, 'DURAND Emma', 15, true), l(9, 'LAURENT Anna', 13), 'Terminé'),
+          m(l(5, 'ROBERT Manon', 12), l(12, 'LEROY Alice', 15, true), 'Terminé'),
+          m(l(4, 'MARTIN Léa'), l(13, 'DAVID Agathe'), 'Piste 4'),
+          m(l(3, 'DUBOIS Chloé'), l(14, 'GARCIA Lou'), 'Piste 3'),
+          m(l(6, 'RICHARD Zoé'), l(11, 'MOREAU Lina'), 'Piste 1'),
+          m(l(7, 'PETIT Louise'), l(10, 'SIMON Rose'), 'Piste 2'),
+          m(l(2, 'BERNARD Inès', 15, true), l(15, 'MICHEL Julia', 6), 'Terminé')
+        ] },
+        { nom: 'Quarts de finale', matchs: [
+          m(l(1, 'THOMAS Jade'), l(8, 'DURAND Emma'), 'À tirer'),
+          m(l(12, 'LEROY Alice'), l('', '……………………'), ''),
+          m(l('', '……………………'), l('', '……………………'), ''),
+          m(l('', '……………………'), l(2, 'BERNARD Inès'), '')
+        ] },
+        { nom: 'Demi-finales', matchs: [
+          m(l('', '……………………'), l('', '……………………'), ''),
+          m(l('', '……………………'), l('', '……………………'), '')
+        ] },
+        { nom: 'Finale', matchs: [
+          m(l('', '……………………'), l('', '……………………'), '')
+        ] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
