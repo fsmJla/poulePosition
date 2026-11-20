@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F9, F10 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-085, US-089, US-092, US-028
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-108-tableau-dans-le-journal`
 
 ## Récit
 
@@ -149,3 +149,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (spécification de l'Epic 6) ; hypothèses et écarts validés par l'utilisateur, passe à Prête |
+| 2026-11-20 | Implémentée : `paquets/domaine/src/tableau.ts`, journal, protocole et `docs/protocole.md` ; passe En revue |

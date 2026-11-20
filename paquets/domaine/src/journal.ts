@@ -55,6 +55,29 @@ import {
   type ErreurPoules,
   type EtatPoules,
 } from './poules';
+import {
+  appelsApres,
+  etatTableauVide,
+  resultatsApresRetrait,
+  resultatsApresScore,
+  verifierAnnulationRetraitTableau,
+  verifierAppel,
+  verifierCreationTableau,
+  verifierDesactivationTroisieme,
+  verifierFinEpreuve,
+  verifierPoulesFigees,
+  verifierRetraitTableau,
+  verifierScoreTableau,
+  type ContexteTableau,
+  type DonneesAnnulationRetraitTableau,
+  type DonneesEpreuveTerminee,
+  type DonneesMatchTableauAppele,
+  type DonneesRetraitTableau,
+  type DonneesScoreTableau,
+  type DonneesTableauCree,
+  type ErreurTableau,
+  type EtatTableau,
+} from './tableau';
 
 /** Origine d'un événement : le clavier du PC pilote (les saisies smartphone viendront avec E5). */
 export type Source = 'clavier';
@@ -94,7 +117,13 @@ export type Proposition =
   | { type: 'RetraitDesPoulesAnnule'; donnees: DonneesAnnulationRetrait }
   | { type: 'JetonQrDefini'; donnees: DonneesJetonQr }
   | { type: 'SaisieRefusee'; donnees: DonneesSaisieRefusee }
-  | { type: 'AppareilExclu'; donnees: DonneesAppareilExclu };
+  | { type: 'AppareilExclu'; donnees: DonneesAppareilExclu }
+  | { type: 'TableauCree'; donnees: DonneesTableauCree }
+  | { type: 'MatchTableauAppele'; donnees: DonneesMatchTableauAppele }
+  | { type: 'ScoreTableauSaisi'; donnees: DonneesScoreTableau }
+  | { type: 'TireurRetireDuTableau'; donnees: DonneesRetraitTableau }
+  | { type: 'RetraitDuTableauAnnule'; donnees: DonneesAnnulationRetraitTableau }
+  | { type: 'EpreuveTerminee'; donnees: DonneesEpreuveTerminee };
 
 /** US-105 CA-2 et CA-4 : la table exclut un smartphone (`exclu: true`) ou le réadmet. */
 export interface DonneesAppareilExclu {
@@ -139,6 +168,8 @@ export interface Epreuve extends DonneesEpreuve {
   tireurs?: Tireur[];
   /** US-085 : les poules ; absent d'une projection gardée avant cette US (lire avec `poulesDe`). */
   poules?: EtatPoules;
+  /** US-108 : le tableau ; absent d'une projection gardée avant cette US (lire avec `tableauDe`). */
+  tableau?: EtatTableau;
   /** US-096 : empreintes des jetons QR en service ; absent d'une projection gardée avant cette US (lire avec `accesDe`). */
   acces?: AccesQr;
   /** US-100 : saisies des smartphones refusées par la table (trace) ; absent avant cette US. */
@@ -155,6 +186,31 @@ export const accesDe = (epreuve: Pick<Epreuve, 'acces'>): AccesQr => epreuve.acc
 
 /** US-085 : les poules d'une épreuve, y compris pour une projection gardée avant US-085. */
 export const poulesDe = (epreuve: Pick<Epreuve, 'poules'>): EtatPoules => epreuve.poules ?? etatPoulesVide();
+
+/** US-108 : le tableau d'une épreuve, y compris pour une projection gardée avant US-108. */
+export const tableauDe = (epreuve: Pick<Epreuve, 'tableau'>): EtatTableau => epreuve.tableau ?? etatTableauVide();
+
+/** US-108 : ce que les règles du tableau lisent de l'épreuve. */
+export const contexteTableau = (epreuve: Epreuve): ContexteTableau => ({
+  poules: poulesDe(epreuve),
+  tableau: tableauDe(epreuve),
+  touchesPoules: epreuve.formule.touchesPoules,
+  touchesTableau: epreuve.formule.touchesTableau,
+  matchTroisieme: epreuve.formule.matchTroisieme,
+  terminee: epreuve.statut === 'terminee',
+});
+
+const TYPES_TABLEAU = [
+  'TableauCree',
+  'MatchTableauAppele',
+  'ScoreTableauSaisi',
+  'TireurRetireDuTableau',
+  'RetraitDuTableauAnnule',
+  'EpreuveTerminee',
+] as const;
+type PropositionTableau = Extract<Proposition, { type: (typeof TYPES_TABLEAU)[number] }>;
+const estPropositionTableau = (p: Proposition): p is PropositionTableau =>
+  (TYPES_TABLEAU as readonly string[]).includes(p.type);
 
 const TYPES_POULES = [
   'PoulesComposees',
@@ -188,6 +244,7 @@ export type ErreurEvenement =
   | ErreurParametres
   | ErreurTireur
   | ErreurPoules
+  | ErreurTableau
   | ErreurAccesQr
   | 'FORMULE_FIGEE'
   | 'PILOTE_INVALIDE'
@@ -234,6 +291,7 @@ export function verifierEvenement(projection: Projection, proposition: Propositi
     return verifierInscription(epreuve, proposition);
   }
   if (estPropositionPoules(proposition)) return verifierPoules(epreuve, proposition);
+  if (estPropositionTableau(proposition)) return verifierTableau(epreuve, proposition);
   // US-027 : la modification est validée sur le résultat de la fusion, comme une création.
   if (!epreuve) return 'EPREUVE_INCONNUE';
   if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
@@ -322,6 +380,9 @@ function verifierInscription(
 function verifierPoules(epreuve: Epreuve | null, proposition: PropositionPoules): ErreurEvenement | null {
   if (!epreuve) return 'EPREUVE_INCONNUE';
   if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
+  // US-108 CA-4 : une fois le tableau créé, les poules sont figées.
+  const figees = verifierPoulesFigees(tableauDe(epreuve));
+  if (figees) return figees;
   const etat = poulesDe(epreuve);
   const tireurs = tireursDe(epreuve);
   if (proposition.type === 'PoulesComposees') return verifierComposition(etat, proposition.donnees.poules, tireurs);
@@ -331,6 +392,27 @@ function verifierPoules(epreuve: Epreuve | null, proposition: PropositionPoules)
   }
   if (proposition.type === 'TireurRetireDesPoules') return verifierRetraitDesPoules(etat, proposition.donnees);
   return verifierAnnulationRetrait(etat, proposition.donnees);
+}
+
+/** US-108 : créer le tableau, appeler, saisir, retirer, annuler un retrait et terminer l'épreuve. */
+function verifierTableau(epreuve: Epreuve | null, proposition: PropositionTableau): ErreurEvenement | null {
+  if (!epreuve) return 'EPREUVE_INCONNUE';
+  if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
+  const contexte = contexteTableau(epreuve);
+  switch (proposition.type) {
+    case 'TableauCree':
+      return verifierCreationTableau(contexte, proposition.donnees);
+    case 'MatchTableauAppele':
+      return verifierAppel(contexte, proposition.donnees);
+    case 'ScoreTableauSaisi':
+      return verifierScoreTableau(contexte, proposition.donnees);
+    case 'TireurRetireDuTableau':
+      return verifierRetraitTableau(contexte, proposition.donnees);
+    case 'RetraitDuTableauAnnule':
+      return verifierAnnulationRetraitTableau(contexte, proposition.donnees);
+    default:
+      return verifierFinEpreuve(contexte);
+  }
 }
 
 const CHAMPS_FORMULE: readonly string[] = ['touchesPoules', 'touchesTableau', 'matchTroisieme'];
@@ -343,6 +425,11 @@ function verifierFormule(epreuve: Epreuve | null, changes: ModificationFormule):
   if (Object.keys(changes).some((champ) => !CHAMPS_FORMULE.includes(champ))) return 'CHAMP_FIGE';
   const erreur = validerFormule(changes);
   if (erreur) return erreur;
+  // US-108 CA-9 : le match pour la 3e place ne se retire plus une fois tiré.
+  if (changes.matchTroisieme === false) {
+    const reglee = verifierDesactivationTroisieme(tableauDe(epreuve));
+    if (reglee) return reglee;
+  }
   const change = modificationFormule(epreuve.formule, { ...epreuve.formule, ...changes });
   return Object.keys(change).length === 0 ? 'AUCUNE_MODIFICATION' : null;
 }
@@ -410,6 +497,11 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
     if (!epreuve) return projection;
     return { ...projection, epreuve: poulesApres(epreuve, evenement), dernierSeq: evenement.seq };
   }
+  if (estPropositionTableau(evenement)) {
+    const { epreuve } = projection;
+    if (!epreuve) return projection;
+    return { ...projection, epreuve: tableauApres(epreuve, evenement), dernierSeq: evenement.seq };
+  }
   if (evenement.type === 'EpreuveArchivee') {
     const { epreuve } = projection;
     if (!epreuve) return projection;
@@ -460,6 +552,7 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
       parametres: parametresParDefaut(),
       tireurs: [],
       poules: etatPoulesVide(),
+      tableau: etatTableauVide(),
     },
     dernierSeq: evenement.seq,
   };
@@ -516,6 +609,36 @@ function poulesApres(
   }
   const retraits = etat.retraits.filter(({ tireurId }) => tireurId !== evenement.donnees.tireurId);
   return { ...epreuve, poules: { ...etat, retraits } };
+}
+
+/** US-108 : l'épreuve après un événement du tableau déjà vérifié ; `EpreuveTerminee` la passe « Terminée ». */
+function tableauApres(
+  epreuve: Epreuve,
+  evenement: Extract<Evenement, { type: (typeof TYPES_TABLEAU)[number] }>,
+): Epreuve {
+  const etat = tableauDe(epreuve);
+  const { date } = evenement;
+  switch (evenement.type) {
+    case 'TableauCree':
+      return { ...epreuve, tableau: { ...etat, qualifies: [...evenement.donnees.qualifies] } };
+    case 'MatchTableauAppele':
+      return { ...epreuve, tableau: { ...etat, appels: appelsApres(etat.appels, evenement.donnees, date) } };
+    case 'ScoreTableauSaisi':
+      return {
+        ...epreuve,
+        tableau: { ...etat, resultats: resultatsApresScore(etat.resultats, evenement.donnees, date) },
+      };
+    case 'TireurRetireDuTableau': {
+      const resultats = resultatsApresRetrait(etat, evenement.donnees, epreuve.formule.matchTroisieme, date);
+      return { ...epreuve, tableau: { ...etat, resultats } };
+    }
+    case 'RetraitDuTableauAnnule': {
+      const resultats = etat.resultats.filter((r) => r.match !== evenement.donnees.match);
+      return { ...epreuve, tableau: { ...etat, resultats } };
+    }
+    default:
+      return { ...epreuve, statut: 'terminee' };
+  }
 }
 
 /** État de l’épreuve calculé à partir de son journal, arrêté au dernier événement cohérent (CA-2). */

@@ -47,6 +47,7 @@ describe('journal d’une épreuve (ADR-0001)', () => {
         parametres: parametresParDefaut(),
         tireurs: [],
         poules: { poules: [], lancees: false, scores: [], retraits: [] },
+        tableau: { qualifies: null, resultats: [], appels: [] },
       },
       dernierSeq: 1,
       anomalie: null,
