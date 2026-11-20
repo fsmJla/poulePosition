@@ -14,6 +14,8 @@ import {
   type Sexe,
   type Statut,
   type TypeEpreuve,
+  type DocumentImprime,
+  type RaisonIndisponible,
 } from '@poule-position/domaine';
 import type { ErreurCompetitionSeule, ErreurCreation, ErreurModification } from './epreuves';
 import type { EtatConnexion } from './connexion';
@@ -2075,7 +2077,148 @@ export const textes = {
       AUTRE: 'Les poules n’ont pas pu être enregistrées sur cet appareil',
     } as Record<string, string>,
   },
-  /** US-109 à US-115 : l'étape « Tableau » (planche 11). */
+  /** US-120 à US-128 : étape « Impressions » et documents imprimés (Epic 7, planches 22 à 30). */
+  impressions: {
+    titre: 'Impressions',
+    explication:
+      'Tout s’imprime depuis ce PC, avec ou sans internet. Pour un PDF, choisissez « Enregistrer en PDF » dans la fenêtre d’impression.',
+    groupes: { avant: 'Avant les poules', poules: 'Poules', tableau: 'Tableau' },
+    documents: {
+      presence: { nom: 'Feuille de présence', detail: 'Les inscrits, case « Présente » et signature' },
+      qrCodes: { nom: 'QR codes des arbitres et des tireurs', detail: 'Une page à afficher près des pistes' },
+      poulesVierges: {
+        nom: 'Feuilles de poule à remplir',
+        detail: 'Pour les arbitres : une page par poule, ordre des matchs, signature, QR code des arbitres',
+      },
+      poulesResultats: {
+        nom: 'Feuilles de poule avec résultats',
+        detail: 'À afficher : scores, victoires, indices et rangs',
+      },
+      poulesPistes: {
+        nom: 'Poules par piste',
+        detail: 'À afficher dans la salle : les poules, leur piste et leurs tireurs',
+      },
+      classementPoules: {
+        nom: 'Classement des poules',
+        detail: 'Le classement après les poules, provisoire ou définitif',
+      },
+      feuillesMatch: {
+        nom: 'Feuilles de match',
+        detail: 'Pour les arbitres : 2 par page, à couper ; les matchs à tirer du tour choisi',
+      },
+      tableau: { nom: 'Tableau', detail: 'À afficher : l’arbre, de son premier tour à la finale, scores compris' },
+      classementFinal: { nom: 'Classement final', detail: 'Le podium et le classement de l’épreuve' },
+    } satisfies Record<DocumentImprime, { nom: string; detail: string }>,
+    raisons: {
+      AUCUN_INSCRIT: 'Aucun inscrit',
+      POULES_NON_COMPOSEES: 'Après la composition des poules',
+      POULES_NON_LANCEES: 'Après le lancement des poules',
+      TABLEAU_NON_CREE: 'Après la création du tableau',
+      AUCUN_MATCH_A_TIRER: 'Aucun match à tirer',
+    } satisfies Record<RaisonIndisponible, string>,
+    aVenir: 'À venir',
+    imprimer: 'Imprimer',
+    toutes: 'Toutes',
+    poule: (n: number) => `Poule ${n}`,
+    choixPoules: 'Poules à imprimer',
+    choixTour: 'Tour à imprimer',
+    choixFormat: 'Format du papier',
+    formats: { a4: 'A4 paysage', a3: 'A3 paysage' },
+    // Page d'impression et gabarit commun (US-120 CA-3).
+    retour: 'Retour aux impressions',
+    imprimerPage: 'Imprimer',
+    introuvable: 'Ce document est introuvable.',
+    indisponible: (raison: string) => `Ce document ne peut pas encore s’imprimer : ${raison.toLowerCase()}.`,
+    marque: 'Poule Position',
+    imprimeLe: (date: Date) =>
+      `Imprimé le ${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()} à ${date.getHours()} h ${String(date.getMinutes()).padStart(2, '0')}`,
+    page: (n: number, total: number) => `Page ${n} / ${total}`,
+    // US-121 : feuille de présence (planche 23).
+    presence: {
+      titre: 'Feuille de présence',
+      intro: (n: number) =>
+        `${n} inscrit${n > 1 ? 's' : ''} · cochez la case à l’arrivée et faites signer. Les cases déjà cochées viennent de l’émargement sur le PC.`,
+      colonnes: {
+        numero: 'N°',
+        tireur: 'Tireur',
+        club: 'Club',
+        classement: 'Class.',
+        present: 'Présent',
+        signature: 'Signature',
+      },
+      pointe: 'pointé à l’émargement',
+      pied: (presents: number, total: number) =>
+        `${presents} présent${presents > 1 ? 's' : ''} sur ${total} au moment de l’impression`,
+    },
+    // US-128 : classement final (planche 30).
+    classementFinal: {
+      titre: 'Classement final',
+      podium: 'Podium',
+      place: (place: number) => (place === 1 ? '1re' : `${place}e`),
+    },
+    // US-127 : tableau à afficher (planche 29).
+    tableau: {
+      titre: (premier: string) => `Tableau, du ${premier.toLowerCase()} à la finale`,
+      titreTour: (tour: string) => tour,
+      aRemplir: '……………………………',
+      legende: '(n) : rang après les poules · en gras : vainqueur',
+    },
+    // US-126 : feuilles de match du tableau (planche 28).
+    feuillesMatch: {
+      titre: (tour: string) => `Feuilles de match · ${tour}`,
+      piste: (piste: number | null) => `${piste ? `Piste ${piste}` : 'Piste ____'} · ___ h ___`,
+      cotes: { gauche: 'À gauche', droite: 'À droite' },
+      touches: 'Touches',
+      vainqueur: 'Vainqueur : ………………………………………………',
+      auTemps: '☐ au temps',
+      priorite: '☐ à égalité, priorité à : ………………………',
+      signatures: ['Arbitre', 'Tireur à gauche', 'Tireur à droite'],
+      rapporter: 'Rapportez la feuille à la table de marque dès la fin du match.',
+      suite: (tour: string) => `Le vainqueur passe au tour suivant : ${tour}.`,
+      finale: 'Le vainqueur remporte l’épreuve.',
+      couper: 'couper ici',
+      pied: 'matchs à tirer',
+    },
+    // US-125 : classement après les poules (planche 27).
+    classementPoules: {
+      titre: 'Classement après les poules',
+      definitif: (total: number) => `Définitif · ${total} matchs sur ${total}`,
+    },
+    // US-124 : poules par piste (planche 26).
+    poulesPistes: {
+      titre: 'Les poules',
+      sousTitre: (n: number) => `${n} poule${n > 1 ? 's' : ''} · rendez-vous sur votre piste`,
+    },
+    // US-122 et US-123 : feuilles de poule (planches 24 et 25).
+    feuillePoule: {
+      titre: (numero: number, piste: number | null) => (piste ? `Poule ${numero} · Piste ${piste}` : `Poule ${numero}`),
+      sousTitre: (tireurs: number, matchs: number, touches: number) =>
+        `${tireurs} tireurs · ${matchs} matchs en ${touches} touches · début : ____ h ____`,
+      colonnes: ['V', 'V/M', 'TD', 'TR', 'Ind', 'Rg'],
+      tireur: 'Tireur',
+      club: 'Club',
+      ordre: (touches: number) =>
+        `Ordre des matchs · notez « V » pour le vainqueur (V${touches}, ou V et ses touches au temps)`,
+      ordreSimple: 'Ordre des matchs',
+      arbitre: 'Arbitre',
+      nom: 'Nom : ……………………………………………',
+      signature: 'Signature :',
+      fin: 'Fin de poule',
+      heure: 'Heure : ____ h ____',
+      rapporter: 'Rapportez la feuille à la table de marque.',
+      qr: 'Arbitre : scannez pour saisir les scores sur votre téléphone.',
+      qrNom: (poule: number) => `QR code des arbitres, poule ${poule}`,
+      pagination: (n: number, total: number) => `Poule ${n} / ${total}`,
+      piedVierge: 'V = victoire (V et les touches au temps) ; défaite = touches données',
+      provisoire: (regles: number, total: number) =>
+        `Provisoire · ${regles} match${regles > 1 ? 's' : ''} sur ${total}`,
+      terminee: 'Terminée',
+      enCours: 'en cours',
+      legende:
+        'V : victoires · V/M : victoires par match · TD : touches données · TR : touches reçues · Ind : indice (TD − TR) · Rg : rang dans la poule.',
+      piedResultats: 'à afficher dans la salle',
+    },
+  },
   /** US-117, US-118 : afficheur et pavé de score à la demande, communs aux saisies du PC et du smartphone. */
   pave: {
     scoreDe: (nom: string) => 'Score de ' + nom,
@@ -2086,6 +2229,7 @@ export const textes = {
     priorite: 'Égalité : qui a la priorité ?',
     prioriteGroupe: 'Vainqueur par priorité',
   },
+  /** US-109 à US-115 : l'étape « Tableau » (planche 11). */
   tableau: {
     titre: 'Tableau',
     etats: { aCreer: 'À créer', enCours: 'En cours', termine: 'Terminé' },

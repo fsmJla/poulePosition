@@ -20,7 +20,7 @@
   import type { Accueil } from '../lib/accueil';
   import { inscrireTireur, pointerTireur } from '../lib/inscriptions';
   import { prendreEcriture, type Journal } from '../lib/journal';
-  import { cheminPoulesEpreuve } from '../lib/routes';
+  import { cheminImprimer, cheminPoulesEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -237,7 +237,12 @@
           id="menu-emargement"
           nom={t.titre}
           actions={[
-            { libelle: t.imprimer, icone: 'imprimante', indisponible: t.imprimerAVenir },
+            // US-121 : la feuille de présence s'imprime.
+            {
+              libelle: t.imprimer,
+              icone: 'imprimante',
+              chemin: cheminImprimer(epreuveId, { document: 'presence' }),
+            },
             {
               libelle: t.remettreAbsents,
               detail: t.remettreAbsentsDetail,
@@ -253,6 +258,16 @@
           <Icone nom="grille" taille={20} />{t.constituer}
         </button>
       </div>
+    {:else if epreuve}
+      <!-- US-121 : en lecture seule, la feuille de présence s'imprime encore. -->
+      <MenuActions
+        id="menu-emargement"
+        nom={t.titre}
+        actions={[
+          { libelle: t.imprimer, icone: 'imprimante', chemin: cheminImprimer(epreuveId, { document: 'presence' }) },
+        ]}
+        {naviguer}
+      />
     {/if}
   </div>
 

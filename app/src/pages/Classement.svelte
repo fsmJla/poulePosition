@@ -8,7 +8,7 @@
   import MenuActions from '../composants/MenuActions.svelte';
   import type { Accueil } from '../lib/accueil';
   import type { Journal } from '../lib/journal';
-  import { cheminPoulesEpreuve } from '../lib/routes';
+  import { cheminImprimer, cheminPoulesEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -110,7 +110,13 @@
       <MenuActions
         id="menu-classement"
         nom={t.classementTitre}
-        actions={[{ libelle: t.imprimerClassement, icone: 'imprimante', indisponible: t.imprimerAVenir }]}
+        actions={[
+          {
+            libelle: t.imprimerClassement,
+            icone: 'imprimante',
+            surChoix: () => naviguer(cheminImprimer(epreuveId, { document: 'classementPoules' })),
+          },
+        ]}
       />
     </div>
 

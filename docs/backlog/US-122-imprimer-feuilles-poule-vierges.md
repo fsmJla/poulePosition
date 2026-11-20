@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F11 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-120, US-087, US-096
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-122-imprimer-feuilles-poule-vierges`
 
 ## Récit
 
@@ -64,3 +64,5 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (Epic 7, planches 22 à 30 validées par l'utilisateur) ; Prête |
+| 2026-11-20 | Implémentée : `ImpressionPoulesVierges`, QR code des arbitres d'après le jeton gardé sur ce PC, choix de la poule, menus « ⋯ » des Poules ; passe En revue |
+| 2026-11-20 | Recette OK (groupée US-120 à US-128) sur https://poule-position-git-us-us-128-imprimer-c-f6911a-fsmjlas-projects.vercel.app ; passe Terminée |

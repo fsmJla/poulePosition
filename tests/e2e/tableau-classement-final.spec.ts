@@ -70,9 +70,9 @@ test('US-115 CA-1, CA-2, CA-4, CA-7 et CA-8 : le classement provisoire, au gabar
   // Les éliminées du tableau de 16 attendent la fin du tour.
   await expect(lignes(page).filter({ hasText: nomDe(qualifies[15]!) })).toContainText('Place à venir');
 
-  // CA-7 : imprimer, à venir.
+  // CA-7 : l'impression du classement final est livrée par US-128.
   await page.getByRole('button', { name: 'Autres actions pour Tableau' }).click();
-  await expect(page.getByRole('menuitem', { name: /^Imprimer le classement final/ })).toHaveAttribute(
+  await expect(page.getByRole('menuitem', { name: /^Imprimer le classement final/ })).not.toHaveAttribute(
     'aria-disabled',
     'true',
   );

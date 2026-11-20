@@ -25,7 +25,7 @@
   import type { VerdictArchivage } from '../lib/archivage';
   import { annulerRetrait, composerPoules, lancerPoules, retirerDesPoules, saisirScore } from '../lib/poules';
   import type { MotifRetrait } from '@poule-position/domaine';
-  import { cheminEmargementEpreuve, cheminParametresEpreuve } from '../lib/routes';
+  import { cheminEmargementEpreuve, cheminImprimer, cheminParametresEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -232,6 +232,7 @@
         nomsVersIds={new Map(tireursDe(epreuve).map((x) => [x.nom, x.id]))}
       />
       <SaisiePoules
+        imprimerFeuilles={() => naviguer(cheminImprimer(epreuveId, { document: 'poulesVierges' }))}
         {etat}
         {tireurs}
         touches={epreuve.formule.touchesPoules}
@@ -255,6 +256,7 @@
       <p class="discret">{t.pointezDabord}</p>
     {:else}
       <CartesPoules
+        imprimerFeuilles={() => naviguer(cheminImprimer(epreuveId, { document: 'poulesVierges' }))}
         {etat}
         {tireurs}
         {manuelle}

@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F11 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-120, US-110
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-127-imprimer-tableau`
 
 ## Récit
 
@@ -52,6 +52,7 @@ Tout se construit dans le navigateur à partir du journal local du PC (ADR-0009)
 ## Hypothèses
 
 - Le choix A4 / A3 se fait sur la ligne de l'étape « Impressions ».
+- Implémentation : une page d’un seul tour (premier tour d’un grand tableau) range ses matchs sur deux colonnes de 8 ; au-delà de 16 matchs, le tour se découpe sur plusieurs pages ; le menu « ⋯ » du Tableau imprime en A4.
 
 ## Questions bloquantes
 
@@ -68,3 +69,5 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (Epic 7, planches 22 à 30 validées par l'utilisateur) ; Prête |
+| 2026-11-20 | Implémentée : `ImpressionTableau`, `pagesTableau` (domaine), A4 / A3 paysage, menu « ⋯ » du Tableau ; passe En revue |
+| 2026-11-20 | Recette OK (groupée US-120 à US-128) sur https://poule-position-git-us-us-128-imprimer-c-f6911a-fsmjlas-projects.vercel.app ; passe Terminée |

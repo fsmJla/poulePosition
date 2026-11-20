@@ -276,7 +276,8 @@
     "tableau-voir",
     "tableau-saisir",
     "tableau-appeler",
-    "tableau-retrait"
+    "tableau-retrait",
+    "impression-tableau"
   ],
   "app/src/composants/ArbreTableau.svelte": ["tableau-voir", "tableau-saisir"],
   "app/src/composants/CarteSaisieTableau.svelte": [
@@ -406,14 +407,16 @@
     "poules-constituer",
     "poules-ajuster",
     "poules-saisie",
-    "poules-retrait"
+    "poules-retrait",
+    "impression-presence"
   ],
   "app/src/pages/Poules.svelte": [
     "poules-constituer",
     "poules-ajuster",
     "poules-saisie",
     "poules-retrait",
-    "poules-envoi"
+    "poules-envoi",
+    "impression-poules"
   ],
   "app/src/composants/ConstitutionPoules.svelte": [
     "poules-constituer",
@@ -421,7 +424,13 @@
     "poules-saisie",
     "poules-retrait"
   ],
-  "app/src/composants/CartesPoules.svelte": ["poules-constituer", "poules-ajuster", "poules-saisie", "poules-retrait"],
+  "app/src/composants/CartesPoules.svelte": [
+    "poules-constituer",
+    "poules-ajuster",
+    "poules-saisie",
+    "poules-retrait",
+    "impression-poules"
+  ],
   "app/src/lib/poules.ts": ["poules-constituer", "poules-ajuster", "poules-saisie", "poules-retrait"],
   "tests/e2e/poules-outils.ts": [
     "poules-constituer",
@@ -440,12 +449,12 @@
     "poules-classement"
   ],
   "tests/e2e/poules-ajuster.spec.ts": ["poules-ajuster"],
-  "app/src/composants/SaisiePoules.svelte": ["poules-saisie", "poules-retrait", "poules-envoi"],
+  "app/src/composants/SaisiePoules.svelte": ["poules-saisie", "poules-retrait", "poules-envoi", "impression-poules"],
   "tests/e2e/poules-saisie.spec.ts": ["poules-saisie", "poules-retrait"],
   "tests/e2e/poules-retrait.spec.ts": ["poules-retrait"],
   "app/src/composants/AttenteEnvoi.svelte": ["poules-envoi", "emargement", "inscriptions"],
   "tests/e2e/poules-envoi.spec.ts": ["poules-envoi"],
-  "app/src/pages/Classement.svelte": ["poules-classement"],
+  "app/src/pages/Classement.svelte": ["poules-classement", "impression-poules"],
   "tests/e2e/poules-classement.spec.ts": ["poules-classement"],
   "app/src/composants/PaveScore.svelte": [
     "tableau-saisir",
@@ -458,5 +467,23 @@
     "mes-matchs-tireur",
     "saisies-recues",
     "saisie-tableau"
-  ]
+  ],
+  "app/src/pages/Impressions.svelte": ["impressions", "impression-tableau", "impression-poules", "impression-presence"],
+  "app/src/pages/Imprimer.svelte": ["impressions", "impression-presence", "impression-poules", "impression-tableau"],
+  "app/src/composants/FeuilleImprimee.svelte": ["impressions", "impression-presence", "impression-poules"],
+  "app/src/lib/impressions.ts": ["impressions"],
+  "paquets/domaine/src/impressions.ts": [
+    "impressions",
+    "impression-presence",
+    "impression-tableau",
+    "impression-poules"
+  ],
+  "app/src/composants/impressions/ImpressionPresence.svelte": ["impression-presence"],
+  "app/src/composants/impressions/ImpressionPoulesVierges.svelte": ["impression-poules"],
+  "app/src/composants/impressions/ImpressionPoulesResultats.svelte": ["impression-poules"],
+  "app/src/composants/impressions/ImpressionPoulesPistes.svelte": ["impression-poules"],
+  "app/src/composants/impressions/ImpressionClassementPoules.svelte": ["impression-poules"],
+  "app/src/composants/impressions/ImpressionFeuillesMatch.svelte": ["impression-tableau"],
+  "app/src/composants/impressions/ImpressionTableau.svelte": ["impression-tableau"],
+  "app/src/composants/impressions/ImpressionClassementFinal.svelte": ["impression-tableau"]
 }

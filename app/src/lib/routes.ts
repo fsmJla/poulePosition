@@ -20,6 +20,8 @@ export type Page =
   | 'poulesEpreuve'
   | 'classementEpreuve'
   | 'tableauEpreuve'
+  | 'impressionsEpreuve'
+  | 'imprimerDocument'
   | 'parametresEpreuve'
   | 'impressionAcces'
   | 'grilleEpreuves'
@@ -59,6 +61,8 @@ export const CHEMINS = Object.freeze({
     | 'poulesEpreuve'
     | 'classementEpreuve'
     | 'tableauEpreuve'
+    | 'impressionsEpreuve'
+    | 'imprimerDocument'
     | 'parametresEpreuve'
     | 'impressionAcces'
     | 'grilleEpreuves'
@@ -169,6 +173,49 @@ export function cheminTableauEpreuve(epreuveId: string): string {
   return `/epreuves/${epreuveId}/tableau`;
 }
 
+/** US-120 : étape « Impressions » d'une épreuve. */
+export function cheminImpressionsEpreuve(epreuveId: string): string {
+  return `/epreuves/${epreuveId}/impressions`;
+}
+
+/** US-120 : ce qu'une page d'impression imprime (document et choix de l'étape « Impressions »). */
+export interface OptionsImpression {
+  document: string;
+  /** Numéro de poule ; absent : toutes les poules. */
+  poule?: number;
+  /** Taille du tour du tableau (32, 16… ; 2 : finale). */
+  tour?: number;
+  format?: 'a4' | 'a3';
+}
+
+/** US-120 : page d'impression d'un document de l'épreuve. */
+export function cheminImprimer(epreuveId: string, options: OptionsImpression): string {
+  const parametres = new URLSearchParams({ document: options.document });
+  if (options.poule !== undefined) parametres.set('poule', String(options.poule));
+  if (options.tour !== undefined) parametres.set('tour', String(options.tour));
+  if (options.format) parametres.set('format', options.format);
+  return `/epreuves/${epreuveId}/imprimer?${parametres}`;
+}
+
+/** US-120 : les choix d'impression d'après l'adresse ; null sans document reconnaissable. */
+export function optionsImpression(recherche: string): OptionsImpression | null {
+  const parametres = new URLSearchParams(recherche);
+  const document = parametres.get('document');
+  if (!document || !/^[a-zA-Z]+$/.test(document)) return null;
+  const entier = (nom: string) => {
+    const valeur = Number(parametres.get(nom));
+    return Number.isInteger(valeur) && valeur > 0 ? valeur : undefined;
+  };
+  const options: OptionsImpression = { document };
+  const poule = entier('poule');
+  const tour = entier('tour');
+  const format = parametres.get('format');
+  if (poule !== undefined) options.poule = poule;
+  if (tour !== undefined) options.tour = tour;
+  if (format === 'a4' || format === 'a3') options.format = format;
+  return options;
+}
+
 /** US-032 : paramètres d'une épreuve. */
 export function cheminParametresEpreuve(epreuveId: string): string {
   return `/epreuves/${epreuveId}/parametres`;
@@ -232,6 +279,8 @@ const MOTIF_POULES = /^\/epreuves\/([^/]+)\/poules$/;
 const MOTIF_CLASSEMENT = /^\/epreuves\/([^/]+)\/classement$/;
 const MOTIF_TABLEAU = new RegExp('^/epreuves/([^/]+)/tableau$');
 const MOTIF_PARAMETRES = /^\/epreuves\/([^/]+)\/parametres$/;
+const MOTIF_IMPRESSIONS = /^\/epreuves\/([^/]+)\/impressions$/;
+const MOTIF_IMPRIMER = /^\/epreuves\/([^/]+)\/imprimer$/;
 const MOTIF_IMPRESSION_ACCES = /^\/epreuves\/([^/]+)\/acces\/imprimer$/;
 
 /** Pages réservées : un visiteur non connecté est renvoyé à l'écran de connexion (CA-6). */
@@ -249,6 +298,8 @@ const RESERVEES: readonly Page[] = [
   'poulesEpreuve',
   'classementEpreuve',
   'tableauEpreuve',
+  'impressionsEpreuve',
+  'imprimerDocument',
   'parametresEpreuve',
   'impressionAcces',
   'grilleEpreuves',
@@ -303,6 +354,8 @@ function pageDe(chemin: string): {
       | 'poulesEpreuve'
       | 'classementEpreuve'
       | 'tableauEpreuve'
+      | 'impressionsEpreuve'
+      | 'imprimerDocument'
       | 'parametresEpreuve'
       | 'impressionAcces'
       | 'grilleEpreuves'
@@ -349,6 +402,12 @@ function pageDe(chemin: string): {
   }
   const tableau = MOTIF_TABLEAU.exec(chemin)?.[1];
   if (tableau) return MOTIF_IDENTIFIANT.test(tableau) ? { page: 'tableauEpreuve', epreuveId: tableau } : null;
+  const impressions = MOTIF_IMPRESSIONS.exec(chemin)?.[1];
+  if (impressions) {
+    return MOTIF_IDENTIFIANT.test(impressions) ? { page: 'impressionsEpreuve', epreuveId: impressions } : null;
+  }
+  const imprimer = MOTIF_IMPRIMER.exec(chemin)?.[1];
+  if (imprimer) return MOTIF_IDENTIFIANT.test(imprimer) ? { page: 'imprimerDocument', epreuveId: imprimer } : null;
   const impressionAcces = MOTIF_IMPRESSION_ACCES.exec(chemin)?.[1];
   if (impressionAcces) {
     return MOTIF_IDENTIFIANT.test(impressionAcces) ? { page: 'impressionAcces', epreuveId: impressionAcces } : null;

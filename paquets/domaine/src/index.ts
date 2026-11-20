@@ -37,5 +37,6 @@ export * from './archivage';
 export * from './filtres-liste';
 export * from './reprise';
 export * from './vue-saisie';
+export * from './impressions';
 export * from './acces-qr';
 export * from './saisies';
