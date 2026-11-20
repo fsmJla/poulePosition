@@ -153,7 +153,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-121](US-121-imprimer-feuille-presence.md) | Imprimer la feuille de présence | E7 | En revue | US-120, US-084 |
 | [US-122](US-122-imprimer-feuilles-poule-vierges.md) | Imprimer les feuilles de poule à remplir | E7 | En revue | US-120, US-087, US-096 |
 | [US-123](US-123-imprimer-feuilles-poule-resultats.md) | Imprimer les feuilles de poule avec résultats | E7 | En revue | US-120, US-088 |
-| [US-124](US-124-imprimer-poules-par-piste.md) | Imprimer les poules par piste, à afficher | E7 | Prête | US-120, US-087 |
+| [US-124](US-124-imprimer-poules-par-piste.md) | Imprimer les poules par piste, à afficher | E7 | En revue | US-120, US-087 |
 | [US-125](US-125-imprimer-classement-poules.md) | Imprimer le classement après les poules | E7 | Prête | US-120, US-092 |
 | [US-126](US-126-imprimer-feuilles-match-tableau.md) | Imprimer les feuilles de match du tableau | E7 | Prête | US-120, US-110, US-112 |
 | [US-127](US-127-imprimer-tableau.md) | Imprimer le tableau à afficher | E7 | Prête | US-120, US-110 |

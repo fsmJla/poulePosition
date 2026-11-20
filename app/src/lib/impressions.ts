@@ -23,7 +23,8 @@ export const CATALOGUE_IMPRESSIONS: readonly LigneImpression[] = [
   { document: 'poulesVierges', groupe: 'poules', choix: 'poules', livre: true },
   // US-123 : les feuilles de poule avec résultats.
   { document: 'poulesResultats', groupe: 'poules', choix: 'poules', livre: true },
-  { document: 'poulesPistes', groupe: 'poules', choix: null, livre: false },
+  // US-124 : les poules par piste.
+  { document: 'poulesPistes', groupe: 'poules', choix: null, livre: true },
   { document: 'classementPoules', groupe: 'poules', choix: null, livre: false },
   { document: 'feuillesMatch', groupe: 'tableau', choix: 'tours', livre: false },
   { document: 'tableau', groupe: 'tableau', choix: 'format', livre: false },

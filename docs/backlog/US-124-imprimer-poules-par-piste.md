@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F11 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-120, US-087
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-124-imprimer-poules-par-piste`
 
 ## Récit
 
@@ -58,3 +58,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (Epic 7, planches 22 à 30 validées par l'utilisateur) ; Prête |
+| 2026-11-20 | Implémentée : `ImpressionPoulesPistes` (six poules par page) ; passe En revue |

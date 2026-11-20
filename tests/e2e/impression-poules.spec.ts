@@ -121,3 +121,22 @@ test('US-123 CA-1 à CA-3 : les feuilles de poule avec résultats, provisoires o
   await expect(feuilles(page).last().getByRole('rowheader').filter({ hasText: 'abandon' })).toHaveCount(1);
   await page.screenshot({ path: 'test-results/impression-poules-resultats.png', fullPage: true });
 });
+
+test('US-124 CA-1 : les poules par piste, une page pour 4 poules, sans réseau', async ({ page, context }) => {
+  test.setTimeout(120_000);
+  await compterImpressions(page);
+  await seConnecter(page);
+  await importerEpreuve(page, poulesJouees());
+  await context.setOffline(true);
+  await ouvrirImpressions(page);
+  await page.getByRole('button', { name: 'Imprimer : Poules par piste' }).click();
+  const feuille = page.getByRole('region', { name: 'Les poules · Page 1 / 1' });
+  await expect(feuille).toBeVisible();
+  await expect.poll(() => impressions(page)).toBe(1);
+  await expect(feuille).toContainText('4 poules · rendez-vous sur votre piste');
+  for (const n of [1, 2, 3, 4]) {
+    await expect(feuille.getByRole('region', { name: `Poule ${n} · Piste ${n}` }).getByRole('listitem')).toHaveCount(6);
+  }
+  await page.screenshot({ path: 'test-results/impression-poules-pistes.png', fullPage: true });
+  await context.setOffline(false);
+});

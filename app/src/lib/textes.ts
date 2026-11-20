@@ -2150,6 +2150,11 @@ export const textes = {
       pied: (presents: number, total: number) =>
         `${presents} présent${presents > 1 ? 's' : ''} sur ${total} au moment de l’impression`,
     },
+    // US-124 : poules par piste (planche 26).
+    poulesPistes: {
+      titre: 'Les poules',
+      sousTitre: (n: number) => `${n} poule${n > 1 ? 's' : ''} · rendez-vous sur votre piste`,
+    },
     // US-122 et US-123 : feuilles de poule (planches 24 et 25).
     feuillePoule: {
       titre: (numero: number, piste: number | null) => (piste ? `Poule ${numero} · Piste ${piste}` : `Poule ${numero}`),
