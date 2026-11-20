@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F11 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-058, US-096
 - **Branche / PR :** `us/US-120-etape-impressions`
 
@@ -72,3 +72,4 @@ Aucune.
 |---|---|
 | 2026-11-20 | Créée (Epic 7, planches 22 à 30 validées par l'utilisateur) ; Prête |
 | 2026-11-20 | Implémentée : étape « Impressions », page d'impression `/epreuves/:id/imprimer?document=…`, gabarit `FeuilleImprimee`, disponibilité (domaine `raisonIndisponible`) ; passe En revue |
+| 2026-11-20 | Recette OK (groupée US-120 à US-128) sur https://poule-position-git-us-us-128-imprimer-c-f6911a-fsmjlas-projects.vercel.app ; passe Terminée |
