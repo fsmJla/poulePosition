@@ -5,6 +5,7 @@
   import { onMount, tick } from 'svelte';
   import {
     DOCUMENTS_IMPRIMES,
+    lienQr,
     poulesDe,
     raisonIndisponible,
     tableauDe,
@@ -15,6 +16,8 @@
   } from '@poule-position/domaine';
   import Icone from '../composants/Icone.svelte';
   import ImpressionPresence from '../composants/impressions/ImpressionPresence.svelte';
+  import ImpressionPoulesVierges from '../composants/impressions/ImpressionPoulesVierges.svelte';
+  import type { AccesQrClient } from '../lib/acces-qr';
   import type { Accueil } from '../lib/accueil';
   import { documentLivre } from '../lib/impressions';
   import type { Journal } from '../lib/journal';
@@ -25,12 +28,14 @@
     epreuveId: string;
     journal: Journal;
     accueil: Accueil;
+    /** US-122 : le jeton des arbitres gardé sur ce PC, pour le QR des feuilles de poule. */
+    acces: AccesQrClient;
     naviguer: (chemin: string) => void;
     /** Lance l'impression du navigateur (remplaçable dans les tests). */
     imprimer?: () => void;
   }
 
-  let { epreuveId, journal, accueil, naviguer, imprimer = () => window.print() }: Proprietes = $props();
+  let { epreuveId, journal, accueil, acces, naviguer, imprimer = () => window.print() }: Proprietes = $props();
 
   const t = textes.impressions;
   const options: OptionsImpression | null = optionsImpression(location.search);
@@ -41,6 +46,7 @@
   let epreuve = $state<Epreuve | null>(null);
   let competition = $state<string | null>(null);
   let charge = $state(false);
+  let jetonArbitres = $state<string | null>(null);
   const imprimeLe = new Date();
 
   const source = $derived<SourceImpression | null>(
@@ -52,6 +58,11 @@
           matchTroisieme: epreuve.formule.matchTroisieme,
         }
       : null,
+  );
+  const parId = $derived(new Map((source?.tireurs ?? []).map((tireur) => [tireur.id, tireur])));
+  /** US-122, US-123 : la poule choisie, ou toutes. */
+  const poulesChoisies = $derived(
+    (source?.poules.poules ?? []).filter((p) => options?.poule === undefined || p.numero === options.poule),
   );
   const raison = $derived(document && source ? raisonIndisponible(document, source) : null);
   const pret = $derived(document !== null && documentLivre(document) && source !== null && raison === null);
@@ -74,6 +85,7 @@
       epreuve = (await journal.lire(epreuveId)).epreuve;
       const hierarchie = await accueil.hierarchie().catch(() => null);
       competition = hierarchie?.competitions.find(({ id }) => id === epreuve?.rattachement?.competitionId)?.nom ?? null;
+      jetonArbitres = (await acces.lire(epreuveId).catch(() => null))?.arbitre ?? null;
       charge = true;
       await tick();
       if (pret) imprimer();
@@ -100,6 +112,16 @@
       <div class="feuilles" data-document={document}>
         {#if document === 'presence'}
           <ImpressionPresence tireurs={source.tireurs} {contexte} {imprimeLe} />
+        {:else if document === 'poulesVierges' && epreuve}
+          <ImpressionPoulesVierges
+            poules={poulesChoisies}
+            total={source.poules.poules.length}
+            tireurs={parId}
+            touches={epreuve.formule.touchesPoules}
+            lienArbitres={jetonArbitres ? lienQr(location.origin, epreuveId, jetonArbitres) : null}
+            {contexte}
+            {imprimeLe}
+          />
         {/if}
         <!-- Les documents de l'Epic 7 (US-121 à US-128) se branchent ici. -->
       </div>

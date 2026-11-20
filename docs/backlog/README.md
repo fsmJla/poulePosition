@@ -151,7 +151,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-119](US-119-saisies-recues-tableau.md) | Voir les saisies reçues des smartphones sur l'écran du tableau | E6 | Terminée | US-100, US-106, US-111 |
 | [US-120](US-120-etape-impressions.md) | Ouvrir l'étape « Impressions » et le gabarit commun des documents imprimés | E7 | En revue | US-058, US-096 |
 | [US-121](US-121-imprimer-feuille-presence.md) | Imprimer la feuille de présence | E7 | En revue | US-120, US-084 |
-| [US-122](US-122-imprimer-feuilles-poule-vierges.md) | Imprimer les feuilles de poule à remplir | E7 | Prête | US-120, US-087, US-096 |
+| [US-122](US-122-imprimer-feuilles-poule-vierges.md) | Imprimer les feuilles de poule à remplir | E7 | En revue | US-120, US-087, US-096 |
 | [US-123](US-123-imprimer-feuilles-poule-resultats.md) | Imprimer les feuilles de poule avec résultats | E7 | Prête | US-120, US-088 |
 | [US-124](US-124-imprimer-poules-par-piste.md) | Imprimer les poules par piste, à afficher | E7 | Prête | US-120, US-087 |
 | [US-125](US-125-imprimer-classement-poules.md) | Imprimer le classement après les poules | E7 | Prête | US-120, US-092 |

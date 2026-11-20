@@ -24,6 +24,8 @@
   import { textes } from '../lib/textes';
 
   interface Proprietes {
+    /** US-122 : ouvre l'impression des feuilles de poule à remplir. */
+    imprimerFeuilles?: () => void;
     etat: EtatPoules;
     tireurs: Tireur[];
     manuelle: boolean;
@@ -34,7 +36,8 @@
     lancer: () => Promise<VerdictArchivage>;
   }
 
-  let { etat, tireurs, manuelle, modifiable, repartirANouveau, composer, lancer }: Proprietes = $props();
+  let { etat, tireurs, manuelle, modifiable, repartirANouveau, composer, lancer, imprimerFeuilles }: Proprietes =
+    $props();
 
   const t = textes.poules;
   const ajustable = $derived(modifiable && !etat.lancees);
@@ -174,7 +177,13 @@
       <MenuActions
         id="menu-poules"
         nom={t.titre}
-        actions={[{ libelle: t.imprimerFeuilles, icone: 'imprimante', indisponible: t.imprimerAVenir }]}
+        actions={[
+          {
+            libelle: t.imprimerFeuilles,
+            icone: 'imprimante',
+            ...(imprimerFeuilles ? { surChoix: imprimerFeuilles } : { indisponible: t.imprimerAVenir }),
+          },
+        ]}
       />
     </div>
   {/if}

@@ -19,7 +19,8 @@ export const CATALOGUE_IMPRESSIONS: readonly LigneImpression[] = [
   { document: 'presence', groupe: 'avant', choix: null, livre: true },
   // US-096 : la page d'impression des QR codes existe déjà.
   { document: 'qrCodes', groupe: 'avant', choix: null, livre: true },
-  { document: 'poulesVierges', groupe: 'poules', choix: 'poules', livre: false },
+  // US-122 : les feuilles de poule à remplir.
+  { document: 'poulesVierges', groupe: 'poules', choix: 'poules', livre: true },
   { document: 'poulesResultats', groupe: 'poules', choix: 'poules', livre: false },
   { document: 'poulesPistes', groupe: 'poules', choix: null, livre: false },
   { document: 'classementPoules', groupe: 'poules', choix: null, livre: false },

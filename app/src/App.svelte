@@ -356,7 +356,7 @@
         {/key}
       {:else if route.page === 'imprimerDocument' && route.epreuveId}
         {#key chemin}
-          <Imprimer epreuveId={route.epreuveId} {journal} {accueil} {naviguer} />
+          <Imprimer epreuveId={route.epreuveId} {journal} {accueil} {acces} {naviguer} />
         {/key}
       {:else if route.page === 'impressionAcces' && route.epreuveId}
         {#key route.epreuveId}

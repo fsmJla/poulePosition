@@ -414,7 +414,8 @@
     "poules-ajuster",
     "poules-saisie",
     "poules-retrait",
-    "poules-envoi"
+    "poules-envoi",
+    "impression-poules"
   ],
   "app/src/composants/ConstitutionPoules.svelte": [
     "poules-constituer",
@@ -422,7 +423,13 @@
     "poules-saisie",
     "poules-retrait"
   ],
-  "app/src/composants/CartesPoules.svelte": ["poules-constituer", "poules-ajuster", "poules-saisie", "poules-retrait"],
+  "app/src/composants/CartesPoules.svelte": [
+    "poules-constituer",
+    "poules-ajuster",
+    "poules-saisie",
+    "poules-retrait",
+    "impression-poules"
+  ],
   "app/src/lib/poules.ts": ["poules-constituer", "poules-ajuster", "poules-saisie", "poules-retrait"],
   "tests/e2e/poules-outils.ts": [
     "poules-constituer",
@@ -441,7 +448,7 @@
     "poules-classement"
   ],
   "tests/e2e/poules-ajuster.spec.ts": ["poules-ajuster"],
-  "app/src/composants/SaisiePoules.svelte": ["poules-saisie", "poules-retrait", "poules-envoi"],
+  "app/src/composants/SaisiePoules.svelte": ["poules-saisie", "poules-retrait", "poules-envoi", "impression-poules"],
   "tests/e2e/poules-saisie.spec.ts": ["poules-saisie", "poules-retrait"],
   "tests/e2e/poules-retrait.spec.ts": ["poules-retrait"],
   "app/src/composants/AttenteEnvoi.svelte": ["poules-envoi", "emargement", "inscriptions"],
@@ -461,9 +468,10 @@
     "saisie-tableau"
   ],
   "app/src/pages/Impressions.svelte": ["impressions"],
-  "app/src/pages/Imprimer.svelte": ["impressions", "impression-presence"],
-  "app/src/composants/FeuilleImprimee.svelte": ["impressions", "impression-presence"],
+  "app/src/pages/Imprimer.svelte": ["impressions", "impression-presence", "impression-poules"],
+  "app/src/composants/FeuilleImprimee.svelte": ["impressions", "impression-presence", "impression-poules"],
   "app/src/lib/impressions.ts": ["impressions"],
   "paquets/domaine/src/impressions.ts": ["impressions", "impression-presence"],
-  "app/src/composants/impressions/ImpressionPresence.svelte": ["impression-presence"]
+  "app/src/composants/impressions/ImpressionPresence.svelte": ["impression-presence"],
+  "app/src/composants/impressions/ImpressionPoulesVierges.svelte": ["impression-poules"]
 }

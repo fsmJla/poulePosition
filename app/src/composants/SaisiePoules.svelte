@@ -31,6 +31,8 @@
   import { textes } from '../lib/textes';
 
   interface Proprietes {
+    /** US-122 : ouvre l'impression des feuilles de poule à remplir. */
+    imprimerFeuilles?: () => void;
     etat: EtatPoules;
     tireurs: Tireur[];
     touches: number;
@@ -51,7 +53,8 @@
     cote?: Snippet;
   }
 
-  let { etat, tireurs, touches, modifiable, saisir, retirer, annulerRetrait, cote }: Proprietes = $props();
+  let { etat, tireurs, touches, modifiable, saisir, retirer, annulerRetrait, cote, imprimerFeuilles }: Proprietes =
+    $props();
 
   /** US-089 : le retrait demandé (ou son annulation, motif null), en attente de confirmation. */
   let demande: { tireurId: string; motif: MotifRetrait | null } | null = $state(null);
@@ -164,7 +167,13 @@
   <MenuActions
     id="menu-poules"
     nom={t.titre}
-    actions={[{ libelle: t.imprimerFeuilles, icone: 'imprimante', indisponible: t.imprimerAVenir }]}
+    actions={[
+      {
+        libelle: t.imprimerFeuilles,
+        icone: 'imprimante',
+        ...(imprimerFeuilles ? { surChoix: imprimerFeuilles } : { indisponible: t.imprimerAVenir }),
+      },
+    ]}
   />
 </div>
 

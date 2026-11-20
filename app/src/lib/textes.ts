@@ -2150,6 +2150,35 @@ export const textes = {
       pied: (presents: number, total: number) =>
         `${presents} présent${presents > 1 ? 's' : ''} sur ${total} au moment de l’impression`,
     },
+    // US-122 et US-123 : feuilles de poule (planches 24 et 25).
+    feuillePoule: {
+      titre: (numero: number, piste: number | null) => (piste ? `Poule ${numero} · Piste ${piste}` : `Poule ${numero}`),
+      sousTitre: (tireurs: number, matchs: number, touches: number) =>
+        `${tireurs} tireurs · ${matchs} matchs en ${touches} touches · début : ____ h ____`,
+      colonnes: ['V', 'V/M', 'TD', 'TR', 'Ind', 'Rg'],
+      tireur: 'Tireur',
+      club: 'Club',
+      ordre: (touches: number) =>
+        `Ordre des matchs · notez « V » pour le vainqueur (V${touches}, ou V et ses touches au temps)`,
+      ordreSimple: 'Ordre des matchs',
+      arbitre: 'Arbitre',
+      nom: 'Nom : ……………………………………………',
+      signature: 'Signature :',
+      fin: 'Fin de poule',
+      heure: 'Heure : ____ h ____',
+      rapporter: 'Rapportez la feuille à la table de marque.',
+      qr: 'Arbitre : scannez pour saisir les scores sur votre téléphone.',
+      qrNom: (poule: number) => `QR code des arbitres, poule ${poule}`,
+      pagination: (n: number, total: number) => `Poule ${n} / ${total}`,
+      piedVierge: 'V = victoire (V et les touches au temps) ; défaite = touches données',
+      provisoire: (regles: number, total: number) =>
+        `Provisoire · ${regles} match${regles > 1 ? 's' : ''} sur ${total}`,
+      terminee: 'Terminée',
+      enCours: 'en cours',
+      legende:
+        'V : victoires · V/M : victoires par match · TD : touches données · TR : touches reçues · Ind : indice (TD − TR) · Rg : rang dans la poule.',
+      piedResultats: 'à afficher dans la salle',
+    },
   },
   /** US-117, US-118 : afficheur et pavé de score à la demande, communs aux saisies du PC et du smartphone. */
   pave: {
