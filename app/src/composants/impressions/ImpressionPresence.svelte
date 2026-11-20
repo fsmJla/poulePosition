@@ -75,13 +75,13 @@
   td {
     height: 7.6mm;
     padding: 0 1.5mm;
-    border: 1px solid #888888;
+    border: 1px solid var(--papier-trait-clair);
     text-align: left;
     font-weight: 400;
   }
 
   thead th {
-    background: #eef2f1;
+    background: var(--papier-entete);
     font-weight: 700;
   }
 
@@ -115,7 +115,7 @@
     justify-content: center;
     width: 4.2mm;
     height: 4.2mm;
-    border: 1.5px solid #222222;
+    border: 1.5px solid var(--papier-encre);
     font-size: 8pt;
     font-weight: 700;
   }

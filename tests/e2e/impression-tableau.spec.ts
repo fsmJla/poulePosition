@@ -45,6 +45,9 @@ function tableauDe32(): { propositions: Proposition[]; nom: (rang: number) => st
   };
 }
 
+// Les impressions se lancent depuis le PC pilote (ADR-0009) : la navigation des étapes y est latérale.
+test.skip(({ isMobile }) => isMobile, 'Impressions : projet « pc » seulement');
+
 test('US-126 CA-1 à CA-3 et US-120 CA-2 : les feuilles de match du tour, deux par page', async ({ page }) => {
   test.setTimeout(150_000);
   await compterImpressions(page);

@@ -102,7 +102,7 @@
 
   h2 {
     margin: 0 0 1.5mm;
-    color: #2f4b4a;
+    color: var(--papier-marque);
     font-size: 10.5pt;
   }
 
@@ -129,7 +129,7 @@
   }
 
   .match {
-    border: 1px solid #555555;
+    border: 1px solid var(--papier-trait);
     font-size: 8.5pt;
     break-inside: avoid;
   }
@@ -139,7 +139,7 @@
     gap: 1mm;
     margin: 0;
     padding: 0.6mm 1.5mm;
-    border-bottom: 1px solid #dddddd;
+    border-bottom: 1px solid var(--papier-filet);
   }
 
   .gagne {
@@ -148,7 +148,7 @@
 
   .rang {
     width: 7mm;
-    color: #444444;
+    color: var(--papier-encre-discrete);
   }
 
   .nom {
@@ -160,7 +160,7 @@
   }
 
   .nom.vide {
-    color: #777777;
+    color: var(--papier-trait);
   }
 
   .score {
@@ -171,7 +171,7 @@
   .etat {
     margin: 0;
     padding: 0.3mm 1.5mm;
-    color: #444444;
+    color: var(--papier-encre-discrete);
     font-size: 7.5pt;
   }
 </style>

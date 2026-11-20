@@ -87,12 +87,12 @@
     align-items: baseline;
     gap: 4mm;
     padding-bottom: 1.5mm;
-    border-bottom: 1px solid #555555;
+    border-bottom: 1px solid var(--papier-trait);
   }
 
   h2 {
     margin: 0;
-    color: #2f4b4a;
+    color: var(--papier-marque);
     font-family: var(--police-titre);
     font-size: 16pt;
   }
@@ -114,7 +114,7 @@
   }
 
   .cote {
-    color: #444444;
+    color: var(--papier-encre-discrete);
     font-size: 9pt;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -127,7 +127,7 @@
 
   .rang,
   .club {
-    color: #444444;
+    color: var(--papier-encre-discrete);
   }
 
   .club {
@@ -144,7 +144,7 @@
   .boite {
     width: 19mm;
     height: 14mm;
-    border: 2px solid #111111;
+    border: 2px solid var(--papier-encre);
   }
 
   .issue {
@@ -165,22 +165,22 @@
     height: 17mm;
     box-sizing: border-box;
     padding: 1.5mm 2mm;
-    border: 1px solid #555555;
+    border: 1px solid var(--papier-trait);
     font-size: 9pt;
     font-weight: 700;
   }
 
   .note {
     margin: 0;
-    color: #444444;
+    color: var(--papier-encre-discrete);
     font-size: 9pt;
   }
 
   .couper {
     margin: 0;
     padding: 1mm 0;
-    border-bottom: 2px dashed #777777;
-    color: #555555;
+    border-bottom: 2px dashed var(--papier-trait);
+    color: var(--papier-trait);
     font-size: 8.5pt;
     text-align: center;
   }

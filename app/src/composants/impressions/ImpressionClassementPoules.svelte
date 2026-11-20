@@ -88,14 +88,14 @@
   .etat {
     margin: 0;
     padding: 1mm 3mm;
-    border: 2px solid #8a560c;
-    color: #8a560c;
+    border: 2px solid var(--papier-provisoire);
+    color: var(--papier-provisoire);
     font-weight: 700;
   }
 
   .etat.definitif {
-    border-color: #14573a;
-    color: #14573a;
+    border-color: var(--papier-definitif);
+    color: var(--papier-definitif);
   }
 
   table {
@@ -108,13 +108,13 @@
   td {
     height: 6.6mm;
     padding: 0 1.5mm;
-    border: 1px solid #999999;
+    border: 1px solid var(--papier-trait-clair);
     text-align: right;
     font-weight: 400;
   }
 
   thead th {
-    background: #eef2f1;
+    background: var(--papier-entete);
     font-weight: 700;
     print-color-adjust: exact;
   }

@@ -98,14 +98,14 @@
   .etat {
     margin: 0;
     padding: 1mm 3mm;
-    border: 2px solid #8a560c;
-    color: #8a560c;
+    border: 2px solid var(--papier-provisoire);
+    color: var(--papier-provisoire);
     font-weight: 700;
   }
 
   .etat.definitif {
-    border-color: #14573a;
-    color: #14573a;
+    border-color: var(--papier-definitif);
+    color: var(--papier-definitif);
   }
 
   .podium {
@@ -116,7 +116,7 @@
 
   .marche {
     padding: 2.5mm 3mm;
-    border: 2px solid #2f4b4a;
+    border: 2px solid var(--papier-marque);
     border-radius: 2mm;
     text-align: center;
   }
@@ -126,7 +126,7 @@
   }
 
   .place {
-    color: #2f4b4a;
+    color: var(--papier-marque);
     font-family: var(--police-titre);
     font-size: 18pt;
   }
@@ -136,7 +136,7 @@
   }
 
   .club {
-    color: #444444;
+    color: var(--papier-encre-discrete);
     font-size: 9.5pt;
   }
 
@@ -150,13 +150,13 @@
   td {
     height: 6.6mm;
     padding: 0 1.5mm;
-    border: 1px solid #999999;
+    border: 1px solid var(--papier-trait-clair);
     text-align: left;
     font-weight: 400;
   }
 
   thead th {
-    background: #eef2f1;
+    background: var(--papier-entete);
     font-weight: 700;
     print-color-adjust: exact;
   }

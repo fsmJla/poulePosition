@@ -62,10 +62,10 @@
 <style>
   /* Le papier reste noir sur blanc, quel que soit le thème de l'application. */
   .feuille {
-    --encre: #111111;
-    --encre-discrete: #444444;
-    --trait: #777777;
-    --marque-papier: #2f4b4a;
+    --encre: var(--papier-encre);
+    --encre-discrete: var(--papier-encre-discrete);
+    --trait: var(--papier-trait);
+    --marque-papier: var(--papier-marque);
     display: flex;
     flex-direction: column;
     gap: 4mm;
@@ -74,12 +74,12 @@
     height: 297mm;
     padding: 12mm 13mm 10mm;
     overflow: hidden;
-    background: #ffffff;
+    background: var(--papier-fond);
     color: var(--encre);
     font-family: var(--police-texte);
     font-size: 10pt;
     line-height: 1.35;
-    box-shadow: 0 2px 12px rgb(0 0 0 / 0.15);
+    box-shadow: var(--papier-ombre);
     page: a4portrait;
   }
 

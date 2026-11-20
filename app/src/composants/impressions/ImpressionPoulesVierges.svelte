@@ -128,7 +128,7 @@
   .grille th,
   .grille td {
     padding: 1mm 1.5mm;
-    border: 1px solid #555555;
+    border: 1px solid var(--papier-trait);
     text-align: center;
   }
 
@@ -163,7 +163,7 @@
   }
 
   .diagonale {
-    background: #2f4b4a;
+    background: var(--papier-marque);
     print-color-adjust: exact;
   }
 
@@ -188,11 +188,11 @@
     align-items: center;
     gap: 1.5mm;
     padding: 1.2mm 0;
-    border-bottom: 1px solid #cccccc;
+    border-bottom: 1px solid var(--papier-filet);
   }
 
   .rang {
-    color: #444444;
+    color: var(--papier-encre-discrete);
   }
 
   .score {
@@ -204,7 +204,7 @@
   .boite {
     width: 7mm;
     height: 6mm;
-    border: 1px solid #333333;
+    border: 1px solid var(--papier-encre);
   }
 
   .cadres {
@@ -218,7 +218,7 @@
     height: 24mm;
     box-sizing: border-box;
     padding: 2.5mm 3mm;
-    border: 1px solid #555555;
+    border: 1px solid var(--papier-trait);
   }
 
   .cadre p {

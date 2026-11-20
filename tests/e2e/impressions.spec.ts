@@ -20,6 +20,9 @@ async function ouvrirImpressions(page: Page) {
 
 const ligne = (page: Page, nom: string) => page.getByRole('listitem').filter({ hasText: nom });
 
+// Les impressions se lancent depuis le PC pilote (ADR-0009) : la navigation des étapes y est latérale.
+test.skip(({ isMobile }) => isMobile, 'Impressions : projet « pc » seulement');
+
 test('US-120 CA-1, CA-2 et CA-4 : les documents par groupe, les indisponibles grisés, les QR codes', async ({
   page,
 }) => {
@@ -34,10 +37,11 @@ test('US-120 CA-1, CA-2 et CA-4 : les documents par groupe, les indisponibles gr
   }
   await expect(page.getByRole('button', { name: /^Imprimer : / })).toHaveCount(9);
 
-  // CA-2 : un document pas encore livré est grisé « À venir » (la raison d'un document livré mais sans données,
-  // « Après la création du tableau », est vérifiée par le domaine et par les E2E des documents, US-121 à US-128).
-  await expect(ligne(page, 'Feuilles de match')).toContainText('À venir');
+  // CA-2 : sans tableau, ses documents sont grisés avec la raison (tous les documents de l'Epic 7 sont livrés).
+  await expect(ligne(page, 'Feuilles de match')).toContainText('Après la création du tableau');
   await expect(page.getByRole('button', { name: 'Imprimer : Feuilles de match' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Imprimer : Classement final' })).toBeDisabled();
+  await expect(page.getByText('À venir')).toHaveCount(0);
 
   // CA-4 : les QR codes ouvrent la page d'impression d'US-096.
   await page.evaluate(() => (window.print = () => undefined));

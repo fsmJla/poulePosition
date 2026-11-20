@@ -235,7 +235,7 @@
 
     :global(html),
     :global(body) {
-      background: #ffffff !important;
+      background: var(--papier-fond) !important;
     }
   }
 </style>

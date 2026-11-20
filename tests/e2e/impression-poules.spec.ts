@@ -27,6 +27,9 @@ async function ouvrirImpressions(page: Page) {
 const ligne = (page: Page, nom: string) => page.getByRole('listitem').filter({ hasText: nom });
 const feuilles = (page: Page) => page.getByRole('region', { name: /^Poule \d · Piste \d · Poule \d \/ 4$/ });
 
+// Les impressions se lancent depuis le PC pilote (ADR-0009) : la navigation des étapes y est latérale.
+test.skip(({ isMobile }) => isMobile, 'Impressions : projet « pc » seulement');
+
 test('US-122 CA-1, CA-3 et CA-4 : une feuille à remplir par poule, ou la poule choisie', async ({ page }) => {
   test.setTimeout(120_000);
   await compterImpressions(page);

@@ -40,6 +40,9 @@ async function ouvrirImpressions(page: Page) {
   await expect(page.getByRole('heading', { level: 2, name: 'Impressions' })).toBeVisible({ timeout: 20_000 });
 }
 
+// Les impressions se lancent depuis le PC pilote (ADR-0009) : la navigation des étapes y est latérale.
+test.skip(({ isMobile }) => isMobile, 'Impressions : projet « pc » seulement');
+
 test('US-121 CA-1 à CA-3 et US-120 CA-3 : la feuille de présence, en deux pages, avec en-tête et pied', async ({
   page,
 }) => {

@@ -115,14 +115,14 @@
   .etat {
     margin: 0;
     padding: 1mm 3mm;
-    border: 2px solid #8a560c;
-    color: #8a560c;
+    border: 2px solid var(--papier-provisoire);
+    color: var(--papier-provisoire);
     font-weight: 700;
   }
 
   .etat.terminee {
-    border-color: #14573a;
-    color: #14573a;
+    border-color: var(--papier-definitif);
+    color: var(--papier-definitif);
   }
 
   .grille {
@@ -133,7 +133,7 @@
   .grille th,
   .grille td {
     padding: 1mm 1.5mm;
-    border: 1px solid #555555;
+    border: 1px solid var(--papier-trait);
     text-align: center;
   }
 
@@ -157,15 +157,15 @@
   }
 
   .club {
-    color: #444444;
+    color: var(--papier-encre-discrete);
     font-size: 8.5pt;
   }
 
   .motif {
     margin-left: 2mm;
     padding: 0 2mm;
-    border: 1px solid #8a560c;
-    color: #8a560c;
+    border: 1px solid var(--papier-provisoire);
+    color: var(--papier-provisoire);
     font-size: 8pt;
   }
 
@@ -180,7 +180,7 @@
   }
 
   .diagonale {
-    background: #2f4b4a;
+    background: var(--papier-marque);
     print-color-adjust: exact;
   }
 
@@ -204,11 +204,11 @@
     grid-template-columns: 6mm minmax(0, 1fr) auto;
     gap: 1.5mm;
     padding: 1.2mm 0;
-    border-bottom: 1px solid #cccccc;
+    border-bottom: 1px solid var(--papier-filet);
   }
 
   .rang {
-    color: #444444;
+    color: var(--papier-encre-discrete);
   }
 
   .legende {

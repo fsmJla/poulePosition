@@ -65,7 +65,7 @@
   }
 
   section {
-    border: 2px solid #2f4b4a;
+    border: 2px solid var(--papier-marque);
     border-radius: 2.5mm;
     overflow: hidden;
     break-inside: avoid;
@@ -74,8 +74,8 @@
   h2 {
     margin: 0;
     padding: 2mm 4mm;
-    background: #2f4b4a;
-    color: #ffffff;
+    background: var(--papier-marque);
+    color: var(--papier-fond);
     font-family: var(--police-titre);
     font-size: 17pt;
     print-color-adjust: exact;
@@ -93,7 +93,7 @@
     grid-template-columns: 7mm minmax(0, 1fr);
     gap: 1.5mm;
     padding: 1.6mm 0;
-    border-bottom: 1px solid #cccccc;
+    border-bottom: 1px solid var(--papier-filet);
     line-height: 1.25;
   }
 
@@ -102,7 +102,7 @@
   }
 
   .club {
-    color: #444444;
+    color: var(--papier-encre-discrete);
     font-size: 9.5pt;
   }
 </style>

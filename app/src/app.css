@@ -63,6 +63,18 @@
   /* US-117 : fond de la case de score dont le pavé est ouvert, teinté au côté de piste. */
   --cote-gauche-teinte: #f9ecea;
   --cote-droit-teinte: #e8f3ed;
+  /* US-120 : le papier des documents imprimés, noir sur blanc dans les deux thèmes (pas redéfini en sombre). */
+  --papier-fond: #ffffff;
+  --papier-encre: #111111;
+  --papier-encre-discrete: #444444;
+  --papier-trait: #555555;
+  --papier-trait-clair: #999999;
+  --papier-filet: #cccccc;
+  --papier-marque: #2f4b4a;
+  --papier-entete: #eef2f1;
+  --papier-provisoire: #8a560c;
+  --papier-definitif: #14573a;
+  --papier-ombre: 0 2px 12px rgb(0 0 0 / 0.15);
   --sur-cote: #ffffff;
   /* Couleurs d'avatar (US-016) : initiales claires posées dessus, contraste AA vérifié par couleurs.test.ts. Communes aux
      modes clair et sombre. */
