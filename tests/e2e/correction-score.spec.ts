@@ -1,5 +1,5 @@
 // Correction d'un score depuis le smartphone (US-101) : le crayon d'un match terminé rouvre la saisie, boutons du score
-// marqués ; la correction remplace le score à la table, qui la note dans ses saisies reçues.
+// dans ses cases ; la correction remplace le score à la table, qui la note dans ses saisies reçues.
 import { expect, test } from '@playwright/test';
 import { ouvrirPoules } from './poules-outils';
 import { entrerArbitre, poulesLancees, telephone } from './saisie-outils';
@@ -19,13 +19,11 @@ test('US-101 CA-1, CA-2 et CA-5 : corriger le score d’un match terminé depuis
     await expect(maintenant).toBeVisible({ timeout: 20_000 });
     await maintenant.getByRole('button', { name: 'Saisir le score' }).click();
     await arbitre
-      .getByRole('group')
-      .nth(0)
+      .getByRole('group', { name: /^Score de / })
       .getByRole('button', { name: /^V pour / })
       .click();
     await arbitre
-      .getByRole('group')
-      .nth(1)
+      .getByRole('group', { name: /^Score de / })
       .getByRole('button', { name: /^2 pour / })
       .click();
     await arbitre.getByRole('button', { name: 'Envoyer à la table' }).click();
@@ -35,26 +33,25 @@ test('US-101 CA-1, CA-2 et CA-5 : corriger le score d’un match terminé depuis
     // CA-1 : le crayon rouvre la saisie, boutons du score marqués.
     await arbitre.getByRole('button', { name: 'Corriger le match 1' }).click();
     await expect(arbitre.getByText('Corriger le match 1')).toBeVisible();
-    await expect(
-      arbitre
-        .getByRole('group')
-        .nth(0)
-        .getByRole('button', { name: /^V pour / }),
-    ).toHaveAttribute('aria-pressed', 'true');
-    await expect(
-      arbitre
-        .getByRole('group')
-        .nth(1)
-        .getByRole('button', { name: /^2 pour / }),
-    ).toHaveAttribute('aria-pressed', 'true');
+    // US-118 CA-4 : les cases montrent le score actuel, pavé fermé.
+    const cases = arbitre.getByRole('button', { name: /^Score de .* : / });
+    await expect(cases).toHaveText(['V', '2']);
+    await expect(arbitre.getByRole('group', { name: /^Score de / })).toHaveCount(0);
     // CA-5 : le même score ne part pas.
     const envoyer = arbitre.getByRole('button', { name: 'Envoyer la correction' });
     await expect(envoyer).toBeDisabled();
-    // CA-2 : une nouvelle valeur remplace le score.
+    // CA-2 : une nouvelle valeur remplace le score : la case de droite, 4, puis l'autre tireur (son « V » est marqué).
+    await cases.last().click();
     await arbitre
-      .getByRole('group')
-      .nth(1)
+      .getByRole('group', { name: /^Score de / })
       .getByRole('button', { name: /^4 pour / })
+      .click();
+    await expect(
+      arbitre.getByRole('group', { name: /^Score de / }).getByRole('button', { name: /^V pour / }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    await arbitre
+      .getByRole('group', { name: /^Score de / })
+      .getByRole('button', { name: /^V pour / })
       .click();
     await envoyer.click();
     await expect(arbitre.getByText(/^Enregistré par la table/)).toBeVisible({ timeout: 10_000 });
@@ -80,13 +77,11 @@ test('US-101 CA-4 : sans correction permise, pas de crayon', async ({ page, brow
     await expect(maintenant).toBeVisible({ timeout: 20_000 });
     await maintenant.getByRole('button', { name: 'Saisir le score' }).click();
     await arbitre
-      .getByRole('group')
-      .nth(0)
+      .getByRole('group', { name: /^Score de / })
       .getByRole('button', { name: /^V pour / })
       .click();
     await arbitre
-      .getByRole('group')
-      .nth(1)
+      .getByRole('group', { name: /^Score de / })
       .getByRole('button', { name: /^2 pour / })
       .click();
     await arbitre.getByRole('button', { name: 'Envoyer à la table' }).click();

@@ -347,7 +347,7 @@
   "app/src/composants/AppareilsConnectes.svelte": ["appareils-connectes"],
   "app/src/composants/QuiEtesVous.svelte": ["acces-tireur"],
   "app/src/composants/MesMatchs.svelte": ["acces-tireur", "mes-matchs-tireur"],
-  "app/src/composants/SaisieMatch.svelte": ["saisie-match", "correction-score"],
+  "app/src/composants/SaisieMatch.svelte": ["saisie-match", "correction-score", "mes-matchs-tireur", "saisies-recues"],
   "app/src/lib/table-saisies.ts": ["saisie-match", "saisies-recues"],
   "app/src/composants/SaisiesRecues.svelte": ["saisies-recues"],
   "app/src/composants/BandeauEcartees.svelte": ["saisies-recues", "saisie-suspendue"],
@@ -446,5 +446,17 @@
   "app/src/composants/AttenteEnvoi.svelte": ["poules-envoi", "emargement", "inscriptions"],
   "tests/e2e/poules-envoi.spec.ts": ["poules-envoi"],
   "app/src/pages/Classement.svelte": ["poules-classement"],
-  "tests/e2e/poules-classement.spec.ts": ["poules-classement"]
+  "tests/e2e/poules-classement.spec.ts": ["poules-classement"],
+  "app/src/composants/PaveScore.svelte": [
+    "tableau-saisir",
+    "tableau-appeler",
+    "tableau-troisieme",
+    "poules-saisie",
+    "poules-envoi",
+    "saisie-match",
+    "correction-score",
+    "mes-matchs-tireur",
+    "saisies-recues",
+    "saisie-tableau"
+  ]
 }

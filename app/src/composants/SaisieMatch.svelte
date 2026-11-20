@@ -1,11 +1,16 @@
 <script lang="ts">
-  // Saisie d'un match de poule sur smartphone (US-099, planche 14) : une colonne par tireur (gauche en rouge, droite en
-  // vert, et dit en toutes lettres), boutons 0 à N−1 puis « V ». Le score s'envoie à la table, qui l'enregistre ou le
+  // Saisie d'un match de poule sur smartphone (US-099, planche 14 ; US-118) : l'afficheur et le pavé à la demande, une
+  // case par tireur (gauche en rouge, droite en vert, et dit en toutes lettres), un pavé 0 à N−1 puis « V ». Le score s'envoie à la table, qui l'enregistre ou le
   // refuse avec un motif. La feuille de la poule reste visible sous la saisie, la case du match encadrée.
   import {
     boutonsDuScore,
+    choisirSurPave,
+    ouvrirCotePave,
+    paveDuScore,
+    paveVierge,
     scoreDesBoutons,
     type ChoixScore,
+    type EtatPave,
     type MatchDeLaPiste,
     type PouleVue,
     type TireurVue,
@@ -14,6 +19,7 @@
   import type { Accuse } from '@poule-position/protocole';
   import { textes } from '../lib/textes';
   import Icone from './Icone.svelte';
+  import PaveScore from './PaveScore.svelte';
 
   interface Proprietes {
     vue: VueSaisie;
@@ -47,21 +53,23 @@
 
   const t = textes.saisie.match;
 
-  // US-101 CA-1 : en correction, les boutons du score actuel sont marqués.
+  // US-101 CA-1, US-118 CA-4 : en correction, les cases montrent le score actuel, pavé fermé.
   // svelte-ignore state_referenced_locally
   const depart = correction && match.touches ? boutonsDuScore(match.touches[0], match.touches[1], vue.touches) : null;
-  let choixA = $state<ChoixScore | null>(depart?.[0] ?? null);
-  let choixB = $state<ChoixScore | null>(depart?.[1] ?? null);
+  let pave = $state<EtatPave>(depart ? paveDuScore(...depart) : paveVierge());
+  /** US-118 CA-4 : la raison d'un score impossible (deux « V », égalité), affichée quand la saisie recommence. */
+  let refus = $state<string | null>(null);
   let envoyee = $state<string | null>(null);
   let heure = $state('');
 
   const poule = $derived(vue.poules.find(({ numero }) => numero === match.poule) as PouleVue);
   const tireurs = $derived(new Map<string, TireurVue>(poule.tireurs.map((x) => [x.id, x])));
   const touches = $derived(vue.touches);
-  const boutons = $derived([...Array.from({ length: touches }, (_, i) => i), 'V'] as ChoixScore[]);
+  const [choixA, choixB] = $derived(pave.actif === null ? pave.valeurs : [null, null]);
   const score = $derived(choixA !== null && choixB !== null ? scoreDesBoutons(choixA, choixB, touches) : null);
   const nomDe = (id: string) => tireurs.get(id)?.nom ?? '';
   const message = $derived.by(() => {
+    if (refus) return refus;
     if (!score) return '';
     if (!score.ok) return score.raison === 'DEUX_VAINQUEURS' ? t.unSeulVainqueur : t.pasDEgalite;
     const gagneA = score.touchesA > score.touchesB;
@@ -96,10 +104,22 @@
     envoyee = envoyer({ touchesA: score.touchesA, touchesB: score.touchesB, auTemps: score.auTemps });
   }
 
-  const cotes = $derived([
-    { id: match.tireurA, choix: choixA, cote: t.gauche, classe: 'gauche', choisir: (c: ChoixScore) => (choixA = c) },
-    { id: match.tireurB, choix: choixB, cote: t.droite, classe: 'droite', choisir: (c: ChoixScore) => (choixB = c) },
-  ]);
+  /** US-118 CA-4 : deux choix complètent le score ; deux « V » ou une égalité font recommencer, avec la raison. */
+  function choisir(valeur: ChoixScore) {
+    const r = choisirSurPave(pave, valeur);
+    pave = r.etat;
+    refus = null;
+    if (!r.complet) return;
+    const essai = scoreDesBoutons(r.etat.valeurs[0]!, r.etat.valeurs[1]!, touches);
+    if (!essai.ok) {
+      refus = essai.raison === 'DEUX_VAINQUEURS' ? t.unSeulVainqueur : t.pasDEgalite;
+      pave = paveVierge();
+    }
+  }
+  const tireurPave = (id: string, cote: string) => {
+    const tireur = tireurs.get(id);
+    return { nom: tireur?.nom ?? '', prenom: tireur?.prenom ?? '', detail: `${tireur?.club ?? ''} · ${cote}` };
+  };
 
   /** Cases de la feuille : le score de chaque match, et celui en cours de saisie pour le match encadré. */
   function caseDe(ligne: string, colonne: string): { texte: string; encadree: boolean; victoire: boolean } {
@@ -149,33 +169,22 @@
 </header>
 
 <main class="saisie">
-  <div class="colonnes">
-    {#each cotes as cote (cote.classe)}
-      {@const tireur = tireurs.get(cote.id)}
-      <div
-        class={`colonne ${cote.classe}`}
-        role="group"
-        aria-label={t.score(`${tireur?.nom} ${tireur?.prenom}`, cote.cote)}
-      >
-        <div class="tireur">
-          <span class="nom"><strong>{tireur?.nom}</strong> {tireur?.prenom}</span>
-          <span class="club">{tireur?.club} · {cote.cote}</span>
-        </div>
-        {#each boutons as choix (choix)}
-          <button
-            type="button"
-            class:choisi={cote.choix === choix}
-            aria-pressed={cote.choix === choix}
-            aria-label={t.bouton(String(choix), `${tireur?.nom} ${tireur?.prenom}`)}
-            disabled={etape !== 'saisie'}
-            onclick={() => cote.choisir(choix)}>{choix}</button
-          >
-        {/each}
-      </div>
-    {/each}
-  </div>
+  <PaveScore
+    format="telephone"
+    tireurs={[tireurPave(match.tireurA, t.gauche), tireurPave(match.tireurB, t.droite)]}
+    {touches}
+    etat={pave}
+    desactive={etape !== 'saisie'}
+    {choisir}
+    ouvrir={(cote) => {
+      pave = ouvrirCotePave(pave, cote);
+      refus = null;
+    }}
+  />
 
-  <p class="message" class:erreur={score !== null && !score.ok} role="status">{etape === 'saisie' ? message : ''}</p>
+  <p class="message" class:erreur={refus !== null || (score !== null && !score.ok)} role="status">
+    {etape === 'saisie' ? message : ''}
+  </p>
 
   {#if etape === 'saisie'}
     <div class="actions">
@@ -292,66 +301,6 @@
     flex-direction: column;
     gap: 10px;
     padding: 12px 16px;
-  }
-
-  .colonnes {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  .colonne {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .gauche {
-    --cote: var(--cote-gauche);
-  }
-
-  .droite {
-    --cote: var(--cote-droit);
-  }
-
-  .tireur {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 40px;
-    line-height: 1.25;
-    text-align: center;
-  }
-
-  .tireur .nom {
-    color: var(--cote);
-    font-size: 1.0625rem;
-  }
-
-  .club {
-    color: var(--texte-discret);
-    font-size: 0.8125rem;
-  }
-
-  .colonne button {
-    height: 46px;
-    border: 2px solid var(--cote);
-    border-radius: 999px;
-    background: var(--surface);
-    color: var(--texte);
-    font: inherit;
-    font-size: 1.25rem;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .colonne button.choisi {
-    background: var(--cote);
-    color: var(--surface);
-  }
-
-  .colonne button:disabled {
-    cursor: default;
   }
 
   .message {

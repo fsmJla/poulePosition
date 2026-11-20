@@ -12,11 +12,10 @@ async function ouvrirSaisie(arbitre: Page) {
   await expect(arbitre.getByText(/^Match \d+ · Poule 1$/)).toBeVisible();
 }
 
-const bouton = (arbitre: Page, cote: 0 | 1, choix: string) =>
-  arbitre
-    .getByRole('group')
-    .nth(cote)
-    .getByRole('button', { name: new RegExp(`^${choix} pour `) });
+/** US-118 : un bouton du pavé ouvert (le pavé passe tout seul du tireur de gauche à celui de droite). */
+const bouton = (arbitre: Page, choix: string) =>
+  arbitre.getByRole('group', { name: /^Score de / }).getByRole('button', { name: new RegExp(`^${choix} pour `) });
+const cases = (arbitre: Page) => arbitre.getByRole('button', { name: /^Score de .* : / });
 
 test('US-099 CA-1 à CA-5, CA-9 et CA-10 : le score part à la table, qui l’enregistre ; la feuille du PC le montre', async ({
   page,
@@ -32,18 +31,21 @@ test('US-099 CA-1 à CA-5, CA-9 et CA-10 : le score part à la table, qui l’en
     await ouvrirSaisie(arbitre);
     const envoyer = arbitre.getByRole('button', { name: 'Envoyer à la table' });
     await expect(envoyer).toBeDisabled();
-    // CA-3 : deux V, ou deux chiffres égaux, sont refusés.
-    await bouton(arbitre, 0, 'V').click();
-    await bouton(arbitre, 1, 'V').click();
+    // CA-3 et US-118 CA-4 : deux V sont refusés, la saisie recommence.
+    await bouton(arbitre, 'V').click();
+    await bouton(arbitre, 'V').click();
     await expect(arbitre.getByText('Un seul vainqueur')).toBeVisible();
+    await expect(cases(arbitre)).toHaveText(['–', '–']);
     await expect(envoyer).toBeDisabled();
     // Victoire au temps : deux chiffres différents.
-    await bouton(arbitre, 0, '4').click();
-    await bouton(arbitre, 1, '3').click();
+    await bouton(arbitre, '4').click();
+    await bouton(arbitre, '3').click();
     await expect(arbitre.getByText(/^Victoire au temps de .+, 4 à 3\.$/)).toBeVisible();
-    // CA-2 : V et 2.
-    await bouton(arbitre, 0, 'V').click();
-    await bouton(arbitre, 1, '2').click();
+    // CA-2 : V et 2, en corrigeant par les cases (le pavé est fermé une fois le score complet).
+    await cases(arbitre).first().click();
+    await bouton(arbitre, 'V').click();
+    await cases(arbitre).last().click();
+    await bouton(arbitre, '2').click();
     await expect(arbitre.getByText(/^Victoire de .+, 5 à 2\.$/)).toBeVisible();
     expect(await arbitre.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     const chemin = process.env.CAPTURE;
@@ -72,8 +74,8 @@ test('US-099 CA-6 : un match déjà saisi au PC est refusé avec son motif', asy
     await ouvrirSaisie(arbitre);
     // Pendant que l'arbitre saisit, la table enregistre ce même match.
     await saisirBoutons(page, 5, 1);
-    await bouton(arbitre, 0, 'V').click();
-    await bouton(arbitre, 1, '2').click();
+    await bouton(arbitre, 'V').click();
+    await bouton(arbitre, '2').click();
     await arbitre.getByRole('button', { name: 'Envoyer à la table' }).click();
     await expect(arbitre.getByRole('alert')).toHaveText('Ce match a déjà un score : voyez la table.', {
       timeout: 10_000,

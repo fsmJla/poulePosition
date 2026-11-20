@@ -5,6 +5,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
 import {
   boutonScore,
+  casesScore,
+  paveScore,
   carteSaisie,
   epreuveAvecPresentes,
   ouvrirPoules,
@@ -41,11 +43,13 @@ test('US-088 CA-1 à CA-3, CA-8 et US-091 CA-1, CA-7 : onglets, feuille, boutons
   await page.getByRole('tab', { name: /Poule 2/ }).click();
   await expect(page.getByRole('heading', { level: 3, name: 'Feuille de la poule 2 · piste 2' })).toBeVisible();
 
-  // CA-3 et US-091 CA-1 : match 1 (1 contre 2), deux colonnes de boutons 0 à 4 et « V », sans champ à taper.
+  // CA-3 et US-118 CA-1 : match 1 (1 contre 2), deux cases vides et le pavé 0 à 4 et « V », ouvert à gauche, sans
+  // champ à taper.
   await expect(carteSaisie(page)).toHaveAccessibleName('Match 1 sur 15');
   await expect(carteSaisie(page)).toContainText('1 contre 2');
   await expect(carteSaisie(page).getByRole('group', { name: 'Score de DUBOIS Chloé' })).toBeVisible();
-  await expect(carteSaisie(page).getByRole('group').nth(0).getByRole('button')).toHaveCount(6);
+  await expect(paveScore(page).getByRole('button')).toHaveCount(6);
+  await expect(casesScore(page)).toHaveText(['–', '–']);
   await expect(carteSaisie(page).getByRole('textbox')).toHaveCount(0);
   await saisir(page, 5, 3);
   await expect(carteSaisie(page)).toHaveAccessibleName('Match 2 sur 15');
@@ -84,14 +88,14 @@ test('US-091 CA-2 à CA-6 et US-088 CA-7 : deux clics, au temps, refus, correcti
   await lancer(page, adresse);
   const carte = carteSaisie(page);
 
-  // US-091 CA-5 : deux « V », puis deux chiffres égaux : refusés avec la raison, les choix s'effacent.
-  await boutonScore(page, 'a', 'V').click();
-  await expect(boutonScore(page, 'a', 'V')).toHaveAttribute('aria-pressed', 'true');
-  await boutonScore(page, 'b', 'V').click();
+  // US-091 CA-5, US-118 CA-3 : deux « V », puis deux chiffres égaux : refusés avec la raison, la saisie recommence.
+  await boutonScore(page, 'V').click();
+  await expect(casesScore(page)).toHaveText(['V', '–']);
+  await boutonScore(page, 'V').click();
   await expect(carte.getByRole('alert')).toHaveText('Un seul vainqueur : choisissez « V » d’un seul côté');
-  await expect(boutonScore(page, 'a', 'V')).toHaveAttribute('aria-pressed', 'false');
-  await boutonScore(page, 'a', 2).click();
-  await boutonScore(page, 'b', 2).click();
+  await expect(casesScore(page)).toHaveText(['–', '–']);
+  await boutonScore(page, 2).click();
+  await boutonScore(page, 2).click();
   await expect(carte.getByRole('alert')).toHaveText('Pas d’égalité : un des deux tireurs gagne');
   await expect(carte).toHaveAccessibleName('Match 1 sur 15');
 
@@ -100,11 +104,12 @@ test('US-091 CA-2 à CA-6 et US-088 CA-7 : deux clics, au temps, refus, correcti
   await expect(carte).toHaveAccessibleName('Match 2 sur 15');
   await expect(case_(page, 'MARTIN Léa', 'DUBOIS Chloé')).toHaveText('V4');
 
-  // US-091 CA-6 : la case rouvre le match, ses deux boutons marqués ; deux nouveaux choix le remplacent.
+  // US-091 CA-6, US-118 CA-3 : la case rouvre le match, son score dans les cases, pavé fermé ; deux nouveaux choix
+  // le remplacent.
   await case_(page, 'DUBOIS Chloé', 'MARTIN Léa').click();
   await expect(carte).toHaveAccessibleName('Match 1 sur 15');
-  await expect(boutonScore(page, 'a', 4)).toHaveAttribute('aria-pressed', 'true');
-  await expect(boutonScore(page, 'b', 3)).toHaveAttribute('aria-pressed', 'true');
+  await expect(casesScore(page)).toHaveText(['4', '3']);
+  await expect(paveScore(page)).toHaveCount(0);
   await saisir(page, 2, 5);
   await expect(case_(page, 'DUBOIS Chloé', 'MARTIN Léa')).toHaveText('V5');
   await expect(carte).toHaveAccessibleName('Match 2 sur 15');

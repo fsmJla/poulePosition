@@ -208,18 +208,6 @@ export function matchsTableauDuTireur(vue: VueSaisie | null, tireurId: string): 
   return matchs.sort((a, b) => rang(a) - rang(b) || (a.tour || 1) - (b.tour || 1));
 }
 
-/**
- * US-106 CA-2 : le score d'un tireur sur le pavé de 15 touches : dizaine (0 ou 10) et unité ; null tant que l'une manque.
- * `permis` dit si une unité (ou une dizaine) peut se toucher sans dépasser `touches`.
- */
-export function scoreDuPave(dizaine: number | null, unite: number | null): number | null {
-  return dizaine === null || unite === null ? null : dizaine + unite;
-}
-
-export function chiffrePermis(dizaine: number | null, unite: number, touches: number): boolean {
-  return (dizaine ?? 0) + unite <= touches;
-}
-
 /** US-098 : un match de la piste, avec sa poule. */
 export interface MatchDeLaPiste extends MatchVue {
   poule: number;
