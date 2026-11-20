@@ -44,6 +44,46 @@ describe('vue de saisie dans le protocole (US-095)', () => {
     expect(analyserVueSaisie({ ...vue(), lancees: false, poules: [], sexe: null, competition: null })).not.toBeNull();
   });
 
+  it('US-112 CA-6 : une vue avec son tableau (ou un tableau null) est lue à l’identique', () => {
+    const place = (tireurId: string | null, rang: number | null, provenance: string | null = null) => ({
+      tireurId,
+      rang,
+      provenance,
+    });
+    const tableau = {
+      touches: 15,
+      taille: 2,
+      matchs: [
+        {
+          id: '2-1',
+          tour: 2,
+          numero: 1,
+          haut: place('a', 1),
+          bas: place('b', 2),
+          etat: 'aTirer' as const,
+          touches: null,
+          vainqueur: null,
+          parPriorite: false,
+          piste: 3,
+          enPiste: true,
+          appeleA: 1_800_000_000_000,
+        },
+      ],
+    };
+    expect(analyserVueSaisie({ ...vue(), tableau })).toEqual({ ...vue(), tableau });
+    expect(analyserVueSaisie({ ...vue(), tableau: null })).toEqual({ ...vue(), tableau: null });
+    const match = tableau.matchs[0]!;
+    expect(analyserVueSaisie({ ...vue(), tableau: { ...tableau, matchs: [{ ...match, etat: 'joue' }] } })).toBeNull();
+    expect(analyserVueSaisie({ ...vue(), tableau: { ...tableau, matchs: [{ ...match, piste: 0 }] } })).toBeNull();
+    expect(
+      analyserVueSaisie({ ...vue(), tableau: { ...tableau, matchs: [{ ...match, haut: place('a', 0) }] } }),
+    ).toBeNull();
+    expect(analyserVueSaisie({ ...vue(), tableau: { ...tableau, matchs: [{ ...match, touches: [1] }] } })).toBeNull();
+    expect(analyserVueSaisie({ ...vue(), tableau: { ...tableau, taille: 1 } })).toBeNull();
+    expect(analyserVueSaisie({ ...vue(), tableau: { ...tableau, matchs: 'x' } })).toBeNull();
+    expect(analyserVueSaisie({ ...vue(), tableau: { ...tableau, matchs: [{ ...match, enPiste: 1 }] } })).toBeNull();
+  });
+
   it('CA-4 : une vue mal formée est refusée', () => {
     const casses: unknown[] = [
       null,

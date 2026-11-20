@@ -26,9 +26,11 @@
     choisir: (id: string) => void;
     /** Actions secondaires de la carte (appel sur une piste, retrait : US-112, US-113). */
     actions?: Snippet;
+    /** US-112 : l'appel du match sur une piste, sous la piste. */
+    appel?: Snippet;
   }
 
-  let { match, structure, tireurs, touches, modifiable, saisir, choisir, actions }: Proprietes = $props();
+  let { match, structure, tireurs, touches, modifiable, saisir, choisir, actions, appel }: Proprietes = $props();
 
   const t = textes.tableau;
   const places = $derived(placesAffichees(match));
@@ -106,6 +108,7 @@
   <div class="identite">
     <h3>{t.titreMatch(match.tour, match.numero)}</h3>
     <span class="discret">{piste}</span>
+    {#if modifiable && match.etat === 'aTirer'}{@render appel?.()}{/if}
   </div>
 
   {#if match.etat === 'attente'}

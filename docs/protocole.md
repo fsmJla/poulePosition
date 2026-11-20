@@ -1131,6 +1131,7 @@ diffuse aux sockets étiquetées `saisie` (smartphones, US-097) ; il ne la lit n
 | `droits` | `arbitreSaisitScores`, `tireurSaisitPoule`, `tireurSaisitTableau`, `correctionScore` (US-032) |
 | `lancees` | Faux avant le lancement des poules ; `poules` est alors vide |
 | `poules[]` | `numero`, `piste`, `tireurs[]` (`id`, `nom`, `prenom`, `club`, dans l'ordre de la poule), `matchs[]` (`numero`, `tireurA`, `tireurB`, `touches` `[a, b]` ou `null`, `auTemps`, `forfait`, dans l'ordre officiel), `regles` et `total` (avancement), `classement[]` (`tireurId`, `rang`, `victoires`, `matchs`, `indice`, `retrait`) |
+| `tableau` | US-112 : `null` avant la création du tableau, sinon `touches` (d'un match du tableau), `taille`, `matchs[]` (`id`, `tour`, `numero`, `haut` et `bas` : `tireurId`, `rang`, `provenance` ; `etat` : `exempt`, `attente`, `aTirer`, `regle` ; `touches` `[haut, bas]` ou `null`, `vainqueur`, `parPriorite`, `piste`, `enPiste`, `appeleA` en millisecondes). Absent d'une vue publiée avant US-112 |
 
 Données personnelles (ADR-0014) : des tireurs, seuls le nom, le prénom, le club et la poule ; ni licence, ni classement,
 ni heure de pointage. Une épreuve de 60 tireurs fait moins de 64 Ko, sous la limite de 256 Ko d'un message.

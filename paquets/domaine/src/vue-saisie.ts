@@ -3,8 +3,9 @@
 // ADR-0014 : des tireurs, seuls le nom, le prénom, le club et la poule ; le réglage « Prénom N. » vise le public, pas
 // les arbitres ni les tireurs de l'épreuve.
 import type { Arme, CorrectionScore, Sexe } from './epreuve';
-import { poulesDe, tireursDe, type Epreuve } from './journal';
+import { poulesDe, tableauDe, tireursDe, type Epreuve } from './journal';
 import { avancementPoules, matchsDePoule, resultatsPoule, type MotifRetrait } from './poules';
+import { structureTableau, tousLesMatchs, type EtatMatch, type MatchTableau } from './tableau';
 
 export interface TireurVue {
   id: string;
@@ -53,6 +54,55 @@ export interface DroitsVue {
   correctionScore: CorrectionScore;
 }
 
+/** US-112 CA-6 : une place d'un match du tableau : le tireur et son rang, ou le match dont il sortira. */
+export interface PlaceVue {
+  tireurId: string | null;
+  rang: number | null;
+  provenance: string | null;
+}
+
+/** US-112 CA-6 : un match du tableau, tel que les smartphones le voient (US-106). */
+export interface MatchTableauVue {
+  id: string;
+  /** Taille du tour (16, 8…, 2 pour la finale), 0 pour la 3e place. */
+  tour: number;
+  numero: number;
+  haut: PlaceVue;
+  bas: PlaceVue;
+  etat: EtatMatch;
+  /** Touches du haut et du bas. */
+  touches: [number, number] | null;
+  vainqueur: string | null;
+  parPriorite: boolean;
+  piste: number | null;
+  enPiste: boolean;
+  /** Heure d'appel effective, en millisecondes. */
+  appeleA: number | null;
+}
+
+/** US-112 CA-6 : le tableau, une fois créé. */
+export interface TableauVue {
+  /** Touches d'un match du tableau (formule, US-028). */
+  touches: number;
+  taille: number;
+  matchs: MatchTableauVue[];
+}
+
+const matchVue = (m: MatchTableau): MatchTableauVue => ({
+  id: m.id,
+  tour: m.tour,
+  numero: m.numero,
+  haut: { tireurId: m.haut.tireurId, rang: m.haut.rang, provenance: m.haut.provenance },
+  bas: { tireurId: m.bas.tireurId, rang: m.bas.rang, provenance: m.bas.provenance },
+  etat: m.etat,
+  touches: m.touches ? [m.touches[0], m.touches[1]] : null,
+  vainqueur: m.vainqueur,
+  parPriorite: m.parPriorite,
+  piste: m.piste,
+  enPiste: m.enPiste,
+  appeleA: m.appeleA,
+});
+
 export interface VueSaisie {
   epreuveId: string;
   nom: string;
@@ -68,6 +118,8 @@ export interface VueSaisie {
   /** Faux avant le lancement des poules : la vue n'a alors aucune poule. */
   lancees: boolean;
   poules: PouleVue[];
+  /** US-112 CA-6 : le tableau (null avant sa création) ; absent d'une vue publiée avant US-112. */
+  tableau?: TableauVue | null;
 }
 
 /** CA-1 : la vue de saisie d'une épreuve, telle que le pilote la publie. */
@@ -122,6 +174,18 @@ export function vueSaisie(epreuve: Epreuve, competition: string | null = null): 
     droits: { arbitreSaisitScores, tireurSaisitPoule, tireurSaisitTableau, correctionScore },
     lancees: etat.lancees,
     poules,
+    tableau: tableauVue(epreuve),
+  };
+}
+
+/** US-112 CA-6 : le tableau de l'épreuve pour les smartphones, ou null. */
+function tableauVue(epreuve: Epreuve): TableauVue | null {
+  const structure = structureTableau(tableauDe(epreuve), epreuve.formule.matchTroisieme);
+  if (!structure) return null;
+  return {
+    touches: epreuve.formule.touchesTableau,
+    taille: structure.taille,
+    matchs: tousLesMatchs(structure).map(matchVue),
   };
 }
 

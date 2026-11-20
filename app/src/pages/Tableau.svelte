@@ -16,6 +16,7 @@
     tireursDe,
     tirerAuSort,
     tousLesMatchs,
+    pisteProposee,
     type DonneesScoreTableau,
     type Epreuve,
     type MatchTableau,
@@ -33,7 +34,7 @@
   import { cheminPoulesEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
-  import { creerTableau, saisirScoreTableau } from '../lib/tableau';
+  import { appelerMatch, creerTableau, saisirScoreTableau } from '../lib/tableau';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
@@ -182,6 +183,38 @@
     return aTirer.find((m) => m.enPiste) ?? aTirer[0] ?? null;
   });
 
+  /** US-112 CA-5 : les pistes de l'épreuve, celles des poules. */
+  const pistes = $derived([...new Set((poules?.poules ?? []).map(({ piste }) => piste))].sort((a, b) => a - b));
+  const proposee = $derived(structure && cree ? pisteProposee(structure, pistes) : null);
+  /** US-112 CA-1 : la piste saisie par l'organisateur ; sinon, la piste proposée. */
+  let pisteSaisie = $state<number | null>(null);
+  const pisteChoisie = $derived(
+    typeof pisteSaisie === 'number' && pisteSaisie >= 1 ? pisteSaisie : (proposee?.piste ?? null),
+  );
+  let matchDeLaPiste = '';
+  $effect(() => {
+    const id = matchCarte?.id ?? '';
+    if (id === matchDeLaPiste) return;
+    matchDeLaPiste = id;
+    pisteSaisie = null;
+  });
+
+  /** US-112 CA-2 et CA-4 : appelle le match de la carte sur une piste, ou lui retire sa piste. */
+  async function appelerSur(piste: number | null) {
+    if (!matchCarte) return;
+    const titre = t.titreMatch(matchCarte.tour, matchCarte.numero);
+    const resultat = await appelerMatch(journal, epreuveId, matchCarte.id, piste, contexte);
+    await recharger();
+    if (!resultat.ok) {
+      erreur = t.erreurs[resultat.erreur] ?? t.erreurs.AUTRE!;
+      return;
+    }
+    erreur = null;
+    pisteSaisie = null;
+    annonce = piste === null ? t.pisteRetireeAnnonce(titre) : t.appelAnnonce(titre, piste);
+    void synchronisation.envoyer(epreuveId).then(() => recharger());
+  }
+
   /** US-111 CA-2 et CA-6 : écrit le score ; la carte passe au match suivant à saisir. */
   async function saisirScore(donnees: DonneesScoreTableau): Promise<boolean> {
     const resultat = await saisirScoreTableau(journal, epreuveId, donnees, contexte);
@@ -267,7 +300,46 @@
           {modifiable}
           saisir={saisirScore}
           choisir={(id) => (choisi = id)}
-        />
+        >
+          {#snippet appel()}
+            {#if matchCarte}
+              {@const titreMatch = t.titreMatch(matchCarte.tour, matchCarte.numero)}
+              <div class="appel">
+                <label class="champ-piste"
+                  >{t.piste}
+                  <input
+                    type="number"
+                    inputmode="numeric"
+                    min="1"
+                    max="99"
+                    list="pistes-epreuve"
+                    bind:value={pisteSaisie}
+                  />
+                </label>
+                <datalist id="pistes-epreuve">
+                  {#each pistes as piste (piste)}<option value={piste}></option>{/each}
+                </datalist>
+                <button
+                  type="button"
+                  class="neutre"
+                  disabled={pisteChoisie === null}
+                  onclick={() => appelerSur(pisteChoisie)}
+                >
+                  {matchCarte.piste === null ? t.appeler(pisteChoisie) : t.changerPiste(pisteChoisie)}
+                </button>
+                {#if proposee?.occupee && pisteChoisie === proposee.piste}<span class="discret">{t.pisteOccupee}</span
+                  >{/if}
+                {#if matchCarte.piste !== null}
+                  <MenuActions
+                    id="menu-match"
+                    nom={titreMatch}
+                    actions={[{ libelle: t.retirerPiste, surChoix: () => void appelerSur(null) }]}
+                  />
+                {/if}
+              </div>
+            {/if}
+          {/snippet}
+        </CarteSaisieTableau>
       {/if}
       <ArbreTableau
         {structure}
@@ -569,6 +641,33 @@
     padding: 0.75rem 1rem;
     color: var(--texte-discret);
     font-size: 0.875rem;
+  }
+
+  .appel {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    margin-top: 8px;
+  }
+
+  .champ-piste {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+  }
+
+  .champ-piste input {
+    width: 4.5rem;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 0 8px;
+    border: 1px solid var(--bordure-champ);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--texte);
+    font: inherit;
   }
 
   .message {
