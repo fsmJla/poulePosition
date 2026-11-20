@@ -38,7 +38,14 @@ test('US-110 CA-1 à CA-4, CA-6 et CA-8 : pilules, arbre, états, choix d’un m
   await expect(page.getByText('Tableau de 32 · 24 qualifiés, 8 exempts · pas de match pour la 3e place')).toBeVisible();
 
   // CA-1 : une pilule par tour, avec son avancement ; le tour en cours est choisi.
-  await expect(pilules(page)).toHaveText(['Tableau de 32terminé', 'Tableau de 164/8', 'Quarts0/4', 'Demies', 'Finale']);
+  await expect(pilules(page)).toHaveText([
+    'Tableau de 32terminé',
+    'Tableau de 164/8',
+    'Quarts0/4',
+    'Demies',
+    'Finale',
+    'Classement finalprovisoire',
+  ]);
   await expect(pilules(page).nth(1)).toHaveAttribute('aria-pressed', 'true');
 
   // CA-2 : l'arbre du tableau de 16 à la finale, en quatre colonnes.

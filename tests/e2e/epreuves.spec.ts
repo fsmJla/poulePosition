@@ -85,7 +85,8 @@ test('US-025 CA-2 et US-045 CA-4 : créer une compétition seule mène à la pag
   await expect(page.getByText('En préparation', { exact: true })).toBeVisible();
   await expect(page.getByText('Non publiée', { exact: true })).toBeVisible();
   await expect(page.getByText('Ce PC est le pilote', { exact: true })).toBeVisible();
-  await expect(page.getByText('samedi 13 mars 2027')).toBeVisible();
+  // Depuis US-107, la date est dans le complément de l'entête, et en entier sur écran large.
+  await expect(page.getByText('samedi 13 mars 2027').first()).toBeVisible();
   await expect(page.getByText('Salle Bellegrave, Pessac')).toBeVisible();
   await expect(page.getByText('Poules en 5 touches, sans élimination · Tableau en 15 touches')).toBeVisible();
   // En ligne, la création part aussitôt au serveur : rien ne reste en attente.

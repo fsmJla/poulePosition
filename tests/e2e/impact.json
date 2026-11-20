@@ -79,6 +79,8 @@
   ],
   "app/src/pages/Epreuve.svelte": [
     "epreuve-etapes",
+    "tableau-creer",
+    "tableau-classement-final",
     "prise-de-main",
     "publication",
     "prochaine-etape",
@@ -284,6 +286,7 @@
     "tableau-troisieme"
   ],
   "app/src/composants/RetraitTableau.svelte": ["tableau-retrait"],
+  "app/src/composants/ClassementFinal.svelte": ["tableau-classement-final"],
   "app/src/lib/tableau.ts": ["tableau-creer"],
   "app/src/lib/accueil.ts": ["accueil", "accueil-refonte", "filtres-liste"],
   "app/src/lib/archivage.ts": ["archivage"],

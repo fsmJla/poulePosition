@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F10 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-111, US-113, US-114, US-064
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-115-classement-final-terminer`
 
 ## Récit
 
@@ -86,6 +86,12 @@ pilote et part au serveur au retour du réseau. Testé par un E2E réseau coupé
 - Pas de « Rouvrir l'épreuve » en P1.
 - Colonne « Tireur » (et non « Tireuse »), comme US-092.
 
+- Implémentation (2026-11-20) : un classement provisoire liste d'abord les tireurs en lice, puis les éliminés d'un tour
+  en cours (« Place à venir »), puis les places acquises : chacun est rangé à la meilleure place qu'il peut encore obtenir.
+  Colonnes : Place, Tireur, Club, « Éliminé en », « Rang poules », État.
+- Implémentation : « Terminer l'épreuve » est l'action principale au-dessus du classement final ; le podium du Résumé
+  est une carte « Podium » (places 1 à 3), en tête des cartes.
+
 ## Questions bloquantes
 
 Aucune.
@@ -100,3 +106,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (spécification de l'Epic 6) ; hypothèses et écarts validés par l'utilisateur, passe à Prête |
+| 2026-11-20 | Implémentée : composant `ClassementFinal`, « Terminer l'épreuve », podium, prochaine étape ; passe En revue |
