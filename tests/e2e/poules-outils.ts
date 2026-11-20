@@ -94,18 +94,25 @@ export const cartePoule = (page: Page, numero: number) =>
 /** La carte de saisie du match en cours (US-088). */
 export const carteSaisie = (page: Page) => page.getByRole('region', { name: /^Match \d+ sur \d+$/ });
 
-/** US-091 : un bouton de score, à gauche (`a`, premier tireur) ou à droite (`b`) ; 5 touches = « V ». */
-export const boutonScore = (page: Page, cote: 'a' | 'b', touches: number | 'V') =>
-  carteSaisie(page)
-    .getByRole('group')
-    .nth(cote === 'a' ? 0 : 1)
-    .getByRole('button', { name: new RegExp(`^${touches === 5 ? 'V' : touches} pour `) });
+/** US-118 : le pavé de score ouvert de la carte de saisie. */
+export const paveScore = (page: Page) => carteSaisie(page).getByRole('group', { name: /^Score de / });
 
-/** US-091 : saisit le match en cours en deux clics (5 = « V ») et attend le match suivant. */
+/** US-118 : les deux cases de score de la carte (gauche, droite). */
+export const casesScore = (page: Page) => carteSaisie(page).getByRole('button', { name: /^Score de .* : / });
+
+/** US-118 : un bouton du pavé ouvert ; 5 touches = « V ». */
+export const boutonScore = (page: Page, touches: number | 'V') =>
+  paveScore(page).getByRole('button', { name: new RegExp(`^${touches === 5 ? 'V' : touches} pour `) });
+
+/**
+ * US-091, US-118 : saisit le match en cours en deux clics (5 = « V ») et attend le match suivant ; un match rouvert
+ * (pavé fermé) se rouvre par la case de gauche.
+ */
 export async function saisirBoutons(page: Page, a: number, b: number) {
   const titre = (await carteSaisie(page).getByRole('heading').textContent()) ?? '';
-  await boutonScore(page, 'a', a).click();
-  await boutonScore(page, 'b', b).click();
+  if (!(await paveScore(page).isVisible())) await casesScore(page).first().click();
+  await boutonScore(page, a).click();
+  await boutonScore(page, b).click();
   // Le match suivant s'ouvre (ou la carte disparaît après le dernier match).
   await expect(page.getByRole('region', { name: titre, exact: true })).toHaveCount(0);
 }

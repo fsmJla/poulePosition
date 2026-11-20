@@ -2,12 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { projeter, type Epreuve, type Evenement, type Proposition } from './journal';
 import {
   chercherTireurs,
-  chiffrePermis,
   matchsDeLaPiste,
   matchsDuTireur,
   matchsTableauDeLaPiste,
   matchsTableauDuTireur,
-  scoreDuPave,
   tireurDeLaVue,
   vueSaisie,
 } from './vue-saisie';
@@ -309,13 +307,5 @@ describe('US-106 CA-1 et CA-2 : matchs du tableau sur le smartphone, pavé de 15
     // a est exempt : sa finale attend son adversaire, elle est listée mais pas saisissable.
     expect(matchsTableauDuTireur(vue, 'a').map((m) => [m.id, m.etat])).toEqual([['2-1', 'attente']]);
     expect(matchsTableauDeLaPiste(null, 2)).toEqual([]);
-  });
-  it('CA-2 : dizaine et unité, bornées par les touches du tableau', () => {
-    expect(scoreDuPave(10, 5)).toBe(15);
-    expect(scoreDuPave(null, 5)).toBeNull();
-    expect(chiffrePermis(10, 6, 15)).toBe(false);
-    expect(chiffrePermis(10, 5, 15)).toBe(true);
-    expect(chiffrePermis(10, 1, 10)).toBe(false);
-    expect(chiffrePermis(null, 9, 15)).toBe(true);
   });
 });

@@ -10,8 +10,13 @@
     resultatsPoule,
     MOTIFS_RETRAIT,
     boutonsDuScore,
+    choisirSurPave,
+    ouvrirCotePave,
+    paveDuScore,
+    paveVierge,
     scoreDesBoutons,
     type ChoixScore,
+    type EtatPave,
     type EtatPoules,
     type MatchPoule,
     type MotifRetrait,
@@ -21,6 +26,7 @@
   import ConfirmationArchivage from './ConfirmationArchivage.svelte';
   import Icone from './Icone.svelte';
   import MenuActions from './MenuActions.svelte';
+  import PaveScore from './PaveScore.svelte';
   import type { VerdictArchivage } from '../lib/archivage';
   import { textes } from '../lib/textes';
 
@@ -63,12 +69,10 @@
   const courant = $derived<MatchPoule | null>(
     matchs.find((m) => m.numero === choisi && !m.forfait) ?? matchs.find(({ touches: tt }) => tt === null) ?? null,
   );
-  /** US-091 : le bouton choisi dans chaque colonne (gauche : tireurA, droite : tireurB). */
-  const choix = $state<{ a: ChoixScore | null; b: ChoixScore | null }>({ a: null, b: null });
+  /** US-118 : l'afficheur et le pavé (gauche : tireurA, droite : tireurB). */
+  let pave = $state<EtatPave>(paveVierge());
   let erreur: string | null = $state(null);
   let envoi = $state(false);
-  /** Boutons d'une colonne : 0 à N−1, puis « V ». */
-  const boutons = $derived<ChoixScore[]>([...Array.from({ length: touches }, (_, i) => i), 'V']);
 
   const nom = (id: string) => {
     const tireur = parId.get(id);
@@ -76,14 +80,12 @@
   };
   const nomCourt = (id: string) => parId.get(id)?.nom.toUpperCase() ?? '';
 
-  /** US-091 CA-6 : les boutons reprennent le score du match ouvert (correction), ou repartent à vide. */
+  /** US-118 CA-3 : les cases reprennent le score du match ouvert (correction, pavé fermé), ou repartent à vide. */
   const cleCourant = $derived(courant ? `${poule.numero}-${courant.numero}-${courant.touches?.join() ?? ''}` : '');
   $effect(() => {
     void cleCourant;
     const match = untrack(() => courant);
-    const [a, b] = match?.touches ? boutonsDuScore(match.touches[0], match.touches[1], touches) : [null, null];
-    choix.a = a;
-    choix.b = b;
+    pave = match?.touches ? paveDuScore(...boutonsDuScore(match.touches[0], match.touches[1], touches)) : paveVierge();
     erreur = null;
   });
 
@@ -109,21 +111,18 @@
     valeur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const signe = (valeur: number) => (valeur > 0 ? `+${valeur}` : String(valeur));
 
-  /** US-091 CA-2 à CA-5 : un bouton choisi ; le choix dans l'autre colonne enregistre le score. */
-  async function choisir(cote: 'a' | 'b', valeur: ChoixScore) {
+  /** US-118 CA-2 et CA-3 (US-091 CA-2 à CA-5) : deux choix enregistrent ; deux « V » ou une égalité recommencent. */
+  async function choisir(valeur: ChoixScore) {
     const match = courant;
     if (!match || !modifiable || envoi) return;
+    const r = choisirSurPave(pave, valeur);
+    pave = r.etat;
     erreur = null;
-    const autre = cote === 'a' ? 'b' : 'a';
-    // Un match déjà saisi (correction) repart d'un seul choix : le second enregistre.
-    if (match.touches && choix.a !== null && choix.b !== null) choix[autre] = null;
-    choix[cote] = valeur;
-    if (choix.a === null || choix.b === null) return;
-    const score = scoreDesBoutons(choix.a, choix.b, touches);
+    if (!r.complet) return;
+    const score = scoreDesBoutons(r.etat.valeurs[0]!, r.etat.valeurs[1]!, touches);
     if (!score.ok) {
       erreur = score.raison === 'DEUX_VAINQUEURS' ? t.unSeulVainqueur : t.egalite;
-      choix.a = null;
-      choix.b = null;
+      pave = paveVierge();
       return;
     }
     envoi = true;
@@ -136,15 +135,17 @@
         touchesB: score.touchesB,
         auTemps: score.auTemps,
       });
-      if (ok) {
-        choisi = null;
-        choix.a = null;
-        choix.b = null;
-      }
+      if (ok) choisi = null;
     } finally {
       envoi = false;
     }
   }
+
+  const tireurPave = (id: string, piste: 'gauche' | 'droite') => ({
+    nom: nomCourt(id),
+    prenom: parId.get(id)?.prenom ?? '',
+    detail: t.cotePiste[piste],
+  });
 </script>
 
 <!-- US-107 CA-2 : l'étape tient sur une ligne : titre, avancement (l'infobulle dit quand s'ouvre le classement), « ⋯ ». -->
@@ -302,23 +303,19 @@
             <h3 id="titre-saisie">{t.match(courant.numero, matchs.length)}</h3>
             <span class="discret">{t.contre(i, j)}</span>
           </header>
-          <div class="colonnes">
-            {#each [['a', courant.tireurA, 'gauche'], ['b', courant.tireurB, 'droite']] as const as [cote, id, piste] (cote)}
-              <div class="colonne {piste}" role="group" aria-label={t.boutonsDe(nom(id))}>
-                <p class="tireur-colonne"><strong>{nomCourt(id)}</strong> {parId.get(id)?.prenom}</p>
-                <p class="discret">{t.cotePiste[piste]}</p>
-                {#each boutons as valeur (valeur)}
-                  <button
-                    type="button"
-                    class="bouton-score"
-                    aria-pressed={choix[cote] === valeur}
-                    aria-label={t.boutonPour(valeur === 'V' ? 'V' : String(valeur), nom(id))}
-                    disabled={envoi}
-                    onclick={() => choisir(cote, valeur)}>{valeur}</button
-                  >
-                {/each}
-              </div>
-            {/each}
+          <div class="pave">
+            <PaveScore
+              format="carte"
+              tireurs={[tireurPave(courant.tireurA, 'gauche'), tireurPave(courant.tireurB, 'droite')]}
+              {touches}
+              etat={pave}
+              desactive={envoi}
+              {choisir}
+              ouvrir={(cote) => {
+                pave = ouvrirCotePave(pave, cote);
+                erreur = null;
+              }}
+            />
           </div>
           {#if erreur}<p class="message" role="alert">{erreur}</p>{/if}
           <p class="discret">{t.aideBoutons}</p>
@@ -378,15 +375,6 @@
   h3 {
     margin: 0;
     font-size: 1rem;
-  }
-
-  .pastille {
-    padding: 0.15rem 0.75rem;
-    border-radius: 999px;
-    background: var(--etat-ok-fond);
-    color: var(--sur-etat-ok-fond);
-    font-size: 0.875rem;
-    font-weight: 600;
   }
 
   .discret {
@@ -588,67 +576,11 @@
     border: 2px solid var(--marque);
   }
 
-  .saisie .colonnes,
+  .saisie .pave,
   .saisie > p,
   .saisie > h3 {
     margin: 0;
     padding: 0.75rem 1rem;
-  }
-
-  .colonnes {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
-  }
-
-  .colonne {
-    display: grid;
-    gap: 0.4rem;
-    align-content: start;
-    text-align: center;
-  }
-
-  .tireur-colonne {
-    margin: 0;
-    font-size: 0.95rem;
-  }
-
-  .gauche .tireur-colonne {
-    color: var(--cote-gauche);
-  }
-
-  .droite .tireur-colonne {
-    color: var(--cote-droit);
-  }
-
-  .bouton-score {
-    min-height: 2.6rem;
-    border: 2px solid var(--cote-gauche);
-    border-radius: 999px;
-    background: var(--surface);
-    color: var(--texte);
-    font: inherit;
-    font-size: 1.15rem;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .droite .bouton-score {
-    border-color: var(--cote-droit);
-  }
-
-  .gauche .bouton-score[aria-pressed='true'] {
-    background: var(--cote-gauche);
-    color: var(--sur-cote);
-  }
-
-  .droite .bouton-score[aria-pressed='true'] {
-    background: var(--cote-droit);
-    color: var(--sur-cote);
-  }
-
-  .bouton-score:disabled {
-    cursor: wait;
   }
 
   .message {

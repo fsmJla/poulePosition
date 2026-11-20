@@ -1,5 +1,5 @@
 // Saisie d'un match du tableau sur smartphone (US-106, planche 15) : le match appelé sur la piste de l'arbitre apparaît
-// sous ses matchs de poule ; le score se touche en dizaine et unité, une égalité demande la priorité ; la table
+// sous ses matchs de poule ; le score se touche sur l'afficheur et le pavé (US-118), une égalité demande la priorité ; la table
 // l'enregistre et le vainqueur passe au tour suivant, dans l'arbre du PC comme dans l'extrait du téléphone.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
@@ -33,11 +33,11 @@ async function tableauAppele(page: Page) {
   return { arbitres, nom: (rang: number) => nomDe(q[rang - 1]!) };
 }
 
-const toucher = (arbitre: Page, cote: 0 | 1, sorte: 'Dizaine' | 'Unité', valeur: number) =>
-  arbitre
-    .getByRole('group')
-    .nth(cote)
-    .getByRole('button', { name: new RegExp(`^${sorte} ${valeur} pour `) })
+/** US-118 : le pavé ouvert (gauche, puis droite) ; 15 = « V ». */
+const pave = (arbitre: Page) => arbitre.getByRole('group', { name: /^Score de / });
+const toucher = (arbitre: Page, valeur: number) =>
+  pave(arbitre)
+    .getByRole('button', { name: new RegExp(`^${valeur === 15 ? 'V' : valeur} pour `) })
     .click();
 
 test('US-106 CA-1, CA-2, CA-4 et CA-6 : le match de la piste se saisit en 15 touches et s’inscrit au tableau (planche 15)', async ({
@@ -58,17 +58,11 @@ test('US-106 CA-1, CA-2, CA-4 et CA-6 : le match de la piste se saisit en 15 tou
     await expect(arbitre.getByText('Match 2 · Quarts de finale', { exact: true })).toBeVisible();
     await expect(arbitre.getByText(/^Piste 1 · .+ · en 15 touches$/)).toBeVisible();
 
-    // CA-2 : dizaine puis unité ; au-delà de 15, désactivé.
-    await toucher(arbitre, 0, 'Dizaine', 10);
-    await expect(
-      arbitre
-        .getByRole('group')
-        .nth(0)
-        .getByRole('button', { name: /^Unité 6 pour / }),
-    ).toBeDisabled();
-    await toucher(arbitre, 0, 'Unité', 5);
-    await toucher(arbitre, 1, 'Dizaine', 0);
-    await toucher(arbitre, 1, 'Unité', 9);
+    // CA-2 et US-118 CA-5 : un pavé de 16 boutons (0 à 14 et « V ») ; « V » puis 9.
+    await expect(pave(arbitre).getByRole('button')).toHaveCount(16);
+    await toucher(arbitre, 15);
+    await toucher(arbitre, 9);
+    await expect(arbitre.getByRole('button', { name: /^Score de .* : / })).toHaveText(['15', '9']);
     await expect(arbitre.getByText(`Victoire de ${nom(4).split(' ')[0]}, 15 à 9.`)).toBeVisible();
     // L'extrait du tableau : ce match en saisie, son voisin et la demi-finale où le vainqueur s'inscrit.
     const extrait = arbitre.getByRole('region', { name: 'Dans le tableau' });
@@ -100,17 +94,15 @@ test('US-106 CA-3 : une égalité demande le vainqueur par priorité', async ({ 
       .getByRole('region', { name: 'Tableau' })
       .getByRole('button', { name: /^Saisir le score : / })
       .click({ timeout: 20_000 });
-    for (const cote of [0, 1] as const) {
-      await toucher(arbitre, cote, 'Dizaine', 0);
-      await toucher(arbitre, cote, 'Unité', 9);
-    }
+    await toucher(arbitre, 9);
+    await toucher(arbitre, 9);
     await expect(arbitre.getByText('Égalité : qui a la priorité ?')).toBeVisible();
     const envoyer = arbitre.getByRole('button', { name: 'Envoyer à la table' });
     await expect(envoyer).toBeDisabled();
     await arbitre
       .getByRole('group', { name: 'Vainqueur par priorité' })
-      .getByRole('radio', { name: nom(5) })
-      .check();
+      .getByRole('button', { name: nom(5) })
+      .click();
     await expect(arbitre.getByText(`Victoire de ${nom(5).split(' ')[0]} par priorité, 9 partout.`)).toBeVisible();
     await envoyer.click();
     await expect(arbitre.getByText(/^Enregistré par la table à /)).toBeVisible({ timeout: 15_000 });

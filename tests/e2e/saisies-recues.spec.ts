@@ -9,13 +9,11 @@ async function envoyerDuTelephone(arbitre: Page, a: string, b: string) {
   await expect(maintenant).toBeVisible({ timeout: 20_000 });
   await maintenant.getByRole('button', { name: 'Saisir le score' }).click();
   await arbitre
-    .getByRole('group')
-    .nth(0)
+    .getByRole('group', { name: /^Score de / })
     .getByRole('button', { name: new RegExp(`^${a} pour `) })
     .click();
   await arbitre
-    .getByRole('group')
-    .nth(1)
+    .getByRole('group', { name: /^Score de / })
     .getByRole('button', { name: new RegExp(`^${b} pour `) })
     .click();
   await arbitre.getByRole('button', { name: 'Envoyer à la table' }).click();
@@ -82,13 +80,11 @@ test('US-100 CA-2 : une saisie refusée par la table s’inscrit avec son motif'
     await maintenant.getByRole('button', { name: 'Saisir le score' }).click();
     await saisirBoutons(page, 5, 1);
     await arbitre
-      .getByRole('group')
-      .nth(0)
+      .getByRole('group', { name: /^Score de / })
       .getByRole('button', { name: /^V pour / })
       .click();
     await arbitre
-      .getByRole('group')
-      .nth(1)
+      .getByRole('group', { name: /^Score de / })
       .getByRole('button', { name: /^2 pour / })
       .click();
     await arbitre.getByRole('button', { name: 'Envoyer à la table' }).click();

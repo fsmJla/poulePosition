@@ -9,15 +9,21 @@
 </script>
 
 <script lang="ts">
-  // Saisie d'un match du tableau sur smartphone (US-106, planche 15) : même principe que la poule (US-099), en 15
-  // touches : le score s'affiche en grand, on touche la dizaine (0 ou 10) puis l'unité sur un pavé 1–9 / 0, les chiffres
-  // qui dépasseraient les touches du tableau sont désactivés. Une égalité demande le vainqueur par priorité. Sous la
-  // saisie, l'extrait du tableau : ce match, son voisin et le match suivant, où le vainqueur s'inscrit.
+  // Saisie d'un match du tableau sur smartphone (US-106, planche 15 ; US-118) : l'afficheur et le pavé à la demande,
+  // comme la poule (US-099), en 15 touches : un pavé 0 à N−1 et « V » en quatre colonnes. Une égalité ferme le pavé et
+  // demande le vainqueur par priorité. Sous la saisie, l'extrait du tableau : ce match, son voisin et le match suivant,
+  // où le vainqueur s'inscrit.
   import {
-    chiffrePermis,
+    boutonsDuScore,
+    choisirSurPave,
     controleScoreTableau,
+    ouvrirCotePave,
+    paveDuScore,
+    paveVierge,
     placesAffichees,
-    scoreDuPave,
+    scoreTableauDesBoutons,
+    type ChoixScore,
+    type EtatPave,
     type MatchTableauVue,
     type PlaceVue,
     type TireurVue,
@@ -26,6 +32,7 @@
   import type { Accuse } from '@poule-position/protocole';
   import { textes } from '../lib/textes';
   import Icone from './Icone.svelte';
+  import PaveScore from './PaveScore.svelte';
 
   interface Proprietes {
     vue: VueSaisie;
@@ -50,20 +57,25 @@
   );
   // svelte-ignore state_referenced_locally
   const { places, touches: depart } = placesAffichees(match);
-  const decouper = (score: number | undefined) =>
-    score === undefined || !correction ? [null, null] : [score >= 10 ? 10 : 0, score % 10];
-  const [dA, uA] = decouper(depart?.[0]);
-  const [dB, uB] = decouper(depart?.[1]);
-  let dizaineA = $state<number | null>(dA ?? null);
-  let uniteA = $state<number | null>(uA ?? null);
-  let dizaineB = $state<number | null>(dB ?? null);
-  let uniteB = $state<number | null>(uB ?? null);
+  // US-101, US-118 CA-5 : en correction, les cases montrent le score actuel, pavé fermé.
+  // svelte-ignore state_referenced_locally
+  let pave = $state<EtatPave>(
+    correction && depart
+      ? paveDuScore(...boutonsDuScore(depart[0], depart[1], vue.tableau?.touches ?? 15))
+      : paveVierge(),
+  );
+  let refus = $state<string | null>(null);
   let priorite = $state<'A' | 'B' | null>(null);
   let envoyee = $state<string | null>(null);
   let heure = $state('');
 
-  const scoreA = $derived(scoreDuPave(dizaineA, uniteA));
-  const scoreB = $derived(scoreDuPave(dizaineB, uniteB));
+  const brut = $derived(
+    pave.actif === null && pave.valeurs[0] !== null && pave.valeurs[1] !== null
+      ? scoreTableauDesBoutons(pave.valeurs[0], pave.valeurs[1], touches)
+      : null,
+  );
+  const scoreA = $derived(brut?.ok ? brut.touchesA : null);
+  const scoreB = $derived(brut?.ok ? brut.touchesB : null);
   const egalite = $derived(scoreA !== null && scoreA === scoreB);
   const controle = $derived(
     scoreA === null || scoreB === null
@@ -76,8 +88,9 @@
     return tireur ? `${tireur.nom} ${tireur.prenom}` : '';
   };
   const message = $derived.by(() => {
-    if (scoreA === null || scoreB === null) return { texte: t.aToucher, erreur: false };
-    if (egalite && !priorite) return { texte: t.egalite, erreur: true };
+    if (refus) return { texte: refus, erreur: true };
+    if (scoreA === null || scoreB === null) return { texte: '', erreur: false };
+    if (egalite && !priorite) return { texte: '', erreur: false };
     if (!controle?.ok) return { texte: tm.pasDEgalite, erreur: true };
     const gagne = controle.vainqueur === 'A' ? places[0] : places[1];
     const [haut, bas] = [Math.max(scoreA, scoreB), Math.min(scoreA, scoreB)];
@@ -114,29 +127,26 @@
     });
   }
 
-  const cotes = $derived([
-    {
-      place: places[0],
-      cote: tm.gauche,
-      classe: 'gauche',
-      score: scoreA,
-      dizaine: dizaineA,
-      unite: uniteA,
-      choisirDizaine: (v: number) => (dizaineA = dizaineA === v ? null : v),
-      choisirUnite: (v: number) => (uniteA = uniteA === v ? null : v),
-    },
-    {
-      place: places[1],
-      cote: tm.droite,
-      classe: 'droite',
-      score: scoreB,
-      dizaine: dizaineB,
-      unite: uniteB,
-      choisirDizaine: (v: number) => (dizaineB = dizaineB === v ? null : v),
-      choisirUnite: (v: number) => (uniteB = uniteB === v ? null : v),
-    },
-  ]);
-  const UNITES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
+  /** US-118 CA-5 : deux choix complètent le score ; deux « V » font recommencer ; une égalité attend la priorité. */
+  function choisir(valeur: ChoixScore) {
+    const r = choisirSurPave(pave, valeur);
+    pave = r.etat;
+    refus = null;
+    priorite = null;
+    if (!r.complet) return;
+    const essai = scoreTableauDesBoutons(r.etat.valeurs[0]!, r.etat.valeurs[1]!, touches);
+    if (!essai.ok) {
+      refus = tm.unSeulVainqueur;
+      pave = paveVierge();
+    }
+  }
+  const tireurPave = (place: PlaceVue, cote: string) => ({
+    nom: nom(place),
+    prenom: tireurs.get(place.tireurId ?? '')?.prenom ?? '',
+    detail: t.tete(place.rang, cote),
+  });
+  /** L'extrait du tableau montre le score en cours de saisie. */
+  const cotes = $derived([{ score: scoreA }, { score: scoreB }]);
 
   // L'extrait du tableau : ce match, son voisin (l'autre match qui alimente le match suivant) et le match suivant.
   const tous = $derived(vue.tableau?.matchs ?? []);
@@ -198,50 +208,39 @@
 </header>
 
 <main class="saisie">
-  <div class="colonnes">
-    {#each cotes as cote (cote.classe)}
-      <div class={`colonne ${cote.classe}`} role="group" aria-label={t.score(nomComplet(cote.place), cote.cote)}>
-        <div class="tireur">
-          <span class="nom"><strong>{nom(cote.place)}</strong> {tireurs.get(cote.place.tireurId ?? '')?.prenom}</span>
-          <span class="club">{t.tete(cote.place.rang, cote.cote)}</span>
-        </div>
-        <span class="grand" aria-hidden="true">{cote.score ?? '–'}</span>
-        <div class="dizaines">
-          {#each [0, 10] as valeur (valeur)}
+  <PaveScore
+    format="telephone"
+    tireurs={[tireurPave(places[0], tm.gauche), tireurPave(places[1], tm.droite)]}
+    {touches}
+    etat={pave}
+    vEnChiffre
+    desactive={etape !== 'saisie'}
+    {choisir}
+    ouvrir={(cote) => {
+      pave = ouvrirCotePave(pave, cote);
+      refus = null;
+      priorite = null;
+    }}
+  >
+    {#snippet ferme()}
+      {#if etape === 'saisie' && egalite}
+        <p class="egalite">{textes.pave.priorite}</p>
+        <div class="priorite" role="group" aria-label={t.priorite}>
+          {#each [{ cote: 'A', place: places[0], classe: 'gauche' }, { cote: 'B', place: places[1], classe: 'droite' }] as const as p (p.cote)}
             <button
               type="button"
-              class:choisi={cote.dizaine === valeur}
-              aria-pressed={cote.dizaine === valeur}
-              aria-label={t.dizaine(valeur, nomComplet(cote.place))}
-              disabled={etape !== 'saisie' || (cote.unite !== null && !chiffrePermis(valeur, cote.unite, touches))}
-              onclick={() => cote.choisirDizaine(valeur)}>{valeur}</button
+              class="pour {p.classe}"
+              aria-pressed={priorite === p.cote}
+              onclick={() => (priorite = p.cote)}>{nomComplet(p.place)}</button
             >
           {/each}
         </div>
-        <div class="pave">
-          {#each UNITES as valeur (valeur)}
-            <button
-              type="button"
-              class:zero={valeur === 0}
-              class:choisi={cote.unite === valeur}
-              aria-pressed={cote.unite === valeur}
-              aria-label={t.unite(valeur, nomComplet(cote.place))}
-              disabled={etape !== 'saisie' || !chiffrePermis(cote.dizaine, valeur, touches)}
-              onclick={() => cote.choisirUnite(valeur)}>{valeur}</button
-            >
-          {/each}
-        </div>
-      </div>
-    {/each}
-  </div>
+      {:else if etape === 'saisie'}
+        <p class="invite">{textes.pave.corriger}</p>
+      {/if}
+    {/snippet}
+  </PaveScore>
 
-  {#if etape === 'saisie' && egalite}
-    <fieldset class="priorite">
-      <legend>{t.priorite}</legend>
-      <label><input type="radio" name="priorite" value="A" bind:group={priorite} />{nomComplet(places[0])}</label>
-      <label><input type="radio" name="priorite" value="B" bind:group={priorite} />{nomComplet(places[1])}</label>
-    </fieldset>
-  {/if}
   <p class="message" class:erreur={message.erreur} role="status">{etape === 'saisie' ? message.texte : ''}</p>
 
   {#if etape === 'saisie'}
@@ -342,107 +341,48 @@
     padding: 12px 16px;
   }
 
-  .colonnes {
+  .egalite {
+    margin: 0;
+    color: var(--sur-etat-attente-fond);
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .invite {
+    margin: 0;
+    color: var(--texte-discret);
+    font-size: 0.9375rem;
+    text-align: center;
+  }
+
+  .priorite {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
 
-  .colonne {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .gauche {
-    --cote: var(--cote-gauche);
-  }
-
-  .droite {
-    --cote: var(--cote-droit);
-  }
-
-  .tireur {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    line-height: 1.25;
-    text-align: center;
-  }
-
-  .tireur .nom {
-    color: var(--cote);
-    font-size: 1.0625rem;
-  }
-
-  .club {
-    color: var(--texte-discret);
-    font-size: 0.8125rem;
-  }
-
-  .grand {
-    padding-bottom: 4px;
-    border-bottom: 3px solid var(--cote);
-    text-align: center;
-    font-family: var(--police-titre);
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: var(--cote);
-  }
-
-  .dizaines {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-  }
-
-  .pave {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-  }
-
-  .pave .zero {
-    grid-column: 2;
-  }
-
-  .colonne button {
-    height: 44px;
+  .pour {
+    min-height: 52px;
     border: 2px solid var(--cote);
     border-radius: 999px;
     background: var(--surface);
-    color: var(--texte);
+    color: var(--cote);
     font: inherit;
-    font-size: 1.125rem;
     font-weight: 600;
     cursor: pointer;
   }
 
-  .colonne button.choisi {
+  .pour.gauche {
+    --cote: var(--cote-gauche);
+  }
+
+  .pour.droite {
+    --cote: var(--cote-droit);
+  }
+
+  .pour[aria-pressed='true'] {
     background: var(--cote);
-    color: var(--surface);
-  }
-
-  .colonne button:disabled:not(.choisi) {
-    opacity: 0.35;
-    cursor: default;
-  }
-
-  .priorite {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 16px;
-    margin: 0;
-    padding: 4px 12px 8px;
-    border: 1px solid var(--etat-attente-bordure);
-    border-radius: 12px;
-  }
-
-  .priorite label {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 44px;
+    color: var(--sur-cote);
   }
 
   .message {

@@ -4,11 +4,9 @@ import { expect, test, type Page } from '@playwright/test';
 import { ouvrirPoules } from './poules-outils';
 import { poulesLancees, telephone } from './saisie-outils';
 
-const bouton = (tel: Page, cote: 0 | 1, choix: string) =>
-  tel
-    .getByRole('group')
-    .nth(cote)
-    .getByRole('button', { name: new RegExp(`^${choix} pour `) });
+/** US-118 : un bouton du pavé ouvert (gauche, puis droite). */
+const bouton = (tel: Page, choix: string) =>
+  tel.getByRole('group', { name: /^Score de / }).getByRole('button', { name: new RegExp(`^${choix} pour `) });
 
 test('US-104 CA-1 à CA-5, CA-7 et CA-8 : mes matchs, ma poule, et la saisie d’un autre match de ma poule', async ({
   page,
@@ -45,8 +43,8 @@ test('US-104 CA-1 à CA-5, CA-7 et CA-8 : mes matchs, ma poule, et la saisie d�
       .getByRole('button', { name: /^Saisir le score du match \d+, / })
       .first()
       .click();
-    await bouton(tireuse, 0, 'V').click();
-    await bouton(tireuse, 1, '2').click();
+    await bouton(tireuse, 'V').click();
+    await bouton(tireuse, '2').click();
     await tireuse.getByRole('button', { name: 'Envoyer à la table' }).click();
     await expect(tireuse.getByText(/^Enregistré par la table à \d+ h \d{2}$/)).toBeVisible({ timeout: 15_000 });
     // Sur le PC, la saisie est signée à son nom.
