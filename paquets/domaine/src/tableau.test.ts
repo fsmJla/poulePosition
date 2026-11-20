@@ -15,6 +15,7 @@ import {
   etatTableauVide,
   matchDuTableau,
   pisteProposee,
+  placesAffichees,
   placementFIE,
   qualifiesDesPoules,
   situationDuTableau,
@@ -212,6 +213,20 @@ describe('US-108 CA-3 : placement de la FIE', () => {
       '7-10',
       '2-15',
     ]);
+  });
+});
+
+describe('US-110 : ordre d’affichage d’un match', () => {
+  it('CA-2 : le meilleur rang en haut quand les deux tireurs sont connus, les touches suivent', () => {
+    const tableau = structureTableau(tableauDe(epreuveDe(...avecTableau, score('8-2', 'e', 'd', 15, 11))), false)!;
+    // 8-2 : d (rang 4) en bas dans le tableau, e (rang 5) en haut.
+    const { places, touches } = placesAffichees(matchDuTableau(tableau, '8-2')!);
+    expect(places.map((p) => p.rang)).toEqual([4, 5]);
+    expect(touches).toEqual([11, 15]);
+    const attente = placesAffichees(matchDuTableau(tableau, '2-1')!);
+    expect(attente.touches).toBeNull();
+    const quart = placesAffichees(matchDuTableau(tableau, '4-1')!);
+    expect(quart.places.map((p) => p.rang)).toEqual([1, 5]);
   });
 });
 

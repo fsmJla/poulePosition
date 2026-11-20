@@ -315,6 +315,22 @@ function construireMatch(
 const memePaire = (r: Pick<ResultatTableau, 'tireurA' | 'tireurB'>, a: string, b: string) =>
   (r.tireurA === a && r.tireurB === b) || (r.tireurA === b && r.tireurB === a);
 
+/**
+ * US-110 : les deux places d'un match dans l'ordre d'affichage de la planche 11 : le meilleur rang en haut quand les deux
+ * tireurs sont connus, sinon l'ordre du tableau ; les touches suivent.
+ */
+export function placesAffichees(match: MatchTableau): {
+  places: readonly [PlaceTableau, PlaceTableau];
+  touches: readonly [number, number] | null;
+} {
+  const inverse = match.haut.rang !== null && match.bas.rang !== null && match.haut.rang > match.bas.rang;
+  if (!inverse) return { places: [match.haut, match.bas], touches: match.touches };
+  return {
+    places: [match.bas, match.haut],
+    touches: match.touches ? [match.touches[1], match.touches[0]] : null,
+  };
+}
+
 /** Tous les matchs du tableau, tour par tour, puis la 3e place. */
 export function tousLesMatchs(structure: StructureTableau): MatchTableau[] {
   const matchs = structure.tours.flatMap((t) => t.matchs);

@@ -5,6 +5,7 @@
   // retéléchargée toutes les 30 s sur un autre appareil (comme le classement, US-092).
   import { onMount } from 'svelte';
   import {
+    avancementTour,
     avancementPoules,
     classementDesPoules,
     poulesDe,
@@ -18,6 +19,7 @@
     type MatchTableau,
     type PlaceTableau,
   } from '@poule-position/domaine';
+  import ArbreTableau from '../composants/ArbreTableau.svelte';
   import ConfirmationArchivage from '../composants/ConfirmationArchivage.svelte';
   import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
   import Icone from '../composants/Icone.svelte';
@@ -64,6 +66,10 @@
   let ecriture = $state(true);
   let confirmer = $state(false);
   let annonce = $state('');
+  /** US-110 CA-1 : le tour choisi par l'organisateur ; sinon, le premier tour pas terminé. */
+  let tourManuel = $state<number | null>(null);
+  /** US-110 CA-4 : le match choisi dans l'arbre. */
+  let choisi = $state<string | null>(null);
 
   const modifiable = $derived(pilote && ecriture && epreuve !== null && epreuve.statut !== 'archivee');
   const poules = $derived(epreuve ? poulesDe(epreuve) : null);
@@ -149,6 +155,15 @@
     return tireur ? `${tireur.nom.toUpperCase()} ${tireur.prenom}` : '';
   };
   const premierTour = $derived<MatchTableau[]>(structure?.tours[0]?.matchs ?? []);
+  const tourEnCours = $derived.by(() => {
+    const tours = structure?.tours ?? [];
+    const indice = tours.findIndex((tour) => {
+      const { regles, total } = avancementTour(tour);
+      return regles < total;
+    });
+    return indice === -1 ? Math.max(0, tours.length - 1) : indice;
+  });
+  const tourChoisi = $derived(tourManuel ?? tourEnCours);
   const etatDuTableau = $derived(
     !cree ? t.etats.aCreer : epreuve?.statut === 'terminee' ? t.etats.termine : t.etats.enCours,
   );
@@ -198,20 +213,30 @@
       </section>
     {:else if !structure}
       <section class="carte avis" aria-label={t.titre}><p>{t.unSeulQualifie}</p></section>
-    {:else}
-      {#if !cree}
-        {#each exaequo as [rang, ids] (rang)}
-          <p class="alerte" role="note">
-            <Icone nom="alerte" />{t.exaequo(rang, ids.map((id) => nom(id)).join(', '))}
-          </p>
+    {:else if cree}
+      <!-- US-110 : les tours en pilules, puis l'arbre à partir du tour choisi. -->
+      <div class="pilules" role="group" aria-label={t.tours}>
+        {#each structure.tours as tour, i (tour.taille)}
+          {@const { regles, total } = avancementTour(tour)}
+          {@const pret = tour.matchs.some((m) => m.etat === 'aTirer' || m.etat === 'regle')}
+          <button type="button" class="pilule" aria-pressed={i === tourChoisi} onclick={() => (tourManuel = i)}>
+            {t.pilule(tour.taille)}{#if pret}<span class="avancement">{t.avancementTour(regles, total)}</span>{/if}
+          </button>
         {/each}
-      {/if}
+      </div>
+      <ArbreTableau {structure} {tireurs} tour={tourChoisi} {choisi} choisir={(id) => (choisi = id)} {modifiable} />
+    {:else}
+      {#each exaequo as [rang, ids] (rang)}
+        <p class="alerte" role="note">
+          <Icone nom="alerte" />{t.exaequo(rang, ids.map((id) => nom(id)).join(', '))}
+        </p>
+      {/each}
       <section class="carte" aria-labelledby="titre-premier-tour">
         <header>
           <h3 id="titre-premier-tour">
             <Icone nom="arbre" />{t.premierTour} · {t.nomDuTour(structure.taille)}
           </h3>
-          {#if !cree && modifiable}
+          {#if modifiable}
             <button type="button" class="principal" onclick={() => (confirmer = true)}>
               <Icone nom="arbre" />{t.creer}
             </button>
@@ -432,6 +457,36 @@
     background: var(--surface-2);
     font-size: 0.8rem;
     font-weight: 600;
+  }
+
+  .pilules {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+  }
+
+  .pilule {
+    flex: none;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid var(--bordure-champ);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--texte);
+    font-size: 0.95rem;
+  }
+
+  .pilule[aria-pressed='true'] {
+    border-color: var(--marque);
+    background: var(--marque);
+    color: var(--sur-marque);
+  }
+
+  .avancement {
+    font-size: 0.8rem;
+    font-weight: 400;
+    opacity: 0.85;
   }
 
   .non-qualifies {
