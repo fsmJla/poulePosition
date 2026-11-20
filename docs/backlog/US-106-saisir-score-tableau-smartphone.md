@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F8, F10 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-099, US-104, US-108, US-111, US-112
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-106-saisir-score-tableau-smartphone`
 
 ## Récit
 
@@ -71,6 +71,15 @@ Comme US-099 et US-102 : saisie suspendue quand la table est déconnectée, sais
   désigné par la priorité (la planche affiche « Pas d'égalité »).
 - Les matchs en 10 touches (formule, US-028) limitent le pavé : la dizaine « 10 » n'autorise que l'unité 0.
 
+- Implémentation (2026-11-20) : les matchs du tableau s'affichent dans une section « Tableau » sous les matchs de poule
+  (arbitre : ceux appelés sur sa piste ; tireur : les siens), avec « Saisir le score » et, pour un arbitre, le crayon de
+  correction. Nouveaux motifs de refus : `TABLEAU_NON_CREE`, `MATCH_SUIVANT_REGLE`, `HORS_MATCH`.
+- Implémentation : la suspension et la récupération des saisies en route (US-102) reprennent le circuit des saisies de
+  poule, sans E2E propre ; les E2E couvrent l'arbitre (saisie, égalité par priorité) ; les droits du tireur sont
+  couverts par les tests unitaires de la table.
+- Implémentation : un refus d'une saisie du tableau n'apparaît pas dans « Saisies reçues des smartphones » (page des
+  poules) ; une liste des saisies reçues pour le tableau pourra suivre.
+
 ## Questions bloquantes
 
 Aucune (US d'E6 écrites le 2026-11-20 : US-108 à US-115).
@@ -87,3 +96,4 @@ Aucune (US d'E6 écrites le 2026-11-20 : US-108 à US-115).
 |---|---|
 | 2026-11-19 | Créée |
 | 2026-11-20 | Complétée avec les US d'E6 (égalité par priorité, matchs du tableau dans les listes) ; passe à Prête |
+| 2026-11-20 | Implémentée : décision de la table, protocole, `MatchsTableau`, `SaisieMatchTableau` ; passe En revue |

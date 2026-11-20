@@ -286,7 +286,9 @@
     "tableau-troisieme"
   ],
   "app/src/composants/RetraitTableau.svelte": ["tableau-retrait"],
-  "app/src/composants/ClassementFinal.svelte": ["tableau-classement-final"],
+  "app/src/composants/MatchsTableau.svelte": ["saisie-tableau"],
+  "app/src/composants/SaisieMatchTableau.svelte": ["saisie-tableau"],
+  "app/src/composants/ClassementFinal.svelte": ["tableau-classement-final", "saisie-tableau"],
   "app/src/lib/tableau.ts": ["tableau-creer"],
   "app/src/lib/accueil.ts": ["accueil", "accueil-refonte", "filtres-liste"],
   "app/src/lib/archivage.ts": ["archivage"],
@@ -349,9 +351,10 @@
   "app/src/lib/table-saisies.ts": ["saisie-match", "saisies-recues"],
   "app/src/composants/SaisiesRecues.svelte": ["saisies-recues"],
   "app/src/composants/BandeauEcartees.svelte": ["saisies-recues", "saisie-suspendue"],
-  "paquets/domaine/src/saisies.ts": ["saisie-match", "saisies-recues", "correction-score"],
-  "paquets/protocole/src/saisies.ts": ["saisie-match"],
+  "paquets/domaine/src/saisies.ts": ["saisie-match", "saisies-recues", "correction-score", "saisie-tableau"],
+  "paquets/protocole/src/saisies.ts": ["saisie-match", "saisie-tableau"],
   "app/src/pages/Saisie.svelte": [
+    "saisie-tableau",
     "smartphone-arbitre",
     "matchs-piste",
     "saisie-match",

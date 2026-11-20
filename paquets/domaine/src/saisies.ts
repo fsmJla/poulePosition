@@ -4,7 +4,16 @@
 import type { RoleQr } from './acces-qr';
 import type { Sexe } from './epreuve';
 import { accesQrOuvert } from './acces-qr';
-import { poulesDe, tireursDe, type Epreuve, type Evenement, type Proposition } from './journal';
+import {
+  contexteTableau,
+  poulesDe,
+  tableauDe,
+  tireursDe,
+  type Epreuve,
+  type Evenement,
+  type Proposition,
+} from './journal';
+import { matchDuTableau, structureTableau, verifierScoreTableau } from './tableau';
 import { matchsDePoule, ordreDesMatchs, verifierScore, type OrigineSaisie } from './poules';
 
 /** Une saisie de score de poule, telle que la table la reçoit (le serveur ajoute le rôle et l'appareil). */
@@ -25,6 +34,10 @@ export interface SaisieScore {
   remplace?: [number, number];
   /** US-104 CA-5 : le tireur qui saisit (choisi sur « Qui êtes-vous ? »), pour vérifier que le match est de sa poule. */
   tireurId?: string;
+  /** US-106 : un match du tableau (son identifiant, `16-5`) ; `poule` vaut alors 0. */
+  match?: string;
+  /** US-106 : à égalité de touches, le vainqueur désigné par la priorité. */
+  parPriorite?: string;
 }
 
 export const MOTIFS_REFUS_SAISIE = [
@@ -40,6 +53,10 @@ export const MOTIFS_REFUS_SAISIE = [
   'SCORE_CHANGE',
   'HORS_POULE',
   'APPAREIL_EXCLU',
+  // US-106 : saisies du tableau.
+  'TABLEAU_NON_CREE',
+  'MATCH_SUIVANT_REGLE',
+  'HORS_MATCH',
 ] as const;
 export type MotifRefusSaisie = (typeof MOTIFS_REFUS_SAISIE)[number];
 
@@ -65,6 +82,7 @@ export function deciderSaisie(epreuve: Epreuve, saisie: SaisieScore): DecisionSa
   const etat = poulesDe(epreuve);
   // CA-7 : une saisie déjà appliquée (renvoyée avec le même identifiant) n'écrit rien de plus.
   if (etat.scores.some((score) => score.saisie?.id === saisie.id)) return { decision: 'doublon' };
+  if (tableauDe(epreuve).resultats.some((r) => r.saisie?.id === saisie.id)) return { decision: 'doublon' };
   // US-100 : une saisie déjà refusée, renvoyée, reçoit le même refus (sans nouvelle trace).
   const refusee = (epreuve.saisiesRefusees ?? []).find(({ saisie: origine }) => origine.id === saisie.id);
   if (refusee) return { decision: 'refuse', motif: refusee.motif };
@@ -72,6 +90,7 @@ export function deciderSaisie(epreuve: Epreuve, saisie: SaisieScore): DecisionSa
   // US-105 CA-3 : une saisie d'un appareil exclu (encore dans la boîte, par exemple) est refusée.
   if ((epreuve.appareilsExclus ?? []).includes(saisie.appareilId))
     return { decision: 'refuse', motif: 'APPAREIL_EXCLU' };
+  if (saisie.match !== undefined) return deciderSaisieTableau(epreuve, saisie, saisie.match);
   const { arbitreSaisitScores, tireurSaisitPoule } = epreuve.parametres;
   if (saisie.role === 'arbitre' ? !arbitreSaisitScores : !tireurSaisitPoule) {
     return { decision: 'refuse', motif: 'DROIT_RETIRE' };
@@ -122,6 +141,64 @@ export function deciderSaisie(epreuve: Epreuve, saisie: SaisieScore): DecisionSa
   };
 }
 
+/**
+ * US-106 CA-4 et CA-5 : ce que la table fait d'une saisie d'un match du tableau : droits (« Arbitre : saisir… »,
+ * « Tireur : saisir le score de ses matchs de tableau »), match prêt, tireur du match, correction, score recevable.
+ */
+function deciderSaisieTableau(epreuve: Epreuve, saisie: SaisieScore, id: string): DecisionSaisie {
+  const { arbitreSaisitScores, tireurSaisitTableau, correctionScore } = epreuve.parametres;
+  if (saisie.role === 'arbitre' ? !arbitreSaisitScores : !tireurSaisitTableau) {
+    return { decision: 'refuse', motif: 'DROIT_RETIRE' };
+  }
+  const contexte = contexteTableau(epreuve);
+  const structure = structureTableau(contexte.tableau, contexte.matchTroisieme);
+  if (!structure) return { decision: 'refuse', motif: 'TABLEAU_NON_CREE' };
+  const match = matchDuTableau(structure, id);
+  const tireurs = [match?.haut.tireurId, match?.bas.tireurId];
+  if (!match || match.etat === 'exempt' || match.etat === 'attente')
+    return { decision: 'refuse', motif: 'MATCH_INCONNU' };
+  if (!tireurs.includes(saisie.tireurA) || !tireurs.includes(saisie.tireurB) || saisie.tireurA === saisie.tireurB) {
+    return { decision: 'refuse', motif: 'MATCH_INCONNU' };
+  }
+  // CA-5 : un tireur ne saisit que ses propres matchs du tableau.
+  if (saisie.role === 'tireur' && !(saisie.tireurId && tireurs.includes(saisie.tireurId))) {
+    return { decision: 'refuse', motif: 'HORS_MATCH' };
+  }
+  if (match.retrait) return { decision: 'refuse', motif: 'TIREUR_RETIRE' };
+  if (saisie.remplace) {
+    if (saisie.role !== 'arbitre') return { decision: 'refuse', motif: 'CORRECTION_INTERDITE' };
+    if (correctionScore !== 'arbitre') return { decision: 'refuse', motif: 'CORRECTION_DESACTIVEE' };
+    const enVigueur =
+      match.touches && match.etat === 'regle'
+        ? match.haut.tireurId === saisie.tireurA
+          ? match.touches
+          : [match.touches[1], match.touches[0]]
+        : null;
+    if (!enVigueur || enVigueur[0] !== saisie.remplace[0] || enVigueur[1] !== saisie.remplace[1]) {
+      return { decision: 'refuse', motif: 'SCORE_CHANGE' };
+    }
+  } else if (match.etat === 'regle') return { decision: 'refuse', motif: 'MATCH_DEJA_SAISI' };
+  const donnees = {
+    match: id,
+    tireurA: saisie.tireurA,
+    tireurB: saisie.tireurB,
+    touchesA: saisie.touchesA,
+    touchesB: saisie.touchesB,
+    ...(saisie.parPriorite !== undefined && { parPriorite: saisie.parPriorite }),
+  };
+  const erreur = verifierScoreTableau(contexte, donnees);
+  if (erreur === 'MATCH_SUIVANT_REGLE') return { decision: 'refuse', motif: 'MATCH_SUIVANT_REGLE' };
+  if (erreur === 'EPREUVE_TERMINEE') return { decision: 'refuse', motif: 'EPREUVE_FERMEE' };
+  if (erreur) return { decision: 'refuse', motif: 'SCORE_INVALIDE' };
+  return {
+    decision: 'accepte',
+    proposition: {
+      type: 'ScoreTableauSaisi',
+      donnees: { ...donnees, saisie: { id: saisie.id, par: signatureSaisie(saisie, epreuve.sexe) } },
+    },
+  };
+}
+
 /** US-100 : données de `SaisieRefusee` : la saisie refusée par la table, avec son motif (trace, ADR-0005). */
 export interface DonneesSaisieRefusee {
   saisie: OrigineSaisie;
@@ -131,14 +208,25 @@ export interface DonneesSaisieRefusee {
   touchesA: number;
   touchesB: number;
   motif: MotifRefusSaisie;
+  /** US-106 : le match du tableau refusé (`poule` vaut alors 0). */
+  match?: string;
 }
 
 /** US-100 : la proposition qui trace le refus d'une saisie. */
 export function propositionRefus(saisie: SaisieScore, motif: MotifRefusSaisie, sexe: Sexe | null = null): Proposition {
-  const { id, poule, tireurA, tireurB, touchesA, touchesB } = saisie;
+  const { id, poule, tireurA, tireurB, touchesA, touchesB, match } = saisie;
   return {
     type: 'SaisieRefusee',
-    donnees: { saisie: { id, par: signatureSaisie(saisie, sexe) }, poule, tireurA, tireurB, touchesA, touchesB, motif },
+    donnees: {
+      saisie: { id, par: signatureSaisie(saisie, sexe) },
+      poule,
+      tireurA,
+      tireurB,
+      touchesA,
+      touchesB,
+      motif,
+      ...(match !== undefined && { match }),
+    },
   };
 }
 
@@ -179,6 +267,8 @@ export function lignesSaisies(evenements: readonly Evenement[], epreuve: Epreuve
   const lignes: LigneSaisie[] = [];
   for (const evenement of evenements) {
     if (evenement.type !== 'ScorePouleSaisi' && evenement.type !== 'SaisieRefusee') continue;
+    // US-106 : les saisies du tableau ne sont pas des saisies de poule.
+    if (evenement.type === 'SaisieRefusee' && evenement.donnees.match !== undefined) continue;
     const { poule, tireurA, tireurB, touchesA, touchesB } = evenement.donnees;
     const base = {
       date: evenement.date,
