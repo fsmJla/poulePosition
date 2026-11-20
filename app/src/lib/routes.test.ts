@@ -5,6 +5,9 @@ import {
   cheminEmargementEpreuve,
   cheminClassementEpreuve,
   cheminTableauEpreuve,
+  cheminImpressionsEpreuve,
+  cheminImprimer,
+  optionsImpression,
   cheminPoulesEpreuve,
   cheminInscriptionsEpreuve,
   cheminGrilleEpreuves,
@@ -322,5 +325,32 @@ describe('copie d’une épreuve depuis le plan (US-051)', () => {
     expect(copieEpreuve(`?competition=${competitionId}`)).toBeNull();
     expect(copieEpreuve('?copie=pas un id')).toBeNull();
     expect(copieEpreuve(`?copie=${id}&arme=<x>`)).toEqual({ epreuveId: id, arme: null, nom: '' });
+  });
+});
+
+describe('impressions d’une épreuve (US-120)', () => {
+  const id = 'b3f1c2d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d';
+  it('l’étape « Impressions » et la page d’impression sont réservées aux comptes connectés', () => {
+    expect(resoudreRoute(cheminImpressionsEpreuve(id), true)).toEqual({ page: 'impressionsEpreuve', epreuveId: id });
+    expect(resoudreRoute(cheminImprimer(id, { document: 'presence' }), true)).toEqual({
+      page: 'imprimerDocument',
+      epreuveId: id,
+    });
+    expect(resoudreRoute(cheminImprimer(id, { document: 'presence' }), false)).toEqual({ redirection: '/connexion' });
+    expect(resoudreRoute('/epreuves/Pas Un Id/impressions', true)).toEqual({ redirection: '/' });
+    expect(resoudreRoute('/epreuves/Pas Un Id/imprimer', true)).toEqual({ redirection: '/' });
+  });
+
+  it('les choix d’impression se relisent dans l’adresse', () => {
+    const chemin = cheminImprimer(id, { document: 'poulesVierges', poule: 2, tour: 16, format: 'a3' });
+    expect(optionsImpression(chemin.split('?')[1]!)).toEqual({
+      document: 'poulesVierges',
+      poule: 2,
+      tour: 16,
+      format: 'a3',
+    });
+    expect(optionsImpression('document=tableau&poule=x&format=a5')).toEqual({ document: 'tableau' });
+    expect(optionsImpression('poule=2')).toBeNull();
+    expect(optionsImpression('document=<script>')).toBeNull();
   });
 });

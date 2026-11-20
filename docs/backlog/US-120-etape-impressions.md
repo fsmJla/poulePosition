@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F11 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-058, US-096
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-120-etape-impressions`
 
 ## Récit
 
@@ -53,6 +53,7 @@ Tout se construit dans le navigateur à partir du journal local du PC (ADR-0009)
 ## Hypothèses
 
 - Les pages imprimées restent noir sur blanc quel que soit le thème de l'application.
+- Implémentation : un document pas encore livré par sa propre US est grisé « À venir » ; le gabarit commun (CA-3) est vérifié par les E2E des documents, à partir d’US-121.
 - L'étape s'appelle « Impressions » (glossaire : Étape).
 
 ## Questions bloquantes
@@ -70,3 +71,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (Epic 7, planches 22 à 30 validées par l'utilisateur) ; Prête |
+| 2026-11-20 | Implémentée : étape « Impressions », page d'impression `/epreuves/:id/imprimer?document=…`, gabarit `FeuilleImprimee`, disponibilité (domaine `raisonIndisponible`) ; passe En revue |

@@ -128,7 +128,8 @@ test('US-061 CA-4 : la barre d’onglets est fixe en bas ; « Plus » ouvre Éma
   await barre.getByRole('button', { name: 'Plus' }).click();
   const menu = page.getByRole('menu');
   await expect(menu.getByRole('menuitem', { name: /Émargement/ })).toHaveAttribute('aria-disabled', 'true');
-  await expect(menu.getByRole('menuitem', { name: /Impressions/ })).toHaveAttribute('aria-disabled', 'true');
+  // US-120 : « Impressions » est livrée.
+  await expect(menu.getByRole('menuitem', { name: /Impressions/ })).not.toHaveAttribute('aria-disabled', 'true');
   await expect(menu.getByRole('menuitem', { name: 'Formule' })).toBeVisible();
   await menu.getByRole('menuitem', { name: 'Paramètres' }).click();
   await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}\/parametres$/);

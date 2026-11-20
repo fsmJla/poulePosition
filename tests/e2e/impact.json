@@ -458,5 +458,10 @@
     "mes-matchs-tireur",
     "saisies-recues",
     "saisie-tableau"
-  ]
+  ],
+  "app/src/pages/Impressions.svelte": ["impressions"],
+  "app/src/pages/Imprimer.svelte": ["impressions"],
+  "app/src/composants/FeuilleImprimee.svelte": ["impressions"],
+  "app/src/lib/impressions.ts": ["impressions"],
+  "paquets/domaine/src/impressions.ts": ["impressions"]
 }

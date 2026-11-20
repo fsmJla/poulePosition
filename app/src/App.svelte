@@ -39,6 +39,8 @@
   import Tableau from './pages/Tableau.svelte';
   import Parametres from './pages/Parametres.svelte';
   import ImpressionAcces from './pages/ImpressionAcces.svelte';
+  import Impressions from './pages/Impressions.svelte';
+  import Imprimer from './pages/Imprimer.svelte';
   import GrilleEpreuves from './pages/GrilleEpreuves.svelte';
   import AideOrganisation from './pages/AideOrganisation.svelte';
   import AssistantManifestation from './pages/AssistantManifestation.svelte';
@@ -347,6 +349,14 @@
             {presence}
             {naviguer}
           />
+        {/key}
+      {:else if route.page === 'impressionsEpreuve' && route.epreuveId}
+        {#key route.epreuveId}
+          <Impressions {session} epreuveId={route.epreuveId} {journal} {synchronisation} {accueil} {naviguer} />
+        {/key}
+      {:else if route.page === 'imprimerDocument' && route.epreuveId}
+        {#key chemin}
+          <Imprimer epreuveId={route.epreuveId} {journal} {accueil} {naviguer} />
         {/key}
       {:else if route.page === 'impressionAcces' && route.epreuveId}
         {#key route.epreuveId}

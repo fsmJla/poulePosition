@@ -27,7 +27,7 @@ describe('étapes de l’épreuve (US-058)', () => {
     for (const etape of ETAPES_EPREUVE) expect(NOMS_ICONES).toContain(etape.icone);
   });
 
-  it('CA-2 et US-082 CA-1 : Résumé, Inscriptions, Émargement (US-084), Poules (US-086), Classement (US-092), Formule et Paramètres sont livrées', () => {
+  it('CA-2 et US-082 CA-1 : Résumé, Inscriptions, Émargement (US-084), Poules (US-086), Classement (US-092), Tableau (US-109), Impressions (US-120), Formule et Paramètres sont livrées', () => {
     expect(ETAPES_EPREUVE.filter((etape) => etape.livree).map((etape) => etape.id)).toEqual([
       'resume',
       'inscriptions',
@@ -35,6 +35,7 @@ describe('étapes de l’épreuve (US-058)', () => {
       'poules',
       'classement',
       'tableau',
+      'impressions',
       'formule',
       'parametres',
     ]);
@@ -47,7 +48,7 @@ describe('étapes de l’épreuve (US-058)', () => {
     expect(par.classement).toBe(`/epreuves/${id}/classement`);
     expect(par.inscriptions).toBe(`/epreuves/${id}/inscriptions`);
     expect(par.tableau).toBe(`/epreuves/${id}/tableau`);
-    expect(par.impressions).toBeNull();
+    expect(par.impressions).toBe(`/epreuves/${id}/impressions`);
     expect(par.resume).toBe(`/epreuves/${id}`);
     expect(par.formule).toBe(`/epreuves/${id}/formule`);
     expect(par.parametres).toBe(`/epreuves/${id}/parametres`);
