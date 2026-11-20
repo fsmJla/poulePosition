@@ -38,11 +38,13 @@ test('US-114 CA-1 à CA-3 : le match pour la 3e place, sous la finale, se saisit
   await importerEpreuve(page, propositions);
   await ouvrirTableau(page);
   await expect(page.getByText('Quarts de finale · 6 qualifiés, 2 exempts · match pour la 3e place')).toBeVisible();
-  await expect(pilules(page).last()).toHaveText('3e place0/1');
+  await expect(pilules(page).filter({ hasText: /^3e place/ })).toHaveText('3e place0/1');
   await expect(
     arbre(page).getByRole('button', { name: `${nom(3)} contre ${nom(4)}, À tirer · piste à attribuer` }),
   ).toBeVisible();
-  await pilules(page).last().click();
+  await pilules(page)
+    .filter({ hasText: /^3e place/ })
+    .click();
   await expect(carte(page).getByRole('heading', { name: 'Match pour la 3e place' })).toBeVisible();
   await carte(page)
     .getByRole('spinbutton', { name: /^Touches de/ })
@@ -53,7 +55,7 @@ test('US-114 CA-1 à CA-3 : le match pour la 3e place, sous la finale, se saisit
     .last()
     .fill('12');
   await carte(page).getByRole('button', { name: 'Valider le score' }).click();
-  await expect(pilules(page).last()).toHaveText('3e placeterminé');
+  await expect(pilules(page).filter({ hasText: /^3e place/ })).toHaveText('3e placeterminé');
   await expect(arbre(page).getByRole('button', { name: `${nom(3)} contre ${nom(4)}, Terminé` })).toBeVisible();
 });
 
@@ -66,7 +68,8 @@ test('US-114 CA-4 et CA-5 : activé après la finale, il apparaît ; tiré, il n
   await expect(
     page.getByText('Quarts de finale · 6 qualifiés, 2 exempts · pas de match pour la 3e place'),
   ).toBeVisible();
-  await expect(pilules(page)).toHaveCount(3);
+  await expect(pilules(page)).toHaveCount(4);
+  await expect(pilules(page).filter({ hasText: /^3e place/ })).toHaveCount(0);
 
   // CA-4 : activé tard, depuis la page « Formule ».
   await page.goto(`${adresse}/formule`);
@@ -76,10 +79,12 @@ test('US-114 CA-4 et CA-5 : activé après la finale, il apparaît ; tiré, il n
     page.getByText('Poules en 5 touches, sans élimination · Tableau en 15 touches · Match pour la 3e place'),
   ).toBeVisible();
   await page.goto(`${adresse}/tableau`);
-  await expect(pilules(page).last()).toHaveText('3e place0/1', { timeout: 20_000 });
+  await expect(pilules(page).filter({ hasText: /^3e place/ })).toHaveText('3e place0/1', { timeout: 20_000 });
 
   // Il se tire…
-  await pilules(page).last().click();
+  await pilules(page)
+    .filter({ hasText: /^3e place/ })
+    .click();
   await carte(page)
     .getByRole('spinbutton', { name: /^Touches de/ })
     .first()

@@ -238,6 +238,11 @@ match, piste et heure d'appel, tireurs avec leur rang, deux champs de touches, a
 égalité ouvre « Vainqueur par priorité » (deux boutons radio, bordure `--etat-attente-bordure`) : aucune planche, écart
 déclaré dans l'US.
 
+**Livré par US-112 à US-115 :** l'appel sur une piste sous la piste de la carte de saisie ; « Abandon, forfait,
+exclusion… » (fenêtre `RetraitTableau`) ; la pilule « 3e place » et ce match sous la finale ; la pilule « Classement
+final » (composant `ClassementFinal`, gabarit de la planche 20) avec l'action principale « Terminer l'épreuve », et la
+carte « Podium » du Résumé. Aucune planche pour ces écrans : écarts déclarés dans les US.
+
 ## Maquette « Déroulé de l'épreuve » (2026-11-17)
 
 Elle prolonge la maquette « IHM de l'organisateur » (mêmes entête, fil d'Ariane, navigation par étapes, charte et

@@ -179,7 +179,9 @@ test('US-111 hors ligne : les matchs se saisissent sans réseau jusqu’à la fi
     await carte(page).getByRole('button', { name: 'Valider le score' }).click();
     await expect(page.getByText(/enregistré$/)).toBeVisible();
   }
-  await pilules(page).last().click();
+  await pilules(page)
+    .filter({ hasText: /^Finale/ })
+    .click();
   await expect(arbre(page).getByRole('button', { name: `${nom(1)} contre ${nom(2)}, Terminé` })).toBeVisible();
   await context.setOffline(false);
 });

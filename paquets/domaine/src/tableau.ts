@@ -736,7 +736,9 @@ export function classementFinal(
     }
   }
   for (const l of places.values()) (l.etat === 'exclusion' ? exclus : classes).push(l);
-  const ordre = (l: LigneClassementFinal) => (l.place === null ? Infinity : l.place);
+  // Un tireur sans place se range à la meilleure place qu'il peut encore obtenir : en lice, devant ; éliminé dans un
+  // tour en cours, avec ce tour (US-115 CA-4).
+  const ordre = (l: LigneClassementFinal) => l.place ?? (l.etat === 'enLice' ? 0 : (l.elimineAu ?? Infinity) / 2 + 0.5);
   classes.sort((a, b) => ordre(a) - ordre(b) || a.rang! - b.rang!);
   exclus.sort((a, b) => a.rang! - b.rang!);
   return [...classes, ...exclus, ...nonQualifies];

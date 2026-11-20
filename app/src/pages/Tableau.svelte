@@ -16,6 +16,8 @@
     tireursDe,
     tirerAuSort,
     tousLesMatchs,
+    classementFinal,
+    tableauTermine,
     MATCH_TROISIEME,
     matchsSuivants,
     placesAffichees,
@@ -38,7 +40,8 @@
   import { cheminPoulesEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
-  import { appelerMatch, creerTableau, retirerDuTableau, saisirScoreTableau } from '../lib/tableau';
+  import { appelerMatch, creerTableau, retirerDuTableau, saisirScoreTableau, terminerEpreuve } from '../lib/tableau';
+  import ClassementFinal from '../composants/ClassementFinal.svelte';
   import RetraitTableau from '../composants/RetraitTableau.svelte';
   import { textes } from '../lib/textes';
 
@@ -81,7 +84,9 @@
   /** US-110 CA-4 : le match choisi dans l'arbre. */
   let choisi = $state<string | null>(null);
 
-  const modifiable = $derived(pilote && ecriture && epreuve !== null && epreuve.statut !== 'archivee');
+  const modifiable = $derived(
+    pilote && ecriture && epreuve !== null && epreuve.statut !== 'archivee' && epreuve.statut !== 'terminee',
+  );
   const poules = $derived(epreuve ? poulesDe(epreuve) : null);
   const touchesPoules = $derived(epreuve?.formule.touchesPoules ?? 5);
   const troisieme = $derived(epreuve?.formule.matchTroisieme ?? false);
@@ -220,6 +225,30 @@
     void synchronisation.envoyer(epreuveId).then(() => recharger());
   }
 
+  /** US-115 CA-1 : la pilule « Classement final » est choisie. */
+  let vueClassement = $state(false);
+  let confirmerFin = $state(false);
+  const lignesFinales = $derived(
+    poules && etatTableau ? classementFinal(poules, etatTableau, touchesPoules, troisieme) : [],
+  );
+  /** US-115 CA-4 : matchs réglés sur matchs à tirer (3e place comprise). */
+  const avancementTableau = $derived.by(() => {
+    const matchs = structure && cree ? tousLesMatchs(structure).filter((m) => m.etat !== 'exempt') : [];
+    return { regles: matchs.filter((m) => m.etat === 'regle').length, total: matchs.length };
+  });
+  const termine = $derived(cree ? structure !== null && tableauTermine(structure) : terminees && qualifies.length < 2);
+  /** US-115 CA-5 : le pilote termine l'épreuve une fois tous les matchs réglés. */
+  const peutTerminer = $derived(modifiable && epreuve?.statut === 'enCours' && termine);
+
+  async function terminer(): Promise<VerdictArchivage> {
+    const resultat = await terminerEpreuve(journal, epreuveId, contexte);
+    await recharger();
+    if (!resultat.ok) return { ok: false, message: t.erreurs[resultat.erreur] ?? t.erreurs.AUTRE! };
+    annonce = t.termineeAnnonce;
+    void synchronisation.envoyer(epreuveId).then(() => recharger());
+    return { ok: true };
+  }
+
   /** US-113 : la fenêtre « Abandon, forfait, exclusion… » est ouverte. */
   let retraitOuvert = $state(false);
 
@@ -275,6 +304,15 @@
   >
 {/snippet}
 
+{#snippet classement()}
+  {#if peutTerminer}
+    <div class="fin">
+      <button type="button" class="principal" onclick={() => (confirmerFin = true)}>{t.terminer}</button>
+    </div>
+  {/if}
+  <ClassementFinal lignes={lignesFinales} {tireurs} regles={avancementTableau.regles} total={avancementTableau.total} />
+{/snippet}
+
 {#snippet etape()}
   {#if !chargee}
     <p role="status">{te.chargement}</p>
@@ -296,7 +334,10 @@
       <MenuActions
         id="menu-tableau"
         nom={t.menu}
-        actions={[{ libelle: t.imprimer, icone: 'imprimante', indisponible: t.imprimerAVenir }]}
+        actions={[
+          { libelle: t.imprimer, icone: 'imprimante', indisponible: t.imprimerAVenir },
+          { libelle: t.imprimerClassement, icone: 'imprimante', indisponible: t.imprimerAVenir },
+        ]}
       />
     </div>
     <p class="annonce" role="status" aria-live="polite">{annonce}</p>
@@ -313,6 +354,7 @@
       </section>
     {:else if !structure}
       <section class="carte avis" aria-label={t.titre}><p>{t.unSeulQualifie}</p></section>
+      {@render classement()}
     {:else if cree}
       <!-- US-110 : les tours en pilules, puis l'arbre à partir du tour choisi. -->
       <div class="pilules" role="group" aria-label={t.tours}>
@@ -322,10 +364,11 @@
           <button
             type="button"
             class="pilule"
-            aria-pressed={i === tourChoisi && matchCarte?.id !== MATCH_TROISIEME}
+            aria-pressed={!vueClassement && i === tourChoisi && matchCarte?.id !== MATCH_TROISIEME}
             onclick={() => {
               tourManuel = i;
               choisi = null;
+              vueClassement = false;
             }}
           >
             {t.pilule(tour.taille)}{#if pret}<span class="avancement">{t.avancementTour(regles, total)}</span>{/if}
@@ -337,10 +380,11 @@
           <button
             type="button"
             class="pilule"
-            aria-pressed={matchCarte?.id === MATCH_TROISIEME}
+            aria-pressed={!vueClassement && matchCarte?.id === MATCH_TROISIEME}
             onclick={() => {
               tourManuel = structure.tours.length - 1;
               choisi = MATCH_TROISIEME;
+              vueClassement = false;
             }}
           >
             {t.troisiemePlace}{#if troisieme.etat !== 'attente'}<span class="avancement"
@@ -348,101 +392,109 @@
               >{/if}
           </button>
         {/if}
+        <!-- US-115 CA-1 : le classement final, après la finale. -->
+        <button type="button" class="pilule" aria-pressed={vueClassement} onclick={() => (vueClassement = true)}>
+          {t.classementFinal}{#if !termine}<span class="avancement">{t.provisoire}</span>{/if}
+        </button>
       </div>
-      {#if matchCarte}
-        <CarteSaisieTableau
-          match={matchCarte}
+      {#if vueClassement}
+        {@render classement()}
+      {:else}
+        {#if matchCarte}
+          <CarteSaisieTableau
+            match={matchCarte}
+            {structure}
+            {tireurs}
+            touches={epreuve.formule.touchesTableau}
+            {modifiable}
+            saisir={saisirScore}
+            choisir={(id) => (choisi = id)}
+          >
+            {#snippet appel()}
+              {#if matchCarte}
+                {@const titreMatch = t.titreMatch(matchCarte.tour, matchCarte.numero)}
+                <div class="appel">
+                  <label class="champ-piste"
+                    >{t.piste}
+                    <input
+                      type="number"
+                      inputmode="numeric"
+                      min="1"
+                      max="99"
+                      list="pistes-epreuve"
+                      bind:value={pisteSaisie}
+                    />
+                  </label>
+                  <datalist id="pistes-epreuve">
+                    {#each pistes as piste (piste)}<option value={piste}></option>{/each}
+                  </datalist>
+                  <button
+                    type="button"
+                    class="neutre"
+                    disabled={pisteChoisie === null}
+                    onclick={() => appelerSur(pisteChoisie)}
+                  >
+                    {matchCarte.piste === null ? t.appeler(pisteChoisie) : t.changerPiste(pisteChoisie)}
+                  </button>
+                  {#if proposee?.occupee && pisteChoisie === proposee.piste}<span class="discret">{t.pisteOccupee}</span
+                    >{/if}
+                  {#if matchCarte.piste !== null}
+                    <MenuActions
+                      id="menu-match"
+                      nom={titreMatch}
+                      actions={[{ libelle: t.retirerPiste, surChoix: () => void appelerSur(null) }]}
+                    />
+                  {/if}
+                </div>
+              {/if}
+            {/snippet}
+            {#snippet actions()}
+              {#if matchCarte && modifiable && matchCarte.etat === 'aTirer'}
+                <button type="button" class="lien" onclick={() => (retraitOuvert = true)}>{t.retrait}</button>
+              {:else if matchCarte && modifiable && matchCarte.retrait}
+                {@const suivant = matchsSuivants(structure, matchCarte.id).find((m) => m.etat === 'regle')}
+                <MenuActions
+                  id="menu-retrait"
+                  nom={t.titreMatch(matchCarte.tour, matchCarte.numero)}
+                  actions={[
+                    {
+                      libelle: t.annulerRetrait,
+                      surChoix: () => void annulerLeRetrait(),
+                      ...(suivant
+                        ? { indisponible: t.corrigerDabord(t.titreMatch(suivant.tour, suivant.numero).toLowerCase()) }
+                        : {}),
+                    },
+                  ]}
+                />
+              {/if}
+            {/snippet}
+          </CarteSaisieTableau>
+          {#if retraitOuvert && matchCarte.haut.tireurId && matchCarte.bas.tireurId}
+            {@const [p1, p2] = placesAffichees(matchCarte).places}
+            <RetraitTableau
+              match={t.titreMatch(matchCarte.tour, matchCarte.numero)}
+              tireurs={[
+                { id: p1.tireurId!, nom: nom(p1.tireurId) },
+                { id: p2.tireurId!, nom: nom(p2.tireurId) },
+              ]}
+              suite={t.suiteDuVainqueur(
+                matchsSuivants(structure, matchCarte.id).find((m) => m.tour !== 0)?.tour ?? null,
+                matchCarte.tour === 0,
+              )}
+              valider={retirer}
+              fermer={() => (retraitOuvert = false)}
+            />
+          {/if}
+        {/if}
+        <ArbreTableau
           {structure}
           {tireurs}
-          touches={epreuve.formule.touchesTableau}
-          {modifiable}
-          saisir={saisirScore}
+          tour={tourChoisi}
+          choisi={matchCarte?.id ?? null}
           choisir={(id) => (choisi = id)}
-        >
-          {#snippet appel()}
-            {#if matchCarte}
-              {@const titreMatch = t.titreMatch(matchCarte.tour, matchCarte.numero)}
-              <div class="appel">
-                <label class="champ-piste"
-                  >{t.piste}
-                  <input
-                    type="number"
-                    inputmode="numeric"
-                    min="1"
-                    max="99"
-                    list="pistes-epreuve"
-                    bind:value={pisteSaisie}
-                  />
-                </label>
-                <datalist id="pistes-epreuve">
-                  {#each pistes as piste (piste)}<option value={piste}></option>{/each}
-                </datalist>
-                <button
-                  type="button"
-                  class="neutre"
-                  disabled={pisteChoisie === null}
-                  onclick={() => appelerSur(pisteChoisie)}
-                >
-                  {matchCarte.piste === null ? t.appeler(pisteChoisie) : t.changerPiste(pisteChoisie)}
-                </button>
-                {#if proposee?.occupee && pisteChoisie === proposee.piste}<span class="discret">{t.pisteOccupee}</span
-                  >{/if}
-                {#if matchCarte.piste !== null}
-                  <MenuActions
-                    id="menu-match"
-                    nom={titreMatch}
-                    actions={[{ libelle: t.retirerPiste, surChoix: () => void appelerSur(null) }]}
-                  />
-                {/if}
-              </div>
-            {/if}
-          {/snippet}
-          {#snippet actions()}
-            {#if matchCarte && modifiable && matchCarte.etat === 'aTirer'}
-              <button type="button" class="lien" onclick={() => (retraitOuvert = true)}>{t.retrait}</button>
-            {:else if matchCarte && modifiable && matchCarte.retrait}
-              {@const suivant = matchsSuivants(structure, matchCarte.id).find((m) => m.etat === 'regle')}
-              <MenuActions
-                id="menu-retrait"
-                nom={t.titreMatch(matchCarte.tour, matchCarte.numero)}
-                actions={[
-                  {
-                    libelle: t.annulerRetrait,
-                    surChoix: () => void annulerLeRetrait(),
-                    ...(suivant
-                      ? { indisponible: t.corrigerDabord(t.titreMatch(suivant.tour, suivant.numero).toLowerCase()) }
-                      : {}),
-                  },
-                ]}
-              />
-            {/if}
-          {/snippet}
-        </CarteSaisieTableau>
-        {#if retraitOuvert && matchCarte.haut.tireurId && matchCarte.bas.tireurId}
-          {@const [p1, p2] = placesAffichees(matchCarte).places}
-          <RetraitTableau
-            match={t.titreMatch(matchCarte.tour, matchCarte.numero)}
-            tireurs={[
-              { id: p1.tireurId!, nom: nom(p1.tireurId) },
-              { id: p2.tireurId!, nom: nom(p2.tireurId) },
-            ]}
-            suite={t.suiteDuVainqueur(
-              matchsSuivants(structure, matchCarte.id).find((m) => m.tour !== 0)?.tour ?? null,
-              matchCarte.tour === 0,
-            )}
-            valider={retirer}
-            fermer={() => (retraitOuvert = false)}
-          />
-        {/if}
+          {modifiable}
+        />
       {/if}
-      <ArbreTableau
-        {structure}
-        {tireurs}
-        tour={tourChoisi}
-        choisi={matchCarte?.id ?? null}
-        choisir={(id) => (choisi = id)}
-        {modifiable}
-      />
     {:else}
       {#each exaequo as [rang, ids] (rang)}
         <p class="alerte" role="note">
@@ -497,6 +549,16 @@
   </GabaritEpreuve>
 {:else}
   <main>{@render etape()}</main>
+{/if}
+
+{#if confirmerFin}
+  <ConfirmationArchivage
+    titre={t.confirmerFin}
+    detail={t.detailFin}
+    action={t.terminer}
+    valider={terminer}
+    fermer={() => (confirmerFin = false)}
+  />
 {/if}
 
 {#if confirmer}
@@ -762,6 +824,11 @@
     background: var(--surface);
     color: var(--texte);
     font: inherit;
+  }
+
+  .fin {
+    display: flex;
+    justify-content: flex-end;
   }
 
   .lien {

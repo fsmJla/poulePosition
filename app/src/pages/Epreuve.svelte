@@ -3,7 +3,16 @@
   // le PC pilote, l'écriture est réservée à un seul onglet (US-021) et les modifications en attente d'envoi sont
   // comptées (US-022) ; sur un autre PC, c'est une copie en lecture seule, datée.
   import { onMount } from 'svelte';
-  import { contexteTableau, prochaineEtape, situationDuTableau, type Epreuve } from '@poule-position/domaine';
+  import {
+    classementFinal,
+    contexteTableau,
+    poulesDe,
+    prochaineEtape,
+    situationDuTableau,
+    tableauDe,
+    tireursDe,
+    type Epreuve,
+  } from '@poule-position/domaine';
   import FichiersJoints from '../composants/FichiersJoints.svelte';
   import Lien from '../composants/Lien.svelte';
   import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
@@ -360,6 +369,23 @@
     }
   }
 
+  /** US-115 CA-5 : le podium (places 1 à 3) d'une épreuve terminée. */
+  const podium = $derived(podiumDe(epreuve));
+
+  function podiumDe(lue: Epreuve | null) {
+    if (!lue || lue.statut !== 'terminee') return [];
+    const { touchesPoules, matchTroisieme } = lue.formule;
+    return classementFinal(poulesDe(lue), tableauDe(lue), touchesPoules, matchTroisieme).filter(
+      (ligne) => ligne.place !== null && ligne.place <= 3,
+    );
+  }
+
+  function nomTireur(id: string) {
+    const lue: Epreuve | null = epreuve;
+    const tireur = lue ? tireursDe(lue).find((x) => x.id === id) : undefined;
+    return tireur ? `${tireur.nom.toUpperCase()} ${tireur.prenom}` : '';
+  }
+
   /** US-064 : la règle du domaine choisit l'étape ; le bandeau ne s'affiche que s'il y en a une. */
   const etapeSuivante = $derived(etapeDe());
 
@@ -493,6 +519,23 @@
       />
     {/if}
     <div class="cartes">
+      {#if epreuve.statut === 'terminee' && podium.length > 0}
+        <!-- US-115 CA-5 : le podium d'une épreuve terminée. -->
+        <section class="carte" aria-label={textes.tableau.podium}>
+          <h2><Icone nom="arbre" />{textes.tableau.podium}</h2>
+          <ol class="podium">
+            {#each podium as ligne (ligne.tireurId)}
+              <li>
+                <strong
+                  >{ligne.place}{#if ligne.exaequo}=
+                  {/if}</strong
+                >
+                {nomTireur(ligne.tireurId)}
+              </li>
+            {/each}
+          </ol>
+        </section>
+      {/if}
       <!-- US-029 : pilote, mains prises par un autre PC, modifications écartées et prise de main. -->
       <section class="carte" aria-label={tpe.cartes.pilote}>
         <h2><Icone nom="ecran" />{tpe.cartes.pilote}</h2>
@@ -714,6 +757,19 @@
     justify-items: center;
     gap: 1.25rem;
     padding: 3rem 1rem;
+  }
+
+  .podium {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .podium strong {
+    display: inline-block;
+    min-width: 2.5rem;
   }
 
   .cartes {

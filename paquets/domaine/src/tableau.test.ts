@@ -454,10 +454,10 @@ describe('US-108 CA-10 : classement final', () => {
       ['q5', 3],
       ['q2', 4],
     ]);
-    // Match prévu mais pas tiré : les perdants des demies n'ont pas encore de place.
+    // Match prévu mais pas tiré : les perdants des demies n'ont pas encore de place, et restent devant les quarts.
     expect(places(complet, true).slice(2, 4)).toEqual([
-      ['q4', 5],
-      ['q6', 6],
+      ['q2', null],
+      ['q5', null],
     ]);
   });
   it('CA-10 : provisoire tant qu’un tour n’est pas terminé', () => {
@@ -466,6 +466,8 @@ describe('US-108 CA-10 : classement final', () => {
     expect(lignes.every((l) => l.place === null)).toBe(true);
     expect(lignes.find((l) => l.tireurId === 'q4')!.etat).toBe('elimine');
     expect(lignes.find((l) => l.tireurId === 'q1')!.etat).toBe('enLice');
+    // US-115 CA-4 : les tireurs en lice d'abord, puis l'éliminé du tour en cours.
+    expect(lignes.map((l) => l.tireurId)).toEqual(['q1', 'q2', 'q3', 'q5', 'q7', 'q4', 'q6', 'q8']);
     expect(tableauTermine(structureTableau(partiel, false)!)).toBe(false);
     expect(avancementTour(structureTableau(partiel, false)!.tours[0]!)).toEqual({ regles: 3, total: 4 });
   });

@@ -2149,6 +2149,41 @@ export const textes = {
     annulerRetrait: 'Annuler le retrait',
     retraitAnnonce: (nom: string, motif: string) => `${nom} : ${motif.toLowerCase()} enregistré`,
     retraitAnnuleAnnonce: (match: string) => `${match} : retrait annulé`,
+    /** US-115 : classement final et fin de l'épreuve. */
+    classementFinal: 'Classement final',
+    provisoire: 'provisoire',
+    classementProvisoire: (regles: number, total: number) =>
+      `Provisoire · ${regles} match${regles > 1 ? 's' : ''} sur ${total}`,
+    classementDefinitif: 'Définitif',
+    effectif: (n: number) => `${n} tireur${n > 1 ? 's' : ''}`,
+    colonnes: { place: 'Place', tireur: 'Tireur', club: 'Club', tour: 'Éliminé en', rang: 'Rang poules', etat: 'État' },
+    tourElimination: (taille: number | null) =>
+      taille === null
+        ? '—'
+        : taille === 1
+          ? 'Vainqueur'
+          : taille === 2
+            ? 'Finale'
+            : taille === 4
+              ? 'Demies'
+              : taille === 8
+                ? 'Quarts'
+                : `Tableau de ${taille}`,
+    etatsClassement: {
+      classe: '',
+      elimine: 'Place à venir',
+      enLice: 'En lice',
+      exclusion: 'Exclusion',
+      nonQualifie: 'Non qualifié',
+    } as Record<string, string>,
+    legendeClassement:
+      '« = » : ex aequo. Les éliminés d’un même tour sont classés par leur rang après poules, une fois le tour terminé ; un tireur exclu n’est pas classé.',
+    terminer: 'Terminer l’épreuve',
+    confirmerFin: 'Terminer l’épreuve ?',
+    detailFin: 'Les scores ne pourront plus être modifiés. Le classement final devient définitif.',
+    termineeAnnonce: 'Épreuve terminée',
+    imprimerClassement: 'Imprimer le classement final',
+    podium: 'Podium',
     poulesEnCours: (regles: number, total: number) =>
       `Le tableau se crée quand toutes les poules sont terminées · ${regles} match${regles > 1 ? 's' : ''} sur ${total}`,
     voirPoules: 'Voir les poules',

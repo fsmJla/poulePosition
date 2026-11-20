@@ -144,7 +144,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-112](US-112-appeler-match-sur-piste.md) | Appeler un match du tableau sur une piste | E6 | En revue | US-111 |
 | [US-113](US-113-abandon-forfait-exclusion-tableau.md) | Retirer un tireur du tableau (abandon, forfait, exclusion) | E6 | En revue | US-111 |
 | [US-114](US-114-match-troisieme-place.md) | Tirer le match pour la 3e place | E6 | En revue | US-111, US-112, US-028 |
-| [US-115](US-115-classement-final-terminer.md) | Afficher le classement final et terminer l'épreuve | E6 | Prête | US-111, US-113, US-114, US-064 |
+| [US-115](US-115-classement-final-terminer.md) | Afficher le classement final et terminer l'épreuve | E6 | En revue | US-111, US-113, US-114, US-064 |
 | [US-116](US-116-separer-clubs-tableau.md) | Séparer les tireurs d'un même club au premier tour du tableau (P2) | E6 | À spécifier | US-109 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
