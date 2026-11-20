@@ -147,6 +147,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-115](US-115-classement-final-terminer.md) | Afficher le classement final et terminer l'épreuve | E6 | Terminée | US-111, US-113, US-114, US-064 |
 | [US-116](US-116-separer-clubs-tableau.md) | Séparer les tireurs d'un même club au premier tour du tableau (P2) | E6 | À spécifier | US-109 |
 | [US-117](US-117-saisie-tableau-par-boutons.md) | Saisir le score du tableau sur un afficheur et un pavé, et appeler d'un clic sur le PC | E6 | En revue | US-111, US-112, US-091 |
+| [US-118](US-118-saisies-harmonisees.md) | Saisir tous les scores sur l'afficheur et le pavé à la demande (poules PC, smartphone) | E4, E5 | En cours | US-117, US-091, US-099, US-101, US-106 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
@@ -183,6 +184,7 @@ US-099 → US-100 → US-102 → US-101 → US-103 → US-104 → US-105 ; US-10
 
 **Ordre conseillé pour E6 (tableau, planches 11, 15 et 20) :** US-108 → US-109 → US-110 → US-111 → US-112 → US-113 →
 US-114 → US-115, puis US-106 (saisie du tableau sur smartphone, E5). US-116 (séparation des clubs, P2) attend ses règles.
+Puis US-117 (carte du tableau sur un afficheur et un pavé) → US-118 (même saisie pour les poules et les smartphones).
 
 **Retours ergonomiques du 2026-11-17, indépendants l'un de l'autre :** US-078 (jour des épreuves : grille et
 glisser-déposer sur le plan) et US-079 (filtres « À venir » / « En cours » de l'accueil de l'organisateur,
