@@ -2133,6 +2133,23 @@ export const textes = {
     imprimeLe: (date: Date) =>
       `Imprimé le ${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()} à ${date.getHours()} h ${String(date.getMinutes()).padStart(2, '0')}`,
     page: (n: number, total: number) => `Page ${n} / ${total}`,
+    // US-121 : feuille de présence (planche 23).
+    presence: {
+      titre: 'Feuille de présence',
+      intro: (n: number) =>
+        `${n} inscrit${n > 1 ? 's' : ''} · cochez la case à l’arrivée et faites signer. Les cases déjà cochées viennent de l’émargement sur le PC.`,
+      colonnes: {
+        numero: 'N°',
+        tireur: 'Tireur',
+        club: 'Club',
+        classement: 'Class.',
+        present: 'Présent',
+        signature: 'Signature',
+      },
+      pointe: 'pointé à l’émargement',
+      pied: (presents: number, total: number) =>
+        `${presents} présent${presents > 1 ? 's' : ''} sur ${total} au moment de l’impression`,
+    },
   },
   /** US-117, US-118 : afficheur et pavé de score à la demande, communs aux saisies du PC et du smartphone. */
   pave: {

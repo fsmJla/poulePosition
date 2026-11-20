@@ -15,7 +15,8 @@ export interface LigneImpression {
 }
 
 export const CATALOGUE_IMPRESSIONS: readonly LigneImpression[] = [
-  { document: 'presence', groupe: 'avant', choix: null, livre: false },
+  // US-121 : la feuille de présence.
+  { document: 'presence', groupe: 'avant', choix: null, livre: true },
   // US-096 : la page d'impression des QR codes existe déjà.
   { document: 'qrCodes', groupe: 'avant', choix: null, livre: true },
   { document: 'poulesVierges', groupe: 'poules', choix: 'poules', livre: false },

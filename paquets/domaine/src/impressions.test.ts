@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { DOCUMENTS_IMPRIMES, raisonIndisponible, type SourceImpression } from './impressions';
+import {
+  DOCUMENTS_IMPRIMES,
+  decouperEnPages,
+  lignesPresence,
+  raisonIndisponible,
+  type SourceImpression,
+} from './impressions';
 import { etatPoulesVide } from './poules';
 import { etatTableauVide } from './tableau';
 import type { Tireur } from './tireurs';
@@ -50,5 +56,23 @@ describe('impressions : disponibilité des documents (US-120 CA-2)', () => {
     expect(raisonIndisponible('poulesResultats', composees)).toBe('POULES_NON_LANCEES');
     const lancees = { ...composees, poules: { ...composees.poules, lancees: true } };
     expect(raisonIndisponible('classementPoules', lancees)).toBeNull();
+  });
+});
+
+describe('feuille de présence (US-121)', () => {
+  it('CA-1 : les inscrits par ordre alphabétique, numérotés', () => {
+    const t = (nom: string, prenom: string) => ({ ...tireur(nom), nom, prenom });
+    const lignes = lignesPresence([t('Écuyer', 'Zoé'), t('dubois', 'Léa'), t('DUBOIS', 'Anna'), t('Martin', 'Eva')]);
+    expect(lignes.map((l) => `${l.numero} ${l.nom} ${l.prenom}`)).toEqual([
+      '1 DUBOIS Anna',
+      '2 dubois Léa',
+      '3 Écuyer Zoé',
+      '4 Martin Eva',
+    ]);
+  });
+
+  it('CA-3 : les lignes se répartissent en pages', () => {
+    expect(decouperEnPages([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
+    expect(decouperEnPages([], 28)).toEqual([[]]);
   });
 });

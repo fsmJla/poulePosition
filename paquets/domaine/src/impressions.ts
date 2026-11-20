@@ -55,3 +55,18 @@ export function raisonIndisponible(document: DocumentImprime, source: SourceImpr
     }
   }
 }
+
+/** Découpe une liste en pages de `parPage` éléments au plus ; au moins une page, même vide. */
+export function decouperEnPages<T>(elements: readonly T[], parPage: number): T[][] {
+  const pages: T[][] = [];
+  for (let i = 0; i < elements.length; i += parPage) pages.push(elements.slice(i, i + parPage));
+  return pages.length > 0 ? pages : [[]];
+}
+
+/** US-121 : les inscrits de la feuille de présence, par ordre alphabétique (nom, puis prénom), numérotés. */
+export function lignesPresence(tireurs: readonly Tireur[]): (Tireur & { numero: number })[] {
+  const ordre = new Intl.Collator('fr', { sensitivity: 'base' });
+  return [...tireurs]
+    .sort((a, b) => ordre.compare(a.nom, b.nom) || ordre.compare(a.prenom, b.prenom))
+    .map((tireur, i) => ({ ...tireur, numero: i + 1 }));
+}

@@ -406,7 +406,8 @@
     "poules-constituer",
     "poules-ajuster",
     "poules-saisie",
-    "poules-retrait"
+    "poules-retrait",
+    "impression-presence"
   ],
   "app/src/pages/Poules.svelte": [
     "poules-constituer",
@@ -460,8 +461,9 @@
     "saisie-tableau"
   ],
   "app/src/pages/Impressions.svelte": ["impressions"],
-  "app/src/pages/Imprimer.svelte": ["impressions"],
-  "app/src/composants/FeuilleImprimee.svelte": ["impressions"],
+  "app/src/pages/Imprimer.svelte": ["impressions", "impression-presence"],
+  "app/src/composants/FeuilleImprimee.svelte": ["impressions", "impression-presence"],
   "app/src/lib/impressions.ts": ["impressions"],
-  "paquets/domaine/src/impressions.ts": ["impressions"]
+  "paquets/domaine/src/impressions.ts": ["impressions", "impression-presence"],
+  "app/src/composants/impressions/ImpressionPresence.svelte": ["impression-presence"]
 }

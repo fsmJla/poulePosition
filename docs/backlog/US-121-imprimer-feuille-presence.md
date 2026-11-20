@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F11 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-120, US-084
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-121-imprimer-feuille-presence`
 
 ## Récit
 
@@ -47,6 +47,7 @@ Tout se construit dans le navigateur à partir du journal local du PC (ADR-0009)
 ## Hypothèses
 
 - Le menu « ⋯ » de l'Émargement porte « Imprimer la feuille de présence » (aujourd'hui grisé « À venir »).
+- Implémentation : 28 lignes par page ; le menu « ⋯ » de l’Émargement reste visible en lecture seule (poules lancées) avec la seule impression.
 
 ## Questions bloquantes
 
@@ -63,3 +64,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (Epic 7, planches 22 à 30 validées par l'utilisateur) ; Prête |
+| 2026-11-20 | Implémentée : `ImpressionPresence`, `lignesPresence` et `decouperEnPages` (domaine), menu « ⋯ » de l'Émargement ; passe En revue |

@@ -14,6 +14,7 @@
     type SourceImpression,
   } from '@poule-position/domaine';
   import Icone from '../composants/Icone.svelte';
+  import ImpressionPresence from '../composants/impressions/ImpressionPresence.svelte';
   import type { Accueil } from '../lib/accueil';
   import { documentLivre } from '../lib/impressions';
   import type { Journal } from '../lib/journal';
@@ -40,6 +41,7 @@
   let epreuve = $state<Epreuve | null>(null);
   let competition = $state<string | null>(null);
   let charge = $state(false);
+  const imprimeLe = new Date();
 
   const source = $derived<SourceImpression | null>(
     epreuve
@@ -95,7 +97,10 @@
     {:else if raison}
       <p role="status">{t.indisponible(t.raisons[raison])}</p>
     {:else if source}
-      <div class="feuilles" data-document={document} data-contexte={contexte}>
+      <div class="feuilles" data-document={document}>
+        {#if document === 'presence'}
+          <ImpressionPresence tireurs={source.tireurs} {contexte} {imprimeLe} />
+        {/if}
         <!-- Les documents de l'Epic 7 (US-121 à US-128) se branchent ici. -->
       </div>
     {/if}
