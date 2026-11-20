@@ -422,6 +422,17 @@ export function verifierCreationTableau(
   return null;
 }
 
+/**
+ * US-109 CA-6 et US-115 CA-6 : où en est le tableau pour le bandeau « Prochaine étape » : à créer (poules terminées, au
+ * moins 2 qualifiés), à terminer (tous les matchs réglés, ou un seul qualifié), sinon null.
+ */
+export function situationDuTableau(contexte: ContexteTableau): 'aCreer' | 'aTerminer' | null {
+  if (contexte.terminee || !poulesTerminees(contexte.poules, contexte.touchesPoules)) return null;
+  const structure = structureTableau(contexte.tableau, contexte.matchTroisieme);
+  if (structure) return tableauTermine(structure) ? 'aTerminer' : null;
+  return qualifiesDesPoules(contexte.poules, contexte.touchesPoules).length >= 2 ? 'aCreer' : 'aTerminer';
+}
+
 /** CA-4 : une fois le tableau créé, les poules sont figées. */
 export const verifierPoulesFigees = (tableau: EtatTableau): ErreurTableau | null =>
   tableau.qualifies ? 'TABLEAU_CREE' : null;

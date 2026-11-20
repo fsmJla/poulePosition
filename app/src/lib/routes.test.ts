@@ -4,6 +4,7 @@ import {
   cheminFormuleEpreuve,
   cheminEmargementEpreuve,
   cheminClassementEpreuve,
+  cheminTableauEpreuve,
   cheminPoulesEpreuve,
   cheminInscriptionsEpreuve,
   cheminGrilleEpreuves,
@@ -201,6 +202,9 @@ describe('émargement d’une épreuve (US-084)', () => {
     // US-092 : le classement des poules.
     expect(cheminClassementEpreuve(id)).toBe(`/epreuves/${id}/classement`);
     expect(resoudreRoute(`/epreuves/${id}/classement`, true)).toEqual({ page: 'classementEpreuve', epreuveId: id });
+    // US-109 : le tableau.
+    expect(cheminTableauEpreuve(id)).toBe(`/epreuves/${id}/tableau`);
+    expect(resoudreRoute(`/epreuves/${id}/tableau`, true)).toEqual({ page: 'tableauEpreuve', epreuveId: id });
     expect(resoudreRoute(`/epreuves/${id}/emargement`, false)).toEqual({ redirection: CHEMINS.connexion });
   });
 });

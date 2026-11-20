@@ -10,6 +10,7 @@ import {
   cheminFormuleEpreuve,
   cheminInscriptionsEpreuve,
   cheminParametresEpreuve,
+  cheminTableauEpreuve,
 } from './routes';
 
 export type IdEtapeEpreuve =
@@ -62,7 +63,8 @@ export const ETAPES_EPREUVE: readonly EtapeEpreuve[] = [
     livree: true,
     chemin: cheminClassementEpreuve,
   },
-  { id: 'tableau', icone: 'arbre', groupe: 'deroulement', livree: false },
+  // US-109 : l'étape « Tableau », ouverte au lancement des poules.
+  { id: 'tableau', icone: 'arbre', groupe: 'deroulement', livree: true, chemin: cheminTableauEpreuve },
   { id: 'impressions', icone: 'imprimante', groupe: 'deroulement', livree: false },
   { id: 'formule', icone: 'arbre', groupe: 'reglages', livree: true, chemin: cheminFormuleEpreuve },
   { id: 'parametres', icone: 'curseurs', groupe: 'reglages', livree: true, chemin: cheminParametresEpreuve },

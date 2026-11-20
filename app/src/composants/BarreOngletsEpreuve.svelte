@@ -13,9 +13,12 @@
     epreuveId: string;
     courante: IdEtapeEpreuve;
     naviguer: (chemin: string) => void;
+    /** US-092 et US-109 : étapes livrées mais pas encore ouvertes (grisées, comme la navigation latérale). */
+    indisponibles?: readonly IdEtapeEpreuve[];
   }
 
-  let { epreuveId, courante, naviguer }: Proprietes = $props();
+  let { epreuveId, courante, naviguer, indisponibles = [] }: Proprietes = $props();
+  const cheminDe = (etape: EtapeEpreuve) => (indisponibles.includes(etape.id) ? null : cheminEtape(etape, epreuveId));
 
   const t = textes.pageEpreuve;
   const DANS_LA_BARRE: readonly IdEtapeEpreuve[] = ['resume', 'inscriptions', 'poules', 'tableau'];
@@ -55,7 +58,7 @@
 >
   <ul>
     {#each principales as etape (etape.id)}
-      {@const chemin = cheminEtape(etape, epreuveId)}
+      {@const chemin = cheminDe(etape)}
       <li>
         {#if chemin}
           <a
@@ -95,7 +98,7 @@
   {#if ouvert}
     <div class="menu" id="menu-plus-epreuve" role="menu" aria-label={t.barre.plus}>
       {#each autres as etape (etape.id)}
-        {@const chemin = cheminEtape(etape, epreuveId)}
+        {@const chemin = cheminDe(etape)}
         {#if chemin}
           <a
             role="menuitem"

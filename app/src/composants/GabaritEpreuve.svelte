@@ -83,8 +83,8 @@
       }),
     };
   });
-  /** US-092 CA-1 : le classement s'ouvre au lancement des poules. */
-  const indisponibles = $derived<IdEtapeEpreuve[]>(poulesDe(epreuve).lancees ? [] : ['classement']);
+  /** US-092 CA-1 et US-109 CA-1 : le classement et le tableau s'ouvrent au lancement des poules. */
+  const indisponibles = $derived<IdEtapeEpreuve[]>(poulesDe(epreuve).lancees ? [] : ['classement', 'tableau']);
   /** Nom court (« M13 Dames ») ; sans catégorie ou sans sexe, le nom complet. */
   const nomCourt = $derived(nomsCourts([epreuve], t.sexes).get(epreuve.id) ?? epreuve.nom);
 </script>
@@ -134,7 +134,7 @@
     </div>
   </div>
 </main>
-<BarreOngletsEpreuve epreuveId={epreuve.id} {courante} {naviguer} />
+<BarreOngletsEpreuve epreuveId={epreuve.id} {courante} {naviguer} {indisponibles} />
 
 <style>
   main {

@@ -5,6 +5,7 @@
   import {
     lignesSaisies,
     poulesDe,
+    tableauDe,
     tireursDe,
     trierTireurs,
     type Epreuve,
@@ -67,7 +68,15 @@
   const presents = $derived(tireurs.filter(({ present }) => present));
   const etat = $derived(epreuve ? poulesDe(epreuve) : null);
   const motifLectureSeule = $derived(
-    !epreuve ? null : !pilote || !ecriture ? t.lectureSeule : epreuve.statut === 'archivee' ? t.archivee : null,
+    !epreuve
+      ? null
+      : !pilote || !ecriture
+        ? t.lectureSeule
+        : epreuve.statut === 'archivee'
+          ? t.archivee
+          : tableauDe(epreuve).qualifies
+            ? t.tableauCree
+            : null,
   );
   const modifiable = $derived(epreuve !== null && motifLectureSeule === null);
   const constitution = $derived(etat !== null && !etat.lancees && modifiable && (etat.poules.length === 0 || refaire));
