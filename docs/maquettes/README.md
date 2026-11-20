@@ -8,6 +8,7 @@ des écrans. Les couleurs et les polices restent celles de la charte « Calme r�
 | Création des manifestations | Assistant, grille des épreuves, plan de la manifestation (US-046 à US-051) | — | https://claude.ai/artifact/Pzn3RPYfvQkfWLDPjMPknZ | — |
 | **IHM de l'organisateur** | Accueil, manifestation, épreuve, mode sélection, smartphone | 2026-11-11 | https://claude.ai/artifact/2PXJVMFmMrZGxb4X9aoc4V | [`ihm/`](ihm/) |
 | **Déroulé de l'épreuve** | Inscriptions, poules (constitution, ajustement, saisie), tableau, saisie sur smartphone | 2026-11-17 | https://claude.ai/artifact/Xb4Vs7ftyoEGUWXvDKJoBv | [`deroule/`](deroule/) |
+| **Saisie des scores** | Afficheur et pavé à la demande : tableau et poules sur le PC, poule et tableau sur smartphone (US-117, US-118) | 2026-11-20 | https://claude.ai/artifact/8u3AY5FxxKCkULtwobhd8b | [`deroule/`](deroule/) (sources `Saisie*.dc.html`) |
 
 Les canevas sont privés (compte de l'utilisateur). Les dossiers `ihm/` et `deroule/` en gardent deux copies :
 
@@ -316,6 +317,33 @@ en double dans une poule.
   distinguer par le libellé « à gauche » / « à droite » et la place, jamais par la seule couleur.
 - La disposition à 390 px des planches 7 à 11 (organisateur sur smartphone, principe 13) : elle suivra la planche 6
   (barre d'onglets en bas) ; la feuille de poule et l'arbre du tableau défilent dans leur cadre.
+
+## Maquette « Saisie des scores » (2026-11-20)
+
+Elle remplace la **zone de saisie du score** des planches 10, 11, 14 et 15 (le reste de ces planches ne change pas).
+L'utilisateur a comparé trois propositions pour la carte du tableau sur le PC et retenu l'**afficheur et pavé à la
+demande** (variante « 1 bis »), puis l'a étendue à toutes les saisies (US-118).
+
+| Planche remplacée | Artboard du canevas | Source | Taille | Ce qu'elle fixe |
+|---|---|---|---|---|
+| 11 (carte de saisie) | 1 bis · Tableau PC : deux choix = enregistré | `deroule/SaisieTableauPC.dc.html` | 1120 × 580 | En tête : titre, piste, pastilles de piste (proposée soulignée, occupée en pointillés, piste du match en puce foncée avec « × »), « Autre… » ; au centre : NOM (rang) [case] – [case] NOM (rang), pavé 0–14 et « V » sur une ligne ; en pied : « Abandon, forfait, exclusion… » en bouton secondaire |
+| 10 (carte de saisie) | Poules PC : carte de saisie | `deroule/SaisiePoulesPC.dc.html` | 480 × 560 | Noms au-dessus de deux cases, pavé 0–4 et « V » ; deux choix enregistrent et passent au match suivant ; égalité et deux « V » refusés |
+| 14 (saisie) | Smartphone : saisie de poule | `deroule/SaisieMobilePoule.dc.html` | 390 × 844 | Deux grandes cases, pavé 3 × 2 sur toute la largeur ; « Envoyer à la table » quand le score est complet |
+| 15 (saisie) | Smartphone : saisie du tableau | `deroule/SaisieMobileTableau.dc.html` | 390 × 844 | Deux grandes cases, pavé 4 × 4 (0–14 et « V ») à la place de la dizaine et de l'unité ; égalité : priorité |
+
+Principes communs :
+
+1. **Une case de score par tireur**, aux couleurs de son côté de piste ; la case dont le pavé est ouvert est teintée
+   (`--cote-gauche-teinte`, `--cote-droit-teinte`).
+2. **Un seul pavé**, ouvert sur le tireur de gauche ; un choix passe à l'autre tireur ; le second choix complète le
+   score. Toucher une case rouvre le pavé sur ce tireur (correction).
+3. **Deux choix = enregistré sur le PC** (pas de bouton « Valider ») ; le smartphone garde « Envoyer à la table », car
+   il propose le score au pilote.
+4. **Égalité** : au tableau, « Égalité : qui a la priorité ? » et un bouton par tireur ; en poule, refusée.
+5. **Les actions secondaires sont des boutons**, pas des liens soulignés (un lien navigue, un bouton agit).
+
+Les captures de référence de ces artboards ne sont pas dans le dépôt (le canevas n'est pas accessible au navigateur
+de test) : la recette compare l'écran au canevas ouvert par l'utilisateur.
 
 ## Règle pour les nouvelles US
 

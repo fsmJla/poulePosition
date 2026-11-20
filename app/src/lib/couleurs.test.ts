@@ -181,4 +181,14 @@ describe('variables de la maquette de l’IHM (US-054 CA-8)', () => {
       expect(variables['--accent-teinte-bordure']).not.toBe(variables['--accent-teinte']);
     }
   });
+
+  it('US-117 : le chiffre d’une case de score reste lisible sur sa teinte de côté, dans les deux thèmes', () => {
+    for (const variables of [clair, sombre]) {
+      for (const cote of ['gauche', 'droit']) {
+        expect(contraste(variables[`--cote-${cote}`]!, variables[`--cote-${cote}-teinte`]!)).toBeGreaterThanOrEqual(
+          4.5,
+        );
+      }
+    }
+  });
 });

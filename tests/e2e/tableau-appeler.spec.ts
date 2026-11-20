@@ -60,7 +60,6 @@ test('US-112 CA-1 à CA-4 : piste proposée, file d’une piste occupée, change
     .getByRole('button', { name: `${nom(4)} contre ${nom(13)}, En piste 4` })
     .click();
   await saisirScoreTableau(page, 15, 9);
-  await carte(page).getByRole('button', { name: 'Valider le score' }).click();
   await expect(arbre(page).getByRole('button', { name: `${nom(1)} contre ${nom(8)}, En piste 4` })).toBeVisible();
 
   // CA-4 : changer de piste, puis la retirer.
@@ -68,15 +67,14 @@ test('US-112 CA-1 à CA-4 : piste proposée, file d’une piste occupée, change
     .getByRole('button', { name: `${nom(1)} contre ${nom(8)}, En piste 4` })
     .click();
   await expect(carte(page)).toContainText(/Piste 4 · appelé à \d+ h \d\d/);
-  await expect(pistes.getByRole('button', { name: 'Piste 4 : le match y est appelé' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  // US-117 : la piste du match est une puce, avec sa croix pour la retirer.
+  await expect(pistes.getByLabel('Piste 4 : le match y est appelé')).toBeVisible();
+  await expect(pistes.getByRole('button', { name: 'Retirer la piste 4' })).toBeVisible();
   await pistes.getByRole('button', { name: 'Autre…' }).click();
   await pistes.getByLabel('Autre…').fill('5');
   await pistes.getByRole('button', { name: 'Appeler sur la piste 5' }).click();
   await expect(arbre(page).getByRole('button', { name: `${nom(1)} contre ${nom(8)}, En piste 5` })).toBeVisible();
-  await pistes.getByRole('button', { name: 'Retirer' }).click();
+  await pistes.getByRole('button', { name: 'Retirer la piste 5' }).click();
   await expect(
     arbre(page).getByRole('button', { name: `${nom(1)} contre ${nom(8)}, À tirer · piste à attribuer` }),
   ).toBeVisible();

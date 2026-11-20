@@ -60,6 +60,9 @@
   /* US-091 : côtés de la piste dans la saisie d'un score (gauche rouge, droite vert), distincts des états. */
   --cote-gauche: #b3362f;
   --cote-droit: #1f7a4d;
+  /* US-117 : fond de la case de score dont le pavé est ouvert, teinté au côté de piste. */
+  --cote-gauche-teinte: #f9ecea;
+  --cote-droit-teinte: #e8f3ed;
   --sur-cote: #ffffff;
   /* Couleurs d'avatar (US-016) : initiales claires posées dessus, contraste AA vérifié par couleurs.test.ts. Communes aux
      modes clair et sombre. */
@@ -116,6 +119,8 @@
     --etat-erreur: #f07168;
     --cote-gauche: #f07168;
     --cote-droit: #5cc48d;
+    --cote-gauche-teinte: #3a2120;
+    --cote-droit-teinte: #17311f;
     --sur-cote: #0f1716;
     --accent-survol: #5fd6d2;
     --accent-teinte: #12302f;
@@ -159,6 +164,8 @@
   --etat-erreur: #f07168;
   --cote-gauche: #f07168;
   --cote-droit: #5cc48d;
+  --cote-gauche-teinte: #3a2120;
+  --cote-droit-teinte: #17311f;
   --sur-cote: #0f1716;
   --accent-survol: #5fd6d2;
   --accent-teinte: #12302f;

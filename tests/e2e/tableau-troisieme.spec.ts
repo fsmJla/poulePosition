@@ -54,7 +54,6 @@ test('US-114 CA-1 à CA-3 : le match pour la 3e place, sous la finale, se saisit
     .click();
   await expect(carte(page).getByRole('heading', { name: 'Match pour la 3e place' })).toBeVisible();
   await saisirScoreTableau(page, 15, 12);
-  await carte(page).getByRole('button', { name: 'Valider le score' }).click();
   await expect(pilules(page).filter({ hasText: /^3e place/ })).toHaveText('3e placeterminé');
   await expect(arbre(page).getByRole('button', { name: `${nom(3)} contre ${nom(4)}, Terminé` })).toBeVisible();
 });
@@ -86,7 +85,6 @@ test('US-114 CA-4 et CA-5 : activé après la finale, il apparaît ; tiré, il n
     .filter({ hasText: /^3e place/ })
     .click();
   await saisirScoreTableau(page, 15, 3);
-  await carte(page).getByRole('button', { name: 'Valider le score' }).click();
   await expect(arbre(page).getByRole('button', { name: `${nom(3)} contre ${nom(4)}, Terminé` })).toBeVisible();
 
   // CA-5 : … puis ne se retire plus.

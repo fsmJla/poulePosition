@@ -436,16 +436,29 @@
                       piste === actuelle
                         ? t.pisteDuMatch(piste)
                         : `${actuelle === null ? t.appeler(piste) : t.changerPiste(piste)}${occupee ? ` (${t.pisteOccupee})` : ''}`}
-                    <button
-                      type="button"
-                      class="pastille-piste"
-                      class:proposee={actuelle === null && piste === proposee?.piste}
-                      class:occupee
-                      aria-pressed={piste === actuelle}
-                      aria-label={libelle}
-                      title={libelle}
-                      onclick={() => piste !== actuelle && void appelerSur(piste)}>{piste}</button
-                    >
+                    {#if piste === actuelle}
+                      <!-- US-117 : la piste du match, avec sa croix pour la retirer. -->
+                      <span class="puce-piste" title={libelle}
+                        ><span aria-label={libelle}>{piste}</span><button
+                          type="button"
+                          class="retirer-piste"
+                          aria-label={t.retirerPiste(piste)}
+                          title={t.retirerPiste(piste)}
+                          onclick={() => void appelerSur(null)}><Icone nom="croix" taille={18} /></button
+                        ></span
+                      >
+                    {:else}
+                      <button
+                        type="button"
+                        class="pastille-piste"
+                        class:proposee={actuelle === null && piste === proposee?.piste}
+                        class:occupee
+                        aria-pressed="false"
+                        aria-label={libelle}
+                        title={libelle}
+                        onclick={() => void appelerSur(piste)}>{piste}</button
+                      >
+                    {/if}
                   {/each}
                   {#if autrePiste}
                     <input
@@ -462,23 +475,22 @@
                     />
                     <button
                       type="button"
-                      class="lien"
+                      class="pastille-piste texte"
                       disabled={typeof pisteSaisie !== 'number' || pisteSaisie < 1 || pisteSaisie > 99}
                       onclick={() => typeof pisteSaisie === 'number' && void appelerSur(pisteSaisie)}
                       >{t.appeler(typeof pisteSaisie === 'number' ? pisteSaisie : null)}</button
                     >
                   {:else}
-                    <button type="button" class="lien" onclick={() => (autrePiste = true)}>{t.autrePiste}</button>
-                  {/if}
-                  {#if actuelle !== null}
-                    <button type="button" class="lien" onclick={() => void appelerSur(null)}>{t.retirerPiste}</button>
+                    <button type="button" class="pastille-piste texte" onclick={() => (autrePiste = true)}
+                      >{t.autrePiste}</button
+                    >
                   {/if}
                 </div>
               {/if}
             {/snippet}
             {#snippet actions()}
               {#if matchCarte && modifiable && matchCarte.etat === 'aTirer'}
-                <button type="button" class="lien" onclick={() => (retraitOuvert = true)}>{t.retrait}</button>
+                <button type="button" class="secondaire" onclick={() => (retraitOuvert = true)}>{t.retrait}</button>
               {:else if matchCarte && modifiable && matchCarte.retrait}
                 {@const suivant = matchsSuivants(structure, matchCarte.id).find((m) => m.etat === 'regle')}
                 <MenuActions
@@ -832,23 +844,6 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 6px 8px;
-    margin-top: 8px;
-  }
-
-  .lien {
-    min-height: 0;
-    padding: 0;
-    border: none;
-    background: none;
-    color: var(--accent);
-    font-size: 0.875rem;
-    font-weight: 400;
-    text-decoration: underline;
-  }
-
-  .lien:disabled {
-    color: var(--texte-inactif);
-    cursor: default;
   }
 
   .libelle-piste {
@@ -857,9 +852,9 @@
   }
 
   .pastille-piste {
-    min-width: 36px;
-    min-height: 36px;
-    padding: 0 8px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 12px;
     border: 1px solid var(--bordure-champ);
     border-radius: 999px;
     background: var(--surface);
@@ -876,19 +871,67 @@
     color: var(--texte-discret);
   }
 
-  .pastille-piste[aria-pressed='true'] {
-    border-color: var(--marque);
+  .pastille-piste {
+    font-weight: 600;
+  }
+
+  .pastille-piste.texte {
+    padding: 0 16px;
+  }
+
+  .pastille-piste:disabled {
+    color: var(--texte-inactif);
+    cursor: default;
+  }
+
+  /* US-117 : la piste du match, foncée, avec sa croix « Retirer la piste ». */
+  .puce-piste {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 0 4px 0 16px;
+    border-radius: 999px;
     background: var(--marque);
     color: var(--sur-marque);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .retirer-piste {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--sur-marque);
+    cursor: pointer;
+  }
+
+  .secondaire {
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px solid var(--bordure-champ);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--texte);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
   }
 
   .autre-piste {
-    width: 4rem;
-    min-height: 36px;
+    width: 4.5rem;
+    min-height: 44px;
     box-sizing: border-box;
     padding: 0 8px;
-    border: 1px solid var(--bordure-champ);
-    border-radius: 10px;
+    border: 2px solid var(--focus);
+    border-radius: 999px;
     background: var(--surface);
     color: var(--texte);
     font: inherit;

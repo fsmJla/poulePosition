@@ -81,7 +81,6 @@ test('US-113 CA-4 : l’annulation est grisée une fois le match suivant réglé
     .getByRole('button', { name: new RegExp(`^${nom(12)} contre ${nom(13)}, `) })
     .click();
   await saisirScoreTableau(page, 15, 7);
-  await carte(page).getByRole('button', { name: 'Valider le score' }).click();
   await expect(
     arbre(page).getByRole('button', { name: new RegExp(`^${nom(12)} contre ${nom(13)}, Terminé`) }),
   ).toBeVisible();

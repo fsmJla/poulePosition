@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Poules PC : carte de saisie</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#066f6c}a:hover{color:#044e4c}
+button{font-family:inherit}
+button:focus-visible{outline:3px solid #078a86;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 480px; height: 560px; box-sizing: border-box; padding: 40px; background: #f7f4ef; color: #1c2b2a; font-family: 'Figtree', 'Segoe UI', system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+<section aria-labelledby="titre-poule" style="background: #ffffff; border: 2px solid #078a86; border-radius: 16px; overflow: hidden">
+<header style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 16px 20px 8px">
+<h2 id="titre-poule" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 18px">{{titre}}</h2>
+<span style="font-size: 14px; color: #55615f">{{numeros}}</span>
+</header>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 8px 20px 0">
+<sc-for list="{{cotes}}" as="c" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+<p style="margin: 0; font-size: 17px; text-align: center; line-height: 1.25"><strong style="{{c.nomStyle}}">{{c.nom}}</strong> {{c.prenom}}<br><span style="font-size: 13px; color: #55615f">{{c.cote}}</span></p>
+<button type="button" aria-label="{{c.aria}}" onClick="{{c.ouvrir}}" style="{{c.style}}">{{c.valeur}}</button>
+</div>
+</sc-for>
+</div>
+
+<div style="min-height: 104px; box-sizing: border-box; padding: 16px 20px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px">
+<sc-if value="{{padOuvert}}" hint-placeholder-val="{{ true }}">
+<p style="margin: 0; font-size: 14px; color: #55615f">Score de <strong style="{{padNomStyle}}">{{padNom}}</strong></p>
+<div role="group" aria-label="Score de {{padNom}}" style="display: flex; gap: 6px">
+<sc-for list="{{touches}}" as="t" hint-placeholder-count="6">
+<button type="button" aria-label="{{t.aria}}" aria-pressed="{{t.presse}}" onClick="{{t.choisir}}" style="{{t.style}}">{{t.libelle}}</button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{repos}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; font-size: 14px; color: #55615f">Touchez un score pour le corriger.</p>
+</sc-if>
+</div>
+
+<footer style="display: flex; flex-direction: column; gap: 10px; padding: 12px 20px 18px; border-top: 1px solid #e2dbd0">
+<p role="status" style="{{messageStyle}}">{{message}}</p>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<button type="button" style="height: 44px; padding: 0 16px; border: 1px solid #7d8886; border-radius: 10px; background: #ffffff; color: #1c2b2a; font-size: 15px; font-weight: 600; cursor: pointer">Abandon, forfait, exclusion…</button>
+</div>
+</footer>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":480,"height":560}}'>
+class Component extends DCLogic {
+  state = { match: 0, actif: 'g', g: null, d: null, fait: false, erreur: null };
+
+  matchs() {
+    return [
+      { no: 10, num: '1 contre 6', g: { nom: 'DUBOIS', prenom: 'Chloé' }, d: { nom: 'VINCENT', prenom: 'Sarah' } },
+      { no: 11, num: '4 contre 2', g: { nom: 'GARCIA', prenom: 'Lou' }, d: { nom: 'DURAND', prenom: 'Emma' } },
+      { no: 12, num: '3 contre 6', g: { nom: 'MOREAU', prenom: 'Lina' }, d: { nom: 'VINCENT', prenom: 'Sarah' } }
+    ];
+  }
+
+  choisir(v) {
+    const s = this.state;
+    const a = s.actif;
+    if (!a) return;
+    const o = a === 'g' ? 'd' : 'g';
+    const maj = { fait: false, erreur: null };
+    maj[a] = v;
+    if (s[o] === null) { maj.actif = o; this.setState(maj); return; }
+    const g = a === 'g' ? v : s.g, d = a === 'd' ? v : s.d;
+    if (g === 5 && d === 5) { this.setState({ actif: 'g', g: null, d: null, fait: false, erreur: 'Un seul « V » : recommencez' }); return; }
+    if (g === d) { this.setState({ actif: 'g', g: null, d: null, fait: false, erreur: 'Pas d’égalité en poule : recommencez' }); return; }
+    // Enregistré : la carte passe au match suivant (US-091 CA-2).
+    const m = this.matchs()[s.match % 3];
+    const aff = (x) => (x === 5 ? 'V' : String(x));
+    this.setState({ match: s.match + 1, actif: 'g', g: null, d: null, fait: true, erreur: null,
+      dernier: '✓ Match ' + m.no + ' enregistré : ' + m.g.nom + ' ' + aff(g) + ' – ' + aff(d) + ' ' + m.d.nom });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const m = this.matchs()[s.match % 3];
+    const T = {
+      g: { nom: m.g.nom, prenom: m.g.prenom, couleur: '#b3362f', teinte: '#f9ecea', cote: 'à gauche' },
+      d: { nom: m.d.nom, prenom: m.d.prenom, couleur: '#1f7a4d', teinte: '#e8f3ed', cote: 'à droite' }
+    };
+    const a = s.actif;
+
+    const cotes = ['g', 'd'].map((c) => {
+      const actif = a === c;
+      const vide = s[c] === null;
+      return {
+        nom: T[c].nom, prenom: T[c].prenom, cote: T[c].cote,
+        nomStyle: 'letter-spacing: 0.02em; color: ' + T[c].couleur + ';',
+        valeur: vide ? '–' : s[c] === 5 ? 'V' : String(s[c]),
+        aria: 'Score de ' + T[c].nom + ' : ' + (vide ? 'à choisir' : s[c] === 5 ? 'V' : s[c]) + (actif ? '' : ' (modifier)'),
+        ouvrir: () => this.setState({ actif: c, fait: false, erreur: null }),
+        style: 'width: 100px; height: 88px; border-radius: 14px; cursor: pointer; font-family: "Bricolage Grotesque", sans-serif; font-weight: 700; font-size: 52px; line-height: 1; font-variant-numeric: tabular-nums; color: ' + (vide ? '#8d9694' : T[c].couleur) + ';' +
+          (actif ? 'background: ' + T[c].teinte + '; border: 3px solid ' + T[c].couleur + ';' : 'background: #ffffff; border: 1px solid #d5ccbf;')
+      };
+    });
+
+    const touches = [];
+    if (a) {
+      for (let v = 0; v <= 5; v++) {
+        const choisi = s[a] === v;
+        touches.push({
+          libelle: v === 5 ? 'V' : String(v),
+          aria: (v === 5 ? 'V' : String(v)) + ' pour ' + T[a].nom,
+          presse: choisi ? 'true' : 'false',
+          choisir: () => this.choisir(v),
+          style: 'width: 48px; height: 48px; border-radius: 12px; font-size: 18px; font-weight: 600; cursor: pointer; font-variant-numeric: tabular-nums;' + (v === 5 ? 'margin-left: 8px;' : '') +
+            (choisi ? 'background: ' + T[a].couleur + '; border: 1px solid ' + T[a].couleur + '; color: #ffffff;' : 'background: #ffffff; border: 1px solid #d5ccbf; color: #1c2b2a;')
+        });
+      }
+    }
+
+    let message = 'Deux choix enregistrent le score.', couleur = '#55615f';
+    if (s.erreur) { message = s.erreur; couleur = '#b3362f'; }
+    else if (s.fait) { message = s.dernier; couleur = '#14573a'; }
+
+    return {
+      titre: 'Match ' + m.no + ' sur 15',
+      numeros: m.num,
+      cotes: cotes,
+      padOuvert: !!a,
+      padNom: a ? T[a].nom : '',
+      padNomStyle: 'color: ' + (a ? T[a].couleur : '#1c2b2a') + ';',
+      touches: touches,
+      repos: !a,
+      message: message,
+      messageStyle: 'margin: 0; font-size: 14px; font-weight: 600; color: ' + couleur + ';'    };
+  }
+}
+</script>
+</body>
+</html>
