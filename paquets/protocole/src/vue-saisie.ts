@@ -6,8 +6,11 @@ import {
   MOTIFS_RETRAIT,
   SEXES,
   type ClassementVue,
+  type MatchTableauVue,
   type MatchVue,
+  type PlaceVue,
   type PouleVue,
+  type TableauVue,
   type TireurVue,
   type VueSaisie,
 } from '@poule-position/domaine';
@@ -61,8 +64,62 @@ function lirePoule(brut: unknown): PouleVue | null {
   return { numero: o.numero, piste: o.piste, tireurs, matchs, regles: o.regles, total: o.total, classement };
 }
 
-/** CA-4 : une vue de saisie bien formée, sinon null. */
+const ETATS_MATCH = ['exempt', 'attente', 'aTirer', 'regle'] as const;
+const estEntierOuNull = (valeur: unknown, minimum = 0) => valeur === null || estEntier(valeur, minimum);
+
+function lirePlace(brut: unknown): PlaceVue | null {
+  const o = aExactementLesChamps(brut, ['tireurId', 'rang', 'provenance']);
+  return o && estTexteOuNull(o.tireurId) && estEntierOuNull(o.rang, 1) && estTexteOuNull(o.provenance)
+    ? (o as unknown as PlaceVue)
+    : null;
+}
+
+function lireMatchTableau(brut: unknown): MatchTableauVue | null {
+  const o = aExactementLesChamps(brut, [
+    'id',
+    'tour',
+    'numero',
+    'haut',
+    'bas',
+    'etat',
+    'touches',
+    'vainqueur',
+    'parPriorite',
+    'piste',
+    'enPiste',
+    'appeleA',
+  ]);
+  if (!o || !estTexte(o.id) || !estEntier(o.tour) || !estEntier(o.numero, 1) || !dans(ETATS_MATCH, o.etat)) return null;
+  const haut = lirePlace(o.haut);
+  const bas = lirePlace(o.bas);
+  const touches = o.touches;
+  const touchesValides =
+    touches === null || (Array.isArray(touches) && touches.length === 2 && touches.every((t) => estEntier(t)));
+  if (!haut || !bas || !touchesValides || !estTexteOuNull(o.vainqueur) || !estBooleen(o.parPriorite)) return null;
+  if (!estEntierOuNull(o.piste, 1) || !estBooleen(o.enPiste) || !estEntierOuNull(o.appeleA)) return null;
+  return { ...(o as unknown as MatchTableauVue), haut, bas };
+}
+
+/** US-112 CA-6 : le tableau de la vue, null s'il n'est pas créé, `undefined` s'il est mal formé. */
+function lireTableau(brut: unknown): TableauVue | null | undefined {
+  if (brut === null) return null;
+  const o = aExactementLesChamps(brut, ['touches', 'taille', 'matchs']);
+  if (!o || !estEntier(o.touches, 1) || !estEntier(o.taille, 2)) return undefined;
+  const matchs = toutes(o.matchs, lireMatchTableau);
+  return matchs ? { touches: o.touches, taille: o.taille, matchs } : undefined;
+}
+
+/** CA-4 : une vue de saisie bien formée, sinon null. US-112 : `tableau` est absent d'une vue publiée avant US-112. */
 export function analyserVueSaisie(brut: unknown): VueSaisie | null {
+  if (brut === null || typeof brut !== 'object' || !('tableau' in brut)) return analyserVueSansTableau(brut);
+  const { tableau: brutTableau, ...reste } = brut as Record<string, unknown>;
+  const tableau = lireTableau(brutTableau);
+  if (tableau === undefined) return null;
+  const vue = analyserVueSansTableau(reste);
+  return vue ? { ...vue, tableau } : null;
+}
+
+function analyserVueSansTableau(brut: unknown): VueSaisie | null {
   const o = aExactementLesChamps(brut, [
     'epreuveId',
     'nom',

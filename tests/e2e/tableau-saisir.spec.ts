@@ -28,8 +28,14 @@ async function epreuvePlanche11(page: Page) {
 }
 
 async function saisir(page: Page, haut: string, bas: string) {
-  await carte(page).getByRole('spinbutton').first().fill(haut);
-  await carte(page).getByRole('spinbutton').last().fill(bas);
+  await carte(page)
+    .getByRole('spinbutton', { name: /^Touches de/ })
+    .first()
+    .fill(haut);
+  await carte(page)
+    .getByRole('spinbutton', { name: /^Touches de/ })
+    .last()
+    .fill(bas);
 }
 
 test('US-111 CA-1, CA-2, CA-6 et CA-9 : la carte du match choisi, valider, corriger (planche 11)', async ({
@@ -71,7 +77,11 @@ test('US-111 CA-1, CA-2, CA-6 et CA-9 : la carte du match choisi, valider, corri
   await arbre(page)
     .getByRole('button', { name: `${nom(3)} contre ${nom(14)}, Terminé` })
     .click();
-  await expect(carte(page).getByRole('spinbutton').first()).toHaveValue('15');
+  await expect(
+    carte(page)
+      .getByRole('spinbutton', { name: /^Touches de/ })
+      .first(),
+  ).toHaveValue('15');
   await saisir(page, '13', '15');
   await carte(page).getByRole('button', { name: 'Valider le score' }).click();
   await expect(
@@ -117,7 +127,11 @@ test('US-111 CA-7 : un match dont le match suivant est réglé ne se corrige plu
     .click();
   await expect(carte(page)).toContainText('Corrigez d’abord le match suivant (tableau de 16 · match 1)');
   await expect(carte(page).getByRole('button', { name: 'Valider le score' })).toHaveCount(0);
-  await expect(carte(page).getByRole('spinbutton').first()).toBeDisabled();
+  await expect(
+    carte(page)
+      .getByRole('spinbutton', { name: /^Touches de/ })
+      .first(),
+  ).toBeDisabled();
   await carte(page).getByRole('button', { name: 'Tableau de 16 · match 1' }).click();
   await expect(carte(page).getByRole('heading', { name: 'Tableau de 16 · match 1' })).toBeVisible();
 });

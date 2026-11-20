@@ -2120,6 +2120,15 @@ export const textes = {
     corrigerDabord: (suivant: string) => `Corrigez d’abord le match suivant (${suivant})`,
     retrait: 'Abandon, forfait, exclusion…',
     carteSaisie: 'Saisie du match',
+    /** US-112 : appeler un match sur une piste. */
+    piste: 'Piste',
+    appeler: (piste: number | null) => (piste ? `Appeler sur la piste ${piste}` : 'Appeler'),
+    changerPiste: (piste: number | null) => (piste ? `Changer pour la piste ${piste}` : 'Changer de piste'),
+    pisteOccupee: 'occupée',
+    retirerPiste: 'Retirer la piste',
+    appelAnnonce: (match: string, piste: number) => `${match} appelé sur la piste ${piste}`,
+    pisteRetireeAnnonce: (match: string) => `${match} : piste retirée`,
+    menuMatch: (match: string) => match,
     poulesEnCours: (regles: number, total: number) =>
       `Le tableau se crée quand toutes les poules sont terminées · ${regles} match${regles > 1 ? 's' : ''} sur ${total}`,
     voirPoules: 'Voir les poules',

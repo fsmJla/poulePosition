@@ -244,3 +244,33 @@ describe('mes matchs, côté tireur (US-104)', () => {
     expect(matchsDuTireur(retire, 'c')).toMatchObject({ retrait: 'abandon', prochain: null });
   });
 });
+
+describe('US-112 CA-6 : le tableau dans la vue de saisie', () => {
+  const score = (a: string, b: string): Proposition => ({
+    type: 'ScorePouleSaisi',
+    donnees: { poule: 1, tireurA: a, tireurB: b, touchesA: 5, touchesB: 1 },
+  });
+  const poulesFinies = [...TROIS, composer, lancer, score('a', 'b'), score('a', 'c'), score('b', 'c')];
+  it('CA-6 : null avant la création du tableau', () => {
+    expect(vueSaisie(epreuveDe(...poulesFinies)).tableau).toBeNull();
+  });
+  it('CA-6 : les matchs du tableau, avec la piste et l’heure d’appel', () => {
+    const epreuve = epreuveDe(
+      ...poulesFinies,
+      { type: 'TableauCree', donnees: { qualifies: ['a', 'b', 'c'] } },
+      { type: 'MatchTableauAppele', donnees: { match: '4-2', piste: 3 } },
+    );
+    const tableau = vueSaisie(epreuve).tableau!;
+    expect(tableau).toMatchObject({ touches: 15, taille: 4 });
+    expect(tableau.matchs.map((m) => m.id)).toEqual(['4-1', '4-2', '2-1']);
+    expect(tableau.matchs[1]).toMatchObject({
+      etat: 'aTirer',
+      piste: 3,
+      enPiste: true,
+      haut: { tireurId: 'b', rang: 2 },
+      bas: { tireurId: 'c', rang: 3 },
+    });
+    expect(tableau.matchs[1]!.appeleA).toBeGreaterThan(0);
+    expect(tableau.matchs[2]!.haut).toEqual({ tireurId: 'a', rang: 1, provenance: '4-1' });
+  });
+});

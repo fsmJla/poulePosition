@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F6, F10 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-111
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-112-appeler-match-sur-piste`
 
 ## Récit
 
@@ -75,6 +75,13 @@ affichage papier. La diffusion vers les smartphones reprend au retour du réseau
   qui n'exige pas une action « match commencé ».
 - Pas de numéro de piste au-delà de 99.
 
+- Implémentation (2026-11-20) : l'appel se règle sous la piste, dans la carte de saisie : un champ « Piste » (proposée
+  d'office, liste des pistes des poules, tout numéro de 1 à 99) et un bouton neutre « Appeler sur la piste N » (« Changer
+  pour la piste N » une fois appelé) ; « Retirer la piste » est dans le menu « ⋯ » de la carte. Pas de planche pour ces
+  commandes : écart déclaré ici.
+- Implémentation : la vue de saisie (US-095) porte désormais tout le tableau (`tableau`), dont la piste et l'heure
+  d'appel des matchs ; la liste de la piste de l'arbitre s'en servira avec US-106.
+
 ## Questions bloquantes
 
 Aucune.
@@ -90,3 +97,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (spécification de l'Epic 6) ; hypothèses et écarts validés par l'utilisateur, passe à Prête |
+| 2026-11-20 | Implémentée : appel, file des pistes, changement et retrait, tableau dans la vue de saisie ; passe En revue |
