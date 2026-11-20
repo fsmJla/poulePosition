@@ -16,6 +16,7 @@
     tireursDe,
     tirerAuSort,
     tousLesMatchs,
+    MATCH_TROISIEME,
     matchsSuivants,
     placesAffichees,
     type MotifRetrait,
@@ -318,10 +319,35 @@
         {#each structure.tours as tour, i (tour.taille)}
           {@const { regles, total } = avancementTour(tour)}
           {@const pret = tour.matchs.some((m) => m.etat === 'aTirer' || m.etat === 'regle')}
-          <button type="button" class="pilule" aria-pressed={i === tourChoisi} onclick={() => (tourManuel = i)}>
+          <button
+            type="button"
+            class="pilule"
+            aria-pressed={i === tourChoisi && matchCarte?.id !== MATCH_TROISIEME}
+            onclick={() => {
+              tourManuel = i;
+              choisi = null;
+            }}
+          >
             {t.pilule(tour.taille)}{#if pret}<span class="avancement">{t.avancementTour(regles, total)}</span>{/if}
           </button>
         {/each}
+        {#if structure.troisieme}
+          <!-- US-114 CA-2 : le match pour la 3e place, après la finale. -->
+          {@const troisieme = structure.troisieme}
+          <button
+            type="button"
+            class="pilule"
+            aria-pressed={matchCarte?.id === MATCH_TROISIEME}
+            onclick={() => {
+              tourManuel = structure.tours.length - 1;
+              choisi = MATCH_TROISIEME;
+            }}
+          >
+            {t.troisiemePlace}{#if troisieme.etat !== 'attente'}<span class="avancement"
+                >{t.avancementTour(troisieme.etat === 'regle' ? 1 : 0, 1)}</span
+              >{/if}
+          </button>
+        {/if}
       </div>
       {#if matchCarte}
         <CarteSaisieTableau

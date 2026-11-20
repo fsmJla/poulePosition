@@ -94,7 +94,7 @@
     "exporter-epreuve",
     "importer-epreuve"
   ],
-  "app/src/pages/Formule.svelte": ["formule", "epreuve-etapes"],
+  "app/src/pages/Formule.svelte": ["formule", "epreuve-etapes", "tableau-troisieme"],
   "app/src/pages/Parametres.svelte": ["parametres", "epreuve-etapes", "acces-qr"],
   "app/src/composants/Entete.svelte": [
     "entete",
@@ -277,7 +277,12 @@
     "tableau-retrait"
   ],
   "app/src/composants/ArbreTableau.svelte": ["tableau-voir", "tableau-saisir"],
-  "app/src/composants/CarteSaisieTableau.svelte": ["tableau-saisir", "tableau-appeler", "tableau-retrait"],
+  "app/src/composants/CarteSaisieTableau.svelte": [
+    "tableau-saisir",
+    "tableau-appeler",
+    "tableau-retrait",
+    "tableau-troisieme"
+  ],
   "app/src/composants/RetraitTableau.svelte": ["tableau-retrait"],
   "app/src/lib/tableau.ts": ["tableau-creer"],
   "app/src/lib/accueil.ts": ["accueil", "accueil-refonte", "filtres-liste"],

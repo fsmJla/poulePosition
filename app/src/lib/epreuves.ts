@@ -299,7 +299,13 @@ export type ErreurModificationFormule =
   | ErreurFormule
   | Extract<
       ErreurJournal,
-      'PAS_PILOTE' | 'EPREUVE_ARCHIVEE' | 'FORMULE_FIGEE' | 'CHAMP_FIGE' | 'JOURNAL_INCOHERENT' | 'ECRITURE_IMPOSSIBLE'
+      | 'PAS_PILOTE'
+      | 'EPREUVE_ARCHIVEE'
+      | 'FORMULE_FIGEE'
+      | 'CHAMP_FIGE'
+      | 'JOURNAL_INCOHERENT'
+      | 'ECRITURE_IMPOSSIBLE'
+      | 'TROISIEME_PLACE_REGLEE'
     >;
 
 export type ResultatModificationFormule =
@@ -328,7 +334,14 @@ export async function modifierFormule(
   );
   if ('projection' in resultat) return { ok: true, modifiee: true };
   const { erreur } = resultat;
-  const connues = ['PAS_PILOTE', 'EPREUVE_ARCHIVEE', 'FORMULE_FIGEE', 'CHAMP_FIGE', 'JOURNAL_INCOHERENT'] as const;
+  const connues = [
+    'PAS_PILOTE',
+    'EPREUVE_ARCHIVEE',
+    'FORMULE_FIGEE',
+    'CHAMP_FIGE',
+    'JOURNAL_INCOHERENT',
+    'TROISIEME_PLACE_REGLEE',
+  ] as const;
   return { ok: false, erreur: connues.find((code) => code === erreur) ?? 'ECRITURE_IMPOSSIBLE' };
 }
 
