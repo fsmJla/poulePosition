@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F10 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-110
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-111-saisir-score-tableau-pc`
 
 ## Récit
 
@@ -89,6 +89,11 @@ finale, puis retrouver les résultats après rechargement et au retour du résea
 - La mention de la priorité (CA-4) n'a pas de planche : texte « priorité » en `--texte-discret` à côté du score du
   vainqueur.
 
+- Implémentation (2026-11-20) : la mention « Score reçu de la piste 3 » (cas limite d'une saisie smartphone pendant la
+  frappe) viendra avec US-106 ; d'ici là, la carte reprend le score enregistré dès qu'il change.
+- Implémentation : après un score validé, la carte passe d'office au premier match en piste du tour en cours, sinon à son
+  premier match à tirer. Le second onglet d'un même PC, qui ne tient pas l'écriture, montre la carte sans saisie.
+
 ## Questions bloquantes
 
 Aucune.
@@ -102,3 +107,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-20 | Créée (spécification de l'Epic 6) ; hypothèses et écarts validés par l'utilisateur, passe à Prête |
+| 2026-11-20 | Implémentée : composant `CarteSaisieTableau` (saisie, priorité, au temps, correction) ; passe En revue |

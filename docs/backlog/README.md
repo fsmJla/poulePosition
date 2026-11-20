@@ -140,7 +140,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-108](US-108-tableau-dans-le-journal.md) | Tenir le tableau d'une épreuve dans son journal (technique) | E6 | En revue | US-085, US-089, US-092, US-028 |
 | [US-109](US-109-creer-le-tableau.md) | Créer le tableau à partir du classement des poules | E6 | En revue | US-108, US-092, US-058, US-064 |
 | [US-110](US-110-voir-le-tableau.md) | Voir le tableau : tours et arbre | E6 | En revue | US-109 |
-| [US-111](US-111-saisir-score-tableau-pc.md) | Saisir et corriger le score d'un match du tableau sur le PC | E6 | Prête | US-110 |
+| [US-111](US-111-saisir-score-tableau-pc.md) | Saisir et corriger le score d'un match du tableau sur le PC | E6 | En revue | US-110 |
 | [US-112](US-112-appeler-match-sur-piste.md) | Appeler un match du tableau sur une piste | E6 | Prête | US-111 |
 | [US-113](US-113-abandon-forfait-exclusion-tableau.md) | Retirer un tireur du tableau (abandon, forfait, exclusion) | E6 | Prête | US-111 |
 | [US-114](US-114-match-troisieme-place.md) | Tirer le match pour la 3e place | E6 | Prête | US-111, US-112, US-028 |
