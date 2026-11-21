@@ -70,6 +70,15 @@ Une perte de connexion ne fait donc perdre que ces fonctions de partage (ADR-000
   saisies dont le match n'a pas encore de score (sinon : rejet journalisé, le PC fait foi), republie les vues ;
   la saisie par smartphone reprend.
 
+**Affichage en direct** (ADR-0029)
+- À chaque écriture, le pilote publie la **vue en direct** de l'épreuve, calculée par le domaine, sur sa WebSocket.
+  Le DO `Epreuve` garde la dernière et la diffuse à ses lecteurs.
+- Il y a deux sortes de lecteurs : les **spectateurs**, sans authentification, tant que l'épreuve est publiée ; les
+  **écrans géants**, par le lien secret de l'écran, échangé contre un ticket de 60 s, que l'épreuve soit publiée ou non.
+- Les réglages des écrans (épreuves cochées, durée d'une page, vue imposée) sont gardés dans le DO `Club`. Chaque écran
+  ouvre une socket de contrôle sur le DO `Club` et une socket de lecture par épreuve cochée.
+- La fenêtre locale de l'écran, sur le PC pilote, reçoit les vues par `BroadcastChannel` et marche sans internet.
+
 ## 4. Organisation du code (ADR-0012)
 
 ```

@@ -37,3 +37,4 @@ Vue d'ensemble : [`../architecture.md`](../architecture.md).
 | [0026](0026-pdfjs-apercu-feuille-de-route.md) | pdf.js (Apache-2.0, chargé à la demande, hors précache) pour l'aperçu de la feuille de route, complète l'ADR-0022 | Proposée |
 | [0027](0027-exceptions-datees-audit-dependances.md) | Exceptions ciblées et datées à l'audit des dépendances (complète l'ADR-0012) | Acceptée |
 | [0028](0028-websocket-du-pilote-par-ticket.md) | WebSocket du pilote authentifiée par un ticket de 60 s ; fin des battements (complète les ADR 0005 et 0017) | Proposée |
+| [0029](0029-vue-en-direct-ecrans-spectateurs.md) | Vue en direct publiée par le pilote ; lecteurs spectateurs (publiques) et écrans (lien secret, ticket de 60 s, réglages dans le DO `Club`) (complète les ADR 0005, 0007, 0010 et 0028) | Acceptée |
