@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F12 (exigences §1, « Application robuste », et §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-021, US-005, US-058, US-094
 - **Branche / PR :** us/US-131-sauvegarde-automatique (branches empilées US-129 → US-130 → US-131, une seule PR vers dev)
 
@@ -100,3 +100,4 @@ pastille « Hors ligne : la compétition continue sur ce PC » s'affiche comme d
 |---|---|
 | 2026-11-21 | Créée (spécification de l'Epic 8) |
 | 2026-11-21 | Implémentée (série E8 enchaînée, une seule PR finale) : En revue |
+| 2026-11-21 | Recette OK sur https://poule-position-git-us-us-131-sauvegarde-a1513b-fsmjlas-projects.vercel.app (recette groupée E8) : hors ligne, onglet fermé après un pointage puis rouvert sur `/` → retour sur l'émargement, présence conservée, « 1 modification en attente d'envoi » (CA-1, CA-2) ; envoyée au retour du réseau (CA-5). CA-3, CA-4 et CA-6 couverts par les E2E verts en CI. Passe à Terminée |

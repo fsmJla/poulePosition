@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F12 (exigences §1, scénario de perte totale de connexion)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-034, US-035, US-017
 - **Branche / PR :** us/US-131-sauvegarde-automatique (branches empilées US-129 → US-130 → US-131, une seule PR vers dev)
 
@@ -113,3 +113,4 @@ Testé en E2E hors ligne avec un faux dossier (API File System Access simulée d
 |---|---|
 | 2026-11-21 | Créée (spécification de l'Epic 8) |
 | 2026-11-21 | Implémentée (série E8 enchaînée, une seule PR finale) : En revue |
+| 2026-11-21 | Recette OK sur https://poule-position-git-us-us-131-sauvegarde-a1513b-fsmjlas-projects.vercel.app (recette groupée E8, dossier simulé : le sélecteur du système n'est pas pilotable) : dossier choisi depuis le menu de compte, épreuve écrite aussitôt (CA-1) ; hors ligne, pointage sauvegardé en 18 s (CA-2) ; clé retirée → bandeau en 30 s, épreuve continue, reprise seule en 5 s (CA-5) ; « Arrêter » garde le fichier et n'écrit plus (CA-8) ; fenêtre lisible en thème sombre. CA-4, CA-6, CA-7 couverts par les tests unitaires et E2E. Passe à Terminée |

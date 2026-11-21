@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F12 (exigences §1, « Au retour de la connexion, le PC resynchronise ses données »)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-094, US-102, US-022
 - **Branche / PR :** us/US-131-sauvegarde-automatique (branches empilées US-129 → US-130 → US-131, une seule PR vers dev)
 
@@ -94,3 +94,4 @@ ligne : la compétition continue sur ce PC » et compteur des modifications en a
 |---|---|
 | 2026-11-21 | Créée (spécification de l'Epic 8) |
 | 2026-11-21 | Implémentée (série E8 enchaînée, une seule PR finale) : En revue |
+| 2026-11-21 | Recette OK sur https://poule-position-git-us-us-131-sauvegarde-a1513b-fsmjlas-projects.vercel.app (recette groupée E8) : au retour du réseau, « De retour en ligne : envoi en cours… » puis « De retour en ligne : 1 modification envoyée », effacé après 8 s, `aria-live="polite"` (CA-1, CA-4, CA-5). CA-2 et CA-3 couverts par les tests unitaires et E2E. Passe à Terminée |
