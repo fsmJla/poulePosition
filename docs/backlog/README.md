@@ -158,9 +158,9 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-126](US-126-imprimer-feuilles-match-tableau.md) | Imprimer les feuilles de match du tableau | E7 | Terminée | US-120, US-110, US-112 |
 | [US-127](US-127-imprimer-tableau.md) | Imprimer le tableau à afficher | E7 | Terminée | US-120, US-110 |
 | [US-128](US-128-imprimer-classement-final.md) | Imprimer le classement final | E7 | Terminée | US-120, US-115 |
-| [US-129](US-129-reprendre-apres-plantage.md) | Reprendre l'épreuve après un plantage, sur l'écran quitté | E8 | Prête | US-021, US-005, US-058, US-094 |
-| [US-130](US-130-resume-retour-en-ligne.md) | Résumer la resynchronisation au retour du réseau | E8 | Prête | US-094, US-102, US-022 |
-| [US-131](US-131-sauvegarde-automatique-dossier.md) | Sauvegarder automatiquement les épreuves pilotées dans un dossier (clé USB) | E8 | Prête | US-034, US-035, US-017 |
+| [US-129](US-129-reprendre-apres-plantage.md) | Reprendre l'épreuve après un plantage, sur l'écran quitté | E8 | En revue | US-021, US-005, US-058, US-094 |
+| [US-130](US-130-resume-retour-en-ligne.md) | Résumer la resynchronisation au retour du réseau | E8 | En revue | US-094, US-102, US-022 |
+| [US-131](US-131-sauvegarde-automatique-dossier.md) | Sauvegarder automatiquement les épreuves pilotées dans un dossier (clé USB) | E8 | En revue | US-034, US-035, US-017 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 

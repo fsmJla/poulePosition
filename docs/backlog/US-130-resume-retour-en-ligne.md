@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F12 (exigences §1, « Au retour de la connexion, le PC resynchronise ses données »)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-094, US-102, US-022
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** us/US-131-sauvegarde-automatique (branches empilées US-129 → US-130 → US-131, une seule PR vers dev)
 
 ## Récit
 
@@ -93,3 +93,4 @@ ligne : la compétition continue sur ce PC » et compteur des modifications en a
 | Date | Événement |
 |---|---|
 | 2026-11-21 | Créée (spécification de l'Epic 8) |
+| 2026-11-21 | Implémentée (série E8 enchaînée, une seule PR finale) : En revue |

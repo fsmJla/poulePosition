@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F12 (exigences §1, « Application robuste », et §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-021, US-005, US-058, US-094
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** us/US-131-sauvegarde-automatique (branches empilées US-129 → US-130 → US-131, une seule PR vers dev)
 
 ## Récit
 
@@ -99,3 +99,4 @@ pastille « Hors ligne : la compétition continue sur ce PC » s'affiche comme d
 | Date | Événement |
 |---|---|
 | 2026-11-21 | Créée (spécification de l'Epic 8) |
+| 2026-11-21 | Implémentée (série E8 enchaînée, une seule PR finale) : En revue |

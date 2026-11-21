@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F12 (exigences §1, scénario de perte totale de connexion)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-034, US-035, US-017
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** us/US-131-sauvegarde-automatique (branches empilées US-129 → US-130 → US-131, une seule PR vers dev)
 
 ## Récit
 
@@ -112,3 +112,4 @@ Testé en E2E hors ligne avec un faux dossier (API File System Access simulée d
 | Date | Événement |
 |---|---|
 | 2026-11-21 | Créée (spécification de l'Epic 8) |
+| 2026-11-21 | Implémentée (série E8 enchaînée, une seule PR finale) : En revue |
