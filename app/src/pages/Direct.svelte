@@ -1,10 +1,11 @@
 <script lang="ts">
   // Lien public d'une épreuve (US-031 CA-4, ADR-0007) : accessible sans connexion tant que l'épreuve est publiée,
   // sinon « Cette épreuve n'est pas publiée ». Le suivi en direct (poules, tableau) viendra avec E9 : cette page n'affiche
-  // pour l'instant que l'épreuve elle-même, jamais de donnée de tireur (CA-5).
+  // pour l'instant que l'épreuve elle-même, jamais de donnée de tireur (CA-5). US-137 : le suivi en direct s'y ajoute.
   import { onMount } from 'svelte';
   import type { EpreuvePublique } from '@poule-position/domaine';
   import Banniere from '../composants/Banniere.svelte';
+  import SuiviDirect from '../composants/SuiviDirect.svelte';
   import Lien from '../composants/Lien.svelte';
   import type { ClientPublic, ErreurPublic } from '../lib/publication';
   import { CHEMINS } from '../lib/routes';
@@ -13,10 +14,12 @@
   interface Proprietes {
     client: ClientPublic;
     epreuveId: string;
+    /** US-137 : adresse WebSocket du serveur, pour la vue en direct. */
+    urlServeur?: string | undefined;
     naviguer: (chemin: string) => void;
   }
 
-  let { client, epreuveId, naviguer }: Proprietes = $props();
+  let { client, epreuveId, urlServeur, naviguer }: Proprietes = $props();
 
   const t = textes.accueilPublic;
   const te = textes.epreuves;
@@ -82,6 +85,14 @@
         <dd>{epreuve.lieu}</dd>
       {/if}
     </dl>
+    <SuiviDirect
+      {epreuveId}
+      {urlServeur}
+      surNonPubliee={() => {
+        epreuve = null;
+        refus = 'NON_PUBLIEE';
+      }}
+    />
   {:else}
     <p class="message" role="alert">{message}</p>
     {#if refus !== 'NON_PUBLIEE'}

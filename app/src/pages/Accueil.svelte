@@ -121,7 +121,15 @@
       {#each noeud.epreuves as epreuve (epreuve.id)}
         {@const lieu = lieuAEcrire(epreuve.lieu, lieuDesLignes)}
         <li>
-          <Lien chemin={cheminDirect(epreuve.id)} {naviguer} etiquette={t.voirEpreuve(epreuve.nom)}>
+          <Lien
+            chemin={cheminDirect(epreuve.id)}
+            {naviguer}
+            etiquette={epreuve.statut === 'enCours'
+              ? t.suivreEpreuve(epreuve.nom)
+              : epreuve.statut === 'terminee'
+                ? t.resultatsEpreuve(epreuve.nom)
+                : t.voirEpreuve(epreuve.nom)}
+          >
             <span class="ligne">
               <span class="nom"
                 >{courts.get(epreuve.id) ?? epreuve.nom}{#if !arme}<span class="arme"
@@ -129,7 +137,15 @@
                   >{/if}</span
               >
               <span class="jour">{epreuve.date ? t.jourCourt(epreuve.date) : ''}</span>
-              <span class="horaires">{horaires(epreuve)}</span>
+              <span class="horaires"
+                >{horaires(epreuve)}
+                <!-- US-139 : une épreuve en cours se suit en direct ; terminée, ses résultats. -->
+                {#if epreuve.statut === 'enCours'}
+                  <span class="direct"><span class="pastille-direct">{t.enDirect}</span>{t.suivreEnDirect}</span>
+                {:else if epreuve.statut === 'terminee'}
+                  <span class="direct">{t.resultats}</span>
+                {/if}</span
+              >
               <span class="chevron" aria-hidden="true"><Icone nom="chevron" taille={18} /></span>
             </span>
           </Lien>
@@ -199,6 +215,25 @@
 </main>
 
 <style>
+  .direct {
+    display: inline-flex;
+    margin-left: 0.5rem;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--lien, var(--accent));
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .pastille-direct {
+    padding: 0.05rem 0.5rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--sur-accent);
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
   main {
     display: grid;
     justify-items: center;
