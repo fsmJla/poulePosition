@@ -264,6 +264,184 @@ export const textes = {
     indisponible: 'Plan indisponible',
     horsLigne: 'Plan disponible en ligne',
   },
+  /** US-137 et US-138 : suivi en direct d'une épreuve sur le smartphone d'un spectateur (planches 38 et 39). */
+  spectateur: {
+    titre: 'Suivi en direct',
+    connexion: 'Connexion au direct…',
+    attente: 'Le direct commence dès que la table publie l’épreuve.',
+    avantPoules: 'Le direct commence avec les poules.',
+    enDirect: 'En direct',
+    onglets: 'Suivi de l’épreuve',
+    aVenir: 'À venir',
+    libelles: {
+      appel: 'Appel',
+      poules: 'Poules',
+      classement: 'Classement',
+      tableau: 'Tableau',
+      tireurs: 'Mes tireurs',
+    },
+    tireur: 'Tireur',
+    suivreColonne: 'Suivre',
+    suivre: (nom: string) => `Suivre ${nom}`,
+    nePlusSuivre: (nom: string) => `Ne plus suivre ${nom}`,
+    pisteAvancement: (piste: number, regles: number, total: number) => `Piste ${piste} · ${regles}/${total} matchs`,
+    chercher: 'Suivre un tireur : nom ou club',
+    aucunSuivi: 'Touchez l’étoile d’un tireur pour le suivre ici.',
+    surCeTelephone: 'Vos tireurs suivis sont gardés sur ce téléphone, sans compte.',
+    enPisteContre: (piste: number, adversaire: string) => `En piste ${piste} contre ${adversaire}`,
+    prochainPoule: (adversaire: string, avant: number) =>
+      `Prochain match contre ${adversaire} · après ${avant} match${avant > 1 ? 's' : ''}`,
+    prochainTableau: (adversaire: string, piste: number | null) =>
+      piste === null
+        ? `Prochain match contre ${adversaire}`
+        : `Prochain match contre ${adversaire} · à tirer, piste ${piste}`,
+    place: (place: number) => (place === 1 ? 'Vainqueur' : `${place}e place`),
+    retraits: { abandon: 'Abandon', forfait: 'Forfait', exclusion: 'Exclu' },
+    poule: 'Poule',
+    victoires: 'Victoires',
+    rang: 'Rang provisoire',
+    pouleEtPiste: (poule: number, piste: number) => `${poule} · piste ${piste}`,
+    surMatchs: (victoires: number, matchs: number) => `${victoires} sur ${matchs}`,
+    rangSur: (rang: number, sur: number) => `${rang}e / ${sur}`,
+  },
+  /** US-134 : l'écran géant lui-même (planches 31 à 35). */
+  ecranGeant: {
+    connexion: 'Connexion au serveur…',
+    lienInvalide: 'Ce lien d’écran n’est plus valable : demandez le nouveau à l’organisateur.',
+    pleinEcran: 'Plein écran',
+    appel: 'Appel des matchs',
+    poules: (numeros: number[]) =>
+      numeros.length > 1
+        ? `Poules ${numeros.slice(0, -1).join(', ')} et ${numeros.at(-1)}`
+        : `Poule ${numeros[0] ?? ''}`,
+    classement: 'Classement après les poules',
+    classementFinal: 'Classement final',
+    tour: (taille: number) =>
+      taille <= 2
+        ? 'Finale'
+        : taille === 4
+          ? 'Demi-finales'
+          : taille === 8
+            ? 'Quarts de finale'
+            : `Tableau de ${taille}`,
+    terminee: 'Épreuve terminée',
+    attente: 'En attente',
+    attenteDetail: 'Les épreuves de cet écran n’ont pas encore commencé.',
+    piste: (numero: number) => `Piste ${numero}`,
+    poule: (numero: number) => `Poule ${numero}`,
+    etats: { enPiste: 'En piste', aTirer: 'À tirer', libre: 'Libre' },
+    contextePoule: (poule: number, match: number, total: number) => `Poule ${poule} · match ${match} sur ${total}`,
+    pouleTerminee: (poule: number) => `Poule ${poule} terminée`,
+    aucunMatch: 'Aucun match appelé',
+    contre: 'contre',
+    puis: (a: string, b: string) => `Puis : ${a} – ${b}`,
+    avancement: (piste: number, regles: number, total: number) => `Piste ${piste} · ${regles} matchs sur ${total}`,
+    enPiste: (a: string, b: string) => `En piste : ${a} – ${b}`,
+    enPisteN: (piste: number) => `En piste ${piste}`,
+    aTirerN: (piste: number) => `À tirer · piste ${piste}`,
+    tireur: 'Tireur',
+    indice: 'Ind.',
+    rang: 'Rang',
+    podium: 'Podium',
+    pageSur: (n: number, total: number) => `Page ${n} sur ${total}`,
+    suivante: (libelle: string) => `suivante : ${libelle.charAt(0).toLowerCase()}${libelle.slice(1)}`,
+    misAJour: (heure: string) => `Mis à jour à ${heure}`,
+    derniereMiseAJour: (heure: string) => `Dernière mise à jour : ${heure}`,
+  },
+  /** US-133 à US-136 : écrans géants d'une manifestation (planches 36 et 37). */
+  ecrans: {
+    titre: 'Écrans',
+    intro:
+      'Chaque écran affiche les épreuves cochées et les fait défiler seul. Ouvrez son lien sur la TV de la salle, ou sur ce PC branché en HDMI pour qu’il continue sans internet.',
+    ajouter: 'Ajouter un écran',
+    aucun: 'Aucun écran pour l’instant.',
+    connecte: 'Connecté',
+    jamaisOuvert: 'Jamais ouvert',
+    ouvertLe: (instant: number) => {
+      const date = new Date(instant);
+      return `Ouvert le ${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} à ${date.getHours()} h ${String(date.getMinutes()).padStart(2, '0')}`;
+    },
+    reglagesResume: (duree: number, masquees: number) =>
+      `${duree} s par page · ${masquees === 0 ? 'toutes les vues' : `${masquees} vue${masquees > 1 ? 's' : ''} masquée${masquees > 1 ? 's' : ''}`}`,
+    aucuneEpreuve: 'Aucune épreuve cochée',
+    lienLibelle: 'Lien de l’écran (à ouvrir sur la TV, ne pas diffuser)',
+    qr: (nom: string) => `QR code du lien de ${nom}`,
+    copier: 'Copier le lien',
+    copie: 'Lien copié',
+    ouvrir: 'Ouvrir l’écran',
+    ouvrirSurCePc: 'Ouvrir sur ce PC',
+    fenetreBloquee: 'Autorisez l’ouverture de fenêtres pour ce site, puis réessayez.',
+    modifier: 'Modifier',
+    regenerer: 'Régénérer le lien…',
+    regenererDetail: 'l’ancien lien ne marchera plus',
+    supprimer: 'Supprimer…',
+    afficher: 'Afficher sur l’écran',
+    /** US-135 : vue imposée à un écran. */
+    commande: {
+      etiquette: (nom: string) => `Afficher sur ${nom}`,
+      epreuve: 'Épreuve',
+      page: 'Page',
+      poule: 'Numéro de poule (vide : toutes)',
+      toutes: 'toutes',
+      pendant: 'Pendant',
+      uneMinute: '1 min',
+      cinqMinutes: '5 min',
+      jusquaReprise: 'Jusqu’à reprise du défilement',
+      afficher: 'Afficher',
+      annuler: 'Annuler',
+      imposee: (vue: string, epreuve: string, poule: number | null) =>
+        `Vue imposée : ${vue.toLowerCase()}${poule ? ` ${poule}` : ''} · ${epreuve}`,
+      encore: (minutes: number) => `encore ${minutes} min`,
+      reprendre: 'Reprendre le défilement',
+    },
+    autres: (nom: string) => `Autres actions pour ${nom}`,
+    confirmerRegeneration: (nom: string) => `Régénérer le lien de ${nom} ?`,
+    detailRegeneration:
+      'L’ancien lien et son QR code ne marcheront plus : l’écran qui l’utilise sera déconnecté. Il faudra ouvrir le nouveau lien sur la TV.',
+    actionRegeneration: 'Régénérer',
+    confirmerSuppression: (nom: string) => `Supprimer ${nom} ?`,
+    detailSuppression: 'L’écran ouvert affichera « Cet écran n’existe plus ». Les épreuves ne sont pas touchées.',
+    actionSuppression: 'Supprimer',
+    horsLigne: 'Nécessite une connexion internet',
+    copieDu: (date: number) => {
+      const jour = new Date(date);
+      return `Hors ligne : écrans du ${String(jour.getDate()).padStart(2, '0')}/${String(jour.getMonth() + 1).padStart(2, '0')} à ${jour.getHours()} h ${String(jour.getMinutes()).padStart(2, '0')}`;
+    },
+    fenetre: {
+      titreNouveau: 'Nouvel écran',
+      nom: 'Nom de l’écran',
+      nomDefaut: 'Écran de la salle',
+      epreuves: 'Épreuves affichées',
+      epreuvesAide: 'Publiées ou non : l’écran les affiche par son lien.',
+      aucuneEpreuve: 'Aucune épreuve dans cette manifestation.',
+      nonPubliee: 'non publiée',
+      duree: 'Durée d’une page',
+      secondes: 'secondes',
+      vues: 'Vues à afficher',
+      enregistrer: 'Enregistrer',
+      annuler: 'Annuler',
+      enCours: 'Enregistrement…',
+    },
+    vues: {
+      appel: 'Appel des matchs',
+      poules: 'Poules',
+      classement: 'Classement',
+      tableau: 'Tableau',
+      podium: 'Podium',
+    },
+    statuts: { preparation: 'en préparation', enCours: 'en cours', terminee: 'terminée', archivee: 'archivée' },
+    erreurs: {
+      HORS_LIGNE: 'Nécessite une connexion internet',
+      SESSION_INVALIDE: 'Reconnectez-vous pour continuer',
+      NOM_EN_DOUBLE: 'Un autre écran porte déjà ce nom',
+      ECRAN_INCONNU: 'Cet écran n’existe plus',
+      ECRAN_DECONNECTE: 'Cet écran n’est pas connecté',
+      PROPRIETAIRE_INCONNU: 'Manifestation inconnue du serveur',
+      ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
+      NOM_VIDE: 'Donnez un nom à l’écran',
+      DUREE: 'La durée d’une page va de 5 à 120 secondes',
+    },
+  },
   /** US-131 : sauvegarde automatique des épreuves pilotées dans un dossier (clé USB). */
   sauvegardeAuto: {
     entree: 'Sauvegarde automatique…',
@@ -1635,6 +1813,8 @@ export const textes = {
     /** US-034 : export de l'épreuve dans un fichier `.poule.json`. */
     exporter: 'Exporter',
     exporterDetail: 'Un fichier de sauvegarde, avec le journal et les fichiers joints',
+    /** US-133 CA-6 : vers les écrans géants qui peuvent afficher l'épreuve. */
+    ecransGeants: 'Écrans géants…',
     exportation: {
       enCours: 'Préparation du fichier…',
       choisi: (nom: string) => `Épreuve exportée dans le fichier ${nom}.`,
@@ -1688,6 +1868,7 @@ export const textes = {
     competitions: 'Compétitions',
     plan: 'Plan',
     documents: 'Affiche et feuille de route',
+    ecrans: 'Écrans',
     nouvelleCompetition: 'Nouvelle compétition',
     plusEpreuves: '+ Épreuves',
     necessiteInternet: 'Nécessite une connexion internet',
@@ -2540,6 +2721,12 @@ export const textes = {
     voirSurCarte: (lieu: string) => `Voir ${lieu} sur OpenStreetMap`,
     /** US-079 CA-7 : la ligne d'une épreuve est le lien vers elle. */
     voirEpreuve: (nom: string) => `Voir l’épreuve ${nom}`,
+    /** US-139 : épreuve en cours ou terminée sur l'accueil public. */
+    enDirect: 'En direct',
+    suivreEnDirect: 'Suivre en direct',
+    resultats: 'Résultats',
+    suivreEpreuve: (nom: string) => `Suivre en direct ${nom}`,
+    resultatsEpreuve: (nom: string) => `Résultats de ${nom}`,
     direct: {
       titre: 'Épreuve',
       chargement: 'Chargement de l’épreuve…',

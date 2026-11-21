@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F13, F14 (exigences §3)
 - **Priorité :** P1
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-094, US-095, US-031, US-032, US-112
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** us/US-132-publier-vue-en-direct (série E9 enchaînée, une seule PR vers dev)
 
 ## Récit
 

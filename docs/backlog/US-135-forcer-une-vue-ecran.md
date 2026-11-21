@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F13 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-134
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** us/US-132-publier-vue-en-direct (série E9 enchaînée, une seule PR vers dev)
 
 ## Récit
 
@@ -74,3 +74,4 @@ internet »). La fenêtre locale (US-136) se commande depuis le PC sans réseau,
 |---|---|
 | 2026-11-21 | Créée (spécification de l'Epic 9) |
 | 2026-11-21 | Planches validées : Prête |
+| 2026-11-21 | Implémentée : « Afficher sur l'écran » (épreuve, page, poule, durée), bandeau « Vue imposée » et « Reprendre le défilement » (`CommandeEcran.svelte`, `PUT /ecrans/<id>/vue`). Tests : serveur `epreuves.test.ts` (CA-1, CA-4), `ecran-geant.test.ts` (vue imposée, échue), E2E `ecran-geant.spec.ts` « US-135 et US-136 » : En revue |

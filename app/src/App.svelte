@@ -19,6 +19,9 @@
   import { creerClientManifestations } from './lib/manifestations';
   import { creerClientFichiers } from './lib/fichiers';
   import { creerClientPublic } from './lib/publication';
+  import { creerClientEcrans } from './lib/ecrans';
+  import { creerDiffuseurLocal } from './lib/diffusion-locale';
+  import type { Ecran, VueImposee } from '@poule-position/protocole';
   import { textes } from './lib/textes';
   import { creerSuiviRetour, type EtatRetour } from './lib/retour-en-ligne';
   import { ecranAReprendre, estAccueil, etapeAMemoriser, lireEcran, memoriserEcran, oublierEcran } from './lib/reprise';
@@ -31,6 +34,7 @@
   import Accueil from './pages/Accueil.svelte';
   import Direct from './pages/Direct.svelte';
   import Saisie from './pages/Saisie.svelte';
+  import EcranGeant from './pages/EcranGeant.svelte';
   import Epreuve from './pages/Epreuve.svelte';
   import Comptes from './pages/Comptes.svelte';
   import Connexion from './pages/Connexion.svelte';
@@ -55,6 +59,7 @@
   import Profil from './pages/Profil.svelte';
   import Reinitialisation from './pages/Reinitialisation.svelte';
   import Organisateur from './pages/Organisateur.svelte';
+  import EcransCompetition from './pages/EcransCompetition.svelte';
 
   const urlServeur = import.meta.env.VITE_URL_SERVEUR ?? (import.meta.env.DEV ? URL_SERVEUR_LOCAL : undefined);
   const client = creerClientSession({ urlServeur: urlHttp(urlServeur), stockage: ouvrirStockage() });
@@ -93,6 +98,18 @@
     journal,
     jeton: async () => (session && !estLocale(session) ? session.jeton : null),
   });
+  /** US-133 : écrans géants du club (réglages gardés par le serveur, copie sur l'appareil). */
+  const ecrans = creerClientEcrans({
+    urlServeur: urlHttp(urlServeur),
+    jeton: async () => (session && !estLocale(session) ? session.jeton : null),
+  });
+  /** US-136 : la vue en direct des épreuves pilotées ici, pour les fenêtres locales de l'écran géant (sans réseau). */
+  const diffuseurLocal = creerDiffuseurLocal({ journal });
+  /** US-136 CA-1 : ouvre l'écran dans une seconde fenêtre, à glisser sur l'écran branché en HDMI ; faux si bloquée. */
+  const ouvrirSurCePc = (ecran: Ecran): boolean =>
+    window.open(`/ecran/${ecran.id}?local#${ecran.jeton}`, `ecran-${ecran.id}`, 'popup,width=1280,height=720') !== null;
+  /** US-135 CA-4 et US-136 CA-4 : une vue imposée depuis ce PC parvient aussi à la fenêtre locale. */
+  const imposerLocalement = (ecranId: string, vue: VueImposee | null) => diffuseurLocal.imposer(ecranId, vue);
   /** US-031 : page d'accueil publique et lien public d'une épreuve, lus sans session. */
   const publication = creerClientPublic({ urlServeur: urlHttp(urlServeur) });
   const accueil = creerAccueil({ journal, synchronisation, manifestations, competitions });
@@ -289,7 +306,9 @@
       annonces = [...annonces.filter((annonce) => annonce.epreuveId !== epreuveId), { epreuveId, texte }];
     });
     const arreterEnvoi = synchronisation.surveiller();
+    const arreterDiffuseur = diffuseurLocal.demarrer();
     return () => {
+      arreterDiffuseur();
       arreterSuppression();
       arreterEnvoi();
       window.removeEventListener('popstate', surRetour);
@@ -331,7 +350,14 @@
     <Accueil client={publication} connecte={session !== null} {naviguer} />
   {:else if route.page === 'direct' && route.epreuveId}
     <BarreOutils />
-    <Direct client={publication} epreuveId={route.epreuveId} {naviguer} />
+    <Direct client={publication} epreuveId={route.epreuveId} {urlServeur} {naviguer} />
+  {:else if route.page === 'ecran' && route.ecranId}
+    <!-- US-134 : écran géant ouvert par son lien, sans compte ni entête. -->
+    <EcranGeant
+      ecranId={route.ecranId}
+      {urlServeur}
+      local={new URLSearchParams(chemin.split('?')[1] ?? '').has('local')}
+    />
   {:else if route.page === 'saisie' && route.epreuveId}
     <!-- US-097 : page d'un smartphone entré par QR code, sans compte ni entête de l'organisateur. -->
     <Saisie epreuveId={route.epreuveId} {urlServeur} />
@@ -405,6 +431,17 @@
           clientCompetitions={competitions}
           {naviguer}
         />
+      {:else if route.page === 'ecransCompetition' && route.competitionId}
+        {#key route.competitionId}
+          <EcransCompetition
+            {accueil}
+            {ecrans}
+            {ouvrirSurCePc}
+            {imposerLocalement}
+            competitionId={route.competitionId}
+            {naviguer}
+          />
+        {/key}
       {:else if route.page === 'creer'}
         <Creer {accueil} {naviguer} />
       {:else if route.page === 'aideOrganisation'}
@@ -419,6 +456,9 @@
             clientManifestations={manifestations}
             clientCompetitions={competitions}
             {fichiers}
+            {ecrans}
+            {ouvrirSurCePc}
+            {imposerLocalement}
             manifestationId={route.manifestationId}
             onglet={route.onglet ?? 'competitions'}
             recherche={chemin.includes('?') ? `?${chemin.split('?')[1]}` : ''}

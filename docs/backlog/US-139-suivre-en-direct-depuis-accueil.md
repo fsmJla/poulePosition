@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F14 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-137, US-079
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** us/US-132-publier-vue-en-direct (série E9 enchaînée, une seule PR vers dev)
 
 ## Récit
 
@@ -55,3 +55,4 @@ nouveau.
 | Date | Événement |
 |---|---|
 | 2026-11-21 | Créée (spécification de l'Epic 9) |
+| 2026-11-21 | Implémentée : statut public facultatif de l'épreuve (domaine, protocole, DO `Club`), pastille « En direct », « Suivre en direct » ou « Résultats » sur la ligne de l'accueil public. Tests : domaine et serveur `publication.test.ts`, E2E `direct-spectateur.spec.ts` (CA-1) : En revue |
