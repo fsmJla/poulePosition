@@ -264,6 +264,28 @@ export const textes = {
     indisponible: 'Plan indisponible',
     horsLigne: 'Plan disponible en ligne',
   },
+  /** US-131 : sauvegarde automatique des épreuves pilotées dans un dossier (clé USB). */
+  sauvegardeAuto: {
+    entree: 'Sauvegarde automatique…',
+    indisponible: 'Disponible sur Chrome et Edge : exportez l’épreuve à la main (menu ⋯)',
+    titre: 'Sauvegarde automatique',
+    explication:
+      'Choisissez un dossier, par exemple sur une clé USB : ce PC y écrit la sauvegarde de chaque épreuve qu’il pilote, après chaque modification, même sans internet. En cas de panne, le fichier se reprend sur un autre PC par « Importer une épreuve ».',
+    inactive: 'Aucun dossier choisi : la sauvegarde automatique est arrêtée.',
+    active: (dossier: string) => `Sauvegarde automatique active dans « ${dossier} »`,
+    derniere: (instant: number) => {
+      const date = new Date(instant);
+      return `Dernière sauvegarde à ${date.getHours()} h ${String(date.getMinutes()).padStart(2, '0')}`;
+    },
+    pause: (dossier: string) => `Sauvegarde en pause : autorisez de nouveau l’écriture dans « ${dossier} ».`,
+    erreur: 'Sauvegarde automatique impossible : rebranchez la clé ou choisissez un autre dossier.',
+    choisir: 'Choisir un dossier',
+    reprendre: 'Reprendre la sauvegarde',
+    arreter: 'Arrêter',
+    fermer: 'Fermer',
+    bandeauPause: 'Sauvegarde automatique en pause',
+    bandeauErreur: 'Sauvegarde automatique impossible : rebranchez la clé ou choisissez un autre dossier',
+  },
   /** US-069 : champ d'heure à deux listes (heures, minutes par quart d'heure). */
   heure: {
     aucune: 'Aucune heure',
@@ -984,6 +1006,17 @@ export const textes = {
     pasEncoreEnvoyee: 'Pas encore envoyée',
     /** US-094 CA-3 : la WebSocket d'une épreuve pilotée ici est perdue ; rien ne s'arrête sur ce PC. */
     horsLignePilote: 'Hors ligne : la compétition continue sur ce PC',
+    /** US-130 : retour du réseau, envoi en cours puis résumé. */
+    retourEnvoi: 'De retour en ligne : envoi en cours…',
+    retourResume: (envoyees: number, recuperees: number, ecartees: number) => {
+      const parties = [
+        envoyees > 0 && `${envoyees} modification${envoyees > 1 ? 's' : ''} envoyée${envoyees > 1 ? 's' : ''}`,
+        recuperees > 0 &&
+          `${recuperees} saisie${recuperees > 1 ? 's' : ''} smartphone récupérée${recuperees > 1 ? 's' : ''}`,
+        ecartees > 0 && `${ecartees} écartée${ecartees > 1 ? 's' : ''}`,
+      ].filter((partie): partie is string => Boolean(partie));
+      return parties.length > 0 ? `De retour en ligne : ${parties.join(', ')}` : 'De retour en ligne';
+    },
     enAttente: (nombre: number) =>
       nombre > 1 ? `${nombre} modifications en attente d’envoi` : `${nombre} modification en attente d’envoi`,
     /** US-022 : date de la copie d'une épreuve pilotée par un autre PC (« Copie du 28/10 à 14 h 05 »). */

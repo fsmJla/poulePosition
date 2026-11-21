@@ -20,6 +20,12 @@
   import { creerClientFichiers } from './lib/fichiers';
   import { creerClientPublic } from './lib/publication';
   import { textes } from './lib/textes';
+  import { creerSuiviRetour, type EtatRetour } from './lib/retour-en-ligne';
+  import { ecranAReprendre, estAccueil, etapeAMemoriser, lireEcran, memoriserEcran, oublierEcran } from './lib/reprise';
+  import { creerSauvegardeAuto } from './lib/sauvegarde-auto';
+  import { magasinIndexedDb, selecteurDossier, sourceJournal } from './lib/sauvegarde-auto-navigateur';
+  import BandeauSauvegarde from './composants/BandeauSauvegarde.svelte';
+  import FenetreSauvegarde from './composants/FenetreSauvegarde.svelte';
   import BarreOutils from './composants/BarreOutils.svelte';
   import Entete from './composants/Entete.svelte';
   import Accueil from './pages/Accueil.svelte';
@@ -109,11 +115,42 @@
         auteur: session?.compte.email ?? '',
       });
       if (accuse.decision === 'accepte' || accuse.decision === 'refuse') void synchronisation.envoyer(epreuveId);
+      // US-130 : les saisies reçues au retour du réseau (boîte du serveur) entrent dans le résumé.
+      suiviRetour.saisieTraitee(accuse);
       return accuse;
     },
   });
+  /** US-130 : résumé de la resynchronisation au retour du réseau, d'après le journal des épreuves pilotées ici. */
+  const suiviRetour = creerSuiviRetour({
+    source: {
+      async confirmes() {
+        const locales = await journal.epreuvesLocales();
+        return new Map(locales.filter(({ pilote }) => pilote).map(({ epreuveId, confirme }) => [epreuveId, confirme]));
+      },
+      async enAttente() {
+        const locales = await journal.epreuvesLocales();
+        const nombres = await Promise.all(
+          locales.filter(({ pilote }) => pilote).map(({ epreuveId }) => synchronisation.enAttente(epreuveId)),
+        );
+        return nombres.reduce((total, nombre) => total + nombre, 0);
+      },
+    },
+  });
+  /** US-131 : sauvegarde automatique des épreuves pilotées ici dans un dossier choisi (Chrome, Edge). */
+  const choisirDossier = selecteurDossier();
+  const sauvegardeAuto = creerSauvegardeAuto({
+    magasin: magasinIndexedDb(),
+    source: sourceJournal({ journal, hierarchie: () => accueil.hierarchie(), fichiers }),
+    choisirDossier,
+  });
+  let fenetreSauvegarde = $state(false);
   let horsLignePilote = $state(false);
-  presence.surEtat((horsLigne) => (horsLignePilote = horsLigne));
+  let retour = $state<EtatRetour>({ etape: 'aucun' });
+  suiviRetour.surEtat((etat) => (retour = etat));
+  presence.surEtat((horsLigne) => {
+    horsLignePilote = horsLigne;
+    void suiviRetour.surHorsLigne(horsLigne);
+  });
   /** Faux tant que la session gardée n'est pas relue : évite d'afficher une page puis d'en changer. */
   let pret = $state(false);
   let chemin = $state(location.pathname + location.search);
@@ -135,6 +172,41 @@
 
   $effect(() => {
     if (pret && 'redirection' in route) naviguer(route.redirection, true);
+  });
+
+  /** US-129 : stockage local de l'appareil (null s'il est inaccessible). */
+  const stockageLocal = (() => {
+    try {
+      return window.localStorage;
+    } catch {
+      return null;
+    }
+  })();
+
+  /** US-129 CA-2 à CA-4 : écran d'une épreuve à rouvrir pour cette session, ou null. */
+  async function aReprendre(ouverte: SessionAppareil): Promise<string | null> {
+    const clubId = ouverte.compte.clubId;
+    if (!clubId) return null;
+    return ecranAReprendre(lireEcran(stockageLocal), clubId, {
+      clubDe: async (epreuveId) => (await journal.lire(epreuveId)).epreuve?.clubId ?? null,
+    });
+  }
+
+  // US-129 : l'étape d'une épreuve pilotée ici est mémorisée ; toute autre page réservée l'efface (le dernier écran
+  // consulté fait foi). Les pages publiques (accueil, connexion, smartphones) n'y touchent pas.
+  $effect(() => {
+    if (!pret || !session || !('page' in route)) return;
+    const clubId = session.compte.clubId;
+    if (!clubId) return;
+    const etape = etapeAMemoriser(route, chemin);
+    if (!etape) {
+      if (!['accueil', 'direct', 'saisie', 'connexion', 'motDePasseOublie', 'reinitialisation'].includes(route.page))
+        oublierEcran(stockageLocal);
+      return;
+    }
+    void journal.etat(etape.epreuveId).then((etat) => {
+      if (etat?.pilote) memoriserEcran(stockageLocal, { ...etape, clubId });
+    });
   });
 
   // US-022 CA-2 : une session en ligne (connexion, revalidation) envoie ce qui attendait.
@@ -161,6 +233,35 @@
     };
   });
 
+  // US-131 : la sauvegarde tourne tant qu'une session existe, dans un seul onglet à la fois (verrou du navigateur).
+  const avecSauvegarde = $derived(avecSession);
+  $effect(() => {
+    if (!avecSauvegarde) return;
+    let arreter = () => {};
+    let liberer: (() => void) | null = null;
+    let fini = false;
+    const lancer = () => {
+      void sauvegardeAuto.demarrer();
+      arreter = sauvegardeAuto.surveiller();
+    };
+    if (navigator.locks) {
+      void navigator.locks.request(
+        'poule-position:sauvegarde-auto',
+        () =>
+          new Promise<void>((resoudre) => {
+            if (fini) return resoudre();
+            lancer();
+            liberer = resoudre;
+          }),
+      );
+    } else lancer();
+    return () => {
+      fini = true;
+      arreter();
+      liberer?.();
+    };
+  });
+
   onMount(() => {
     const surRetour = () => (chemin = location.pathname + location.search);
     // US-005 CA-5 / CA-6 : de retour en ligne, la session est revalidée sans action (ou fermée, avec son motif).
@@ -169,8 +270,13 @@
     };
     window.addEventListener('popstate', surRetour);
     window.addEventListener('online', surEnLigne);
-    client.restaurer().then((restauree) => {
+    client.restaurer().then(async (restauree) => {
       session = restauree;
+      // US-129 CA-2 : rouverte sur son accueil, l'application reprend l'écran de l'épreuve quittée.
+      if (restauree && !restauree.compte.temporaire && estAccueil(chemin)) {
+        const reprise = await aReprendre(restauree);
+        if (reprise) naviguer(reprise, true);
+      }
       pret = true;
     });
     const arreterSuppression = synchronisation.surSuppression(({ epreuveId, nom, abandonnees }) => {
@@ -186,9 +292,11 @@
     };
   });
 
-  function surConnexion(ouverte: SessionAppareil) {
+  async function surConnexion(ouverte: SessionAppareil) {
+    // US-129 CA-3 : après une nouvelle connexion, on reprend l'écran de l'épreuve quittée.
+    const reprise = ouverte.compte.temporaire ? null : await aReprendre(ouverte);
     session = ouverte;
-    naviguer(CHEMINS.organisateur);
+    naviguer(reprise ?? CHEMINS.organisateur);
   }
 
   async function surDeconnexion() {
@@ -200,6 +308,7 @@
   /** US-006 : se déconnecter et effacer le vérificateur local du compte sur cet appareil. */
   async function surOubli() {
     await client.oublierCetAppareil();
+    oublierEcran(stockageLocal);
     session = null;
     naviguer(CHEMINS.connexion);
   }
@@ -233,7 +342,19 @@
   {:else if session}
     <!-- Pages réservées : entête commun (US-014) ; action principale tiffany (US-054, app.css). -->
     <div class="pages-connectees">
-      <Entete compte={session.compte} {surDeconnexion} {surOubli} {naviguer} {accueil} locale={estLocale(session)} />
+      <Entete
+        compte={session.compte}
+        {surDeconnexion}
+        {surOubli}
+        {naviguer}
+        {accueil}
+        locale={estLocale(session)}
+        surSauvegarde={choisirDossier ? () => (fenetreSauvegarde = true) : undefined}
+      />
+      <BandeauSauvegarde sauvegarde={sauvegardeAuto} />
+      {#if fenetreSauvegarde}
+        <FenetreSauvegarde sauvegarde={sauvegardeAuto} fermer={() => (fenetreSauvegarde = false)} />
+      {/if}
       {#if route.page === 'organisateur'}
         <Organisateur {session} {accueil} {fichiers} {journal} {synchronisation} {naviguer} />
       {:else if route.page === 'motDePasse'}
@@ -381,8 +502,21 @@
 {/if}
 
 <!-- US-094 CA-3 : la connexion au serveur d'une épreuve pilotée ici est perdue ; la compétition continue. -->
-<p class="hors-ligne-pilote" class:visible={horsLignePilote} role="status" aria-live="polite">
-  {horsLignePilote ? textes.epreuves.horsLignePilote : ''}
+<!-- US-130 : au retour, la même zone annonce l'envoi en cours puis le résumé, qui s'efface seul. -->
+<p
+  class="hors-ligne-pilote"
+  class:visible={horsLignePilote || retour.etape !== 'aucun'}
+  class:retour={!horsLignePilote && retour.etape !== 'aucun'}
+  role="status"
+  aria-live="polite"
+>
+  {horsLignePilote
+    ? textes.epreuves.horsLignePilote
+    : retour.etape === 'envoi'
+      ? textes.epreuves.retourEnvoi
+      : retour.etape === 'resume'
+        ? textes.epreuves.retourResume(retour.envoyees, retour.recuperees, retour.ecartees)
+        : ''}
 </p>
 
 <!-- US-039 CA-5 et CA-6 : ce PC vient d'effacer la copie d'une épreuve supprimée par un administrateur. -->
@@ -420,6 +554,13 @@
 
   .hors-ligne-pilote.visible {
     visibility: visible;
+  }
+
+  /* US-130 : de retour en ligne, la pastille passe à l'état « ok ». */
+  .hors-ligne-pilote.retour {
+    border-color: var(--etat-ok);
+    background: var(--surface);
+    color: var(--texte);
   }
 
   .annonces {

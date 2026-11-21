@@ -158,6 +158,9 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-126](US-126-imprimer-feuilles-match-tableau.md) | Imprimer les feuilles de match du tableau | E7 | Terminée | US-120, US-110, US-112 |
 | [US-127](US-127-imprimer-tableau.md) | Imprimer le tableau à afficher | E7 | Terminée | US-120, US-110 |
 | [US-128](US-128-imprimer-classement-final.md) | Imprimer le classement final | E7 | Terminée | US-120, US-115 |
+| [US-129](US-129-reprendre-apres-plantage.md) | Reprendre l'épreuve après un plantage, sur l'écran quitté | E8 | Terminée | US-021, US-005, US-058, US-094 |
+| [US-130](US-130-resume-retour-en-ligne.md) | Résumer la resynchronisation au retour du réseau | E8 | Terminée | US-094, US-102, US-022 |
+| [US-131](US-131-sauvegarde-automatique-dossier.md) | Sauvegarder automatiquement les épreuves pilotées dans un dossier (clé USB) | E8 | Terminée | US-034, US-035, US-017 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
@@ -197,6 +200,12 @@ US-114 → US-115, puis US-106 (saisie du tableau sur smartphone, E5). US-116 (s
 Puis US-117 (carte du tableau sur un afficheur et un pavé) → US-118 (même saisie pour les poules et les smartphones).
 
 **Ordre conseillé pour E7 (impressions, planches 22 à 30) :** US-120 (étape et gabarit) → US-121 → US-122 → US-123 → US-124 → US-125 → US-126 → US-127 → US-128.
+
+**Ordre conseillé pour E8 (hors ligne et resynchronisation) :** US-129 (reprise après plantage) → US-130 (résumé au
+retour du réseau) → US-131 (sauvegarde automatique dans un dossier). Le reste de F12 est déjà livré : connexion hors
+ligne (US-005), journal local et envoi différé (US-021, US-022), pastille hors ligne et reconnexion (US-094), saisie
+suspendue et saisies récupérées ou écartées (US-102), impressions hors ligne (E7). La fenêtre locale de l'écran géant
+(ADR-0010) relève de E9.
 
 **Retours ergonomiques du 2026-11-17, indépendants l'un de l'autre :** US-078 (jour des épreuves : grille et
 glisser-déposer sur le plan) et US-079 (filtres « À venir » / « En cours » de l'accueil de l'organisateur,

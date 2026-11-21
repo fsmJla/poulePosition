@@ -24,9 +24,11 @@
     /** US-062 : liste du club, lue au premier usage du champ de recherche. */
     accueil: Accueil;
     locale?: boolean;
+    /** US-131 : ouvre la fenêtre « Sauvegarde automatique » ; absent sans l'API du navigateur (entrée grisée). */
+    surSauvegarde?: (() => void) | undefined;
   }
 
-  let { compte, surDeconnexion, surOubli, naviguer, accueil, locale = false }: Proprietes = $props();
+  let { compte, surDeconnexion, surOubli, naviguer, accueil, locale = false, surSauvegarde }: Proprietes = $props();
 
   const t = textes.organisateur.oublier;
   const te = textes.entete;
@@ -82,7 +84,15 @@
       <!-- US-067 : les trois icônes de thème restent visibles sur écran large, sans menu à ouvrir. -->
       <SelecteurTheme surMarque grand />
     {/if}
-    <MenuCompte {compte} {naviguer} {surDeconnexion} surOubli={() => (aConfirmer = true)} {etroit} {enLigne} />
+    <MenuCompte
+      {compte}
+      {naviguer}
+      {surDeconnexion}
+      surOubli={() => (aConfirmer = true)}
+      {etroit}
+      {enLigne}
+      {surSauvegarde}
+    />
   </div>
 </header>
 {#if aConfirmer}
