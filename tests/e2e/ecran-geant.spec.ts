@@ -55,7 +55,7 @@ test('US-134 CA-1 à CA-3 et CA-5 : l’écran s’ouvre par son lien, suit l’
   await lancer(page, adresse);
   await expect(ecran.getByText('Appel des matchs').first()).toBeVisible({ timeout: 20_000 });
   await expect(ecran.getByRole('region', { name: 'Piste 1' })).toContainText('En piste');
-  await expect(ecran.getByText(/Page \d sur \d/)).toBeVisible();
+  await expect(ecran.getByText(/Mis à jour à \d\d:\d\d/)).toBeVisible({ timeout: 15_000 });
 
   // CA-3 : un score saisi au PC apparaît sur l'écran (page des poules) en moins de quelques secondes.
   await saisirBoutons(page, 5, 3);
@@ -119,7 +119,8 @@ test('US-135 et US-136 : imposer une vue ; la fenêtre locale de ce PC suit les 
   await choix.getByRole('button', { name: 'Afficher' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Vue imposée : poules' })).toBeVisible({ timeout: 20_000 });
   await expect(fenetre.getByRole('region', { name: 'Poule 1' })).toBeVisible({ timeout: 20_000 });
-  await expect(fenetre.getByText('Page 1 sur 1')).toBeVisible();
+  // Une seule page : la vue imposée ne défile pas.
+  await expect(fenetre.getByRole('region', { name: 'Poule 2' })).toHaveCount(0);
 
   // US-136 CA-2 : sans réseau, un score saisi sur ce PC arrive dans la fenêtre locale.
   await context.setOffline(true);

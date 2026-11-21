@@ -222,7 +222,11 @@
     if (!clubId) return;
     const etape = etapeAMemoriser(route, chemin);
     if (!etape) {
-      if (!['accueil', 'direct', 'saisie', 'connexion', 'motDePasseOublie', 'reinitialisation'].includes(route.page))
+      if (
+        !['accueil', 'direct', 'saisie', 'ecran', 'connexion', 'motDePasseOublie', 'reinitialisation'].includes(
+          route.page,
+        )
+      )
         oublierEcran(stockageLocal);
       return;
     }
@@ -239,7 +243,9 @@
   // US-094 : la présence du pilote tourne tant qu'une session existe ; une session locale (US-005) attend le réseau.
   // Recette US-099 à US-105 : la page de saisie d'un smartphone n'est jamais une table, même ouverte sur le PC pilote
   // (sinon elle ouvre une seconde WebSocket du pilote et tient la table « connectée » à elle seule).
-  const avecSession = $derived(session !== null && !('page' in route && route.page === 'saisie'));
+  // US-136 : la fenêtre d'un écran géant n'est jamais une table non plus : elle affiche, elle ne pilote rien.
+  const pageAffichage = $derived('page' in route && (route.page === 'saisie' || route.page === 'ecran'));
+  const avecSession = $derived(session !== null && !pageAffichage);
   $effect(() => {
     if (!avecSession) return;
     const arreter = presence.surveiller();
@@ -305,8 +311,10 @@
       const texte = textes.epreuves.suppression.annonce(nom, abandonnees);
       annonces = [...annonces.filter((annonce) => annonce.epreuveId !== epreuveId), { epreuveId, texte }];
     });
-    const arreterEnvoi = synchronisation.surveiller();
-    const arreterDiffuseur = diffuseurLocal.demarrer();
+    // US-136 : une fenêtre d'écran géant n'envoie rien au serveur et ne diffuse rien : c'est l'onglet du pilote qui le fait.
+    const fenetreEcran = location.pathname.startsWith('/ecran/');
+    const arreterEnvoi = fenetreEcran ? () => {} : synchronisation.surveiller();
+    const arreterDiffuseur = fenetreEcran ? () => {} : diffuseurLocal.demarrer();
     return () => {
       arreterDiffuseur();
       arreterSuppression();
@@ -550,7 +558,7 @@
 <!-- US-130 : au retour, la même zone annonce l'envoi en cours puis le résumé, qui s'efface seul. -->
 <p
   class="hors-ligne-pilote"
-  class:visible={horsLignePilote || retour.etape !== 'aucun'}
+  class:visible={!pageAffichage && (horsLignePilote || retour.etape !== 'aucun')}
   class:retour={!horsLignePilote && retour.etape !== 'aucun'}
   role="status"
   aria-live="polite"

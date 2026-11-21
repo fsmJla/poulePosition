@@ -100,7 +100,7 @@
       surEtat: (nouvel) => (etatServeur = { ...nouvel }),
     });
     connexion.demarrer();
-    // CA-2 : défilement ; l'horloge et la barre d'avancement suivent.
+    // CA-2 : défilement ; l'horloge suit.
     const minuteur = setInterval(() => {
       maintenant = Date.now();
       if (maintenant - debutPage >= duree) {
@@ -341,14 +341,6 @@
     </main>
 
     <footer>
-      <span
-        >{t.pageSur(pages.length === 0 ? 0 : (indice % pages.length) + 1, pages.length)}{pages.length > 1
-          ? ` · ${t.suivante(libellePage(pages[(indice + 1) % pages.length] ?? null))}`
-          : ''}</span
-      >
-      <div class="avancement" aria-hidden="true">
-        <div style="width: {Math.min(100, ((maintenant - debutPage) / duree) * 100)}%"></div>
-      </div>
       <span role="status">
         {#if recue}{perimee ? t.derniereMiseAJour(heure(recue.publieeLe)) : t.misAJour(heure(recue.publieeLe))}{/if}
       </span>
@@ -447,25 +439,14 @@
     padding: 2.5em 3.5em;
   }
 
+  /* Pied : seulement l'heure de la dernière mise à jour, à droite. */
   footer {
     display: flex;
+    justify-content: flex-end;
     align-items: center;
     gap: 1em;
     padding: 0.85em 2.3em;
     border-top: 1px solid var(--bordure);
-  }
-
-  .avancement {
-    flex: 1;
-    height: 0.33em;
-    border-radius: 999px;
-    background: var(--surface-2);
-  }
-
-  .avancement div {
-    height: 100%;
-    border-radius: 999px;
-    background: var(--accent);
   }
 
   .pistes {
