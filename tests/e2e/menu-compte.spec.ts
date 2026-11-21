@@ -9,6 +9,9 @@ const etroit = (page: Page) => (page.viewportSize()?.width ?? 1280) < 640;
 
 const menu = (page: Page) => page.locator('#menu-compte');
 
+/** US-131 : le navigateur propose-t-il le sélecteur de dossier (Chrome, Edge) ? */
+const avecSelecteurDossier = (page: Page) => page.evaluate(() => 'showDirectoryPicker' in window);
+
 test('US-017 CA-1 : l’avatar remplace les deux boutons de l’entête', async ({ page }) => {
   await connecterSimule(page, 'organisateur');
   const entete = page.getByRole('banner');
@@ -29,6 +32,8 @@ test('US-017 CA-2 : le menu montre l’avatar, le nom, l’e-mail, puis les troi
   await expect(menu(page)).toContainText('simule@poule-position.test');
   expect(await menu(page).locator('a, button').allInnerTexts()).toEqual([
     'Éditer le profil',
+    // US-131 : la sauvegarde automatique est un bouton si le navigateur a le sélecteur de dossier, grisée sinon.
+    ...((await avecSelecteurDossier(page)) ? ['Sauvegarde automatique…'] : []),
     ...(etroit(page) ? ['Créer', 'Comment ça s’organise', 'Clair', 'Sombre', 'Auto'] : []),
     'Se déconnecter',
     'Se déconnecter et oublier cet appareil',
@@ -74,7 +79,9 @@ test('US-017 CA-4 : au clavier, avec les flèches, Début, Fin et Entrée', asyn
   await page.keyboard.press('ArrowDown');
   await expect(menu(page).getByRole('link', { name: 'Éditer le profil' })).toBeFocused();
   // Écran étroit : cinq entrées de plus (Créer, aide, trois thèmes) entre le profil et « Se déconnecter ».
-  for (let pas = 0; pas < (etroit(page) ? 6 : 1); pas++) await page.keyboard.press('ArrowDown');
+  // US-131 : une entrée de plus, « Sauvegarde automatique… », si le navigateur a le sélecteur de dossier.
+  const sauvegarde = (await avecSelecteurDossier(page)) ? 1 : 0;
+  for (let pas = 0; pas < (etroit(page) ? 6 : 1) + sauvegarde; pas++) await page.keyboard.press('ArrowDown');
   await expect(menu(page).getByRole('button', { name: 'Se déconnecter', exact: true })).toBeFocused();
   await page.keyboard.press('End');
   await expect(menu(page).getByRole('button', { name: 'Se déconnecter et oublier cet appareil' })).toBeFocused();

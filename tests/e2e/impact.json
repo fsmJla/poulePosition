@@ -135,7 +135,8 @@
     "charte",
     "smartphone-organisateur",
     "page",
-    "theme-icones"
+    "theme-icones",
+    "sauvegarde-automatique"
   ],
   "app/src/composants/SelecteurTheme.svelte": [
     "entete",
@@ -338,10 +339,16 @@
   "app/src/lib/adresse.ts": ["adresse-lieu"],
   "app/src/composants/PlanLieu.svelte": ["plan-lieu", "assistant", "manifestation"],
   "app/src/lib/plan-lieu.ts": ["plan-lieu"],
-  "app/src/lib/sauvegarde.ts": ["exporter-epreuve"],
+  "app/src/lib/sauvegarde.ts": ["exporter-epreuve", "sauvegarde-automatique"],
   "app/src/lib/import-sauvegarde.ts": ["importer-epreuve"],
   "app/src/composants/ConfirmationImport.svelte": ["importer-epreuve"],
-  "app/src/lib/synchronisation.ts": ["importer-epreuve", "prise-de-main", "presence-pilote"],
+  "app/src/lib/synchronisation.ts": [
+    "importer-epreuve",
+    "prise-de-main",
+    "presence-pilote",
+    "retour-en-ligne",
+    "reprise-plantage"
+  ],
   "app/src/lib/acces-qr.ts": ["acces-qr", "smartphone-arbitre"],
   "app/src/lib/saisie-smartphone.ts": ["smartphone-arbitre", "matchs-piste", "saisie-suspendue"],
   "app/src/composants/MatchsPiste.svelte": ["matchs-piste", "saisie-match", "correction-score", "saisie-suspendue"],
@@ -383,7 +390,7 @@
     "tableau-retrait"
   ],
   "paquets/protocole/src/acces-qr.ts": ["acces-qr"],
-  "app/src/lib/presence-pilote.ts": ["presence-pilote", "prise-de-main", "vue-saisie"],
+  "app/src/lib/presence-pilote.ts": ["presence-pilote", "prise-de-main", "vue-saisie", "retour-en-ligne"],
   "paquets/domaine/src/vue-saisie.ts": ["vue-saisie", "matchs-piste"],
   "paquets/protocole/src/vue-saisie.ts": ["vue-saisie"],
   "app/src/lib/connexion.ts": ["presence-pilote", "prise-de-main", "hors-ligne", "vue-saisie"],
@@ -485,5 +492,11 @@
   "app/src/composants/impressions/ImpressionClassementPoules.svelte": ["impression-poules"],
   "app/src/composants/impressions/ImpressionFeuillesMatch.svelte": ["impression-tableau"],
   "app/src/composants/impressions/ImpressionTableau.svelte": ["impression-tableau"],
-  "app/src/composants/impressions/ImpressionClassementFinal.svelte": ["impression-tableau"]
+  "app/src/composants/impressions/ImpressionClassementFinal.svelte": ["impression-tableau"],
+  "app/src/lib/reprise.ts": ["reprise-plantage"],
+  "app/src/lib/retour-en-ligne.ts": ["retour-en-ligne"],
+  "app/src/lib/sauvegarde-auto.ts": ["sauvegarde-automatique"],
+  "app/src/lib/sauvegarde-auto-navigateur.ts": ["sauvegarde-automatique"],
+  "app/src/composants/FenetreSauvegarde.svelte": ["sauvegarde-automatique"],
+  "app/src/composants/BandeauSauvegarde.svelte": ["sauvegarde-automatique"]
 }
