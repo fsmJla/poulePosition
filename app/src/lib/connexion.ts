@@ -23,6 +23,8 @@ const SANS_RECONNEXION: number[] = [
   FERMETURES.EXCLUE,
   FERMETURES.MAIN_PRISE,
   FERMETURES.APPAREIL_EXCLU,
+  // US-132 : un spectateur d'une épreuve dépubliée ne se reconnecte pas.
+  FERMETURES.NON_PUBLIEE,
 ];
 
 /** Ce qu'utilise la connexion d'une WebSocket (permet une fausse socket dans les tests). */
