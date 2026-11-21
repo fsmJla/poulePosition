@@ -147,6 +147,8 @@ export function pagesDeLEpreuve(vue: VueDirect, masquees: readonly VueEcran[] = 
       if (voir('poules'))
         for (const poules of parTranches(vue.poules, POULES_PAR_PAGE))
           pages.push({ type: 'poules', epreuveId, poules });
+      // Demande de l'utilisateur (2026-11-21) : le classement provisoire suit les poules.
+      classement(false);
       break;
     case 'classement':
       classement(false);
@@ -160,6 +162,8 @@ export function pagesDeLEpreuve(vue: VueDirect, masquees: readonly VueEcran[] = 
         for (const tranche of parTranches(matchs, MATCHS_PAR_PAGE))
           pages.push({ type: 'tableau', epreuveId, tour, matchs: tranche, suivant });
       }
+      // Demande de l'utilisateur (2026-11-21) : le classement après les poules ferme le cycle du tableau.
+      classement(false);
       break;
     }
     case 'terminee':

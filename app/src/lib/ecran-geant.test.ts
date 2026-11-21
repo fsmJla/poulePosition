@@ -101,9 +101,10 @@ describe('écran géant : pages (US-134 CA-2)', () => {
 
   it('poules en cours : l’appel, puis les poules deux par deux ; une vue masquée est sautée', () => {
     const vue = vueDe(...deuxPoules);
-    expect(pagesDeLEpreuve(vue).map((p) => p.type)).toEqual(['appel', 'poules']);
+    expect(pagesDeLEpreuve(vue).map((p) => p.type)).toEqual(['appel', 'poules', 'classement']);
+    expect(pagesDeLEpreuve(vue).at(-1)).toMatchObject({ type: 'classement', final: false, definitif: false });
     expect((pagesDeLEpreuve(vue)[1] as { poules: unknown[] }).poules).toHaveLength(POULES_PAR_PAGE);
-    expect(pagesDeLEpreuve(vue, ['appel']).map((p) => p.type)).toEqual(['poules']);
+    expect(pagesDeLEpreuve(vue, ['appel', 'classement']).map((p) => p.type)).toEqual(['poules']);
   });
 
   it('poules finies : le classement, définitif', () => {
@@ -116,7 +117,7 @@ describe('écran géant : pages (US-134 CA-2)', () => {
   it('tableau : l’appel, puis le tour en cours et le tour suivant', () => {
     const vue = vueDe(...poulesFinies, { type: 'TableauCree', donnees: { qualifies: ['a', 'd', 'b', 'e', 'c', 'f'] } });
     const pages = pagesDeLEpreuve(vue);
-    expect(pages.map((p) => p.type)).toEqual(['tableau']);
+    expect(pages.map((p) => p.type)).toEqual(['tableau', 'classement']);
     expect(pages[0]).toMatchObject({ type: 'tableau', tour: 8 });
     expect((pages[0] as { suivant: unknown[] }).suivant.length).toBeGreaterThan(0);
   });
@@ -155,6 +156,7 @@ describe('écran géant : pages (US-134 CA-2)', () => {
       ['classement', 'e2'],
       ['appel', 'e1'],
       ['poules', 'e1'],
+      ['classement', 'e1'],
     ]);
   });
 });
@@ -178,13 +180,13 @@ describe('écran géant : vue imposée (US-135)', () => {
 
   it('CA-2 : échue, ou sans page à montrer, la vue imposée laisse place au défilement', () => {
     expect(pagesDeLEcran(ecran({ epreuveId: 'e1', vue: 'appel', poule: null, jusqua: 1000 }), vues, 2000)).toHaveLength(
-      2,
+      3,
     );
     expect(pagesDeLEcran(ecran({ epreuveId: 'e1', vue: 'podium', poule: null, jusqua: null }), vues, 0)).toHaveLength(
       1,
     );
     expect(pagesDeLEcran(ecran({ epreuveId: 'autre', vue: 'appel', poule: null, jusqua: null }), vues, 0)).toHaveLength(
-      2,
+      3,
     );
     expect(pagesDeLEcran(ecran({ epreuveId: 'e1', vue: 'poules', poule: 9, jusqua: null }), vues, 0)).toHaveLength(1);
   });

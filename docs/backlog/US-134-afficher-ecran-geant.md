@@ -28,9 +28,9 @@ Maquette : planches 31 à 35 (`docs/maquettes/direct/31-ecran-appel.png` à `35-
 - **Étant donné** un écran avec plusieurs épreuves cochées
 - **Quand** il tourne
 - **Alors** il enchaîne, pour chaque épreuve, les pages utiles à son étape, chacune pendant la durée réglée :
-  - **poules en cours :** l'appel par piste, puis les poules et leurs scores ;
+  - **poules en cours :** l'appel par piste, puis les poules et leurs scores, puis le classement provisoire ;
   - **poules finies :** le classement ;
-  - **tableau :** l'appel des matchs, puis le tour en cours du tableau ;
+  - **tableau :** l'appel des matchs, puis le tour en cours du tableau, puis le classement après les poules ;
   - **épreuve terminée :** le podium, puis le classement final.
 
   Une page trop longue se découpe en plusieurs pages. Les vues masquées (US-133) sont sautées.
@@ -93,3 +93,4 @@ son heure (CA-4) et reprend seul au retour. La version sans internet est la fen�
 | 2026-11-21 | Créée (spécification de l'Epic 9) |
 | 2026-11-21 | Planches validées : Prête |
 | 2026-11-21 | Implémentée : page `/ecran/<id>#<jeton>` (ticket, socket de contrôle, une socket de lecture par épreuve), défilement selon l'étape (`ecran-geant.ts`), pages des planches 31 à 35, « Dernière mise à jour », lien invalide, plein écran et Wake Lock. Tests : `ecran-geant.test.ts`, `connexion-ecran.test.ts`, E2E `ecran-geant.spec.ts` (CA-1 à CA-3, CA-5) : En revue |
+| 2026-11-21 | Recette : à la demande de l'utilisateur, le classement s'ajoute au défilement pendant les poules (provisoire) et au tableau (après les poules), pas seulement entre les deux ; le pied de l'écran ne garde que l'heure de mise à jour |
