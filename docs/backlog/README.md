@@ -161,6 +161,14 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-129](US-129-reprendre-apres-plantage.md) | Reprendre l'épreuve après un plantage, sur l'écran quitté | E8 | Terminée | US-021, US-005, US-058, US-094 |
 | [US-130](US-130-resume-retour-en-ligne.md) | Résumer la resynchronisation au retour du réseau | E8 | Terminée | US-094, US-102, US-022 |
 | [US-131](US-131-sauvegarde-automatique-dossier.md) | Sauvegarder automatiquement les épreuves pilotées dans un dossier (clé USB) | E8 | Terminée | US-034, US-035, US-017 |
+| [US-132](US-132-publier-vue-en-direct.md) | Publier la vue en direct d'une épreuve et la lire par lien public ou lien d'écran (technique, ADR à écrire d'abord) | E9 | Prête | US-094, US-095, US-031, US-032, US-112 |
+| [US-133](US-133-gerer-les-ecrans.md) | Gérer les écrans géants d'une manifestation (onglet « Écrans ») | E9 | Prête | US-132, US-056 |
+| [US-134](US-134-afficher-ecran-geant.md) | Afficher l'écran géant avec un défilement automatique | E9 | Prête | US-132, US-133 |
+| [US-135](US-135-forcer-une-vue-ecran.md) | Forcer une vue sur un écran géant depuis le PC | E9 | Prête | US-134 |
+| [US-136](US-136-ecran-geant-fenetre-locale.md) | Ouvrir l'écran géant dans une fenêtre locale du PC pilote, qui marche sans internet | E9 | Prête | US-134 |
+| [US-137](US-137-suivre-epreuve-en-direct.md) | Suivre une épreuve en direct sur son smartphone (spectateur) (P2) | E9 | Prête | US-132, US-031 |
+| [US-138](US-138-suivre-un-tireur.md) | Suivre un ou plusieurs tireurs (spectateur) (P2) | E9 | Prête | US-137 |
+| [US-139](US-139-suivre-en-direct-depuis-accueil.md) | Proposer « Suivre en direct » sur l'accueil public (P2) | E9 | Prête | US-137, US-079 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
@@ -206,6 +214,8 @@ retour du réseau) → US-131 (sauvegarde automatique dans un dossier). Le reste
 ligne (US-005), journal local et envoi différé (US-021, US-022), pastille hors ligne et reconnexion (US-094), saisie
 suspendue et saisies récupérées ou écartées (US-102), impressions hors ligne (E7). La fenêtre locale de l'écran géant
 (ADR-0010) relève de E9.
+
+**Ordre conseillé pour E9 (affichage en direct) :** US-132 (ADR des lecteurs de la vue en direct d'abord, via `/adr`), puis US-133 (planches 31 à 39 validées le 2026-11-21, `docs/maquettes/direct/`) → US-134 → US-136 (fenêtre locale, hors ligne) → US-135. Puis, en P2 : US-137 → US-138 → US-139.
 
 **Retours ergonomiques du 2026-11-17, indépendants l'un de l'autre :** US-078 (jour des épreuves : grille et
 glisser-déposer sur le plan) et US-079 (filtres « À venir » / « En cours » de l'accueil de l'organisateur,

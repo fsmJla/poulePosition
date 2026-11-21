@@ -10,6 +10,7 @@ des écrans. Les couleurs et les polices restent celles de la charte « Calme r�
 | **Déroulé de l'épreuve** | Inscriptions, poules (constitution, ajustement, saisie), tableau, saisie sur smartphone | 2026-11-17 | https://claude.ai/artifact/Xb4Vs7ftyoEGUWXvDKJoBv | [`deroule/`](deroule/) |
 | **Saisie des scores** | Afficheur et pavé à la demande : tableau et poules sur le PC, poule et tableau sur smartphone (US-117, US-118) | 2026-11-20 | https://claude.ai/artifact/8u3AY5FxxKCkULtwobhd8b | [`deroule/`](deroule/) (sources `Saisie*.dc.html`) |
 | **Impressions** | Étape « Impressions » et les huit documents imprimés de l'épreuve (Epic 7, US-120 à US-128) | 2026-11-20 | https://claude.ai/artifact/G2APfbhZzKQFy4PCi2NQ3P | [`impressions/`](impressions/) |
+| **Affichage en direct** | Écran géant (appel, poules, classement, tableau, podium), onglet « Écrans » de la manifestation, réglage d'un écran, spectateur sur smartphone (Epic 9, US-133 à US-138) | 2026-11-21 | https://claude.ai/artifact/XQV7W2qNRrbRHhuKQ8sEA7 | [`direct/`](direct/) |
 
 Les canevas sont privés (compte de l'utilisateur). Les dossiers `ihm/` et `deroule/` en gardent deux copies :
 
@@ -367,6 +368,29 @@ test) : la recette compare l'écran ou l'aperçu d'impression au canevas.
 
 Principes : chaque document porte le même en-tête (Poule Position, épreuve, arme, compétition, date) et le même pied
 (« Imprimé le … à … », page n / N) ; il reste noir sur blanc quel que soit le thème ; il s'imprime sans internet.
+
+## Maquette « Affichage en direct » (2026-11-21)
+
+Epic 9 (US-133 à US-138). Les planches de l'écran géant sont en **thème sombre**, à 1920 × 1080 ; celles de
+l'organisateur suivent la planche 2 ; celles du spectateur sont à 390 × 844. Les données sont celles d'un même exemple
+(Challenge de Pessac 2026, Sabre M13 Dames, 24 tireuses). Les captures `.png` de `direct/` sont la référence
+visuelle ; les sources `.dc.html` donnent les mesures exactes.
+
+| N° | Planche | Capture (référence visuelle) | Source | Taille | Ce qu'elle fixe |
+|---|---|---|---|---|---|
+| 31 | Écran géant : appel des matchs | [`direct/31-ecran-appel.png`](direct/31-ecran-appel.png) | `direct/Main.dc.html` | 1920 × 1080 | Bandeau haut (manifestation, épreuve, page, heure) ; une carte par piste (« En piste » turquoise, « À tirer » ambre, « Libre »), tireurs aux couleurs de leur côté, match suivant ; bandeau bas (page n sur N, page suivante, avancement, heure de mise à jour) |
+| 32 | Écran géant : poules en cours | [`direct/32-ecran-poules.png`](direct/32-ecran-poules.png) | `direct/EcranPoules.dc.html` | 1920 × 1080 | Deux poules par page : grille des scores, V, indice, match en piste encadré |
+| 33 | Écran géant : classement | [`direct/33-ecran-classement.png`](direct/33-ecran-classement.png) | `direct/EcranClassement.dc.html` | 1920 × 1080 | Douze lignes par page sur deux colonnes : rang, nom et club, V/M, indice, touches données ; « Provisoire » ou « Définitif » |
+| 34 | Écran géant : tableau | [`direct/34-ecran-tableau.png`](direct/34-ecran-tableau.png) | `direct/EcranTableau.dc.html` | 1920 × 1080 | Matchs du tour en cours (score, « En piste N », « À tirer · piste N », « À appeler »), tour suivant à droite |
+| 35 | Écran géant : podium | [`direct/35-ecran-podium.png`](direct/35-ecran-podium.png) | `direct/EcranPodium.dc.html` | 1920 × 1080 | Podium 1, 2, 3 ex aequo, « Épreuve terminée » |
+| 36 | Manifestation : onglet « Écrans » | [`direct/36-manifestation-ecrans.png`](direct/36-manifestation-ecrans.png) | `direct/Ecrans.dc.html` | 1360 × 1100 | Quatrième onglet ; « Ajouter un écran » ; carte d'écran (état, épreuves, réglages, « Afficher sur l'écran » et son choix épreuve / page / durée, bandeau « Vue imposée », lien, QR, « Copier le lien », « Ouvrir sur ce PC », « ⋯ ») |
+| 37 | Régler un écran | [`direct/37-regler-un-ecran.png`](direct/37-regler-un-ecran.png) | `direct/EcranReglages.dc.html` | 1360 × 1100 | Fenêtre : nom, épreuves cochées par compétition (publiées ou non), durée d'une page, vues à afficher |
+| 38 | Spectateur : suivre une épreuve | [`direct/38-spectateur-epreuve.png`](direct/38-spectateur-epreuve.png) | `direct/DirectPoules.dc.html` | 390 × 844 | Pastille « En direct » ; onglets Appel, Poules, Classement, Tableau (grisé à venir), ★ Mes tireurs ; étoile par tireur ; heure de mise à jour |
+| 39 | Spectateur : mes tireurs | [`direct/39-spectateur-mes-tireurs.png`](direct/39-spectateur-mes-tireurs.png) | `direct/DirectTireurs.dc.html` | 390 × 844 | Recherche « Suivre un tireur » ; une carte par tireur suivi (en piste ou prochain match, poule, victoires, rang provisoire) |
+
+Choix retenus : l'écran géant n'a ni entête de l'application ni action ; ses vues (planches 31 à 35) se suivent selon
+l'avancement (US-134 CA-2). Les captures sont rendues hors du canevas, en HTML statique ; le QR de la planche 36 est
+un motif provisoire.
 
 ## Règle pour les nouvelles US
 
