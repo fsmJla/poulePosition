@@ -20,6 +20,7 @@
   import { creerClientFichiers } from './lib/fichiers';
   import { creerClientPublic } from './lib/publication';
   import { textes } from './lib/textes';
+  import { creerSuiviRetour, type EtatRetour } from './lib/retour-en-ligne';
   import { ecranAReprendre, estAccueil, etapeAMemoriser, lireEcran, memoriserEcran, oublierEcran } from './lib/reprise';
   import BarreOutils from './composants/BarreOutils.svelte';
   import Entete from './composants/Entete.svelte';
@@ -110,11 +111,34 @@
         auteur: session?.compte.email ?? '',
       });
       if (accuse.decision === 'accepte' || accuse.decision === 'refuse') void synchronisation.envoyer(epreuveId);
+      // US-130 : les saisies reçues au retour du réseau (boîte du serveur) entrent dans le résumé.
+      suiviRetour.saisieTraitee(accuse);
       return accuse;
     },
   });
+  /** US-130 : résumé de la resynchronisation au retour du réseau, d'après le journal des épreuves pilotées ici. */
+  const suiviRetour = creerSuiviRetour({
+    source: {
+      async confirmes() {
+        const locales = await journal.epreuvesLocales();
+        return new Map(locales.filter(({ pilote }) => pilote).map(({ epreuveId, confirme }) => [epreuveId, confirme]));
+      },
+      async enAttente() {
+        const locales = await journal.epreuvesLocales();
+        const nombres = await Promise.all(
+          locales.filter(({ pilote }) => pilote).map(({ epreuveId }) => synchronisation.enAttente(epreuveId)),
+        );
+        return nombres.reduce((total, nombre) => total + nombre, 0);
+      },
+    },
+  });
   let horsLignePilote = $state(false);
-  presence.surEtat((horsLigne) => (horsLignePilote = horsLigne));
+  let retour = $state<EtatRetour>({ etape: 'aucun' });
+  suiviRetour.surEtat((etat) => (retour = etat));
+  presence.surEtat((horsLigne) => {
+    horsLignePilote = horsLigne;
+    void suiviRetour.surHorsLigne(horsLigne);
+  });
   /** Faux tant que la session gardée n'est pas relue : évite d'afficher une page puis d'en changer. */
   let pret = $state(false);
   let chemin = $state(location.pathname + location.search);
@@ -425,8 +449,21 @@
 {/if}
 
 <!-- US-094 CA-3 : la connexion au serveur d'une épreuve pilotée ici est perdue ; la compétition continue. -->
-<p class="hors-ligne-pilote" class:visible={horsLignePilote} role="status" aria-live="polite">
-  {horsLignePilote ? textes.epreuves.horsLignePilote : ''}
+<!-- US-130 : au retour, la même zone annonce l'envoi en cours puis le résumé, qui s'efface seul. -->
+<p
+  class="hors-ligne-pilote"
+  class:visible={horsLignePilote || retour.etape !== 'aucun'}
+  class:retour={!horsLignePilote && retour.etape !== 'aucun'}
+  role="status"
+  aria-live="polite"
+>
+  {horsLignePilote
+    ? textes.epreuves.horsLignePilote
+    : retour.etape === 'envoi'
+      ? textes.epreuves.retourEnvoi
+      : retour.etape === 'resume'
+        ? textes.epreuves.retourResume(retour.envoyees, retour.recuperees, retour.ecartees)
+        : ''}
 </p>
 
 <!-- US-039 CA-5 et CA-6 : ce PC vient d'effacer la copie d'une épreuve supprimée par un administrateur. -->
@@ -464,6 +501,13 @@
 
   .hors-ligne-pilote.visible {
     visibility: visible;
+  }
+
+  /* US-130 : de retour en ligne, la pastille passe à l'état « ok ». */
+  .hors-ligne-pilote.retour {
+    border-color: var(--etat-ok);
+    background: var(--surface);
+    color: var(--texte);
   }
 
   .annonces {
