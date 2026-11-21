@@ -14,6 +14,9 @@ async function epreuveDuJour(page: Page) {
   await page.getByLabel('Arme').selectOption('sabre');
   await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
   await expect(page).toHaveURL(MOTIF_PAGE_EPREUVE);
+  // La pastille d'attente n'apparaît qu'après 3 s (US-090) : on attend d'abord l'envoi de la création au serveur.
+  await expect(page.getByText(/Pas encore envoyée/)).toHaveCount(0, { timeout: 20_000 });
+  await page.waitForTimeout(3_500);
   await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 20_000 });
 }
 

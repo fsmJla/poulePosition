@@ -29,9 +29,12 @@ test('US-137 CA-1 à CA-5, US-138 et US-139 : suivre une épreuve publiée et se
   const visiteur = await visiteurContexte.newPage();
 
   // US-139 CA-1 : sur l'accueil public, l'épreuve en cours se suit en direct.
-  await visiteur.goto('/');
+  // Le statut « En cours » arrive au serveur avec le lot du lancement des poules : on recharge jusqu'à le voir.
   const suivre = visiteur.getByRole('link', { name: `Suivre en direct ${nom}` });
-  await expect(suivre).toBeVisible({ timeout: 30_000 });
+  await expect(async () => {
+    await visiteur.goto('/');
+    await expect(suivre).toBeVisible({ timeout: 5_000 });
+  }).toPass({ timeout: 60_000 });
   await expect(suivre).toContainText('En direct');
   await suivre.click();
   await expect(visiteur).toHaveURL(new RegExp(`/direct/${epreuveId}$`));
