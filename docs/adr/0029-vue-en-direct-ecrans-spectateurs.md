@@ -39,7 +39,7 @@ contient des droits et des identifiants d'appareil. Le serveur ne calcule rien (
 
 | Lecteur | Ouverture | Condition |
 |---|---|---|
-| **Spectateur** | `…/epreuves/<id>/direct`, sans authentification | L'épreuve est publiée, d'après la dernière vue. À la dépublication, le DO ferme les sockets des spectateurs avec le code `4005` (« épreuve non publiée »). |
+| **Spectateur** | `…/epreuves/<id>/direct`, sans authentification | L'épreuve est publiée, d'après la dernière vue. À la dépublication, le DO ferme les sockets des spectateurs avec le code `4006` (« épreuve non publiée » ; `4005` est déjà pris par US-105). |
 | **Écran** | `…/epreuves/<id>/direct?ticket=<ticket>` | Un ticket d'écran valide (§3) qui contient cette épreuve, publiée ou non. |
 
 - À l'ouverture, le lecteur reçoit aussitôt la dernière vue, puis chaque nouvelle. Le DO diffuse aussi `pilote-absent`
@@ -112,4 +112,4 @@ Aucun service nouveau, aucun moyen de paiement. La consommation se suit avec `/q
 - ➖ Un écran de N épreuves ouvre N + 1 sockets. C'est acceptable : quelques écrans par salle.
 - ➖ Le lien d'un écran donne accès à des épreuves non publiées tant qu'il n'est pas régénéré. C'est le choix retenu :
   l'organisateur le garde pour la TV de la salle.
-- ➖ Le code de fermeture `4005` s'ajoute à la liste du protocole (`docs/protocole.md`).
+- ➖ Le code de fermeture `4006` s'ajoute à la liste du protocole (`docs/protocole.md`).

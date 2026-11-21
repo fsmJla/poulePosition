@@ -40,3 +40,4 @@ export * from './vue-saisie';
 export * from './impressions';
 export * from './acces-qr';
 export * from './saisies';
+export * from './vue-direct';

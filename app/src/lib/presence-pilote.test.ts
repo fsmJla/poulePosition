@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FERMETURES, MESSAGE_PING, messageBienvenue, messageSaisie } from '@poule-position/protocole';
-import type { VueSaisie } from '@poule-position/domaine';
+import type { VueDirect, VueSaisie } from '@poule-position/domaine';
 import type { SocketMinimale } from './connexion';
 import { creerPresencePilote, INTERVALLE_REVUE, type SynchronisationPresence } from './presence-pilote';
 
@@ -261,6 +261,35 @@ describe('publication de la vue de saisie (US-095)', () => {
     socketDe('e1').accueillir('e1');
     await vi.advanceTimersByTimeAsync(0);
     expect(vuesEnvoyees(socketDe('e1'))).toEqual(['Version 1']);
+  });
+});
+
+describe('vue en direct publiée par le pilote (US-132)', () => {
+  const directsEnvoyees = (socket: FausseSocket) =>
+    socket.envoyes
+      .filter((m) => m.includes('"type":"vueDirect"'))
+      .map((m) => (JSON.parse(m) as { vue: { nom: string } }).vue.nom);
+
+  it('CA-3 : la vue en direct part à la connexion et à chaque changement, jamais deux fois identique', async () => {
+    let nom = 'Direct 1';
+    const { synchronisation } = synchronisationSimulee(['e1']);
+    const pilote = creerPresencePilote({
+      urlServeur: 'wss://serveur.test',
+      synchronisation,
+      creerSocket: (url) => new FausseSocket(url),
+      vueDirectDe: async (id) => (id === 'e1' ? ({ epreuveId: id, nom } as unknown as VueDirect) : null),
+    });
+    pilote.surveiller(new EventTarget());
+    await vi.advanceTimersByTimeAsync(0);
+    socketDe('e1').accueillir('e1');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(directsEnvoyees(socketDe('e1'))).toEqual(['Direct 1']);
+    await pilote.publier('e1');
+    nom = 'Direct 2';
+    await pilote.publier('e1');
+    expect(directsEnvoyees(socketDe('e1'))).toEqual(['Direct 1', 'Direct 2']);
+    // Sans vue de saisie, aucune vue de saisie ne part.
+    expect(socketDe('e1').envoyes.some((m) => m.includes('"type":"vue"'))).toBe(false);
   });
 });
 

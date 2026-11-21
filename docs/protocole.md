@@ -1206,3 +1206,25 @@ les saisies reçues des poules.
   réadmet. Une saisie d'un appareil exclu reçue par la table (boîte) est refusée avec le motif `APPAREIL_EXCLU`.
 - Un exclu peut rescanner le QR code depuis un autre navigateur (nouvel identifiant) : seule la régénération du QR coupe
   tout un rôle.
+
+## 22. Vue en direct : spectateurs et écrans géants (US-132, ADR-0029)
+
+La **vue en direct** (`VueDirect`, `paquets/domaine/src/vue-direct.ts`) est calculée par le pilote à partir du journal.
+Elle est publique : l'étape (`inscriptions`, `poules`, `classement`, `tableau`, `terminee`), les tireurs (nom affiché
+selon « Prénom N. », club), les poules et leurs scores, le classement après les poules, le tableau et le classement
+final, ainsi que le statut de publication. Elle ne porte ni émargement, ni licence, ni droit, ni identifiant d'appareil.
+
+- **Publication** : sur sa WebSocket (§20 et ADR-0028), le pilote envoie `{ "v": 1, "type": "vueDirect", "vue": … }`
+  à chaque changement ; une vue identique ne repart pas. Le DO la garde (table `vue_direct`) avec son heure.
+- **Lecture** : `GET /epreuves/<id>/direct`, en WebSocket, depuis une origine autorisée.
+  - Sans paramètre, c'est un **spectateur**. Il est refusé (fermeture `4006`) si la dernière vue dit l'épreuve non
+    publiée, et il est fermé avec `4006` dès qu'une vue dépubliée arrive.
+  - Avec `?ticket=<ticket d'écran>`, c'est un **écran**. Le ticket (60 s, signé comme celui du pilote, `t: "ecran"`)
+    porte le club, l'écran et ses épreuves. Une épreuve absente du ticket, un ticket faux ou expiré donnent `401`, et
+    comptent pour le limiteur de l'adresse.
+  - Au-delà de **300 lecteurs** par épreuve, la socket est fermée avec `4007`.
+- **Messages reçus par un lecteur** : `bienvenue`, puis `{ "type": "table", "connectee": … }` (pilote présent ou non,
+  puis à chaque changement), puis la dernière vue `{ "type": "vueDirect", "vue": …, "publieeLe": <ms> }` et chacune des
+  suivantes. Un lecteur n'envoie que `ping` (réponse automatique) ; tout autre message reçoit `TYPE_INTERDIT`. Il ne
+  reçoit jamais la vue de saisie (§18).
+- **Codes de fermeture** ajoutés : `4006` (épreuve non publiée), `4007` (trop de lecteurs).

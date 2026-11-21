@@ -2,12 +2,14 @@
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { unstable_startWorker } from 'wrangler';
-import type { Evenement } from '@poule-position/domaine';
+import type { Evenement, VueDirect } from '@poule-position/domaine';
+import { signerTicketEcran } from './logique';
 import {
   FERMETURES,
   MESSAGE_PING,
   MESSAGE_PONG,
   messageVue,
+  messageVueDirect,
   messageSaisie,
   messageAccuse,
   messageExclure,
@@ -896,5 +898,171 @@ describe('appareils connectés (US-105)', () => {
     expect(JSON.parse(await pilote.prochain())).toMatchObject({ connectes: 1, liste: [{ id: 't1', connecte: true }] });
     revenu.socket.close();
     pilote.socket.close();
+  });
+});
+
+describe('lecteurs de la vue en direct (US-132, ADR-0029)', () => {
+  const vueDirectDe = (epreuveId: string, publiee: boolean, nom = 'M13 Dames'): VueDirect => ({
+    epreuveId,
+    nom,
+    arme: 'sabre',
+    categorie: 'M13',
+    sexe: 'dames',
+    date: null,
+    statut: 'enCours',
+    publiee,
+    etape: 'inscriptions',
+    tireurs: [{ id: 't1', nom: 'Léa M.', club: 'Talence' }],
+    poules: [],
+    classement: null,
+    tableau: null,
+    classementFinal: null,
+  });
+
+  async function ouvrirLecteur(epreuveId: string, ticket?: string) {
+    const suite = ticket ? `?ticket=${encodeURIComponent(ticket)}` : '';
+    const reponse = await worker.fetch(`http://localhost/epreuves/${epreuveId}/direct${suite}`, {
+      headers: { Upgrade: 'websocket', Origin: 'http://localhost:4173' },
+    });
+    expect(reponse.status).toBe(101);
+    const socket = reponse.webSocket as NonNullable<typeof reponse.webSocket>;
+    const recus: string[] = [];
+    const attentes: ((message: string) => void)[] = [];
+    let resoudreFermeture: (code: number) => void = () => {};
+    const fermeture = new Promise<number>((resoudre) => (resoudreFermeture = resoudre));
+    socket.addEventListener('message', (evenement) => {
+      const message = String(evenement.data);
+      const attente = attentes.shift();
+      if (attente) attente(message);
+      else recus.push(message);
+    });
+    socket.addEventListener('close', (evenement) => resoudreFermeture(evenement.code));
+    socket.accept();
+    const prochain = async () =>
+      JSON.parse(
+        await new Promise<string>((resoudre) => {
+          const deja = recus.shift();
+          if (deja !== undefined) resoudre(deja);
+          else attentes.push(resoudre);
+        }),
+      ) as Record<string, unknown>;
+    return { socket, prochain, fermeture };
+  }
+
+  const ticketEcran = async (epreuves: string[], club = clubId) =>
+    (await signerTicketEcran({ club, ecran: 'ecran-1', epreuves }, SECRET_SESSION, Date.now())).ticket;
+
+  /** Une épreuve dont le pilote est connecté (bienvenue et compte des appareils déjà lus). */
+  async function piloteConnecte() {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    const pilote = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    await pilote.prochain();
+    await pilote.prochain();
+    return { id, pilote };
+  }
+
+  it('CA-4 et CA-6 : un spectateur reçoit l’état du pilote, puis chaque vue publiée avec son heure', async () => {
+    const id = crypto.randomUUID();
+    await envoyer(id, lot(id, 0, [evenement(id, 1)], 'pc-a'));
+    const spectateur = await ouvrirLecteur(id);
+    expect(await spectateur.prochain()).toEqual({ v: 1, type: 'bienvenue', epreuveId: id });
+    expect(await spectateur.prochain()).toEqual({ v: 1, type: 'table', connectee: false });
+    const pilote = await ouvrirSocket(id, await ticketDe(id, 'pc-a'));
+    await pilote.prochain();
+    expect(await spectateur.prochain()).toEqual({ v: 1, type: 'table', connectee: true });
+    const avant = Date.now();
+    pilote.socket.send(messageVueDirect(vueDirectDe(id, true)));
+    const recu = await spectateur.prochain();
+    expect(recu).toMatchObject({ type: 'vueDirect', vue: vueDirectDe(id, true) });
+    expect(recu.publieeLe as number).toBeGreaterThanOrEqual(avant - 1000);
+    // Un nouveau spectateur reçoit aussitôt la dernière vue.
+    const second = await ouvrirLecteur(id);
+    await second.prochain();
+    await second.prochain();
+    expect(await second.prochain()).toMatchObject({ type: 'vueDirect', vue: vueDirectDe(id, true) });
+    // CA-6 : le pilote part ; les lecteurs le savent et gardent la dernière vue.
+    pilote.socket.close();
+    expect(await spectateur.prochain()).toEqual({ v: 1, type: 'table', connectee: false });
+    spectateur.socket.close();
+    second.socket.close();
+  });
+
+  it('CA-4 : dépubliée, l’épreuve ferme ses spectateurs (4006) et en refuse de nouveaux', async () => {
+    const { id, pilote } = await piloteConnecte();
+    pilote.socket.send(messageVueDirect(vueDirectDe(id, true)));
+    const spectateur = await ouvrirLecteur(id);
+    await spectateur.prochain();
+    await spectateur.prochain();
+    await spectateur.prochain();
+    pilote.socket.send(messageVueDirect(vueDirectDe(id, false)));
+    expect(await spectateur.fermeture).toBe(4006);
+    expect(await (await ouvrirLecteur(id)).fermeture).toBe(4006);
+    pilote.socket.close();
+  });
+
+  it('CA-5 : un écran lit une épreuve non publiée avec son ticket ; un ticket faux ou d’une autre épreuve est refusé', async () => {
+    const { id, pilote } = await piloteConnecte();
+    pilote.socket.send(messageVueDirect(vueDirectDe(id, false)));
+    await attendre(100);
+    const ecran = await ouvrirLecteur(id, await ticketEcran([id]));
+    await ecran.prochain();
+    expect(await ecran.prochain()).toMatchObject({ type: 'table', connectee: true });
+    expect(await ecran.prochain()).toMatchObject({ type: 'vueDirect', vue: { publiee: false } });
+    const ouvrir = (suite: string) =>
+      worker.fetch(`http://localhost/epreuves/${id}/direct${suite}`, {
+        headers: { Upgrade: 'websocket', Origin: 'http://localhost:4173' },
+      });
+    expect((await ouvrir(`?ticket=${await ticketEcran(['autre'])}`)).status).toBe(401);
+    expect((await ouvrir(`?ticket=${await ticketEcran([id], 'autre-club')}`)).status).toBe(401);
+    expect((await ouvrir('?ticket=faux')).status).toBe(401);
+    expect((await ouvrir(`?ticket=${await ticketDe(id, 'pc-a')}`)).status).toBe(401);
+    ecran.socket.close();
+    pilote.socket.close();
+  });
+
+  it('CA-3 : seul le pilote publie la vue en direct ; un lecteur ne publie rien et ne reçoit pas la vue de saisie', async () => {
+    const { id, pilote } = await piloteConnecte();
+    pilote.socket.send(messageVueDirect(vueDirectDe('autre-epreuve', true)));
+    expect(JSON.parse(await pilote.prochain())).toMatchObject({ type: 'erreur', code: 'TYPE_INTERDIT' });
+    const spectateur = await ouvrirLecteur(id);
+    await spectateur.prochain();
+    await spectateur.prochain();
+    spectateur.socket.send(messageVueDirect(vueDirectDe(id, true)));
+    expect(await spectateur.prochain()).toMatchObject({ type: 'erreur', code: 'TYPE_INTERDIT' });
+    // La vue de saisie (droits) ne va qu'aux smartphones : le lecteur ne reçoit que la vue en direct.
+    pilote.socket.send(
+      messageVue({
+        epreuveId: id,
+        nom: 'x',
+        arme: 'sabre',
+        categorie: null,
+        sexe: null,
+        date: null,
+        competition: null,
+        touches: 5,
+        droits: {
+          arbitreSaisitScores: true,
+          tireurSaisitPoule: true,
+          tireurSaisitTableau: true,
+          correctionScore: 'arbitre',
+        },
+        lancees: false,
+        poules: [],
+      }),
+    );
+    pilote.socket.send(messageVueDirect(vueDirectDe(id, true, 'Après')));
+    expect(await spectateur.prochain()).toMatchObject({ type: 'vueDirect', vue: { nom: 'Après' } });
+    spectateur.socket.close();
+    pilote.socket.close();
+  });
+
+  it('cas limites : WebSocket attendue, origine refusée', async () => {
+    const id = crypto.randomUUID();
+    expect((await worker.fetch(`http://localhost/epreuves/${id}/direct`)).status).toBe(426);
+    const refus = await worker.fetch(`http://localhost/epreuves/${id}/direct`, {
+      headers: { Upgrade: 'websocket', Origin: 'https://ailleurs.example' },
+    });
+    expect(refus.status).toBe(403);
   });
 });

@@ -104,3 +104,4 @@ fenêtre locale (US-136) l'utilise sans réseau.
 | Date | Événement |
 |---|---|
 | 2026-11-21 | Créée (spécification de l'Epic 9) |
+| 2026-11-21 | Implémentée : `vueDirect` (domaine), message `vueDirect` et codes `4006`/`4007` (protocole, §22), lecteurs spectateurs et écrans sur `/epreuves/<id>/direct` (DO `Epreuve`, table `vue_direct`), tickets d'écran (`logique.ts`), publication par la présence du pilote. Tests : domaine `vue-direct.test.ts` (CA-1, CA-2), protocole `vue-direct.test.ts`, serveur `epreuves.test.ts` « lecteurs » (CA-3 à CA-6) et `logique.test.ts`, app `presence-pilote.test.ts` (CA-3) |

@@ -13,7 +13,7 @@
   import { creerPresencePilote } from './lib/presence-pilote';
   import { creerAccesQr } from './lib/acces-qr';
   import { traiterSaisie } from './lib/table-saisies';
-  import { vueSaisie } from '@poule-position/domaine';
+  import { vueDirect, vueSaisie } from '@poule-position/domaine';
   import { creerAccueil } from './lib/accueil';
   import { creerClientCompetitions } from './lib/competitions';
   import { creerClientManifestations } from './lib/manifestations';
@@ -107,6 +107,11 @@
       const copie = await competitions.copie();
       const competition = copie?.competitions.find(({ id }) => id === epreuve.rattachement.competitionId);
       return vueSaisie(epreuve, competition?.nom ?? null);
+    },
+    // US-132 : vue en direct publiée pour les écrans géants et les spectateurs (ADR-0029).
+    vueDirectDe: async (epreuveId) => {
+      const { epreuve } = await journal.lire(epreuveId);
+      return epreuve ? vueDirect(epreuve) : null;
     },
     // US-099 : une saisie d'un smartphone, décidée par ce PC ; un score accepté part au serveur (et la vue suit).
     surSaisie: async (epreuveId, saisie) => {

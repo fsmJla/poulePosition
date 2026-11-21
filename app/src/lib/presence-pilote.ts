@@ -2,11 +2,12 @@
 // se tire aujourd'hui ; le serveur sait ainsi s'il est connecté. Hors ligne, rien ne s'arrête : la compétition continue
 // sur ce PC et la socket se rouvre d'elle-même au retour du réseau. Quand un autre PC prend la main, le serveur ferme la
 // socket (`4004`) et la perte de main est traitée aussitôt.
-import type { SaisieScore, VueSaisie } from '@poule-position/domaine';
+import type { SaisieScore, VueDirect, VueSaisie } from '@poule-position/domaine';
 import {
   FERMETURES,
   messageAccuse,
   messageVue,
+  messageVueDirect,
   type Accuse,
   messageExclure,
   type AppareilConnu,
@@ -32,6 +33,8 @@ export interface OptionsPresence {
   intervalle?: number;
   /** US-095 : vue de saisie actuelle d'une épreuve, calculée à partir du journal local ; null si elle est inconnue. */
   vueDe?: (epreuveId: string) => Promise<VueSaisie | null>;
+  /** US-132 : vue en direct actuelle d'une épreuve (écrans géants, spectateurs) ; null si elle est inconnue. */
+  vueDirectDe?: (epreuveId: string) => Promise<VueDirect | null>;
   /** US-099 : la table traite une saisie reçue d'un smartphone et renvoie son accusé. */
   surSaisie?: (epreuveId: string, saisie: SaisieScore) => Promise<Accuse>;
 }
@@ -48,6 +51,7 @@ export function creerPresencePilote({
   creerSocket,
   intervalle = INTERVALLE_REVUE,
   vueDe = async () => null,
+  vueDirectDe = async () => null,
   surSaisie,
 }: OptionsPresence) {
   const connexions = new Map<
@@ -56,6 +60,8 @@ export function creerPresencePilote({
   >();
   /** US-095 : dernière vue envoyée par épreuve ; une vue identique n'est pas renvoyée (une écriture de moins au serveur). */
   const publiees = new Map<string, string>();
+  /** US-132 : dernière vue en direct envoyée par épreuve, pour ne pas renvoyer une vue identique. */
+  const publieesDirect = new Map<string, string>();
   /** US-100 CA-1 : smartphones connectés, par épreuve (dit par le serveur). */
   const appareils = new Map<string, number>();
   const ecouteursAppareils = new Set<(epreuveId: string, connectes: number) => void>();
@@ -76,6 +82,7 @@ export function creerPresencePilote({
     connexions.get(epreuveId)?.arreter();
     connexions.delete(epreuveId);
     publiees.delete(epreuveId);
+    publieesDirect.delete(epreuveId);
     signaler();
   };
 
@@ -83,11 +90,16 @@ export function creerPresencePilote({
   async function publier(epreuveId: string): Promise<void> {
     const connexion = connexions.get(epreuveId);
     if (!connexion) return;
-    const vue = await vueDe(epreuveId);
-    if (!vue) return;
-    const texte = messageVue(vue);
-    if (publiees.get(epreuveId) === texte) return;
-    if (connexion.envoyer(texte)) publiees.set(epreuveId, texte);
+    const [vue, vueDirect] = await Promise.all([vueDe(epreuveId), vueDirectDe(epreuveId)]);
+    if (vue) {
+      const texte = messageVue(vue);
+      if (publiees.get(epreuveId) !== texte && connexion.envoyer(texte)) publiees.set(epreuveId, texte);
+    }
+    // US-132 CA-3 : la vue en direct part avec la vue de saisie, seulement si elle a changé.
+    if (vueDirect) {
+      const texte = messageVueDirect(vueDirect);
+      if (publieesDirect.get(epreuveId) !== texte && connexion.envoyer(texte)) publieesDirect.set(epreuveId, texte);
+    }
   }
 
   function ouvrir(epreuveId: string) {
@@ -139,6 +151,7 @@ export function creerPresencePilote({
       // US-095 CA-3 : à chaque (re)connexion, la vue complète est republiée.
       surConnecte: () => {
         publiees.delete(epreuveId);
+        publieesDirect.delete(epreuveId);
         void publier(epreuveId);
       },
       surFin: (code) => {

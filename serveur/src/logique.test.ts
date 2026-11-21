@@ -10,6 +10,9 @@ import {
   decisionSession,
   signerSession,
   signerTicket,
+  signerTicketEcran,
+  verifierTicketEcran,
+  deciderLecteur,
   verifierTicket,
   DUREE_TICKET_MS,
   verifierSession,
@@ -272,6 +275,76 @@ describe('ticket de la WebSocket du pilote (US-094, ADR-0028)', () => {
     expect(await verifierTicket(jeton, SECRET, MAINTENANT)).toBeNull();
     const { ticket } = await signerTicket(lieu, SECRET, MAINTENANT);
     expect(await verifierSession(ticket, SECRET, MAINTENANT)).toBeNull();
+  });
+});
+
+describe('ticket d’un écran et lecteurs de la vue en direct (US-132, ADR-0029)', () => {
+  const SECRET = 'secret-de-session-de-test';
+  const MAINTENANT = Date.UTC(2026, 10, 21, 10);
+  const lieu = { club: 'club-principal', ecran: 'ecran-1', epreuves: ['e1', 'e2'] };
+
+  it('CA-5 : signe un ticket d’écran de 60 s, relu à l’identique ; il ne vaut ni ticket de pilote ni session', async () => {
+    const { ticket, expireLe } = await signerTicketEcran(lieu, SECRET, MAINTENANT);
+    expect(expireLe).toBe(MAINTENANT + DUREE_TICKET_MS);
+    expect(await verifierTicketEcran(ticket, SECRET, MAINTENANT)).toEqual({
+      t: 'ecran',
+      ...lieu,
+      exp: expireLe / 1000,
+    });
+    expect(await verifierTicketEcran(ticket, SECRET, expireLe)).toBeNull();
+    expect(await verifierTicketEcran(ticket, 'autre', MAINTENANT)).toBeNull();
+    expect(await verifierTicket(ticket, SECRET, MAINTENANT)).toBeNull();
+    expect(await verifierSession(ticket, SECRET, MAINTENANT)).toBeNull();
+    const pilote = await signerTicket({ club: 'club-principal', epreuve: 'e1', appareil: 'pc' }, SECRET, MAINTENANT);
+    expect(await verifierTicketEcran(pilote.ticket, SECRET, MAINTENANT)).toBeNull();
+  });
+
+  it('CA-5 : refuse un ticket d’écran dont les épreuves sont mal formées', async () => {
+    const { ticket } = await signerTicketEcran(lieu, SECRET, MAINTENANT);
+    const [entete] = ticket.split('.');
+    for (const charge of [
+      { t: 'ecran', club: 'c', ecran: 'x', epreuves: 'e1', exp: MAINTENANT / 1000 + 60 },
+      { t: 'ecran', club: 'c', ecran: 'x', epreuves: [1], exp: MAINTENANT / 1000 + 60 },
+      { t: 'ecran', club: 'c', ecran: 3, epreuves: [], exp: MAINTENANT / 1000 + 60 },
+      { t: 'ecran', club: 'c', ecran: 'x', epreuves: [], exp: 'demain' },
+    ]) {
+      const corps = `${entete}.${encoderBase64Url(new TextEncoder().encode(JSON.stringify(charge)))}`;
+      const signature = encoderBase64Url(
+        new Uint8Array(
+          await crypto.subtle.sign(
+            'HMAC',
+            await crypto.subtle.importKey(
+              'raw',
+              new TextEncoder().encode(SECRET),
+              { name: 'HMAC', hash: 'SHA-256' },
+              false,
+              ['sign'],
+            ),
+            new TextEncoder().encode(corps),
+          ),
+        ),
+      );
+      expect(await verifierTicketEcran(`${corps}.${signature}`, SECRET, MAINTENANT)).toBeNull();
+    }
+  });
+
+  it('CA-4 et CA-5 : sans ticket, un spectateur ; avec un ticket valide qui contient l’épreuve, un écran ; sinon un refus', async () => {
+    const { ticket } = await signerTicketEcran(lieu, SECRET, MAINTENANT);
+    const ici = { club: 'club-principal', epreuve: 'e1' };
+    expect(await deciderLecteur(null, ici, SECRET, MAINTENANT)).toEqual({ ok: true, lecteur: 'spectateur' });
+    expect(await deciderLecteur(ticket, ici, SECRET, MAINTENANT)).toEqual({
+      ok: true,
+      lecteur: 'ecran',
+      ecran: 'ecran-1',
+    });
+    expect(await deciderLecteur(ticket, { ...ici, epreuve: 'e3' }, SECRET, MAINTENANT)).toEqual({ ok: false });
+    expect(await deciderLecteur(ticket, { ...ici, club: 'autre' }, SECRET, MAINTENANT)).toEqual({ ok: false });
+    expect(await deciderLecteur(ticket, ici, undefined, MAINTENANT)).toEqual({ ok: false });
+    expect(await deciderLecteur('faux', ici, SECRET, MAINTENANT)).toEqual({ ok: false });
+  });
+
+  it('la route de lecture d’une épreuve', () => {
+    expect(analyserChemin('/epreuves/e-1/direct')).toEqual({ route: 'direct', epreuveId: 'e-1' });
   });
 });
 

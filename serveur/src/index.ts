@@ -68,6 +68,7 @@ import {
   autorisationAdministrateur,
   decisionSession,
   deciderConnexion,
+  deciderLecteur,
   enTetesCors,
   extraireJetonBearer,
   fauxSel,
@@ -123,12 +124,13 @@ export default {
     if (route.route === 'essai-email') return essayerEnvoi(requete, env);
     if (route.route === 'fichier-public') return servirFichier(route.nom, requete, env);
     if (route.route === 'public' || route.route === 'epreuve-publique') return servirPublic(route, requete, env);
-    if (route.route !== 'connexion') return routeSession(route, requete, env, contexte);
+    if (route.route !== 'connexion' && route.route !== 'direct') return routeSession(route, requete, env, contexte);
 
     if (requete.headers.get('Upgrade') !== 'websocket') return new Response('WebSocket attendu', { status: 426 });
     if (!origineAutorisee(requete.headers.get('Origin'), env.ORIGINES)) {
       return new Response('Origine refusée', { status: 403 });
     }
+    if (route.route === 'direct') return connecterLecteur(route.epreuveId, requete, env);
     // US-097 : un smartphone entre avec le jeton du QR code d'un rôle (`j`).
     const parametres = new URL(requete.url).searchParams;
     const jetonQr = parametres.get('j');
@@ -147,6 +149,30 @@ export default {
     return epreuve.fetch(new Request(url, requete));
   },
 } satisfies ExportedHandler<Env>;
+
+/**
+ * US-132 (ADR-0029) : WebSocket de lecture de la vue en direct. Sans ticket, c'est un spectateur (le DO le refuse si
+ * l'épreuve n'est pas publiée) ; avec un ticket, c'est un écran géant, dont le ticket doit contenir l'épreuve.
+ */
+async function connecterLecteur(epreuveId: string, requete: Request, env: Env): Promise<Response> {
+  const ticket = new URL(requete.url).searchParams.get('ticket');
+  const decision = await deciderLecteur(
+    ticket,
+    { club: env.CLUB_ID, epreuve: epreuveId },
+    env.SECRET_SESSION,
+    Date.now(),
+  );
+  if (!decision.ok) {
+    const limiteur = env.LIMITEUR.get(env.LIMITEUR.idFromName(`qr:${adresseIp(requete)}`));
+    await limiteur.enregistrerEchec(REGLE_ADRESSE);
+    return new Response('Ticket refusé', { status: 401 });
+  }
+  const url = new URL('https://epreuve/direct');
+  url.searchParams.set('epreuveId', epreuveId);
+  url.searchParams.set('lecteur', decision.lecteur);
+  if (decision.lecteur === 'ecran') url.searchParams.set('ecran', decision.ecran);
+  return objetEpreuve(env, epreuveId).fetch(new Request(url, requete));
+}
 
 /**
  * US-097 CA-1 et CA-2 (ADR-0007) : la WebSocket d'un smartphone. Le jeton doit être celui d'un rôle en service et
