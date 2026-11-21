@@ -20,6 +20,7 @@
   import { creerClientFichiers } from './lib/fichiers';
   import { creerClientPublic } from './lib/publication';
   import { textes } from './lib/textes';
+  import { ecranAReprendre, estAccueil, etapeAMemoriser, lireEcran, memoriserEcran, oublierEcran } from './lib/reprise';
   import BarreOutils from './composants/BarreOutils.svelte';
   import Entete from './composants/Entete.svelte';
   import Accueil from './pages/Accueil.svelte';
@@ -137,6 +138,41 @@
     if (pret && 'redirection' in route) naviguer(route.redirection, true);
   });
 
+  /** US-129 : stockage local de l'appareil (null s'il est inaccessible). */
+  const stockageLocal = (() => {
+    try {
+      return window.localStorage;
+    } catch {
+      return null;
+    }
+  })();
+
+  /** US-129 CA-2 à CA-4 : écran d'une épreuve à rouvrir pour cette session, ou null. */
+  async function aReprendre(ouverte: SessionAppareil): Promise<string | null> {
+    const clubId = ouverte.compte.clubId;
+    if (!clubId) return null;
+    return ecranAReprendre(lireEcran(stockageLocal), clubId, {
+      clubDe: async (epreuveId) => (await journal.lire(epreuveId)).epreuve?.clubId ?? null,
+    });
+  }
+
+  // US-129 : l'étape d'une épreuve pilotée ici est mémorisée ; toute autre page réservée l'efface (le dernier écran
+  // consulté fait foi). Les pages publiques (accueil, connexion, smartphones) n'y touchent pas.
+  $effect(() => {
+    if (!pret || !session || !('page' in route)) return;
+    const clubId = session.compte.clubId;
+    if (!clubId) return;
+    const etape = etapeAMemoriser(route, chemin);
+    if (!etape) {
+      if (!['accueil', 'direct', 'saisie', 'connexion', 'motDePasseOublie', 'reinitialisation'].includes(route.page))
+        oublierEcran(stockageLocal);
+      return;
+    }
+    void journal.etat(etape.epreuveId).then((etat) => {
+      if (etat?.pilote) memoriserEcran(stockageLocal, { ...etape, clubId });
+    });
+  });
+
   // US-022 CA-2 : une session en ligne (connexion, revalidation) envoie ce qui attendait.
   $effect(() => {
     if (session && !estLocale(session)) void synchronisation.envoyerTout();
@@ -169,8 +205,13 @@
     };
     window.addEventListener('popstate', surRetour);
     window.addEventListener('online', surEnLigne);
-    client.restaurer().then((restauree) => {
+    client.restaurer().then(async (restauree) => {
       session = restauree;
+      // US-129 CA-2 : rouverte sur son accueil, l'application reprend l'écran de l'épreuve quittée.
+      if (restauree && !restauree.compte.temporaire && estAccueil(chemin)) {
+        const reprise = await aReprendre(restauree);
+        if (reprise) naviguer(reprise, true);
+      }
       pret = true;
     });
     const arreterSuppression = synchronisation.surSuppression(({ epreuveId, nom, abandonnees }) => {
@@ -186,9 +227,11 @@
     };
   });
 
-  function surConnexion(ouverte: SessionAppareil) {
+  async function surConnexion(ouverte: SessionAppareil) {
+    // US-129 CA-3 : après une nouvelle connexion, on reprend l'écran de l'épreuve quittée.
+    const reprise = ouverte.compte.temporaire ? null : await aReprendre(ouverte);
     session = ouverte;
-    naviguer(CHEMINS.organisateur);
+    naviguer(reprise ?? CHEMINS.organisateur);
   }
 
   async function surDeconnexion() {
@@ -200,6 +243,7 @@
   /** US-006 : se déconnecter et effacer le vérificateur local du compte sur cet appareil. */
   async function surOubli() {
     await client.oublierCetAppareil();
+    oublierEcran(stockageLocal);
     session = null;
     naviguer(CHEMINS.connexion);
   }
