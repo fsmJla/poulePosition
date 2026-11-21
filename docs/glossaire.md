@@ -77,6 +77,7 @@ l'ajoute ici avant de l'utiliser.
 | Vue de saisie | Vue publiée par le pilote pour les smartphones : poules, pistes, tireurs, ordre des matchs, scores, classement provisoire, touches et droits (US-095). | `vueSaisie` |
 | Identifiant d'appareil | Nom court (`t1`, `t2`…) attribué par le serveur à un smartphone entré par QR ; il signe ses saisies (« arbitre Dupont (t4) », ADR-0007). | `appareilId` |
 | Saisie suspendue | État d'un smartphone quand la table est déconnectée (ou lui-même sans réseau) : il ne peut plus saisir et renvoie à la feuille papier (US-102). | `SAISIE_SUSPENDUE` |
+| Sauvegarde automatique | Copie du journal de chaque épreuve pilotée, écrite par le PC dans un dossier choisi (clé USB), au format de l'export ; Chrome et Edge seulement (US-131). | `sauvegardeAuto` |
 | Saisie écartée | Saisie récupérée au retour du pilote mais rejetée car le match avait déjà un score (le papier fait foi, ADR-0005). | `saisieEcartee` |
 | Exclure (un appareil) | Couper l'accès d'un seul smartphone sans régénérer le QR (US-105). | `AppareilExclu` |
 | Publication | Réglage d'une épreuve : publiée, elle est visible du public sur la page d'accueil (affiche, dates…) ; non publiée, seuls les organisateurs la voient. Sans rapport avec le réseau : « en ligne / hors ligne » est réservé à l'état du réseau. | `publiee` |
