@@ -10,6 +10,12 @@ import {
   analyserDemandeProfil,
   analyserDemandeReinitialisation,
   analyserDemandeEssaiEmail,
+  analyserDemandeEcran,
+  analyserDemandeReglages,
+  analyserVueImposee,
+  MOTIF_JETON_ECRAN,
+  type ReponseEcran,
+  type ReponseTicketEcran,
   analyserDemandeMotDePasseOublie,
   analyserDemandeNouveauMotDePasse,
   nouveauJeton,
@@ -69,6 +75,8 @@ import {
   decisionSession,
   deciderConnexion,
   deciderLecteur,
+  signerTicketEcran,
+  verifierTicketEcran,
   enTetesCors,
   extraireJetonBearer,
   fauxSel,
@@ -124,13 +132,16 @@ export default {
     if (route.route === 'essai-email') return essayerEnvoi(requete, env);
     if (route.route === 'fichier-public') return servirFichier(route.nom, requete, env);
     if (route.route === 'public' || route.route === 'epreuve-publique') return servirPublic(route, requete, env);
-    if (route.route !== 'connexion' && route.route !== 'direct') return routeSession(route, requete, env, contexte);
+    if (route.route !== 'connexion' && route.route !== 'direct' && route.route !== 'connexion-ecran') {
+      return routeSession(route, requete, env, contexte);
+    }
 
     if (requete.headers.get('Upgrade') !== 'websocket') return new Response('WebSocket attendu', { status: 426 });
     if (!origineAutorisee(requete.headers.get('Origin'), env.ORIGINES)) {
       return new Response('Origine refusée', { status: 403 });
     }
     if (route.route === 'direct') return connecterLecteur(route.epreuveId, requete, env);
+    if (route.route === 'connexion-ecran') return connecterEcran(route.id, requete, env);
     // US-097 : un smartphone entre avec le jeton du QR code d'un rôle (`j`).
     const parametres = new URL(requete.url).searchParams;
     const jetonQr = parametres.get('j');
@@ -172,6 +183,18 @@ async function connecterLecteur(epreuveId: string, requete: Request, env: Env): 
   url.searchParams.set('lecteur', decision.lecteur);
   if (decision.lecteur === 'ecran') url.searchParams.set('ecran', decision.ecran);
   return objetEpreuve(env, epreuveId).fetch(new Request(url, requete));
+}
+
+/** US-134 (ADR-0029) : socket de contrôle d'un écran, ouverte avec son ticket ; elle reçoit ses réglages. */
+async function connecterEcran(ecranId: string, requete: Request, env: Env): Promise<Response> {
+  const ticket = new URL(requete.url).searchParams.get('ticket') ?? '';
+  const charge = env.SECRET_SESSION ? await verifierTicketEcran(ticket, env.SECRET_SESSION, Date.now()) : null;
+  if (!charge || charge.club !== env.CLUB_ID || charge.ecran !== ecranId) {
+    return new Response('Ticket refusé', { status: 401 });
+  }
+  const url = new URL('https://club/ecran');
+  url.searchParams.set('ecran', ecranId);
+  return env.CLUB.get(env.CLUB.idFromName(`club:${env.CLUB_ID}`)).fetch(new Request(url, requete));
 }
 
 /**
@@ -311,7 +334,12 @@ type RouteSession = Extract<
       | 'competitions'
       | 'competition'
       | 'fichiers'
-      | 'fichier';
+      | 'fichier'
+      | 'ecrans'
+      | 'ecran'
+      | 'jeton-ecran'
+      | 'vue-ecran'
+      | 'ticket-ecran';
   }
 >;
 
@@ -340,6 +368,11 @@ const METHODES_SESSION = {
   competition: ['PATCH', 'DELETE'],
   fichiers: ['GET'],
   fichier: ['PUT', 'DELETE'],
+  ecrans: ['GET', 'POST'],
+  ecran: ['PATCH', 'DELETE'],
+  'jeton-ecran': ['POST'],
+  'vue-ecran': ['PUT'],
+  'ticket-ecran': ['POST'],
 } as const;
 
 /**
@@ -425,8 +458,22 @@ async function traiterSession(
     return ouvrirSession(compte as CompteStocke, env.CLUB_ID, secret);
   }
 
+  // US-134 : un écran échange son jeton contre un ticket de 60 s, sans session.
+  if (route.route === 'ticket-ecran') return accorderTicketEcran(route.id, requete, env, club, secret);
+
   const authentifie = await compteDeLaSession(requete, secret, env.CLUB_ID, club);
   if (!authentifie.ok) return authentifie.refus;
+
+  if (
+    route.route === 'ecrans' ||
+    route.route === 'ecran' ||
+    route.route === 'jeton-ecran' ||
+    route.route === 'vue-ecran'
+  ) {
+    // US-133 : tout compte du club au mot de passe définitif, comme les manifestations.
+    if (authentifie.compte.temporaire) return refuserSession(403, 'ACCES_REFUSE');
+    return gererEcrans(route, requete, env, club);
+  }
 
   if (
     route.route === 'epreuves' ||
@@ -704,6 +751,93 @@ async function gererManifestations(
   if (resultat.ok) return Response.json(resultat satisfies ReponseManifestation);
   if (resultat.erreur === 'MANIFESTATION_INCONNUE') return refuserSession(404, resultat.erreur);
   return Response.json(resultat satisfies ReponseManifestation, { status: 409 });
+}
+
+/** Réponse d'erreur des routes des écrans. */
+const refusEcran = (statut: number, erreur: string) => Response.json({ ok: false, erreur }, { status: statut });
+
+/**
+ * US-133 à US-135 (ADR-0029, docs/protocole.md §23) : écrans géants du club, gardés dans le DO `Club`. Un écran supprimé
+ * ou au lien régénéré est déconnecté partout (socket de contrôle et lecteurs des épreuves).
+ */
+async function gererEcrans(
+  route: Extract<RouteSession, { route: 'ecrans' | 'ecran' | 'jeton-ecran' | 'vue-ecran' }>,
+  requete: Request,
+  env: Env,
+  club: DurableObjectStub<Club>,
+): Promise<Response> {
+  const deconnecter = (ecran: { id: string; epreuves: string[] }, epreuves = ecran.epreuves) =>
+    Promise.all(epreuves.map((epreuveId) => objetEpreuve(env, epreuveId).fermerEcran(ecran.id)));
+  if (route.route === 'ecrans' && requete.method === 'GET') {
+    const [ecrans, connectes] = await Promise.all([club.listerEcrans(), club.ecransConnectes()]);
+    return Response.json({ ok: true, ecrans, connectes });
+  }
+  if (route.route === 'ecrans') {
+    const analyse = analyserDemandeEcran(await lireJson(requete));
+    if (!analyse.ok) return refusEcran(400, 'DEMANDE_INVALIDE');
+    const resultat = await club.creerEcran(analyse.demande);
+    if (!resultat.ok) return refusEcran(resultat.erreur === 'NOM_EN_DOUBLE' ? 409 : 404, resultat.erreur);
+    return Response.json(resultat satisfies ReponseEcran, { status: 201 });
+  }
+  if (route.route === 'jeton-ecran') {
+    const ecran = await club.regenererJetonEcran(route.id);
+    if (!ecran) return refusEcran(404, 'ECRAN_INCONNU');
+    await deconnecter(ecran);
+    return Response.json({ ok: true, ecran } satisfies ReponseEcran);
+  }
+  if (route.route === 'vue-ecran') {
+    const analyse = analyserVueImposee(await lireJson(requete));
+    if (!analyse.ok) return refusEcran(400, 'DEMANDE_INVALIDE');
+    if (!(await club.ecransConnectes()).includes(route.id)) return refusEcran(409, 'ECRAN_DECONNECTE');
+    const ecran = await club.imposerVueEcran(route.id, analyse.vue);
+    return ecran ? Response.json({ ok: true, ecran } satisfies ReponseEcran) : refusEcran(404, 'ECRAN_INCONNU');
+  }
+  if (requete.method === 'DELETE') {
+    const ecran = await club.supprimerEcran(route.id);
+    if (!ecran) return refusEcran(404, 'ECRAN_INCONNU');
+    await deconnecter(ecran);
+    return Response.json({ ok: true });
+  }
+  const analyse = analyserDemandeReglages(await lireJson(requete));
+  if (!analyse.ok) return refusEcran(400, 'DEMANDE_INVALIDE');
+  const avant = (await club.listerEcrans()).find(({ id }) => id === route.id);
+  const resultat = await club.modifierEcran(route.id, analyse.demande);
+  if (!resultat.ok) return refusEcran(resultat.erreur === 'NOM_EN_DOUBLE' ? 409 : 404, resultat.erreur);
+  // Une épreuve décochée n'est plus lue par cet écran.
+  const retirees = (avant?.epreuves ?? []).filter((id) => !resultat.ecran.epreuves.includes(id));
+  await deconnecter(resultat.ecran, retirees);
+  return Response.json(resultat satisfies ReponseEcran);
+}
+
+/**
+ * US-134 (ADR-0029) : un écran présente son jeton (corps `{ "jeton": … }`) et reçoit un ticket de 60 s avec ses
+ * réglages. Un mauvais jeton compte pour le limiteur de l'adresse.
+ */
+async function accorderTicketEcran(
+  ecranId: string,
+  requete: Request,
+  env: Env,
+  club: DurableObjectStub<Club>,
+  secret: string,
+): Promise<Response> {
+  const limiteur = env.LIMITEUR.get(env.LIMITEUR.idFromName(`qr:${adresseIp(requete)}`));
+  if (await limiteur.estBloque()) return refusEcran(429, 'TROP_D_ESSAIS');
+  const corps = await lireJson(requete);
+  const jetonEcran =
+    corps && typeof corps === 'object' && typeof (corps as { jeton?: unknown }).jeton === 'string'
+      ? (corps as { jeton: string }).jeton
+      : '';
+  const ouvert = MOTIF_JETON_ECRAN.test(jetonEcran) ? await club.ouvrirEcran(ecranId, jetonEcran, Date.now()) : null;
+  if (!ouvert) {
+    await limiteur.enregistrerEchec(REGLE_ADRESSE);
+    return refusEcran(401, 'LIEN_INVALIDE');
+  }
+  const { ticket, expireLe } = await signerTicketEcran(
+    { club: env.CLUB_ID, ecran: ecranId, epreuves: ouvert.ecran.epreuves },
+    secret,
+    Date.now(),
+  );
+  return Response.json({ ok: true, ticket, expireLe, ...ouvert } satisfies ReponseTicketEcran);
 }
 
 /**

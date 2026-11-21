@@ -349,6 +349,11 @@ export class Epreuve extends DurableObject<Env> {
     return new Response(null, { status: 101, webSocket: client });
   }
 
+  /** US-133 CA-4 et CA-5 : un écran supprimé ou au lien régénéré ne lit plus cette épreuve (`4003`). */
+  fermerEcran(ecranId: string): void {
+    this.fermer(`ecran:${ecranId}`, FERMETURES.EXCLUE, 'Écran supprimé ou lien régénéré');
+  }
+
   /** US-132 : dernière vue en direct publiée (texte JSON), sa publication et son heure, ou null. */
   derniereVueDirect(): { contenu: string; publiee: boolean; publieeLe: number } | null {
     const [ligne] = this.ctx.storage.sql

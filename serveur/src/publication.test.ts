@@ -220,6 +220,7 @@ describe('page publique (US-031)', () => {
       horaires: { appel: '08:30', scratch: '09:00', debutPoules: '09:30' },
       lieu: 'Salle Bellegrave',
       competitionId: competition.id,
+      statut: expect.any(String),
     });
     expect(page.competitions.find(({ id }) => id === competition.id)).toEqual({
       id: competition.id,

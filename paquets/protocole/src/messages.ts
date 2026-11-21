@@ -2,6 +2,7 @@
 // Enveloppe commune : un objet JSON texte avec `v` (version) et `type`, repris du relais Wireless Fencing.
 import { ROLES_QR, type RoleQr, type VueDirect, type VueSaisie } from '@poule-position/domaine';
 import { analyserVueDirect } from './vue-direct';
+import { analyserEcranPublic, type EcranPublic } from './ecrans';
 import { analyserVueSaisie } from './vue-saisie';
 import {
   analyserAccuse,
@@ -86,6 +87,13 @@ export interface MessageVueDirect {
   publieeLe?: number;
 }
 
+/** US-133 à US-135 (ADR-0029) : réglages d'un écran géant, poussés sur sa socket de contrôle à chaque changement. */
+export interface MessageEcran {
+  v: typeof VERSION_PROTOCOLE;
+  type: 'ecran';
+  ecran: EcranPublic;
+}
+
 /** US-097 : un smartphone est entré avec le QR code d'un rôle ; son identifiant d'appareil signe ses saisies. */
 export interface MessageAcces {
   v: typeof VERSION_PROTOCOLE;
@@ -156,6 +164,7 @@ export type MessageServeur =
   | MessagePong
   | MessageVue
   | MessageVueDirect
+  | MessageEcran
   | MessageAcces
   | MessageTable
   | MessageSaisieTable
@@ -185,6 +194,10 @@ export function messageVueDirect(vue: VueDirect, publieeLe?: number): string {
     vue,
     ...(publieeLe !== undefined && { publieeLe }),
   } satisfies MessageVueDirect);
+}
+
+export function messageEcran(ecran: EcranPublic): string {
+  return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'ecran', ecran } satisfies MessageEcran);
 }
 
 export function messageAcces(role: RoleQr, appareilId: string): string {
@@ -279,6 +292,10 @@ export function analyserMessageServeur(brut: unknown): Analyse<{ message: Messag
       return lireVue(contenu);
     case 'vueDirect':
       return lireVueDirect(contenu);
+    case 'ecran': {
+      const ecran = analyserEcranPublic(contenu.ecran);
+      return ecran ? { ok: true, message: { v: VERSION_PROTOCOLE, type: 'ecran', ecran } } : invalide;
+    }
     case 'acces':
       if (!(ROLES_QR as readonly unknown[]).includes(contenu.role) || typeof contenu.appareilId !== 'string') {
         return { ok: false, erreur: 'MESSAGE_INVALIDE' };

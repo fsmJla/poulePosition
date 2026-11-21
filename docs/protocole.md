@@ -1228,3 +1228,41 @@ final, ainsi que le statut de publication. Elle ne porte ni émargement, ni lice
   suivantes. Un lecteur n'envoie que `ping` (réponse automatique) ; tout autre message reçoit `TYPE_INTERDIT`. Il ne
   reçoit jamais la vue de saisie (§18).
 - **Codes de fermeture** ajoutés : `4006` (épreuve non publiée), `4007` (trop de lecteurs).
+
+## 23. Écrans géants (US-133 à US-136, ADR-0029)
+
+Les écrans sont des réglages d'affichage gardés dans le DO `Club` (table `ecrans`), et non dans le journal d'une
+épreuve. Un écran (`Ecran`, `paquets/protocole/src/ecrans.ts`) contient :
+- `id` ;
+- `proprietaire` : `{ type: "manifestation" | "competition", id }` ;
+- `nom` (unique pour un même propriétaire) ;
+- `epreuves` (cochées, 50 au plus) ;
+- `dureePage` (de 5 à 120 s, 15 par défaut) ;
+- `vuesMasquees` (`appel`, `poules`, `classement`, `tableau`, `podium`) ;
+- `jeton` (128 bits en base64url, tiré par le serveur) ;
+- `creeLe` ;
+- `ouvertLe` (dernière demande de ticket) ;
+- `vueImposee` (`{ epreuveId, vue, poule, jusqua }` ou `null`).
+
+Routes avec session (tout compte du club au mot de passe définitif) :
+
+| Route | Effet |
+|---|---|
+| `GET /ecrans` | `{ ok, ecrans, connectes }` : `connectes` liste les écrans dont la socket de contrôle est ouverte |
+| `POST /ecrans` | Crée un écran (`proprietaire`, `nom`, `epreuves`, `dureePage`, `vuesMasquees`) : `201`, ou `409 NOM_EN_DOUBLE`, ou `404 PROPRIETAIRE_INCONNU` |
+| `PATCH /ecrans/<id>` | Nouveaux réglages (sans propriétaire), poussés à l'écran ouvert ; une épreuve décochée ferme son lecteur |
+| `DELETE /ecrans/<id>` | Supprime l'écran ; sa socket de contrôle et ses lecteurs sont fermés (`4003`) |
+| `POST /ecrans/<id>/jeton` | Régénère le jeton ; l'ancien lien ne vaut plus rien (fermetures `4003`) |
+| `PUT /ecrans/<id>/vue` | Impose une vue (`VueImposee`), ou reprend le défilement (`null`) ; `409 ECRAN_DECONNECTE` si l'écran n'est pas connecté |
+
+Côté écran, sans session :
+- `POST /ecrans/<id>/ticket` avec `{ "jeton": … }` renvoie `{ ok, ticket, expireLe, ecran, titre }`. Le ticket vaut
+  60 s (`t: "ecran"`, voir §22) ; `ecran` est l'écran sans son jeton ; `titre` est le nom de la manifestation ou de la
+  compétition. Un mauvais jeton donne `401 LIEN_INVALIDE` et compte pour le limiteur de l'adresse.
+- `GET /ecrans/<id>/connexion?ticket=…` ouvre une WebSocket de contrôle sur le DO `Club`. L'écran y reçoit
+  `bienvenue`, puis `{ "type": "ecran", "ecran": … }` à l'ouverture et à chaque changement de réglage ou de vue imposée.
+- L'écran ouvre aussi une socket de lecture `…/epreuves/<e>/direct?ticket=…` par épreuve cochée (§22).
+
+Le lien d'un écran est `…/ecran/<id>#<jeton>` : le jeton reste dans le fragment. Sur le PC pilote, `…/ecran/<id>?local`
+ouvre la fenêtre locale (US-136). Elle reçoit sans réseau, par `BroadcastChannel` (`poule-position:direct`), la vue des
+épreuves pilotées par ce PC (`vue`) et les vues imposées depuis ce PC (`imposer`) ; elle annonce ses épreuves (`bonjour`).

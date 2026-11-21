@@ -15,6 +15,7 @@ import {
   messageExclure,
   deriverCle,
   preparerDemandeInstallation,
+  type Ecran,
   type EpreuveIndexee,
   type ResumeEpreuve,
   type DemandeEnvoi,
@@ -1065,4 +1066,199 @@ describe('lecteurs de la vue en direct (US-132, ADR-0029)', () => {
     });
     expect(refus.status).toBe(403);
   });
+});
+
+describe('écrans géants (US-133 à US-135, ADR-0029)', () => {
+  const competitionSeule = async () => {
+    const reponse = await appeler(worker, 'POST', '/competitions', jeton, {
+      manifestationId: null,
+      nom: `Challenge ${crypto.randomUUID().slice(0, 6)}`,
+      arme: 'sabre',
+      commentaire: null,
+    });
+    expect(reponse.status).toBe(201);
+    return ((await reponse.json()) as { competition: { id: string } }).competition.id;
+  };
+  const creerEcran = (competitionId: string, champs: Record<string, unknown> = {}) =>
+    appeler(worker, 'POST', '/ecrans', jeton, {
+      proprietaire: { type: 'competition', id: competitionId },
+      nom: 'Écran de la salle A',
+      epreuves: [],
+      dureePage: 15,
+      vuesMasquees: [],
+      ...champs,
+    });
+  const lister = async () =>
+    (await (await appeler(worker, 'GET', '/ecrans', jeton)).json()) as {
+      ok: boolean;
+      ecrans: Ecran[];
+      connectes: string[];
+    };
+  const demanderTicketEcran = (id: string, jetonEcran: string) =>
+    appeler(worker, 'POST', `/ecrans/${id}/ticket`, null, { jeton: jetonEcran });
+
+  async function ouvrirControle(id: string, ticket: string) {
+    const reponse = await worker.fetch(`http://localhost/ecrans/${id}/connexion?ticket=${encodeURIComponent(ticket)}`, {
+      headers: { Upgrade: 'websocket', Origin: 'http://localhost:4173' },
+    });
+    expect(reponse.status).toBe(101);
+    const socket = reponse.webSocket as NonNullable<typeof reponse.webSocket>;
+    const recus: string[] = [];
+    const attentes: ((message: string) => void)[] = [];
+    let resoudreFermeture: (code: number) => void = () => {};
+    const fermeture = new Promise<number>((resoudre) => (resoudreFermeture = resoudre));
+    socket.addEventListener('message', (evenement) => {
+      const message = String(evenement.data);
+      const attente = attentes.shift();
+      if (attente) attente(message);
+      else recus.push(message);
+    });
+    socket.addEventListener('close', (evenement) => resoudreFermeture(evenement.code));
+    socket.accept();
+    const prochain = async () =>
+      JSON.parse(
+        await new Promise<string>((resoudre) => {
+          const deja = recus.shift();
+          if (deja !== undefined) resoudre(deja);
+          else attentes.push(resoudre);
+        }),
+      ) as Record<string, unknown>;
+    return { socket, prochain, fermeture };
+  }
+
+  it('US-133 CA-1 et CA-2 : créer un écran (jeton de 22 caractères), le relire dans la liste', async () => {
+    const competitionId = await competitionSeule();
+    const reponse = await creerEcran(competitionId);
+    expect(reponse.status).toBe(201);
+    const { ecran } = (await reponse.json()) as { ecran: Ecran };
+    expect(ecran).toMatchObject({ nom: 'Écran de la salle A', dureePage: 15, ouvertLe: null, vueImposee: null });
+    expect(ecran.jeton).toMatch(/^[A-Za-z0-9_-]{22}$/);
+    const liste = await lister();
+    expect(liste.ecrans.find(({ id }) => id === ecran.id)).toEqual(ecran);
+    expect(liste.connectes).not.toContain(ecran.id);
+  });
+
+  it('US-133 cas limites : nom en double (409), propriétaire inconnu (404), demande invalide (400), sans session (401)', async () => {
+    const competitionId = await competitionSeule();
+    await creerEcran(competitionId);
+    expect((await creerEcran(competitionId, { nom: 'écran de la SALLE a' })).status).toBe(409);
+    expect((await creerEcran(crypto.randomUUID())).status).toBe(404);
+    expect((await creerEcran(competitionId, { dureePage: 2 })).status).toBe(400);
+    expect((await appeler(worker, 'GET', '/ecrans', '')).status).toBe(401);
+    expect(
+      (
+        await appeler(worker, 'PATCH', `/ecrans/${crypto.randomUUID()}`, jeton, {
+          nom: 'x',
+          epreuves: [],
+          dureePage: 15,
+          vuesMasquees: [],
+        })
+      ).status,
+    ).toBe(404);
+    expect((await appeler(worker, 'DELETE', `/ecrans/${crypto.randomUUID()}`, jeton)).status).toBe(404);
+    expect((await appeler(worker, 'POST', `/ecrans/${crypto.randomUUID()}/jeton`, jeton)).status).toBe(404);
+  });
+
+  it('US-134 et US-133 CA-5 : le jeton donne un ticket ; la socket de contrôle reçoit les réglages et leurs changements', async () => {
+    const competitionId = await competitionSeule();
+    const { ecran } = (await (await creerEcran(competitionId)).json()) as { ecran: Ecran };
+    expect((await demanderTicketEcran(ecran.id, 'mauvais-jeton-abcdefghi')).status).toBe(401);
+    const reponse = await demanderTicketEcran(ecran.id, ecran.jeton);
+    expect(reponse.status).toBe(200);
+    const corps = (await reponse.json()) as { ticket: string; ecran: Record<string, unknown>; titre: string };
+    expect(corps.ecran).not.toHaveProperty('jeton');
+    expect(corps).toMatchObject({ titre: expect.stringMatching(/^Challenge /) });
+    expect(corps.ecran.ouvertLe).toEqual(expect.any(Number));
+    const controle = await ouvrirControle(ecran.id, corps.ticket);
+    expect(await controle.prochain()).toMatchObject({ type: 'bienvenue' });
+    expect(await controle.prochain()).toMatchObject({
+      type: 'ecran',
+      ecran: { id: ecran.id, nom: 'Écran de la salle A' },
+    });
+    expect((await lister()).connectes).toContain(ecran.id);
+    const modification = await appeler(worker, 'PATCH', `/ecrans/${ecran.id}`, jeton, {
+      nom: 'Salle B',
+      epreuves: [],
+      dureePage: 30,
+      vuesMasquees: ['podium'],
+    });
+    expect(modification.status).toBe(200);
+    expect(await controle.prochain()).toMatchObject({ type: 'ecran', ecran: { nom: 'Salle B', dureePage: 30 } });
+    // US-135 : vue imposée, poussée à l'écran ; reprise du défilement.
+    const epreuveId = crypto.randomUUID();
+    await appeler(worker, 'PATCH', `/ecrans/${ecran.id}`, jeton, {
+      nom: 'Salle B',
+      epreuves: [epreuveId],
+      dureePage: 30,
+      vuesMasquees: [],
+    });
+    await controle.prochain();
+    const vue = { epreuveId, vue: 'appel', poule: null, jusqua: null };
+    expect((await appeler(worker, 'PUT', `/ecrans/${ecran.id}/vue`, jeton, vue)).status).toBe(200);
+    expect(await controle.prochain()).toMatchObject({ type: 'ecran', ecran: { vueImposee: vue } });
+    expect((await appeler(worker, 'PUT', `/ecrans/${ecran.id}/vue`, jeton, null)).status).toBe(200);
+    expect(await controle.prochain()).toMatchObject({ type: 'ecran', ecran: { vueImposee: null } });
+    // US-133 CA-4 : régénérer ferme l'écran ; l'ancien jeton ne vaut plus.
+    const regeneration = await appeler(worker, 'POST', `/ecrans/${ecran.id}/jeton`, jeton);
+    expect(regeneration.status).toBe(200);
+    const { ecran: nouveau } = (await regeneration.json()) as { ecran: Ecran };
+    expect(nouveau.jeton).not.toBe(ecran.jeton);
+    expect(await controle.fermeture).toBe(4003);
+    expect((await demanderTicketEcran(ecran.id, ecran.jeton)).status).toBe(401);
+    expect((await demanderTicketEcran(ecran.id, nouveau.jeton)).status).toBe(200);
+  });
+
+  it('US-135 CA-4 : imposer une vue à un écran déconnecté est refusé (409)', async () => {
+    const competitionId = await competitionSeule();
+    const { ecran } = (await (await creerEcran(competitionId)).json()) as { ecran: Ecran };
+    const vue = { epreuveId: 'e-1', vue: 'appel', poule: null, jusqua: null };
+    const refus = await appeler(worker, 'PUT', `/ecrans/${ecran.id}/vue`, jeton, vue);
+    expect(refus.status).toBe(409);
+    expect(await refus.json()).toEqual({ ok: false, erreur: 'ECRAN_DECONNECTE' });
+  });
+
+  it('US-133 CA-5 : un écran supprimé ferme ses lecteurs et sa socket de contrôle', async () => {
+    const competitionId = await competitionSeule();
+    const epreuveId = crypto.randomUUID();
+    await envoyer(epreuveId, lot(epreuveId, 0, [evenement(epreuveId, 1)], 'pc-a'));
+    const { ecran } = (await (await creerEcran(competitionId, { epreuves: [epreuveId] })).json()) as { ecran: Ecran };
+    const { ticket } = (await (await demanderTicketEcran(ecran.id, ecran.jeton)).json()) as { ticket: string };
+    const controle = await ouvrirControle(ecran.id, ticket);
+    await controle.prochain();
+    await controle.prochain();
+    const lecteur = await worker.fetch(
+      `http://localhost/epreuves/${epreuveId}/direct?ticket=${encodeURIComponent(ticket)}`,
+      {
+        headers: { Upgrade: 'websocket', Origin: 'http://localhost:4173' },
+      },
+    );
+    expect(lecteur.status).toBe(101);
+    const socketLecteur = lecteur.webSocket as NonNullable<typeof lecteur.webSocket>;
+    const fermetureLecteur = new Promise<number>((resoudre) =>
+      socketLecteur.addEventListener('close', (evenement) => resoudre(evenement.code)),
+    );
+    socketLecteur.accept();
+    expect((await appeler(worker, 'DELETE', `/ecrans/${ecran.id}`, jeton)).status).toBe(200);
+    expect(await controle.fermeture).toBe(4003);
+    expect(await fermetureLecteur).toBe(4003);
+    expect((await lister()).ecrans.some(({ id }) => id === ecran.id)).toBe(false);
+  });
+
+  it('US-134 : la socket de contrôle demande un ticket de cet écran', async () => {
+    const ouvrir = (suite: string) =>
+      worker.fetch(`http://localhost/ecrans/ecran-x/connexion${suite}`, {
+        headers: { Upgrade: 'websocket', Origin: 'http://localhost:4173' },
+      });
+    expect((await ouvrir('?ticket=faux')).status).toBe(401);
+    expect((await ouvrir(`?ticket=${await ticketEcranDe('autre-ecran')}`)).status).toBe(401);
+    const ouvert = await ouvrir(`?ticket=${await ticketEcranDe('ecran-x')}`);
+    expect(ouvert.status).toBe(101);
+    const socket = ouvert.webSocket as NonNullable<typeof ouvert.webSocket>;
+    const fermeture = new Promise<number>((resoudre) => socket.addEventListener('close', (e) => resoudre(e.code)));
+    socket.accept();
+    // Écran inconnu du club : fermé.
+    expect(await fermeture).toBe(4003);
+  });
+  const ticketEcranDe = async (ecran: string) =>
+    (await signerTicketEcran({ club: clubId, ecran, epreuves: [] }, SECRET_SESSION, Date.now())).ticket;
 });

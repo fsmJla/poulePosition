@@ -56,6 +56,12 @@ export type Route =
   | { route: 'jeton'; epreuveId: string; role: RoleQr }
   | { route: 'connexion'; epreuveId: string }
   | { route: 'direct'; epreuveId: string }
+  | { route: 'ecrans' }
+  | { route: 'ecran'; id: string }
+  | { route: 'jeton-ecran'; id: string }
+  | { route: 'vue-ecran'; id: string }
+  | { route: 'ticket-ecran'; id: string }
+  | { route: 'connexion-ecran'; id: string }
   | { route: 'fichiers' }
   | { route: 'fichier'; proprietaire: ProprietaireFichier; id: string; sorte: SorteFichier }
   | { route: 'fichier-public'; nom: string }
@@ -87,6 +93,19 @@ export function analyserChemin(chemin: string): Route | null {
   if (chemin === '/competitions') return { route: 'competitions' };
   const competition = /^\/competitions\/([^/]+)$/.exec(chemin)?.[1];
   if (competition) return MOTIF_EPREUVE.test(competition) ? { route: 'competition', id: competition } : null;
+  // US-133 à US-135 (ADR-0029) : écrans géants du club.
+  if (chemin === '/ecrans') return { route: 'ecrans' };
+  const ecran = /^\/ecrans\/([^/]+)(?:\/(jeton|vue|ticket|connexion))?$/.exec(chemin);
+  if (ecran?.[1]) {
+    if (!MOTIF_EPREUVE.test(ecran[1])) return null;
+    const suite = {
+      jeton: 'jeton-ecran',
+      vue: 'vue-ecran',
+      ticket: 'ticket-ecran',
+      connexion: 'connexion-ecran',
+    } as const;
+    return { route: ecran[2] ? suite[ecran[2] as keyof typeof suite] : 'ecran', id: ecran[1] };
+  }
   if (chemin === '/epreuves') return { route: 'epreuves' };
   const seule = /^\/epreuves\/([^/]+)$/.exec(chemin)?.[1];
   if (seule) return MOTIF_EPREUVE.test(seule) ? { route: 'epreuve', epreuveId: seule } : null;
