@@ -77,8 +77,8 @@ Testé en E2E hors ligne avec un faux dossier (API File System Access simulée d
 - Épreuve non pilotée par ce PC (lecture seule) : rien n'est écrit pour elle.
 - Épreuve renommée : le nouveau nom donne un nouveau fichier ; l'ancien reste dans le dossier.
 - Dossier plein : traité comme le CA-5.
-- Fichiers joints (affiche, feuille de route) : inclus comme dans l'export (US-034 CA-2), mais réécrits seulement
-  s'ils changent, pour ne pas ralentir chaque écriture.
+- Fichiers joints (affiche, feuille de route) : inclus comme dans l'export (US-034 CA-2). Le format de l'export les
+  range dans le même fichier : ils sont donc réécrits à chaque sauvegarde (quelques Mo au plus, une fois toutes les 30 s).
 - Plusieurs onglets ouverts : un seul écrit à la fois (verrou entre onglets).
 
 ## Hypothèses

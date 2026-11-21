@@ -20,9 +20,20 @@
     /** US-054 CA-7 : écran étroit, « Comptes », l'aide et le thème quittent l'entête pour ce menu. */
     etroit?: boolean;
     enLigne?: boolean;
+    /** US-131 : ouvre la fenêtre « Sauvegarde automatique » ; absent (entrée grisée, CA-7) sans l'API du navigateur. */
+    surSauvegarde?: (() => void) | undefined;
   }
 
-  let { compte, naviguer, surDeconnexion, surOubli, etroit = false, enLigne = true }: Proprietes = $props();
+  let {
+    compte,
+    naviguer,
+    surDeconnexion,
+    surOubli,
+    etroit = false,
+    enLigne = true,
+    surSauvegarde,
+  }: Proprietes = $props();
+  const ts = textes.sauvegardeAuto;
   const te = textes.entete;
   const choixTheme = theme.choix;
   const iconeTheme = { clair: 'soleil', sombre: 'lune', auto: 'ecran' } as const;
@@ -118,6 +129,15 @@
       </div>
       <ul>
         <li><a href={CHEMINS.profil} onclick={versProfil}>{t.menu.editerProfil}</a></li>
+        <li>
+          {#if surSauvegarde}
+            <button type="button" onclick={() => choisir(surSauvegarde)}>{ts.entree}</button>
+          {:else}
+            <span class="inactif" aria-disabled="true" title={ts.indisponible}
+              >{ts.entree} <small>{ts.indisponible}</small></span
+            >
+          {/if}
+        </li>
         {#if etroit}
           <!-- Provisoire : le bouton « Créer » flottant des smartphones arrive avec US-061 ; d'ici là, l'entrée est ici. -->
           <li>

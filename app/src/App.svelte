@@ -22,6 +22,10 @@
   import { textes } from './lib/textes';
   import { creerSuiviRetour, type EtatRetour } from './lib/retour-en-ligne';
   import { ecranAReprendre, estAccueil, etapeAMemoriser, lireEcran, memoriserEcran, oublierEcran } from './lib/reprise';
+  import { creerSauvegardeAuto } from './lib/sauvegarde-auto';
+  import { magasinIndexedDb, selecteurDossier, sourceJournal } from './lib/sauvegarde-auto-navigateur';
+  import BandeauSauvegarde from './composants/BandeauSauvegarde.svelte';
+  import FenetreSauvegarde from './composants/FenetreSauvegarde.svelte';
   import BarreOutils from './composants/BarreOutils.svelte';
   import Entete from './composants/Entete.svelte';
   import Accueil from './pages/Accueil.svelte';
@@ -132,6 +136,14 @@
       },
     },
   });
+  /** US-131 : sauvegarde automatique des épreuves pilotées ici dans un dossier choisi (Chrome, Edge). */
+  const choisirDossier = selecteurDossier();
+  const sauvegardeAuto = creerSauvegardeAuto({
+    magasin: magasinIndexedDb(),
+    source: sourceJournal({ journal, hierarchie: () => accueil.hierarchie(), fichiers }),
+    choisirDossier,
+  });
+  let fenetreSauvegarde = $state(false);
   let horsLignePilote = $state(false);
   let retour = $state<EtatRetour>({ etape: 'aucun' });
   suiviRetour.surEtat((etat) => (retour = etat));
@@ -221,6 +233,35 @@
     };
   });
 
+  // US-131 : la sauvegarde tourne tant qu'une session existe, dans un seul onglet à la fois (verrou du navigateur).
+  const avecSauvegarde = $derived(avecSession);
+  $effect(() => {
+    if (!avecSauvegarde) return;
+    let arreter = () => {};
+    let liberer: (() => void) | null = null;
+    let fini = false;
+    const lancer = () => {
+      void sauvegardeAuto.demarrer();
+      arreter = sauvegardeAuto.surveiller();
+    };
+    if (navigator.locks) {
+      void navigator.locks.request(
+        'poule-position:sauvegarde-auto',
+        () =>
+          new Promise<void>((resoudre) => {
+            if (fini) return resoudre();
+            lancer();
+            liberer = resoudre;
+          }),
+      );
+    } else lancer();
+    return () => {
+      fini = true;
+      arreter();
+      liberer?.();
+    };
+  });
+
   onMount(() => {
     const surRetour = () => (chemin = location.pathname + location.search);
     // US-005 CA-5 / CA-6 : de retour en ligne, la session est revalidée sans action (ou fermée, avec son motif).
@@ -301,7 +342,19 @@
   {:else if session}
     <!-- Pages réservées : entête commun (US-014) ; action principale tiffany (US-054, app.css). -->
     <div class="pages-connectees">
-      <Entete compte={session.compte} {surDeconnexion} {surOubli} {naviguer} {accueil} locale={estLocale(session)} />
+      <Entete
+        compte={session.compte}
+        {surDeconnexion}
+        {surOubli}
+        {naviguer}
+        {accueil}
+        locale={estLocale(session)}
+        surSauvegarde={choisirDossier ? () => (fenetreSauvegarde = true) : undefined}
+      />
+      <BandeauSauvegarde sauvegarde={sauvegardeAuto} />
+      {#if fenetreSauvegarde}
+        <FenetreSauvegarde sauvegarde={sauvegardeAuto} fermer={() => (fenetreSauvegarde = false)} />
+      {/if}
       {#if route.page === 'organisateur'}
         <Organisateur {session} {accueil} {fichiers} {journal} {synchronisation} {naviguer} />
       {:else if route.page === 'motDePasse'}
