@@ -110,6 +110,8 @@ describe('client des écrans (US-133 à US-135)', () => {
       erreur: 'ERREUR_INATTENDUE',
     });
     expect(await client(() => [500, 'x']).ecrans.regenerer('x')).toEqual({ ok: false, erreur: 'ERREUR_INATTENDUE' });
-    expect(await client(() => 'reseau').ecrans.lister()).toEqual({ ok: false, erreur: 'HORS_LIGNE' });
+    // En ligne, un serveur qui ne répond pas n'est pas une coupure du réseau.
+    expect(await client(() => 'reseau').ecrans.lister()).toEqual({ ok: false, erreur: 'SERVEUR_INJOIGNABLE' });
+    expect(await client(() => 'reseau').ecrans.supprimer('x')).toEqual({ ok: false, erreur: 'SERVEUR_INJOIGNABLE' });
   });
 });

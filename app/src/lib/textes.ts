@@ -432,6 +432,7 @@ export const textes = {
     statuts: { preparation: 'en préparation', enCours: 'en cours', terminee: 'terminée', archivee: 'archivée' },
     erreurs: {
       HORS_LIGNE: 'Nécessite une connexion internet',
+      SERVEUR_INJOIGNABLE: 'Serveur injoignable : réessayez dans un instant',
       SESSION_INVALIDE: 'Reconnectez-vous pour continuer',
       NOM_EN_DOUBLE: 'Un autre écran porte déjà ce nom',
       ECRAN_INCONNU: 'Cet écran n’existe plus',

@@ -12,6 +12,8 @@ import { DELAI_REPONSE } from './session';
 
 export type ErreurEcrans =
   | 'HORS_LIGNE'
+  /** En ligne, mais le serveur ne répond pas (ou refuse sans en-têtes CORS : route inconnue d'un serveur trop ancien). */
+  | 'SERVEUR_INJOIGNABLE'
   | 'SESSION_INVALIDE'
   | 'NOM_EN_DOUBLE'
   | 'ECRAN_INCONNU'
@@ -43,6 +45,7 @@ export interface OptionsEcrans {
 }
 
 const ERREURS_CONNUES: readonly ErreurEcrans[] = [
+  'SERVEUR_INJOIGNABLE',
   'NOM_EN_DOUBLE',
   'ECRAN_INCONNU',
   'ECRAN_DECONNECTE',
@@ -94,7 +97,8 @@ export function creerClientEcrans({
       });
       return { ok: reponse.ok, corps: await reponse.json().catch(() => undefined) };
     } catch {
-      return null;
+      // Le navigateur est en ligne : ce n'est pas une coupure, c'est le serveur qui ne répond pas.
+      return { ok: false, corps: { erreur: 'SERVEUR_INJOIGNABLE' } };
     }
   }
 
