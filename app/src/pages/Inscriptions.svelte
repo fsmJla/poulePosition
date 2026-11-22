@@ -2,10 +2,13 @@
   // Inscriptions d'une épreuve (US-082, planche 7) : saisie rapide en ligne (Entrée enchaîne, club repris), alerte
   // d'homonyme, liste triée par classement et filtrable, modification au crayon et retrait par « ⋯ ». Les écritures
   // passent par le journal local du PC pilote (US-081), donc aussi hors ligne, puis partent au serveur (US-022).
+  // US-146 : une épreuve par équipes a deux onglets, « Tireurs » et « Équipes » (planche 40).
   import { onMount, tick } from 'svelte';
   import {
     cleTexte,
     analyserImport,
+    equipeDuTireur,
+    equipesDe,
     comparerTireur,
     inscriptionsOuvertes,
     tireursDe,
@@ -16,6 +19,7 @@
     type Tireur,
   } from '@poule-position/domaine';
   import ConfirmationArchivage from '../composants/ConfirmationArchivage.svelte';
+  import GestionEquipes from '../composants/GestionEquipes.svelte';
   import AttenteEnvoi from '../composants/AttenteEnvoi.svelte';
   import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
   import Icone from '../composants/Icone.svelte';
@@ -68,6 +72,14 @@
   /** CA-6 : la ligne en édition et ses valeurs. */
   let edition: { id: string; nom: string; prenom: string; club: string; classement: string } | null = $state(null);
   let retraitDemande: Tireur | null = $state(null);
+  /** US-146 CA-1 : onglet ouvert d'une épreuve par équipes. */
+  let onglet: 'tireurs' | 'equipes' = $state('tireurs');
+  const tq = textes.equipes;
+  const parEquipes = $derived(epreuve !== null && epreuve.typeEpreuve !== 'individuelle');
+  const nombreEquipes = $derived(epreuve ? equipesDe(epreuve).length : 0);
+  const nombreSansEquipe = $derived(
+    epreuve ? tireursDe(epreuve).filter((x) => !equipeDuTireur(equipesDe(epreuve!), x.id)).length : 0,
+  );
 
   const tireurs = $derived(epreuve ? trierTireurs(tireursDe(epreuve)) : []);
   const visibles = $derived(
@@ -341,181 +353,197 @@
     {#if pilote}<AttenteEnvoi nombre={enAttente} />{/if}
     <p class="invisible" role="status" aria-live="polite">{annonce}</p>
 
-    {#if modifiable}
-      <!-- CA-2 : saisie rapide en ligne ; « Ajouter » est l'action principale ; Entrée ajoute. -->
-      <section class="carte" aria-labelledby="titre-ajout">
-        <h3 id="titre-ajout"><Icone nom="personnePlus" taille={20} />{t.ajout}</h3>
-        <form class="ajout" onsubmit={(e) => ajouter(e)} novalidate>
-          <div class="champ">
-            <label for="saisie-nom">{t.nom}</label>
-            <input
-              id="saisie-nom"
-              bind:this={champNom}
-              bind:value={saisie.nom}
-              class="majuscules"
-              placeholder={t.exempleNom}
-              autocomplete="off"
-              aria-invalid={erreurs.nom ? 'true' : undefined}
-              aria-describedby={erreurs.nom ? 'erreur-nom' : undefined}
-              disabled={enCours}
-            />
-            {#if erreurs.nom}<span id="erreur-nom" class="erreur">{erreurs.nom}</span>{/if}
-          </div>
-          <div class="champ">
-            <label for="saisie-prenom">{t.prenom}</label>
-            <input
-              id="saisie-prenom"
-              bind:value={saisie.prenom}
-              placeholder={t.exemplePrenom}
-              autocomplete="off"
-              aria-invalid={erreurs.prenom ? 'true' : undefined}
-              aria-describedby={erreurs.prenom ? 'erreur-prenom' : undefined}
-              disabled={enCours}
-            />
-            {#if erreurs.prenom}<span id="erreur-prenom" class="erreur">{erreurs.prenom}</span>{/if}
-          </div>
-          <div class="champ">
-            <label for="saisie-club">{t.club}</label>
-            <input
-              id="saisie-club"
-              bind:value={saisie.club}
-              list="clubs-connus"
-              autocomplete="off"
-              disabled={enCours}
-            />
-            <datalist id="clubs-connus" aria-label={t.clubsProposes}>
-              {#each clubsConnus as club (club)}<option value={club}></option>{/each}
-            </datalist>
-          </div>
-          <div class="champ">
-            <label for="saisie-classement">{t.classement} <small>{t.facultatif}</small></label>
-            <input
-              id="saisie-classement"
-              bind:value={saisie.classement}
-              inputmode="numeric"
-              autocomplete="off"
-              aria-invalid={erreurs.classement ? 'true' : undefined}
-              aria-describedby={erreurs.classement ? 'erreur-classement' : undefined}
-              disabled={enCours}
-            />
-            {#if erreurs.classement}<span id="erreur-classement" class="erreur">{erreurs.classement}</span>{/if}
-          </div>
-          <button type="submit" class="principal" disabled={enCours}>
-            <Icone nom="plus" taille={20} />{t.ajouter}
-          </button>
-        </form>
-        <p class="aide">{t.aideAjout}</p>
-        {#if homonyme}
-          <!-- CA-4 : un homonyme déjà inscrit : l'organisateur décide. -->
-          <div class="alerte" role="alert">
-            <Icone nom="alerte" taille={20} />
-            <span>{t.homonyme(`${homonyme.nom.toUpperCase()} ${homonyme.prenom}`, homonyme.club)}</span>
-            <button type="button" class="lien" onclick={() => ajouter(undefined, true)}>{t.ajouterQuandMeme}</button>
-            <button type="button" class="lien" onclick={() => (homonyme = null)}>{t.annuler}</button>
-          </div>
-        {/if}
-        {#if erreurs.general}<p class="message" role="alert">{erreurs.general}</p>{/if}
-      </section>
+    {#if parEquipes}
+      <!-- US-146 CA-1 : onglets « Tireurs » et « Équipes ». -->
+      <div class="onglets" role="tablist" aria-label={tq.onglets}>
+        <button type="button" role="tab" aria-selected={onglet === 'tireurs'} onclick={() => (onglet = 'tireurs')}
+          >{tq.ongletTireurs} <span>{tireurs.length}</span></button
+        >
+        <button type="button" role="tab" aria-selected={onglet === 'equipes'} onclick={() => (onglet = 'equipes')}
+          >{tq.ongletEquipes} <span>{tq.resume(nombreEquipes, nombreSansEquipe)}</span></button
+        >
+      </div>
     {/if}
 
-    <!-- CA-5 : la liste des inscrits, triée par classement puis par nom, filtrable. -->
-    <section class="carte liste" aria-labelledby="titre-liste">
-      <div class="entete-liste">
-        <h3 id="titre-liste">{t.liste}</h3>
-        <label class="filtre">
-          <Icone nom="loupe" taille={18} />
-          <input type="search" bind:value={filtre} aria-label={t.filtrer} placeholder={t.exempleFiltre} />
-        </label>
-        <span class="discret">{t.clubs(nombreClubs)}</span>
-      </div>
-      {#if tireurs.length === 0}
-        <p class="vide">{t.aucun}</p>
-      {:else if visibles.length === 0}
-        <p class="vide">{t.aucunFiltre}</p>
-      {:else}
-        <div class="defilement">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col" class="col-classement">{t.colonnes.classement}</th>
-                <th scope="col">{t.colonnes.nom}</th>
-                <th scope="col">{t.colonnes.prenom}</th>
-                <th scope="col">{t.colonnes.club}</th>
-                <th scope="col" class="col-actions"><span class="invisible">{t.colonnes.actions}</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each visibles as tireur (tireur.id)}
-                {#if edition?.id === tireur.id}
-                  <!-- CA-6 : la ligne passe en édition ; Échap annule. -->
-                  <tr class="en-edition">
-                    <td colspan="5">
-                      <form class="edition" onsubmit={(e) => enregistrerEdition(e)} novalidate>
-                        <input
-                          bind:value={edition.classement}
-                          onkeydown={annulerSurEchap}
-                          inputmode="numeric"
-                          aria-label={t.classement}
-                        />
-                        <input
-                          bind:value={edition.nom}
-                          onkeydown={annulerSurEchap}
-                          class="majuscules"
-                          aria-label={t.nom}
-                        />
-                        <input bind:value={edition.prenom} onkeydown={annulerSurEchap} aria-label={t.prenom} />
-                        <input
-                          bind:value={edition.club}
-                          onkeydown={annulerSurEchap}
-                          list="clubs-connus"
-                          aria-label={t.club}
-                        />
-                        <button type="submit" class="principal" disabled={enCours}>{t.enregistrer}</button>
-                        <button type="button" class="secondaire" onclick={() => (edition = null)}>{t.annuler}</button>
-                      </form>
-                      {#if erreurs.general}<p class="message" role="alert">{erreurs.general}</p>{/if}
-                    </td>
-                  </tr>
-                {:else}
-                  <tr>
-                    <td class:discret={tireur.classement === null}>{tireur.classement ?? t.sansClassement}</td>
-                    <td class="nom">{tireur.nom.toUpperCase()}</td>
-                    <td>{tireur.prenom}</td>
-                    <td class="discret">{tireur.club}</td>
-                    <td>
-                      {#if modifiable}<div class="actions">
-                          <button
-                            type="button"
-                            class="icone"
-                            aria-label={t.modifier(nomComplet(tireur))}
-                            title={t.modifier(nomComplet(tireur))}
-                            onclick={() => commencerEdition(tireur)}><Icone nom="crayon" taille={18} /></button
-                          >
-                          <MenuActions
-                            id="menu-tireur-{tireur.id}"
-                            nom={nomComplet(tireur)}
-                            contour={false}
-                            actions={[
-                              {
-                                libelle: t.retirer,
-                                icone: 'corbeille',
-                                destructive: true,
-                                surChoix: () => (retraitDemande = tireur),
-                              },
-                            ]}
-                            {naviguer}
-                          />
-                        </div>{/if}
-                    </td>
-                  </tr>
-                {/if}
-              {/each}
-            </tbody>
-          </table>
-        </div>
+    {#if parEquipes && onglet === 'equipes'}
+      <GestionEquipes {epreuve} {journal} {contexte} {modifiable} {apres} />
+    {:else}
+      {#if modifiable}
+        <!-- CA-2 : saisie rapide en ligne ; « Ajouter » est l'action principale ; Entrée ajoute. -->
+        <section class="carte" aria-labelledby="titre-ajout">
+          <h3 id="titre-ajout"><Icone nom="personnePlus" taille={20} />{t.ajout}</h3>
+          <form class="ajout" onsubmit={(e) => ajouter(e)} novalidate>
+            <div class="champ">
+              <label for="saisie-nom">{t.nom}</label>
+              <input
+                id="saisie-nom"
+                bind:this={champNom}
+                bind:value={saisie.nom}
+                class="majuscules"
+                placeholder={t.exempleNom}
+                autocomplete="off"
+                aria-invalid={erreurs.nom ? 'true' : undefined}
+                aria-describedby={erreurs.nom ? 'erreur-nom' : undefined}
+                disabled={enCours}
+              />
+              {#if erreurs.nom}<span id="erreur-nom" class="erreur">{erreurs.nom}</span>{/if}
+            </div>
+            <div class="champ">
+              <label for="saisie-prenom">{t.prenom}</label>
+              <input
+                id="saisie-prenom"
+                bind:value={saisie.prenom}
+                placeholder={t.exemplePrenom}
+                autocomplete="off"
+                aria-invalid={erreurs.prenom ? 'true' : undefined}
+                aria-describedby={erreurs.prenom ? 'erreur-prenom' : undefined}
+                disabled={enCours}
+              />
+              {#if erreurs.prenom}<span id="erreur-prenom" class="erreur">{erreurs.prenom}</span>{/if}
+            </div>
+            <div class="champ">
+              <label for="saisie-club">{t.club}</label>
+              <input
+                id="saisie-club"
+                bind:value={saisie.club}
+                list="clubs-connus"
+                autocomplete="off"
+                disabled={enCours}
+              />
+              <datalist id="clubs-connus" aria-label={t.clubsProposes}>
+                {#each clubsConnus as club (club)}<option value={club}></option>{/each}
+              </datalist>
+            </div>
+            <div class="champ">
+              <label for="saisie-classement">{t.classement} <small>{t.facultatif}</small></label>
+              <input
+                id="saisie-classement"
+                bind:value={saisie.classement}
+                inputmode="numeric"
+                autocomplete="off"
+                aria-invalid={erreurs.classement ? 'true' : undefined}
+                aria-describedby={erreurs.classement ? 'erreur-classement' : undefined}
+                disabled={enCours}
+              />
+              {#if erreurs.classement}<span id="erreur-classement" class="erreur">{erreurs.classement}</span>{/if}
+            </div>
+            <button type="submit" class="principal" disabled={enCours}>
+              <Icone nom="plus" taille={20} />{t.ajouter}
+            </button>
+          </form>
+          <p class="aide">{t.aideAjout}</p>
+          {#if homonyme}
+            <!-- CA-4 : un homonyme déjà inscrit : l'organisateur décide. -->
+            <div class="alerte" role="alert">
+              <Icone nom="alerte" taille={20} />
+              <span>{t.homonyme(`${homonyme.nom.toUpperCase()} ${homonyme.prenom}`, homonyme.club)}</span>
+              <button type="button" class="lien" onclick={() => ajouter(undefined, true)}>{t.ajouterQuandMeme}</button>
+              <button type="button" class="lien" onclick={() => (homonyme = null)}>{t.annuler}</button>
+            </div>
+          {/if}
+          {#if erreurs.general}<p class="message" role="alert">{erreurs.general}</p>{/if}
+        </section>
       {/if}
-      <p class="pied">{t.tri}</p>
-    </section>
+
+      <!-- CA-5 : la liste des inscrits, triée par classement puis par nom, filtrable. -->
+      <section class="carte liste" aria-labelledby="titre-liste">
+        <div class="entete-liste">
+          <h3 id="titre-liste">{t.liste}</h3>
+          <label class="filtre">
+            <Icone nom="loupe" taille={18} />
+            <input type="search" bind:value={filtre} aria-label={t.filtrer} placeholder={t.exempleFiltre} />
+          </label>
+          <span class="discret">{t.clubs(nombreClubs)}</span>
+        </div>
+        {#if tireurs.length === 0}
+          <p class="vide">{t.aucun}</p>
+        {:else if visibles.length === 0}
+          <p class="vide">{t.aucunFiltre}</p>
+        {:else}
+          <div class="defilement">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col" class="col-classement">{t.colonnes.classement}</th>
+                  <th scope="col">{t.colonnes.nom}</th>
+                  <th scope="col">{t.colonnes.prenom}</th>
+                  <th scope="col">{t.colonnes.club}</th>
+                  <th scope="col" class="col-actions"><span class="invisible">{t.colonnes.actions}</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each visibles as tireur (tireur.id)}
+                  {#if edition?.id === tireur.id}
+                    <!-- CA-6 : la ligne passe en édition ; Échap annule. -->
+                    <tr class="en-edition">
+                      <td colspan="5">
+                        <form class="edition" onsubmit={(e) => enregistrerEdition(e)} novalidate>
+                          <input
+                            bind:value={edition.classement}
+                            onkeydown={annulerSurEchap}
+                            inputmode="numeric"
+                            aria-label={t.classement}
+                          />
+                          <input
+                            bind:value={edition.nom}
+                            onkeydown={annulerSurEchap}
+                            class="majuscules"
+                            aria-label={t.nom}
+                          />
+                          <input bind:value={edition.prenom} onkeydown={annulerSurEchap} aria-label={t.prenom} />
+                          <input
+                            bind:value={edition.club}
+                            onkeydown={annulerSurEchap}
+                            list="clubs-connus"
+                            aria-label={t.club}
+                          />
+                          <button type="submit" class="principal" disabled={enCours}>{t.enregistrer}</button>
+                          <button type="button" class="secondaire" onclick={() => (edition = null)}>{t.annuler}</button>
+                        </form>
+                        {#if erreurs.general}<p class="message" role="alert">{erreurs.general}</p>{/if}
+                      </td>
+                    </tr>
+                  {:else}
+                    <tr>
+                      <td class:discret={tireur.classement === null}>{tireur.classement ?? t.sansClassement}</td>
+                      <td class="nom">{tireur.nom.toUpperCase()}</td>
+                      <td>{tireur.prenom}</td>
+                      <td class="discret">{tireur.club}</td>
+                      <td>
+                        {#if modifiable}<div class="actions">
+                            <button
+                              type="button"
+                              class="icone"
+                              aria-label={t.modifier(nomComplet(tireur))}
+                              title={t.modifier(nomComplet(tireur))}
+                              onclick={() => commencerEdition(tireur)}><Icone nom="crayon" taille={18} /></button
+                            >
+                            <MenuActions
+                              id="menu-tireur-{tireur.id}"
+                              nom={nomComplet(tireur)}
+                              contour={false}
+                              actions={[
+                                {
+                                  libelle: t.retirer,
+                                  icone: 'corbeille',
+                                  destructive: true,
+                                  surChoix: () => (retraitDemande = tireur),
+                                },
+                              ]}
+                              {naviguer}
+                            />
+                          </div>{/if}
+                      </td>
+                    </tr>
+                  {/if}
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+        <p class="pied">{t.tri}</p>
+      </section>
+    {/if}
   {/if}
 {/snippet}
 
@@ -547,6 +575,34 @@
 {/if}
 
 <style>
+  .onglets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .onglets button {
+    min-height: 40px;
+    padding: 0 1rem;
+    border: 1px solid var(--bordure);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--texte);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .onglets button span {
+    font-weight: 400;
+  }
+
+  .onglets button[aria-selected='true'] {
+    border-color: var(--texte);
+    background: var(--texte);
+    color: var(--fond);
+  }
+
   .titre-etape {
     display: flex;
     flex-wrap: wrap;

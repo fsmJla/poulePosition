@@ -398,7 +398,7 @@ colonnes V, M, V/M, TD, TR, Ind, Rang, sans le fond jaune du rang, US-142) ;
 [`direct/ref-34bis-tableau-arbre.png`](direct/ref-34bis-tableau-arbre.png) remplace la planche 34 (arbre symétrique, finale
 et petite finale au centre, US-143). Les couleurs violettes et le logo relèvent du style personnalisé (US-144).
 
-## Maquette « Épreuves par équipes » (2026-11-22, à valider)
+## Maquette « Épreuves par équipes » (validée le 2026-11-22)
 
 Planches de l'Epic 10, dessinées en HTML statique (sources `equipes/*.html` et `equipes/commun.css`, mêmes couleurs et
 mesures que les planches 7 à 21), avec une capture `.png` par planche. Exemple : M15 Dames par équipes de 3, six équipes.
