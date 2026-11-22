@@ -98,7 +98,7 @@
     "importer-epreuve",
     "ecrans"
   ],
-  "app/src/pages/Formule.svelte": ["formule", "epreuve-etapes", "tableau-troisieme"],
+  "app/src/pages/Formule.svelte": ["formule", "epreuve-etapes", "tableau-troisieme", "equipes"],
   "app/src/pages/Parametres.svelte": ["parametres", "epreuve-etapes", "acces-qr"],
   "app/src/composants/Entete.svelte": [
     "entete",
@@ -232,14 +232,16 @@
     "emargement",
     "poules-saisie",
     "poules-retrait",
-    "poules-classement"
+    "poules-classement",
+    "equipes"
   ],
   "app/src/composants/NavigationEpreuve.svelte": [
     "epreuve-etapes",
     "prochaine-etape",
     "smartphone-organisateur",
     "inscriptions",
-    "poules-classement"
+    "poules-classement",
+    "equipes"
   ],
   "app/src/composants/BarreOngletsEpreuve.svelte": ["epreuve-etapes", "prochaine-etape", "smartphone-organisateur"],
   "app/src/composants/BandeauProchaineEtape.svelte": ["epreuve-etapes", "prochaine-etape", "smartphone-organisateur"],
@@ -280,19 +282,21 @@
     "tableau-saisir",
     "tableau-appeler",
     "tableau-retrait",
-    "impression-tableau"
+    "impression-tableau",
+    "equipes"
   ],
   "app/src/composants/ArbreTableau.svelte": ["tableau-voir", "tableau-saisir"],
   "app/src/composants/CarteSaisieTableau.svelte": [
     "tableau-saisir",
     "tableau-appeler",
     "tableau-retrait",
-    "tableau-troisieme"
+    "tableau-troisieme",
+    "equipes"
   ],
   "app/src/composants/RetraitTableau.svelte": ["tableau-retrait"],
   "app/src/composants/MatchsTableau.svelte": ["saisie-tableau"],
   "app/src/composants/SaisieMatchTableau.svelte": ["saisie-tableau"],
-  "app/src/composants/ClassementFinal.svelte": ["tableau-classement-final", "saisie-tableau"],
+  "app/src/composants/ClassementFinal.svelte": ["tableau-classement-final", "saisie-tableau", "equipes"],
   "app/src/lib/tableau.ts": ["tableau-creer"],
   "app/src/lib/accueil.ts": ["accueil", "accueil-refonte", "filtres-liste"],
   "app/src/lib/archivage.ts": ["archivage"],
@@ -424,7 +428,8 @@
     "poules-ajuster",
     "poules-saisie",
     "poules-retrait",
-    "impression-presence"
+    "impression-presence",
+    "equipes"
   ],
   "app/src/pages/Poules.svelte": [
     "poules-constituer",
@@ -482,7 +487,8 @@
     "correction-score",
     "mes-matchs-tireur",
     "saisies-recues",
-    "saisie-tableau"
+    "saisie-tableau",
+    "equipes"
   ],
   "app/src/pages/Impressions.svelte": ["impressions", "impression-tableau", "impression-poules", "impression-presence"],
   "app/src/pages/Imprimer.svelte": ["impressions", "impression-presence", "impression-poules", "impression-tableau"],

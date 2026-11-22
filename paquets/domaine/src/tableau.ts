@@ -470,6 +470,8 @@ export function situationDuTableau(contexte: ContexteTableau): 'aCreer' | 'aTerm
   if (contexte.terminee || !pretPourLeTableau(contexte)) return null;
   const structure = structureTableau(contexte.tableau, contexte.matchTroisieme);
   if (structure) return tableauTermine(structure) ? 'aTerminer' : null;
+  // US-151 : en tableau direct, rien à proposer tant qu'il n'y a pas deux équipes complètes.
+  if (contexte.direct) return contexte.direct.length >= 2 ? 'aCreer' : null;
   return qualifiesDuContexte(contexte).length >= 2 ? 'aCreer' : 'aTerminer';
 }
 

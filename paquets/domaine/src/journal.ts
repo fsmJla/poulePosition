@@ -793,7 +793,12 @@ function tableauApres(
   const { date } = evenement;
   switch (evenement.type) {
     case 'TableauCree':
-      return { ...epreuve, tableau: { ...etat, qualifies: [...evenement.donnees.qualifies] } };
+      // US-151 : en tableau direct, créer le tableau lance l'épreuve (comme le lancement des poules).
+      return {
+        ...epreuve,
+        statut: epreuve.statut === 'preparation' ? 'enCours' : epreuve.statut,
+        tableau: { ...etat, qualifies: [...evenement.donnees.qualifies] },
+      };
     case 'MatchTableauAppele':
       return { ...epreuve, tableau: { ...etat, appels: appelsApres(etat.appels, evenement.donnees, date) } };
     case 'ScoreTableauSaisi':

@@ -2,19 +2,26 @@
   // Étape « Tableau » d'une épreuve (US-109, planche 11) : tant que les poules se tirent, un avis ; une fois terminées,
   // l'aperçu du premier tour et l'action principale « Créer le tableau » ; ensuite, le tableau. Écrit les événements
   // d'US-108 dans le journal local du PC pilote, hors ligne compris ; relu toutes les 2 s, et la copie du pilote est
-  // retéléchargée toutes les 30 s sur un autre appareil (comme le classement, US-092).
+  // retéléchargée toutes les 30 s sur un autre appareil (comme le classement, US-092). US-151 : par équipes, le tableau
+  // tire des équipes ; en tableau direct, il se crée sans poules, d'après le rang des équipes complètes.
   import { onMount } from 'svelte';
   import {
     avancementTour,
     lignesSaisiesTableau,
     avancementPoules,
     classementDesPoules,
+    contexteTableau,
+    derouleDe,
+    participantsDe,
+    qualifiesDirects,
     poulesDe,
     poulesTerminees,
     qualifiesDesPoules,
     structureTableau,
     tableauDe,
     tireursDe,
+    equipesDe,
+    membresDe,
     tirerAuSort,
     tousLesMatchs,
     classementFinal,
@@ -100,10 +107,34 @@
   const poules = $derived(epreuve ? poulesDe(epreuve) : null);
   const touchesPoules = $derived(epreuve?.formule.touchesPoules ?? 5);
   const troisieme = $derived(epreuve?.formule.matchTroisieme ?? false);
-  const tireurs = $derived(epreuve ? new Map(tireursDe(epreuve).map((tireur) => [tireur.id, tireur])) : new Map());
+  /** US-151 : les participants (tireurs, ou équipes par équipes) ; une équipe y porte son nom. */
+  const tireurs = $derived(epreuve ? new Map(participantsDe(epreuve).map((tireur) => [tireur.id, tireur])) : new Map());
+  /** US-151 CA-1 : en tableau direct, pas de poules ; les qualifiés sont les équipes complètes, rangées. */
+  const direct = $derived(epreuve !== null && derouleDe(epreuve.typeEpreuve, epreuve.formule) === 'tableauDirect');
   const avancement = $derived(poules ? avancementPoules(poules, touchesPoules) : { regles: 0, total: 0 });
-  const terminees = $derived(poules ? poulesTerminees(poules, touchesPoules) : false);
-  const qualifies = $derived(poules && terminees ? qualifiesDesPoules(poules, touchesPoules) : []);
+  const terminees = $derived(direct || (poules ? poulesTerminees(poules, touchesPoules) : false));
+  const qualifies = $derived(
+    direct && epreuve
+      ? (qualifiesDirects(epreuve) ?? [])
+      : poules && terminees
+        ? qualifiesDesPoules(poules, touchesPoules)
+        : [],
+  );
+  /** US-151 CA-4 : par équipes, les tireurs de chaque équipe (titulaires, puis remplaçant). */
+  const membres = $derived.by(() => {
+    if (!epreuve || epreuve.typeEpreuve === 'individuelle') return undefined;
+    const inscrits = new Map(tireursDe(epreuve).map((x) => [x.id, `${x.nom.toUpperCase()} ${x.prenom}`]));
+    return new Map(
+      equipesDe(epreuve).map((e) => [
+        e.id,
+        membresDe(e)
+          .map((id) => inscrits.get(id) ?? '')
+          .join(' · '),
+      ]),
+    );
+  });
+  /** US-151 CA-2 : par équipes, les rencontres se tirent au relais complet. */
+  const touchesTableau = $derived(epreuve ? contexteTableau(epreuve).touchesTableau : 15);
   const nonQualifies = $derived(
     poules && terminees ? classementDesPoules(poules, touchesPoules).filter(({ retrait }) => retrait !== null) : [],
   );
@@ -163,7 +194,7 @@
       await recharger();
       chargee = true;
       // CA-1 : avant le lancement des poules, l'étape renvoie vers « Poules ».
-      if (epreuve && !poulesDe(epreuve).lancees) naviguer(cheminPoulesEpreuve(epreuveId));
+      if (epreuve && !direct && !poulesDe(epreuve).lancees) naviguer(cheminPoulesEpreuve(epreuveId));
     })();
     return () => {
       demonte = true;
@@ -266,7 +297,9 @@
   let vueClassement = $state(false);
   let confirmerFin = $state(false);
   const lignesFinales = $derived(
-    poules && etatTableau ? classementFinal(poules, etatTableau, touchesPoules, troisieme) : [],
+    poules && etatTableau && epreuve
+      ? classementFinal(poules, etatTableau, touchesPoules, troisieme, qualifiesDirects(epreuve))
+      : [],
   );
   /** US-115 CA-4 : matchs réglés sur matchs à tirer (3e place comprise). */
   const avancementTableau = $derived.by(() => {
@@ -347,7 +380,13 @@
       <button type="button" class="principal" onclick={() => (confirmerFin = true)}>{t.terminer}</button>
     </div>
   {/if}
-  <ClassementFinal lignes={lignesFinales} {tireurs} regles={avancementTableau.regles} total={avancementTableau.total} />
+  <ClassementFinal
+    lignes={lignesFinales}
+    {tireurs}
+    {membres}
+    regles={avancementTableau.regles}
+    total={avancementTableau.total}
+  />
 {/snippet}
 
 {#snippet etape()}
@@ -452,7 +491,7 @@
             match={matchCarte}
             {structure}
             {tireurs}
-            touches={epreuve.formule.touchesTableau}
+            touches={touchesTableau}
             {modifiable}
             saisir={saisirScore}
             choisir={(id) => (choisi = id)}

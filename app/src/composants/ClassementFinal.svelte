@@ -11,9 +11,11 @@
     /** Avancement du tableau : matchs réglés sur matchs à tirer. */
     regles: number;
     total: number;
+    /** US-151 CA-4 : par équipes, les tireurs de chaque équipe, affichés sous son nom. */
+    membres?: ReadonlyMap<string, string>;
   }
 
-  let { lignes, tireurs, regles, total }: Proprietes = $props();
+  let { lignes, tireurs, regles, total, membres }: Proprietes = $props();
 
   const t = textes.tableau;
   const tp = textes.poules;
@@ -22,7 +24,9 @@
 
 <section class="carte" aria-labelledby="titre-classement-final">
   <header>
-    <h3 id="titre-classement-final">{t.classementFinal} · {t.effectif(lignes.length)}</h3>
+    <h3 id="titre-classement-final">
+      {t.classementFinal} · {membres ? textes.equipes.effectif(lignes.length) : t.effectif(lignes.length)}
+    </h3>
     <span class="pastille" class:definitif role="status"
       >{definitif ? t.classementDefinitif : t.classementProvisoire(regles, total)}</span
     >
@@ -46,7 +50,12 @@
             <td class="droite place"
               >{ligne.place ?? '—'}{#if ligne.exaequo}<span class="discret" title={tp.exaequo}>=</span>{/if}</td
             >
-            <th scope="row" class="gauche nom"><strong>{tireur?.nom.toUpperCase()}</strong> {tireur?.prenom}</th>
+            <th scope="row" class="gauche nom"
+              ><strong>{tireur?.nom.toUpperCase()}</strong>
+              {tireur?.prenom}{#if membres?.get(ligne.tireurId)}<span class="membres"
+                  >{membres.get(ligne.tireurId)}</span
+                >{/if}</th
+            >
             <td class="gauche discret">{tireur?.club}</td>
             <td class="gauche">{t.tourElimination(ligne.elimineAu)}</td>
             <td>{ligne.rang ?? '—'}</td>
@@ -66,6 +75,13 @@
 </section>
 
 <style>
+  .membres {
+    display: block;
+    color: var(--texte-discret);
+    font-size: 0.85rem;
+    font-weight: 400;
+  }
+
   .carte {
     border: 1px solid var(--bordure);
     border-radius: 14px;

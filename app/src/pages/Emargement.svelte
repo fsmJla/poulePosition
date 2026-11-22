@@ -1,11 +1,20 @@
 <script lang="ts">
   // Émargement d'une épreuve (US-084, planche 19) : pointer les présents le jour J (ligne cliquable, recherche dont
   // Entrée pointe le seul résultat, filtres), inscrire sur place (inscrit et pointé), remettre tout le monde absent.
-  // Écrit `PresenceModifiee` dans le journal local du PC pilote (US-081), hors ligne compris.
+  // Écrit `PresenceModifiee` dans le journal local du PC pilote (US-081), hors ligne compris. US-148 (planche 41) :
+  // par équipes, les tireurs sont groupés sous leur équipe, complète ou incomplète.
   import { onMount, tick } from 'svelte';
   import {
     cleTexte,
+    derouleDe,
+    equipeComplete,
+    equipeDuTireur,
+    equipesDe,
     inscriptionsOuvertes,
+    membresDe,
+    presentsDe,
+    rangEquipes,
+    tailleEquipe,
     tireursDe,
     trierTireurs,
     validerTireur,
@@ -20,7 +29,7 @@
   import type { Accueil } from '../lib/accueil';
   import { inscrireTireur, pointerTireur } from '../lib/inscriptions';
   import { prendreEcriture, type Journal } from '../lib/journal';
-  import { cheminImprimer, cheminPoulesEpreuve } from '../lib/routes';
+  import { cheminImprimer, cheminPoulesEpreuve, cheminTableauEpreuve } from '../lib/routes';
   import type { SessionAppareil } from '../lib/stockage';
   import type { Synchronisation } from '../lib/synchronisation';
   import { textes } from '../lib/textes';
@@ -67,6 +76,46 @@
   const visibles = $derived(
     cherches.filter(({ present }) => filtre === 'toutes' || (filtre === 'presentes' ? present : !present)),
   );
+  // US-148 : par équipes.
+  const tq = textes.equipes.emargement;
+  const parEquipes = $derived(epreuve !== null && epreuve.typeEpreuve !== 'individuelle');
+  const taille = $derived(epreuve ? tailleEquipe(epreuve.typeEpreuve) : 0);
+  const equipes = $derived(
+    epreuve ? rangEquipes(equipesDe(epreuve), tireursDe(epreuve), epreuve.ordreEquipes ?? null) : [],
+  );
+  const completes = $derived(equipes.filter((e) => equipeComplete(e, tireursDe(epreuve!), epreuve!.typeEpreuve)));
+  let filtreEquipes: 'toutes' | 'incompletes' | 'completes' = $state('toutes');
+  const equipesVisibles = $derived(
+    equipes.filter((e) => {
+      const complete = completes.includes(e);
+      if (filtreEquipes !== 'toutes' && complete !== (filtreEquipes === 'completes')) return false;
+      if (!recherche.trim()) return true;
+      const texte = [
+        e.nom,
+        ...membresDe(e).map((id) => {
+          const x = tireurs.find((y) => y.id === id);
+          return x ? `${x.nom} ${x.prenom} ${x.club}` : '';
+        }),
+      ].join(' ');
+      return cleTexte(texte).includes(cleTexte(recherche));
+    }),
+  );
+  const sansEquipe = $derived(epreuve ? tireurs.filter((x) => !equipeDuTireur(equipesDe(epreuve!), x.id)) : []);
+  const direct = $derived(epreuve !== null && derouleDe(epreuve.typeEpreuve, epreuve.formule) === 'tableauDirect');
+  /** CA-4 : les équipes incomplètes, annoncées avant de passer à l'étape suivante. */
+  let incompletesAConfirmer = $state(false);
+  const cheminSuivant = $derived(direct ? cheminTableauEpreuve(epreuveId) : cheminPoulesEpreuve(epreuveId));
+  function suivant() {
+    if (parEquipes && completes.length < equipes.length) incompletesAConfirmer = true;
+    else naviguer(cheminSuivant);
+  }
+  const etatEquipe = (equipe: (typeof equipes)[number]) => {
+    const presentes = presentsDe(equipe, tireursDe(epreuve!));
+    if (presentes < taille) return { complete: false, texte: tq.incomplete(presentes, taille) };
+    const titulairesPresents = equipe.titulaires.every((id) => tireurs.find((x) => x.id === id)?.present);
+    return { complete: true, texte: titulairesPresents ? tq.complete : tq.avecRemplacant };
+  };
+
   /** CA-5 : pourquoi l'écran est en lecture seule, ou null s'il est modifiable. */
   const motifLectureSeule = $derived(
     !epreuve
@@ -210,12 +259,37 @@
   }
 </script>
 
+{#snippet ligne(tireur: Tireur)}
+  <li>
+    <button
+      type="button"
+      role="checkbox"
+      class="ligne-tireur"
+      class:present={tireur.present}
+      aria-checked={tireur.present}
+      aria-label={t.pointer(nomAffiche(tireur))}
+      disabled={!modifiable}
+      onclick={() => basculer(tireur)}
+    >
+      <span class="case" aria-hidden="true"
+        >{#if tireur.present}<Icone nom="coche" taille={18} />{/if}</span
+      >
+      <span class:discret={tireur.classement === null}>{tireur.classement ?? ti.sansClassement}</span>
+      <span><strong>{tireur.nom.toUpperCase()}</strong> {tireur.prenom}</span>
+      <span class="discret">{tireur.club}</span>
+      <span class="etat">{tireur.present ? t.present(tireur.heure) : t.absent}</span>
+    </button>
+  </li>
+{/snippet}
+
 {#snippet etape()}
   <div class="titre-etape">
     <div class="identite">
       <div class="ligne">
         <h2>{t.titre}</h2>
-        {#if epreuve}<span class="compteur" role="status">{t.compteur(presents, tireurs.length)}</span>{/if}
+        {#if epreuve}<span class="compteur" role="status"
+            >{parEquipes ? tq.compteur(completes.length, equipes.length) : t.compteur(presents, tireurs.length)}</span
+          >{/if}
       </div>
       {#if epreuve && (epreuve.horaires.appel || epreuve.horaires.scratch)}
         <p class="discret">{t.horaires(epreuve.horaires.appel, epreuve.horaires.scratch)}</p>
@@ -253,9 +327,18 @@
           ]}
           {naviguer}
         />
-        <!-- CA-6 : l'action principale mène aux poules (US-086). -->
-        <button type="button" class="principal" onclick={() => naviguer(cheminPoulesEpreuve(epreuveId))}>
-          <Icone nom="grille" taille={20} />{t.constituer}
+        <!-- CA-6 : l'action principale mène aux poules (US-086) ; US-148 : au tableau en tableau direct. -->
+        <button
+          type="button"
+          class="principal"
+          disabled={parEquipes && completes.length === 0}
+          title={parEquipes && completes.length === 0 ? tq.aucuneComplete : undefined}
+          onclick={suivant}
+        >
+          {#if direct}<Icone nom="arbre" taille={20} />{tq.creerTableau}{:else}<Icone
+              nom="grille"
+              taille={20}
+            />{t.constituer}{/if}
         </button>
       </div>
     {:else if epreuve}
@@ -317,47 +400,78 @@
           />
         </label>
         <div class="filtres" role="group" aria-label={t.afficher}>
-          {#each [['toutes', tireurs.length], ['absentes', tireurs.length - presents], ['presentes', presents]] as const as [cle, nombre] (cle)}
-            <button type="button" class="pilule" aria-pressed={filtre === cle} onclick={() => (filtre = cle)}
-              >{t.filtres[cle]} <span class="nombre">{nombre}</span></button
-            >
-          {/each}
+          {#if parEquipes}
+            {#each [['toutes', equipes.length], ['incompletes', equipes.length - completes.length], ['completes', completes.length]] as const as [cle, nombre] (cle)}
+              <button
+                type="button"
+                class="pilule"
+                aria-pressed={filtreEquipes === cle}
+                onclick={() => (filtreEquipes = cle)}>{tq.filtres[cle]} <span class="nombre">{nombre}</span></button
+              >
+            {/each}
+          {:else}
+            {#each [['toutes', tireurs.length], ['absentes', tireurs.length - presents], ['presentes', presents]] as const as [cle, nombre] (cle)}
+              <button type="button" class="pilule" aria-pressed={filtre === cle} onclick={() => (filtre = cle)}
+                >{t.filtres[cle]} <span class="nombre">{nombre}</span></button
+              >
+            {/each}
+          {/if}
         </div>
       </div>
-      {#if tireurs.length === 0}
+      {#if parEquipes}
+        <!-- US-148 CA-1 à CA-3 : une carte par équipe, ses tireurs pointables, son état. -->
+        {#each equipesVisibles as equipe (equipe.id)}
+          {@const etat = etatEquipe(equipe)}
+          <section class="equipe" aria-label={equipe.nom}>
+            <div class="tete-equipe">
+              <strong>{equipe.nom}</strong>
+              <span class="etat-equipe" class:incomplete={!etat.complete}
+                >{#if !etat.complete}<Icone nom="alerte" taille={16} />{/if}{etat.texte}</span
+              >
+            </div>
+            <ul aria-label={equipe.nom}>
+              {#each membresDe(equipe) as id (id)}
+                {@const tireur = tireurs.find((x) => x.id === id)}
+                {#if tireur}{@render ligne(tireur)}{/if}
+              {/each}
+            </ul>
+          </section>
+        {/each}
+        {#if sansEquipe.length > 0 && filtreEquipes === 'toutes'}
+          <section class="equipe" aria-label={tq.sansEquipe}>
+            <div class="tete-equipe"><strong>{tq.sansEquipe}</strong></div>
+            <ul aria-label={tq.sansEquipe}>
+              {#each sansEquipe as tireur (tireur.id)}{@render ligne(tireur)}{/each}
+            </ul>
+          </section>
+        {/if}
+        <p class="pied">{tq.aide(taille)}</p>
+      {:else if tireurs.length === 0}
         <p class="vide">{t.aucunInscrit}</p>
       {:else if visibles.length === 0}
         <p class="vide">{t.aucunResultat}</p>
       {:else}
         <ul aria-label={t.liste}>
-          {#each visibles as tireur (tireur.id)}
-            <li>
-              <button
-                type="button"
-                role="checkbox"
-                class="ligne-tireur"
-                class:present={tireur.present}
-                aria-checked={tireur.present}
-                aria-label={t.pointer(nomAffiche(tireur))}
-                disabled={!modifiable}
-                onclick={() => basculer(tireur)}
-              >
-                <span class="case" aria-hidden="true"
-                  >{#if tireur.present}<Icone nom="coche" taille={18} />{/if}</span
-                >
-                <span class:discret={tireur.classement === null}>{tireur.classement ?? ti.sansClassement}</span>
-                <span><strong>{tireur.nom.toUpperCase()}</strong> {tireur.prenom}</span>
-                <span class="discret">{tireur.club}</span>
-                <span class="etat">{tireur.present ? t.present(tireur.heure) : t.absent}</span>
-              </button>
-            </li>
-          {/each}
+          {#each visibles as tireur (tireur.id)}{@render ligne(tireur)}{/each}
         </ul>
       {/if}
-      <p class="pied">{t.aide}</p>
+      {#if !parEquipes}<p class="pied">{t.aide}</p>{/if}
     </section>
   {/if}
 {/snippet}
+
+{#if incompletesAConfirmer}
+  <ConfirmationArchivage
+    titre={tq.confirmerIncompletes(equipes.filter((e) => !completes.includes(e)).map((e) => e.nom))}
+    detail={tq.detailIncompletes}
+    action={tq.continuer}
+    valider={async () => {
+      naviguer(cheminSuivant);
+      return { ok: true as const };
+    }}
+    fermer={() => (incompletesAConfirmer = false)}
+  />
+{/if}
 
 {#if remiseDemandee}
   <ConfirmationArchivage
@@ -378,6 +492,37 @@
 {/if}
 
 <style>
+  .equipe {
+    border-top: 1px solid var(--bordure);
+  }
+
+  .tete-equipe {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background: var(--surface-2, var(--surface));
+  }
+
+  .etat-equipe {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.1rem 0.7rem;
+    border-radius: 999px;
+    background: var(--etat-ok-fond);
+    color: var(--sur-etat-ok-fond);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .etat-equipe.incomplete {
+    background: var(--etat-attente-fond);
+    color: var(--sur-etat-attente-fond);
+  }
+
   .titre-etape {
     display: flex;
     flex-wrap: wrap;

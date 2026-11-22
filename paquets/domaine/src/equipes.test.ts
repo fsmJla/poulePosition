@@ -286,6 +286,7 @@ describe('formule par équipes (US-149) et tableau direct (US-151)', () => {
     expect(situationDuTableau(contexte)).toBe('aCreer');
     const cree = journal('equipes3', ...trois, { type: 'TableauCree', donnees: { qualifies: ['t', 'p', 'b'] } });
     expect(tableauDe(cree.epreuve!).qualifies).toEqual(['t', 'p', 'b']);
+    expect(cree.epreuve!.statut).toBe('enCours');
     expect(verifierEvenement(projection, { type: 'TableauCree', donnees: { qualifies: ['p', 't', 'b'] } })).toBe(
       'QUALIFIES_INVALIDES',
     );
@@ -300,9 +301,9 @@ describe('formule par équipes (US-149) et tableau direct (US-151)', () => {
     expect(verifierEvenement(cree, { type: 'FormuleModifiee', donnees: { deroule: 'poulesTableau' } })).toBe(
       'FORMULE_FIGEE',
     );
-    // Une seule équipe complète : rien à créer, l'épreuve se termine.
+    // Une seule équipe complète : rien à proposer ; terminée, elle serait première.
     const seule = journal('equipes3', ...NEUF, creer('p', ['a', 'b', 'c']));
-    expect(situationDuTableau(contexteTableau(seule.epreuve!))).toBe('aTerminer');
+    expect(situationDuTableau(contexteTableau(seule.epreuve!))).toBeNull();
     expect(
       classementFinal(
         etatPoulesVide(),

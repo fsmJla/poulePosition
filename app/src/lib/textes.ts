@@ -2029,6 +2029,27 @@ export const textes = {
   /** US-082 : saisie des tireurs d'une épreuve (planche 7). */
   /** US-146 et US-147 : équipes d'une épreuve par équipes (planches 40 et 40 bis). */
   equipes: {
+    /** US-148 : émargement par équipes (planche 41). */
+    emargement: {
+      compteur: (completes: number, total: number) =>
+        `${completes} équipe${completes > 1 ? 's' : ''} complète${completes > 1 ? 's' : ''} sur ${total}`,
+      complete: 'Complète',
+      avecRemplacant: 'Complète · avec remplaçant',
+      incomplete: (presents: number, taille: number) =>
+        `Incomplète · ${presents} présent${presents > 1 ? 's' : ''} sur ${taille}`,
+      filtres: { toutes: 'Toutes', incompletes: 'Incomplètes', completes: 'Complètes' },
+      sansEquipe: 'Sans équipe · ne tireront pas',
+      aide: (taille: number) =>
+        `Une équipe est complète avec ${taille} présents, remplaçant compris. Une équipe incomplète ne tirera pas.`,
+      creerTableau: 'Créer le tableau',
+      confirmerIncompletes: (noms: string[]) =>
+        `${noms.length === 1 ? '1 équipe incomplète ne tirera pas' : `${noms.length} équipes incomplètes ne tireront pas`} : ${noms.join(', ')}`,
+      detailIncompletes:
+        'Vous pourrez encore pointer leurs tireurs tant que les poules ou le tableau ne sont pas lancés.',
+      continuer: 'Continuer',
+      aucuneComplete: 'Aucune équipe complète : pointez les tireurs présents',
+    },
+    effectif: (n: number) => `${n} équipe${n > 1 ? 's' : ''}`,
     ongletTireurs: 'Tireurs',
     ongletEquipes: 'Équipes',
     onglets: 'Inscrits ou équipes',
@@ -2521,6 +2542,11 @@ export const textes = {
     corriger: 'Touchez un score pour le corriger.',
     priorite: 'Égalité : qui a la priorité ?',
     prioriteGroupe: 'Vainqueur par priorité',
+    /** US-150 à US-152 (planches 42 et 42 bis) : score d'une rencontre en relais, dizaines puis unités. */
+    dizaines: 'Dizaines',
+    unites: 'Unités',
+    dizainesDe: (nom: string) => 'Dizaines du score de ' + nom,
+    unitesDe: (nom: string) => 'Unités du score de ' + nom,
   },
   /** US-109 à US-115 : l'étape « Tableau » (planche 11). */
   tableau: {
