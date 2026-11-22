@@ -21,6 +21,8 @@ export interface ScorePoule {
   touchesA: number;
   touchesB: number;
   auTemps: boolean;
+  /** US-150 CA-3 : à égalité (rencontre par équipes au temps), le vainqueur désigné par la priorité. */
+  parPriorite?: string;
   /** US-099 : score venu d'un smartphone, accepté par la table. */
   saisie?: OrigineSaisie;
 }
@@ -59,6 +61,8 @@ export interface DonneesScorePoule {
   touchesA: number;
   touchesB: number;
   auTemps?: boolean;
+  /** US-150 CA-3 : à égalité, le vainqueur par priorité (rencontre par équipes). */
+  parPriorite?: string;
   /** US-099 : présent quand le score vient d'un smartphone. */
   saisie?: OrigineSaisie;
 }
@@ -225,6 +229,12 @@ export function verifierScore(etat: EtatPoules, donnees: DonneesScorePoule, touc
     return 'MATCH_INCONNU';
   }
   if (estRetire(etat, tireurA) || estRetire(etat, tireurB)) return 'TIREUR_RETIRE';
+  // US-150 CA-3 : à égalité au temps, la priorité désigne l'un des deux.
+  const { parPriorite } = donnees;
+  if (parPriorite !== undefined) {
+    const egaliteAuTemps = touchesA === touchesB && touchesA < touches && touchesA >= 0 && Number.isInteger(touchesA);
+    return egaliteAuTemps && (parPriorite === tireurA || parPriorite === tireurB) ? null : 'SCORE_INVALIDE';
+  }
   return scoreValide(touchesA, touchesB, touches, donnees.auTemps ?? false) ? null : 'SCORE_INVALIDE';
 }
 
@@ -295,7 +305,7 @@ export function matchsDePoule(etat: EtatPoules, poule: Poule, touchesFormule: nu
     const score = etat.scores.find((s) => s.poule === poule.numero && memePaire(s, tireurA, tireurB));
     if (score) {
       const touches = score.tireurA === tireurA ? [score.touchesA, score.touchesB] : [score.touchesB, score.touchesA];
-      const vainqueur = touches[0]! > touches[1]! ? tireurA : tireurB;
+      const vainqueur = score.parPriorite ?? (touches[0]! > touches[1]! ? tireurA : tireurB);
       return { ...base, touches: [touches[0]!, touches[1]!], vainqueur, auTemps: score.auTemps, forfait: false };
     }
     const retireA = estRetire(etat, tireurA);

@@ -145,8 +145,18 @@ function donneesPoulesValides(type: unknown, donnees: unknown): boolean {
   }
   if (type === 'ScorePouleSaisi') {
     return (
-      aSeulement(donnees, ['poule', 'tireurA', 'tireurB', 'touchesA', 'touchesB', 'auTemps', 'saisie']) &&
+      aSeulement(donnees, [
+        'poule',
+        'tireurA',
+        'tireurB',
+        'touchesA',
+        'touchesB',
+        'auTemps',
+        'parPriorite',
+        'saisie',
+      ]) &&
       (donnees.saisie === undefined || origineSaisieValide(donnees.saisie)) &&
+      (donnees.parPriorite === undefined || estTexte(donnees.parPriorite)) &&
       estEntier(donnees.poule) &&
       estTexte(donnees.tireurA) &&
       estTexte(donnees.tireurB) &&

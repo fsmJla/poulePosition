@@ -6,7 +6,7 @@
     lignesSaisies,
     poulesDe,
     tableauDe,
-    tireursDe,
+    participantsDe,
     trierTireurs,
     type Epreuve,
     type LigneSaisie,
@@ -64,7 +64,8 @@
   /** US-087 CA-1 : la dernière répartition écrite ici était manuelle. */
   let manuelle = $state(false);
 
-  const tireurs = $derived(epreuve ? trierTireurs(tireursDe(epreuve)) : []);
+  /** US-150 : par équipes, les poules tirent des équipes. */
+  const tireurs = $derived(epreuve ? trierTireurs(participantsDe(epreuve)) : []);
   const presents = $derived(tireurs.filter(({ present }) => present));
   const etat = $derived(epreuve ? poulesDe(epreuve) : null);
   const motifLectureSeule = $derived(
@@ -229,7 +230,7 @@
         {lignes}
         {etat}
         touches={epreuve.formule.touchesPoules}
-        nomsVersIds={new Map(tireursDe(epreuve).map((x) => [x.nom, x.id]))}
+        nomsVersIds={new Map(participantsDe(epreuve).map((x) => [x.nom, x.id]))}
       />
       <SaisiePoules
         imprimerFeuilles={() => naviguer(cheminImprimer(epreuveId, { document: 'poulesVierges' }))}
@@ -237,6 +238,7 @@
         {tireurs}
         touches={epreuve.formule.touchesPoules}
         {modifiable}
+        priorite={epreuve.typeEpreuve !== 'individuelle'}
         {saisir}
         {retirer}
         annulerRetrait={(id) => retirer(id, null)}

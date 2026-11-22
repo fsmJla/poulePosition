@@ -2,7 +2,7 @@
 // inscrites, les ranger par la somme des classements, corriger le rang à la main, supprimer une équipe.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
-import { epreuveAvecPresentes, TIREUSES } from './poules-outils';
+import { carteSaisie, epreuveAvecPresentes, repartir, TIREUSES } from './poules-outils';
 
 /** Crée une équipe par la fenêtre « Nouvelle équipe » : 3 titulaires et, au besoin, une remplaçante. */
 export async function creerEquipe(page: Page, nom: string, titulaires: string[], remplacante?: string) {
@@ -192,4 +192,66 @@ test('US-151 CA-1 à CA-4 : tableau direct des équipes, rencontres en 45 touche
   await expect(classement.getByRole('row').nth(1)).toContainText('FORTES');
   await expect(classement.getByRole('row').nth(1)).toContainText(`${TIREUSES[0]![0]} ${TIREUSES[0]![1]}`);
   await expect(classement.getByRole('row').nth(2)).toContainText('MOYENNES');
+});
+
+test('US-149 CA-1 à CA-4 et US-150 CA-1 à CA-4 : poules d’équipes en 30 touches, égalité départagée par la priorité', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'pc', 'Équipes : projet « pc » seulement');
+  test.setTimeout(150_000);
+  await seConnecter(page);
+  const adresse = await epreuveAvecPresentes(page, 9, 9, 'equipes3');
+  await page.goto(`${adresse}/inscriptions`);
+  await page.getByRole('tab', { name: /^Équipes/ }).click();
+  await creerEquipe(page, 'Fortes', [nomComplet(0), nomComplet(1), nomComplet(2)]);
+  await creerEquipe(page, 'Moyennes', [nomComplet(3), nomComplet(4), nomComplet(5)]);
+  await creerEquipe(page, 'Faibles', [nomComplet(6), nomComplet(7), nomComplet(8)]);
+
+  // US-149 CA-1 et CA-2 : poules puis tableau, rencontres de poule en 30 touches.
+  await page.goto(`${adresse}/formule`);
+  await expect(page.getByRole('radio', { name: 'Tableau direct' })).toBeChecked({ timeout: 20_000 });
+  await page.getByRole('radio', { name: 'Poules puis tableau' }).check();
+  await page.getByLabel('Touches des rencontres de poule').selectOption('30');
+  await page.getByRole('button', { name: 'Enregistrer la formule' }).click();
+  await expect(
+    page.getByRole('listitem').filter({ hasText: 'Poules en 30 touches · Poules puis tableau' }),
+  ).toBeVisible();
+
+  // US-150 CA-1 : composer et lancer.
+  await repartir(page, adresse);
+  await page.getByRole('button', { name: 'Lancer les poules' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Lancer les poules' }).click();
+  await expect(page.getByRole('heading', { level: 3, name: /^Feuille de la poule 1/ })).toBeVisible();
+  // US-149 CA-4 : déroulé et touches figés.
+  await page.goto(`${adresse}/formule`);
+  await expect(page.getByRole('radio', { name: 'Tableau direct' })).toBeDisabled({ timeout: 20_000 });
+  await page.goto(`${adresse}/poules`);
+
+  // US-150 CA-2 : une rencontre en 30 touches, au pavé des relais.
+  const carte = carteSaisie(page);
+  const relais = async (score: number) => {
+    const dizaine = Math.floor(score / 10) * 10;
+    await carte
+      .getByRole('group', { name: /^Dizaines du score de/ })
+      .getByRole('button', { name: new RegExp(`^${dizaine} pour`) })
+      .click();
+    await carte
+      .getByRole('group', { name: /^Unités du score de/ })
+      .getByRole('button', { name: new RegExp(`^${score - dizaine} pour`) })
+      .click();
+  };
+  const titre = (await carte.getByRole('heading').textContent()) ?? '';
+  await relais(30);
+  await relais(22);
+  await expect(page.getByRole('region', { name: titre, exact: true })).toHaveCount(0);
+  // CA-3 : égalité au temps, la priorité désigne le vainqueur.
+  await relais(20);
+  await relais(20);
+  const priorite = carteSaisie(page).getByRole('group', { name: 'Vainqueur par priorité' });
+  await expect(priorite).toBeVisible();
+  await priorite.getByRole('button').last().click();
+  await expect(priorite).toHaveCount(0);
+  // CA-4 : le classement des poules classe les équipes.
+  await page.goto(`${adresse}/classement`);
+  await expect(page.getByRole('table')).toContainText('FORTES', { timeout: 20_000 });
 });

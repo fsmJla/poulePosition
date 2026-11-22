@@ -21,7 +21,8 @@ import {
   type Proposition,
 } from './journal';
 import { derouleDe, touchesPoulesPermises, type TypeEpreuve } from './epreuve';
-import { etatPoulesVide } from './poules';
+import { etatPoulesVide, matchsDePoule } from './poules';
+import { repartirEnSerpentin } from './repartition';
 import { classementFinal, situationDuTableau } from './tableau';
 import type { Tireur } from './tireurs';
 
@@ -322,5 +323,76 @@ describe('formule par équipes (US-149) et tableau direct (US-151)', () => {
     });
     expect(contexteTableau(projection.epreuve!).direct).toBeNull();
     expect(situationDuTableau(contexteTableau(projection.epreuve!))).toBeNull();
+  });
+});
+
+describe('poules d’équipes (US-150)', () => {
+  const base = [
+    ...NEUF,
+    creer('p', ['a', 'b', 'c']),
+    creer('t', ['d', 'e', 'g']),
+    creer('b', ['h', 'i', 'f']),
+    { type: 'FormuleModifiee', donnees: { deroule: 'poulesTableau', touchesPoules: 30 } } as Proposition,
+    {
+      type: 'PoulesComposees',
+      donnees: { poules: [{ numero: 1, piste: 1, tireurIds: ['p', 't', 'b'] }] },
+    } as Proposition,
+    { type: 'PoulesLancees', donnees: {} } as Proposition,
+  ];
+  const score = (touchesA: number, touchesB: number, extra: Record<string, unknown> = {}): Proposition =>
+    ({
+      type: 'ScorePouleSaisi',
+      donnees: { poule: 1, tireurA: 'p', tireurB: 't', touchesA, touchesB, ...extra },
+    }) as Proposition;
+
+  it('CA-2 et CA-3 : score de rencontre jusqu’aux touches de la formule ; égalité au temps départagée par la priorité', () => {
+    const lancees = journal('equipes3', ...base);
+    expect(verifierEvenement(lancees, score(30, 22))).toBeNull();
+    expect(verifierEvenement(lancees, score(31, 22))).toBe('SCORE_INVALIDE');
+    expect(verifierEvenement(lancees, score(20, 20, { auTemps: true }))).toBe('SCORE_INVALIDE');
+    expect(verifierEvenement(lancees, score(20, 20, { auTemps: true, parPriorite: 't' }))).toBeNull();
+    expect(verifierEvenement(lancees, score(20, 20, { auTemps: true, parPriorite: 'z' }))).toBe('SCORE_INVALIDE');
+    expect(verifierEvenement(lancees, score(30, 30, { parPriorite: 't' }))).toBe('SCORE_INVALIDE');
+    const avecPriorite = journal('equipes3', ...base, score(20, 20, { auTemps: true, parPriorite: 't' }));
+    const match = matchsDePoule(poulesDe(avecPriorite.epreuve!), poulesDe(avecPriorite.epreuve!).poules[0]!, 30).find(
+      (m) => m.touches !== null,
+    );
+    expect(match?.vainqueur).toBe('t');
+  });
+
+  it('CA-1 : une équipe « Mixte » n’entre pas dans la séparation des clubs', () => {
+    const participant = (id: string, club: string, classement: number): Tireur => ({
+      id,
+      nom: id,
+      prenom: '',
+      club,
+      classement,
+      licence: null,
+      present: true,
+      heure: null,
+    });
+    const options = { separerClubs: true, hasardSansClassement: false, premierePiste: 1, alea: () => 0 };
+    // En serpentin, les rangs 1 et 4 tombent dans la même poule : deux « Mixte » y restent ensemble.
+    const mixtes = repartirEnSerpentin(
+      [
+        participant('m1', CLUB_MIXTE, 1),
+        participant('x', 'X', 2),
+        participant('y', 'Y', 3),
+        participant('m2', CLUB_MIXTE, 4),
+      ],
+      2,
+      options,
+    );
+    expect(mixtes.map(({ tireurIds }) => tireurIds)).toEqual([
+      ['m1', 'm2'],
+      ['x', 'y'],
+    ]);
+    // Deux équipes d'un même club, elles, sont séparées.
+    const memeClub = repartirEnSerpentin(
+      [participant('p1', 'P', 1), participant('x', 'X', 2), participant('y', 'Y', 3), participant('p2', 'P', 4)],
+      2,
+      options,
+    );
+    expect(memeClub.find(({ tireurIds }) => tireurIds.includes('p1'))!.tireurIds).not.toContain('p2');
   });
 });
