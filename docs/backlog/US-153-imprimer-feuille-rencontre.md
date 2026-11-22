@@ -4,16 +4,16 @@
 - **Fonctionnalité :** F11, F15 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-120, US-150, US-151
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-145-equipes` (série E10, une seule PR)
 
 ## Récit
 
 **En tant qu'**arbitre, **je veux** une feuille de rencontre imprimée avec l'ordre officiel des relais et les cases du
 score cumulé, **afin de** tenir la rencontre à la piste, puisque seul le score final est saisi dans l'application.
 
-Maquette : planche 43 « Feuille de rencontre » (à dessiner et à faire valider avant l'implémentation), dans le gabarit
+Maquette : planche 43 « Feuille de rencontre » (validée le 2026-11-22), dans le gabarit
 commun des documents imprimés (US-120).
 
 ## Critères d'acceptation
@@ -70,3 +70,4 @@ Comme toutes les impressions (US-120) : générées sur le PC pilote, sans rése
 | Date | Événement |
 |---|---|
 | 2026-11-22 | Créée (spécification de l'Epic 10) |
+| 2026-11-22 | Implémentée sur `us/US-145-equipes` (série E10, PR unique) ; en attente de la recette groupée |

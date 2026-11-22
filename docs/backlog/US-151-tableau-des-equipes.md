@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F9, F10, F15 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-147, US-148, US-149, US-109, US-111, US-115
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-145-equipes` (série E10, une seule PR)
 
 ## Récit
 
@@ -68,3 +68,4 @@ Comme le tableau individuel : sur le PC pilote, sans réseau.
 | Date | Événement |
 |---|---|
 | 2026-11-22 | Créée (spécification de l'Epic 10) |
+| 2026-11-22 | Implémentée sur `us/US-145-equipes` (série E10, PR unique) ; en attente de la recette groupée |

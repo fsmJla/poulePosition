@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F15 (exigences §3)
 - **Priorité :** P2
 - **Type :** technique
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-081, US-085, US-108
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-145-equipes` (série E10, une seule PR)
 
 ## Récit
 
@@ -79,3 +79,4 @@ Sans objet en propre : tout se passe dans le journal local du PC pilote, comme e
 | Date | Événement |
 |---|---|
 | 2026-11-22 | Créée (spécification de l'Epic 10) |
+| 2026-11-22 | Implémentée sur `us/US-145-equipes` (série E10, PR unique) ; en attente de la recette groupée |

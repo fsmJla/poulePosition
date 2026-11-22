@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F5, F6, F7, F15 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-147, US-148, US-149, US-086, US-087, US-088
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-145-equipes` (série E10, une seule PR)
 
 ## Récit
 
@@ -14,7 +14,7 @@
 rencontre, **afin de** dérouler la phase de poules d'une épreuve par équipes.
 
 Maquette : planches 8, 9 et 10 avec des équipes à la place des tireurs, et la carte de saisie d'une rencontre de la
-planche 42 « Saisie d'une rencontre » (à dessiner et à faire valider avant l'implémentation).
+planche 42 « Saisie d'une rencontre » (`docs/maquettes/equipes/42-saisie-rencontre.png`, validée le 2026-11-22).
 
 ## Critères d'acceptation
 
@@ -76,3 +76,4 @@ Comme les poules individuelles : composition, lancement et saisie sur le PC pilo
 | Date | Événement |
 |---|---|
 | 2026-11-22 | Créée (spécification de l'Epic 10) |
+| 2026-11-22 | Implémentée sur `us/US-145-equipes` (série E10, PR unique) ; en attente de la recette groupée |

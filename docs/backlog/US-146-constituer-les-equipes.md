@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F3, F15 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-145, US-082
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-145-equipes` (série E10, une seule PR)
 
 ## Récit
 
@@ -82,3 +82,4 @@ Comme la saisie des tireurs (US-082) : tout se fait sur le PC pilote sans résea
 | Date | Événement |
 |---|---|
 | 2026-11-22 | Créée (spécification de l'Epic 10) |
+| 2026-11-22 | Implémentée sur `us/US-145-equipes` (série E10, PR unique) ; en attente de la recette groupée |

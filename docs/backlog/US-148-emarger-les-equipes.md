@@ -4,17 +4,17 @@
 - **Fonctionnalité :** F4, F15 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-146, US-084
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-145-equipes` (série E10, une seule PR)
 
 ## Récit
 
 **En tant qu'**organisateur, **je veux** pointer les tireurs présents et voir d'un coup d'œil quelles équipes sont
 complètes, **afin de** ne lancer que des équipes en état de tirer.
 
-Maquette : planche 41 « Émargement par équipes » (à dessiner et à faire valider avant l'implémentation), variante de la
-planche 19 : les tireurs groupés par équipe.
+Maquette : planche 41 « Émargement par équipes » (`docs/maquettes/equipes/41-emargement-equipes.png`, validée le 2026-11-22),
+variante de la planche 19 : les tireurs groupés par équipe.
 
 ## Critères d'acceptation
 
@@ -67,3 +67,4 @@ Comme l'émargement individuel (US-084) : sans réseau, sur le PC pilote.
 | Date | Événement |
 |---|---|
 | 2026-11-22 | Créée (spécification de l'Epic 10) |
+| 2026-11-22 | Implémentée sur `us/US-145-equipes` (série E10, PR unique) ; en attente de la recette groupée |

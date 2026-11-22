@@ -4,17 +4,17 @@
 - **Fonctionnalité :** F8, F15 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-150, US-151, US-099, US-106
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-145-equipes` (série E10, une seule PR)
 
 ## Récit
 
 **En tant qu'**arbitre, **je veux** saisir sur mon smartphone le score final de la rencontre que j'arbitre, **afin
 de** l'envoyer à la table sans me déplacer.
 
-Maquette : planche 42 bis « Smartphone : saisie d'une rencontre » (à dessiner et à faire valider avant
-l'implémentation), sur le principe de la planche 15.
+Maquette : planche 42 bis « Smartphone : saisie d'une rencontre »
+(`docs/maquettes/equipes/42bis-smartphone-saisie-rencontre.png`, validée le 2026-11-22), sur le principe de la planche 15.
 
 ## Critères d'acceptation
 
@@ -62,3 +62,4 @@ suspendue (US-102).
 | Date | Événement |
 |---|---|
 | 2026-11-22 | Créée (spécification de l'Epic 10) |
+| 2026-11-22 | Implémentée sur `us/US-145-equipes` (série E10, PR unique) ; en attente de la recette groupée |

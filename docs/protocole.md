@@ -474,7 +474,7 @@ Aucun autre champ n'est accepté.
 |---|---|---|
 | `EpreuveCreee` | voir ci-dessous | Premier événement d'une épreuve, une seule fois. |
 | `EpreuveModifiee` | un ou plusieurs champs de `EpreuveCreee` | Modifie les champs donnés (US-027), seulement ceux qui ont changé. |
-| `FormuleModifiee` | un ou plusieurs réglages de la formule | Modifie la formule de l’épreuve (US-028), seulement ce qui a changé. |
+| `FormuleModifiee` | un ou plusieurs réglages de la formule | Modifie la formule de l’épreuve (US-028), seulement ce qui a changé ; par équipes, `deroule` (`tableauDirect` ou `poulesTableau`) et les touches des rencontres de poule (10 au relais complet, par pas de 5), figés au lancement (US-149). |
 | `PiloteChange` | `{ ancienAppareil, nouvelAppareil }` | Un autre PC a pris la main (US-029). |
 | `ParametresModifies` | un ou plusieurs paramètres de l’épreuve | Modifie les droits et l'affichage des noms (US-032), seulement ce qui a changé. |
 | `PublicationModifiee` | `{ publiee }` | Publie ou dépublie l’épreuve (US-031). |
@@ -488,7 +488,7 @@ Aucun autre champ n'est accepté.
 | `PresenceModifiee` | `{ tireurId, present, heure? }` | Pointe un inscrit présent, avec l'heure `HH:MM`, ou le remet absent (US-081, US-084). |
 | `PoulesComposees` | `{ poules: [{ numero, piste, tireurIds }] }` | Remplace la composition des poules, avant leur lancement ; une poule peut être vide (US-085, US-086). |
 | `PoulesLancees` | `{}` | Fige la composition et passe l'épreuve « En cours » ; chaque poule a 3 à 7 tireurs et aucun présent n'est à placer (US-085, US-087). |
-| `ScorePouleSaisi` | `{ poule, tireurA, tireurB, touchesA, touchesB, auTemps? }` | Score d'un match de poule ; une nouvelle saisie du même match le remplace (US-085, US-088). |
+| `ScorePouleSaisi` | `{ poule, tireurA, tireurB, touchesA, touchesB, auTemps?, parPriorite? }` | Score d'un match de poule ; une nouvelle saisie du même match le remplace (US-085, US-088). Par équipes, une égalité au temps porte `parPriorite`, le vainqueur (US-150). |
 | `TireurRetireDesPoules` | `{ tireurId, motif }` | Abandon, forfait ou exclusion (`abandon`, `forfait`, `exclusion`) : ses matchs restants sont perdus, il est classé dernier de sa poule (US-085, US-089). |
 | `RetraitDesPoulesAnnule` | `{ tireurId }` | Annule un retrait fait par erreur (US-089). |
 | `TableauCree` | `{ qualifies }` | Crée le tableau (US-108) : les qualifiés dans l'ordre du classement après poules, ex aequo tirés au sort. Fige les poules. |
@@ -1135,6 +1135,7 @@ diffuse aux sockets étiquetées `saisie` (smartphones, US-097) ; il ne la lit n
 | `droits` | `arbitreSaisitScores`, `tireurSaisitPoule`, `tireurSaisitTableau`, `correctionScore` (US-032) |
 | `lancees` | Faux avant le lancement des poules ; `poules` est alors vide |
 | `poules[]` | `numero`, `piste`, `tireurs[]` (`id`, `nom`, `prenom`, `club`, dans l'ordre de la poule), `matchs[]` (`numero`, `tireurA`, `tireurB`, `touches` `[a, b]` ou `null`, `auTemps`, `forfait`, dans l'ordre officiel), `regles` et `total` (avancement), `classement[]` (`tireurId`, `rang`, `victoires`, `matchs`, `indice`, `retrait`) |
+| `equipes` | US-152 : `true` pour une épreuve par équipes (absent sinon) : les « tireurs » de la vue sont les équipes, les touches suivent les rencontres (relais), une égalité de poule se départage par `parPriorite` et seuls les arbitres saisissent. |
 | `tableau` | US-112 : `null` avant la création du tableau, sinon `touches` (d'un match du tableau), `taille`, `matchs[]` (`id`, `tour`, `numero`, `haut` et `bas` : `tireurId`, `rang`, `provenance` ; `etat` : `exempt`, `attente`, `aTirer`, `regle` ; `touches` `[haut, bas]` ou `null`, `vainqueur`, `parPriorite`, `piste`, `enPiste`, `appeleA` en millisecondes). Absent d'une vue publiée avant US-112 |
 
 Données personnelles (ADR-0014) : des tireurs, seuls le nom, le prénom, le club et la poule ; ni licence, ni classement,
@@ -1196,7 +1197,7 @@ le lien du QR code est retiré de l'adresse affichée dès la page ouverte.
    part au serveur avec le lot suivant, et la vue de saisie republiée (§18) met à jour tous les téléphones.
 
 **Match du tableau** (US-106) : la saisie porte `match` (l'identifiant du match, « 16-5 ») et `poule: 0`, et, à égalité de
-touches, `parPriorite` (le tireur désigné vainqueur). La table applique les droits « Arbitre : saisir… » et « Tireur :
+touches, `parPriorite` (le tireur désigné vainqueur ; US-152 : aussi pour une rencontre de poule par équipes, à égalité au temps). La table applique les droits « Arbitre : saisir… » et « Tireur :
 saisir le score de ses matchs de tableau » ; acceptée, elle devient un `ScoreTableauSaisi` avec `saisie: { id, par }`.
 Motifs propres au tableau : `TABLEAU_NON_CREE`, `MATCH_SUIVANT_REGLE` (correction d'un match dont le suivant est tiré),
 `HORS_MATCH` (un tireur saisit le match d'un autre). Un refus trace `SaisieRefusee` avec `match` ; il n'apparaît pas dans
@@ -1216,7 +1217,7 @@ les saisies reçues des poules.
 La **vue en direct** (`VueDirect`, `paquets/domaine/src/vue-direct.ts`) est calculée par le pilote à partir du journal.
 Elle est publique : l'étape (`inscriptions`, `poules`, `classement`, `tableau`, `terminee`), les tireurs (nom affiché
 selon « Prénom N. », club), les poules et leurs scores (avec, par tireur, TD et TR : US-142), le classement après les
-poules, le tableau et le classement final, le statut de publication et `scoresRecents` (US-141) : les 40 derniers scores
+poules, le tableau et le classement final, le statut de publication, `equipes` (US-155, par équipes seulement : `[{ id, membres }]`, les tireurs de chaque équipe au nom affiché ; les « tireurs » de la vue sont alors les équipes) et `scoresRecents` (US-141) : les 40 derniers scores
 saisis (poules et tableau), le plus récent d'abord, chacun avec son heure d'enregistrement (`date`), sa poule ou son tour
 (`poule` ou `tour`, l'un des deux à `null`), ses tireurs et ses touches. Un score corrigé remplace l'ancien. Elle ne porte ni émargement, ni licence, ni droit, ni identifiant d'appareil.
 
