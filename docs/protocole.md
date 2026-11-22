@@ -496,6 +496,10 @@ Aucun autre champ n'est accepté.
 | `ScoreTableauSaisi` | `{ match, tireurA, tireurB, touchesA, touchesB, parPriorite?, saisie? }` | Score d'un match du tableau, ou sa correction ; `parPriorite` désigne le vainqueur d'une égalité (US-108). |
 | `TireurRetireDuTableau` | `{ match, tireurId, motif }` | Abandon, forfait ou exclusion dans un match du tableau : l'adversaire passe (US-108, US-113). |
 | `RetraitDuTableauAnnule` | `{ match }` | Annule un retrait du tableau fait par erreur (US-113). |
+| `EquipeCreee` | `{ equipeId, nom, titulaires, remplacant, tirage }` | Épreuve par équipes : une équipe de 2 ou 3 titulaires et un remplaçant facultatif ; `tirage` départage les équipes à égalité de rang (US-145, ADR-0030). |
+| `EquipeModifiee` | `{ equipeId, nom?, titulaires?, remplacant? }` | Les champs qui changent ; après le lancement, seul le remplaçant (US-146). |
+| `EquipeSupprimee` | `{ equipeId }` | L'équipe et sa place dans la composition des poules non lancées (US-146). |
+| `RangsEquipesModifies` | `{ ordre }` | Ordre des équipes corrigé à la main, ou `null` pour revenir au rang calculé (US-147). |
 | `EpreuveTerminee` | `{}` | Termine l'épreuve une fois tous les matchs réglés : statut « Terminée » (US-108, US-115). |
 
 Les quatre événements d'inscription ne s'écrivent que sur une épreuve en préparation (`INSCRIPTIONS_CLOSES` sinon,

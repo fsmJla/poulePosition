@@ -38,3 +38,4 @@ Vue d'ensemble : [`../architecture.md`](../architecture.md).
 | [0027](0027-exceptions-datees-audit-dependances.md) | Exceptions ciblées et datées à l'audit des dépendances (complète l'ADR-0012) | Acceptée |
 | [0028](0028-websocket-du-pilote-par-ticket.md) | WebSocket du pilote authentifiée par un ticket de 60 s ; fin des battements (complète les ADR 0005 et 0017) | Proposée |
 | [0029](0029-vue-en-direct-ecrans-spectateurs.md) | Vue en direct publiée par le pilote ; lecteurs spectateurs (publiques) et écrans (lien secret, ticket de 60 s, réglages dans le DO `Club`) (complète les ADR 0005, 0007, 0010 et 0028) | Acceptée |
+| [0030](0030-equipes-participants-journal.md) | Équipes dans le journal (quatre événements) ; poules et tableau tirés par des « participants » (tireurs ou équipes) (complète l'ADR-0001) | Acceptée |
