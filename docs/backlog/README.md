@@ -174,17 +174,17 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-142](US-142-quatre-poules-par-page.md) | Afficher quatre poules par page sur l'écran géant, avec leur classement | E9 | Terminée | US-134 |
 | [US-143](US-143-tableau-en-arbre.md) | Afficher le tableau en arbre symétrique sur l'écran géant | E9 | Terminée | US-134 |
 | [US-144](US-144-style-ecran-personnalise.md) | Donner à un écran géant un style personnalisé (couleurs et logo d'un sponsor) (P3) | E9 | À spécifier | US-140 |
-| [US-145](US-145-equipes-dans-le-journal.md) | Tenir les équipes dans le journal et faire tirer poules et tableau par des participants (technique) | E10 | En revue | US-081, US-085, US-108 |
-| [US-146](US-146-constituer-les-equipes.md) | Constituer les équipes à partir des tireurs inscrits | E10 | En revue | US-145, US-082 |
-| [US-147](US-147-ranger-les-equipes.md) | Ranger les équipes par la somme des classements de leurs titulaires | E10 | En revue | US-146 |
-| [US-148](US-148-emarger-les-equipes.md) | Émarger une épreuve par équipes | E10 | En revue | US-146, US-084 |
-| [US-149](US-149-formule-par-equipes.md) | Choisir la formule d'une épreuve par équipes : tableau direct, ou poules puis tableau | E10 | En revue | US-028, US-145 |
-| [US-150](US-150-poules-d-equipes.md) | Constituer, lancer et saisir les poules d'équipes | E10 | En revue | US-147, US-148, US-149, US-086, US-087, US-088 |
-| [US-151](US-151-tableau-des-equipes.md) | Créer et dérouler le tableau des équipes jusqu'au classement final | E10 | En revue | US-147, US-148, US-149, US-109, US-111, US-115 |
-| [US-152](US-152-saisir-rencontre-smartphone.md) | Saisir le score final d'une rencontre par équipes sur le smartphone de l'arbitre | E10 | En revue | US-150, US-151, US-099, US-106 |
-| [US-153](US-153-imprimer-feuille-rencontre.md) | Imprimer la feuille de rencontre par équipes (ordre des relais) | E10 | En revue | US-120, US-150, US-151 |
-| [US-154](US-154-imprimer-documents-equipes.md) | Adapter aux équipes les documents imprimés existants | E10 | En revue | US-148, US-150, US-151, US-121 à US-128 |
-| [US-155](US-155-direct-equipes.md) | Afficher les épreuves par équipes sur l'écran géant et pour les spectateurs | E10 | En revue | US-150, US-151, US-132 à US-143 |
+| [US-145](US-145-equipes-dans-le-journal.md) | Tenir les équipes dans le journal et faire tirer poules et tableau par des participants (technique) | E10 | Terminée | US-081, US-085, US-108 |
+| [US-146](US-146-constituer-les-equipes.md) | Constituer les équipes à partir des tireurs inscrits | E10 | Terminée | US-145, US-082 |
+| [US-147](US-147-ranger-les-equipes.md) | Ranger les équipes par la somme des classements de leurs titulaires | E10 | Terminée | US-146 |
+| [US-148](US-148-emarger-les-equipes.md) | Émarger une épreuve par équipes | E10 | Terminée | US-146, US-084 |
+| [US-149](US-149-formule-par-equipes.md) | Choisir la formule d'une épreuve par équipes : tableau direct, ou poules puis tableau | E10 | Terminée | US-028, US-145 |
+| [US-150](US-150-poules-d-equipes.md) | Constituer, lancer et saisir les poules d'équipes | E10 | Terminée | US-147, US-148, US-149, US-086, US-087, US-088 |
+| [US-151](US-151-tableau-des-equipes.md) | Créer et dérouler le tableau des équipes jusqu'au classement final | E10 | Terminée | US-147, US-148, US-149, US-109, US-111, US-115 |
+| [US-152](US-152-saisir-rencontre-smartphone.md) | Saisir le score final d'une rencontre par équipes sur le smartphone de l'arbitre | E10 | Terminée | US-150, US-151, US-099, US-106 |
+| [US-153](US-153-imprimer-feuille-rencontre.md) | Imprimer la feuille de rencontre par équipes (ordre des relais) | E10 | Terminée | US-120, US-150, US-151 |
+| [US-154](US-154-imprimer-documents-equipes.md) | Adapter aux équipes les documents imprimés existants | E10 | Terminée | US-148, US-150, US-151, US-121 à US-128 |
+| [US-155](US-155-direct-equipes.md) | Afficher les épreuves par équipes sur l'écran géant et pour les spectateurs | E10 | Terminée | US-150, US-151, US-132 à US-143 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 

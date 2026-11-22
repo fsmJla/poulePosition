@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F11, F15 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-148, US-150, US-151, US-121 à US-128
 - **Branche / PR :** `us/US-145-equipes` (série E10, une seule PR)
 
@@ -61,3 +61,4 @@ Comme toutes les impressions (US-120).
 |---|---|
 | 2026-11-22 | Créée (spécification de l'Epic 10) |
 | 2026-11-22 | Implémentée sur `us/US-145-equipes` (série E10, PR unique) ; en attente de la recette groupée |
+| 2026-11-22 | Recette OK par l'utilisateur sur la preview de la PR #183 ; mergée dans `dev` |
