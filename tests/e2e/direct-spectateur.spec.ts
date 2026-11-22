@@ -22,8 +22,12 @@ test('US-137 CA-1 à CA-5, US-138 et US-139 : suivre une épreuve publiée et se
   await page.goto(adresse);
   const nom = ((await page.getByRole('heading', { level: 1 }).textContent()) ?? '').trim();
   await page.getByRole('region', { name: 'Publication' }).getByRole('button', { name: 'Publier', exact: true }).click();
+  // Les pastilles d'attente n'apparaissent qu'après 3 s (US-090) : on attend avant de vérifier que tout est parti.
+  await page.waitForTimeout(3_500);
   await expect(page.getByText('Publication en attente d’envoi')).toHaveCount(0, { timeout: 30_000 });
   await lancer(page, adresse);
+  await page.waitForTimeout(3_500);
+  await expect(page.getByText(/en attente d’envoi/)).toHaveCount(0, { timeout: 30_000 });
 
   const visiteurContexte = await browser.newContext();
   const visiteur = await visiteurContexte.newPage();
