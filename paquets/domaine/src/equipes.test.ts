@@ -23,6 +23,8 @@ import {
 import { derouleDe, touchesPoulesPermises, type TypeEpreuve } from './epreuve';
 import { etatPoulesVide, matchsDePoule } from './poules';
 import { repartirEnSerpentin } from './repartition';
+import { deciderSaisie, type SaisieScore } from './saisies';
+import { vueSaisie } from './vue-saisie';
 import { classementFinal, situationDuTableau } from './tableau';
 import type { Tireur } from './tireurs';
 
@@ -394,5 +396,54 @@ describe('poules d’équipes (US-150)', () => {
       options,
     );
     expect(memeClub.find(({ tireurIds }) => tireurIds.includes('p1'))!.tireurIds).not.toContain('p2');
+  });
+});
+
+describe('saisie smartphone des rencontres (US-152)', () => {
+  const base = [
+    ...NEUF,
+    creer('p', ['a', 'b', 'c']),
+    creer('t', ['d', 'e', 'g']),
+    creer('b', ['h', 'i', 'f']),
+    { type: 'FormuleModifiee', donnees: { deroule: 'poulesTableau' } } as Proposition,
+    {
+      type: 'PoulesComposees',
+      donnees: { poules: [{ numero: 1, piste: 1, tireurIds: ['p', 't', 'b'] }] },
+    } as Proposition,
+    { type: 'PoulesLancees', donnees: {} } as Proposition,
+  ];
+  const saisie = (champs: Partial<SaisieScore> = {}): SaisieScore => ({
+    id: 's1',
+    poule: 1,
+    tireurA: 'p',
+    tireurB: 't',
+    touchesA: 45,
+    touchesB: 30,
+    auTemps: false,
+    role: 'arbitre',
+    nom: 'Paul',
+    appareilId: 'x',
+    ...champs,
+  });
+
+  it('CA-1 : la vue de saisie porte les équipes, en relais, et dit « équipes »', () => {
+    const vue = vueSaisie(journal('equipes3', ...base).epreuve!);
+    expect(vue.equipes).toBe(true);
+    expect(vue.touches).toBe(45);
+    expect(vue.poules[0]!.tireurs.map(({ nom }) => nom)).toEqual(['Équipe p', 'Équipe t', 'Équipe b']);
+    expect(vueSaisie(journal('individuelle', ...NEUF).epreuve!).equipes).toBeUndefined();
+  });
+
+  it('CA-2 et CA-3 : l’arbitre saisit (égalité par priorité) ; un tireur est refusé', () => {
+    const { epreuve } = journal('equipes3', ...base);
+    expect(deciderSaisie(epreuve!, saisie())).toMatchObject({ decision: 'accepte' });
+    expect(
+      deciderSaisie(epreuve!, saisie({ touchesA: 30, touchesB: 30, auTemps: true, parPriorite: 't' })),
+    ).toMatchObject({ decision: 'accepte', proposition: { donnees: { parPriorite: 't' } } });
+    expect(deciderSaisie(epreuve!, saisie({ role: 'tireur', tireurId: 'a' }))).toEqual({
+      decision: 'refuse',
+      motif: 'DROIT_RETIRE',
+    });
+    expect(vueSaisie(epreuve!).droits).toMatchObject({ tireurSaisitPoule: false, tireurSaisitTableau: false });
   });
 });

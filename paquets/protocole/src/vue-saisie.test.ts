@@ -84,6 +84,16 @@ describe('vue de saisie dans le protocole (US-095)', () => {
     expect(analyserVueSaisie({ ...vue(), tableau: { ...tableau, matchs: [{ ...match, enPiste: 1 }] } })).toBeNull();
   });
 
+  it('US-152 : une vue d’épreuve par équipes porte « equipes: true », et rien d’autre', () => {
+    expect(analyserVueSaisie({ ...vue(), equipes: true })).toEqual({ ...vue(), equipes: true });
+    expect(analyserVueSaisie({ ...vue(), tableau: null, equipes: true })).toMatchObject({
+      equipes: true,
+      tableau: null,
+    });
+    expect(analyserVueSaisie({ ...vue(), equipes: false })).toBeNull();
+    expect(analyserVueSaisie({ ...vue(), equipes: 'oui' })).toBeNull();
+  });
+
   it('CA-4 : une vue mal formée est refusée', () => {
     const casses: unknown[] = [
       null,

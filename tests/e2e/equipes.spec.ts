@@ -3,6 +3,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
 import { carteSaisie, epreuveAvecPresentes, repartir, TIREUSES } from './poules-outils';
+import { entrerArbitre, telephone } from './saisie-outils';
 
 /** Crée une équipe par la fenêtre « Nouvelle équipe » : 3 titulaires et, au besoin, une remplaçante. */
 export async function creerEquipe(page: Page, nom: string, titulaires: string[], remplacante?: string) {
@@ -254,4 +255,61 @@ test('US-149 CA-1 à CA-4 et US-150 CA-1 à CA-4 : poules d’équipes en 30 tou
   // CA-4 : le classement des poules classe les équipes.
   await page.goto(`${adresse}/classement`);
   await expect(page.getByRole('table')).toContainText('FORTES', { timeout: 20_000 });
+});
+
+test('US-152 CA-1 et CA-2 : l’arbitre saisit sur son smartphone une rencontre à égalité, départagée par la priorité', async ({
+  page,
+  browser,
+  baseURL,
+}, info) => {
+  test.skip(info.project.name !== 'pc', 'Équipes : projet « pc » seulement');
+  test.setTimeout(180_000);
+  await seConnecter(page);
+  const adresse = await epreuveAvecPresentes(page, 9, 9, 'equipes3');
+  await page.goto(`${adresse}/inscriptions`);
+  await page.getByRole('tab', { name: /^Équipes/ }).click();
+  await creerEquipe(page, 'Fortes', [nomComplet(0), nomComplet(1), nomComplet(2)]);
+  await creerEquipe(page, 'Moyennes', [nomComplet(3), nomComplet(4), nomComplet(5)]);
+  await creerEquipe(page, 'Faibles', [nomComplet(6), nomComplet(7), nomComplet(8)]);
+  await page.goto(`${adresse}/formule`);
+  await page.getByRole('radio', { name: 'Poules puis tableau' }).check({ timeout: 20_000 });
+  await page.getByRole('button', { name: 'Enregistrer la formule' }).click();
+  await expect(page.getByRole('listitem').filter({ hasText: 'Poules puis tableau' })).toBeVisible();
+  await repartir(page, adresse);
+  await page.getByRole('button', { name: 'Lancer les poules' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Lancer les poules' }).click();
+  await expect(page.getByRole('heading', { level: 3, name: /^Feuille de la poule 1/ })).toBeVisible();
+  await page.goto(`${adresse}/parametres`);
+  const acces = page.getByRole('region', { name: 'Accès par QR code' });
+  await expect(acces.getByLabel('Lien des arbitres')).toHaveText(/#j=/, { timeout: 20_000 });
+  const arbitres = (await acces.getByLabel('Lien des arbitres').textContent()) as string;
+  await page.goto(`${adresse}/poules`);
+
+  const { contexte, page: arbitre } = await telephone(browser, baseURL);
+  try {
+    await entrerArbitre(arbitre, arbitres, 'Paul', 1);
+    const maintenant = arbitre.getByRole('region', { name: /^À saisir maintenant · match \d+$/ });
+    await expect(maintenant).toBeVisible({ timeout: 20_000 });
+    await maintenant.getByRole('button', { name: 'Saisir le score' }).click();
+    // CA-2 : 30 – 30, puis la priorité.
+    for (let i = 0; i < 2; i += 1) {
+      await arbitre
+        .getByRole('group', { name: /^Dizaines du score de/ })
+        .getByRole('button', { name: /^30 pour/ })
+        .click();
+      await arbitre
+        .getByRole('group', { name: /^Unités du score de/ })
+        .getByRole('button', { name: /^0 pour/ })
+        .click();
+    }
+    const envoyer = arbitre.getByRole('button', { name: 'Envoyer à la table' });
+    await expect(envoyer).toBeDisabled();
+    await arbitre.getByRole('group', { name: 'Vainqueur par priorité' }).getByRole('button').last().click();
+    await envoyer.click();
+    await expect(arbitre.getByText(/^Enregistré par la table à \d+ h \d{2}$/)).toBeVisible({ timeout: 15_000 });
+    // La table l'a enregistré : la rencontre suivante est en cours au PC.
+    await expect(page.getByRole('region', { name: 'Match 2 sur 3' })).toBeVisible({ timeout: 15_000 });
+  } finally {
+    await contexte.close();
+  }
 });

@@ -148,7 +148,10 @@
     return idEnvoye;
   }
 
-  function envoyer(match: MatchDeLaPiste, score: { touchesA: number; touchesB: number; auTemps: boolean }) {
+  function envoyer(
+    match: MatchDeLaPiste,
+    score: { touchesA: number; touchesB: number; auTemps: boolean; parPriorite?: string },
+  ) {
     const id = crypto.randomUUID();
     const parti = saisie?.envoyerSaisie({
       id,

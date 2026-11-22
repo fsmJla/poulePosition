@@ -6,9 +6,10 @@ import type { Sexe } from './epreuve';
 import { accesQrOuvert } from './acces-qr';
 import {
   contexteTableau,
+  participantsDe,
+  parEquipes,
   poulesDe,
   tableauDe,
-  tireursDe,
   type Epreuve,
   type Evenement,
   type Proposition,
@@ -90,6 +91,8 @@ export function deciderSaisie(epreuve: Epreuve, saisie: SaisieScore): DecisionSa
   // US-105 CA-3 : une saisie d'un appareil exclu (encore dans la boîte, par exemple) est refusée.
   if ((epreuve.appareilsExclus ?? []).includes(saisie.appareilId))
     return { decision: 'refuse', motif: 'APPAREIL_EXCLU' };
+  // US-152 CA-3 : par équipes, seuls les arbitres saisissent les rencontres.
+  if (parEquipes(epreuve) && saisie.role !== 'arbitre') return { decision: 'refuse', motif: 'DROIT_RETIRE' };
   if (saisie.match !== undefined) return deciderSaisieTableau(epreuve, saisie, saisie.match);
   const { arbitreSaisitScores, tireurSaisitPoule } = epreuve.parametres;
   if (saisie.role === 'arbitre' ? !arbitreSaisitScores : !tireurSaisitPoule) {
@@ -102,6 +105,8 @@ export function deciderSaisie(epreuve: Epreuve, saisie: SaisieScore): DecisionSa
     touchesA: saisie.touchesA,
     touchesB: saisie.touchesB,
     auTemps: saisie.auTemps,
+    // US-152 CA-2 : à égalité, l'équipe gagnante par priorité.
+    ...(saisie.parPriorite !== undefined && { parPriorite: saisie.parPriorite }),
   };
   const erreur = verifierScore(etat, donnees, epreuve.formule.touchesPoules);
   if (erreur === 'POULES_NON_LANCEES' || erreur === 'MATCH_INCONNU' || erreur === 'TIREUR_RETIRE') {
@@ -253,7 +258,7 @@ export interface LigneSaisie {
 
 /** US-100 CA-2 et CA-3 : les scores saisis et les saisies refusées, de la plus récente à la plus ancienne. */
 export function lignesSaisies(evenements: readonly Evenement[], epreuve: Epreuve | null): LigneSaisie[] {
-  const noms = new Map(tireursDe(epreuve ?? {}).map((t) => [t.id, t.nom]));
+  const noms = new Map((epreuve ? participantsDe(epreuve) : []).map((t) => [t.id, t.nom]));
   const poules = poulesDe(epreuve ?? {}).poules;
   const numeroDe = (poule: number, a: string, b: string): number | null => {
     const composition = poules.find(({ numero }) => numero === poule);
@@ -317,7 +322,7 @@ function tourEtNumero(id: string): { tour: number; numero: number } {
  * de la plus récente à la plus ancienne ; une correction dit le score qu'elle remplace.
  */
 export function lignesSaisiesTableau(evenements: readonly Evenement[], epreuve: Epreuve | null): LigneSaisie[] {
-  const noms = new Map(tireursDe(epreuve ?? {}).map((t) => [t.id, t.nom]));
+  const noms = new Map((epreuve ? participantsDe(epreuve) : []).map((t) => [t.id, t.nom]));
   const derniers = new Map<string, { a: string; touchesA: number; touchesB: number }>();
   const lignes: LigneSaisie[] = [];
   for (const evenement of evenements) {

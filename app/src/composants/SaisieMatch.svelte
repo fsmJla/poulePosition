@@ -29,7 +29,7 @@
     /** Accusé de la saisie envoyée, s'il est arrivé. */
     accuse: Accuse | null;
     /** Envoie le score ; renvoie l'identifiant de la saisie, ou null si rien n'est parti. */
-    envoyer: (score: { touchesA: number; touchesB: number; auTemps: boolean }) => string | null;
+    envoyer: (score: { touchesA: number; touchesB: number; auTemps: boolean; parPriorite?: string }) => string | null;
     /** US-101 : correction d'un match terminé (les boutons de son score sont marqués). */
     correction?: boolean;
     retour: () => void;
@@ -68,8 +68,13 @@
   const [choixA, choixB] = $derived(pave.actif === null ? pave.valeurs : [null, null]);
   const score = $derived(choixA !== null && choixB !== null ? scoreDesBoutons(choixA, choixB, touches) : null);
   const nomDe = (id: string) => tireurs.get(id)?.nom ?? '';
+  /** US-152 CA-2 : par équipes, une égalité au temps se départage par la priorité. */
+  const egalite = $derived(vue.equipes === true && score !== null && !score.ok && score.raison === 'EGALITE');
+  let priorite = $state<string | null>(null);
+  const tp = textes.pave;
   const message = $derived.by(() => {
     if (refus) return refus;
+    if (egalite) return priorite ? `${tp.prioriteGroupe} : ${nomDe(priorite)}` : tp.priorite;
     if (!score) return '';
     if (!score.ok) return score.raison === 'DEUX_VAINQUEURS' ? t.unSeulVainqueur : t.pasDEgalite;
     const gagneA = score.touchesA > score.touchesB;
@@ -100,6 +105,10 @@
   );
 
   function envoyerScore() {
+    if (egalite && priorite && typeof choixA === 'number' && typeof choixB === 'number') {
+      envoyee = envoyer({ touchesA: choixA, touchesB: choixB, auTemps: true, parPriorite: priorite });
+      return;
+    }
     if (!score?.ok || inchange) return;
     envoyee = envoyer({ touchesA: score.touchesA, touchesB: score.touchesB, auTemps: score.auTemps });
   }
@@ -111,6 +120,8 @@
     refus = null;
     if (!r.complet) return;
     const essai = scoreDesBoutons(r.etat.valeurs[0]!, r.etat.valeurs[1]!, touches);
+    priorite = null;
+    if (!essai.ok && essai.raison === 'EGALITE' && vue.equipes) return;
     if (!essai.ok) {
       refus = essai.raison === 'DEUX_VAINQUEURS' ? t.unSeulVainqueur : t.pasDEgalite;
       pave = paveVierge();
@@ -182,15 +193,34 @@
     }}
   />
 
-  <p class="message" class:erreur={refus !== null || (score !== null && !score.ok)} role="status">
+  <p class="message" class:erreur={refus !== null || (score !== null && !score.ok && !egalite)} role="status">
     {etape === 'saisie' ? message : ''}
   </p>
+  {#if egalite && etape === 'saisie'}
+    <div class="priorite" role="group" aria-label={tp.prioriteGroupe}>
+      <button
+        type="button"
+        class="pour gauche"
+        aria-pressed={priorite === match.tireurA}
+        onclick={() => (priorite = match.tireurA)}>{nomDe(match.tireurA)}</button
+      >
+      <button
+        type="button"
+        class="pour droite"
+        aria-pressed={priorite === match.tireurB}
+        onclick={() => (priorite = match.tireurB)}>{nomDe(match.tireurB)}</button
+      >
+    </div>
+  {/if}
 
   {#if etape === 'saisie'}
     <div class="actions">
       <button type="button" class="neutre" onclick={retour}>{t.retour}</button>
-      <button type="button" class="principal" disabled={!score?.ok || !table || inchange} onclick={envoyerScore}
-        >{correction ? t.envoyerCorrection : t.envoyer}</button
+      <button
+        type="button"
+        class="principal"
+        disabled={!(score?.ok || (egalite && priorite)) || !table || inchange}
+        onclick={envoyerScore}>{correction ? t.envoyerCorrection : t.envoyer}</button
       >
     </div>
     {#if !table}<p class="note">{t.suspendue}</p>{/if}
@@ -245,6 +275,39 @@
 </main>
 
 <style>
+  .priorite {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .pour {
+    min-height: 44px;
+    padding: 0 18px;
+    border: 2px solid var(--cote-gauche);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--cote-gauche);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .pour.droite {
+    border-color: var(--cote-droit);
+    color: var(--cote-droit);
+  }
+
+  .pour[aria-pressed='true'] {
+    background: var(--cote-gauche);
+    color: var(--sur-cote);
+  }
+
+  .pour.droite[aria-pressed='true'] {
+    background: var(--cote-droit);
+  }
+
   .entete {
     display: flex;
     align-items: center;

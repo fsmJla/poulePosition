@@ -153,7 +153,12 @@ describe('US-106 : saisie d’un match du tableau', () => {
     expect(analyserSaisieTelephone({ ...tableau, poule: 1 })).toBeNull();
     expect(analyserSaisieTelephone({ ...tableau, match: '' })).toBeNull();
     expect(analyserSaisieTelephone({ ...tableau, parPriorite: 3 })).toBeNull();
-    // La priorité sans match (saisie de poule) est refusée.
-    expect(analyserSaisieTelephone({ ...tableau, match: undefined, poule: 1 })).toBeNull();
+    // US-152 : une rencontre de poule par équipes porte aussi la priorité (la table vérifie l'égalité).
+    const sansMatch: Record<string, unknown> = { ...tableau };
+    delete sansMatch.match;
+    expect(analyserSaisieTelephone({ ...sansMatch, poule: 1 })).toMatchObject({
+      poule: 1,
+      parPriorite: tableau.parPriorite,
+    });
   });
 });
