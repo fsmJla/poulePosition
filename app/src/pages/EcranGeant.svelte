@@ -188,7 +188,26 @@
 
   const enPiste = (poule: PouleDirect) =>
     poule.matchs.find(({ touches, forfait }) => touches === null && !forfait) ?? null;
+  /**
+   * Recette US-143 : le texte de l'arbre grandit quand le tableau est petit, pour remplir l'écran (tableau de 32 : 1 ;
+   * tableau de 4 : 1,9). Une page de moitié d'un grand tableau garde la taille de base.
+   */
+  const echelleArbre = (arbre: { tours: number[]; moitie: string | null }) =>
+    arbre.moitie ? 1 : (({ 1: 1.9, 2: 1.5, 3: 1.3 } as Record<number, number>)[arbre.tours.length] ?? 1);
+
   /** US-143 CA-2 : une place d'un match de l'arbre : rang et nom, « exempt », ou « – » si elle n'est pas connue. */
+  /**
+   * Recette US-143 : dans un grand arbre (à partir du tableau de 32, ou une moitié), « VINCENT Sarah » devient
+   * « VINCENT S. » pour rester lisible ; le nom complet reste dans l'infobulle.
+   */
+  const nomsCourts = $derived(page?.type === 'tableau' && (page.arbre.moitie !== null || page.arbre.tours.length >= 4));
+  function nomCourt(complet: string): string {
+    const mots = complet.split(' ').filter(Boolean);
+    const estNom = (mot: string) => /\p{Lu}/u.test(mot) && mot === mot.toLocaleUpperCase('fr');
+    const noms = mots.filter(estNom);
+    const prenom = mots.find((mot) => !estNom(mot));
+    return noms.length > 0 && prenom ? `${noms.join(' ')} ${prenom.charAt(0)}.` : complet;
+  }
   const placeArbre = (m: MatchTableauVue, cote: 'haut' | 'bas') => {
     const place = m[cote];
     if (place.tireurId) return { rang: place.rang, nom: nom.get(place.tireurId) ?? '', exempt: false };
@@ -353,19 +372,25 @@
             class="carte-match"
             class:miroir
             class:appele={match.piste !== null && match.etat === 'aTirer'}
+            class:exempte={match.etat === 'exempt'}
             data-match={match.id}
           >
             {#each [['haut', gagnantHaut, 0], ['bas', match.vainqueur !== null && !gagnantHaut, 1]] as const as [cote, gagnant, i] (cote)}
               {@const place = placeArbre(match, cote)}
               <div class="place" class:gagnant class:exempt={place.exempt} class:inconnue={place.nom === '–'}>
                 <span class="rang-place">{place.rang ?? ''}</span>
-                <span class="nom-place">{place.nom}</span>
+                <span class="nom-place" title={place.nom}>{nomsCourts ? nomCourt(place.nom) : place.nom}</span>
                 <span class="score-place">{match.touches ? match.touches[i] : ''}</span>
               </div>
             {/each}
           </div>
         {/snippet}
-        <div class="arbre" style="--colonnes: {arbre.tours.length}fr" class:moitie={arbre.moitie !== null}>
+        <div
+          class="arbre"
+          style="--colonnes: {arbre.tours.length}fr; --echelle: {echelleArbre(arbre)}; --centre: {echelleArbre(arbre) *
+            0.9}fr"
+          class:moitie={arbre.moitie !== null}
+        >
           <div class="cote-arbre">
             {#each arbre.tours as tour, c (tour)}
               <div class="colonne-arbre">
@@ -379,12 +404,16 @@
           {#if !arbre.moitie}
             <div class="centre-arbre">
               {#if arbre.finale}
-                <h3>{t.tour(2)}</h3>
-                {@render carte(arbre.finale, false)}
+                <div class="finale">
+                  <h3>{t.tour(2)}</h3>
+                  {@render carte(arbre.finale, false)}
+                </div>
               {/if}
               {#if arbre.troisieme}
-                <h3>{t.petiteFinale}</h3>
-                {@render carte(arbre.troisieme, false)}
+                <div class="petite-finale">
+                  <h3>{t.petiteFinale}</h3>
+                  {@render carte(arbre.troisieme, false)}
+                </div>
               {/if}
             </div>
             <div class="cote-arbre droite-arbre">
@@ -764,11 +793,15 @@
     clip: rect(0 0 0 0);
   }
 
-  /* US-143 : arbre symétrique ; chaque colonne répartit ses matchs, ce qui les aligne entre leurs deux précédents. */
+  /*
+   * US-143 : arbre symétrique ; chaque colonne répartit ses matchs, ce qui les aligne entre leurs deux précédents. Le
+   * texte suit `--echelle` (plus grand pour un petit tableau) ; le vainqueur d'un match est sur fond d'accent, la finale
+   * est encadrée d'or.
+   */
   .arbre {
     display: grid;
-    grid-template-columns: minmax(0, var(--colonnes)) minmax(0, 0.9fr) minmax(0, var(--colonnes));
-    gap: 0.6em;
+    grid-template-columns: minmax(0, var(--colonnes)) minmax(0, var(--centre)) minmax(0, var(--colonnes));
+    gap: 0.8em;
     height: 100%;
   }
 
@@ -780,7 +813,7 @@
     display: grid;
     grid-auto-columns: minmax(0, 1fr);
     grid-auto-flow: column;
-    gap: 0.6em;
+    gap: 0.8em;
     min-height: 0;
   }
 
@@ -792,10 +825,16 @@
 
   .colonne-arbre h3,
   .centre-arbre h3 {
-    margin: 0 0 0.4em;
-    font-size: 1.05em;
-    font-weight: 700;
+    align-self: center;
+    margin: 0 0 0.5em;
+    padding: 0.2em 0.9em;
+    border-radius: 999px;
+    background: var(--accent-teinte);
+    color: var(--accent);
+    font-size: calc(min(var(--echelle), 1.2) * 1.15em);
+    font-weight: 800;
     text-align: center;
+    white-space: nowrap;
   }
 
   .matchs-colonne {
@@ -804,54 +843,102 @@
     flex-direction: column;
     justify-content: space-around;
     min-height: 0;
+    font-size: calc(var(--echelle) * 1em);
   }
 
   .centre-arbre {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 0.75em;
+    gap: 2em;
+    font-size: calc(var(--echelle) * 1em);
+  }
+
+  .finale,
+  .petite-finale {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .centre-arbre h3 {
+    font-size: 1.1em;
+  }
+
+  .finale h3 {
+    background: var(--etat-attente-fond);
+    color: var(--sur-etat-attente-fond);
+    font-size: 1.3em;
+  }
+
+  .finale .carte-match {
+    border: 0.15em solid var(--etat-attente);
+    border-left-width: 0.35em;
+    font-size: 1.15em;
   }
 
   .carte-match {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 0.2em 0.4em;
-    border: 1px solid var(--bordure);
-    border-radius: 0.4em;
+    overflow: hidden;
+    border: 1px solid var(--accent-teinte-bordure);
+    border-left: 0.3em solid var(--accent);
+    border-radius: 0.5em;
     background: var(--surface);
+    box-shadow: 0 0.15em 0.5em rgb(0 0 0 / 0.12);
+  }
+
+  .carte-match.miroir {
+    border-right: 0.3em solid var(--accent);
+    border-left-width: 1px;
   }
 
   .carte-match.appele {
-    border-color: var(--accent);
+    border-color: var(--etat-attente);
+  }
+
+  .carte-match.exempte {
+    opacity: 0.55;
+    box-shadow: none;
   }
 
   .place {
     display: grid;
-    grid-template-columns: 1.3em minmax(0, 1fr) auto;
-    align-items: baseline;
-    gap: 0.3em;
+    grid-template-columns: 1.2em minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.3em 0.5em;
     color: var(--texte-discret);
-    font-size: 1.1em;
-    line-height: 1.35;
+    font-size: 1.15em;
+    line-height: 1.3;
   }
 
+  .place + .place {
+    border-top: 1px solid var(--bordure);
+  }
+
+  /* Côté droit, en miroir : nom, score, puis rang au bord. */
   .miroir .place {
-    grid-template-columns: auto minmax(0, 1fr) 1.3em;
-    text-align: right;
+    grid-template-columns: minmax(0, 1fr) auto 1.2em;
   }
 
   .miroir .rang-place {
     order: 3;
+    text-align: right;
   }
 
   .miroir .score-place {
+    order: 2;
+  }
+
+  .miroir .nom-place {
     order: 1;
   }
 
   .rang-place {
-    font-size: 0.75em;
+    color: var(--texte-discret);
+    font-size: 0.7em;
+    font-weight: 700;
   }
 
   .nom-place {
@@ -862,10 +949,29 @@
     white-space: nowrap;
   }
 
-  .place.gagnant .nom-place,
-  .place.gagnant .score-place {
-    color: var(--accent);
+  .score-place {
+    min-width: 1.6em;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+  }
+
+  .place.gagnant {
+    background: var(--accent-teinte);
+  }
+
+  .place.gagnant .nom-place {
     font-weight: 800;
+  }
+
+  .place.gagnant .score-place {
+    border-radius: 0.3em;
+    background: var(--accent);
+    color: var(--sur-accent);
+  }
+
+  .finale .place.gagnant .score-place {
+    background: var(--etat-attente);
   }
 
   .place.exempt .nom-place,
