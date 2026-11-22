@@ -20,10 +20,36 @@ describe('écrans géants (US-133)', () => {
   it('CA-2 : une demande valide est nettoyée (nom, vues en double)', () => {
     expect(analyserDemandeEcran(demande)).toEqual({
       ok: true,
-      demande: { ...demande, nom: 'Écran de la salle A', vuesMasquees: ['podium'] },
+      demande: {
+        ...demande,
+        nom: 'Écran de la salle A',
+        vuesMasquees: ['podium'],
+        style: 'sombre',
+        bandeau: { actif: false, minutes: 15 },
+      },
     });
     expect(analyserDemandeEcran({ ...demande, proprietaire: { type: 'competition', id: 'c-1' } }).ok).toBe(true);
     expect(analyserDemandeEcran({ ...demande, epreuves: [] }).ok).toBe(true);
+  });
+
+  it('US-140, US-141 : style et bandeau, facultatifs (sombre, bandeau désactivé sur 15 min par défaut)', () => {
+    expect(analyserDemandeEcran(demande)).toMatchObject({
+      demande: { style: 'sombre', bandeau: { actif: false, minutes: 15 } },
+    });
+    const avec = { ...demande, style: 'clair', bandeau: { actif: true, minutes: 120 } };
+    expect(analyserDemandeEcran(avec)).toMatchObject({
+      demande: { style: 'clair', bandeau: { actif: true, minutes: 120 } },
+    });
+    for (const mauvais of [
+      { ...demande, style: 'violet' },
+      { ...demande, bandeau: { actif: true, minutes: 0 } },
+      { ...demande, bandeau: { actif: true, minutes: 121 } },
+      { ...demande, bandeau: { actif: 'oui', minutes: 15 } },
+      { ...demande, bandeau: { actif: true } },
+      { ...demande, bandeau: { actif: true, minutes: 1.5 } },
+    ]) {
+      expect(analyserDemandeEcran(mauvais).ok).toBe(false);
+    }
   });
 
   it('CA-2 et cas limites : nom vide ou trop long, durée hors bornes, épreuves ou vues invalides sont refusés', () => {
@@ -85,12 +111,19 @@ describe('écrans géants (US-133)', () => {
       epreuves: ['e-1'],
       dureePage: 20,
       vuesMasquees: [],
+      style: 'clair',
+      bandeau: { actif: true, minutes: 30 },
       jeton: 'abcdefghijklmnopqrstuv',
       creeLe: 1,
       ouvertLe: null,
       vueImposee: null,
     };
     expect(analyserEcran(ecran)).toEqual(ecran);
+    // Un écran créé avant US-140 et US-141 : sombre, sans bandeau.
+    const ancien: Record<string, unknown> = { ...ecran };
+    delete ancien.style;
+    delete ancien.bandeau;
+    expect(analyserEcran(ancien)).toEqual({ ...ecran, style: 'sombre', bandeau: { actif: false, minutes: 15 } });
     expect(analyserEcran({ ...ecran, ouvertLe: 'hier' })).toBeNull();
     expect(analyserEcran({ ...ecran, vueImposee: { vue: 'x' } })).toBeNull();
     expect(analyserEcran({ ...ecran, jeton: 1 })).toBeNull();

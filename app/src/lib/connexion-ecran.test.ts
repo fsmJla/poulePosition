@@ -43,6 +43,8 @@ const ECRAN: EcranPublic = {
   epreuves: ['e1'],
   dureePage: 15,
   vuesMasquees: [],
+  style: 'sombre' as const,
+  bandeau: { actif: false, minutes: 15 },
   creeLe: 1,
   ouvertLe: 2,
   vueImposee: null,

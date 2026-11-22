@@ -10,10 +10,15 @@
 
 <script lang="ts">
   // Fenêtre de réglage d'un écran géant (US-133 CA-2 et CA-5, planche 37) : nom, épreuves cochées par compétition
-  // (publiées ou non), durée d'une page, vues à afficher. « Enregistrer » est l'action principale ; Échap ou « Annuler »
+  // (publiées ou non), durée d'une page, vues à afficher, style (US-140) et bandeau des derniers scores (US-141). « Enregistrer » est l'action principale ; Échap ou « Annuler »
   // la ferment.
   import { onMount } from 'svelte';
   import {
+    BANDEAU_DEFAUT,
+    BANDEAU_MINUTES_MAX,
+    BANDEAU_MINUTES_MIN,
+    STYLES_ECRAN,
+    type StyleEcran,
     DUREE_PAGE_DEFAUT,
     DUREE_PAGE_MAX,
     DUREE_PAGE_MIN,
@@ -41,6 +46,9 @@
   let epreuves = $state<string[]>([]);
   let duree = $state(DUREE_PAGE_DEFAUT);
   let masquees = $state<VueEcran[]>([]);
+  let style = $state<StyleEcran>('sombre');
+  let bandeauActif = $state(BANDEAU_DEFAUT.actif);
+  let minutes = $state(BANDEAU_DEFAUT.minutes);
   let erreur: string | null = $state(null);
   let enCours = $state(false);
 
@@ -49,6 +57,9 @@
     epreuves = [...(initial?.epreuves ?? [])];
     duree = initial?.dureePage ?? DUREE_PAGE_DEFAUT;
     masquees = [...(initial?.vuesMasquees ?? [])];
+    style = initial?.style ?? 'sombre';
+    bandeauActif = initial?.bandeau.actif ?? BANDEAU_DEFAUT.actif;
+    minutes = initial?.bandeau.minutes ?? BANDEAU_DEFAUT.minutes;
     dialogue?.showModal();
   });
 
@@ -66,8 +77,19 @@
       erreur = t.erreurs.DUREE;
       return;
     }
+    if (!Number.isInteger(minutes) || minutes < BANDEAU_MINUTES_MIN || minutes > BANDEAU_MINUTES_MAX) {
+      erreur = t.erreurs.MINUTES;
+      return;
+    }
     enCours = true;
-    erreur = await enregistrer({ nom: nom.trim(), epreuves, dureePage: duree, vuesMasquees: masquees });
+    erreur = await enregistrer({
+      nom: nom.trim(),
+      epreuves,
+      dureePage: duree,
+      vuesMasquees: masquees,
+      style,
+      bandeau: { actif: bandeauActif, minutes },
+    });
     enCours = false;
     if (erreur === null) fermer();
   }
@@ -133,6 +155,40 @@
             {t.vues[vue]}
           </label>
         {/each}
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>{tf.style}</legend>
+      <div class="vues">
+        {#each STYLES_ECRAN as valeur (valeur)}
+          <label>
+            <input type="radio" name="style" value={valeur} bind:group={style} />
+            {tf.styles[valeur]}
+          </label>
+        {/each}
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>{tf.bandeau}</legend>
+      <div class="vues">
+        <label>
+          <input type="checkbox" bind:checked={bandeauActif} />
+          {tf.bandeau}
+        </label>
+        <label class="duree">
+          {tf.bandeauMinutes}
+          <input
+            type="number"
+            bind:value={minutes}
+            min={BANDEAU_MINUTES_MIN}
+            max={BANDEAU_MINUTES_MAX}
+            step="1"
+            disabled={!bandeauActif}
+          />
+          {tf.minutes}
+        </label>
       </div>
     </fieldset>
 

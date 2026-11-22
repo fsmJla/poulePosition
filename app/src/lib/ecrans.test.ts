@@ -9,6 +9,8 @@ const ECRAN: Ecran = {
   epreuves: ['e-1'],
   dureePage: 15,
   vuesMasquees: [],
+  style: 'sombre' as const,
+  bandeau: { actif: false, minutes: 15 },
   jeton: 'abcdefghijklmnopqrstuv',
   creeLe: 1,
   ouvertLe: null,
@@ -81,6 +83,8 @@ describe('client des écrans (US-133 à US-135)', () => {
       epreuves: ECRAN.epreuves,
       dureePage: ECRAN.dureePage,
       vuesMasquees: ECRAN.vuesMasquees,
+      style: ECRAN.style,
+      bandeau: ECRAN.bandeau,
     };
     const demande = { proprietaire: ECRAN.proprietaire, ...reglages };
     expect(await ecrans.creer(demande)).toEqual({ ok: true, ecran: ECRAN });

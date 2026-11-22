@@ -14,6 +14,19 @@ export const DUREE_PAGE_MAX = 120;
 export const LONGUEUR_MAX_NOM_ECRAN = 60;
 export const EPREUVES_MAX_ECRAN = 50;
 
+/** US-140 : style d'un écran ; « sombre » par défaut, y compris pour un écran créé avant l'US. */
+export const STYLES_ECRAN = ['sombre', 'clair'] as const;
+export type StyleEcran = (typeof STYLES_ECRAN)[number];
+
+/** US-141 : bandeau des derniers scores, désactivé par défaut ; scores des N dernières minutes. */
+export interface BandeauEcran {
+  actif: boolean;
+  minutes: number;
+}
+export const BANDEAU_MINUTES_MIN = 1;
+export const BANDEAU_MINUTES_MAX = 120;
+export const BANDEAU_DEFAUT: BandeauEcran = { actif: false, minutes: 15 };
+
 /** Jeton d'un écran : 128 bits en base64url (22 caractères). */
 export const MOTIF_JETON_ECRAN = /^[A-Za-z0-9_-]{22}$/;
 
@@ -37,6 +50,28 @@ export interface ReglagesEcran {
   epreuves: string[];
   dureePage: number;
   vuesMasquees: VueEcran[];
+  style: StyleEcran;
+  bandeau: BandeauEcran;
+}
+
+/** Réglages facultatifs à la lecture (absents d'un écran créé avant US-140 et US-141). */
+const FACULTATIFS = ['style', 'bandeau'];
+
+/** Comme `aExactementLesChamps`, avec des champs facultatifs. */
+function aLesChamps(brut: unknown, obligatoires: readonly string[]): Record<string, unknown> | null {
+  if (brut === null || typeof brut !== 'object' || Array.isArray(brut)) return null;
+  const o = brut as Record<string, unknown>;
+  const permis = new Set([...obligatoires, ...FACULTATIFS]);
+  const cles = Object.keys(o);
+  return cles.every((cle) => permis.has(cle)) && obligatoires.every((cle) => cle in o) ? o : null;
+}
+
+function lireBandeau(brut: unknown): BandeauEcran | null {
+  if (brut === undefined) return { ...BANDEAU_DEFAUT };
+  const o = aExactementLesChamps(brut, ['actif', 'minutes']);
+  if (!o || typeof o.actif !== 'boolean' || !Number.isInteger(o.minutes)) return null;
+  const minutes = o.minutes as number;
+  return minutes >= BANDEAU_MINUTES_MIN && minutes <= BANDEAU_MINUTES_MAX ? { actif: o.actif, minutes } : null;
 }
 
 export interface Ecran extends ReglagesEcran {
@@ -63,6 +98,10 @@ const estEntier = (valeur: unknown): valeur is number => Number.isInteger(valeur
 
 function lireReglages(o: Record<string, unknown>): ReglagesEcran | null {
   const { nom, epreuves, dureePage, vuesMasquees } = o;
+  const style = o.style === undefined ? 'sombre' : o.style;
+  if (!(STYLES_ECRAN as readonly unknown[]).includes(style)) return null;
+  const bandeau = lireBandeau(o.bandeau);
+  if (!bandeau) return null;
   if (typeof nom !== 'string') return null;
   const nomPropre = nom.trim();
   if (nomPropre.length === 0 || nomPropre.length > LONGUEUR_MAX_NOM_ECRAN) return null;
@@ -78,6 +117,8 @@ function lireReglages(o: Record<string, unknown>): ReglagesEcran | null {
     epreuves: epreuves as string[],
     dureePage,
     vuesMasquees: [...new Set(vuesMasquees as VueEcran[])],
+    style: style as StyleEcran,
+    bandeau,
   };
 }
 
@@ -89,7 +130,7 @@ function lireProprietaire(brut: unknown): ProprietaireEcran | null {
 
 /** CA-2 : corps de `POST /ecrans`. */
 export function analyserDemandeEcran(brut: unknown): { ok: true; demande: DemandeEcran } | { ok: false } {
-  const o = aExactementLesChamps(brut, ['proprietaire', 'nom', 'epreuves', 'dureePage', 'vuesMasquees']);
+  const o = aLesChamps(brut, ['proprietaire', 'nom', 'epreuves', 'dureePage', 'vuesMasquees']);
   if (!o) return { ok: false };
   const proprietaire = lireProprietaire(o.proprietaire);
   const reglages = lireReglages(o);
@@ -98,7 +139,7 @@ export function analyserDemandeEcran(brut: unknown): { ok: true; demande: Demand
 
 /** CA-5 : corps de `PATCH /ecrans/<id>` (le propriétaire ne change pas). */
 export function analyserDemandeReglages(brut: unknown): { ok: true; demande: ReglagesEcran } | { ok: false } {
-  const o = aExactementLesChamps(brut, ['nom', 'epreuves', 'dureePage', 'vuesMasquees']);
+  const o = aLesChamps(brut, ['nom', 'epreuves', 'dureePage', 'vuesMasquees']);
   const reglages = o ? lireReglages(o) : null;
   return reglages ? { ok: true, demande: reglages } : { ok: false };
 }
@@ -124,7 +165,7 @@ export function analyserVueImposee(brut: unknown): { ok: true; vue: VueImposee |
 
 /** Un écran tel que le serveur le renvoie (validation côté application, et relecture de la copie de l'appareil). */
 export function analyserEcran(brut: unknown): Ecran | null {
-  const o = aExactementLesChamps(brut, [
+  const o = aLesChamps(brut, [
     'id',
     'proprietaire',
     'nom',
@@ -168,6 +209,7 @@ export function analyserEcranPublic(brut: unknown): EcranPublic | null {
 
 /** Un écran sans son jeton : ce que l'écran lui-même reçoit. */
 export function ecranPublic(ecran: Ecran): EcranPublic {
-  const { id, proprietaire, nom, epreuves, dureePage, vuesMasquees, creeLe, ouvertLe, vueImposee } = ecran;
-  return { id, proprietaire, nom, epreuves, dureePage, vuesMasquees, creeLe, ouvertLe, vueImposee };
+  const { id, proprietaire, nom, epreuves, dureePage, vuesMasquees, style, bandeau, creeLe, ouvertLe, vueImposee } =
+    ecran;
+  return { id, proprietaire, nom, epreuves, dureePage, vuesMasquees, style, bandeau, creeLe, ouvertLe, vueImposee };
 }
