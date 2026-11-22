@@ -25,6 +25,7 @@ import { etatPoulesVide, matchsDePoule } from './poules';
 import { repartirEnSerpentin } from './repartition';
 import { deciderSaisie, type SaisieScore } from './saisies';
 import { vueSaisie } from './vue-saisie';
+import { vueDirect } from './vue-direct';
 import { classementFinal, situationDuTableau, structureTableau } from './tableau';
 import { raisonIndisponible, relaisDeRencontre, rencontresDesPoules, rencontresDuTableau } from './impressions';
 import type { Tireur } from './tireurs';
@@ -506,5 +507,31 @@ describe('feuilles de rencontre (US-153)', () => {
     expect(rencontresDuTableau(structure, 2)).toEqual([
       { phase: { tour: 2, numero: 1 }, piste: null, equipes: ['t', 'p'] },
     ]);
+  });
+});
+
+describe('vue en direct par équipes (US-155)', () => {
+  it('CA-1 : les équipes (nom, club ou « Mixte »), leurs tireurs au nom affiché, les rencontres en relais', () => {
+    const projection = journal(
+      'equipes3',
+      ...NEUF,
+      { type: 'ParametresModifies', donnees: { prenomInitiale: true } },
+      creer('p', ['a', 'b', 'c'], 'f'),
+      creer('t', ['d', 'e', 'g']),
+      { type: 'TableauCree', donnees: { qualifies: ['t', 'p'] } },
+      { type: 'ScoreTableauSaisi', donnees: { match: '2-1', tireurA: 't', tireurB: 'p', touchesA: 45, touchesB: 40 } },
+    );
+    const vue = vueDirect(projection.epreuve!, []);
+    expect(vue.tireurs).toEqual([
+      { id: 't', nom: 'Équipe t', club: 'Talence' },
+      { id: 'p', nom: 'Équipe p', club: 'Mixte' },
+    ]);
+    expect(vue.equipes).toEqual([
+      { id: 'p', membres: ['X A.', 'X B.', 'X C.', 'X F.'] },
+      { id: 't', membres: ['X D.', 'X E.', 'X G.'] },
+    ]);
+    expect(vue.tableau).toMatchObject({ touches: 45 });
+    expect(vue.classementFinal?.[0]).toMatchObject({ tireurId: 't', place: 1 });
+    expect(vueDirect(journal('individuelle', ...NEUF).epreuve!).equipes).toBeUndefined();
   });
 });

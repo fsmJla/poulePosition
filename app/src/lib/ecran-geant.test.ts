@@ -290,3 +290,37 @@ describe('bandeau des derniers scores (US-141)', () => {
     expect(groupesDuBandeau(['e2'], vues, 15, 60 * 60_000)).toEqual([]);
   });
 });
+
+describe('écran géant par équipes (US-155 CA-2)', () => {
+  const evenement = (seq: number, p: Proposition) => ({ ...enTete(seq), date: seq * 1000, ...p }) as Evenement;
+  const propositions: Proposition[] = [
+    ...SIX,
+    { type: 'EpreuveModifiee', donnees: { typeEpreuve: 'equipes3' } },
+    {
+      type: 'EquipeCreee',
+      donnees: { equipeId: 'q1', nom: 'Pessac 1', titulaires: ['a', 'b', 'c'], remplacant: null, tirage: 0 },
+    },
+    {
+      type: 'EquipeCreee',
+      donnees: { equipeId: 'q2', nom: 'Talence', titulaires: ['d', 'e', 'f'], remplacant: null, tirage: 1 },
+    },
+    { type: 'TableauCree', donnees: { qualifies: ['q1', 'q2'] } },
+    { type: 'ScoreTableauSaisi', donnees: { match: '2-1', tireurA: 'q1', tireurB: 'q2', touchesA: 45, touchesB: 38 } },
+  ];
+
+  it('l’arbre, le bandeau et le podium montrent les équipes et le score des rencontres', () => {
+    const evenements = [creation, ...propositions.map((p, i) => evenement(i + 2, p))];
+    const projection = projeter(evenements);
+    expect(projection.anomalie).toBeNull();
+    const vue = vueDirect(projection.epreuve!, evenements);
+    expect(vue.etape).toBe('tableau');
+    const pages = pagesDeLEpreuve(vue);
+    expect(pages[0]).toMatchObject({ type: 'tableau' });
+    const groupes = groupesDuBandeau(['e1'], new Map([['e1', vue]]), 60, propositions.length * 1000 + 5000);
+    expect(groupes[0]!.scores[0]).toMatchObject({
+      tireurA: 'Pessac 1',
+      tireurB: 'Talence',
+      score: { touchesA: 45, touchesB: 38 },
+    });
+  });
+});

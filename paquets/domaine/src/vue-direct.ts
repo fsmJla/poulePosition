@@ -3,7 +3,19 @@
 // des tireurs, seuls le nom affiché (« Prénom N. » si le réglage l'exige, US-032) et le club (ADR-0014). Ni émargement,
 // ni licence, ni classement fédéral, ni droits, ni identifiant d'appareil.
 import type { Arme, Sexe, Statut } from './epreuve';
-import { poulesDe, tableauDe, tireursDe, type Epreuve, type Evenement } from './journal';
+import { membresDe } from './equipes';
+import {
+  contexteTableau,
+  equipesDe,
+  parEquipes,
+  participantsDe,
+  poulesDe,
+  qualifiesDirects,
+  tableauDe,
+  tireursDe,
+  type Epreuve,
+  type Evenement,
+} from './journal';
 import { avancementPoules, classementDesPoules, matchsDePoule, resultatsPoule, type MotifRetrait } from './poules';
 import { classementFinal, structureTableau, tousLesMatchs } from './tableau';
 import { matchTableauVue, type ClassementVue, type MatchVue, type TableauVue } from './vue-saisie';
@@ -16,6 +28,12 @@ export interface TireurDirect {
   /** Nom affiché : « MARTIN Léa », ou « Léa M. » avec le réglage « Prénom N. ». */
   nom: string;
   club: string;
+}
+
+/** US-155 : une équipe de la vue en direct : ses tireurs (titulaires, puis remplaçant), au nom affiché. */
+export interface EquipeDirect {
+  id: string;
+  membres: string[];
 }
 
 export interface PouleDirect {
@@ -93,6 +111,11 @@ export interface VueDirect {
   classementFinal: LigneFinaleDirect[] | null;
   /** US-141 : les derniers scores saisis (poules et tableau), le plus récent d'abord. */
   scoresRecents: ScoreRecent[];
+  /**
+   * US-155 : par équipes, les « tireurs » de la vue sont les équipes (nom de l'équipe, club ou « Mixte ») ; voici leurs
+   * tireurs. Absent en individuel.
+   */
+  equipes?: EquipeDirect[];
 }
 
 /** CA-2 : « MARTIN Léa », ou « Léa M. » quand le public ne voit que l'initiale du nom. */
@@ -135,11 +158,15 @@ export function vueDirect(epreuve: Epreuve, evenements: readonly Evenement[] = [
   const touches = epreuve.formule.touchesPoules;
   const etat = poulesDe(epreuve);
   const prenomInitiale = epreuve.parametres.prenomInitiale;
-  const tireurs = tireursDe(epreuve).map(({ id, nom, prenom, club }) => ({
+  const individuels = tireursDe(epreuve).map(({ id, nom, prenom, club }) => ({
     id,
     nom: nomAffiche(nom, prenom, prenomInitiale),
     club,
   }));
+  // US-155 CA-1 : par équipes, les participants sont les équipes (leur nom tel quel), et leurs tireurs au nom affiché.
+  const equipes = parEquipes(epreuve);
+  const tireurs = equipes ? participantsDe(epreuve).map(({ id, nom, club }) => ({ id, nom, club })) : individuels;
+  const nomDuTireur = new Map(individuels.map(({ id, nom }) => [id, nom]));
 
   const poules: PouleDirect[] = etat.lancees
     ? etat.poules.map((poule) => {
@@ -180,7 +207,7 @@ export function vueDirect(epreuve: Epreuve, evenements: readonly Evenement[] = [
   const structure = structureTableau(tableauDe(epreuve), epreuve.formule.matchTroisieme);
   const tableau: TableauVue | null = structure
     ? {
-        touches: epreuve.formule.touchesTableau,
+        touches: contexteTableau(epreuve).touchesTableau,
         taille: structure.taille,
         matchs: tousLesMatchs(structure).map(matchTableauVue),
       }
@@ -228,10 +255,20 @@ export function vueDirect(epreuve: Epreuve, evenements: readonly Evenement[] = [
       : null,
     tableau,
     classementFinal: tableau
-      ? classementFinal(etat, tableauDe(epreuve), touches, epreuve.formule.matchTroisieme).map(
-          ({ tireurId, place, exaequo, etat: etatFinal }) => ({ tireurId, place, exaequo, etat: etatFinal }),
-        )
+      ? classementFinal(
+          etat,
+          tableauDe(epreuve),
+          touches,
+          epreuve.formule.matchTroisieme,
+          qualifiesDirects(epreuve),
+        ).map(({ tireurId, place, exaequo, etat: etatFinal }) => ({ tireurId, place, exaequo, etat: etatFinal }))
       : null,
     scoresRecents: scoresRecents(evenements, new Map((tableau?.matchs ?? []).map(({ id, tour }) => [id, tour]))),
+    ...(equipes && {
+      equipes: equipesDe(epreuve).map((e) => ({
+        id: e.id,
+        membres: membresDe(e).map((id) => nomDuTireur.get(id) ?? ''),
+      })),
+    }),
   };
 }

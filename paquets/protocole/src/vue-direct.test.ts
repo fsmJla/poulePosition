@@ -60,6 +60,14 @@ describe('vue en direct dans le protocole (US-132)', () => {
     expect(analyserVueDirect(JSON.parse(JSON.stringify(complete)))).toEqual(complete);
   });
 
+  it('US-155 : une vue par équipes porte leurs tireurs ; mal formée, elle est refusée', () => {
+    const equipes = [{ id: 'q1', membres: ['Léa M.', 'Chloé D.'] }];
+    expect(analyserVueDirect({ ...complete, equipes })).toEqual({ ...complete, equipes });
+    expect(analyserVueDirect({ ...complete, equipes: [{ id: 'q1', membres: [1] }] })).toBeNull();
+    expect(analyserVueDirect({ ...complete, equipes: [{ id: 'q1' }] })).toBeNull();
+    expect(analyserVueDirect({ ...complete, equipes: 'x' })).toBeNull();
+  });
+
   it('refuse une vue mal formée ou porteuse d’un champ en trop', () => {
     expect(analyserVueDirect(null)).toBeNull();
     expect(analyserVueDirect({ ...complete, licence: 'x' })).toBeNull();

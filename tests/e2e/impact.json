@@ -563,5 +563,7 @@
   "app/src/composants/FenetreEquipe.svelte": ["equipes"],
   "app/src/lib/equipes.ts": ["equipes"],
   "paquets/domaine/src/equipes.ts": ["equipes"],
-  "app/src/composants/impressions/ImpressionFeuillesRencontre.svelte": ["equipes"]
+  "app/src/composants/impressions/ImpressionFeuillesRencontre.svelte": ["equipes"],
+  "paquets/domaine/src/vue-direct.ts": ["equipes"],
+  "paquets/protocole/src/vue-direct.ts": ["equipes"]
 }

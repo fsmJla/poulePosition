@@ -7,6 +7,7 @@ import {
   SEXES,
   STATUTS,
   type ClassementPouleDirect,
+  type EquipeDirect,
   type LigneClassementDirect,
   type LigneFinaleDirect,
   type PouleDirect,
@@ -94,8 +95,22 @@ function lireClassementDirect(brut: unknown): VueDirect['classement'] | undefine
   return lignes ? { definitif: o.definitif, lignes } : undefined;
 }
 
-/** US-132 : une vue en direct bien formée, sinon null. */
+/** US-155 : une équipe de la vue en direct. */
+function lireEquipe(brut: unknown): EquipeDirect | null {
+  const o = aExactementLesChamps(brut, ['id', 'membres']);
+  if (!o || !estTexte(o.id)) return null;
+  const membres = toutes(o.membres, (nom) => (estTexte(nom) ? nom : null));
+  return membres ? { id: o.id, membres } : null;
+}
+
+/** US-132 : une vue en direct bien formée, sinon null ; US-155 : `equipes` facultatif (épreuve par équipes). */
 export function analyserVueDirect(brut: unknown): VueDirect | null {
+  if (brut !== null && typeof brut === 'object' && 'equipes' in brut) {
+    const { equipes: brutes, ...reste } = brut as Record<string, unknown>;
+    const equipes = toutes(brutes, lireEquipe);
+    const vue = analyserVueDirect(reste);
+    return vue && equipes ? { ...vue, equipes } : null;
+  }
   const o = aExactementLesChamps(brut, [
     'epreuveId',
     'nom',
