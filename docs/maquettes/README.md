@@ -392,6 +392,12 @@ Choix retenus : l'écran géant n'a ni entête de l'application ni action ; ses 
 l'avancement (US-134 CA-2). Les captures sont rendues hors du canevas, en HTML statique ; le QR de la planche 36 est
 un motif provisoire.
 
+Captures de référence fournies par l'utilisateur le 2026-11-22 (retours de recette) :
+[`direct/ref-32bis-poules-quatre.png`](direct/ref-32bis-poules-quatre.png) remplace la planche 32 (quatre poules par page,
+colonnes V, M, V/M, TD, TR, Ind, Rang, sans le fond jaune du rang, US-142) ;
+[`direct/ref-34bis-tableau-arbre.png`](direct/ref-34bis-tableau-arbre.png) remplace la planche 34 (arbre symétrique, finale
+et petite finale au centre, US-143). Les couleurs violettes et le logo relèvent du style personnalisé (US-144).
+
 ## Règle pour les nouvelles US
 
 Une US qui crée ou modifie un écran :

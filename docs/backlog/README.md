@@ -169,6 +169,11 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-137](US-137-suivre-epreuve-en-direct.md) | Suivre une épreuve en direct sur son smartphone (spectateur) (P2) | E9 | En revue | US-132, US-031 |
 | [US-138](US-138-suivre-un-tireur.md) | Suivre un ou plusieurs tireurs (spectateur) (P2) | E9 | En revue | US-137 |
 | [US-139](US-139-suivre-en-direct-depuis-accueil.md) | Proposer « Suivre en direct » sur l'accueil public (P2) | E9 | En revue | US-137, US-079 |
+| [US-140](US-140-theme-ecran.md) | Choisir le thème clair ou sombre d'un écran géant | E9 | Prête | US-133, US-134 |
+| [US-141](US-141-bandeau-derniers-scores.md) | Faire défiler les derniers scores dans un bandeau en bas de l'écran géant | E9 | Prête | US-134 |
+| [US-142](US-142-quatre-poules-par-page.md) | Afficher quatre poules par page sur l'écran géant, avec leur classement | E9 | Prête | US-134 |
+| [US-143](US-143-tableau-en-arbre.md) | Afficher le tableau en arbre symétrique sur l'écran géant | E9 | Prête | US-134 |
+| [US-144](US-144-style-ecran-personnalise.md) | Donner à un écran géant un style personnalisé (couleurs et logo d'un sponsor) (P3) | E9 | À spécifier | US-140 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
@@ -215,7 +220,7 @@ ligne (US-005), journal local et envoi différé (US-021, US-022), pastille hors
 suspendue et saisies récupérées ou écartées (US-102), impressions hors ligne (E7). La fenêtre locale de l'écran géant
 (ADR-0010) relève de E9.
 
-**Ordre conseillé pour E9 (affichage en direct) :** US-132 (ADR des lecteurs de la vue en direct d'abord, via `/adr`), puis US-133 (planches 31 à 39 validées le 2026-11-21, `docs/maquettes/direct/`) → US-134 → US-136 (fenêtre locale, hors ligne) → US-135. Puis, en P2 : US-137 → US-138 → US-139.
+**Ordre conseillé pour E9 (affichage en direct) :** US-132 (ADR des lecteurs de la vue en direct d'abord, via `/adr`), puis US-133 (planches 31 à 39 validées le 2026-11-21, `docs/maquettes/direct/`) → US-134 → US-136 (fenêtre locale, hors ligne) → US-135. Puis, en P2 : US-137 → US-138 → US-139. Retours de recette du 2026-11-22 : US-142 → US-143 → US-141 → US-140 ; US-144 (P3) attend sa spécification.
 
 **Retours ergonomiques du 2026-11-17, indépendants l'un de l'autre :** US-078 (jour des épreuves : grille et
 glisser-déposer sur le plan) et US-079 (filtres « À venir » / « En cours » de l'accueil de l'organisateur,
