@@ -3,6 +3,7 @@
   // place (« = »), tireur, club, tour d'élimination, rang après poules ; « Définitif » ou « Provisoire » ; retirés et
   // non qualifiés en fin, avec leur état. 32 lignes par page.
   import {
+    type Qualifie,
     classementFinal,
     decouperEnPages,
     tousLesMatchs,
@@ -23,14 +24,27 @@
     tireurs: ReadonlyMap<string, Tireur>;
     contexte: string;
     imprimeLe: Date;
+    /** US-154 CA-3 : en tableau direct, les équipes rangées ; par équipes, les tireurs de chaque équipe. */
+    direct?: readonly Qualifie[] | null;
+    membres?: ReadonlyMap<string, string>;
   }
 
-  let { poules, tableau, structure, touchesPoules, matchTroisieme, tireurs, contexte, imprimeLe }: Proprietes =
-    $props();
+  let {
+    poules,
+    tableau,
+    structure,
+    touchesPoules,
+    matchTroisieme,
+    tireurs,
+    contexte,
+    imprimeLe,
+    direct,
+    membres,
+  }: Proprietes = $props();
 
   const t = textes.tableau;
   const ti = textes.impressions.classementFinal;
-  const lignes = $derived(classementFinal(poules, tableau, touchesPoules, matchTroisieme));
+  const lignes = $derived(classementFinal(poules, tableau, touchesPoules, matchTroisieme, direct ?? null));
   const pages = $derived(decouperEnPages(lignes, 32));
   const matchs = $derived(tousLesMatchs(structure).filter((m) => m.etat !== 'exempt'));
   const regles = $derived(matchs.filter((m) => m.etat === 'regle').length);
@@ -75,7 +89,12 @@
           {@const tireur = tireurs.get(ligne.tireurId)}
           <tr>
             <td class="droite fort">{ligne.place ?? '—'}{ligne.exaequo ? '=' : ''}</td>
-            <th scope="row"><strong>{tireur?.nom.toUpperCase()}</strong> {tireur?.prenom}</th>
+            <th scope="row"
+              ><strong>{tireur?.nom.toUpperCase()}</strong>
+              {tireur?.prenom}{#if membres?.get(ligne.tireurId)}<span class="membres"
+                  >{membres.get(ligne.tireurId)}</span
+                >{/if}</th
+            >
             <td>{tireur?.club}</td>
             <td>{t.tourElimination(ligne.elimineAu)}</td>
             <td class="droite">{ligne.rang ?? '—'}</td>
@@ -95,6 +114,12 @@
 {/each}
 
 <style>
+  .membres {
+    display: block;
+    font-size: 8pt;
+    font-weight: 400;
+  }
+
   .etat {
     margin: 0;
     padding: 1mm 3mm;

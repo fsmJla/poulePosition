@@ -1,11 +1,21 @@
 <script lang="ts">
   // Page d'impression d'un document de l'épreuve (US-120, ADR-0009) : le document choisi dans l'étape « Impressions »,
   // construit à partir du journal local (hors ligne compris), mis en feuilles par le gabarit commun, puis la fenêtre
-  // d'impression du navigateur s'ouvre. « Retour aux impressions » et « Imprimer » ne s'impriment pas.
+  // d'impression du navigateur s'ouvre. « Retour aux impressions » et « Imprimer » ne s'impriment pas. US-153 et
+  // US-154 : par équipes, les documents montrent les équipes, et les feuilles de rencontre remplacent celles de match.
   import { onMount, tick } from 'svelte';
   import {
     DOCUMENTS_IMPRIMES,
+    contexteTableau,
+    equipesDe,
     lienQr,
+    membresDe,
+    participantsDe,
+    qualifiesDirects,
+    rangEquipes,
+    rencontresDesPoules,
+    rencontresDuTableau,
+    tailleEquipe,
     structureTableau,
     toursAImprimer,
     poulesDe,
@@ -25,6 +35,7 @@
   import ImpressionFeuillesMatch from '../composants/impressions/ImpressionFeuillesMatch.svelte';
   import ImpressionTableau from '../composants/impressions/ImpressionTableau.svelte';
   import ImpressionClassementFinal from '../composants/impressions/ImpressionClassementFinal.svelte';
+  import ImpressionFeuillesRencontre from '../composants/impressions/ImpressionFeuillesRencontre.svelte';
   import type { AccesQrClient } from '../lib/acces-qr';
   import type { Accueil } from '../lib/accueil';
   import { documentLivre } from '../lib/impressions';
@@ -67,7 +78,37 @@
         }
       : null,
   );
-  const parId = $derived(new Map((source?.tireurs ?? []).map((tireur) => [tireur.id, tireur])));
+  /** Les tireurs, et par équipes les équipes (avec leur nom) : les poules et le tableau tirent des équipes. */
+  const parId = $derived(
+    new Map([...(source?.tireurs ?? []), ...(epreuve ? participantsDe(epreuve) : [])].map((x) => [x.id, x])),
+  );
+  const parEquipes = $derived(epreuve !== null && epreuve.typeEpreuve !== 'individuelle');
+  const equipesParId = $derived(new Map((epreuve ? equipesDe(epreuve) : []).map((e) => [e.id, e])));
+  /** US-154 CA-1 : les équipes rangées et leurs membres, pour la feuille de présence. */
+  const equipesPresence = $derived(
+    epreuve && parEquipes
+      ? rangEquipes(equipesDe(epreuve), source?.tireurs ?? [], epreuve.ordreEquipes ?? null).map((e) => ({
+          nom: e.nom,
+          membres: membresDe(e),
+        }))
+      : undefined,
+  );
+  /** US-154 CA-3 : les tireurs de chaque équipe, au classement final. */
+  const membres = $derived(
+    parEquipes
+      ? new Map(
+          [...equipesParId.values()].map((e) => [
+            e.id,
+            membresDe(e)
+              .map((id) => {
+                const x = parId.get(id);
+                return x ? `${x.nom.toUpperCase()} ${x.prenom}` : '';
+              })
+              .join(' · '),
+          ]),
+        )
+      : undefined,
+  );
   /** US-122, US-123 : la poule choisie, ou toutes. */
   const poulesChoisies = $derived(
     (source?.poules.poules ?? []).filter((p) => options?.poule === undefined || p.numero === options.poule),
@@ -122,7 +163,7 @@
     {:else if source}
       <div class="feuilles" data-document={document}>
         {#if document === 'presence'}
-          <ImpressionPresence tireurs={source.tireurs} {contexte} {imprimeLe} />
+          <ImpressionPresence tireurs={source.tireurs} equipes={equipesPresence} {contexte} {imprimeLe} />
         {:else if document === 'poulesVierges' && epreuve}
           <ImpressionPoulesVierges
             poules={poulesChoisies}
@@ -164,6 +205,34 @@
             touchesPoules={epreuve.formule.touchesPoules}
             matchTroisieme={source.matchTroisieme}
             tireurs={parId}
+            direct={qualifiesDirects(epreuve)}
+            {membres}
+            {contexte}
+            {imprimeLe}
+          />
+        {:else if document === 'rencontresPoules' && epreuve}
+          <!-- US-153 : les feuilles de rencontre des poules choisies, aux touches des rencontres de poule. -->
+          <ImpressionFeuillesRencontre
+            rencontres={rencontresDesPoules(
+              source.poules,
+              options?.poule === undefined ? [] : [options.poule],
+              epreuve.formule.touchesPoules,
+            )}
+            equipes={equipesParId}
+            tireurs={parId}
+            taille={tailleEquipe(epreuve.typeEpreuve) === 2 ? 2 : 3}
+            touches={epreuve.formule.touchesPoules}
+            {contexte}
+            {imprimeLe}
+          />
+        {:else if document === 'rencontresTableau' && structure && epreuve}
+          <!-- US-153 : les feuilles de rencontre d'un tour du tableau, au relais complet. -->
+          <ImpressionFeuillesRencontre
+            rencontres={rencontresDuTableau(structure, tour)}
+            equipes={equipesParId}
+            tireurs={parId}
+            taille={tailleEquipe(epreuve.typeEpreuve) === 2 ? 2 : 3}
+            touches={contexteTableau(epreuve).touchesTableau}
             {contexte}
             {imprimeLe}
           />

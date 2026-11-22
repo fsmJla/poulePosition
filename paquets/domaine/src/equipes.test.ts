@@ -25,7 +25,8 @@ import { etatPoulesVide, matchsDePoule } from './poules';
 import { repartirEnSerpentin } from './repartition';
 import { deciderSaisie, type SaisieScore } from './saisies';
 import { vueSaisie } from './vue-saisie';
-import { classementFinal, situationDuTableau } from './tableau';
+import { classementFinal, situationDuTableau, structureTableau } from './tableau';
+import { raisonIndisponible, relaisDeRencontre, rencontresDesPoules, rencontresDuTableau } from './impressions';
 import type { Tireur } from './tireurs';
 
 const enTete = (seq: number) => ({
@@ -445,5 +446,65 @@ describe('saisie smartphone des rencontres (US-152)', () => {
       motif: 'DROIT_RETIRE',
     });
     expect(vueSaisie(epreuve!).droits).toMatchObject({ tireurSaisitPoule: false, tireurSaisitTableau: false });
+  });
+});
+
+describe('feuilles de rencontre (US-153)', () => {
+  it('CA-2 : ordre officiel des relais, score cumulé ; une rencontre de poule plus courte s’arrête à son total', () => {
+    const neuf = relaisDeRencontre(3, 45);
+    expect(neuf.map(({ tireurs }) => tireurs.join('-'))).toEqual([
+      '3-6',
+      '1-5',
+      '2-4',
+      '1-6',
+      '3-4',
+      '2-5',
+      '1-4',
+      '2-6',
+      '3-5',
+    ]);
+    expect(neuf.at(-1)).toMatchObject({ numero: 9, jusqua: 45 });
+    expect(relaisDeRencontre(2, 20).map(({ tireurs }) => tireurs.join('-'))).toEqual(['1-3', '2-4', '1-4', '2-3']);
+    expect(relaisDeRencontre(3, 30)).toHaveLength(6);
+    expect(relaisDeRencontre(3, 32).at(-1)).toMatchObject({ numero: 7, jusqua: 32 });
+  });
+
+  it('CA-3 : les rencontres à tirer des poules (une, ou toutes) et d’un tour du tableau ; disponibilité', () => {
+    const base = [
+      ...NEUF,
+      creer('p', ['a', 'b', 'c']),
+      creer('t', ['d', 'e', 'g']),
+      creer('b', ['h', 'i', 'f']),
+      { type: 'FormuleModifiee', donnees: { deroule: 'poulesTableau' } } as Proposition,
+    ];
+    const source = (p: Projection) => ({
+      tireurs: [],
+      poules: poulesDe(p.epreuve!),
+      tableau: tableauDe(p.epreuve!),
+      matchTroisieme: false,
+    });
+    const avant = journal('equipes3', ...base);
+    expect(raisonIndisponible('rencontresPoules', source(avant))).toBe('POULES_NON_COMPOSEES');
+    expect(raisonIndisponible('rencontresTableau', source(avant))).toBe('TABLEAU_NON_CREE');
+    const lancees = journal(
+      'equipes3',
+      ...base,
+      { type: 'PoulesComposees', donnees: { poules: [{ numero: 1, piste: 2, tireurIds: ['p', 't', 'b'] }] } },
+      { type: 'PoulesLancees', donnees: {} },
+      { type: 'ScorePouleSaisi', donnees: { poule: 1, tireurA: 'p', tireurB: 't', touchesA: 45, touchesB: 10 } },
+    );
+    expect(raisonIndisponible('rencontresPoules', source(lancees))).toBeNull();
+    const rencontres = rencontresDesPoules(poulesDe(lancees.epreuve!), [], 45);
+    expect(rencontres).toHaveLength(2);
+    expect(rencontres[0]).toMatchObject({ phase: { poule: 1 }, piste: 2 });
+    expect(rencontresDesPoules(poulesDe(lancees.epreuve!), [2], 45)).toEqual([]);
+    const direct = journal('equipes3', ...NEUF, creer('p', ['a', 'b', 'c']), creer('t', ['d', 'e', 'g']), {
+      type: 'TableauCree',
+      donnees: { qualifies: ['t', 'p'] },
+    });
+    const structure = structureTableau(tableauDe(direct.epreuve!), false)!;
+    expect(rencontresDuTableau(structure, 2)).toEqual([
+      { phase: { tour: 2, numero: 1 }, piste: null, equipes: ['t', 'p'] },
+    ]);
   });
 });

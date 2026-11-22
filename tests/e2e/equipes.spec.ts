@@ -2,7 +2,7 @@
 // inscrites, les ranger par la somme des classements, corriger le rang à la main, supprimer une équipe.
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
-import { carteSaisie, epreuveAvecPresentes, repartir, TIREUSES } from './poules-outils';
+import { cartePoule, carteSaisie, epreuveAvecPresentes, repartir, TIREUSES } from './poules-outils';
 import { entrerArbitre, telephone } from './saisie-outils';
 
 /** Crée une équipe par la fenêtre « Nouvelle équipe » : 3 titulaires et, au besoin, une remplaçante. */
@@ -193,6 +193,13 @@ test('US-151 CA-1 à CA-4 : tableau direct des équipes, rencontres en 45 touche
   await expect(classement.getByRole('row').nth(1)).toContainText('FORTES');
   await expect(classement.getByRole('row').nth(1)).toContainText(`${TIREUSES[0]![0]} ${TIREUSES[0]![1]}`);
   await expect(classement.getByRole('row').nth(2)).toContainText('MOYENNES');
+
+  // US-154 CA-3 : le classement final imprimé donne les équipes et leurs tireuses.
+  await page.addInitScript(() => (window.print = () => undefined));
+  await page.goto(`${adresse}/imprimer?document=classementFinal`);
+  const imprime = page.getByRole('region', { name: /^Classement final/ }).first();
+  await expect(imprime).toContainText('FORTES', { timeout: 20_000 });
+  await expect(imprime).toContainText(`${TIREUSES[0]![0]} ${TIREUSES[0]![1]}`);
 });
 
 test('US-149 CA-1 à CA-4 et US-150 CA-1 à CA-4 : poules d’équipes en 30 touches, égalité départagée par la priorité', async ({
@@ -312,4 +319,51 @@ test('US-152 CA-1 et CA-2 : l’arbitre saisit sur son smartphone une rencontre 
   } finally {
     await contexte.close();
   }
+});
+
+test('US-153 CA-1 à CA-3 et US-154 CA-1 et CA-2 : feuilles de rencontre et feuille de présence par équipes', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'pc', 'Équipes : projet « pc » seulement');
+  test.setTimeout(150_000);
+  await page.addInitScript(() => (window.print = () => undefined));
+  await seConnecter(page);
+  const adresse = await epreuveAvecPresentes(page, 9, 9, 'equipes3');
+  await page.goto(`${adresse}/inscriptions`);
+  await page.getByRole('tab', { name: /^Équipes/ }).click();
+  await creerEquipe(page, 'Fortes', [nomComplet(0), nomComplet(1), nomComplet(2)]);
+  await creerEquipe(page, 'Moyennes', [nomComplet(3), nomComplet(4), nomComplet(5)]);
+  await creerEquipe(page, 'Faibles', [nomComplet(6), nomComplet(7), nomComplet(8)]);
+  await page.goto(`${adresse}/formule`);
+  await page.getByRole('radio', { name: 'Poules puis tableau' }).check({ timeout: 20_000 });
+  await page.getByRole('button', { name: 'Enregistrer la formule' }).click();
+  await expect(page.getByRole('listitem').filter({ hasText: 'Poules puis tableau' })).toBeVisible();
+  await repartir(page, adresse);
+  await expect(cartePoule(page, 1)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Lancer les poules' })).toBeEnabled();
+
+  // US-154 CA-1 : la feuille de présence groupe les tireuses par équipe.
+  await page.goto(`${adresse}/impressions`);
+  await expect(page.getByRole('heading', { level: 2, name: 'Impressions' })).toBeVisible({ timeout: 20_000 });
+  // US-153 : par équipes, pas de feuilles de match, mais des feuilles de rencontre.
+  await expect(page.getByRole('button', { name: 'Imprimer : Feuilles de match' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Imprimer : Feuille de présence' }).click();
+  const presence = page.getByRole('region', { name: /^Feuille de présence · Page 1/ });
+  await expect(presence.getByRole('columnheader', { name: 'Équipe' })).toBeVisible();
+  await expect(presence.getByRole('row').nth(1)).toContainText('Fortes');
+
+  // US-153 CA-1 à CA-3 : les feuilles de rencontre des poules, avec l'ordre officiel des 9 relais.
+  await page.goto(`${adresse}/impressions`);
+  await page.getByRole('button', { name: 'Imprimer : Feuilles de rencontre' }).first().click();
+  const feuilles = page.getByRole('region', { name: /^Feuille de rencontre · Page \d \/ 3$/ });
+  await expect(feuilles).toHaveCount(3);
+  const premiere = feuilles.first();
+  await expect(premiere).toContainText('Poule 1 · rencontre 1');
+  for (const relais of ['3 – 6', '1 – 5', '2 – 4', '3 – 5']) await expect(premiere).toContainText(relais);
+  await expect(premiere).toContainText('Capitaine');
+
+  // US-154 CA-2 : les poules par piste montrent les équipes.
+  await page.goto(`${adresse}/impressions`);
+  await page.getByRole('button', { name: 'Imprimer : Poules par piste' }).click();
+  await expect(page.getByRole('region', { name: /^Les poules · Page/ })).toContainText('FORTES');
 });

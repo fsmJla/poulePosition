@@ -1,6 +1,6 @@
 // Impressions de l'épreuve (Epic 7, F11, ADR-0009) : la liste des documents, leur disponibilité selon l'avancement de
 // l'épreuve, et ce que chaque document imprime. Tout se calcule à partir de la projection locale : hors ligne compris.
-import type { EtatPoules } from './poules';
+import { matchsDePoule, type EtatPoules } from './poules';
 import type { EtatTableau } from './tableau';
 import { structureTableau, tousLesMatchs, type MatchTableau, type StructureTableau } from './tableau';
 import type { Tireur } from './tireurs';
@@ -16,6 +16,9 @@ export const DOCUMENTS_IMPRIMES = [
   'feuillesMatch',
   'tableau',
   'classementFinal',
+  // US-153 : feuilles de rencontre par équipes, des poules et du tableau.
+  'rencontresPoules',
+  'rencontresTableau',
 ] as const;
 export type DocumentImprime = (typeof DOCUMENTS_IMPRIMES)[number];
 
@@ -48,12 +51,95 @@ export function raisonIndisponible(document: DocumentImprime, source: SourceImpr
     case 'tableau':
     case 'classementFinal':
       return source.tableau.qualifies ? null : 'TABLEAU_NON_CREE';
-    case 'feuillesMatch': {
+    case 'feuillesMatch':
+    case 'rencontresTableau': {
       const structure = structureTableau(source.tableau, source.matchTroisieme);
       if (!structure) return 'TABLEAU_NON_CREE';
       return tousLesMatchs(structure).some((m) => m.etat === 'aTirer') ? null : 'AUCUN_MATCH_A_TIRER';
     }
+    case 'rencontresPoules':
+      return composees ? null : 'POULES_NON_COMPOSEES';
   }
+}
+
+/**
+ * US-153 CA-2 : ordre officiel des relais d'une rencontre par équipes (une équipe numérotée 1 à 3, l'autre 4 à 6). Équipes
+ * de 3 : ordre de la FIE (à vérifier, hypothèse de l'US) ; équipes de 2 : ordre proposé (à confirmer par l'utilisateur).
+ */
+export const ORDRE_DES_RELAIS: Readonly<Record<2 | 3, readonly (readonly [number, number])[]>> = {
+  3: [
+    [3, 6],
+    [1, 5],
+    [2, 4],
+    [1, 6],
+    [3, 4],
+    [2, 5],
+    [1, 4],
+    [2, 6],
+    [3, 5],
+  ],
+  2: [
+    [1, 3],
+    [2, 4],
+    [1, 4],
+    [2, 3],
+  ],
+};
+
+/** US-153 : un relais de la feuille : les deux numéros qui tirent et le score cumulé à atteindre. */
+export interface RelaisImprime {
+  numero: number;
+  tireurs: readonly [number, number];
+  jusqua: number;
+}
+
+/**
+ * US-153 CA-2 et cas limite : les relais d'une rencontre à `touches` touches, par relais de 5 ; une rencontre de poule
+ * plus courte (US-149) s'arrête au total de la formule.
+ */
+export function relaisDeRencontre(taille: 2 | 3, touches: number): RelaisImprime[] {
+  const ordre = ORDRE_DES_RELAIS[taille];
+  const nombre = Math.max(1, Math.ceil(touches / 5));
+  return Array.from({ length: nombre }, (_, i) => ({
+    numero: i + 1,
+    tireurs: ordre[i % ordre.length]!,
+    jusqua: Math.min(touches, (i + 1) * 5),
+  }));
+}
+
+/** US-153 : une rencontre à imprimer : sa phase (poule ou tour du tableau), sa piste et ses deux équipes. */
+export interface RencontreImprimee {
+  phase: { poule: number; numero: number } | { tour: number; numero: number };
+  piste: number | null;
+  equipes: readonly [string, string];
+}
+
+/** US-153 CA-3 : les rencontres à tirer des poules choisies (toutes si `numeros` est vide), dans l'ordre officiel. */
+export function rencontresDesPoules(
+  poules: EtatPoules,
+  numeros: readonly number[],
+  touches: number,
+): RencontreImprimee[] {
+  return poules.poules
+    .filter(({ numero }) => numeros.length === 0 || numeros.includes(numero))
+    .flatMap((poule) =>
+      matchsDePoule(poules, poule, touches)
+        .filter(({ touches: score, forfait }) => score === null && !forfait)
+        .map(({ numero, tireurA, tireurB }) => ({
+          phase: { poule: poule.numero, numero },
+          piste: poule.piste,
+          equipes: [tireurA, tireurB] as const,
+        })),
+    );
+}
+
+/** US-153 CA-3 : les rencontres à tirer d'un tour du tableau (comme les feuilles de match, US-126). */
+export function rencontresDuTableau(structure: StructureTableau, tour: number): RencontreImprimee[] {
+  return matchsAImprimer(structure, tour).map((m) => ({
+    phase: { tour: m.tour, numero: m.numero },
+    piste: m.piste,
+    equipes: [m.haut.tireurId!, m.bas.tireurId!] as const,
+  }));
 }
 
 /** Découpe une liste en pages de `parPage` éléments au plus ; au moins une page, même vide. */

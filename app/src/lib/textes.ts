@@ -2422,6 +2422,14 @@ export const textes = {
       },
       tableau: { nom: 'Tableau', detail: 'À afficher : l’arbre, de son premier tour à la finale, scores compris' },
       classementFinal: { nom: 'Classement final', detail: 'Le podium et le classement de l’épreuve' },
+      rencontresPoules: {
+        nom: 'Feuilles de rencontre',
+        detail: 'Pour les arbitres : une par rencontre à tirer des poules, avec l’ordre des relais',
+      },
+      rencontresTableau: {
+        nom: 'Feuilles de rencontre',
+        detail: 'Pour les arbitres : une par rencontre à tirer du tour choisi, avec l’ordre des relais',
+      },
     } satisfies Record<DocumentImprime, { nom: string; detail: string }>,
     raisons: {
       AUCUN_INSCRIT: 'Aucun inscrit',
@@ -2453,6 +2461,7 @@ export const textes = {
       intro: (n: number) =>
         `${n} inscrit${n > 1 ? 's' : ''} · cochez la case à l’arrivée et faites signer. Les cases déjà cochées viennent de l’émargement sur le PC.`,
       colonnes: {
+        equipe: 'Équipe',
         numero: 'N°',
         tireur: 'Tireur',
         club: 'Club',
@@ -2478,6 +2487,27 @@ export const textes = {
       legende: '(n) : rang après les poules · en gras : vainqueur',
     },
     // US-126 : feuilles de match du tableau (planche 28).
+    /** US-153 (planche 43) : feuille de rencontre par équipes. */
+    feuillesRencontre: {
+      titre: 'Feuille de rencontre',
+      membres: (noms: string[]) => noms.join(' · '),
+      poule: (poule: number, numero: number) => `Poule ${poule} · rencontre ${numero}`,
+      tour: (tour: string, numero: number) => `${tour} · rencontre ${numero}`,
+      piste: (piste: number | null) => (piste === null ? 'Piste : ______' : `Piste ${piste}`),
+      numero: 'N°',
+      tireurs: (debut: number, fin: number) => `Tireur (écrire son numéro ${debut} à ${fin})`,
+      remplacant: (nom: string | null) => `Remplaçant : ${nom ?? '—'}`,
+      relais: 'Relais',
+      tireursRelais: 'Tireurs',
+      jusqua: 'Jusqu’à',
+      paraphe: 'Paraphe arbitre',
+      explication: (touches: number) =>
+        `Chaque relais se tire jusqu’au score cumulé indiqué (ou jusqu’à la fin de son temps), ${touches} touches en tout. L’ordre des relais est l’ordre officiel : 1, 2, 3 pour une équipe, 4, 5, 6 pour l’autre. Un remplaçant prend les relais du tireur qu’il remplace.`,
+      scoreFinal: 'Score final',
+      vainqueur: 'Vainqueur :',
+      arbitre: 'Arbitre',
+      capitaine: (equipe: string) => `Capitaine ${equipe}`,
+    },
     feuillesMatch: {
       titre: (tour: string) => `Feuilles de match · ${tour}`,
       piste: (piste: number | null) => `${piste ? `Piste ${piste}` : 'Piste ____'} · ___ h ___`,

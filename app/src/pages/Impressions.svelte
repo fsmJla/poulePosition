@@ -106,7 +106,7 @@
       <section class="carte" aria-labelledby={`groupe-${groupe}`}>
         <h3 id={`groupe-${groupe}`}>{t.groupes[groupe]}</h3>
         <ul>
-          {#each CATALOGUE_IMPRESSIONS.filter((l) => l.groupe === groupe) as ligne (ligne.document)}
+          {#each CATALOGUE_IMPRESSIONS.filter((l) => l.groupe === groupe && (!l.pour || l.pour === (epreuve?.typeEpreuve === 'individuelle' ? 'individuelle' : 'equipes'))) as ligne (ligne.document)}
             {@const r = libelleRaison(ligne)}
             <li class:indisponible={r !== null}>
               <div class="quoi">

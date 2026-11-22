@@ -511,24 +511,37 @@
     "saisie-tableau",
     "equipes"
   ],
-  "app/src/pages/Impressions.svelte": ["impressions", "impression-tableau", "impression-poules", "impression-presence"],
-  "app/src/pages/Imprimer.svelte": ["impressions", "impression-presence", "impression-poules", "impression-tableau"],
+  "app/src/pages/Impressions.svelte": [
+    "impressions",
+    "impression-tableau",
+    "impression-poules",
+    "impression-presence",
+    "equipes"
+  ],
+  "app/src/pages/Imprimer.svelte": [
+    "impressions",
+    "impression-presence",
+    "impression-poules",
+    "impression-tableau",
+    "equipes"
+  ],
   "app/src/composants/FeuilleImprimee.svelte": ["impressions", "impression-presence", "impression-poules"],
-  "app/src/lib/impressions.ts": ["impressions"],
+  "app/src/lib/impressions.ts": ["impressions", "equipes"],
   "paquets/domaine/src/impressions.ts": [
     "impressions",
     "impression-presence",
     "impression-tableau",
-    "impression-poules"
+    "impression-poules",
+    "equipes"
   ],
-  "app/src/composants/impressions/ImpressionPresence.svelte": ["impression-presence"],
+  "app/src/composants/impressions/ImpressionPresence.svelte": ["impression-presence", "equipes"],
   "app/src/composants/impressions/ImpressionPoulesVierges.svelte": ["impression-poules"],
   "app/src/composants/impressions/ImpressionPoulesResultats.svelte": ["impression-poules"],
   "app/src/composants/impressions/ImpressionPoulesPistes.svelte": ["impression-poules"],
   "app/src/composants/impressions/ImpressionClassementPoules.svelte": ["impression-poules"],
   "app/src/composants/impressions/ImpressionFeuillesMatch.svelte": ["impression-tableau"],
   "app/src/composants/impressions/ImpressionTableau.svelte": ["impression-tableau"],
-  "app/src/composants/impressions/ImpressionClassementFinal.svelte": ["impression-tableau"],
+  "app/src/composants/impressions/ImpressionClassementFinal.svelte": ["impression-tableau", "equipes"],
   "app/src/lib/reprise.ts": ["reprise-plantage"],
   "app/src/lib/retour-en-ligne.ts": ["retour-en-ligne"],
   "app/src/lib/sauvegarde-auto.ts": ["sauvegarde-automatique"],
@@ -549,5 +562,6 @@
   "app/src/composants/GestionEquipes.svelte": ["equipes"],
   "app/src/composants/FenetreEquipe.svelte": ["equipes"],
   "app/src/lib/equipes.ts": ["equipes"],
-  "paquets/domaine/src/equipes.ts": ["equipes"]
+  "paquets/domaine/src/equipes.ts": ["equipes"],
+  "app/src/composants/impressions/ImpressionFeuillesRencontre.svelte": ["equipes"]
 }
