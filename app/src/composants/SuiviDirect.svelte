@@ -129,7 +129,7 @@
   </button>
 {/snippet}
 
-<section class="suivi" aria-label={t.titre}>
+<section class="suivi-direct" aria-label={t.titre}>
   {#if !vue}
     <p class="discret" role="status">{connecte ? t.attente : t.connexion}</p>
   {:else if vue.etape === 'inscriptions'}
@@ -184,7 +184,7 @@
               >
               <tbody>
                 {#each [...poule.classement].sort((a, b) => a.rang - b.rang) as ligne (ligne.tireurId)}
-                  <tr class:suivi={suivis.includes(ligne.tireurId)}>
+                  <tr class:mis-en-avant={suivis.includes(ligne.tireurId)}>
                     <td class="nom">{nom.get(ligne.tireurId)} <span class="club">{club.get(ligne.tireurId)}</span></td>
                     <td>{ligne.victoires}</td>
                     <td>{ligne.indice > 0 ? '+' : ''}{ligne.indice}</td>
@@ -206,7 +206,7 @@
           >
           <tbody>
             {#each lignesClassement as ligne (ligne.tireurId)}
-              <tr class:suivi={suivis.includes(ligne.tireurId)}>
+              <tr class:mis-en-avant={suivis.includes(ligne.tireurId)}>
                 <td>{ligne.rang ?? '—'}</td>
                 <td class="nom">{nom.get(ligne.tireurId)} <span class="club">{club.get(ligne.tireurId)}</span></td>
                 <td>{ligne.matchs ? (ligne.victoires / ligne.matchs).toFixed(2).replace('.', ',') : '—'}</td>
@@ -225,7 +225,7 @@
                 <div
                   class="cote"
                   class:gagnant={match.vainqueur !== null && match.vainqueur === place.tireurId}
-                  class:suivi={place.tireurId !== null && suivis.includes(place.tireurId)}
+                  class:mis-en-avant={place.tireurId !== null && suivis.includes(place.tireurId)}
                 >
                   <span>{place.tireurId ? nom.get(place.tireurId) : '…'}</span>
                   <span>{match.touches ? match.touches[i] : ''}</span>
@@ -299,7 +299,7 @@
 </section>
 
 <style>
-  .suivi {
+  .suivi-direct {
     display: grid;
     gap: 0.75rem;
     width: min(40rem, 100%);
@@ -432,8 +432,8 @@
     text-align: left;
   }
 
-  tr.suivi,
-  .cote.suivi {
+  tr.mis-en-avant,
+  .cote.mis-en-avant {
     background: var(--etat-attente-fond);
   }
 
