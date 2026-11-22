@@ -75,6 +75,8 @@ const FORMES_FORMULE: Record<string, (valeur: unknown) => boolean> = {
   touchesPoules: Number.isInteger,
   touchesTableau: Number.isInteger,
   matchTroisieme: (valeur) => typeof valeur === 'boolean',
+  // US-149 : déroulé d'une épreuve par équipes ; les valeurs permises sont une règle du domaine.
+  deroule: (valeur) => typeof valeur === 'string',
 };
 
 const estBooleen = (valeur: unknown) => typeof valeur === 'boolean';

@@ -1365,6 +1365,11 @@ export const textes = {
       touchesPoules: 'Touches en poules',
       touchesTableau: 'Touches au tableau',
       matchTroisieme: 'Match pour la 3e place',
+      /** US-149 : déroulé d'une épreuve par équipes. */
+      deroule: 'Déroulé',
+      deroules: { tableauDirect: 'Tableau direct', poulesTableau: 'Poules puis tableau' },
+      derouleAide: 'En tableau direct, les équipes sont placées au tableau d’après leur rang.',
+      touchesRencontresPoule: 'Touches des rencontres de poule',
       relaisFixe: (touches: number) => `Rencontres en relais à ${touches} touches (fixées par le type de l’épreuve)`,
       autresFormules: 'D’autres formules seront proposées plus tard.',
       enregistrer: 'Enregistrer la formule',
@@ -1382,6 +1387,8 @@ export const textes = {
         touchesTableau: (touches: number) => `Tableau en ${touches} touches`,
         matchTroisieme: (actif: boolean) =>
           actif ? 'Match pour la 3e place activé' : 'Match pour la 3e place désactivé',
+        deroule: (deroule: 'tableauDirect' | 'poulesTableau') =>
+          deroule === 'tableauDirect' ? 'Tableau direct' : 'Poules puis tableau',
       },
       erreurs: {
         TOUCHES_POULES_INVALIDES: 'Les poules se jouent en 3 à 10 touches',
@@ -1390,6 +1397,7 @@ export const textes = {
         FORMULE_FIGEE: 'Cette épreuve est terminée : sa formule n’est plus modifiable',
         /** US-114 CA-5 : le match pour la 3e place ne se retire plus une fois tiré. */
         TROISIEME_PLACE_REGLEE: 'Le match pour la 3e place est déjà tiré',
+        DEROULE_INVALIDE: 'Choisissez tableau direct, ou poules puis tableau',
       },
     },
     chargement: 'Chargement de l’épreuve…',

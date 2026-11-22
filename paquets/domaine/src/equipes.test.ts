@@ -9,6 +9,8 @@ import {
   type Equipe,
 } from './equipes';
 import {
+  contexteTableau,
+  tableauDe,
   equipesDe,
   participantsDe,
   poulesDe,
@@ -18,7 +20,9 @@ import {
   type Projection,
   type Proposition,
 } from './journal';
-import type { TypeEpreuve } from './epreuve';
+import { derouleDe, touchesPoulesPermises, type TypeEpreuve } from './epreuve';
+import { etatPoulesVide } from './poules';
+import { classementFinal, situationDuTableau } from './tableau';
 import type { Tireur } from './tireurs';
 
 const enTete = (seq: number) => ({
@@ -57,7 +61,7 @@ const journal = (typeEpreuve: TypeEpreuve, ...propositions: Proposition[]): Proj
 const inscrire = (id: string, club: string, classement: number | null): Proposition[] => [
   {
     type: 'TireurInscrit',
-    donnees: { tireurId: id, nom: id.toUpperCase(), prenom: 'X', club, classement, licence: null },
+    donnees: { tireurId: id, nom: id.toUpperCase(), prenom: 'X', club, ...(classement === null ? {} : { classement }) },
   },
   { type: 'PresenceModifiee', donnees: { tireurId: id, present: true, heure: '08:00' } },
 ];
@@ -247,5 +251,75 @@ describe('règles des équipes (US-146 à US-148)', () => {
       'y',
       'v',
     ]);
+  });
+});
+
+describe('formule par équipes (US-149) et tableau direct (US-151)', () => {
+  const trois = [...NEUF, creer('p', ['a', 'b', 'c']), creer('t', ['d', 'e', 'g']), creer('b', ['h', 'i', 'f'])];
+
+  it('US-149 CA-1 et CA-2 : tableau direct par défaut ; poules au relais complet, réglables par pas de 5', () => {
+    const { epreuve } = journal('equipes3', ...trois);
+    expect(epreuve!.formule).toMatchObject({ deroule: 'tableauDirect', touchesPoules: 45, touchesRelais: 45 });
+    expect(derouleDe('equipes2', {})).toBe('tableauDirect');
+    expect(derouleDe('individuelle', { deroule: 'tableauDirect' })).toBe('poulesTableau');
+    expect(touchesPoulesPermises('equipes2')).toEqual([10, 15, 20]);
+    const projection = journal('equipes3', ...trois);
+    const formule = (donnees: Record<string, unknown>) =>
+      verifierEvenement(projection, { type: 'FormuleModifiee', donnees } as Proposition);
+    expect(formule({ deroule: 'poulesTableau', touchesPoules: 30 })).toBeNull();
+    expect(formule({ touchesPoules: 32 })).toBe('TOUCHES_POULES_INVALIDES');
+    expect(formule({ touchesPoules: 5 })).toBe('TOUCHES_POULES_INVALIDES');
+    expect(formule({ deroule: 'autre' })).toBe('DEROULE_INVALIDE');
+    expect(
+      verifierEvenement(journal('individuelle', ...NEUF), {
+        type: 'FormuleModifiee',
+        donnees: { deroule: 'tableauDirect' },
+      }),
+    ).toBe('DEROULE_INVALIDE');
+  });
+
+  it('US-149 CA-3 et US-151 CA-1 : le tableau direct se crée sans poules, d’après le rang des équipes complètes', () => {
+    const projection = journal('equipes3', ...trois);
+    const contexte = contexteTableau(projection.epreuve!);
+    expect(contexte.direct?.map(({ tireurId }) => tireurId)).toEqual(['t', 'p', 'b']);
+    expect(contexte.touchesTableau).toBe(45);
+    expect(situationDuTableau(contexte)).toBe('aCreer');
+    const cree = journal('equipes3', ...trois, { type: 'TableauCree', donnees: { qualifies: ['t', 'p', 'b'] } });
+    expect(tableauDe(cree.epreuve!).qualifies).toEqual(['t', 'p', 'b']);
+    expect(verifierEvenement(projection, { type: 'TableauCree', donnees: { qualifies: ['p', 't', 'b'] } })).toBe(
+      'QUALIFIES_INVALIDES',
+    );
+    // US-151 CA-2 : la rencontre se joue jusqu'à 45 touches ; au-delà, refusé.
+    const score = (touchesA: number, touchesB: number): Proposition => ({
+      type: 'ScoreTableauSaisi',
+      donnees: { match: '4-2', tireurA: 'p', tireurB: 'b', touchesA, touchesB },
+    });
+    expect(verifierEvenement(cree, score(45, 38))).toBeNull();
+    expect(verifierEvenement(cree, score(46, 38))).toBe('SCORE_INVALIDE');
+    // Après la création, déroulé et touches des poules sont figés.
+    expect(verifierEvenement(cree, { type: 'FormuleModifiee', donnees: { deroule: 'poulesTableau' } })).toBe(
+      'FORMULE_FIGEE',
+    );
+    // Une seule équipe complète : rien à créer, l'épreuve se termine.
+    const seule = journal('equipes3', ...NEUF, creer('p', ['a', 'b', 'c']));
+    expect(situationDuTableau(contexteTableau(seule.epreuve!))).toBe('aTerminer');
+    expect(
+      classementFinal(
+        etatPoulesVide(),
+        tableauDe(seule.epreuve!),
+        45,
+        false,
+        contexteTableau(seule.epreuve!).direct,
+      )[0],
+    ).toMatchObject({ tireurId: 'p', place: 1 });
+  });
+
+  it('US-149 : avec « Poules puis tableau », le tableau attend les poules', () => {
+    const projection = journal('equipes3', ...trois, {
+      type: 'FormuleModifiee',
+      donnees: { deroule: 'poulesTableau' },
+    });
+    expect(contexteTableau(projection.epreuve!).direct).toBeNull();
+    expect(situationDuTableau(contexteTableau(projection.epreuve!))).toBeNull();
   });
 });

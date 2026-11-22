@@ -15,15 +15,17 @@
     naviguer: (chemin: string) => void;
     /** US-092 et US-109 : étapes livrées mais pas encore ouvertes (grisées, comme la navigation latérale). */
     indisponibles?: readonly IdEtapeEpreuve[];
+    /** US-149 CA-3 : étapes sans objet pour cette épreuve, non affichées. */
+    absentes?: readonly IdEtapeEpreuve[];
   }
 
-  let { epreuveId, courante, naviguer, indisponibles = [] }: Proprietes = $props();
+  let { epreuveId, courante, naviguer, indisponibles = [], absentes = [] }: Proprietes = $props();
   const cheminDe = (etape: EtapeEpreuve) => (indisponibles.includes(etape.id) ? null : cheminEtape(etape, epreuveId));
 
   const t = textes.pageEpreuve;
   const DANS_LA_BARRE: readonly IdEtapeEpreuve[] = ['resume', 'inscriptions', 'poules', 'tableau'];
-  const principales = ETAPES_EPREUVE.filter(({ id }) => DANS_LA_BARRE.includes(id));
-  const autres = ETAPES_EPREUVE.filter(({ id }) => !DANS_LA_BARRE.includes(id));
+  const principales = $derived(ETAPES_EPREUVE.filter(({ id }) => DANS_LA_BARRE.includes(id) && !absentes.includes(id)));
+  const autres = $derived(ETAPES_EPREUVE.filter(({ id }) => !DANS_LA_BARRE.includes(id) && !absentes.includes(id)));
 
   let ouvert = $state(false);
   let conteneur: HTMLElement | undefined = $state();

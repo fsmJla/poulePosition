@@ -2,6 +2,7 @@
 // Les règles sont pures : le stockage du journal et la migration de son format sont faits ailleurs.
 import {
   champsModifiables,
+  derouleDe,
   formuleParDefaut,
   modification,
   modificationFormule,
@@ -81,6 +82,7 @@ import {
   verifierRetraitTableau,
   verifierScoreTableau,
   type ContexteTableau,
+  type Qualifie,
   type DonneesAnnulationRetraitTableau,
   type DonneesEpreuveTerminee,
   type DonneesMatchTableauAppele,
@@ -235,10 +237,20 @@ export const contexteTableau = (epreuve: Epreuve): ContexteTableau => ({
   poules: poulesDe(epreuve),
   tableau: tableauDe(epreuve),
   touchesPoules: epreuve.formule.touchesPoules,
-  touchesTableau: epreuve.formule.touchesTableau,
+  // US-151 : par équipes, les rencontres du tableau se tirent au relais complet.
+  touchesTableau: epreuve.formule.touchesRelais ?? epreuve.formule.touchesTableau,
   matchTroisieme: epreuve.formule.matchTroisieme,
   terminee: epreuve.statut === 'terminee',
+  direct: qualifiesDirects(epreuve),
 });
+
+/** US-149 CA-3 et US-151 CA-1 : en tableau direct, les équipes complètes dans l'ordre de leur rang ; sinon null. */
+export function qualifiesDirects(epreuve: Epreuve): Qualifie[] | null {
+  if (derouleDe(epreuve.typeEpreuve, epreuve.formule) !== 'tableauDirect') return null;
+  return participantsDe(epreuve)
+    .filter(({ present }) => present)
+    .map(({ id }, i) => ({ tireurId: id, rang: i + 1, exaequo: false }));
+}
 
 const TYPES_TABLEAU = [
   'TableauCree',
@@ -512,7 +524,7 @@ function verifierTableau(epreuve: Epreuve | null, proposition: PropositionTablea
   }
 }
 
-const CHAMPS_FORMULE: readonly string[] = ['touchesPoules', 'touchesTableau', 'matchTroisieme'];
+const CHAMPS_FORMULE: readonly string[] = ['touchesPoules', 'touchesTableau', 'matchTroisieme', 'deroule'];
 
 /** US-028 : la formule se règle jusqu'à la fin de l’épreuve ; les touches de relais ne se modifient pas. */
 function verifierFormule(epreuve: Epreuve | null, changes: ModificationFormule): ErreurEvenement | null {
@@ -520,8 +532,13 @@ function verifierFormule(epreuve: Epreuve | null, changes: ModificationFormule):
   if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
   if (epreuve.statut === 'terminee') return 'FORMULE_FIGEE';
   if (Object.keys(changes).some((champ) => !CHAMPS_FORMULE.includes(champ))) return 'CHAMP_FIGE';
-  const erreur = validerFormule(changes);
+  const erreur = validerFormule(changes, epreuve.typeEpreuve);
   if (erreur) return erreur;
+  // US-149 CA-4 : par équipes, le déroulé et les touches des poules se figent au lancement.
+  const lance = poulesDe(epreuve).lancees || tableauDe(epreuve).qualifies !== null;
+  if (parEquipes(epreuve) && lance && (changes.deroule !== undefined || changes.touchesPoules !== undefined)) {
+    return 'FORMULE_FIGEE';
+  }
   // US-108 CA-9 : le match pour la 3e place ne se retire plus une fois tiré.
   if (changes.matchTroisieme === false) {
     const reglee = verifierDesactivationTroisieme(tableauDe(epreuve));
@@ -632,10 +649,11 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
     const { epreuve } = projection;
     if (!epreuve) return projection;
     const donnees = normaliserEpreuve(fusionner(epreuve, evenement.donnees));
+    // US-149 : changer de type reprend la formule par défaut du nouveau type (touches, déroulé), sauf la 3e place.
     const formule =
       donnees.typeEpreuve === epreuve.typeEpreuve
         ? epreuve.formule
-        : { ...epreuve.formule, touchesRelais: formuleParDefaut(donnees.typeEpreuve).touchesRelais };
+        : { ...formuleParDefaut(donnees.typeEpreuve), matchTroisieme: epreuve.formule.matchTroisieme };
     return { ...projection, epreuve: { ...epreuve, ...donnees, formule }, dernierSeq: evenement.seq };
   }
   const { donnees } = evenement;

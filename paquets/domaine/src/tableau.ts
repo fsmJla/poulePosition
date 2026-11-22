@@ -428,7 +428,17 @@ export interface ContexteTableau {
   touchesTableau: number;
   matchTroisieme: boolean;
   terminee: boolean;
+  /** US-151 : en tableau direct (par équipes), les qualifiés rangés ; null quand le tableau suit les poules. */
+  direct?: Qualifie[] | null;
 }
+
+/** US-151 : les qualifiés du tableau : le rang des équipes en tableau direct, sinon le classement des poules. */
+const qualifiesDuContexte = (contexte: ContexteTableau): Qualifie[] =>
+  contexte.direct ?? qualifiesDesPoules(contexte.poules, contexte.touchesPoules);
+
+/** US-151 : le tableau peut-il se créer ? En tableau direct, sans poules ; sinon, une fois les poules terminées. */
+const pretPourLeTableau = (contexte: ContexteTableau): boolean =>
+  Boolean(contexte.direct) || poulesTerminees(contexte.poules, contexte.touchesPoules);
 
 /** CA-2 : la création du tableau est-elle recevable ? */
 export function verifierCreationTableau(
@@ -437,8 +447,8 @@ export function verifierCreationTableau(
 ): ErreurTableau | null {
   if (contexte.terminee) return 'EPREUVE_TERMINEE';
   if (contexte.tableau.qualifies) return 'TABLEAU_EXISTE';
-  if (!poulesTerminees(contexte.poules, contexte.touchesPoules)) return 'POULES_NON_TERMINEES';
-  const attendus = qualifiesDesPoules(contexte.poules, contexte.touchesPoules);
+  if (!pretPourLeTableau(contexte)) return 'POULES_NON_TERMINEES';
+  const attendus = qualifiesDuContexte(contexte);
   if (attendus.length < 2) return 'QUALIFIES_INSUFFISANTS';
   if (attendus.length > TAILLE_MAX_TABLEAU) return 'TABLEAU_TROP_GRAND';
   if (!Array.isArray(qualifies) || qualifies.length !== attendus.length) return 'QUALIFIES_INVALIDES';
@@ -457,10 +467,10 @@ export function verifierCreationTableau(
  * moins 2 qualifiés), à terminer (tous les matchs réglés, ou un seul qualifié), sinon null.
  */
 export function situationDuTableau(contexte: ContexteTableau): 'aCreer' | 'aTerminer' | null {
-  if (contexte.terminee || !poulesTerminees(contexte.poules, contexte.touchesPoules)) return null;
+  if (contexte.terminee || !pretPourLeTableau(contexte)) return null;
   const structure = structureTableau(contexte.tableau, contexte.matchTroisieme);
   if (structure) return tableauTermine(structure) ? 'aTerminer' : null;
-  return qualifiesDesPoules(contexte.poules, contexte.touchesPoules).length >= 2 ? 'aCreer' : 'aTerminer';
+  return qualifiesDuContexte(contexte).length >= 2 ? 'aCreer' : 'aTerminer';
 }
 
 /** CA-4 : une fois le tableau créé, les poules sont figées. */
@@ -544,9 +554,7 @@ export function verifierFinEpreuve(contexte: ContexteTableau): ErreurTableau | n
   if (contexte.terminee) return 'EPREUVE_TERMINEE';
   const structure = structureTableau(contexte.tableau, contexte.matchTroisieme);
   if (structure) return tableauTermine(structure) ? null : 'MATCHS_A_REGLER';
-  const seul =
-    poulesTerminees(contexte.poules, contexte.touchesPoules) &&
-    qualifiesDesPoules(contexte.poules, contexte.touchesPoules).length <= 1;
+  const seul = pretPourLeTableau(contexte) && qualifiesDuContexte(contexte).length <= 1;
   return seul ? null : 'MATCHS_A_REGLER';
 }
 
@@ -645,6 +653,8 @@ export function classementFinal(
   tableau: EtatTableau,
   touchesPoules: number,
   matchTroisieme: boolean,
+  /** US-151 : en tableau direct, les équipes rangées (sans tableau encore créé). */
+  direct: readonly Qualifie[] | null = null,
 ): LigneClassementFinal[] {
   const lignesPoules = classementDesPoules(poules, touchesPoules);
   const nonQualifies: LigneClassementFinal[] = lignesPoules
@@ -661,8 +671,8 @@ export function classementFinal(
   const structure = structureTableau(tableau, matchTroisieme);
   if (!structure) {
     // Sans tableau : le seul qualifié, s'il y en a un et que les poules sont terminées, est 1er.
-    const qualifies = qualifiesDesPoules(poules, touchesPoules);
-    const termine = poulesTerminees(poules, touchesPoules) && qualifies.length === 1;
+    const qualifies = direct ?? qualifiesDesPoules(poules, touchesPoules);
+    const termine = (direct !== null || poulesTerminees(poules, touchesPoules)) && qualifies.length === 1;
     const lignes: LigneClassementFinal[] = qualifies.map((q) => ({
       tireurId: q.tireurId,
       place: termine ? 1 : null,

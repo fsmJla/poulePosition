@@ -5,6 +5,7 @@
   import {
     avancementPoules,
     couleurDeCompetition,
+    derouleDe,
     nomsCourts,
     poulesDe,
     tireursDe,
@@ -83,8 +84,13 @@
       }),
     };
   });
+  /** US-149 CA-3 : en tableau direct, pas d'étapes Poules ni Classement ; le tableau est ouvert d'emblée. */
+  const direct = $derived(derouleDe(epreuve.typeEpreuve, epreuve.formule) === 'tableauDirect');
+  const absentes = $derived<IdEtapeEpreuve[]>(direct ? ['poules', 'classement'] : []);
   /** US-092 CA-1 et US-109 CA-1 : le classement et le tableau s'ouvrent au lancement des poules. */
-  const indisponibles = $derived<IdEtapeEpreuve[]>(poulesDe(epreuve).lancees ? [] : ['classement', 'tableau']);
+  const indisponibles = $derived<IdEtapeEpreuve[]>(
+    direct || poulesDe(epreuve).lancees ? [] : ['classement', 'tableau'],
+  );
   /** Nom court (« M13 Dames ») ; sans catégorie ou sans sexe, le nom complet. */
   const nomCourt = $derived(nomsCourts([epreuve], t.sexes).get(epreuve.id) ?? epreuve.nom);
 </script>
@@ -92,7 +98,14 @@
 <main>
   <FilAriane {niveaux} {naviguer} />
   <div class="corps">
-    <NavigationEpreuve epreuveId={epreuve.id} {courante} {naviguer} comptes={comptesEtapes} {indisponibles} />
+    <NavigationEpreuve
+      epreuveId={epreuve.id}
+      {courante}
+      {naviguer}
+      comptes={comptesEtapes}
+      {indisponibles}
+      {absentes}
+    />
     <div class="colonne">
       <header>
         <!-- US-061 CA-3 : flèche de retour, visible seulement sur smartphone (le fil d'Ariane y est masqué). -->
@@ -134,7 +147,7 @@
     </div>
   </div>
 </main>
-<BarreOngletsEpreuve epreuveId={epreuve.id} {courante} {naviguer} {indisponibles} />
+<BarreOngletsEpreuve epreuveId={epreuve.id} {courante} {naviguer} {indisponibles} {absentes} />
 
 <style>
   main {
