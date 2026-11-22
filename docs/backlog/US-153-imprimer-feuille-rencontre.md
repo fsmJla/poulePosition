@@ -40,7 +40,7 @@ commun des documents imprimés (US-120).
 **CA-4 — Conforme à la planche 43**
 - **Étant donné** les données de la planche
 - **Quand** la feuille s'imprime en A4
-- **Alors** elle suit `docs/maquettes/impressions/43-feuille-rencontre.png`.
+- **Alors** elle suit `docs/maquettes/equipes/43-feuille-rencontre.png`.
 
 ## Comportement hors ligne
 

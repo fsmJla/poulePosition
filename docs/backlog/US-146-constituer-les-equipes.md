@@ -13,7 +13,7 @@
 **En tant qu'**organisateur, **je veux** regrouper les tireurs inscrits en équipes nommées, **afin de** préparer une
 épreuve par équipes.
 
-Maquette : planche 40 « Inscriptions : équipes » (à dessiner et à faire valider avant l'implémentation), dans l'étape
+Maquette : planche 40 « Inscriptions : équipes » et 40 bis « Nouvelle équipe » (`docs/maquettes/equipes/`), dans l'étape
 « Inscriptions » de l'épreuve (planche 7), à côté de la saisie des tireurs.
 
 ## Critères d'acceptation
@@ -50,7 +50,7 @@ Maquette : planche 40 « Inscriptions : équipes » (à dessiner et à faire val
 **CA-6 — Conforme à la planche 40**
 - **Étant donné** les données de la planche
 - **Quand** l'écran s'affiche à 1360 px de large
-- **Alors** il suit `docs/maquettes/deroule/40-inscriptions-equipes.png`.
+- **Alors** il suit `docs/maquettes/equipes/40-inscriptions-equipes.png`.
 
 ## Comportement hors ligne
 

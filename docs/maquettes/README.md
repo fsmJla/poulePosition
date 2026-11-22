@@ -398,6 +398,20 @@ colonnes V, M, V/M, TD, TR, Ind, Rang, sans le fond jaune du rang, US-142) ;
 [`direct/ref-34bis-tableau-arbre.png`](direct/ref-34bis-tableau-arbre.png) remplace la planche 34 (arbre symétrique, finale
 et petite finale au centre, US-143). Les couleurs violettes et le logo relèvent du style personnalisé (US-144).
 
+## Maquette « Épreuves par équipes » (2026-11-22, à valider)
+
+Planches de l'Epic 10, dessinées en HTML statique (sources `equipes/*.html` et `equipes/commun.css`, mêmes couleurs et
+mesures que les planches 7 à 21), avec une capture `.png` par planche. Exemple : M15 Dames par équipes de 3, six équipes.
+
+| N° | Planche | Capture | Source | Taille | Contenu |
+|---|---|---|---|---|---|
+| 40 | Inscriptions : équipes | [`equipes/40-inscriptions-equipes.png`](equipes/40-inscriptions-equipes.png) | `equipes/Equipes.html` | 1360 × 1100 | Onglets « Tireuses / Équipes », alerte des tireuses sans équipe, liste rangée (flèches « Monter » et « Descendre », rang, Σ des classements, « tirage au sort », « rang modifié »), titulaires et remplaçante, crayon et « ⋯ », « Nouvelle équipe » (US-146, US-147) |
+| 40 bis | Fenêtre « Nouvelle équipe » | [`equipes/40bis-nouvelle-equipe.png`](equipes/40bis-nouvelle-equipe.png) | `equipes/NouvelleEquipe.html` | 1360 × 900 | Nom proposé, tireuses sans équipe à marquer « Titulaire » ou « Remplaçante », résumé (Σ, club ou « Mixte ») (US-146) |
+| 41 | Émargement par équipes | [`equipes/41-emargement-equipes.png`](equipes/41-emargement-equipes.png) | `equipes/EmargementEquipes.html` | 1360 × 1700 | Compteur « 5 équipes complètes sur 6 », une carte par équipe (titulaires, remplaçante), état « Complète · avec remplaçante » ou « Incomplète · 2 présentes sur 3 », filtres, « Créer le tableau » (US-148) |
+| 42 | Saisie d'une rencontre sur le PC | [`equipes/42-saisie-rencontre.png`](equipes/42-saisie-rencontre.png) | `equipes/SaisieRencontre.html` | 1120 × 520 | Carte de saisie : phase, piste, équipes et tireuses, deux cases de score, pavé des dizaines (0 à 40) puis des unités ; l'unité enregistre (US-150, US-151) |
+| 42 bis | Smartphone : saisie d'une rencontre | [`equipes/42bis-smartphone-saisie-rencontre.png`](equipes/42bis-smartphone-saisie-rencontre.png) | `equipes/MobileSaisieRencontre.html` | 390 × 844 | Deux colonnes d'équipe (gauche rouge, droite verte), dizaines puis unités, rappel de vérifier avec la feuille, « Envoyer à la table » (US-152) |
+| 43 | Feuille de rencontre (A4) | [`equipes/43-feuille-rencontre.png`](equipes/43-feuille-rencontre.png) | `equipes/FeuilleRencontre.html` | 794 × 1123 | Équipes et numéros à écrire (1 à 3, 4 à 6), ordre des 9 relais avec le score cumulé à atteindre, score final, vainqueur, signatures (US-153) |
+
 ## Règle pour les nouvelles US
 
 Une US qui crée ou modifie un écran :
