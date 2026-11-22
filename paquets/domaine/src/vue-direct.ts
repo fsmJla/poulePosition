@@ -3,7 +3,7 @@
 // des tireurs, seuls le nom affiché (« Prénom N. » si le réglage l'exige, US-032) et le club (ADR-0014). Ni émargement,
 // ni licence, ni classement fédéral, ni droits, ni identifiant d'appareil.
 import type { Arme, Sexe, Statut } from './epreuve';
-import { poulesDe, tableauDe, tireursDe, type Epreuve } from './journal';
+import { poulesDe, tableauDe, tireursDe, type Epreuve, type Evenement } from './journal';
 import { avancementPoules, classementDesPoules, matchsDePoule, resultatsPoule, type MotifRetrait } from './poules';
 import { classementFinal, structureTableau, tousLesMatchs } from './tableau';
 import { matchTableauVue, type ClassementVue, type MatchVue, type TableauVue } from './vue-saisie';
@@ -26,8 +26,31 @@ export interface PouleDirect {
   matchs: MatchVue[];
   regles: number;
   total: number;
-  classement: ClassementVue[];
+  classement: ClassementPouleDirect[];
 }
+
+/** US-142 : une ligne du classement d'une poule, avec ses touches données et reçues (TD, TR). */
+export interface ClassementPouleDirect extends ClassementVue {
+  touchesDonnees: number;
+  touchesRecues: number;
+}
+
+/** US-141 : un score récent, pour le bandeau de l'écran géant ; le plus récent d'abord. */
+export interface ScoreRecent {
+  /** Heure d'enregistrement par le pilote, en millisecondes. */
+  date: number;
+  /** Numéro de la poule, ou null pour un match du tableau. */
+  poule: number | null;
+  /** Taille du tour du tableau (16, 8…, 2 ; 0 pour la 3e place), ou null pour une poule. */
+  tour: number | null;
+  tireurA: string;
+  tireurB: string;
+  touchesA: number;
+  touchesB: number;
+}
+
+/** US-141 : nombre de scores récents publiés ; l'écran ne garde ensuite que ceux de ses N dernières minutes. */
+export const SCORES_RECENTS_MAX = 40;
 
 /** Une ligne du classement après les poules (US-092). */
 export interface LigneClassementDirect {
@@ -68,6 +91,8 @@ export interface VueDirect {
   tableau: TableauVue | null;
   /** Classement final, dès la création du tableau ; définitif quand l'épreuve est terminée. */
   classementFinal: LigneFinaleDirect[] | null;
+  /** US-141 : les derniers scores saisis (poules et tableau), le plus récent d'abord. */
+  scoresRecents: ScoreRecent[];
 }
 
 /** CA-2 : « MARTIN Léa », ou « Léa M. » quand le public ne voit que l'initiale du nom. */
@@ -79,8 +104,34 @@ export function nomAffiche(nom: string, prenom: string, prenomInitiale: boolean)
   return [prenomPropre, initiale].filter(Boolean).join(' ');
 }
 
-/** CA-1 : la vue en direct d'une épreuve, telle que le pilote la publie. */
-export function vueDirect(epreuve: Epreuve): VueDirect {
+/**
+ * US-141 : les derniers scores du journal, le plus récent d'abord. Un score corrigé remplace l'ancien, à l'heure de la
+ * correction ; un forfait, un abandon ou une exclusion n'est pas un score.
+ */
+export function scoresRecents(
+  evenements: readonly Evenement[],
+  toursDesMatchs: ReadonlyMap<string, number> = new Map(),
+): ScoreRecent[] {
+  const parMatch = new Map<string, ScoreRecent>();
+  for (const evenement of evenements) {
+    if (evenement.type === 'ScorePouleSaisi') {
+      const { poule, tireurA, tireurB, touchesA, touchesB } = evenement.donnees;
+      const cle = `p${poule}:${[tireurA, tireurB].sort().join('|')}`;
+      parMatch.delete(cle);
+      parMatch.set(cle, { date: evenement.date, poule, tour: null, tireurA, tireurB, touchesA, touchesB });
+    } else if (evenement.type === 'ScoreTableauSaisi') {
+      const { match, tireurA, tireurB, touchesA, touchesB } = evenement.donnees;
+      const cle = `t${match}`;
+      parMatch.delete(cle);
+      const tour = toursDesMatchs.get(match) ?? null;
+      parMatch.set(cle, { date: evenement.date, poule: null, tour, tireurA, tireurB, touchesA, touchesB });
+    }
+  }
+  return [...parMatch.values()].reverse().slice(0, SCORES_RECENTS_MAX);
+}
+
+/** CA-1 : la vue en direct d'une épreuve, telle que le pilote la publie ; ses événements donnent les scores récents. */
+export function vueDirect(epreuve: Epreuve, evenements: readonly Evenement[] = []): VueDirect {
   const touches = epreuve.formule.touchesPoules;
   const etat = poulesDe(epreuve);
   const prenomInitiale = epreuve.parametres.prenomInitiale;
@@ -110,12 +161,14 @@ export function vueDirect(epreuve: Epreuve): VueDirect {
           regles,
           total,
           classement: resultatsPoule(etat, poule, touches)
-            .map(({ tireurId, rang, victoires, matchs, indice, retrait }) => ({
+            .map(({ tireurId, rang, victoires, matchs, indice, touchesDonnees, touchesRecues, retrait }) => ({
               tireurId,
               rang,
               victoires,
               matchs,
               indice,
+              touchesDonnees,
+              touchesRecues,
               retrait,
             }))
             .sort((a, b) => a.rang - b.rang),
@@ -179,5 +232,6 @@ export function vueDirect(epreuve: Epreuve): VueDirect {
           ({ tireurId, place, exaequo, etat: etatFinal }) => ({ tireurId, place, exaequo, etat: etatFinal }),
         )
       : null,
+    scoresRecents: scoresRecents(evenements, new Map((tableau?.matchs ?? []).map(({ id, tour }) => [id, tour]))),
   };
 }

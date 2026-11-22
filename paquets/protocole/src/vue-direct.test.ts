@@ -73,6 +73,21 @@ describe('vue en direct dans le protocole (US-132)', () => {
     expect(analyserVueDirect({ ...complete, tableau: { touches: 0, taille: 1, matchs: [] } })).toBeNull();
     expect(analyserVueDirect({ ...complete, classementFinal: [{ tireurId: 'a', place: 0 }] })).toBeNull();
     expect(analyserVueDirect({ ...complete, classementFinal: 'x' })).toBeNull();
+    // US-142 : TD et TR obligatoires dans le classement d'une poule.
+    const lignePoule = complete.poules[0]!.classement[0]!;
+    const pouleAvec = (ligne: unknown) => ({ ...complete, poules: [{ ...complete.poules[0], classement: [ligne] }] });
+    expect(analyserVueDirect(pouleAvec({ ...lignePoule, touchesRecues: -1 }))).toBeNull();
+    expect(analyserVueDirect(pouleAvec({ ...lignePoule, rang: 0 }))).toBeNull();
+    expect(analyserVueDirect(pouleAvec('x'))).toBeNull();
+    // US-141 : scores récents.
+    const recent = { date: 1, poule: 1, tour: null, tireurA: 'a', tireurB: 'b', touchesA: 5, touchesB: 2 };
+    expect(analyserVueDirect({ ...complete, scoresRecents: [recent] })).toMatchObject({ scoresRecents: [recent] });
+    expect(analyserVueDirect({ ...complete, scoresRecents: [{ ...recent, poule: null, tour: 8 }] })).not.toBeNull();
+    expect(analyserVueDirect({ ...complete, scoresRecents: [{ ...recent, tour: 8 }] })).toBeNull();
+    expect(analyserVueDirect({ ...complete, scoresRecents: [{ ...recent, touchesA: 'x' }] })).toBeNull();
+    expect(analyserVueDirect({ ...complete, scoresRecents: [{ ...recent, date: -1 }] })).toBeNull();
+    expect(analyserVueDirect({ ...complete, scoresRecents: [{ ...recent, tireurA: 1 }] })).toBeNull();
+    expect(analyserVueDirect({ ...complete, scoresRecents: 'x' })).toBeNull();
     const ligne = complete.classement!.lignes[0]!;
     expect(
       analyserVueDirect({ ...complete, classement: { definitif: true, lignes: [{ ...ligne, retrait: 'x' }] } }),

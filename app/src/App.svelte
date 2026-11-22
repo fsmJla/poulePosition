@@ -127,8 +127,8 @@
     },
     // US-132 : vue en direct publiée pour les écrans géants et les spectateurs (ADR-0029).
     vueDirectDe: async (epreuveId) => {
-      const { epreuve } = await journal.lire(epreuveId);
-      return epreuve ? vueDirect(epreuve) : null;
+      const [{ epreuve }, evenements] = await Promise.all([journal.lire(epreuveId), journal.evenements(epreuveId)]);
+      return epreuve ? vueDirect(epreuve, evenements) : null;
     },
     // US-099 : une saisie d'un smartphone, décidée par ce PC ; un score accepté part au serveur (et la vue suit).
     surSaisie: async (epreuveId, saisie) => {

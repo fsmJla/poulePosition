@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { projeter, type Epreuve, type Evenement, type Proposition } from './journal';
-import { nomAffiche, vueDirect } from './vue-direct';
+import { nomAffiche, scoresRecents, SCORES_RECENTS_MAX, vueDirect } from './vue-direct';
 
 const enTete = (seq: number) => ({
   epreuveId: 'e1',
@@ -89,6 +89,12 @@ describe('vue en direct (US-132)', () => {
     expect(vue.poules[0]).toMatchObject({ numero: 1, piste: 2, tireurIds: ['a', 'b', 'c'], regles: 1, total: 3 });
     expect(vue.poules[0]!.matchs[0]).toMatchObject({ tireurA: 'a', tireurB: 'b', touches: [5, 3] });
     expect(vue.poules[0]!.classement[0]).toMatchObject({ tireurId: 'a', rang: 1, victoires: 1 });
+    // US-142 CA-2 : TD et TR de chaque tireur de la poule.
+    expect(vue.poules[0]!.classement[0]).toMatchObject({ touchesDonnees: 5, touchesRecues: 3 });
+    expect(vue.poules[0]!.classement.find((l) => l.tireurId === 'b')).toMatchObject({
+      touchesDonnees: 3,
+      touchesRecues: 5,
+    });
     expect(vue.classement).toMatchObject({ definitif: false });
     expect(vue.classement!.lignes[0]).toMatchObject({ tireurId: 'a', rang: 1, touchesDonnees: 5 });
   });
@@ -155,5 +161,51 @@ describe('nom affiché (US-132 CA-2)', () => {
     expect(nomAffiche('', 'Zoé', true)).toBe('Zoé');
     expect(nomAffiche('MARTIN', '', true)).toBe('M.');
     expect(nomAffiche('MARTIN', '', false)).toBe('MARTIN');
+  });
+});
+
+describe('scores récents du bandeau (US-141)', () => {
+  const evenement = (seq: number, date: number, p: Proposition): Evenement =>
+    ({ ...enTete(seq), date, ...p }) as Evenement;
+
+  it('CA-2 : poules et tableau, le plus récent d’abord, avec le tour du tableau', () => {
+    const scores = scoresRecents(
+      [
+        evenement(2, 100, score('a', 'b', 5, 3)),
+        evenement(3, 200, { type: 'PoulesLancees', donnees: {} }),
+        evenement(4, 300, scoreTableau('m1', 'a', 'c', 15, 12)),
+      ],
+      new Map([['m1', 16]]),
+    );
+    expect(scores).toEqual([
+      { date: 300, poule: null, tour: 16, tireurA: 'a', tireurB: 'c', touchesA: 15, touchesB: 12 },
+      { date: 100, poule: 1, tour: null, tireurA: 'a', tireurB: 'b', touchesA: 5, touchesB: 3 },
+    ]);
+  });
+
+  it('un score corrigé remplace l’ancien, à l’heure de la correction ; tour inconnu = null', () => {
+    const scores = scoresRecents([
+      evenement(2, 100, score('a', 'b', 5, 3)),
+      evenement(3, 200, score('a', 'c', 5, 1)),
+      evenement(4, 300, score('b', 'a', 5, 4)),
+      evenement(5, 400, scoreTableau('m9', 'a', 'c', 15, 2)),
+    ]);
+    expect(scores.map(({ date, tireurA, tour }) => [date, tireurA, tour])).toEqual([
+      [400, 'a', null],
+      [300, 'b', null],
+      [200, 'a', null],
+    ]);
+  });
+
+  it('au plus SCORES_RECENTS_MAX scores ; la vue les reprend de ses événements', () => {
+    const beaucoup = Array.from({ length: SCORES_RECENTS_MAX + 5 }, (_, i) =>
+      evenement(i + 2, i, {
+        type: 'ScorePouleSaisi',
+        donnees: { poule: i + 1, tireurA: 'a', tireurB: 'b', touchesA: 5, touchesB: 0 },
+      }),
+    );
+    expect(scoresRecents(beaucoup)).toHaveLength(SCORES_RECENTS_MAX);
+    expect(vueDirect(epreuveDe(...TROIS)).scoresRecents).toEqual([]);
+    expect(vueDirect(epreuveDe(...TROIS), [evenement(9, 50, score('a', 'b'))]).scoresRecents).toHaveLength(1);
   });
 });

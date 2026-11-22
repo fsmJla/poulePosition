@@ -35,7 +35,7 @@ export function creerDiffuseurLocal({
   intervalle = 1000,
   maintenant = () => Date.now(),
 }: {
-  journal: Pick<Journal, 'dernierSeq' | 'lire' | 'etat'>;
+  journal: Pick<Journal, 'dernierSeq' | 'lire' | 'evenements' | 'etat'>;
   canal?: CanalMinimal | null;
   intervalle?: number;
   maintenant?: () => number;
@@ -48,10 +48,10 @@ export function creerDiffuseurLocal({
       if (!(await journal.etat(epreuveId))?.pilote) continue;
       const seq = await journal.dernierSeq(epreuveId);
       if (seq === envoye) continue;
-      const { epreuve } = await journal.lire(epreuveId);
+      const [{ epreuve }, evenements] = await Promise.all([journal.lire(epreuveId), journal.evenements(epreuveId)]);
       if (!epreuve) continue;
       demandees.set(epreuveId, seq);
-      canal?.postMessage({ type: 'vue', epreuveId, vue: vueDirect(epreuve), publieeLe: maintenant() });
+      canal?.postMessage({ type: 'vue', epreuveId, vue: vueDirect(epreuve, evenements), publieeLe: maintenant() });
     }
   }
 

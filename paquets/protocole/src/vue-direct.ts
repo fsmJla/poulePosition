@@ -6,9 +6,11 @@ import {
   MOTIFS_RETRAIT,
   SEXES,
   STATUTS,
+  type ClassementPouleDirect,
   type LigneClassementDirect,
   type LigneFinaleDirect,
   type PouleDirect,
+  type ScoreRecent,
   type TireurDirect,
   type VueDirect,
 } from '@poule-position/domaine';
@@ -31,6 +33,22 @@ function lireTireur(brut: unknown): TireurDirect | null {
   return o && estTexte(o.id) && estTexte(o.nom) && estTexte(o.club) ? (o as unknown as TireurDirect) : null;
 }
 
+/** US-142 : une ligne du classement d'une poule, avec TD et TR. */
+function lireClassementPoule(brut: unknown): ClassementPouleDirect | null {
+  if (brut === null || typeof brut !== 'object' || Array.isArray(brut)) return null;
+  const { touchesDonnees, touchesRecues, ...reste } = brut as Record<string, unknown>;
+  if (!estEntier(touchesDonnees) || !estEntier(touchesRecues) || !lireClassement(reste)) return null;
+  return brut as ClassementPouleDirect;
+}
+
+/** US-141 : un score récent du bandeau. */
+function lireScoreRecent(brut: unknown): ScoreRecent | null {
+  const o = aExactementLesChamps(brut, ['date', 'poule', 'tour', 'tireurA', 'tireurB', 'touchesA', 'touchesB']);
+  if (!o || !estEntier(o.date) || !estEntierOuNull(o.poule, 1) || !estEntierOuNull(o.tour)) return null;
+  if (!estTexte(o.tireurA) || !estTexte(o.tireurB) || !estEntier(o.touchesA) || !estEntier(o.touchesB)) return null;
+  return (o.poule === null) !== (o.tour === null) ? (o as unknown as ScoreRecent) : null;
+}
+
 function lirePoule(brut: unknown): PouleDirect | null {
   const o = aExactementLesChamps(brut, ['numero', 'piste', 'tireurIds', 'matchs', 'regles', 'total', 'classement']);
   if (!o || !estEntier(o.numero, 1) || !estEntier(o.piste, 1) || !estEntier(o.regles) || !estEntier(o.total)) {
@@ -38,7 +56,7 @@ function lirePoule(brut: unknown): PouleDirect | null {
   }
   const tireurIds = toutes(o.tireurIds, (id) => (estTexte(id) ? id : null));
   const matchs = toutes(o.matchs, lireMatch);
-  const classement = toutes(o.classement, lireClassement);
+  const classement = toutes(o.classement, lireClassementPoule);
   if (!tireurIds || !matchs || !classement) return null;
   return { numero: o.numero, piste: o.piste, tireurIds, matchs, regles: o.regles, total: o.total, classement };
 }
@@ -93,6 +111,7 @@ export function analyserVueDirect(brut: unknown): VueDirect | null {
     'classement',
     'tableau',
     'classementFinal',
+    'scoresRecents',
   ]);
   if (!o || !estTexte(o.epreuveId) || !estTexte(o.nom) || !dans(ARMES, o.arme)) return null;
   if (!estTexteOuNull(o.categorie) || !(o.sexe === null || dans(SEXES, o.sexe)) || !estTexteOuNull(o.date)) return null;
@@ -104,5 +123,15 @@ export function analyserVueDirect(brut: unknown): VueDirect | null {
   const classementFinal = o.classementFinal === null ? null : toutes(o.classementFinal, lireFinale);
   if (!tireurs || !poules || classement === undefined || tableau === undefined) return null;
   if (o.classementFinal !== null && !classementFinal) return null;
-  return { ...(o as unknown as VueDirect), tireurs, poules, classement, tableau, classementFinal };
+  const scores = toutes(o.scoresRecents, lireScoreRecent);
+  if (!scores) return null;
+  return {
+    ...(o as unknown as VueDirect),
+    tireurs,
+    poules,
+    classement,
+    tableau,
+    classementFinal,
+    scoresRecents: scores,
+  };
 }

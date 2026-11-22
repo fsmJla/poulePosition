@@ -918,6 +918,7 @@ describe('lecteurs de la vue en direct (US-132, ADR-0029)', () => {
     classement: null,
     tableau: null,
     classementFinal: null,
+    scoresRecents: [],
   });
 
   async function ouvrirLecteur(epreuveId: string, ticket?: string) {
@@ -1184,6 +1185,19 @@ describe('écrans géants (US-133 à US-135, ADR-0029)', () => {
     });
     expect(modification.status).toBe(200);
     expect(await controle.prochain()).toMatchObject({ type: 'ecran', ecran: { nom: 'Salle B', dureePage: 30 } });
+    // US-140 CA-2, US-141 CA-1 : le style et le bandeau sont enregistrés et poussés à l'écran.
+    await appeler(worker, 'PATCH', `/ecrans/${ecran.id}`, jeton, {
+      nom: 'Salle B',
+      epreuves: [],
+      dureePage: 30,
+      vuesMasquees: [],
+      style: 'clair',
+      bandeau: { actif: true, minutes: 10 },
+    });
+    expect(await controle.prochain()).toMatchObject({
+      type: 'ecran',
+      ecran: { style: 'clair', bandeau: { actif: true, minutes: 10 } },
+    });
     // US-135 : vue imposée, poussée à l'écran ; reprise du défilement.
     const epreuveId = crypto.randomUUID();
     await appeler(worker, 'PATCH', `/ecrans/${ecran.id}`, jeton, {

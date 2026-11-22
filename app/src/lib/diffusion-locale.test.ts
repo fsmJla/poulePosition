@@ -61,6 +61,7 @@ describe('fenêtre locale de l’écran géant (US-136)', () => {
     const journal = {
       dernierSeq: vi.fn(async () => seq),
       lire: vi.fn(async () => lue),
+      evenements: vi.fn(async () => []),
       etat: vi.fn(async (id: string) =>
         id === 'e1' ? { epreuveId: id, pilote: true, confirme: 0, copieLe: null } : null,
       ),
@@ -101,7 +102,12 @@ describe('fenêtre locale de l’écran géant (US-136)', () => {
       canal: fenetre,
     }).demarrer();
     const diffuseur = creerDiffuseurLocal({
-      journal: { dernierSeq: async () => 0, lire: async () => ({}) as Projection, etat: async () => null },
+      journal: {
+        dernierSeq: async () => 0,
+        lire: async () => ({}) as Projection,
+        evenements: async () => [],
+        etat: async () => null,
+      },
       canal: pilote,
     });
     const vue = { epreuveId: 'e1', vue: 'appel' as const, poule: null, jusqua: null };
@@ -116,6 +122,7 @@ describe('fenêtre locale de l’écran géant (US-136)', () => {
       journal: {
         dernierSeq: async () => 0,
         lire: async () => ({ epreuve: null as Epreuve | null }) as Projection,
+        evenements: async () => [],
         etat: async () => null,
       },
       canal: null,
@@ -133,7 +140,12 @@ describe('fenêtre locale de l’écran géant (US-136)', () => {
     ).not.toThrow();
     const { pilote } = paire();
     creerDiffuseurLocal({
-      journal: { dernierSeq: async () => 0, lire: async () => ({}) as Projection, etat: async () => null },
+      journal: {
+        dernierSeq: async () => 0,
+        lire: async () => ({}) as Projection,
+        evenements: async () => [],
+        etat: async () => null,
+      },
       canal: pilote,
     }).demarrer();
     expect(() => pilote.onmessage?.({ data: { type: 'autre' } })).not.toThrow();
