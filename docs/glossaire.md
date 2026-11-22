@@ -11,6 +11,13 @@ l'ajoute ici avant de l'utiliser.
 | Arme | Sabre, épée, fleuret ou sabre laser. | `arme` : `sabre`, `epee`, `fleuret`, `sabreLaser` |
 | Tireur | Compétiteur. | `tireur` |
 | Équipe | 2 ou 3 tireurs (et un remplaçant éventuel) d'une épreuve par équipes. | `equipe` |
+| Titulaire | Tireur d'une équipe qui tire les relais (2 ou 3 selon le type d'épreuve). | `titulaires` |
+| Remplaçant | Tireur facultatif d'une équipe, qui peut remplacer un titulaire ; il ne compte pas dans le rang de l'équipe. | `remplacant` |
+| Rang d'une équipe | Ordre des équipes avant les poules ou le tableau direct : somme des classements de leurs titulaires, tirage au sort à égalité, corrigeable à la main (US-147). | `rangEquipe` |
+| Rencontre | Match entre deux équipes, tiré en relais ; seul son score final est saisi (45 touches en équipes de 3, 20 en équipes de 2). | `rencontre` |
+| Relais | Portion d'une rencontre entre deux tireurs, jusqu'au prochain multiple de 5 du score cumulé ; l'ordre officiel des relais est imprimé sur la feuille de rencontre (US-153). | `relais` |
+| Tableau direct | Déroulé d'une épreuve par équipes sans poules : les équipes, rangées, tirent directement le tableau (US-149). | `tableauDirect` |
+| Participant | Terme du code seulement : un tireur en individuel, une équipe par équipes (US-145). | `participant` |
 | Manifestation | Rassemblement organisé par le club sur un ou plusieurs jours (souvent un week-end), qui regroupe des compétitions : nom, dates de début et de fin, lieu. Ce mot est employé dans l'interface comme dans le code ; on évite « évènement », qui se confondrait avec l'événement du journal. | `manifestation` |
 | Épreuve | Unité qui se tire (inscriptions, poules, tableau) : nom, arme, type, catégorie, sexe, date, horaires, lieu, formule. Une par arme × catégorie × sexe ; appartient **toujours** à une compétition. Elle a son journal et son pilote. | `epreuve` |
 | Compétition | Ensemble d'épreuves présentées sous un même nom et une même affiche, éventuellement sur plusieurs jours (ex. « Championnats de Nouvelle-Aquitaine de sabre ») ; arme facultative. Dans une manifestation ou seule : un challenge seul est une compétition à une seule épreuve. | `competition` |
