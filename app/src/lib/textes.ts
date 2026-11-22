@@ -1365,6 +1365,11 @@ export const textes = {
       touchesPoules: 'Touches en poules',
       touchesTableau: 'Touches au tableau',
       matchTroisieme: 'Match pour la 3e place',
+      /** US-149 : déroulé d'une épreuve par équipes. */
+      deroule: 'Déroulé',
+      deroules: { tableauDirect: 'Tableau direct', poulesTableau: 'Poules puis tableau' },
+      derouleAide: 'En tableau direct, les équipes sont placées au tableau d’après leur rang.',
+      touchesRencontresPoule: 'Touches des rencontres de poule',
       relaisFixe: (touches: number) => `Rencontres en relais à ${touches} touches (fixées par le type de l’épreuve)`,
       autresFormules: 'D’autres formules seront proposées plus tard.',
       enregistrer: 'Enregistrer la formule',
@@ -1382,6 +1387,8 @@ export const textes = {
         touchesTableau: (touches: number) => `Tableau en ${touches} touches`,
         matchTroisieme: (actif: boolean) =>
           actif ? 'Match pour la 3e place activé' : 'Match pour la 3e place désactivé',
+        deroule: (deroule: 'tableauDirect' | 'poulesTableau') =>
+          deroule === 'tableauDirect' ? 'Tableau direct' : 'Poules puis tableau',
       },
       erreurs: {
         TOUCHES_POULES_INVALIDES: 'Les poules se jouent en 3 à 10 touches',
@@ -1390,6 +1397,7 @@ export const textes = {
         FORMULE_FIGEE: 'Cette épreuve est terminée : sa formule n’est plus modifiable',
         /** US-114 CA-5 : le match pour la 3e place ne se retire plus une fois tiré. */
         TROISIEME_PLACE_REGLEE: 'Le match pour la 3e place est déjà tiré',
+        DEROULE_INVALIDE: 'Choisissez tableau direct, ou poules puis tableau',
       },
     },
     chargement: 'Chargement de l’épreuve…',
@@ -2019,6 +2027,80 @@ export const textes = {
       `${nombre} épreuve${nombre > 1 ? 's n’ont' : ' n’a'} pas pu être enregistrée${nombre > 1 ? 's' : ''} sur cet appareil`,
   },
   /** US-082 : saisie des tireurs d'une épreuve (planche 7). */
+  /** US-146 et US-147 : équipes d'une épreuve par équipes (planches 40 et 40 bis). */
+  equipes: {
+    /** US-148 : émargement par équipes (planche 41). */
+    emargement: {
+      compteur: (completes: number, total: number) =>
+        `${completes} équipe${completes > 1 ? 's' : ''} complète${completes > 1 ? 's' : ''} sur ${total}`,
+      complete: 'Complète',
+      avecRemplacant: 'Complète · avec remplaçant',
+      incomplete: (presents: number, taille: number) =>
+        `Incomplète · ${presents} présent${presents > 1 ? 's' : ''} sur ${taille}`,
+      filtres: { toutes: 'Toutes', incompletes: 'Incomplètes', completes: 'Complètes' },
+      sansEquipe: 'Sans équipe · ne tireront pas',
+      aide: (taille: number) =>
+        `Une équipe est complète avec ${taille} présents, remplaçant compris. Une équipe incomplète ne tirera pas.`,
+      creerTableau: 'Créer le tableau',
+      confirmerIncompletes: (noms: string[]) =>
+        `${noms.length === 1 ? '1 équipe incomplète ne tirera pas' : `${noms.length} équipes incomplètes ne tireront pas`} : ${noms.join(', ')}`,
+      detailIncompletes:
+        'Vous pourrez encore pointer leurs tireurs tant que les poules ou le tableau ne sont pas lancés.',
+      continuer: 'Continuer',
+      aucuneComplete: 'Aucune équipe complète : pointez les tireurs présents',
+    },
+    effectif: (n: number) => `${n} équipe${n > 1 ? 's' : ''}`,
+    ongletTireurs: 'Tireurs',
+    ongletEquipes: 'Équipes',
+    onglets: 'Inscrits ou équipes',
+    titreListe: 'Équipes · rangées par la somme des classements des titulaires',
+    nouvelle: 'Nouvelle équipe',
+    aucune: 'Aucune équipe : créez-en une à partir des tireurs inscrits.',
+    sansEquipe: (noms: string[]) =>
+      `${noms.length === 1 ? '1 tireur sans équipe' : `${noms.length} tireurs sans équipe`} ne tirera${noms.length === 1 ? '' : 'ont'} pas : ${noms.join(', ')}.`,
+    resume: (equipes: number, sans: number) =>
+      `${equipes} équipe${equipes > 1 ? 's' : ''}${sans > 0 ? ` · ${sans} tireur${sans > 1 ? 's' : ''} sans équipe` : ''}`,
+    somme: (somme: number) => `Σ ${somme}`,
+    tirage: 'tirage au sort',
+    rangModifie: 'rang modifié',
+    mixte: 'Mixte',
+    nonClasse: 'non classé',
+    remplacant: 'Remplaçant',
+    titulaire: 'Titulaire',
+    monter: (nom: string) => `Monter ${nom}`,
+    descendre: (nom: string) => `Descendre ${nom}`,
+    modifier: (nom: string) => `Modifier l’équipe ${nom}`,
+    supprimer: 'Supprimer l’équipe…',
+    revenirAuCalcul: 'Revenir au rang calculé',
+    aide: 'Rang = somme des classements des titulaires (un tireur non classé compte pour le dernier classement + 1) ; à égalité, tirage au sort. Les flèches corrigent le rang à la main, jusqu’au lancement.',
+    confirmerSuppression: (nom: string) => `Supprimer l’équipe « ${nom} » ?`,
+    detailSuppression: 'Ses tireurs redeviennent sans équipe.',
+    supprimerAction: 'Supprimer',
+    figees: 'Poules lancées ou tableau créé : seul le remplaçant se change encore.',
+    pasAssez: 'Pas assez de tireurs sans équipe pour une nouvelle équipe',
+    fenetre: {
+      titreNouvelle: 'Nouvelle équipe',
+      nom: 'Nom de l’équipe',
+      nomAide: 'Proposé d’après le club du premier tireur choisi.',
+      tireurs: (taille: number) => `Tireurs sans équipe · ${taille} titulaires, 1 remplaçant au plus`,
+      role: (nom: string) => `Rôle de ${nom}`,
+      bilan: (titulaires: number, taille: number, remplacant: boolean, somme: number, club: string) =>
+        `${titulaires}/${taille} titulaires${remplacant ? ' · 1 remplaçant' : ''} · Σ ${somme} · club : ${club}`,
+      creer: 'Créer l’équipe',
+      enregistrer: 'Enregistrer',
+      annuler: 'Annuler',
+      aucunLibre: 'Aucun tireur sans équipe.',
+    },
+    erreurs: {
+      NOM_EQUIPE_VIDE: 'Donnez un nom à l’équipe',
+      NOM_EQUIPE_PRIS: 'Une autre équipe porte déjà ce nom',
+      TITULAIRES_INVALIDES: 'Choisissez exactement le nombre de titulaires de l’épreuve',
+      TIREUR_DEJA_EN_EQUIPE: 'Un de ces tireurs est déjà dans une autre équipe',
+      EQUIPES_FIGEES: 'Les équipes sont figées : poules lancées ou tableau créé',
+      TIREUR_EN_EQUIPE: 'Retirez d’abord ce tireur de son équipe',
+      AUTRE: 'L’équipe n’a pas pu être enregistrée',
+    } as Record<string, string>,
+  },
   inscriptions: {
     titre: 'Inscriptions',
     nombre: (nombre: number) => (nombre > 1 ? `${nombre} inscrits` : `${nombre} inscrit`),
@@ -2068,6 +2150,7 @@ export const textes = {
       TIREUR_CHAMP_TROP_LONG: 'Ce champ fait au plus 60 caractères',
       CLASSEMENT_INVALIDE: 'Le classement est un nombre entier',
       INSCRIPTIONS_CLOSES: 'Les inscriptions sont closes : les poules sont lancées',
+      TIREUR_EN_EQUIPE: 'Retirez d’abord ce tireur de son équipe',
       PAS_PILOTE: 'Lecture seule : un autre PC est le pilote',
       AUTRE: 'L’inscription n’a pas pu être enregistrée sur cet appareil',
     } as Record<string, string>,
@@ -2339,6 +2422,14 @@ export const textes = {
       },
       tableau: { nom: 'Tableau', detail: 'À afficher : l’arbre, de son premier tour à la finale, scores compris' },
       classementFinal: { nom: 'Classement final', detail: 'Le podium et le classement de l’épreuve' },
+      rencontresPoules: {
+        nom: 'Feuilles de rencontre',
+        detail: 'Pour les arbitres : une par rencontre à tirer des poules, avec l’ordre des relais',
+      },
+      rencontresTableau: {
+        nom: 'Feuilles de rencontre',
+        detail: 'Pour les arbitres : une par rencontre à tirer du tour choisi, avec l’ordre des relais',
+      },
     } satisfies Record<DocumentImprime, { nom: string; detail: string }>,
     raisons: {
       AUCUN_INSCRIT: 'Aucun inscrit',
@@ -2370,6 +2461,7 @@ export const textes = {
       intro: (n: number) =>
         `${n} inscrit${n > 1 ? 's' : ''} · cochez la case à l’arrivée et faites signer. Les cases déjà cochées viennent de l’émargement sur le PC.`,
       colonnes: {
+        equipe: 'Équipe',
         numero: 'N°',
         tireur: 'Tireur',
         club: 'Club',
@@ -2395,6 +2487,27 @@ export const textes = {
       legende: '(n) : rang après les poules · en gras : vainqueur',
     },
     // US-126 : feuilles de match du tableau (planche 28).
+    /** US-153 (planche 43) : feuille de rencontre par équipes. */
+    feuillesRencontre: {
+      titre: 'Feuille de rencontre',
+      membres: (noms: string[]) => noms.join(' · '),
+      poule: (poule: number, numero: number) => `Poule ${poule} · rencontre ${numero}`,
+      tour: (tour: string, numero: number) => `${tour} · rencontre ${numero}`,
+      piste: (piste: number | null) => (piste === null ? 'Piste : ______' : `Piste ${piste}`),
+      numero: 'N°',
+      tireurs: (debut: number, fin: number) => `Tireur (écrire son numéro ${debut} à ${fin})`,
+      remplacant: (nom: string | null) => `Remplaçant : ${nom ?? '—'}`,
+      relais: 'Relais',
+      tireursRelais: 'Tireurs',
+      jusqua: 'Jusqu’à',
+      paraphe: 'Paraphe arbitre',
+      explication: (touches: number) =>
+        `Chaque relais se tire jusqu’au score cumulé indiqué (ou jusqu’à la fin de son temps), ${touches} touches en tout. L’ordre des relais est l’ordre officiel : 1, 2, 3 pour une équipe, 4, 5, 6 pour l’autre. Un remplaçant prend les relais du tireur qu’il remplace.`,
+      scoreFinal: 'Score final',
+      vainqueur: 'Vainqueur :',
+      arbitre: 'Arbitre',
+      capitaine: (equipe: string) => `Capitaine ${equipe}`,
+    },
     feuillesMatch: {
       titre: (tour: string) => `Feuilles de match · ${tour}`,
       piste: (piste: number | null) => `${piste ? `Piste ${piste}` : 'Piste ____'} · ___ h ___`,
@@ -2459,6 +2572,11 @@ export const textes = {
     corriger: 'Touchez un score pour le corriger.',
     priorite: 'Égalité : qui a la priorité ?',
     prioriteGroupe: 'Vainqueur par priorité',
+    /** US-150 à US-152 (planches 42 et 42 bis) : score d'une rencontre en relais, dizaines puis unités. */
+    dizaines: 'Dizaines',
+    unites: 'Unités',
+    dizainesDe: (nom: string) => 'Dizaines du score de ' + nom,
+    unitesDe: (nom: string) => 'Unités du score de ' + nom,
   },
   /** US-109 à US-115 : l'étape « Tableau » (planche 11). */
   tableau: {

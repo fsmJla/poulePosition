@@ -6,6 +6,7 @@ export * from './competition';
 export * from './essais';
 export * from './formule';
 export * from './journal';
+export * from './equipes';
 export * from './manifestation';
 export * from './reinitialisation';
 export * from './sessions';

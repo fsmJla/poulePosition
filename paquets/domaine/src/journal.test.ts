@@ -150,7 +150,8 @@ describe('modification d’une épreuve (US-027)', () => {
   it('CA-1 : changer le type recalcule les touches de relais de la formule', () => {
     const { epreuve } = projeter([evenement(1), evenement(2, modifiee({ typeEpreuve: 'equipes3' }))]);
     expect(epreuve?.formule.touchesRelais).toBe(45);
-    expect(epreuve?.formule.touchesPoules).toBe(5);
+    // US-149 : la formule repart de celle du nouveau type : poules au relais complet, tableau direct.
+    expect(epreuve?.formule).toMatchObject({ touchesPoules: 45, deroule: 'tableauDirect' });
   });
 
   it('CA-1 : refuse une modification sans épreuve créée', () => {
@@ -231,9 +232,9 @@ describe('formule d’une épreuve (US-028)', () => {
     expect(verifierEvenement(creee(), formuleModifiee(relais))).toBe('CHAMP_FIGE');
     const { epreuve } = projeter([
       evenement(1, creation({ typeEpreuve: 'equipes2' })),
-      evenement(2, formuleModifiee({ touchesPoules: 4 })),
+      evenement(2, formuleModifiee({ touchesPoules: 15 })),
     ]);
-    expect(epreuve?.formule).toMatchObject({ touchesRelais: 20, touchesPoules: 4 });
+    expect(epreuve?.formule).toMatchObject({ touchesRelais: 20, touchesPoules: 15 });
   });
 
   it('CA-4 : en cours, la formule peut changer', () => {

@@ -44,6 +44,8 @@ describe('impressions : disponibilité des documents (US-120 CA-2)', () => {
       feuillesMatch: 'TABLEAU_NON_CREE',
       tableau: 'TABLEAU_NON_CREE',
       classementFinal: 'TABLEAU_NON_CREE',
+      rencontresPoules: 'POULES_NON_COMPOSEES',
+      rencontresTableau: 'TABLEAU_NON_CREE',
     });
   });
 

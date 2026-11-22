@@ -49,11 +49,17 @@ function fichier(nombre: number) {
  * Crée une épreuve Dames au sabre pilotée par ce PC, y importe les `nombre` premières tireuses et en pointe `presentes`
  * (toutes par défaut). Retourne l'adresse de l'épreuve ; la page est sur l'émargement.
  */
-export async function epreuveAvecPresentes(page: Page, nombre = 24, presentes = nombre): Promise<string> {
+export async function epreuveAvecPresentes(
+  page: Page,
+  nombre = 24,
+  presentes = nombre,
+  type: 'individuelle' | 'equipes2' | 'equipes3' = 'individuelle',
+): Promise<string> {
   await page.goto('/epreuves/nouvelle?seule');
   await page.getByLabel('Nom de la compétition et de son épreuve').fill(`E2E ${crypto.randomUUID().slice(0, 8)}`);
   await page.getByLabel('Arme').selectOption('sabre');
   await page.getByLabel('Sexe').selectOption('dames');
+  if (type !== 'individuelle') await page.getByLabel('Type').selectOption(type);
   await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
   await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
   const adresse = page.url();

@@ -172,7 +172,11 @@
     if (erreurs.size > 0) return;
     enCours = true;
     try {
-      const formule = { ...formuleParDefaut(typeEpreuve), touchesPoules, touchesTableau, matchTroisieme };
+      // US-149 : par équipes, les touches suivent les rencontres en relais (formule par défaut du type).
+      const formule =
+        typeEpreuve === 'individuelle'
+          ? { ...formuleParDefaut(typeEpreuve), touchesPoules, touchesTableau, matchTroisieme }
+          : { ...formuleParDefaut(typeEpreuve), matchTroisieme };
       const rendu = await creerLot(journal, lot, formule, {
         clubId: session.compte.clubId,
         auteur: session.compte.email,

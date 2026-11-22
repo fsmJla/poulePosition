@@ -1,0 +1,369 @@
+// US-146 et US-147 (planches 40 et 40 bis) : constituer les équipes d'une épreuve par équipes de 3 à partir des tireuses
+// inscrites, les ranger par la somme des classements, corriger le rang à la main, supprimer une équipe.
+import { expect, test, type Page } from '@playwright/test';
+import { seConnecter } from './compte';
+import { cartePoule, carteSaisie, epreuveAvecPresentes, repartir, TIREUSES } from './poules-outils';
+import { entrerArbitre, telephone } from './saisie-outils';
+
+/** Crée une équipe par la fenêtre « Nouvelle équipe » : 3 titulaires et, au besoin, une remplaçante. */
+export async function creerEquipe(page: Page, nom: string, titulaires: string[], remplacante?: string) {
+  await page.getByRole('button', { name: 'Nouvelle équipe' }).click();
+  const fenetre = page.getByRole('dialog', { name: 'Nouvelle équipe' });
+  for (const tireuse of titulaires) {
+    await fenetre
+      .getByRole('group', { name: `Rôle de ${tireuse}` })
+      .getByRole('button', { name: 'Titulaire' })
+      .click();
+  }
+  if (remplacante) {
+    await fenetre
+      .getByRole('group', { name: `Rôle de ${remplacante}` })
+      .getByRole('button', { name: 'Remplaçant' })
+      .click();
+  }
+  await fenetre.getByLabel('Nom de l’équipe').fill(nom);
+  await fenetre.getByRole('button', { name: 'Créer l’équipe' }).click();
+  await expect(fenetre).toBeHidden();
+}
+
+const nomComplet = (i: number) => `${TIREUSES[i]![0]} ${TIREUSES[i]![1]}`;
+
+test('US-146 CA-1 à CA-5 et US-147 CA-1 à CA-4 : constituer, ranger, corriger et supprimer des équipes', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'pc', 'Équipes : projet « pc » seulement');
+  test.setTimeout(120_000);
+  await seConnecter(page);
+  const adresse = await epreuveAvecPresentes(page, 8, 0, 'equipes3');
+  await page.goto(`${adresse}/inscriptions`);
+
+  // CA-1 : deux onglets.
+  await page.getByRole('tab', { name: /^Équipes/ }).click();
+  await expect(page.getByText('Aucune équipe : créez-en une à partir des tireurs inscrits.')).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: '8 tireurs sans équipe' })).toBeVisible();
+
+  // CA-2 : le nom est proposé d'après le club de la première titulaire.
+  await page.getByRole('button', { name: 'Nouvelle équipe' }).click();
+  const fenetre = page.getByRole('dialog', { name: 'Nouvelle équipe' });
+  await fenetre
+    .getByRole('group', { name: `Rôle de ${nomComplet(1)}` })
+    .getByRole('button', { name: 'Titulaire' })
+    .click();
+  await expect(fenetre.getByLabel('Nom de l’équipe')).toHaveValue('Pessac (SPUC) 1');
+  await fenetre.getByRole('button', { name: 'Annuler' }).click();
+
+  // Classements 1 à 8 : « Fortes » (1, 2, 3 → Σ 6) et « Moyennes » (4, 5, 6 → Σ 15), remplaçante 7.
+  await creerEquipe(page, 'Moyennes', [nomComplet(3), nomComplet(4), nomComplet(5)], nomComplet(6));
+  await creerEquipe(page, 'Fortes', [nomComplet(0), nomComplet(1), nomComplet(2)]);
+  const liste = page.getByRole('region', { name: /^Équipes · rangées/ });
+  const equipes = liste.getByRole('listitem');
+  await expect(equipes).toHaveCount(2);
+  // US-147 CA-1 : rangées par la somme des classements.
+  await expect(equipes.nth(0)).toContainText('Fortes');
+  await expect(equipes.nth(0)).toContainText('Σ 6');
+  await expect(equipes.nth(1)).toContainText('Moyennes');
+  await expect(equipes.nth(1)).toContainText('Remplaçant');
+  await expect(equipes.nth(0)).toContainText('Mixte');
+  // CA-5 : la dernière tireuse sans équipe est signalée.
+  await expect(page.getByRole('status').filter({ hasText: /1 tireur sans équipe ne tirera pas/ })).toBeVisible();
+  // Nom déjà pris.
+  await page.getByRole('button', { name: 'Modifier l’équipe Moyennes' }).click();
+  const modification = page.getByRole('dialog', { name: 'Modifier l’équipe Moyennes' });
+  await modification.getByLabel('Nom de l’équipe').fill('fortes');
+  await modification.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(modification.getByRole('alert')).toHaveText('Une autre équipe porte déjà ce nom');
+  await modification.getByRole('button', { name: 'Annuler' }).click();
+
+  // US-147 CA-3 : descendre « Fortes » ; « rang modifié » ; puis revenir au rang calculé.
+  await page.getByRole('button', { name: 'Descendre Fortes' }).click();
+  await expect(equipes.nth(0)).toContainText('Moyennes');
+  await expect(equipes.nth(1)).toContainText('rang modifié');
+  await page.getByRole('button', { name: 'Revenir au rang calculé' }).click();
+  await page.getByRole('menuitem', { name: 'Revenir au rang calculé' }).click();
+  await expect(equipes.nth(0)).toContainText('Fortes');
+
+  // CA-3 : supprimer une équipe ; ses tireuses redeviennent sans équipe.
+  await page.getByRole('button', { name: 'Autres actions pour Moyennes' }).click();
+  await page.getByRole('menuitem', { name: /Supprimer l’équipe/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Supprimer' }).click();
+  await expect(equipes).toHaveCount(1);
+  await expect(page.getByRole('status').filter({ hasText: '5 tireurs sans équipe' })).toBeVisible();
+
+  // Une tireuse d'une équipe ne se désinscrit pas.
+  await page.getByRole('tab', { name: /^Tireurs/ }).click();
+  await page.getByRole('button', { name: `Autres actions pour ${TIREUSES[0]![1]} ${TIREUSES[0]![0]}` }).click();
+  await page.getByRole('menuitem', { name: /Retirer/ }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: /Retirer/ })
+    .click();
+  await expect(page.getByRole('dialog').getByText('Retirez d’abord ce tireur de son équipe')).toBeVisible();
+});
+
+/** Une épreuve par équipes de 3 : 8 tireuses absentes, « Fortes » (1 à 3) et « Moyennes » (4 à 6, remplaçante 7). */
+export async function deuxEquipes(page: Page) {
+  const adresse = await epreuveAvecPresentes(page, 8, 0, 'equipes3');
+  await page.goto(`${adresse}/inscriptions`);
+  await page.getByRole('tab', { name: /^Équipes/ }).click();
+  await creerEquipe(page, 'Fortes', [nomComplet(0), nomComplet(1), nomComplet(2)]);
+  await creerEquipe(page, 'Moyennes', [nomComplet(3), nomComplet(4), nomComplet(5)], nomComplet(6));
+  return adresse;
+}
+
+test('US-148 CA-1 à CA-4 : émarger par équipes, complète avec remplaçant, incomplète annoncée avant le tableau', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'pc', 'Équipes : projet « pc » seulement');
+  test.setTimeout(120_000);
+  await seConnecter(page);
+  const adresse = await deuxEquipes(page);
+  await page.goto(`${adresse}/emargement`);
+  await expect(page.getByRole('status').filter({ hasText: '0 équipe complète sur 2' })).toBeVisible({
+    timeout: 20_000,
+  });
+  const pointer = async (i: number) => {
+    const ligne = page.getByRole('checkbox', { name: `Présent : ${nomComplet(i)}` });
+    await ligne.click();
+    await expect(ligne).toHaveAttribute('aria-checked', String(true));
+  };
+  for (const i of [0, 1, 2, 3, 4, 6]) await pointer(i);
+  // CA-2 et CA-3 : complètes, l'une grâce à sa remplaçante.
+  await expect(page.getByRole('region', { name: 'Fortes' })).toContainText('Complète');
+  await expect(page.getByRole('region', { name: 'Moyennes' })).toContainText('Complète · avec remplaçant');
+  await expect(page.getByRole('status').filter({ hasText: '2 équipes complètes sur 2' })).toBeVisible();
+  // Une titulaire remise absente : incomplète.
+  await page.getByRole('checkbox', { name: `Présent : ${nomComplet(4)}` }).click();
+  await expect(page.getByRole('region', { name: 'Moyennes' })).toContainText('Incomplète · 2 présents sur 3');
+  await page.getByRole('button', { name: /^Incomplètes/ }).click();
+  await expect(page.getByRole('region', { name: 'Fortes' })).toHaveCount(0);
+  // CA-4 : en tableau direct, l'action principale crée le tableau ; l'équipe incomplète est annoncée.
+  await page.getByRole('button', { name: 'Créer le tableau' }).click();
+  const confirmation = page.getByRole('dialog');
+  await expect(confirmation).toContainText('1 équipe incomplète ne tirera pas : Moyennes');
+  await confirmation.getByRole('button', { name: 'Continuer' }).click();
+  await expect(page).toHaveURL(/\/tableau$/);
+});
+
+/** Saisit un score de rencontre au pavé des relais : dizaines puis unités, pour chaque équipe. */
+async function saisirRencontre(page: Page, gauche: number, droite: number) {
+  for (const score of [gauche, droite]) {
+    const dizaine = Math.floor(score / 10) * 10;
+    await page
+      .getByRole('group', { name: /^Dizaines du score de/ })
+      .getByRole('button', { name: new RegExp(`^${dizaine} pour`) })
+      .click();
+    await page
+      .getByRole('group', { name: /^Unités du score de/ })
+      .getByRole('button', { name: new RegExp(`^${score - dizaine} pour`) })
+      .click();
+  }
+}
+
+test('US-151 CA-1 à CA-4 : tableau direct des équipes, rencontres en 45 touches, classement final avec les tireuses', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'pc', 'Équipes : projet « pc » seulement');
+  test.setTimeout(150_000);
+  await seConnecter(page);
+  const adresse = await epreuveAvecPresentes(page, 9, 9, 'equipes3');
+  await page.goto(`${adresse}/inscriptions`);
+  await page.getByRole('tab', { name: /^Équipes/ }).click();
+  await creerEquipe(page, 'Fortes', [nomComplet(0), nomComplet(1), nomComplet(2)]);
+  await creerEquipe(page, 'Moyennes', [nomComplet(3), nomComplet(4), nomComplet(5)]);
+  await creerEquipe(page, 'Faibles', [nomComplet(6), nomComplet(7), nomComplet(8)]);
+
+  // CA-1 : sans poules, le tableau se crée d'après le rang des équipes ; pas d'étape « Poules ».
+  await page.goto(`${adresse}/tableau`);
+  await expect(page.getByRole('navigation', { name: /Étapes/ }).getByText('Poules')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Créer le tableau' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /Créer/ }).click();
+  // CA-2 : la demi-finale Moyennes – Faibles, en 45 touches (Fortes exempte).
+  await saisirRencontre(page, 45, 38);
+  await expect(page.getByRole('status').filter({ hasText: /45/ }).first()).toBeVisible({ timeout: 10_000 });
+  // La finale Fortes – Moyennes.
+  await saisirRencontre(page, 45, 41);
+  // CA-3 et CA-4 : terminer ; le classement final donne les équipes et leurs tireuses.
+  await page.getByRole('button', { name: /^Classement final/ }).click();
+  await page.getByRole('button', { name: 'Terminer l’épreuve' }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: /Terminer/ })
+    .click();
+  const classement = page.getByRole('table');
+  await expect(classement.getByRole('row').nth(1)).toContainText('FORTES');
+  await expect(classement.getByRole('row').nth(1)).toContainText(`${TIREUSES[0]![0]} ${TIREUSES[0]![1]}`);
+  await expect(classement.getByRole('row').nth(2)).toContainText('MOYENNES');
+
+  // US-154 CA-3 : le classement final imprimé donne les équipes et leurs tireuses.
+  await page.addInitScript(() => (window.print = () => undefined));
+  await page.goto(`${adresse}/imprimer?document=classementFinal`);
+  const imprime = page.getByRole('region', { name: /^Classement final/ }).first();
+  await expect(imprime).toContainText('FORTES', { timeout: 20_000 });
+  await expect(imprime).toContainText(`${TIREUSES[0]![0]} ${TIREUSES[0]![1]}`);
+});
+
+test('US-149 CA-1 à CA-4 et US-150 CA-1 à CA-4 : poules d’équipes en 30 touches, égalité départagée par la priorité', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'pc', 'Équipes : projet « pc » seulement');
+  test.setTimeout(150_000);
+  await seConnecter(page);
+  const adresse = await epreuveAvecPresentes(page, 9, 9, 'equipes3');
+  await page.goto(`${adresse}/inscriptions`);
+  await page.getByRole('tab', { name: /^Équipes/ }).click();
+  await creerEquipe(page, 'Fortes', [nomComplet(0), nomComplet(1), nomComplet(2)]);
+  await creerEquipe(page, 'Moyennes', [nomComplet(3), nomComplet(4), nomComplet(5)]);
+  await creerEquipe(page, 'Faibles', [nomComplet(6), nomComplet(7), nomComplet(8)]);
+
+  // US-149 CA-1 et CA-2 : poules puis tableau, rencontres de poule en 30 touches.
+  await page.goto(`${adresse}/formule`);
+  await expect(page.getByRole('radio', { name: 'Tableau direct' })).toBeChecked({ timeout: 20_000 });
+  await page.getByRole('radio', { name: 'Poules puis tableau' }).check();
+  await page.getByLabel('Touches des rencontres de poule').selectOption('30');
+  await page.getByRole('button', { name: 'Enregistrer la formule' }).click();
+  await expect(
+    page.getByRole('listitem').filter({ hasText: 'Poules en 30 touches · Poules puis tableau' }),
+  ).toBeVisible();
+
+  // US-150 CA-1 : composer et lancer.
+  await repartir(page, adresse);
+  await page.getByRole('button', { name: 'Lancer les poules' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Lancer les poules' }).click();
+  await expect(page.getByRole('heading', { level: 3, name: /^Feuille de la poule 1/ })).toBeVisible();
+  // US-149 CA-4 : déroulé et touches figés.
+  await page.goto(`${adresse}/formule`);
+  await expect(page.getByRole('radio', { name: 'Tableau direct' })).toBeDisabled({ timeout: 20_000 });
+  await page.goto(`${adresse}/poules`);
+
+  // US-150 CA-2 : une rencontre en 30 touches, au pavé des relais.
+  const carte = carteSaisie(page);
+  const relais = async (score: number) => {
+    const dizaine = Math.floor(score / 10) * 10;
+    await carte
+      .getByRole('group', { name: /^Dizaines du score de/ })
+      .getByRole('button', { name: new RegExp(`^${dizaine} pour`) })
+      .click();
+    await carte
+      .getByRole('group', { name: /^Unités du score de/ })
+      .getByRole('button', { name: new RegExp(`^${score - dizaine} pour`) })
+      .click();
+  };
+  const titre = (await carte.getByRole('heading').textContent()) ?? '';
+  await relais(30);
+  await relais(22);
+  await expect(page.getByRole('region', { name: titre, exact: true })).toHaveCount(0);
+  // CA-3 : égalité au temps, la priorité désigne le vainqueur.
+  await relais(20);
+  await relais(20);
+  const priorite = carteSaisie(page).getByRole('group', { name: 'Vainqueur par priorité' });
+  await expect(priorite).toBeVisible();
+  await priorite.getByRole('button').last().click();
+  await expect(priorite).toHaveCount(0);
+  // CA-4 : le classement des poules classe les équipes.
+  await page.goto(`${adresse}/classement`);
+  await expect(page.getByRole('table')).toContainText('FORTES', { timeout: 20_000 });
+});
+
+test('US-152 CA-1 et CA-2 : l’arbitre saisit sur son smartphone une rencontre à égalité, départagée par la priorité', async ({
+  page,
+  browser,
+  baseURL,
+}, info) => {
+  test.skip(info.project.name !== 'pc', 'Équipes : projet « pc » seulement');
+  test.setTimeout(180_000);
+  await seConnecter(page);
+  const adresse = await epreuveAvecPresentes(page, 9, 9, 'equipes3');
+  await page.goto(`${adresse}/inscriptions`);
+  await page.getByRole('tab', { name: /^Équipes/ }).click();
+  await creerEquipe(page, 'Fortes', [nomComplet(0), nomComplet(1), nomComplet(2)]);
+  await creerEquipe(page, 'Moyennes', [nomComplet(3), nomComplet(4), nomComplet(5)]);
+  await creerEquipe(page, 'Faibles', [nomComplet(6), nomComplet(7), nomComplet(8)]);
+  await page.goto(`${adresse}/formule`);
+  await page.getByRole('radio', { name: 'Poules puis tableau' }).check({ timeout: 20_000 });
+  await page.getByRole('button', { name: 'Enregistrer la formule' }).click();
+  await expect(page.getByRole('listitem').filter({ hasText: 'Poules puis tableau' })).toBeVisible();
+  await repartir(page, adresse);
+  await page.getByRole('button', { name: 'Lancer les poules' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Lancer les poules' }).click();
+  await expect(page.getByRole('heading', { level: 3, name: /^Feuille de la poule 1/ })).toBeVisible();
+  await page.goto(`${adresse}/parametres`);
+  const acces = page.getByRole('region', { name: 'Accès par QR code' });
+  await expect(acces.getByLabel('Lien des arbitres')).toHaveText(/#j=/, { timeout: 20_000 });
+  const arbitres = (await acces.getByLabel('Lien des arbitres').textContent()) as string;
+  await page.goto(`${adresse}/poules`);
+
+  const { contexte, page: arbitre } = await telephone(browser, baseURL);
+  try {
+    await entrerArbitre(arbitre, arbitres, 'Paul', 1);
+    const maintenant = arbitre.getByRole('region', { name: /^À saisir maintenant · match \d+$/ });
+    await expect(maintenant).toBeVisible({ timeout: 20_000 });
+    await maintenant.getByRole('button', { name: 'Saisir le score' }).click();
+    // CA-2 : 30 – 30, puis la priorité.
+    for (let i = 0; i < 2; i += 1) {
+      await arbitre
+        .getByRole('group', { name: /^Dizaines du score de/ })
+        .getByRole('button', { name: /^30 pour/ })
+        .click();
+      await arbitre
+        .getByRole('group', { name: /^Unités du score de/ })
+        .getByRole('button', { name: /^0 pour/ })
+        .click();
+    }
+    const envoyer = arbitre.getByRole('button', { name: 'Envoyer à la table' });
+    await expect(envoyer).toBeDisabled();
+    await arbitre.getByRole('group', { name: 'Vainqueur par priorité' }).getByRole('button').last().click();
+    await envoyer.click();
+    await expect(arbitre.getByText(/^Enregistré par la table à \d+ h \d{2}$/)).toBeVisible({ timeout: 15_000 });
+    // La table l'a enregistré : la rencontre suivante est en cours au PC.
+    await expect(page.getByRole('region', { name: 'Match 2 sur 3' })).toBeVisible({ timeout: 15_000 });
+  } finally {
+    await contexte.close();
+  }
+});
+
+test('US-153 CA-1 à CA-3 et US-154 CA-1 et CA-2 : feuilles de rencontre et feuille de présence par équipes', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'pc', 'Équipes : projet « pc » seulement');
+  test.setTimeout(150_000);
+  await page.addInitScript(() => (window.print = () => undefined));
+  await seConnecter(page);
+  const adresse = await epreuveAvecPresentes(page, 9, 9, 'equipes3');
+  await page.goto(`${adresse}/inscriptions`);
+  await page.getByRole('tab', { name: /^Équipes/ }).click();
+  await creerEquipe(page, 'Fortes', [nomComplet(0), nomComplet(1), nomComplet(2)]);
+  await creerEquipe(page, 'Moyennes', [nomComplet(3), nomComplet(4), nomComplet(5)]);
+  await creerEquipe(page, 'Faibles', [nomComplet(6), nomComplet(7), nomComplet(8)]);
+  await page.goto(`${adresse}/formule`);
+  await page.getByRole('radio', { name: 'Poules puis tableau' }).check({ timeout: 20_000 });
+  await page.getByRole('button', { name: 'Enregistrer la formule' }).click();
+  await expect(page.getByRole('listitem').filter({ hasText: 'Poules puis tableau' })).toBeVisible();
+  await repartir(page, adresse);
+  await expect(cartePoule(page, 1)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Lancer les poules' })).toBeEnabled();
+
+  // US-154 CA-1 : la feuille de présence groupe les tireuses par équipe.
+  await page.goto(`${adresse}/impressions`);
+  await expect(page.getByRole('heading', { level: 2, name: 'Impressions' })).toBeVisible({ timeout: 20_000 });
+  // US-153 : par équipes, pas de feuilles de match, mais des feuilles de rencontre.
+  await expect(page.getByRole('button', { name: 'Imprimer : Feuilles de match' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Imprimer : Feuille de présence' }).click();
+  const presence = page.getByRole('region', { name: /^Feuille de présence · Page 1/ });
+  await expect(presence.getByRole('columnheader', { name: 'Équipe' })).toBeVisible();
+  await expect(presence.getByRole('row').nth(1)).toContainText('Fortes');
+
+  // US-153 CA-1 à CA-3 : les feuilles de rencontre des poules, avec l'ordre officiel des 9 relais.
+  await page.goto(`${adresse}/impressions`);
+  await page.getByRole('button', { name: 'Imprimer : Feuilles de rencontre' }).first().click();
+  const feuilles = page.getByRole('region', { name: /^Feuille de rencontre · Page \d \/ 3$/ });
+  await expect(feuilles).toHaveCount(3);
+  const premiere = feuilles.first();
+  await expect(premiere).toContainText('Poule 1 · rencontre 1');
+  for (const relais of ['3 – 6', '1 – 5', '2 – 4', '3 – 5']) await expect(premiere).toContainText(relais);
+  await expect(premiere).toContainText('Capitaine');
+
+  // US-154 CA-2 : les poules par piste montrent les équipes.
+  await page.goto(`${adresse}/impressions`);
+  await page.getByRole('button', { name: 'Imprimer : Poules par piste' }).click();
+  await expect(page.getByRole('region', { name: /^Les poules · Page/ })).toContainText('FORTES');
+});

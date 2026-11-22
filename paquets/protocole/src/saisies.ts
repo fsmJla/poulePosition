@@ -44,7 +44,8 @@ export function analyserSaisieTelephone(brut: unknown): SaisieTelephone | null {
   if (tireurId !== undefined && !texteBorne(tireurId, 64)) return null;
   // US-106 : une saisie du tableau porte son match (« 16-5 ») et la poule 0 ; à égalité, le vainqueur par priorité.
   if (match !== undefined && !texteBorne(match, 16)) return null;
-  if (parPriorite !== undefined && (match === undefined || !texteBorne(parPriorite, 64))) return null;
+  // US-152 : une rencontre de poule par équipes peut aussi se départager par la priorité.
+  if (parPriorite !== undefined && !texteBorne(parPriorite, 64)) return null;
   const pouleValide = match === undefined ? entier(poule, 1) : poule === 0;
   if (!texteBorne(id, 64) || !pouleValide || !texteBorne(tireurA, 64) || !texteBorne(tireurB, 64)) return null;
   if (!entier(touchesA) || !entier(touchesB) || typeof auTemps !== 'boolean' || !texteBorne(nom, 80)) return null;

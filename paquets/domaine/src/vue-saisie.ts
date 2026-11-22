@@ -3,7 +3,7 @@
 // ADR-0014 : des tireurs, seuls le nom, le prénom, le club et la poule ; le réglage « Prénom N. » vise le public, pas
 // les arbitres ni les tireurs de l'épreuve.
 import type { Arme, CorrectionScore, Sexe } from './epreuve';
-import { poulesDe, tableauDe, tireursDe, type Epreuve } from './journal';
+import { contexteTableau, parEquipes, participantsDe, poulesDe, tableauDe, type Epreuve } from './journal';
 import { avancementPoules, matchsDePoule, resultatsPoule, type MotifRetrait } from './poules';
 import { structureTableau, tousLesMatchs, type EtatMatch, type MatchTableau } from './tableau';
 
@@ -121,14 +121,23 @@ export interface VueSaisie {
   poules: PouleVue[];
   /** US-112 CA-6 : le tableau (null avant sa création) ; absent d'une vue publiée avant US-112. */
   tableau?: TableauVue | null;
+  /**
+   * US-152 : épreuve par équipes : les « tireurs » de la vue sont des équipes, une égalité se départage par la priorité
+   * et seuls les arbitres saisissent. Absent en individuel.
+   */
+  equipes?: true;
 }
 
 /** CA-1 : la vue de saisie d'une épreuve, telle que le pilote la publie. */
 export function vueSaisie(epreuve: Epreuve, competition: string | null = null): VueSaisie {
   const touches = epreuve.formule.touchesPoules;
   const etat = poulesDe(epreuve);
-  const parId = new Map(tireursDe(epreuve).map((tireur) => [tireur.id, tireur]));
-  const { arbitreSaisitScores, tireurSaisitPoule, tireurSaisitTableau, correctionScore } = epreuve.parametres;
+  // US-152 : par équipes, les poules et le tableau tirent des équipes ; les tireurs ne saisissent pas (CA-3).
+  const parId = new Map(participantsDe(epreuve).map((tireur) => [tireur.id, tireur]));
+  const equipes = parEquipes(epreuve);
+  const { arbitreSaisitScores, correctionScore } = epreuve.parametres;
+  const tireurSaisitPoule = epreuve.parametres.tireurSaisitPoule && !equipes;
+  const tireurSaisitTableau = epreuve.parametres.tireurSaisitTableau && !equipes;
   const poules: PouleVue[] = etat.lancees
     ? etat.poules.map((poule) => {
         const matchs = matchsDePoule(etat, poule, touches);
@@ -176,6 +185,7 @@ export function vueSaisie(epreuve: Epreuve, competition: string | null = null): 
     lancees: etat.lancees,
     poules,
     tableau: tableauVue(epreuve),
+    ...(equipes && { equipes: true as const }),
   };
 }
 
@@ -184,7 +194,8 @@ function tableauVue(epreuve: Epreuve): TableauVue | null {
   const structure = structureTableau(tableauDe(epreuve), epreuve.formule.matchTroisieme);
   if (!structure) return null;
   return {
-    touches: epreuve.formule.touchesTableau,
+    // US-152 : par équipes, les rencontres du tableau se tirent au relais complet.
+    touches: contexteTableau(epreuve).touchesTableau,
     taille: structure.taille,
     matchs: tousLesMatchs(structure).map(matchTableauVue),
   };

@@ -12,6 +12,8 @@ export interface LigneImpression {
   choix: ChoixImpression;
   /** Faux tant que l'US du document n'est pas livrée. */
   livre: boolean;
+  /** US-153 et US-154 : un document propre aux épreuves individuelles ou par équipes ; sinon, les deux. */
+  pour?: 'individuelle' | 'equipes';
 }
 
 export const CATALOGUE_IMPRESSIONS: readonly LigneImpression[] = [
@@ -27,8 +29,11 @@ export const CATALOGUE_IMPRESSIONS: readonly LigneImpression[] = [
   { document: 'poulesPistes', groupe: 'poules', choix: null, livre: true },
   // US-125 : le classement après les poules.
   { document: 'classementPoules', groupe: 'poules', choix: null, livre: true },
-  // US-126 : les feuilles de match du tableau.
-  { document: 'feuillesMatch', groupe: 'tableau', choix: 'tours', livre: true },
+  // US-153 : les feuilles de rencontre des poules d'équipes.
+  { document: 'rencontresPoules', groupe: 'poules', choix: 'poules', livre: true, pour: 'equipes' },
+  // US-126 : les feuilles de match du tableau ; US-153 : par équipes, les feuilles de rencontre.
+  { document: 'feuillesMatch', groupe: 'tableau', choix: 'tours', livre: true, pour: 'individuelle' },
+  { document: 'rencontresTableau', groupe: 'tableau', choix: 'tours', livre: true, pour: 'equipes' },
   // US-127 : le tableau à afficher.
   { document: 'tableau', groupe: 'tableau', choix: 'format', livre: true },
   // US-128 : le classement final.

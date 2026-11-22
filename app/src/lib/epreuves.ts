@@ -325,7 +325,7 @@ export async function modifierFormule(
   if (!epreuve) return { ok: false, erreur: 'INTROUVABLE' };
   const changes = modificationFormule(epreuve.formule, saisie);
   if (Object.keys(changes).length === 0) return { ok: true, modifiee: false };
-  const invalide = validerFormule(changes);
+  const invalide = validerFormule(changes, epreuve.typeEpreuve);
   if (invalide) return { ok: false, erreur: invalide };
   const resultat = await journal.enregistrer(
     epreuveId,

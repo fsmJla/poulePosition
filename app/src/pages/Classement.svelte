@@ -3,7 +3,13 @@
   // puis TD ; « provisoire » tant qu'un match reste à tirer. Calculé sur l'appareil à partir du journal local (hors
   // ligne compris) ; relu toutes les 2 s, et la copie du pilote est retéléchargée toutes les 30 s sur un autre appareil.
   import { onMount } from 'svelte';
-  import { avancementPoules, classementDesPoules, poulesDe, tireursDe, type Epreuve } from '@poule-position/domaine';
+  import {
+    avancementPoules,
+    classementDesPoules,
+    participantsDe,
+    poulesDe,
+    type Epreuve,
+  } from '@poule-position/domaine';
   import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
   import MenuActions from '../composants/MenuActions.svelte';
   import type { Accueil } from '../lib/accueil';
@@ -43,7 +49,7 @@
 
   const etat = $derived(epreuve ? poulesDe(epreuve) : null);
   const touches = $derived(epreuve?.formule.touchesPoules ?? 5);
-  const tireurs = $derived(epreuve ? new Map(tireursDe(epreuve).map((tireur) => [tireur.id, tireur])) : new Map());
+  const tireurs = $derived(epreuve ? new Map(participantsDe(epreuve).map((tireur) => [tireur.id, tireur])) : new Map());
   const lignes = $derived(etat ? classementDesPoules(etat, touches) : []);
   const avancement = $derived(etat ? avancementPoules(etat, touches) : { regles: 0, total: 0 });
   const definitif = $derived(avancement.total > 0 && avancement.regles === avancement.total);

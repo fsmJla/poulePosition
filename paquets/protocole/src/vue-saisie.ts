@@ -111,6 +111,13 @@ export function lireTableau(brut: unknown): TableauVue | null | undefined {
 
 /** CA-4 : une vue de saisie bien formée, sinon null. US-112 : `tableau` est absent d'une vue publiée avant US-112. */
 export function analyserVueSaisie(brut: unknown): VueSaisie | null {
+  // US-152 : `equipes: true`, facultatif, pour une épreuve par équipes.
+  if (brut !== null && typeof brut === 'object' && 'equipes' in brut) {
+    const { equipes, ...reste } = brut as Record<string, unknown>;
+    if (equipes !== true) return null;
+    const vue = analyserVueSaisie(reste);
+    return vue ? { ...vue, equipes } : null;
+  }
   if (brut === null || typeof brut !== 'object' || !('tableau' in brut)) return analyserVueSansTableau(brut);
   const { tableau: brutTableau, ...reste } = brut as Record<string, unknown>;
   const tableau = lireTableau(brutTableau);

@@ -2,6 +2,7 @@
 // Les règles sont pures : le stockage du journal et la migration de son format sont faits ailleurs.
 import {
   champsModifiables,
+  derouleDe,
   formuleParDefaut,
   modification,
   modificationFormule,
@@ -24,6 +25,18 @@ import {
   type Statut,
 } from './epreuve';
 import type { DonneesSaisieRefusee } from './saisies';
+import {
+  equipeComplete,
+  equipeDuTireur,
+  equipesCommeParticipants,
+  verifierEquipe,
+  type DonneesEquipeCreee,
+  type DonneesEquipeModifiee,
+  type DonneesEquipeSupprimee,
+  type DonneesRangsEquipes,
+  type Equipe,
+  type ErreurEquipe,
+} from './equipes';
 import { accesQrVide, verifierDonneesJetonQr, type AccesQr, type DonneesJetonQr, type ErreurAccesQr } from './acces-qr';
 import {
   heureValide,
@@ -69,6 +82,7 @@ import {
   verifierRetraitTableau,
   verifierScoreTableau,
   type ContexteTableau,
+  type Qualifie,
   type DonneesAnnulationRetraitTableau,
   type DonneesEpreuveTerminee,
   type DonneesMatchTableauAppele,
@@ -123,7 +137,11 @@ export type Proposition =
   | { type: 'ScoreTableauSaisi'; donnees: DonneesScoreTableau }
   | { type: 'TireurRetireDuTableau'; donnees: DonneesRetraitTableau }
   | { type: 'RetraitDuTableauAnnule'; donnees: DonneesAnnulationRetraitTableau }
-  | { type: 'EpreuveTerminee'; donnees: DonneesEpreuveTerminee };
+  | { type: 'EpreuveTerminee'; donnees: DonneesEpreuveTerminee }
+  | { type: 'EquipeCreee'; donnees: DonneesEquipeCreee }
+  | { type: 'EquipeModifiee'; donnees: DonneesEquipeModifiee }
+  | { type: 'EquipeSupprimee'; donnees: DonneesEquipeSupprimee }
+  | { type: 'RangsEquipesModifies'; donnees: DonneesRangsEquipes };
 
 /** US-105 CA-2 et CA-4 : la table exclut un smartphone (`exclu: true`) ou le réadmet. */
 export interface DonneesAppareilExclu {
@@ -176,10 +194,34 @@ export interface Epreuve extends DonneesEpreuve {
   saisiesRefusees?: DonneesSaisieRefusee[];
   /** US-105 : identifiants des smartphones exclus par la table ; absent avant cette US. */
   appareilsExclus?: string[];
+  /** US-145 : les équipes d'une épreuve par équipes, dans l'ordre de création ; absent avant cette US. */
+  equipes?: Equipe[];
+  /** US-147 CA-3 : l'ordre des équipes corrigé à la main, ou null (rang calculé). */
+  ordreEquipes?: string[] | null;
 }
 
 /** US-081 : les inscrits d'une épreuve, y compris pour une projection gardée avant US-081. */
 export const tireursDe = (epreuve: Pick<Epreuve, 'tireurs'>): Tireur[] => epreuve.tireurs ?? [];
+
+/** US-145 : les équipes d'une épreuve, y compris pour une projection gardée avant US-145. */
+export const equipesDe = (epreuve: Pick<Epreuve, 'equipes'>): Equipe[] => epreuve.equipes ?? [];
+
+/** US-145 : une épreuve par équipes ? */
+export const parEquipes = (epreuve: Pick<Epreuve, 'typeEpreuve'>): boolean => epreuve.typeEpreuve !== 'individuelle';
+
+/**
+ * US-145 CA-3 : ce que tirent les poules et le tableau : les tireurs en individuel, les équipes (rangées, présentes si
+ * complètes) par équipes.
+ */
+export function participantsDe(epreuve: Epreuve): Tireur[] {
+  if (!parEquipes(epreuve)) return tireursDe(epreuve);
+  return equipesCommeParticipants(
+    equipesDe(epreuve),
+    tireursDe(epreuve),
+    epreuve.typeEpreuve,
+    epreuve.ordreEquipes ?? null,
+  );
+}
 
 /** US-096 : les empreintes des jetons QR d'une épreuve, y compris pour une projection gardée avant US-096. */
 export const accesDe = (epreuve: Pick<Epreuve, 'acces'>): AccesQr => epreuve.acces ?? accesQrVide();
@@ -195,10 +237,20 @@ export const contexteTableau = (epreuve: Epreuve): ContexteTableau => ({
   poules: poulesDe(epreuve),
   tableau: tableauDe(epreuve),
   touchesPoules: epreuve.formule.touchesPoules,
-  touchesTableau: epreuve.formule.touchesTableau,
+  // US-151 : par équipes, les rencontres du tableau se tirent au relais complet.
+  touchesTableau: epreuve.formule.touchesRelais ?? epreuve.formule.touchesTableau,
   matchTroisieme: epreuve.formule.matchTroisieme,
   terminee: epreuve.statut === 'terminee',
+  direct: qualifiesDirects(epreuve),
 });
+
+/** US-149 CA-3 et US-151 CA-1 : en tableau direct, les équipes complètes dans l'ordre de leur rang ; sinon null. */
+export function qualifiesDirects(epreuve: Epreuve): Qualifie[] | null {
+  if (derouleDe(epreuve.typeEpreuve, epreuve.formule) !== 'tableauDirect') return null;
+  return participantsDe(epreuve)
+    .filter(({ present }) => present)
+    .map(({ id }, i) => ({ tireurId: id, rang: i + 1, exaequo: false }));
+}
 
 const TYPES_TABLEAU = [
   'TableauCree',
@@ -246,6 +298,9 @@ export type ErreurEvenement =
   | ErreurPoules
   | ErreurTableau
   | ErreurAccesQr
+  | ErreurEquipe
+  | 'TIREUR_EN_EQUIPE'
+  | 'EQUIPES_EXISTANTES'
   | 'FORMULE_FIGEE'
   | 'PILOTE_INVALIDE'
   | 'EPREUVE_DEJA_CREEE'
@@ -290,6 +345,7 @@ export function verifierEvenement(projection: Projection, proposition: Propositi
   ) {
     return verifierInscription(epreuve, proposition);
   }
+  if (estPropositionEquipe(proposition)) return verifierEquipes(epreuve, proposition);
   if (estPropositionPoules(proposition)) return verifierPoules(epreuve, proposition);
   if (estPropositionTableau(proposition)) return verifierTableau(epreuve, proposition);
   // US-027 : la modification est validée sur le résultat de la fusion, comme une création.
@@ -298,6 +354,11 @@ export function verifierEvenement(projection: Projection, proposition: Propositi
   const modifiables = champsModifiables(epreuve.statut);
   const champs = Object.keys(proposition.donnees);
   if (champs.some((champ) => !(modifiables as readonly string[]).includes(champ))) return 'CHAMP_FIGE';
+  // US-145 : le type ne change plus tant qu'il existe des équipes.
+  const { typeEpreuve } = proposition.donnees;
+  if (typeEpreuve !== undefined && typeEpreuve !== epreuve.typeEpreuve && equipesDe(epreuve).length > 0) {
+    return 'EQUIPES_EXISTANTES';
+  }
   const fusion = fusionner(epreuve, proposition.donnees);
   if (Object.keys(modification(epreuve, fusion)).length === 0) return 'AUCUNE_MODIFICATION';
   return Object.values(validerEpreuve(fusion))[0] ?? null;
@@ -366,7 +427,10 @@ function verifierInscription(
     return inscrit ? 'TIREUR_DEJA_INSCRIT' : validerTireur(proposition.donnees);
   }
   if (!inscrit) return 'TIREUR_INCONNU';
-  if (proposition.type === 'TireurRetire') return null;
+  // US-146 : un tireur d'une équipe ne se désinscrit qu'après l'avoir quittée.
+  if (proposition.type === 'TireurRetire') {
+    return equipeDuTireur(equipesDe(epreuve), inscrit.id) ? 'TIREUR_EN_EQUIPE' : null;
+  }
   if (proposition.type === 'PresenceModifiee') {
     const { present, heure } = proposition.donnees;
     if (heure !== undefined && (!present || !heureValide(heure))) return 'HEURE_INVALIDE';
@@ -384,7 +448,8 @@ function verifierPoules(epreuve: Epreuve | null, proposition: PropositionPoules)
   const figees = verifierPoulesFigees(tableauDe(epreuve));
   if (figees) return figees;
   const etat = poulesDe(epreuve);
-  const tireurs = tireursDe(epreuve);
+  // US-145 CA-3 : par équipes, les poules tirent des équipes.
+  const tireurs = participantsDe(epreuve);
   if (proposition.type === 'PoulesComposees') return verifierComposition(etat, proposition.donnees.poules, tireurs);
   if (proposition.type === 'PoulesLancees') return verifierLancement(etat, tireurs);
   if (proposition.type === 'ScorePouleSaisi') {
@@ -392,6 +457,50 @@ function verifierPoules(epreuve: Epreuve | null, proposition: PropositionPoules)
   }
   if (proposition.type === 'TireurRetireDesPoules') return verifierRetraitDesPoules(etat, proposition.donnees);
   return verifierAnnulationRetrait(etat, proposition.donnees);
+}
+
+const TYPES_EQUIPE = ['EquipeCreee', 'EquipeModifiee', 'EquipeSupprimee', 'RangsEquipesModifies'] as const;
+type PropositionEquipe = Extract<Proposition, { type: (typeof TYPES_EQUIPE)[number] }>;
+const estPropositionEquipe = (p: Proposition): p is PropositionEquipe =>
+  (TYPES_EQUIPE as readonly string[]).includes(p.type);
+
+/**
+ * US-145 à US-147 : créer, modifier, supprimer et ranger les équipes d'une épreuve par équipes, jusqu'au lancement des
+ * poules ou à la création du tableau ; après, seul le remplaçant se désigne encore (US-146 CA-4).
+ */
+function verifierEquipes(epreuve: Epreuve | null, proposition: PropositionEquipe): ErreurEvenement | null {
+  if (!epreuve) return 'EPREUVE_INCONNUE';
+  if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
+  if (!parEquipes(epreuve)) return 'EPREUVE_INDIVIDUELLE';
+  const equipes = equipesDe(epreuve);
+  const tireurs = tireursDe(epreuve);
+  const figees = poulesDe(epreuve).lancees || tableauDe(epreuve).qualifies !== null;
+  if (proposition.type === 'RangsEquipesModifies') {
+    if (figees) return 'EQUIPES_FIGEES';
+    const { ordre } = proposition.donnees;
+    if (ordre === null) return epreuve.ordreEquipes ? null : 'AUCUNE_MODIFICATION';
+    const ids = new Set(equipes.map(({ id }) => id));
+    return ordre.length === ids.size && new Set(ordre).size === ordre.length && ordre.every((id) => ids.has(id))
+      ? null
+      : 'ORDRE_INVALIDE';
+  }
+  if (proposition.type === 'EquipeCreee') {
+    if (figees) return 'EQUIPES_FIGEES';
+    const { equipeId, tirage } = proposition.donnees;
+    if (equipes.some(({ id }) => id === equipeId)) return 'EQUIPE_DEJA_CREEE';
+    if (!Number.isFinite(tirage)) return 'TIRAGE_INVALIDE';
+    return verifierEquipe(proposition.donnees, equipes, tireurs, epreuve.typeEpreuve);
+  }
+  const equipe = equipes.find(({ id }) => id === proposition.donnees.equipeId);
+  if (!equipe) return 'EQUIPE_INCONNUE';
+  const autres = equipes.filter(({ id }) => id !== equipe.id);
+  if (proposition.type === 'EquipeSupprimee') return figees ? 'EQUIPES_FIGEES' : null;
+  const changes: Partial<DonneesEquipeModifiee> = { ...proposition.donnees };
+  delete changes.equipeId;
+  const champs = Object.keys(changes);
+  if (champs.length === 0) return 'AUCUNE_MODIFICATION';
+  if (figees && champs.some((champ) => champ !== 'remplacant')) return 'EQUIPES_FIGEES';
+  return verifierEquipe({ ...equipe, ...changes }, autres, tireurs, epreuve.typeEpreuve);
 }
 
 /** US-108 : créer le tableau, appeler, saisir, retirer, annuler un retrait et terminer l'épreuve. */
@@ -415,7 +524,7 @@ function verifierTableau(epreuve: Epreuve | null, proposition: PropositionTablea
   }
 }
 
-const CHAMPS_FORMULE: readonly string[] = ['touchesPoules', 'touchesTableau', 'matchTroisieme'];
+const CHAMPS_FORMULE: readonly string[] = ['touchesPoules', 'touchesTableau', 'matchTroisieme', 'deroule'];
 
 /** US-028 : la formule se règle jusqu'à la fin de l’épreuve ; les touches de relais ne se modifient pas. */
 function verifierFormule(epreuve: Epreuve | null, changes: ModificationFormule): ErreurEvenement | null {
@@ -423,8 +532,13 @@ function verifierFormule(epreuve: Epreuve | null, changes: ModificationFormule):
   if (epreuve.statut === 'archivee') return 'EPREUVE_ARCHIVEE';
   if (epreuve.statut === 'terminee') return 'FORMULE_FIGEE';
   if (Object.keys(changes).some((champ) => !CHAMPS_FORMULE.includes(champ))) return 'CHAMP_FIGE';
-  const erreur = validerFormule(changes);
+  const erreur = validerFormule(changes, epreuve.typeEpreuve);
   if (erreur) return erreur;
+  // US-149 CA-4 : par équipes, le déroulé et les touches des poules se figent au lancement.
+  const lance = poulesDe(epreuve).lancees || tableauDe(epreuve).qualifies !== null;
+  if (parEquipes(epreuve) && lance && (changes.deroule !== undefined || changes.touchesPoules !== undefined)) {
+    return 'FORMULE_FIGEE';
+  }
   // US-108 CA-9 : le match pour la 3e place ne se retire plus une fois tiré.
   if (changes.matchTroisieme === false) {
     const reglee = verifierDesactivationTroisieme(tableauDe(epreuve));
@@ -492,6 +606,11 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
       dernierSeq: evenement.seq,
     };
   }
+  if (estPropositionEquipe(evenement)) {
+    const { epreuve } = projection;
+    if (!epreuve) return projection;
+    return { ...projection, epreuve: equipesApres(epreuve, evenement), dernierSeq: evenement.seq };
+  }
   if (estPropositionPoules(evenement)) {
     const { epreuve } = projection;
     if (!epreuve) return projection;
@@ -530,10 +649,11 @@ export function appliquer(projection: Projection, evenement: Evenement): Project
     const { epreuve } = projection;
     if (!epreuve) return projection;
     const donnees = normaliserEpreuve(fusionner(epreuve, evenement.donnees));
+    // US-149 : changer de type reprend la formule par défaut du nouveau type (touches, déroulé), sauf la 3e place.
     const formule =
       donnees.typeEpreuve === epreuve.typeEpreuve
         ? epreuve.formule
-        : { ...epreuve.formule, touchesRelais: formuleParDefaut(donnees.typeEpreuve).touchesRelais };
+        : { ...formuleParDefaut(donnees.typeEpreuve), matchTroisieme: epreuve.formule.matchTroisieme };
     return { ...projection, epreuve: { ...epreuve, ...donnees, formule }, dernierSeq: evenement.seq };
   }
   const { donnees } = evenement;
@@ -574,11 +694,64 @@ function tireursApres(
   });
 }
 
+/** US-145 : l'épreuve après un événement d'équipe déjà vérifié ; une équipe supprimée sort de la composition des poules. */
+function equipesApres(
+  epreuve: Epreuve,
+  evenement: Extract<Evenement, { type: (typeof TYPES_EQUIPE)[number] }>,
+): Epreuve {
+  const equipes = equipesDe(epreuve);
+  switch (evenement.type) {
+    case 'EquipeCreee': {
+      const { equipeId, nom, titulaires, remplacant, tirage } = evenement.donnees;
+      const equipe: Equipe = { id: equipeId, nom: nom.trim(), titulaires: [...titulaires], remplacant, tirage };
+      return { ...epreuve, equipes: [...equipes, equipe] };
+    }
+    case 'EquipeModifiee': {
+      const { equipeId, ...changes } = evenement.donnees;
+      const modifiees = equipes.map((e) =>
+        e.id === equipeId
+          ? {
+              ...e,
+              ...changes,
+              nom: (changes.nom ?? e.nom).trim(),
+              titulaires: [...(changes.titulaires ?? e.titulaires)],
+            }
+          : e,
+      );
+      return { ...epreuve, equipes: modifiees, poules: compositionDesCompletes({ ...epreuve, equipes: modifiees }) };
+    }
+    case 'EquipeSupprimee': {
+      const { equipeId } = evenement.donnees;
+      const ordre = epreuve.ordreEquipes ? epreuve.ordreEquipes.filter((id) => id !== equipeId) : null;
+      return {
+        ...epreuve,
+        equipes: equipes.filter(({ id }) => id !== equipeId),
+        ordreEquipes: ordre,
+        poules: compositionSans(poulesDe(epreuve), equipeId),
+      };
+    }
+    default:
+      return { ...epreuve, ordreEquipes: evenement.donnees.ordre ? [...evenement.donnees.ordre] : null };
+  }
+}
+
+/** US-148 : par équipes, une équipe devenue incomplète sort de la composition des poules (avant leur lancement). */
+function compositionDesCompletes(epreuve: Epreuve): EtatPoules {
+  let etat = poulesDe(epreuve);
+  for (const equipe of equipesDe(epreuve)) {
+    if (!equipeComplete(equipe, tireursDe(epreuve), epreuve.typeEpreuve)) etat = compositionSans(etat, equipe.id);
+  }
+  return etat;
+}
+
 /** US-085 : un tireur retiré de l'épreuve ou remis absent sort de la composition des poules (avant leur lancement). */
 function poulesApresInscription(
   epreuve: Epreuve,
   evenement: Extract<Evenement, { type: 'TireurInscrit' | 'TireurModifie' | 'TireurRetire' | 'PresenceModifiee' }>,
 ): EtatPoules {
+  if (parEquipes(epreuve)) {
+    return compositionDesCompletes({ ...epreuve, tireurs: tireursApres(tireursDe(epreuve), evenement) });
+  }
   const etat = poulesDe(epreuve);
   const sort =
     evenement.type === 'TireurRetire' || (evenement.type === 'PresenceModifiee' && !evenement.donnees.present);
@@ -620,7 +793,12 @@ function tableauApres(
   const { date } = evenement;
   switch (evenement.type) {
     case 'TableauCree':
-      return { ...epreuve, tableau: { ...etat, qualifies: [...evenement.donnees.qualifies] } };
+      // US-151 : en tableau direct, créer le tableau lance l'épreuve (comme le lancement des poules).
+      return {
+        ...epreuve,
+        statut: epreuve.statut === 'preparation' ? 'enCours' : epreuve.statut,
+        tableau: { ...etat, qualifies: [...evenement.donnees.qualifies] },
+      };
     case 'MatchTableauAppele':
       return { ...epreuve, tableau: { ...etat, appels: appelsApres(etat.appels, evenement.donnees, date) } };
     case 'ScoreTableauSaisi':

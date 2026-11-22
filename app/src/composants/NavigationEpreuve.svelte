@@ -15,9 +15,12 @@
     comptes?: Partial<Record<IdEtapeEpreuve, string>>;
     /** US-092 CA-1 : étapes livrées mais pas encore ouvertes pour cette épreuve (grisées « À venir »). */
     indisponibles?: readonly IdEtapeEpreuve[];
+    /** US-149 CA-3 : étapes sans objet pour cette épreuve (Poules et Classement en tableau direct), non affichées. */
+    absentes?: readonly IdEtapeEpreuve[];
   }
 
-  let { epreuveId, courante, naviguer, comptes = {}, indisponibles = [] }: Proprietes = $props();
+  let { epreuveId, courante, naviguer, comptes = {}, indisponibles = [], absentes = [] }: Proprietes = $props();
+  const etapes = $derived(ETAPES_EPREUVE.filter(({ id }) => !absentes.includes(id)));
 
   const t = textes.pageEpreuve;
 
@@ -31,9 +34,9 @@
 
 <nav aria-label={t.navigation}>
   <ul>
-    {#each ETAPES_EPREUVE as etape, rang (etape.id)}
+    {#each etapes as etape, rang (etape.id)}
       {@const chemin = indisponibles.includes(etape.id) ? null : cheminEtape(etape, epreuveId)}
-      {#if etape.groupe === 'reglages' && ETAPES_EPREUVE[rang - 1]?.groupe !== 'reglages'}
+      {#if etape.groupe === 'reglages' && etapes[rang - 1]?.groupe !== 'reglages'}
         <li class="separateur" role="separator"></li>
       {/if}
       <li>

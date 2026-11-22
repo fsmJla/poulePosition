@@ -1,13 +1,20 @@
 <script lang="ts">
   // Formule d'une épreuve (US-028), page réservée : réglage des touches et du match pour la 3e place, écrit dans le
   // journal local (donc aussi hors ligne) et envoyé ensuite ; historique des changements tiré du journal. Sur un PC qui
-  // n'est pas le pilote, ou une fois l’épreuve terminée ou archivée, la formule est en lecture seule.
+  // n'est pas le pilote, ou une fois l’épreuve terminée ou archivée, la formule est en lecture seule. US-149 : par
+  // équipes, le déroulé (tableau direct, ou poules puis tableau) et les touches des rencontres de poule ; figés au lancement.
   import { onMount } from 'svelte';
   import {
+    DEROULES,
+    derouleDe,
     historiqueFormule,
+    poulesDe,
+    tableauDe,
+    touchesPoulesPermises,
     TOUCHES_POULES_MAX,
     TOUCHES_POULES_MIN,
     TOUCHES_TABLEAU,
+    type Deroule,
     type Epreuve,
     type EntreeHistoriqueFormule,
     type ModificationFormule,
@@ -52,15 +59,28 @@
   /** CA-4 : la confirmation demandée est affichée et attend le choix du pilote. */
   let aConfirmer: string | null = $state(null);
 
-  const saisie = $state({ touchesPoules: 5, touchesTableau: 15, matchTroisieme: false });
+  const saisie = $state<{ touchesPoules: number; touchesTableau: number; matchTroisieme: boolean; deroule?: Deroule }>({
+    touchesPoules: 5,
+    touchesTableau: 15,
+    matchTroisieme: false,
+  });
   const figee = $derived(epreuve?.statut === 'terminee' || epreuve?.statut === 'archivee');
+  const parEquipes = $derived(epreuve !== null && epreuve.typeEpreuve !== 'individuelle');
+  /** US-149 CA-4 : par équipes, déroulé et touches des poules se figent au lancement des poules ou du tableau. */
+  const lancee = $derived(epreuve !== null && (poulesDe(epreuve).lancees || tableauDe(epreuve).qualifies !== null));
+  const derouleCourant = $derived(
+    epreuve ? derouleDe(epreuve.typeEpreuve, { deroule: saisie.deroule }) : 'poulesTableau',
+  );
   const lectureSeule = $derived(!pilote || !ecriture || figee);
 
   /** Relit le journal ; la saisie n'est remplacée que sur demande, pour ne pas écraser ce que le pilote tape. */
   async function recharger(remettreSaisie = false) {
     const { epreuve: lue } = await journal.lire(epreuveId);
     epreuve = lue;
-    if (lue && remettreSaisie) Object.assign(saisie, { ...lue.formule });
+    if (lue && remettreSaisie) {
+      Object.assign(saisie, { ...lue.formule });
+      if (lue.typeEpreuve !== 'individuelle') saisie.deroule = derouleDe(lue.typeEpreuve, lue.formule);
+    }
     historique = historiqueFormule(await journal.evenements(epreuveId));
     enAttente = pilote ? await synchronisation.enAttente(epreuveId) : 0;
   }
@@ -135,6 +155,7 @@
       changements.touchesPoules !== undefined ? tf.changement.touchesPoules(changements.touchesPoules) : null,
       changements.touchesTableau !== undefined ? tf.changement.touchesTableau(changements.touchesTableau) : null,
       changements.matchTroisieme !== undefined ? tf.changement.matchTroisieme(changements.matchTroisieme) : null,
+      changements.deroule !== undefined ? tf.changement.deroule(changements.deroule) : null,
     ]
       .filter((texte) => texte !== null)
       .join(' · ');
@@ -167,26 +188,56 @@
     {/if}
 
     <form onsubmit={enregistrer} novalidate>
-      <div class="champ">
-        <label for="touches-poules">{tf.touchesPoules}</label>
-        <input
-          id="touches-poules"
-          type="number"
-          inputmode="numeric"
-          min={TOUCHES_POULES_MIN}
-          max={TOUCHES_POULES_MAX}
-          bind:value={saisie.touchesPoules}
-          disabled={lectureSeule || enCours}
-        />
-      </div>
-      <div class="champ">
-        <label for="touches-tableau">{tf.touchesTableau}</label>
-        <select id="touches-tableau" bind:value={saisie.touchesTableau} disabled={lectureSeule || enCours}>
-          {#each TOUCHES_TABLEAU as touches (touches)}
-            <option value={touches}>{touches}</option>
+      {#if parEquipes && epreuve}
+        <!-- US-149 CA-1 et CA-2 : déroulé et touches des rencontres de poule ; le tableau se tire au relais complet. -->
+        <fieldset class="champ">
+          <legend>{tf.deroule}</legend>
+          {#each DEROULES as valeur (valeur)}
+            <label class="case">
+              <input
+                type="radio"
+                name="deroule"
+                value={valeur}
+                bind:group={saisie.deroule}
+                disabled={lectureSeule || enCours || lancee}
+              />
+              {tf.deroules[valeur]}
+            </label>
           {/each}
-        </select>
-      </div>
+          <span class="aide">{tf.derouleAide}</span>
+        </fieldset>
+        {#if derouleCourant === 'poulesTableau'}
+          <div class="champ">
+            <label for="touches-poules">{tf.touchesRencontresPoule}</label>
+            <select id="touches-poules" bind:value={saisie.touchesPoules} disabled={lectureSeule || enCours || lancee}>
+              {#each touchesPoulesPermises(epreuve.typeEpreuve) as touches (touches)}
+                <option value={touches}>{touches}</option>
+              {/each}
+            </select>
+          </div>
+        {/if}
+      {:else}
+        <div class="champ">
+          <label for="touches-poules">{tf.touchesPoules}</label>
+          <input
+            id="touches-poules"
+            type="number"
+            inputmode="numeric"
+            min={TOUCHES_POULES_MIN}
+            max={TOUCHES_POULES_MAX}
+            bind:value={saisie.touchesPoules}
+            disabled={lectureSeule || enCours}
+          />
+        </div>
+        <div class="champ">
+          <label for="touches-tableau">{tf.touchesTableau}</label>
+          <select id="touches-tableau" bind:value={saisie.touchesTableau} disabled={lectureSeule || enCours}>
+            {#each TOUCHES_TABLEAU as touches (touches)}
+              <option value={touches}>{touches}</option>
+            {/each}
+          </select>
+        </div>
+      {/if}
       <label class="case">
         <input type="checkbox" bind:checked={saisie.matchTroisieme} disabled={lectureSeule || enCours} />
         {tf.matchTroisieme}
@@ -260,6 +311,17 @@
     gap: 0.4rem;
     margin: 0;
     padding-left: 1.25rem;
+  }
+
+  fieldset {
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+
+  .aide {
+    color: var(--texte-discret);
+    font-size: 0.9rem;
   }
 
   .champ {

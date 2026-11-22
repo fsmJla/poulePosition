@@ -75,6 +75,8 @@ const FORMES_FORMULE: Record<string, (valeur: unknown) => boolean> = {
   touchesPoules: Number.isInteger,
   touchesTableau: Number.isInteger,
   matchTroisieme: (valeur) => typeof valeur === 'boolean',
+  // US-149 : déroulé d'une épreuve par équipes ; les valeurs permises sont une règle du domaine.
+  deroule: (valeur) => typeof valeur === 'string',
 };
 
 const estBooleen = (valeur: unknown) => typeof valeur === 'boolean';
@@ -143,8 +145,18 @@ function donneesPoulesValides(type: unknown, donnees: unknown): boolean {
   }
   if (type === 'ScorePouleSaisi') {
     return (
-      aSeulement(donnees, ['poule', 'tireurA', 'tireurB', 'touchesA', 'touchesB', 'auTemps', 'saisie']) &&
+      aSeulement(donnees, [
+        'poule',
+        'tireurA',
+        'tireurB',
+        'touchesA',
+        'touchesB',
+        'auTemps',
+        'parPriorite',
+        'saisie',
+      ]) &&
       (donnees.saisie === undefined || origineSaisieValide(donnees.saisie)) &&
+      (donnees.parPriorite === undefined || estTexte(donnees.parPriorite)) &&
       estEntier(donnees.poule) &&
       estTexte(donnees.tireurA) &&
       estTexte(donnees.tireurB) &&
@@ -221,6 +233,40 @@ const TYPES_TABLEAU = [
 
 const TYPES_TIREUR = ['TireurInscrit', 'TireurModifie', 'TireurRetire', 'PresenceModifiee'];
 
+const TYPES_EQUIPE = ['EquipeCreee', 'EquipeModifiee', 'EquipeSupprimee', 'RangsEquipesModifies'];
+const estListeDeTextes = (valeur: unknown) => Array.isArray(valeur) && valeur.every(estTexte);
+
+/** US-145 : forme des données des événements d'équipes ; les règles (taille, doublons…) sont celles du domaine. */
+function donneesEquipeValides(type: unknown, donnees: unknown): boolean {
+  if (!estObjet(donnees)) return false;
+  if (type === 'RangsEquipesModifies') {
+    return (
+      aSeulement(donnees, ['ordre']) &&
+      'ordre' in donnees &&
+      (donnees.ordre === null || estListeDeTextes(donnees.ordre))
+    );
+  }
+  if (!estTexte(donnees.equipeId)) return false;
+  if (type === 'EquipeSupprimee') return aSeulement(donnees, ['equipeId']);
+  const remplacantValide =
+    donnees.remplacant === undefined || donnees.remplacant === null || estTexte(donnees.remplacant);
+  if (type === 'EquipeCreee') {
+    return (
+      aExactementLesChamps(donnees, ['equipeId', 'nom', 'titulaires', 'remplacant', 'tirage']) !== null &&
+      estTexte(donnees.nom) &&
+      estListeDeTextes(donnees.titulaires) &&
+      remplacantValide &&
+      Number.isFinite(donnees.tirage)
+    );
+  }
+  return (
+    aSeulement(donnees, ['equipeId', 'nom', 'titulaires', 'remplacant']) &&
+    (donnees.nom === undefined || estTexte(donnees.nom)) &&
+    (donnees.titulaires === undefined || estListeDeTextes(donnees.titulaires)) &&
+    remplacantValide
+  );
+}
+
 /**
  * Forme des données : tous les champs pour `EpreuveCreee` ; pour `EpreuveModifiee` (US-027) et
  * `FormuleModifiee` (US-028), un ou plusieurs champs parmi les leurs, ceux qui ont changé.
@@ -246,6 +292,7 @@ function donneesValides(type: unknown, donnees: unknown): boolean {
   if (TYPES_TIREUR.includes(type as string)) return donneesTireurValides(type, donnees);
   if (TYPES_POULES.includes(type as string)) return donneesPoulesValides(type, donnees);
   if (TYPES_TABLEAU.includes(type as string)) return donneesTableauValides(type, donnees);
+  if (TYPES_EQUIPE.includes(type as string)) return donneesEquipeValides(type, donnees);
   if (type === 'EpreuveArchivee' || type === 'EpreuveDesarchivee') return aExactementLesChamps(donnees, []) !== null;
   if (type === 'AppareilExclu') {
     const exclusion = aExactementLesChamps(donnees, ['appareilId', 'exclu']);

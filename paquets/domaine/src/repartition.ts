@@ -1,6 +1,7 @@
 // Constitution des poules (US-086) : nombre de poules proposé, répartition en serpentin et séparation des clubs.
 // Pur : le tirage des tireurs sans classement prend l'aléa en paramètre.
 import { ordreDesMatchs, type Poule } from './poules';
+import { CLUB_MIXTE } from './equipes';
 import { cleTexte, type Tireur } from './tireurs';
 
 export const TAILLE_CONSEILLEE_MIN = 5;
@@ -103,7 +104,8 @@ export const pouleEnSerpentin = (i: number, nombre: number) => {
   return ligne % 2 === 0 ? colonne : nombre - 1 - colonne;
 };
 
-const clubDe = (tireur: Tireur) => cleTexte(tireur.club);
+// US-150 CA-1 : une équipe « Mixte » n'entre pas dans la séparation des clubs.
+const clubDe = (tireur: Tireur) => (tireur.club === CLUB_MIXTE ? '' : cleTexte(tireur.club));
 
 /**
  * CA-3, CA-4 et CA-6 : répartit les présents en serpentin sur `nombre` poules, sépare les clubs autant que possible et

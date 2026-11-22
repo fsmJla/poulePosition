@@ -45,7 +45,10 @@
       touchesA: number;
       touchesB: number;
       auTemps: boolean;
+      parPriorite?: string;
     }) => Promise<boolean>;
+    /** US-150 CA-3 : rencontres par équipes : une égalité se départage par la priorité. */
+    priorite?: boolean;
     /** US-089 : retire un tireur des poules, ou annule ce retrait. */
     retirer: (tireurId: string, motif: MotifRetrait) => Promise<VerdictArchivage>;
     annulerRetrait: (tireurId: string) => Promise<VerdictArchivage>;
@@ -53,8 +56,21 @@
     cote?: Snippet;
   }
 
-  let { etat, tireurs, touches, modifiable, saisir, retirer, annulerRetrait, cote, imprimerFeuilles }: Proprietes =
-    $props();
+  let {
+    etat,
+    tireurs,
+    touches,
+    modifiable,
+    saisir,
+    retirer,
+    annulerRetrait,
+    cote,
+    imprimerFeuilles,
+    priorite = false,
+  }: Proprietes = $props();
+  /** US-150 CA-3 : l'égalité saisie, en attente de la priorité. */
+  let egalite: { touchesA: number; touchesB: number } | null = $state(null);
+  const tp = textes.pave;
 
   /** US-089 : le retrait demandé (ou son annulation, motif null), en attente de confirmation. */
   let demande: { tireurId: string; motif: MotifRetrait | null } | null = $state(null);
@@ -123,6 +139,11 @@
     erreur = null;
     if (!r.complet) return;
     const score = scoreDesBoutons(r.etat.valeurs[0]!, r.etat.valeurs[1]!, touches);
+    const [a, b] = r.etat.valeurs;
+    if (!score.ok && score.raison === 'EGALITE' && priorite && typeof a === 'number' && typeof b === 'number') {
+      egalite = { touchesA: a, touchesB: b };
+      return;
+    }
     if (!score.ok) {
       erreur = score.raison === 'DEUX_VAINQUEURS' ? t.unSeulVainqueur : t.egalite;
       pave = paveVierge();
@@ -139,6 +160,30 @@
         auTemps: score.auTemps,
       });
       if (ok) choisi = null;
+    } finally {
+      envoi = false;
+    }
+  }
+
+  /** US-150 CA-3 : enregistre l'égalité avec le vainqueur désigné par la priorité. */
+  async function choisirPriorite(vainqueur: string) {
+    const match = courant;
+    const score = egalite;
+    if (!match || !score || envoi) return;
+    envoi = true;
+    try {
+      const ok = await saisir({
+        poule: poule.numero,
+        tireurA: match.tireurA,
+        tireurB: match.tireurB,
+        ...score,
+        auTemps: true,
+        parPriorite: vainqueur,
+      });
+      if (ok) {
+        choisi = null;
+        egalite = null;
+      }
     } finally {
       envoi = false;
     }
@@ -323,8 +368,31 @@
               ouvrir={(cote) => {
                 pave = ouvrirCotePave(pave, cote);
                 erreur = null;
+                egalite = null;
               }}
-            />
+            >
+              {#snippet ferme()}
+                {#if egalite && courant}
+                  <p class="egalite">{tp.priorite}</p>
+                  <div class="priorite" role="group" aria-label={tp.prioriteGroupe}>
+                    <button
+                      type="button"
+                      class="pour gauche"
+                      disabled={envoi}
+                      onclick={() => choisirPriorite(courant!.tireurA)}>{nomCourt(courant.tireurA)}</button
+                    >
+                    <button
+                      type="button"
+                      class="pour droite"
+                      disabled={envoi}
+                      onclick={() => choisirPriorite(courant!.tireurB)}>{nomCourt(courant.tireurB)}</button
+                    >
+                  </div>
+                {:else}
+                  <p class="discret">{tp.corriger}</p>
+                {/if}
+              {/snippet}
+            </PaveScore>
           </div>
           {#if erreur}<p class="message" role="alert">{erreur}</p>{/if}
           <p class="discret">{t.aideBoutons}</p>
@@ -351,6 +419,36 @@
 {/if}
 
 <style>
+  .egalite {
+    margin: 0;
+    color: var(--sur-etat-attente-fond);
+    font-weight: 600;
+  }
+
+  .priorite {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .pour {
+    min-height: 44px;
+    padding: 0 18px;
+    border: 2px solid var(--cote-gauche);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--cote-gauche);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .pour.droite {
+    border-color: var(--cote-droit);
+    color: var(--cote-droit);
+  }
+
   .titre-etape {
     display: flex;
     flex-wrap: wrap;

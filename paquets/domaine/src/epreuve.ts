@@ -81,7 +81,20 @@ export interface Formule {
   /** Touches des rencontres en relais par équipes ; null en individuel. */
   touchesRelais: number | null;
   matchTroisieme: boolean;
+  /**
+   * US-149 : déroulé d'une épreuve par équipes ; absent d'une formule d'avant cette US (lire avec `derouleDe` :
+   * tableau direct par équipes, poules puis tableau en individuel).
+   */
+  deroule?: Deroule;
 }
+
+/** US-149 CA-1 : poules puis tableau, ou tableau direct (par équipes seulement). */
+export const DEROULES = ['poulesTableau', 'tableauDirect'] as const;
+export type Deroule = (typeof DEROULES)[number];
+
+/** US-149 : le déroulé en vigueur, y compris pour une formule enregistrée avant US-149. */
+export const derouleDe = (typeEpreuve: TypeEpreuve, formule: Pick<Formule, 'deroule'>): Deroule =>
+  typeEpreuve === 'individuelle' ? 'poulesTableau' : (formule.deroule ?? 'tableauDirect');
 
 export type ErreurEpreuve =
   | 'NOM_VIDE'
@@ -199,18 +212,47 @@ export function preremplir(cadre: CadreRattachement): { lieu: string | null; arm
 /** Formule d'une nouvelle épreuve (US-028 CA-1 et CA-3). */
 export function formuleParDefaut(typeEpreuve: TypeEpreuve): Formule {
   const relais = { individuelle: null, equipes2: 20, equipes3: 45 } as const;
-  return { touchesPoules: 5, touchesTableau: 15, touchesRelais: relais[typeEpreuve], matchTroisieme: false };
+  const touchesRelais = relais[typeEpreuve];
+  // US-149 CA-1 et CA-2 : par équipes, tableau direct ; les rencontres de poule au relais complet par défaut.
+  if (touchesRelais !== null) {
+    return {
+      touchesPoules: touchesRelais,
+      touchesTableau: 15,
+      touchesRelais,
+      matchTroisieme: false,
+      deroule: 'tableauDirect',
+    };
+  }
+  return { touchesPoules: 5, touchesTableau: 15, touchesRelais, matchTroisieme: false };
 }
 
 /** Bornes des touches de la formule (US-028 CA-2). */
 export const TOUCHES_POULES_MIN = 3;
 export const TOUCHES_POULES_MAX = 10;
 export const TOUCHES_TABLEAU = [10, 15] as const;
+/** US-149 CA-2 : touches des rencontres de poule par équipes, par pas de 5, de 10 au relais complet. */
+export const TOUCHES_RENCONTRE_POULE_MIN = 10;
+export const PAS_TOUCHES_RENCONTRE = 5;
 
-export type ErreurFormule = 'TOUCHES_POULES_INVALIDES' | 'TOUCHES_TABLEAU_INVALIDES' | 'MATCH_TROISIEME_INVALIDE';
+/** US-149 CA-2 : les touches de poule permises pour ce type d'épreuve. */
+export function touchesPoulesPermises(typeEpreuve: TypeEpreuve): number[] {
+  const relais = formuleParDefaut(typeEpreuve).touchesRelais;
+  const permises: number[] = [];
+  if (relais === null) {
+    for (let t = TOUCHES_POULES_MIN; t <= TOUCHES_POULES_MAX; t += 1) permises.push(t);
+  } else {
+    for (let t = TOUCHES_RENCONTRE_POULE_MIN; t <= relais; t += PAS_TOUCHES_RENCONTRE) permises.push(t);
+  }
+  return permises;
+}
+
+export type ErreurFormule =
+  'TOUCHES_POULES_INVALIDES' | 'TOUCHES_TABLEAU_INVALIDES' | 'MATCH_TROISIEME_INVALIDE' | 'DEROULE_INVALIDE';
 
 /** US-028 : les seuls réglages changés ; les touches de relais suivent le type de l’épreuve (CA-3). */
-export type ModificationFormule = Partial<Pick<Formule, 'touchesPoules' | 'touchesTableau' | 'matchTroisieme'>>;
+export type ModificationFormule = Partial<
+  Pick<Formule, 'touchesPoules' | 'touchesTableau' | 'matchTroisieme' | 'deroule'>
+>;
 
 /** CA-2 : ce qui diffère entre la formule courante et la saisie ; {} si rien. */
 export function modificationFormule(courante: Formule, saisie: Formule): ModificationFormule {
@@ -218,17 +260,21 @@ export function modificationFormule(courante: Formule, saisie: Formule): Modific
   if (saisie.touchesPoules !== courante.touchesPoules) changes.touchesPoules = saisie.touchesPoules;
   if (saisie.touchesTableau !== courante.touchesTableau) changes.touchesTableau = saisie.touchesTableau;
   if (saisie.matchTroisieme !== courante.matchTroisieme) changes.matchTroisieme = saisie.matchTroisieme;
+  if (saisie.deroule !== undefined && saisie.deroule !== courante.deroule) changes.deroule = saisie.deroule;
   return changes;
 }
 
-/** CA-2 : code du premier réglage refusé, ou null si les réglages sont valides. */
-export function validerFormule(changes: ModificationFormule): ErreurFormule | null {
-  const { touchesPoules, touchesTableau, matchTroisieme } = changes;
-  if (
-    touchesPoules !== undefined &&
-    !(Number.isInteger(touchesPoules) && touchesPoules >= TOUCHES_POULES_MIN && touchesPoules <= TOUCHES_POULES_MAX)
-  ) {
+/** CA-2 : code du premier réglage refusé, ou null si les réglages sont valides (US-149 : selon le type d'épreuve). */
+export function validerFormule(
+  changes: ModificationFormule,
+  typeEpreuve: TypeEpreuve = 'individuelle',
+): ErreurFormule | null {
+  const { touchesPoules, touchesTableau, matchTroisieme, deroule } = changes;
+  if (touchesPoules !== undefined && !touchesPoulesPermises(typeEpreuve).includes(touchesPoules)) {
     return 'TOUCHES_POULES_INVALIDES';
+  }
+  if (deroule !== undefined && (typeEpreuve === 'individuelle' || !comprend(DEROULES, deroule))) {
+    return 'DEROULE_INVALIDE';
   }
   if (touchesTableau !== undefined && !(TOUCHES_TABLEAU as readonly number[]).includes(touchesTableau)) {
     return 'TOUCHES_TABLEAU_INVALIDES';

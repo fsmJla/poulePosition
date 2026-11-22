@@ -402,3 +402,38 @@ describe('US-108 : forme des événements du tableau', () => {
     expect(lit('EpreuveTerminee', { x: 1 })).toBe(false);
   });
 });
+
+describe('événements des équipes (US-145)', () => {
+  const lire = (type: string, d: unknown) => lireEvenement(brut({ type, donnees: d }));
+  const equipe = { equipeId: 'q1', nom: 'Pessac 1', titulaires: ['a', 'b', 'c'], remplacant: null, tirage: 0.42 };
+
+  it('CA-1 : lit les quatre événements bien formés', () => {
+    expect(lire('EquipeCreee', equipe)).not.toBeNull();
+    expect(lire('EquipeCreee', { ...equipe, remplacant: 'd' })).not.toBeNull();
+    expect(lire('EquipeModifiee', { equipeId: 'q1', nom: 'Pessac 2' })).not.toBeNull();
+    expect(lire('EquipeModifiee', { equipeId: 'q1', titulaires: ['a', 'b', 'd'], remplacant: null })).not.toBeNull();
+    expect(lire('EquipeSupprimee', { equipeId: 'q1' })).not.toBeNull();
+    expect(lire('RangsEquipesModifies', { ordre: ['q1', 'q2'] })).not.toBeNull();
+    expect(lire('RangsEquipesModifies', { ordre: null })).not.toBeNull();
+  });
+
+  it('refuse les données mal formées', () => {
+    for (const [type, d] of [
+      ['EquipeCreee', { ...equipe, tirage: 'x' }],
+      ['EquipeCreee', { ...equipe, titulaires: 'a' }],
+      ['EquipeCreee', { ...equipe, remplacant: 3 }],
+      ['EquipeCreee', { ...equipe, nom: 1 }],
+      ['EquipeCreee', { equipeId: 'q1', nom: 'x', titulaires: [], remplacant: null }],
+      ['EquipeModifiee', { equipeId: 'q1', club: 'x' }],
+      ['EquipeModifiee', { equipeId: 'q1', titulaires: [1] }],
+      ['EquipeModifiee', { equipeId: 'q1', nom: 2 }],
+      ['EquipeModifiee', { nom: 'x' }],
+      ['EquipeSupprimee', { equipeId: 'q1', en: 'trop' }],
+      ['RangsEquipesModifies', { ordre: 'q1' }],
+      ['RangsEquipesModifies', {}],
+      ['RangsEquipesModifies', 'x'],
+    ] as const) {
+      expect(lire(type, d)).toBeNull();
+    }
+  });
+});
