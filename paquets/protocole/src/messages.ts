@@ -1,6 +1,8 @@
 // Messages échangés entre l'application et le serveur, partagés par les deux (docs/protocole.md).
 // Enveloppe commune : un objet JSON texte avec `v` (version) et `type`, repris du relais Wireless Fencing.
-import { ROLES_QR, type RoleQr, type VueSaisie } from '@poule-position/domaine';
+import { ROLES_QR, type RoleQr, type VueDirect, type VueSaisie } from '@poule-position/domaine';
+import { analyserVueDirect } from './vue-direct';
+import { analyserEcranPublic, type EcranPublic } from './ecrans';
 import { analyserVueSaisie } from './vue-saisie';
 import {
   analyserAccuse,
@@ -33,6 +35,10 @@ export const FERMETURES = Object.freeze({
   MAIN_PRISE: 4004,
   /** US-105 : cet appareil a été exclu par la table de marque. */
   APPAREIL_EXCLU: 4005,
+  /** US-132 (ADR-0029) : l'épreuve n'est pas (ou plus) publiée ; un spectateur ne la lit plus. */
+  NON_PUBLIEE: 4006,
+  /** US-132 (ADR-0029) : trop de lecteurs sur cette épreuve (garde-fou de 300). */
+  TROP_DE_LECTEURS: 4007,
 });
 
 /** Codes d'erreur et message lisible associé. */
@@ -68,6 +74,24 @@ export interface MessageVue {
   v: typeof VERSION_PROTOCOLE;
   type: 'vue';
   vue: VueSaisie;
+}
+
+/**
+ * US-132 (ADR-0029) : vue en direct, publiée par le pilote (client, sans `publieeLe`) puis diffusée aux spectateurs et
+ * aux écrans (serveur, avec l'heure de publication en millisecondes).
+ */
+export interface MessageVueDirect {
+  v: typeof VERSION_PROTOCOLE;
+  type: 'vueDirect';
+  vue: VueDirect;
+  publieeLe?: number;
+}
+
+/** US-133 à US-135 (ADR-0029) : réglages d'un écran géant, poussés sur sa socket de contrôle à chaque changement. */
+export interface MessageEcran {
+  v: typeof VERSION_PROTOCOLE;
+  type: 'ecran';
+  ecran: EcranPublic;
 }
 
 /** US-097 : un smartphone est entré avec le QR code d'un rôle ; son identifiant d'appareil signe ses saisies. */
@@ -139,13 +163,15 @@ export type MessageServeur =
   | MessageErreur
   | MessagePong
   | MessageVue
+  | MessageVueDirect
+  | MessageEcran
   | MessageAcces
   | MessageTable
   | MessageSaisieTable
   | MessageAccuse;
 
 /** Messages qu'un client envoie au serveur (le `ping` exact mis à part, auto-répondu). */
-export type MessageClient = MessageVue | MessageSaisieTelephone | MessageAccuse | MessageExclure;
+export type MessageClient = MessageVue | MessageVueDirect | MessageSaisieTelephone | MessageAccuse | MessageExclure;
 
 /** Contenu d'une enveloppe valide : version et type vérifiés, le reste est propre au type. */
 export type Enveloppe = { v: typeof VERSION_PROTOCOLE; type: string } & Record<string, unknown>;
@@ -159,6 +185,19 @@ export function messageBienvenue(epreuveId: string): string {
 
 export function messageVue(vue: VueSaisie): string {
   return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'vue', vue } satisfies MessageVue);
+}
+
+export function messageVueDirect(vue: VueDirect, publieeLe?: number): string {
+  return JSON.stringify({
+    v: VERSION_PROTOCOLE,
+    type: 'vueDirect',
+    vue,
+    ...(publieeLe !== undefined && { publieeLe }),
+  } satisfies MessageVueDirect);
+}
+
+export function messageEcran(ecran: EcranPublic): string {
+  return JSON.stringify({ v: VERSION_PROTOCOLE, type: 'ecran', ecran } satisfies MessageEcran);
 }
 
 export function messageAcces(role: RoleQr, appareilId: string): string {
@@ -251,6 +290,12 @@ export function analyserMessageServeur(brut: unknown): Analyse<{ message: Messag
       return { ok: true, message: { v: VERSION_PROTOCOLE, type: 'pong' } };
     case 'vue':
       return lireVue(contenu);
+    case 'vueDirect':
+      return lireVueDirect(contenu);
+    case 'ecran': {
+      const ecran = analyserEcranPublic(contenu.ecran);
+      return ecran ? { ok: true, message: { v: VERSION_PROTOCOLE, type: 'ecran', ecran } } : invalide;
+    }
     case 'acces':
       if (!(ROLES_QR as readonly unknown[]).includes(contenu.role) || typeof contenu.appareilId !== 'string') {
         return { ok: false, erreur: 'MESSAGE_INVALIDE' };
@@ -294,6 +339,23 @@ function lireVue(contenu: Enveloppe): Analyse<{ message: MessageVue }> | Refus {
     : { ok: false, erreur: 'MESSAGE_INVALIDE' };
 }
 
+function lireVueDirect(contenu: Enveloppe): Analyse<{ message: MessageVueDirect }> | Refus {
+  const vue = analyserVueDirect(contenu.vue);
+  const { publieeLe } = contenu;
+  if (!vue || (publieeLe !== undefined && !(Number.isInteger(publieeLe) && (publieeLe as number) >= 0))) {
+    return { ok: false, erreur: 'MESSAGE_INVALIDE' };
+  }
+  return {
+    ok: true,
+    message: {
+      v: VERSION_PROTOCOLE,
+      type: 'vueDirect',
+      vue,
+      ...(publieeLe !== undefined && { publieeLe: publieeLe as number }),
+    },
+  };
+}
+
 /** US-095 : analyse un message reçu d'un client (côté serveur) ; le serveur décide ensuite si ce client peut l'envoyer. */
 const invalide: Refus = { ok: false, erreur: 'MESSAGE_INVALIDE' };
 
@@ -312,6 +374,7 @@ export function analyserMessageClient(brut: unknown): Analyse<{ message: Message
   if (!enveloppe.ok) return enveloppe;
   const { contenu } = enveloppe;
   if (contenu.type === 'vue') return lireVue(contenu);
+  if (contenu.type === 'vueDirect') return lireVueDirect(contenu);
   if (contenu.type === 'accuse') return lireAccuse(contenu);
   if (contenu.type === 'exclure') {
     const { appareilId, exclu } = contenu;

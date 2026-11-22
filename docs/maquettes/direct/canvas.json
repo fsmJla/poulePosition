@@ -1,0 +1,34 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-21T18:30:00Z" },
+  "title": "Maquette affichage en direct",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1920, "h": 1080, "title": "31 · Écran géant : appel des matchs par piste" },
+    "EcranPoules.dc.html": { "x": 2000, "y": 0, "w": 1920, "h": 1080, "title": "32 · Écran géant : poules en cours" },
+    "EcranClassement.dc.html": { "x": 4000, "y": 0, "w": 1920, "h": 1080, "title": "33 · Écran géant : classement" },
+    "EcranTableau.dc.html": { "x": 0, "y": 1200, "w": 1920, "h": 1080, "title": "34 · Écran géant : tableau (tour en cours)" },
+    "EcranPodium.dc.html": { "x": 2000, "y": 1200, "w": 1920, "h": 1080, "title": "35 · Écran géant : podium" },
+    "Ecrans.dc.html": { "x": 0, "y": 2400, "w": 1360, "h": 1100, "title": "36 · Manifestation : onglet « Écrans »" },
+    "EcranReglages.dc.html": { "x": 1440, "y": 2400, "w": 1360, "h": 1100, "title": "37 · Régler un écran (fenêtre)" },
+    "DirectPoules.dc.html": { "x": 2880, "y": 2400, "w": 390, "h": 844, "title": "38 · Spectateur : suivre une épreuve" },
+    "DirectTireurs.dc.html": { "x": 3350, "y": 2400, "w": 390, "h": 844, "title": "39 · Spectateur : mes tireurs" }
+  },
+  "order": [
+    "Main.dc.html",
+    "EcranPoules.dc.html",
+    "EcranClassement.dc.html",
+    "EcranTableau.dc.html",
+    "EcranPodium.dc.html",
+    "Ecrans.dc.html",
+    "EcranReglages.dc.html",
+    "DirectPoules.dc.html",
+    "DirectTireurs.dc.html"
+  ],
+  "notes": {
+    "titreEcran": { "x": 0, "y": -300, "text": "Écran géant (US-134) · 1920 × 1080, thème sombre", "kind": "title1", "maxW": 5920 },
+    "titreOrga": { "x": 0, "y": 2100, "text": "Organisateur (US-133, US-135, US-136) et spectateur (US-137, US-138)", "kind": "title1", "maxW": 3740 }
+  },
+  "designSystems": []
+}

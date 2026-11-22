@@ -39,7 +39,18 @@ import type {
   Manifestation,
   ReponsePublique,
 } from '@poule-position/protocole';
-import { completerResume } from '@poule-position/protocole';
+import {
+  completerResume,
+  ecranPublic,
+  encoderBase64Url,
+  FERMETURES,
+  MESSAGE_PING,
+  MESSAGE_PONG,
+  messageBienvenue,
+  messageEcran,
+  messageErreur,
+} from '@poule-position/protocole';
+import type { DemandeEcran, Ecran, EcranPublic, ReglagesEcran, VueImposee } from '@poule-position/protocole';
 import type { Env } from './index';
 import { requetesCompetitionsSeules, requetesInversionVocabulaire, type ColonneSql } from './logique';
 import { ListeEnMemoire, type Lecture } from './liste-en-memoire';
@@ -127,6 +138,8 @@ export class Club extends DurableObject<Env> {
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+    // US-134 : sockets de contrôle des écrans en hibernation ; le ping reçoit son pong sans réveiller l'objet.
+    ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(MESSAGE_PING, MESSAGE_PONG));
     this.fichiers = new StockageFichiers(ctx.storage.sql, signalerLecture('fichiers'));
     ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS comptes (
@@ -217,6 +230,8 @@ export class Club extends DurableObject<Env> {
         contenu TEXT NOT NULL,
         version INTEGER NOT NULL
       )`);
+    // US-133 (ADR-0029) : écrans géants, réglages d'affichage (pas une donnée d'escrime), une ligne par écran.
+    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS ecrans (id TEXT PRIMARY KEY, contenu TEXT NOT NULL)`);
   }
 
   /** US-030 : description des fichiers joints du club. */
@@ -650,7 +665,7 @@ export class Club extends DurableObject<Env> {
     return this.lignesIndex()
       .map((ligne) => completerResume(ligne))
       .filter((ligne) => estVisibleDuPublic(ligne) && ligne.rattachement?.competitionId)
-      .map(({ id, nom, arme, categorie, sexe, date, horaires, lieu, rattachement }) => ({
+      .map(({ id, nom, arme, categorie, sexe, date, horaires, lieu, rattachement, statut }) => ({
         id,
         nom,
         arme,
@@ -660,6 +675,7 @@ export class Club extends DurableObject<Env> {
         horaires,
         lieu,
         competitionId: rattachement.competitionId,
+        statut,
       }));
   }
 
@@ -999,12 +1015,198 @@ export class Club extends DurableObject<Env> {
     return id;
   }
 
+  /** US-133 : les écrans géants du club. */
+  listerEcrans(): Ecran[] {
+    return this.ctx.storage.sql
+      .exec<{ contenu: string }>('SELECT contenu FROM ecrans ORDER BY id')
+      .toArray()
+      .map(({ contenu }) => JSON.parse(contenu) as Ecran);
+  }
+
+  private lireEcran(id: string): Ecran | null {
+    const [ligne] = this.ctx.storage.sql
+      .exec<{ contenu: string }>('SELECT contenu FROM ecrans WHERE id = ?', id)
+      .toArray();
+    return ligne ? (JSON.parse(ligne.contenu) as Ecran) : null;
+  }
+
+  private ecrireEcran(ecran: Ecran): Ecran {
+    this.ctx.storage.sql.exec(
+      'INSERT OR REPLACE INTO ecrans (id, contenu) VALUES (?, ?)',
+      ecran.id,
+      JSON.stringify(ecran),
+    );
+    return ecran;
+  }
+
+  /** CA-2 : deux écrans d'un même propriétaire ne portent pas le même nom. */
+  private nomPris(ecran: Pick<Ecran, 'proprietaire' | 'nom'>, sauf?: string): boolean {
+    const nom = ecran.nom.toLocaleLowerCase('fr');
+    return this.listerEcrans().some(
+      (autre) =>
+        autre.id !== sauf &&
+        autre.proprietaire.type === ecran.proprietaire.type &&
+        autre.proprietaire.id === ecran.proprietaire.id &&
+        autre.nom.toLocaleLowerCase('fr') === nom,
+    );
+  }
+
+  /** CA-2 : crée un écran, avec un jeton tiré par le serveur (128 bits). */
+  creerEcran(
+    demande: DemandeEcran,
+  ): { ok: true; ecran: Ecran } | { ok: false; erreur: 'PROPRIETAIRE_INCONNU' | 'NOM_EN_DOUBLE' } {
+    const { proprietaire } = demande;
+    const existe =
+      proprietaire.type === 'manifestation'
+        ? this.lireManifestation(proprietaire.id)
+        : this.lireCompetition(proprietaire.id);
+    if (!existe) return { ok: false, erreur: 'PROPRIETAIRE_INCONNU' };
+    if (this.nomPris(demande)) return { ok: false, erreur: 'NOM_EN_DOUBLE' };
+    return {
+      ok: true,
+      ecran: this.ecrireEcran({
+        id: crypto.randomUUID(),
+        ...demande,
+        jeton: jetonEcran(),
+        creeLe: Date.now(),
+        ouvertLe: null,
+        vueImposee: null,
+      }),
+    };
+  }
+
+  /** CA-5 : nouveaux réglages ; une vue imposée sur une épreuve décochée est levée. */
+  modifierEcran(
+    id: string,
+    reglages: ReglagesEcran,
+  ): { ok: true; ecran: Ecran } | { ok: false; erreur: 'ECRAN_INCONNU' | 'NOM_EN_DOUBLE' } {
+    const ecran = this.lireEcran(id);
+    if (!ecran) return { ok: false, erreur: 'ECRAN_INCONNU' };
+    if (this.nomPris({ proprietaire: ecran.proprietaire, nom: reglages.nom }, id))
+      return { ok: false, erreur: 'NOM_EN_DOUBLE' };
+    const vueImposee =
+      ecran.vueImposee && reglages.epreuves.includes(ecran.vueImposee.epreuveId) ? ecran.vueImposee : null;
+    const modifie = this.ecrireEcran({ ...ecran, ...reglages, vueImposee });
+    this.pousserEcran(modifie);
+    return { ok: true, ecran: modifie };
+  }
+
+  /** CA-5 : supprime un écran ; renvoie ses épreuves (leurs lecteurs sont à fermer), ou null s'il est inconnu. */
+  supprimerEcran(id: string): Ecran | null {
+    const ecran = this.lireEcran(id);
+    if (ecran) {
+      this.ctx.storage.sql.exec('DELETE FROM ecrans WHERE id = ?', id);
+      this.fermerEcran(id, 'Écran supprimé');
+    }
+    return ecran;
+  }
+
+  /** CA-4 : remplace le jeton ; l'ancien lien ne vaut plus rien. */
+  regenererJetonEcran(id: string): Ecran | null {
+    const ecran = this.lireEcran(id);
+    if (!ecran) return null;
+    this.fermerEcran(id, 'Lien régénéré');
+    return this.ecrireEcran({ ...ecran, jeton: jetonEcran() });
+  }
+
+  /** US-135 : impose une vue à un écran (ou reprend le défilement avec null). */
+  imposerVueEcran(id: string, vue: VueImposee | null): Ecran | null {
+    const ecran = this.lireEcran(id);
+    if (!ecran) return null;
+    const modifie = this.ecrireEcran({ ...ecran, vueImposee: vue });
+    this.pousserEcran(modifie);
+    return modifie;
+  }
+
+  /** US-133 CA-1 : les écrans dont la socket de contrôle est ouverte (« Connecté »). */
+  ecransConnectes(): string[] {
+    const ids = this.ctx
+      .getWebSockets()
+      .flatMap((socket) => this.ctx.getTags(socket))
+      .filter((etiquette) => etiquette.startsWith('ecran:'))
+      .map((etiquette) => etiquette.slice('ecran:'.length));
+    return [...new Set(ids)];
+  }
+
+  /** CA-5 : un écran ouvert reçoit ses nouveaux réglages sans rechargement. */
+  private pousserEcran(ecran: Ecran): void {
+    const message = messageEcran(ecranPublic(ecran));
+    for (const socket of this.ctx.getWebSockets(`ecran:${ecran.id}`)) {
+      try {
+        socket.send(message);
+      } catch {
+        // socket en cours de fermeture
+      }
+    }
+  }
+
+  /** CA-4 et CA-5 : un lien régénéré ou un écran supprimé ferme sa socket de contrôle (`4003`). */
+  private fermerEcran(id: string, raison: string): void {
+    for (const socket of this.ctx.getWebSockets(`ecran:${id}`)) {
+      try {
+        socket.close(FERMETURES.EXCLUE, raison);
+      } catch {
+        // déjà fermée
+      }
+    }
+  }
+
+  /**
+   * US-134 : socket de contrôle d'un écran, dont le Worker a vérifié le ticket. Elle reçoit aussitôt les réglages, puis
+   * chacun de leurs changements ; un écran supprimé entre-temps est fermé (`4003`).
+   */
+  override async fetch(requete: Request): Promise<Response> {
+    const id = new URL(requete.url).searchParams.get('ecran') ?? '';
+    const [client, serveur] = Object.values(new WebSocketPair()) as [WebSocket, WebSocket];
+    const ecran = this.lireEcran(id);
+    if (!ecran) {
+      this.ctx.acceptWebSocket(serveur, ['refuse']);
+      serveur.close(FERMETURES.EXCLUE, 'Écran inconnu');
+      return new Response(null, { status: 101, webSocket: client });
+    }
+    this.ctx.acceptWebSocket(serveur, [`ecran:${id}`]);
+    serveur.send(messageBienvenue(id));
+    serveur.send(messageEcran(ecranPublic(ecran)));
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  /** Un écran n'envoie que des pings (réponse automatique) : tout autre message est refusé. */
+  override async webSocketMessage(ws: WebSocket): Promise<void> {
+    ws.send(messageErreur('TYPE_INTERDIT'));
+  }
+
+  override async webSocketClose(ws: WebSocket): Promise<void> {
+    try {
+      ws.close();
+    } catch {
+      // déjà fermée
+    }
+  }
+
+  /**
+   * US-134 : un écran présente son jeton ; s'il est le bon, il est noté ouvert et reçoit ses réglages (sans le jeton).
+   * Null pour un écran inconnu ou un mauvais jeton.
+   */
+  ouvrirEcran(id: string, jeton: string, maintenant: number): { ecran: EcranPublic; titre: string } | null {
+    const ecran = this.lireEcran(id);
+    if (!ecran || ecran.jeton !== jeton) return null;
+    const { type, id: proprietaireId } = ecran.proprietaire;
+    const proprietaire =
+      type === 'manifestation' ? this.lireManifestation(proprietaireId) : this.lireCompetition(proprietaireId);
+    return { ecran: ecranPublic(this.ecrireEcran({ ...ecran, ouvertLe: maintenant })), titre: proprietaire?.nom ?? '' };
+  }
+
   private lireCompte(colonne: 'email' | 'id', valeur: string): CompteStocke | null {
     const [ligne] = this.ctx.storage.sql
       .exec<LigneCompte>(`SELECT ${COLONNES} FROM comptes WHERE ${colonne} = ?`, valeur)
       .toArray();
     return ligne ? versCompte(ligne) : null;
   }
+}
+
+/** US-133 : jeton d'un écran, 128 bits en base64url (22 caractères). */
+function jetonEcran(): string {
+  return encoderBase64Url(crypto.getRandomValues(new Uint8Array(16)));
 }
 
 function versCompte(ligne: LigneCompte): CompteStocke {

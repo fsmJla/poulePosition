@@ -55,6 +55,13 @@ export type Route =
   | { route: 'jetons'; epreuveId: string }
   | { route: 'jeton'; epreuveId: string; role: RoleQr }
   | { route: 'connexion'; epreuveId: string }
+  | { route: 'direct'; epreuveId: string }
+  | { route: 'ecrans' }
+  | { route: 'ecran'; id: string }
+  | { route: 'jeton-ecran'; id: string }
+  | { route: 'vue-ecran'; id: string }
+  | { route: 'ticket-ecran'; id: string }
+  | { route: 'connexion-ecran'; id: string }
   | { route: 'fichiers' }
   | { route: 'fichier'; proprietaire: ProprietaireFichier; id: string; sorte: SorteFichier }
   | { route: 'fichier-public'; nom: string }
@@ -86,6 +93,19 @@ export function analyserChemin(chemin: string): Route | null {
   if (chemin === '/competitions') return { route: 'competitions' };
   const competition = /^\/competitions\/([^/]+)$/.exec(chemin)?.[1];
   if (competition) return MOTIF_EPREUVE.test(competition) ? { route: 'competition', id: competition } : null;
+  // US-133 à US-135 (ADR-0029) : écrans géants du club.
+  if (chemin === '/ecrans') return { route: 'ecrans' };
+  const ecran = /^\/ecrans\/([^/]+)(?:\/(jeton|vue|ticket|connexion))?$/.exec(chemin);
+  if (ecran?.[1]) {
+    if (!MOTIF_EPREUVE.test(ecran[1])) return null;
+    const suite = {
+      jeton: 'jeton-ecran',
+      vue: 'vue-ecran',
+      ticket: 'ticket-ecran',
+      connexion: 'connexion-ecran',
+    } as const;
+    return { route: ecran[2] ? suite[ecran[2] as keyof typeof suite] : 'ecran', id: ecran[1] };
+  }
   if (chemin === '/epreuves') return { route: 'epreuves' };
   const seule = /^\/epreuves\/([^/]+)$/.exec(chemin)?.[1];
   if (seule) return MOTIF_EPREUVE.test(seule) ? { route: 'epreuve', epreuveId: seule } : null;
@@ -109,10 +129,11 @@ export function analyserChemin(chemin: string): Route | null {
     if (!MOTIF_EPREUVE.test(epreuveId) || !(ROLES_QR as readonly string[]).includes(role)) return null;
     return { route: 'jeton', epreuveId, role: role as RoleQr };
   }
-  const morceaux = /^\/epreuves\/([^/]+)\/(connexion|evenements|pilote|ticket|vue|jetons)$/.exec(chemin);
+  const morceaux = /^\/epreuves\/([^/]+)\/(connexion|direct|evenements|pilote|ticket|vue|jetons)$/.exec(chemin);
   if (!morceaux?.[1] || !MOTIF_EPREUVE.test(morceaux[1])) return null;
   const route = {
     connexion: 'connexion',
+    direct: 'direct',
     evenements: 'evenements',
     pilote: 'pilote',
     ticket: 'ticket',
@@ -333,8 +354,8 @@ export async function signerTicket(
   return { ticket: `${corps}.${encoderBase64Url(await hmac(secret, corps))}`, expireLe: charge.exp * 1000 };
 }
 
-/** Charge d'un ticket correctement signé, non expiré et de la bonne forme ; sinon null. */
-export async function verifierTicket(ticket: string, secret: string, maintenant: number): Promise<ChargeTicket | null> {
+/** Charge (objet JSON) d'un ticket correctement signé ; sinon null. L'expiration et la forme sont vérifiées après. */
+async function chargeSignee(ticket: string, secret: string): Promise<Record<string, unknown> | null> {
   const morceaux = ticket.split('.');
   if (morceaux.length !== 3) return null;
   const [entete, charge, signature] = morceaux as [string, string, string];
@@ -347,12 +368,70 @@ export async function verifierTicket(ticket: string, secret: string, maintenant:
     return null;
   }
   if (lue === null || typeof lue !== 'object' || Array.isArray(lue)) return null;
-  const { t, club, epreuve, appareil, exp } = lue as Record<string, unknown>;
+  return lue as Record<string, unknown>;
+}
+
+/** Charge d'un ticket de pilote correctement signé, non expiré et de la bonne forme ; sinon null. */
+export async function verifierTicket(ticket: string, secret: string, maintenant: number): Promise<ChargeTicket | null> {
+  const lue = await chargeSignee(ticket, secret);
+  if (!lue) return null;
+  const { t, club, epreuve, appareil, exp } = lue;
   if (t !== 'pilote' || typeof club !== 'string' || typeof epreuve !== 'string' || typeof appareil !== 'string') {
     return null;
   }
   if (typeof exp !== 'number' || exp * 1000 <= maintenant) return null;
   return { t, club, epreuve, appareil, exp };
+}
+
+/** US-132 (ADR-0029) : ce que porte le ticket d'un écran géant : le club, l'écran et les épreuves qu'il affiche. */
+export interface ChargeTicketEcran {
+  t: 'ecran';
+  club: string;
+  ecran: string;
+  epreuves: string[];
+  exp: number;
+}
+
+/** US-132 (ADR-0029) : signe un ticket de 60 s pour qu'un écran ouvre ses WebSockets de lecture. */
+export async function signerTicketEcran(
+  lieu: { club: string; ecran: string; epreuves: string[] },
+  secret: string,
+  maintenant: number,
+): Promise<{ ticket: string; expireLe: number }> {
+  const charge: ChargeTicketEcran = { t: 'ecran', ...lieu, exp: Math.floor((maintenant + DUREE_TICKET_MS) / 1000) };
+  const corps = `${ENTETE_JWT}.${encoderJson(charge)}`;
+  return { ticket: `${corps}.${encoderBase64Url(await hmac(secret, corps))}`, expireLe: charge.exp * 1000 };
+}
+
+/** Charge d'un ticket d'écran correctement signé, non expiré et de la bonne forme ; sinon null. */
+export async function verifierTicketEcran(
+  ticket: string,
+  secret: string,
+  maintenant: number,
+): Promise<ChargeTicketEcran | null> {
+  const lue = await chargeSignee(ticket, secret);
+  if (!lue) return null;
+  const { t, club, ecran, epreuves, exp } = lue;
+  if (t !== 'ecran' || typeof club !== 'string' || typeof ecran !== 'string') return null;
+  if (!Array.isArray(epreuves) || !epreuves.every((id) => typeof id === 'string')) return null;
+  if (typeof exp !== 'number' || exp * 1000 <= maintenant) return null;
+  return { t, club, ecran, epreuves: epreuves as string[], exp };
+}
+
+/** US-132 : qui lit la vue en direct d'une épreuve : un spectateur (sans ticket) ou un écran dont le ticket la contient. */
+export type DecisionLecteur =
+  { ok: true; lecteur: 'spectateur' } | { ok: true; lecteur: 'ecran'; ecran: string } | { ok: false };
+
+export async function deciderLecteur(
+  ticket: string | null,
+  lieu: { club: string; epreuve: string },
+  secret: string | undefined,
+  maintenant: number,
+): Promise<DecisionLecteur> {
+  if (ticket === null) return { ok: true, lecteur: 'spectateur' };
+  const charge = secret ? await verifierTicketEcran(ticket, secret, maintenant) : null;
+  if (!charge || charge.club !== lieu.club || !charge.epreuves.includes(lieu.epreuve)) return { ok: false };
+  return { ok: true, lecteur: 'ecran', ecran: charge.ecran };
 }
 
 /** En-têtes CORS d'une réponse à une origine autorisée ; null si l'origine est absente ou refusée. */

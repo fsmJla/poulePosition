@@ -4,7 +4,7 @@
 // US-022 (ADR-0016) : copie du journal envoyée par le pilote, ajoutée lot par lot, et appareil pilote.
 // US-094 (ADR-0028) : WebSocket du pilote, ouverte avec un ticket vérifié par le Worker ; elle fait sa présence.
 import { DurableObject } from 'cloudflare:workers';
-import type { RoleQr } from '@poule-position/domaine';
+import { ROLES_QR, type RoleQr } from '@poule-position/domaine';
 import { appareilRepris, prochainAppareil, type RefusAcces } from './saisie';
 import {
   analyserMessageClient,
@@ -17,6 +17,7 @@ import {
   messageErreur,
   messageTable,
   messageVue,
+  messageVueDirect,
   MESSAGE_PING,
   MESSAGE_PONG,
 } from '@poule-position/protocole';
@@ -39,12 +40,25 @@ const LIGNE_UNIQUE = 'courante';
 
 /** Ce qu'une WebSocket garde d'elle-même (survit à l'hibernation). */
 interface AttacheSocket {
-  /** US-097 : le pilote, ou un smartphone entré avec le QR code d'un rôle. */
-  role: 'pilote' | RoleQr;
+  /** US-097 : le pilote, ou un smartphone entré avec le QR code d'un rôle ; US-132 : ou un lecteur de la vue en direct. */
+  role: 'pilote' | RoleQr | Lecteur;
   appareil: string;
   epreuveId: string;
   ouverteLe: number;
 }
+
+/** US-132 (ADR-0029) : lecteur de la vue en direct, spectateur (public) ou écran géant (ticket d'écran). */
+export type Lecteur = 'spectateur' | 'ecran';
+
+/** US-132 : garde-fou du nombre de lecteurs par épreuve (ADR-0004, ADR-0029). */
+export const LECTEURS_MAX = 300;
+
+/** US-132 : étiquette de toutes les sockets de lecture, et de celles d'un type de lecteur. */
+export const ETIQUETTE_LECTEUR = 'lecteur';
+const etiquetteLecteur = (lecteur: Lecteur) => `lecteur:${lecteur}`;
+
+const estSmartphone = (role: AttacheSocket['role'] | undefined): role is RoleQr =>
+  (ROLES_QR as readonly unknown[]).includes(role);
 
 /** US-097 : code de fermeture d'un smartphone refusé (le téléphone en tire son message). */
 const FERMETURE_REFUS: Record<RefusAcces, number> = {
@@ -91,6 +105,10 @@ export class Epreuve extends DurableObject<Env> {
     sql.exec(`CREATE TABLE IF NOT EXISTS jetons (role TEXT PRIMARY KEY, jeton TEXT NOT NULL)`);
     // US-095 : dernière vue de saisie publiée par le pilote, gardée pour les smartphones qui se connectent.
     sql.exec(`CREATE TABLE IF NOT EXISTS vue (cle TEXT PRIMARY KEY, contenu TEXT NOT NULL)`);
+    // US-132 : dernière vue en direct, sa publication et son heure, pour les lecteurs qui se connectent.
+    sql.exec(
+      `CREATE TABLE IF NOT EXISTS vue_direct (cle TEXT PRIMARY KEY, contenu TEXT NOT NULL, publiee INTEGER NOT NULL, publiee_le INTEGER NOT NULL)`,
+    );
     // US-094 : la présence vient de la WebSocket du pilote ; la table des battements (US-029) n'existe plus.
     sql.exec(`DROP TABLE IF EXISTS presence`);
   }
@@ -156,7 +174,7 @@ export class Epreuve extends DurableObject<Env> {
       // US-094 CA-4 : l'ancien pilote est prévenu tout de suite, par la fermeture de sa WebSocket.
       if (decision.ancienAppareil !== demande.appareilId) {
         this.fermer(etiquettePilote(decision.ancienAppareil), FERMETURES.MAIN_PRISE, 'Main prise');
-        this.diffuser(messageTable(false));
+        this.annoncerTable(false);
       }
       return { ok: true as const, ancienAppareil: decision.ancienAppareil, ...journal };
     });
@@ -215,6 +233,9 @@ export class Epreuve extends DurableObject<Env> {
   override async fetch(requete: Request): Promise<Response> {
     const parametres = new URL(requete.url).searchParams;
     const epreuveId = parametres.get('epreuveId') ?? '';
+    const lecteur = parametres.get('lecteur');
+    if (lecteur === 'spectateur' || lecteur === 'ecran')
+      return this.accepterLecteur(epreuveId, lecteur, parametres.get('ecran'));
     const role = parametres.get('role');
     const refus = parametres.get('refus') as RefusAcces | null;
     if (role !== null || refus !== null) {
@@ -232,7 +253,7 @@ export class Epreuve extends DurableObject<Env> {
     this.fermer(etiquette, FERMETURES.REMPLACEE, 'Connexion remplacée', serveur);
     serveur.send(messageBienvenue(epreuveId));
     // US-097 CA-5 : les smartphones apprennent que la table est connectée ; la table, combien ils sont (US-100).
-    this.diffuser(messageTable(true));
+    this.annoncerTable(true);
     this.compterAppareils();
     // US-102 CA-6 : la table reçoit les saisies restées dans la boîte pendant son absence.
     for (const { contenu } of this.ctx.storage.sql.exec<{ contenu: string }>('SELECT contenu FROM boite').toArray()) {
@@ -292,6 +313,69 @@ export class Epreuve extends DurableObject<Env> {
     if (vue !== null) serveur.send(`{"v":1,"type":"vue","vue":${vue}}`);
     this.compterAppareils();
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  /**
+   * US-132 CA-4 à CA-6 (ADR-0029) : WebSocket d'un lecteur de la vue en direct, dont le Worker a vérifié le ticket
+   * d'écran s'il y en a un. Au-delà de 300 lecteurs, il est refusé (`4007`) ; un spectateur l'est aussi quand la
+   * dernière vue dit l'épreuve non publiée (`4006`). Accepté, il reçoit l'état du pilote et la dernière vue.
+   */
+  private accepterLecteur(epreuveId: string, lecteur: Lecteur, ecran: string | null): Response {
+    const [client, serveur] = Object.values(new WebSocketPair()) as [WebSocket, WebSocket];
+    const derniere = this.derniereVueDirect();
+    const refus =
+      this.ctx.getWebSockets(ETIQUETTE_LECTEUR).length >= LECTEURS_MAX
+        ? FERMETURES.TROP_DE_LECTEURS
+        : lecteur === 'spectateur' && derniere && !derniere.publiee
+          ? FERMETURES.NON_PUBLIEE
+          : null;
+    if (refus !== null) {
+      this.ctx.acceptWebSocket(serveur, ['refuse']);
+      serveur.close(refus, refus === FERMETURES.NON_PUBLIEE ? 'Épreuve non publiée' : 'Trop de lecteurs');
+      return new Response(null, { status: 101, webSocket: client });
+    }
+    const etiquettes = [ETIQUETTE_LECTEUR, etiquetteLecteur(lecteur), ...(ecran ? [`ecran:${ecran}`] : [])];
+    this.ctx.acceptWebSocket(serveur, etiquettes);
+    serveur.serializeAttachment({
+      role: lecteur,
+      appareil: ecran ?? '',
+      epreuveId,
+      ouverteLe: Date.now(),
+    } satisfies AttacheSocket);
+    serveur.send(messageBienvenue(epreuveId));
+    serveur.send(messageTable(this.etatPilote()?.connecte ?? false));
+    if (derniere)
+      serveur.send(`{"v":1,"type":"vueDirect","vue":${derniere.contenu},"publieeLe":${derniere.publieeLe}}`);
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  /** US-133 CA-4 et CA-5 : un écran supprimé ou au lien régénéré ne lit plus cette épreuve (`4003`). */
+  fermerEcran(ecranId: string): void {
+    this.fermer(`ecran:${ecranId}`, FERMETURES.EXCLUE, 'Écran supprimé ou lien régénéré');
+  }
+
+  /** US-132 : dernière vue en direct publiée (texte JSON), sa publication et son heure, ou null. */
+  derniereVueDirect(): { contenu: string; publiee: boolean; publieeLe: number } | null {
+    const [ligne] = this.ctx.storage.sql
+      .exec<{ contenu: string; publiee: number; publiee_le: number }>(
+        'SELECT contenu, publiee, publiee_le FROM vue_direct WHERE cle = ?',
+        LIGNE_UNIQUE,
+      )
+      .toArray();
+    return ligne ? { contenu: ligne.contenu, publiee: ligne.publiee === 1, publieeLe: ligne.publiee_le } : null;
+  }
+
+  /** US-097 CA-5 et US-132 CA-6 : l'état du pilote, aux smartphones et aux lecteurs de la vue en direct. */
+  private annoncerTable(connectee: boolean): void {
+    const message = messageTable(connectee);
+    this.diffuser(message);
+    for (const socket of this.ctx.getWebSockets(ETIQUETTE_LECTEUR)) {
+      try {
+        socket.send(message);
+      } catch {
+        // socket en cours de fermeture
+      }
+    }
   }
 
   /**
@@ -387,7 +471,7 @@ export class Epreuve extends DurableObject<Env> {
     // US-099 : la saisie d'un téléphone part à la table, avec le rôle et l'appareil de ce téléphone ; sans table
     // connectée, elle est suspendue (ADR-0005).
     if (message0.type === 'saisie') {
-      if (!attache || attache.role === 'pilote') {
+      if (!attache || !estSmartphone(attache.role)) {
         ws.send(messageErreur('TYPE_INTERDIT'));
         return;
       }
@@ -431,6 +515,34 @@ export class Epreuve extends DurableObject<Env> {
       for (const telephone of this.ctx.getWebSockets(`appareil:${message0.appareilId}`)) telephone.send(retour);
       return;
     }
+    // US-132 CA-3 et CA-4 : la vue en direct du pilote est gardée et diffusée aux lecteurs ; dépubliée, les spectateurs
+    // sont fermés (`4006`).
+    if (message0.type === 'vueDirect') {
+      if (!duPilote || message0.vue.epreuveId !== attache.epreuveId) {
+        ws.send(messageErreur('TYPE_INTERDIT'));
+        return;
+      }
+      const publieeLe = Date.now();
+      this.ctx.storage.sql.exec(
+        'INSERT OR REPLACE INTO vue_direct (cle, contenu, publiee, publiee_le) VALUES (?, ?, ?, ?)',
+        LIGNE_UNIQUE,
+        JSON.stringify(message0.vue),
+        message0.vue.publiee ? 1 : 0,
+        publieeLe,
+      );
+      const diffusee = messageVueDirect(message0.vue, publieeLe);
+      for (const socket of this.ctx.getWebSockets(ETIQUETTE_LECTEUR)) {
+        try {
+          socket.send(diffusee);
+        } catch {
+          // socket en cours de fermeture
+        }
+      }
+      if (!message0.vue.publiee) {
+        this.fermer(etiquetteLecteur('spectateur'), FERMETURES.NON_PUBLIEE, 'Épreuve non publiée');
+      }
+      return;
+    }
     const { vue } = message0;
     if (!duPilote || vue.epreuveId !== attache.epreuveId) {
       ws.send(messageErreur('TYPE_INTERDIT'));
@@ -450,8 +562,8 @@ export class Epreuve extends DurableObject<Env> {
     }
     // US-097 CA-5 : la table se déconnecte quand la dernière socket du pilote se ferme.
     const attache = ws.deserializeAttachment() as AttacheSocket | null;
-    if (attache?.role === 'pilote' && !this.etatPilote(ws)?.connecte) this.diffuser(messageTable(false));
-    if (attache && attache.role !== 'pilote') {
+    if (attache?.role === 'pilote' && !this.etatPilote(ws)?.connecte) this.annoncerTable(false);
+    if (attache && estSmartphone(attache.role)) {
       // US-105 CA-1 : « vu à 10 h 46 ».
       this.ctx.storage.sql.exec('UPDATE appareils SET vu_le = ? WHERE id = ?', Date.now(), attache.appareil);
       this.compterAppareils(ws);

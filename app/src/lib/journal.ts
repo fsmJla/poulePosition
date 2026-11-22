@@ -40,6 +40,8 @@ export type ResultatImport =
 
 export interface Journal {
   lire(epreuveId: string): Promise<Projection>;
+  /** US-136 : dernier `seq` écrit au journal de l'épreuve (0 s'il est vide), sans le relire en entier. */
+  dernierSeq(epreuveId: string): Promise<number>;
   /** Événements lisibles de l’épreuve, dans l'ordre des `seq` (jusqu'au premier illisible). */
   evenements(epreuveId: string): Promise<Evenement[]>;
   enregistrer(epreuveId: string, proposition: Proposition, contexte: Contexte): Promise<ResultatEcriture>;
@@ -102,6 +104,14 @@ export function ouvrirJournal(nom = 'poulePosition', persister: () => Promise<bo
   return {
     async lire(epreuveId) {
       return projeterBruts(await evenementsBruts(epreuveId));
+    },
+
+    async dernierSeq(epreuveId) {
+      const dernier = await base.evenements
+        .where('[epreuveId+seq]')
+        .between([epreuveId, Dexie.minKey], [epreuveId, Dexie.maxKey])
+        .last();
+      return typeof dernier?.seq === 'number' ? dernier.seq : 0;
     },
 
     async evenements(epreuveId) {

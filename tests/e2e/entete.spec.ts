@@ -322,7 +322,10 @@ test('US-054 CA-9 : la page d’une épreuve, menu « ⋯ » ouvert, est conform
   // US-057 : un administrateur (le compte local) a « Supprimer… » en dernier ; un organisateur (la preview), non.
   const actions = (await menu.getByRole('menuitem').allInnerTexts()).map((texte) => texte.split('\n')[0]);
   expect(actions).toEqual(
-    process.env.BASE_URL ? ['Dupliquer', 'Exporter', 'Archiver'] : ['Dupliquer', 'Exporter', 'Archiver', 'Supprimer…'],
+    // US-133 CA-6 : « Écrans géants… » suit « Dupliquer ».
+    process.env.BASE_URL
+      ? ['Dupliquer', 'Écrans géants…', 'Exporter', 'Archiver']
+      : ['Dupliquer', 'Écrans géants…', 'Exporter', 'Archiver', 'Supprimer…'],
   );
   expect(await menu.locator('svg[data-icone]').count()).toBe(actions.length);
   expect(await sansDefilementHorizontal(page)).toBe(true);

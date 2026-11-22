@@ -49,6 +49,8 @@ describe('page publique (US-031)', () => {
       horaires: { appel: '08:30', scratch: '09:00', debutPoules: null },
       lieu: 'Salle Bellegrave',
       competitionId: 'c1',
+      // US-139 : le statut décide de « Suivre en direct » ou « Résultats ».
+      statut: 'preparation',
     });
   });
 
@@ -97,7 +99,7 @@ describe('page publique (US-031)', () => {
     });
     const cles = Object.keys(page.competitionsSeules[0]?.epreuves[0] ?? {}).sort();
     expect(cles).toEqual(
-      ['arme', 'categorie', 'competitionId', 'date', 'horaires', 'id', 'lieu', 'nom', 'sexe'].sort(),
+      ['arme', 'categorie', 'competitionId', 'date', 'horaires', 'id', 'lieu', 'nom', 'sexe', 'statut'].sort(),
     );
   });
 

@@ -183,7 +183,10 @@ test('US-058 CA-6 : le menu « ⋯ » propose Dupliquer, puis Supprimer… à un
   const menu = page.getByRole('menu', { name: `Autres actions pour ${epreuve}` });
   const actions = (await menu.getByRole('menuitem').allInnerTexts()).map((texte) => texte.split('\n')[0]);
   expect(actions).toEqual(
-    process.env.BASE_URL ? ['Dupliquer', 'Exporter', 'Archiver'] : ['Dupliquer', 'Exporter', 'Archiver', 'Supprimer…'],
+    // US-133 CA-6 : « Écrans géants… » suit « Dupliquer ».
+    process.env.BASE_URL
+      ? ['Dupliquer', 'Écrans géants…', 'Exporter', 'Archiver']
+      : ['Dupliquer', 'Écrans géants…', 'Exporter', 'Archiver', 'Supprimer…'],
   );
   await menu.getByRole('menuitem', { name: /^Dupliquer/ }).click();
   await expect(page).toHaveURL(/\/epreuves\/nouvelle\?.*copie=/);

@@ -3,6 +3,8 @@
 import {
   ARMES,
   SEXES,
+  STATUTS,
+  type Statut,
   validerNom,
   type CompetitionListee,
   type EpreuvePublique,
@@ -42,6 +44,12 @@ function erreurDe(brut: unknown): { ok: false; erreur: ErreurReponse } {
 const estJour = (valeur: unknown): valeur is string => typeof valeur === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(valeur);
 
 export function analyserEpreuvePublique(brut: unknown): EpreuvePublique | null {
+  // US-139 : le statut est facultatif (absent d'un serveur d'avant US-139).
+  if (brut !== null && typeof brut === 'object' && 'statut' in brut) {
+    const { statut, ...reste } = brut as Record<string, unknown>;
+    const lue = comprend(STATUTS, statut) ? analyserEpreuvePublique(reste) : null;
+    return lue ? { ...lue, statut: statut as Statut } : null;
+  }
   const objet = aExactementLesChamps(brut, [
     'id',
     'nom',

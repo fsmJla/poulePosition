@@ -22,7 +22,7 @@ const estEntier = (valeur: unknown, minimum = 0): valeur is number =>
 const estBooleen = (valeur: unknown): valeur is boolean => typeof valeur === 'boolean';
 const dans = <T extends string>(liste: readonly T[], valeur: unknown): valeur is T =>
   (liste as readonly unknown[]).includes(valeur);
-const toutes = <T>(brut: unknown, lire: (element: unknown) => T | null): T[] | null => {
+export const toutes = <T>(brut: unknown, lire: (element: unknown) => T | null): T[] | null => {
   if (!Array.isArray(brut)) return null;
   const lus = brut.map(lire);
   return lus.every((lu) => lu !== null) ? (lus as T[]) : null;
@@ -35,7 +35,7 @@ function lireTireur(brut: unknown): TireurVue | null {
     : null;
 }
 
-function lireMatch(brut: unknown): MatchVue | null {
+export function lireMatch(brut: unknown): MatchVue | null {
   const o = aExactementLesChamps(brut, ['numero', 'tireurA', 'tireurB', 'touches', 'auTemps', 'forfait']);
   if (!o || !estEntier(o.numero, 1) || !estTexte(o.tireurA) || !estTexte(o.tireurB)) return null;
   const touches = o.touches;
@@ -44,7 +44,7 @@ function lireMatch(brut: unknown): MatchVue | null {
   return touchesValides && estBooleen(o.auTemps) && estBooleen(o.forfait) ? (o as unknown as MatchVue) : null;
 }
 
-function lireClassement(brut: unknown): ClassementVue | null {
+export function lireClassement(brut: unknown): ClassementVue | null {
   const o = aExactementLesChamps(brut, ['tireurId', 'rang', 'victoires', 'matchs', 'indice', 'retrait']);
   if (!o || !estTexte(o.tireurId) || !estEntier(o.rang, 1) || !estEntier(o.victoires) || !estEntier(o.matchs))
     return null;
@@ -101,7 +101,7 @@ function lireMatchTableau(brut: unknown): MatchTableauVue | null {
 }
 
 /** US-112 CA-6 : le tableau de la vue, null s'il n'est pas créé, `undefined` s'il est mal formé. */
-function lireTableau(brut: unknown): TableauVue | null | undefined {
+export function lireTableau(brut: unknown): TableauVue | null | undefined {
   if (brut === null) return null;
   const o = aExactementLesChamps(brut, ['touches', 'taille', 'matchs']);
   if (!o || !estEntier(o.touches, 1) || !estEntier(o.taille, 2)) return undefined;

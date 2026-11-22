@@ -18,6 +18,9 @@
   import ConfirmationArchivage from '../composants/ConfirmationArchivage.svelte';
   import ConfirmationSuppression from '../composants/ConfirmationSuppression.svelte';
   import FichiersJoints from '../composants/FichiersJoints.svelte';
+  import GestionEcrans from '../composants/GestionEcrans.svelte';
+  import type { ClientEcrans } from '../lib/ecrans';
+  import type { Ecran, VueImposee } from '@poule-position/protocole';
   import FilAriane from '../composants/FilAriane.svelte';
   import FormulaireCompetition from '../composants/FormulaireCompetition.svelte';
   import FormulaireManifestation from '../composants/FormulaireManifestation.svelte';
@@ -63,6 +66,12 @@
     clientCompetitions: ClientCompetitions;
     /** US-030 : affiche et feuille de route d'une manifestation et de ses compétitions. */
     fichiers: ClientFichiers;
+    /** US-133 : écrans géants de la manifestation (onglet « Écrans »). */
+    ecrans: ClientEcrans;
+    /** US-136 : ouvre un écran dans une fenêtre locale de ce PC. */
+    ouvrirSurCePc?: ((ecran: Ecran) => boolean) | undefined;
+    /** US-135 CA-4 : une vue imposée depuis ce PC, pour sa fenêtre locale. */
+    imposerLocalement?: ((ecranId: string, vue: VueImposee | null) => void) | undefined;
     manifestationId: string;
     onglet: OngletManifestation;
     /** Partie « ?… » de l'adresse : « ?modifier », « ?competition=nouvelle » ou « ?competition=<id> » ouvrent un formulaire. */
@@ -80,6 +89,9 @@
     clientManifestations,
     clientCompetitions,
     fichiers,
+    ecrans,
+    ouvrirSurCePc,
+    imposerLocalement,
     manifestationId,
     onglet,
     recherche,
@@ -157,6 +169,7 @@
     },
     { id: 'plan', libelle: t.plan, icone: 'carres', chemin: cheminOnglet(manifestationId, 'plan') },
     { id: 'documents', libelle: t.documents, icone: 'document', chemin: cheminOnglet(manifestationId, 'documents') },
+    { id: 'ecrans', libelle: t.ecrans, icone: 'ecran', chemin: cheminOnglet(manifestationId, 'ecrans') },
   ]);
 
   const motifHorsLigne = $derived(horsLigne ? t.necessiteInternet : undefined);
@@ -503,6 +516,14 @@
         </button>
       {:else if onglet === 'plan'}
         <PlanManifestation {session} {journal} {synchronisation} {accueil} {manifestationId} {naviguer} />
+      {:else if onglet === 'ecrans'}
+        <GestionEcrans
+          client={ecrans}
+          proprietaire={{ type: 'manifestation', id: manifestationId }}
+          groupes={noeud.competitions.map(({ competition, epreuves }) => ({ competition, epreuves }))}
+          {ouvrirSurCePc}
+          {imposerLocalement}
+        />
       {:else}
         <FichiersJoints client={fichiers} chaine={[{ proprietaire: 'manifestation', id: manifestationId }]} />
       {/if}

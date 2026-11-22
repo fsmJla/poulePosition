@@ -15,6 +15,8 @@ export interface EpreuvePublique {
   lieu: string | null;
   /** Compétition de l'épreuve. */
   competitionId: string;
+  /** US-139 : « En cours » ou « Terminée » décide du lien « Suivre en direct » ou « Résultats » ; absent avant US-139. */
+  statut?: Statut;
 }
 
 /** Une épreuve de l'index du club, avec les réglages qui décident de sa publication. */
@@ -79,8 +81,9 @@ function versPublique({
   horaires,
   lieu,
   competitionId,
+  statut,
 }: EpreuvePublique): EpreuvePublique {
-  return { id, nom, arme, categorie, sexe, date, horaires, lieu, competitionId };
+  return { id, nom, arme, categorie, sexe, date, horaires, lieu, competitionId, ...(statut && { statut }) };
 }
 
 /**

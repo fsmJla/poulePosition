@@ -32,7 +32,8 @@ test('US-056 CA-1 : la page montre le fil, le nom, les dates, le lieu, « Modifi
   await expect(page.getByText('Salle Bellegrave')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Modifier', exact: true })).toBeVisible();
   await expect(menuDe(page, planche.manifestation)).toBeVisible();
-  await expect(page.getByRole('tab')).toHaveText(['Compétitions', 'Plan', 'Affiche et feuille de route']);
+  // US-133 : quatrième onglet, « Écrans ».
+  await expect(page.getByRole('tab')).toHaveText(['Compétitions', 'Plan', 'Affiche et feuille de route', 'Écrans']);
   await expect(onglet(page, 'Compétitions')).toHaveAttribute('aria-selected', 'true');
 });
 
@@ -113,9 +114,11 @@ test('US-056 CA-5 : un onglet se rouvre au rechargement, et les flèches changen
   await expect(onglet(page, 'Affiche et feuille de route')).toHaveAttribute('aria-selected', 'true');
   await expect(page).toHaveURL(new RegExp(`/documents$`));
   await page.keyboard.press('ArrowRight');
+  await expect(onglet(page, 'Écrans')).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('ArrowRight');
   await expect(onglet(page, 'Compétitions')).toHaveAttribute('aria-selected', 'true');
   await page.keyboard.press('ArrowLeft');
-  await expect(onglet(page, 'Affiche et feuille de route')).toHaveAttribute('aria-selected', 'true');
+  await expect(onglet(page, 'Écrans')).toHaveAttribute('aria-selected', 'true');
 });
 
 test('US-056 CA-5 : « Voir le plan » de l’accueil mène à l’onglet « Plan »', async ({ page }) => {

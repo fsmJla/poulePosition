@@ -69,6 +69,12 @@ l'ajoute ici avant de l'utiliser.
 | Événement | Fait enregistré dans le journal (`ScoreSaisi`…), avec un numéro de séquence. | `evenement`, `seq` |
 | Projection | État calculé à partir du journal. | `projection` |
 | Vue | Données d'affichage publiées par le pilote pour l'écran ou les spectateurs. | `vue` |
+| Vue en direct | Vue publique d'une épreuve publiée par le pilote : poules et scores, classement, tableau, appel des matchs par piste, podium ; noms selon « Prénom N. » (US-132). | `vueDirect` |
+| Écran (géant) | Affichage d'une salle, réglé sur la page de la manifestation : épreuves cochées, durée d'une page, vues masquées ; ouvert par son lien d'écran (US-133). | `ecran` |
+| Lien d'écran | Lien secret et régénérable d'un écran ; il affiche les épreuves cochées, publiées ou non (US-133). | `jetonEcran` |
+| Vue imposée | Page qu'un organisateur impose à un écran pour une durée, à la place du défilement automatique (US-135). | `vueImposee` |
+| Fenêtre locale | Écran géant ouvert dans une seconde fenêtre du PC pilote, alimenté sans réseau (US-136, ADR-0010). | `fenetreLocale` |
+| Tireur suivi | Tireur qu'un spectateur a mis dans « Mes tireurs » sur son smartphone (US-138). | `tireursSuivis` |
 | Saisie | Proposition de score envoyée par un smartphone, que le pilote accepte ou refuse. | `saisie` |
 | Accusé | Réponse du pilote à une saisie : acceptée, refusée ou doublon. | `accuse` |
 | Boîte | Saisies stockées par le serveur en attente d'accusé. | `boite` |

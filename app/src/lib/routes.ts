@@ -30,7 +30,9 @@ export type Page =
   | 'saisie'
   | 'assistantManifestation'
   | 'creer'
-  | 'aideOrganisation';
+  | 'aideOrganisation'
+  | 'ecransCompetition'
+  | 'ecran';
 
 /** Adresses fixes ; celle d'une épreuve porte son identifiant (`cheminEpreuve`). */
 export const CHEMINS = Object.freeze({
@@ -69,6 +71,8 @@ export const CHEMINS = Object.freeze({
     | 'manifestation'
     | 'direct'
     | 'saisie'
+    | 'ecransCompetition'
+    | 'ecran'
   >,
   string
 >);
@@ -87,8 +91,18 @@ export function cheminEpreuve(epreuveId: string): string {
 export const CHEMIN_NOUVELLE_COMPETITION_SEULE = `${CHEMINS.nouvelleEpreuve}?seule`;
 
 /** US-056 : onglets de la page d'une manifestation, et leur suffixe d'adresse. */
-export type OngletManifestation = 'competitions' | 'plan' | 'documents';
-export const ONGLETS_MANIFESTATION: readonly OngletManifestation[] = ['competitions', 'plan', 'documents'];
+export type OngletManifestation = 'competitions' | 'plan' | 'documents' | 'ecrans';
+export const ONGLETS_MANIFESTATION: readonly OngletManifestation[] = ['competitions', 'plan', 'documents', 'ecrans'];
+
+/** US-133 CA-1 : onglet « Écrans » d'une manifestation. */
+export function cheminEcransManifestation(manifestationId: string): string {
+  return `/manifestations/${manifestationId}/ecrans`;
+}
+
+/** US-133 CA-6 : écrans géants d'une compétition seule (sans manifestation). */
+export function cheminEcransCompetition(competitionId: string): string {
+  return `/competitions/${competitionId}/ecrans`;
+}
 
 /** US-056 CA-5 : page d'une manifestation, onglet « Compétitions ». */
 export function cheminManifestation(manifestationId: string): string {
@@ -111,7 +125,9 @@ export function cheminOnglet(manifestationId: string, onglet: OngletManifestatio
     ? cheminPlanManifestation(manifestationId)
     : onglet === 'documents'
       ? cheminDocumentsManifestation(manifestationId)
-      : cheminManifestation(manifestationId);
+      : onglet === 'ecrans'
+        ? cheminEcransManifestation(manifestationId)
+        : cheminManifestation(manifestationId);
 }
 
 /** US-056 CA-7 : page de la manifestation avec le formulaire d'une nouvelle compétition ouvert. */
@@ -268,7 +284,9 @@ export function copieEpreuve(recherche: string): { epreuveId: string; arme: stri
 
 const MOTIF_DIRECT = /^\/direct\/([^/]+)$/;
 const MOTIF_SAISIE = /^\/saisie\/([^/]+)$/;
-const MOTIF_MANIFESTATION = /^\/manifestations\/([^/]+)(?:\/(plan|documents))?$/;
+const MOTIF_ECRAN = /^\/ecran\/([^/]+)$/;
+const MOTIF_MANIFESTATION = /^\/manifestations\/([^/]+)(?:\/(plan|documents|ecrans))?$/;
+const MOTIF_ECRANS_COMPETITION = /^\/competitions\/([^/]+)\/ecrans$/;
 const MOTIF_GRILLE = /^\/competitions\/([^/]+)\/epreuves$/;
 const MOTIF_EPREUVE = /^\/epreuves\/([^/]+)$/;
 const MOTIF_MODIFICATION = /^\/epreuves\/([^/]+)\/modifier$/;
@@ -307,6 +325,7 @@ const RESERVEES: readonly Page[] = [
   'assistantManifestation',
   'creer',
   'aideOrganisation',
+  'ecransCompetition',
 ];
 
 /** Pages des administrateurs : un organisateur est renvoyé à son accueil (US-007 CA-6). */
@@ -332,7 +351,14 @@ function redirectionAncienneListe(chemin: string, connecte: boolean, temporaire:
 }
 
 export type Route =
-  | { page: Page; epreuveId?: string; competitionId?: string; manifestationId?: string; onglet?: OngletManifestation }
+  | {
+      page: Page;
+      epreuveId?: string;
+      competitionId?: string;
+      manifestationId?: string;
+      onglet?: OngletManifestation;
+      ecranId?: string;
+    }
   | { redirection: string };
 
 /** Page désignée par une adresse normalisée, avec l'identifiant de l’épreuve s'il y en a un ; null si inconnue. */
@@ -342,6 +368,7 @@ function pageDe(chemin: string): {
   competitionId?: string;
   manifestationId?: string;
   onglet?: OngletManifestation;
+  ecranId?: string;
 } | null {
   const page = (
     Object.keys(CHEMINS) as Exclude<
@@ -362,12 +389,17 @@ function pageDe(chemin: string): {
       | 'manifestation'
       | 'direct'
       | 'saisie'
+      | 'ecransCompetition'
+      | 'ecran'
     >[]
   ).find((candidate) => CHEMINS[candidate] === chemin);
   if (page) return { page };
   // US-097 : page publique du lien d'un QR code (le jeton est dans le fragment, jamais dans le chemin).
   const saisie = MOTIF_SAISIE.exec(chemin)?.[1];
   if (saisie) return MOTIF_IDENTIFIANT.test(saisie) ? { page: 'saisie', epreuveId: saisie } : null;
+  // US-134 : écran géant, ouvert par son lien (le jeton est dans le fragment).
+  const ecran = MOTIF_ECRAN.exec(chemin)?.[1];
+  if (ecran) return MOTIF_IDENTIFIANT.test(ecran) ? { page: 'ecran', ecranId: ecran } : null;
   const direct = MOTIF_DIRECT.exec(chemin)?.[1];
   if (direct) return MOTIF_IDENTIFIANT.test(direct) ? { page: 'direct', epreuveId: direct } : null;
   const manifestation = MOTIF_MANIFESTATION.exec(chemin);
@@ -378,6 +410,12 @@ function pageDe(chemin: string): {
           manifestationId: manifestation[1],
           onglet: (manifestation[2] as OngletManifestation | undefined) ?? 'competitions',
         }
+      : null;
+  }
+  const ecransCompetition = MOTIF_ECRANS_COMPETITION.exec(chemin)?.[1];
+  if (ecransCompetition) {
+    return MOTIF_IDENTIFIANT.test(ecransCompetition)
+      ? { page: 'ecransCompetition', competitionId: ecransCompetition }
       : null;
   }
   const grille = MOTIF_GRILLE.exec(chemin)?.[1];

@@ -88,7 +88,8 @@ export interface TableauVue {
   matchs: MatchTableauVue[];
 }
 
-const matchVue = (m: MatchTableau): MatchTableauVue => ({
+/** Un match du tableau, tel que les vues publiées le montrent (vue de saisie, vue en direct). */
+export const matchTableauVue = (m: MatchTableau): MatchTableauVue => ({
   id: m.id,
   tour: m.tour,
   numero: m.numero,
@@ -185,7 +186,7 @@ function tableauVue(epreuve: Epreuve): TableauVue | null {
   return {
     touches: epreuve.formule.touchesTableau,
     taille: structure.taille,
-    matchs: tousLesMatchs(structure).map(matchVue),
+    matchs: tousLesMatchs(structure).map(matchTableauVue),
   };
 }
 

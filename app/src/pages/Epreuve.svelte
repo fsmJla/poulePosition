@@ -32,6 +32,8 @@
   import {
     cheminDirect,
     cheminDupliquerEpreuve,
+    cheminEcransCompetition,
+    cheminEcransManifestation,
     cheminFormuleEpreuve,
     cheminModificationEpreuve,
     cheminTableauEpreuve,
@@ -89,6 +91,18 @@
   /** US-029 CA-2 : celui qui vient de prendre la main, annoncé à l'ancien pilote. */
   let perteLibelle: string | null = $state(null);
   let enLigne = $state(navigator.onLine);
+
+  /** US-133 CA-6 : page des écrans géants de l'épreuve (onglet de sa manifestation, ou page de sa compétition seule). */
+  let cheminEcrans: string | null = $state(null);
+  $effect(() => {
+    const competitionId = epreuve?.rattachement?.competitionId;
+    if (!competitionId) return;
+    void trouverManifestation(competitionId).then((manifestationId) => {
+      cheminEcrans = manifestationId
+        ? cheminEcransManifestation(manifestationId)
+        : cheminEcransCompetition(competitionId);
+    });
+  });
 
   /** US-030 CA-4 : manifestation de la compétition de l'épreuve (en ligne, ou d'après la dernière copie). */
   async function trouverManifestation(competitionId: string | undefined) {
@@ -462,6 +476,8 @@
                   },
                 ]
               : []),
+            // US-133 CA-6 : les écrans géants qui peuvent afficher l'épreuve.
+            ...(cheminEcrans ? [{ libelle: tpe.ecransGeants, icone: 'ecran' as const, chemin: cheminEcrans }] : []),
             // US-034 : exporter, sur n'importe quel PC (journal local, même hors ligne) ; jamais indisponible.
             {
               libelle: tpe.exporter,

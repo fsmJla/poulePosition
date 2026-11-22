@@ -25,8 +25,8 @@
     "publication-competition",
     "reprise-competition"
   ],
-  "app/src/pages/Accueil.svelte": ["page", "marque", "publication", "charte", "accueil-public"],
-  "app/src/pages/Direct.svelte": ["publication", "page"],
+  "app/src/pages/Accueil.svelte": ["page", "marque", "publication", "charte", "accueil-public", "direct-spectateur"],
+  "app/src/pages/Direct.svelte": ["publication", "page", "direct-spectateur"],
   "app/src/pages/Connexion.svelte": ["connexion", "connexion-moderne", "hors-ligne", "charte", "theme", "theme-icones"],
   "app/src/pages/MotDePasse.svelte": ["mot-de-passe", "profil"],
   "app/src/pages/MotDePasseOublie.svelte": ["reinitialisation", "reinitialisation-email"],
@@ -65,7 +65,8 @@
     "adresse-lieu",
     "plan-lieu",
     "publication-competition",
-    "reprise-competition"
+    "reprise-competition",
+    "ecrans"
   ],
   "app/src/pages/PlanManifestation.svelte": [
     "manifestation",
@@ -94,7 +95,8 @@
     "smartphone-organisateur",
     "epreuves",
     "exporter-epreuve",
-    "importer-epreuve"
+    "importer-epreuve",
+    "ecrans"
   ],
   "app/src/pages/Formule.svelte": ["formule", "epreuve-etapes", "tableau-troisieme"],
   "app/src/pages/Parametres.svelte": ["parametres", "epreuve-etapes", "acces-qr"],
@@ -390,7 +392,14 @@
     "tableau-retrait"
   ],
   "paquets/protocole/src/acces-qr.ts": ["acces-qr"],
-  "app/src/lib/presence-pilote.ts": ["presence-pilote", "prise-de-main", "vue-saisie", "retour-en-ligne"],
+  "app/src/lib/presence-pilote.ts": [
+    "presence-pilote",
+    "prise-de-main",
+    "vue-saisie",
+    "retour-en-ligne",
+    "ecran-geant",
+    "direct-spectateur"
+  ],
   "paquets/domaine/src/vue-saisie.ts": ["vue-saisie", "matchs-piste"],
   "paquets/protocole/src/vue-saisie.ts": ["vue-saisie"],
   "app/src/lib/connexion.ts": ["presence-pilote", "prise-de-main", "hors-ligne", "vue-saisie"],
@@ -498,5 +507,16 @@
   "app/src/lib/sauvegarde-auto.ts": ["sauvegarde-automatique"],
   "app/src/lib/sauvegarde-auto-navigateur.ts": ["sauvegarde-automatique"],
   "app/src/composants/FenetreSauvegarde.svelte": ["sauvegarde-automatique"],
-  "app/src/composants/BandeauSauvegarde.svelte": ["sauvegarde-automatique"]
+  "app/src/composants/BandeauSauvegarde.svelte": ["sauvegarde-automatique"],
+  "app/src/composants/GestionEcrans.svelte": ["ecrans", "ecran-geant"],
+  "app/src/composants/FenetreEcran.svelte": ["ecrans", "ecran-geant"],
+  "app/src/lib/ecrans.ts": ["ecrans", "ecran-geant"],
+  "app/src/pages/EcransCompetition.svelte": ["ecrans", "ecran-geant"],
+  "app/src/composants/CommandeEcran.svelte": ["ecran-geant"],
+  "app/src/pages/EcranGeant.svelte": ["ecran-geant"],
+  "app/src/lib/ecran-geant.ts": ["ecran-geant"],
+  "app/src/lib/connexion-ecran.ts": ["ecran-geant"],
+  "app/src/lib/diffusion-locale.ts": ["ecran-geant"],
+  "app/src/composants/SuiviDirect.svelte": ["direct-spectateur"],
+  "app/src/lib/suivi-tireurs.ts": ["direct-spectateur"]
 }
