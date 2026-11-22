@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F14 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-137
 - **Branche / PR :** us/US-132-publier-vue-en-direct (série E9 enchaînée, une seule PR vers dev)
 
@@ -77,3 +77,4 @@ dernière vue reçue, avec son heure.
 | 2026-11-21 | Créée (spécification de l'Epic 9) |
 | 2026-11-21 | Planches validées : Prête |
 | 2026-11-21 | Implémentée : étoile par tireur, recherche, « Mes tireurs » (poule et piste, victoires, rang, prochain match ou place), choix gardé sur le smartphone (`suivi-tireurs.ts`). Tests : `suivi-tireurs.test.ts`, E2E `direct-spectateur.spec.ts` : En revue |
+| 2026-11-22 | Recette OK par l'utilisateur sur la preview de la PR #182 ; mergée dans `dev` |

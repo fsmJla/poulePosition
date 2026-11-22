@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F13 (exigences §3, §6 : moins de 2 s entre la saisie et l'affichage)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-132, US-133
 - **Branche / PR :** us/US-132-publier-vue-en-direct (série E9 enchaînée, une seule PR vers dev)
 
@@ -94,3 +94,4 @@ son heure (CA-4) et reprend seul au retour. La version sans internet est la fen�
 | 2026-11-21 | Planches validées : Prête |
 | 2026-11-21 | Implémentée : page `/ecran/<id>#<jeton>` (ticket, socket de contrôle, une socket de lecture par épreuve), défilement selon l'étape (`ecran-geant.ts`), pages des planches 31 à 35, « Dernière mise à jour », lien invalide, plein écran et Wake Lock. Tests : `ecran-geant.test.ts`, `connexion-ecran.test.ts`, E2E `ecran-geant.spec.ts` (CA-1 à CA-3, CA-5) : En revue |
 | 2026-11-21 | Recette : à la demande de l'utilisateur, le classement s'ajoute au défilement pendant les poules (provisoire) et au tableau (après les poules), pas seulement entre les deux ; le pied de l'écran ne garde que l'heure de mise à jour |
+| 2026-11-22 | Recette OK par l'utilisateur sur la preview de la PR #182 ; mergée dans `dev` |

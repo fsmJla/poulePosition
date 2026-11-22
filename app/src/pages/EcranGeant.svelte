@@ -885,7 +885,7 @@
     border-left: 0.3em solid var(--accent);
     border-radius: 0.5em;
     background: var(--surface);
-    box-shadow: 0 0.15em 0.5em rgb(0 0 0 / 0.12);
+    box-shadow: var(--ombre-flottante);
   }
 
   .carte-match.miroir {

@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F14 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-132, US-031
 - **Branche / PR :** us/US-132-publier-vue-en-direct (série E9 enchaînée, une seule PR vers dev)
 
@@ -81,3 +81,4 @@ mais sans données nouvelles tant que le réseau manque. Si le pilote est hors l
 | 2026-11-21 | Créée (spécification de l'Epic 9) |
 | 2026-11-21 | Planches validées : Prête |
 | 2026-11-21 | Implémentée : suivi en direct sur `/direct/<id>` (`SuiviDirect.svelte`) : onglets selon l'étape, appel, poules, classement, tableau, « Dernière mise à jour », fermeture `4006` quand l'épreuve est dépubliée. Tests : E2E `direct-spectateur.spec.ts` (CA-1 à CA-5) : En revue |
+| 2026-11-22 | Recette OK par l'utilisateur sur la preview de la PR #182 ; mergée dans `dev` |

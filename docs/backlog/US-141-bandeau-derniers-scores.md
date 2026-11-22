@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F13 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-134
 - **Branche / PR :** `us/US-132-publier-vue-en-direct` · PR #182 (série E9, une seule PR)
 
@@ -81,3 +81,4 @@ par ce PC.
 |---|---|
 | 2026-11-22 | Créée (retours de recette de l'Epic 9) |
 | 2026-11-22 | Implémentée dans la PR #182 (série E9) ; en attente de la recette groupée |
+| 2026-11-22 | Recette OK par l'utilisateur sur la preview de la PR #182 ; mergée dans `dev` |

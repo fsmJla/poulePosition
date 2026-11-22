@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F13 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-132, US-056
 - **Branche / PR :** us/US-132-publier-vue-en-direct (série E9 enchaînée, une seule PR vers dev)
 
@@ -98,3 +98,4 @@ La fenêtre locale (US-136) reste disponible hors ligne.
 | 2026-11-21 | Créée (spécification de l'Epic 9) |
 | 2026-11-21 | Planches validées : Prête |
 | 2026-11-21 | Implémentée : écrans dans le DO `Club` (routes `/ecrans`, §23 du protocole), onglet « Écrans » de la manifestation et page des écrans d'une compétition seule (menu « ⋯ » de l'épreuve), fenêtre de réglage, lien et QR, régénération, suppression, état « Connecté ». Tests : protocole `ecrans.test.ts`, serveur `epreuves.test.ts` « écrans géants », app `ecrans.test.ts`, E2E `ecrans.spec.ts` (CA-1 à CA-7) : En revue |
+| 2026-11-22 | Recette OK par l'utilisateur sur la preview de la PR #182 ; mergée dans `dev` |

@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F13, F12 (exigences §1 : « si l'affichage peut continuer localement depuis ce PC, c'est un bonus »)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-134
 - **Branche / PR :** us/US-132-publier-vue-en-direct (série E9 enchaînée, une seule PR vers dev)
 
@@ -76,3 +76,4 @@ C'est le but de l'US : les vues des épreuves pilotées ici passent d'une fenêt
 | 2026-11-21 | Créée (spécification de l'Epic 9) |
 | 2026-11-21 | Planches validées : Prête |
 | 2026-11-21 | Implémentée : « Ouvrir sur ce PC » (`/ecran/<id>?local`), diffusion locale par `BroadcastChannel` (`diffusion-locale.ts`) des épreuves pilotées ici et des vues imposées, réglages repris de la copie de l'appareil. Tests : `diffusion-locale.test.ts`, E2E `ecran-geant.spec.ts` « US-135 et US-136 » (CA-1, CA-2, CA-4, hors ligne) : En revue |
+| 2026-11-22 | Recette OK par l'utilisateur sur la preview de la PR #182 ; mergée dans `dev` |
