@@ -343,8 +343,18 @@ export const textes = {
     indice: 'Ind.',
     rang: 'Rang',
     podium: 'Podium',
-    pageSur: (n: number, total: number) => `Page ${n} sur ${total}`,
-    suivante: (libelle: string) => `suivante : ${libelle.charAt(0).toLowerCase()}${libelle.slice(1)}`,
+    /** US-142 : avancement d'une poule. */
+    matchsRegles: (regles: number, total: number) => `${regles} / ${total} matchs`,
+    /** US-143 : tableau en arbre. */
+    tableau: 'Tableau',
+    moitie: (moitie: 'haute' | 'basse') => `Tableau · moitié ${moitie}`,
+    petiteFinale: 'Petite finale',
+    exempt: 'exempt',
+    /** US-141 : bandeau des derniers scores. */
+    bandeau: 'Derniers scores',
+    scorePoule: (a: string, ta: number, tb: number, b: string, poule: number) =>
+      `${a} ${ta} – ${tb} ${b} · Poule ${poule}`,
+    scoreTableau: (tour: string, a: string, ta: number, tb: number, b: string) => `${tour} : ${a} ${ta} – ${tb} ${b}`,
     misAJour: (heure: string) => `Mis à jour à ${heure}`,
     derniereMiseAJour: (heure: string) => `Dernière mise à jour : ${heure}`,
   },
@@ -418,6 +428,11 @@ export const textes = {
       duree: 'Durée d’une page',
       secondes: 'secondes',
       vues: 'Vues à afficher',
+      style: 'Style',
+      styles: { sombre: 'Sombre', clair: 'Clair' },
+      bandeau: 'Bandeau des derniers scores',
+      bandeauMinutes: 'Scores des dernières',
+      minutes: 'minutes',
       enregistrer: 'Enregistrer',
       annuler: 'Annuler',
       enCours: 'Enregistrement…',
@@ -441,6 +456,7 @@ export const textes = {
       ERREUR_INATTENDUE: 'Erreur inattendue du serveur : réessayez',
       NOM_VIDE: 'Donnez un nom à l’écran',
       DUREE: 'La durée d’une page va de 5 à 120 secondes',
+      MINUTES: 'Le bandeau montre les scores de 1 à 120 dernières minutes',
     },
   },
   /** US-131 : sauvegarde automatique des épreuves pilotées dans un dossier (clé USB). */

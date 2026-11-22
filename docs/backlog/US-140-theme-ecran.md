@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F13 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-133, US-134
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-132-publier-vue-en-direct` · PR #182 (série E9, une seule PR)
 
 ## Récit
 
@@ -63,3 +63,4 @@ ligne, il ne se change pas (réglages grisés, comme US-133).
 | Date | Événement |
 |---|---|
 | 2026-11-22 | Créée (retours de recette de l'Epic 9) |
+| 2026-11-22 | Implémentée dans la PR #182 (série E9) ; en attente de la recette groupée |

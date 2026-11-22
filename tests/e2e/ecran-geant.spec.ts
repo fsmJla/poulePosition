@@ -138,3 +138,66 @@ test('US-135 et US-136 : imposer une vue ; la fenêtre locale de ce PC suit les 
   await page.getByRole('button', { name: 'Reprendre le défilement' }).click({ timeout: 20_000 });
   await expect(page.getByRole('status').filter({ hasText: 'Vue imposée' })).toHaveCount(0, { timeout: 20_000 });
 });
+
+test('US-140 à US-142 : thème clair puis sombre sans rechargement, bandeau des derniers scores, colonnes des poules', async ({
+  page,
+  context,
+}, info) => {
+  test.skip(info.project.name !== 'pc', 'Écran géant : projet « pc » seulement');
+  test.setTimeout(180_000);
+  await seConnecter(page);
+  const adresse = await epreuveAvecPresentes(page, 6);
+  const nom = (await page.getByRole('heading', { level: 1 }).textContent())?.trim() ?? '';
+
+  // US-140 CA-1 et US-141 CA-1 : style « Clair » et bandeau sur 10 minutes, réglés à la création.
+  await page.goto(adresse);
+  await page
+    .getByRole('button', { name: /^Autres actions pour / })
+    .first()
+    .click();
+  await page.getByRole('menuitem', { name: /Écrans géants/ }).click();
+  await page.getByRole('button', { name: 'Ajouter un écran' }).click({ timeout: 20_000 });
+  const fenetre = page.getByRole('dialog', { name: 'Nouvel écran' });
+  await fenetre.getByRole('checkbox', { name: new RegExp(nom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) }).check();
+  await fenetre.getByRole('radio', { name: 'Clair' }).check();
+  await fenetre.getByRole('checkbox', { name: 'Bandeau des derniers scores' }).check();
+  await fenetre.getByLabel('Scores des dernières').fill('10');
+  await fenetre.getByRole('button', { name: 'Enregistrer' }).click();
+  const lien = (await page.getByRole('article', { name: 'Écran de la salle' }).locator('code').textContent()) ?? '';
+  const pageEcrans = new URL(page.url()).pathname;
+
+  const ecran = await context.newPage();
+  await ecran.setViewportSize({ width: 1920, height: 1080 });
+  await ecran.goto(new URL(lien).pathname + new URL(lien).hash);
+  await expect(ecran.locator('html')).toHaveAttribute('data-theme', 'clair', { timeout: 20_000 });
+  // US-141 CA-4 : rien de récent, pas de bandeau.
+  await expect(ecran.getByLabel('Derniers scores')).toHaveCount(0);
+
+  // US-141 CA-2, CA-3 et CA-5 : un score saisi entre dans le bandeau ; l'heure de mise à jour reste visible.
+  await lancer(page, adresse);
+  await saisirBoutons(page, 5, 3);
+  const bandeau = ecran.getByLabel('Derniers scores');
+  await expect(bandeau).toContainText(nom, { timeout: 20_000 });
+  await expect(bandeau).toContainText(/5 – 3 .+ · Poule 1/);
+  await expect(ecran.getByText(/Mis à jour à \d\d:\d\d/)).toBeVisible();
+
+  // US-142 CA-1 et CA-2 : la poule, son avancement et ses colonnes V, M, V/M, TD, TR, Ind, Rang.
+  const poule = ecran.getByRole('region', { name: 'Poule 1' });
+  await expect(poule).toBeVisible({ timeout: 20_000 });
+  await expect(poule).toContainText('1 / 15 matchs');
+  for (const colonne of ['V', 'M', 'V/M', 'TD', 'TR', 'Ind', 'Rang']) {
+    await expect(poule.getByRole('columnheader', { name: colonne, exact: true })).toBeVisible();
+  }
+  await info.attach('ecran-clair-bandeau', { body: await ecran.screenshot(), contentType: 'image/png' });
+
+  // US-140 CA-2 : passé en « Sombre », l'écran change sans rechargement.
+  await page.goto(pageEcrans);
+  await page.getByRole('button', { name: 'Autres actions pour Écran de la salle' }).click({ timeout: 20_000 });
+  await page.getByRole('menuitem', { name: /Modifier/ }).click();
+  const modification = page.getByRole('dialog', { name: 'Écran de la salle' });
+  await expect(modification.getByRole('radio', { name: 'Clair' })).toBeChecked();
+  await expect(modification.getByRole('checkbox', { name: 'Bandeau des derniers scores' })).toBeChecked();
+  await modification.getByRole('radio', { name: 'Sombre' }).check();
+  await modification.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(ecran.locator('html')).toHaveAttribute('data-theme', 'sombre', { timeout: 10_000 });
+});

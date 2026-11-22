@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F13 (exigences §3)
 - **Priorité :** P1
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-134
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-132-publier-vue-en-direct` · PR #182 (série E9, une seule PR)
 
 ## Récit
 
@@ -77,3 +77,4 @@ Sans changement : la page se calcule à partir de la vue en direct (US-134, US-1
 | Date | Événement |
 |---|---|
 | 2026-11-22 | Créée (retours de recette de l'Epic 9) |
+| 2026-11-22 | Implémentée dans la PR #182 (série E9) ; en attente de la recette groupée |
