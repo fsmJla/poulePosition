@@ -2793,6 +2793,48 @@ export const textes = {
       AUCUN_TIREUR: 'Ce fichier ne contient aucun tireur',
     },
   },
+  /** US-156 : import des équipes depuis un fichier CSV. */
+  importEquipes: {
+    importerFichier: 'Importer un fichier…',
+    titre: 'Importer des équipes',
+    choisir: 'Fichier d’équipes (CSV)',
+    resume: (total: number) => (total > 1 ? `${total} équipes dans le fichier` : `${total} équipe dans le fichier`),
+    importables: (nombre: number) => `${nombre} équipe${nombre > 1 ? 's' : ''} à créer`,
+    tireurs: (aInscrire: number, deja: number) =>
+      `${aInscrire} tireur${aInscrire > 1 ? 's' : ''} à inscrire, ${deja} déjà inscrit${deja > 1 ? 's' : ''}`,
+    rapproches: (nombre: number) =>
+      `${nombre} rapproché${nombre > 1 ? 's' : ''} d’un inscrit par le nom (sans licence commune) : vérifiez`,
+    rapproche: (importe: string, inscrit: string) => `${importe}, comme ${inscrit}`,
+    ecartees: (nombre: number) => `${nombre} écartée${nombre > 1 ? 's' : ''}`,
+    motif: (motif: string, tireur?: string, equipe?: string) =>
+      (
+        ({
+          NOM_EQUIPE_MANQUANT: 'Nom d’équipe manquant',
+          NOM_EQUIPE_PRIS: 'Une autre équipe porte déjà ce nom',
+          NOMBRE_TITULAIRES: 'Nombre de titulaires différent du type d’épreuve',
+          NOM_TIREUR_MANQUANT: 'Nom ou prénom manquant',
+          DOUBLON_DANS_EQUIPE: 'Le même tireur apparaît deux fois dans l’équipe',
+          TIREUR_DEJA_EN_EQUIPE: `${tireur ?? 'Un tireur'} est déjà dans l’équipe ${equipe ?? ''}`.trim(),
+        }) as Record<string, string>
+      )[motif] ?? motif,
+    importer: (nombre: number) => (nombre > 1 ? `Importer ${nombre} équipes` : `Importer ${nombre} équipe`),
+    annuler: 'Annuler',
+    resultat: (equipes: number, tireurs: number, ecartees: number, echecs: number) =>
+      [
+        `${equipes} équipe${equipes > 1 ? 's' : ''} créée${equipes > 1 ? 's' : ''}`,
+        `${tireurs} tireur${tireurs > 1 ? 's' : ''} inscrit${tireurs > 1 ? 's' : ''}`,
+        `${ecartees} écartée${ecartees > 1 ? 's' : ''}`,
+        echecs > 0 ? `${echecs} non enregistrée${echecs > 1 ? 's' : ''}` : null,
+      ]
+        .filter(Boolean)
+        .join(', '),
+    erreurs: {
+      TROP_GROS: 'Ce fichier dépasse 5 Mo',
+      COLONNES_MANQUANTES: 'Ce fichier n’est pas un fichier d’équipes au format attendu',
+      AUCUNE_EQUIPE: 'Ce fichier ne contient aucune équipe',
+    },
+    colonnesManquantes: (colonnes: string[]) => `Colonnes manquantes : ${colonnes.join(', ')}`,
+  },
   /** US-080 CA-3 à CA-5 : reprendre en main toutes les épreuves d'une compétition. */
   repriseLot: {
     action: 'Tout reprendre en main',

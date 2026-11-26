@@ -30,6 +30,7 @@ export * from './tableau';
 export * from './appareils';
 export * from './repartition';
 export * from './import-ffe';
+export * from './import-equipes';
 export * from './lieu-public';
 export * from './prochaine-etape';
 export * from './rattachement';

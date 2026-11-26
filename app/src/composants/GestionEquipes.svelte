@@ -8,11 +8,13 @@
     equipesDe,
     poulesDe,
     rangCalcule,
+    analyserImportEquipes,
     rangEquipes,
     sommeClassements,
     tableauDe,
     tailleEquipe,
     tireursDe,
+    type AnalyseImportEquipes,
     type Epreuve,
     type Equipe,
     type Tireur,
@@ -20,6 +22,7 @@
   import {
     creerEquipe,
     deplacer,
+    importerEquipes,
     modifierEquipe,
     rangerEquipes,
     supprimerEquipe,
@@ -27,7 +30,9 @@
   } from '../lib/equipes';
   import type { Contexte, ResultatInscription } from '../lib/inscriptions';
   import type { Journal } from '../lib/journal';
+  import { lireFichierEquipes } from '../lib/fichier-equipes';
   import { textes } from '../lib/textes';
+  import ApercuImportEquipes from './ApercuImportEquipes.svelte';
   import ConfirmationArchivage from './ConfirmationArchivage.svelte';
   import FenetreEquipe from './FenetreEquipe.svelte';
   import Icone from './Icone.svelte';
@@ -49,6 +54,39 @@
   let fenetre: { equipe: Equipe | null } | null = $state(null);
   let suppression: Equipe | null = $state(null);
   let erreur: string | null = $state(null);
+
+  // US-156 : import des équipes depuis un CSV, lu sur l'appareil puis montré dans un aperçu.
+  const ti = textes.importEquipes;
+  let champFichier: HTMLInputElement | undefined = $state();
+  let apercu: AnalyseImportEquipes | null = $state(null);
+  let annonce = $state('');
+
+  /** CA-1, CA-2 et CA-5 : lit le fichier choisi et ouvre l'aperçu, ou dit pourquoi il est refusé. */
+  async function choisirFichier(evenement: Event & { currentTarget: HTMLInputElement }) {
+    const fichier = evenement.currentTarget.files?.[0];
+    evenement.currentTarget.value = '';
+    if (!fichier) return;
+    erreur = null;
+    annonce = '';
+    const lu = lireFichierEquipes(new Uint8Array(await fichier.arrayBuffer()));
+    if (!lu.ok) {
+      erreur = [ti.erreurs[lu.erreur], lu.manquantes ? ti.colonnesManquantes(lu.manquantes) : null]
+        .filter(Boolean)
+        .join(' · ');
+      return;
+    }
+    apercu = analyserImportEquipes(lu.lignes, { typeEpreuve: epreuve.typeEpreuve, tireurs, equipes });
+  }
+
+  /** CA-3 : importe, relit la liste et dit le résultat. */
+  async function importer() {
+    const encours = apercu;
+    if (!encours) return;
+    const rendu = await importerEquipes(journal, epreuve.id, encours.importables, contexte);
+    await apres({ ok: true });
+    annonce = ti.resultat(rendu.equipes, rendu.tireurs, encours.ecartees.length, rendu.echecs);
+    apercu = null;
+  }
 
   const tireurs = $derived(tireursDe(epreuve));
   const equipes = $derived(equipesDe(epreuve));
@@ -138,6 +176,19 @@
       >
         <Icone nom="plus" taille={20} />{t.nouvelle}
       </button>
+      <!-- US-156 : « Importer un fichier… » (bouton neutre) ouvre le choix d'un CSV d'équipes. -->
+      <button type="button" class="secondaire" onclick={() => champFichier?.click()}>
+        <Icone nom="televerser" taille={20} />{ti.importerFichier}
+      </button>
+      <input
+        bind:this={champFichier}
+        class="invisible"
+        type="file"
+        accept=".csv,text/csv,text/plain"
+        aria-label={ti.choisir}
+        tabindex="-1"
+        onchange={choisirFichier}
+      />
       {#if ordre}
         <MenuActions
           id="menu-equipes"
@@ -149,6 +200,7 @@
     {/if}
   </div>
   {#if erreur}<p class="erreur" role="alert">{erreur}</p>{/if}
+  <p class="invisible" role="status" aria-live="polite">{annonce}</p>
   {#if rangees.length === 0}
     <p class="vide">{t.aucune}</p>
   {:else}
@@ -228,6 +280,10 @@
   <p class="pied">{t.aide}</p>
 </section>
 
+{#if apercu}
+  <ApercuImportEquipes analyse={apercu} {importer} fermer={() => (apercu = null)} />
+{/if}
+
 {#if fenetre}
   {@const modifiee = fenetre.equipe}
   <FenetreEquipe
@@ -250,6 +306,14 @@
 {/if}
 
 <style>
+  .invisible {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
   .alerte {
     display: flex;
     gap: 0.6rem;

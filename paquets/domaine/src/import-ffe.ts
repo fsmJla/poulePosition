@@ -40,7 +40,7 @@ function sexeDuFichier(sexe: string | undefined): Sexe | null {
 }
 
 /** Cas limite : un classement vide, nul ou non numérique vaut « sans classement ». */
-function classementDuFichier(texte: string | undefined): number | null {
+export function classementDuFichier(texte: string | undefined): number | null {
   const valeur = Number(texte?.trim());
   return Number.isInteger(valeur) && valeur >= 1 && valeur <= 99_999 ? valeur : null;
 }

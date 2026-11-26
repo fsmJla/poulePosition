@@ -417,7 +417,7 @@
   "app/src/lib/journal.ts": ["importer-epreuve", "prise-de-main"],
   "app/src/lib/publication-lot.ts": ["publication-competition", "accueil-public"],
   "app/src/lib/reprise-lot.ts": ["reprise-competition"],
-  "app/src/pages/Inscriptions.svelte": ["inscriptions", "import-ffe", "equipes"],
+  "app/src/pages/Inscriptions.svelte": ["inscriptions", "import-ffe", "equipes", "import-equipes"],
   "app/src/lib/inscriptions.ts": [
     "inscriptions",
     "import-ffe",
@@ -428,6 +428,7 @@
     "poules-retrait"
   ],
   "app/src/lib/fichier-ffe.ts": ["import-ffe"],
+  "paquets/domaine/src/import-ffe.ts": ["import-ffe", "import-equipes"],
   "app/src/composants/ApercuImportFfe.svelte": ["import-ffe"],
   "app/src/pages/Emargement.svelte": [
     "emargement",
@@ -559,9 +560,12 @@
   "app/src/lib/diffusion-locale.ts": ["ecran-geant"],
   "app/src/composants/SuiviDirect.svelte": ["direct-spectateur"],
   "app/src/lib/suivi-tireurs.ts": ["direct-spectateur"],
-  "app/src/composants/GestionEquipes.svelte": ["equipes"],
+  "app/src/composants/GestionEquipes.svelte": ["equipes", "import-equipes"],
+  "app/src/composants/ApercuImportEquipes.svelte": ["import-equipes"],
+  "app/src/lib/fichier-equipes.ts": ["import-equipes"],
+  "paquets/domaine/src/import-equipes.ts": ["import-equipes"],
   "app/src/composants/FenetreEquipe.svelte": ["equipes"],
-  "app/src/lib/equipes.ts": ["equipes"],
+  "app/src/lib/equipes.ts": ["equipes", "import-equipes"],
   "paquets/domaine/src/equipes.ts": ["equipes"],
   "app/src/composants/impressions/ImpressionFeuillesRencontre.svelte": ["equipes"],
   "paquets/domaine/src/vue-direct.ts": ["equipes"],
