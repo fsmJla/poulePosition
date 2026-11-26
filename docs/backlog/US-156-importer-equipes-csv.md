@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F3, F15, F16 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-146, US-083
 - **Branche / PR :** `us/US-156-importer-equipes-csv`
 

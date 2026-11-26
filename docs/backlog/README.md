@@ -185,7 +185,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-153](US-153-imprimer-feuille-rencontre.md) | Imprimer la feuille de rencontre par équipes (ordre des relais) | E10 | Terminée | US-120, US-150, US-151 |
 | [US-154](US-154-imprimer-documents-equipes.md) | Adapter aux équipes les documents imprimés existants | E10 | Terminée | US-148, US-150, US-151, US-121 à US-128 |
 | [US-155](US-155-direct-equipes.md) | Afficher les épreuves par équipes sur l'écran géant et pour les spectateurs | E10 | Terminée | US-150, US-151, US-132 à US-143 |
-| [US-156](US-156-importer-equipes-csv.md) | Importer les équipes depuis un fichier CSV | E10 | En revue | US-146, US-083 |
+| [US-156](US-156-importer-equipes-csv.md) | Importer les équipes depuis un fichier CSV | E10 | Terminée | US-146, US-083 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
