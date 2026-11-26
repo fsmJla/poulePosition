@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F3, F15, F16 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** Terminée
 - **Dépend de :** US-146, US-083
-- **Branche / PR :** —
+- **Branche / PR :** `us/US-156-importer-equipes-csv`
 
 ## Récit
 
@@ -102,7 +102,17 @@ réseau ; l'envoi au serveur suit au retour du réseau (US-022). Testé par un E
   lancement (choix de l'utilisateur).
 - Écart à la planche 40 : ajout du bouton « Importer un fichier… » (icône d'import du vocabulaire, nom visible) ;
   l'aperçu reprend la fenêtre d'US-083, sans planche dédiée. À valider à la recette.
-- L'import est une seule opération côté journal : tous les événements sont ajoutés ensemble ou aucun.
+- Prises à l'implémentation (validées avec le plan) :
+  - le journal n'a pas d'écriture par lot : l'import écrit événement par événement, comme celui des tireurs (US-083).
+    Pour chaque équipe, ses tireurs inconnus sont inscrits, puis l'équipe est créée ; une écriture refusée est comptée
+    (« non enregistrée ») sans arrêter l'import, et une équipe dont un tireur n'a pas pu être inscrit n'est pas créée ;
+  - rapprochement des homonymes : même licence = même tireur ; même nom et prénom avec une licence absente d'un côté =
+    réutilisé et listé « rapproché par le nom » dans l'aperçu ; même nom et prénom mais deux licences différentes =
+    autre tireur, inscrit ;
+  - le bouton « Importer un fichier… » est dans l'en-tête de la liste d'équipes, à côté de « Nouvelle équipe » ; le
+    bouton d'import XML des tireurs (US-083) n'est plus affiché sur l'onglet « Équipes » ;
+  - un tireur déjà pris par une équipe plus haut dans le fichier est traité comme un tireur déjà en équipe
+    (« <Nom Prénom> est déjà dans l'équipe <X> »).
 
 ## Questions bloquantes
 
@@ -122,3 +132,4 @@ Aucune.
 | Date | Événement |
 |---|---|
 | 2026-11-26 | Créée |
+| 2026-11-26 | Implémentée sur `us/US-156-importer-equipes-csv` : tests unitaires (domaine, lecture du fichier) et E2E `import-equipes` verts en local ; en revue |

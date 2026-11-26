@@ -327,7 +327,7 @@
     {#if epreuve}<span class="pastille-nombre">{t.nombre(tireurs.length)}</span>{/if}
     <span class="espace"></span>
     <!-- US-083 : « Importer un fichier… » (bouton neutre) ouvre le choix d'un fichier XML de la Fédération. -->
-    {#if modifiable}
+    {#if modifiable && !(parEquipes && onglet === 'equipes')}
       <button type="button" class="secondaire" onclick={() => champFichier?.click()}>
         <Icone nom="televerser" taille={20} />{t.importer}
       </button>

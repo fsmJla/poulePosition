@@ -1,7 +1,16 @@
 // Équipes d'une épreuve par équipes (US-146, US-147) : écriture des événements d'US-145 dans le journal local du PC
 // pilote, donc aussi hors ligne ; l'envoi au serveur suit (US-022). Les règles sont celles du domaine.
-import { cleTexte, equipesDe, type DonneesEquipeModifiee, type Epreuve, type Tireur } from '@poule-position/domaine';
-import { ecrire, type Contexte, type ResultatInscription } from './inscriptions';
+import {
+  cleTexte,
+  equipesDe,
+  type DonneesEquipeModifiee,
+  type EquipeImportee,
+  type Epreuve,
+  type MembreImporte,
+  type Tireur,
+  type TireurImporte,
+} from '@poule-position/domaine';
+import { ecrire, inscrireTireur, type Contexte, type ResultatInscription } from './inscriptions';
 import type { Journal } from './journal';
 
 export interface ChampsEquipe {
@@ -86,4 +95,73 @@ export function nomPropose(epreuve: Epreuve, premier: Tireur | undefined): strin
   let numero = 1;
   while (pris.has(cleTexte(`${club} ${numero}`))) numero += 1;
   return `${club} ${numero}`;
+}
+
+/** US-156 CA-3 : le compte rendu d'un import d'équipes. */
+export interface CompteRenduImportEquipes {
+  equipes: number;
+  tireurs: number;
+  echecs: number;
+}
+
+/**
+ * US-156 CA-3 : pour chaque équipe importable, inscrit ses tireurs inconnus puis crée l'équipe. Le journal n'a pas
+ * d'écriture par lot : une écriture refusée est comptée sans arrêter l'import, et une équipe dont un tireur n'a pas pu
+ * être inscrit n'est pas créée.
+ */
+export async function importerEquipes(
+  journal: Journal,
+  epreuveId: string,
+  equipes: readonly EquipeImportee[],
+  contexte: Contexte,
+): Promise<CompteRenduImportEquipes> {
+  const rendu: CompteRenduImportEquipes = { equipes: 0, tireurs: 0, echecs: 0 };
+  /** Un tireur à inscrire est partagé par clé (licence, sinon nom) : on ne l'inscrit qu'une fois. */
+  const inscrits = new Map<string, string>();
+  const cle = ({ licence, nom, prenom }: TireurImporte) =>
+    licence ? `l:${licence}` : `n:${cleTexte(nom)}|${cleTexte(prenom)}`;
+
+  const identifiant = async (membre: MembreImporte): Promise<string | null> => {
+    if ('tireurId' in membre) return membre.tireurId;
+    const { nouveau } = membre;
+    const connu = inscrits.get(cle(nouveau));
+    if (connu) return connu;
+    const tireurId = crypto.randomUUID();
+    const resultat = await inscrireTireur(
+      journal,
+      epreuveId,
+      {
+        nom: nouveau.nom,
+        prenom: nouveau.prenom,
+        club: nouveau.club,
+        ...(nouveau.classement !== null && { classement: nouveau.classement }),
+        ...(nouveau.licence && { licence: nouveau.licence }),
+      },
+      contexte,
+      tireurId,
+    );
+    if (!resultat.ok) return null;
+    inscrits.set(cle(nouveau), tireurId);
+    rendu.tireurs++;
+    return tireurId;
+  };
+
+  for (const equipe of equipes) {
+    const titulaires: string[] = [];
+    let complete = true;
+    for (const membre of equipe.titulaires) {
+      const id = await identifiant(membre);
+      if (id) titulaires.push(id);
+      else complete = false;
+    }
+    const remplacant = equipe.remplacant ? await identifiant(equipe.remplacant) : null;
+    if (!complete || (equipe.remplacant && !remplacant)) {
+      rendu.echecs++;
+      continue;
+    }
+    const resultat = await creerEquipe(journal, epreuveId, { nom: equipe.nom, titulaires, remplacant }, contexte);
+    if (resultat.ok) rendu.equipes++;
+    else rendu.echecs++;
+  }
+  return rendu;
 }
