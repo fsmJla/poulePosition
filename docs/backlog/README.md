@@ -185,6 +185,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-153](US-153-imprimer-feuille-rencontre.md) | Imprimer la feuille de rencontre par équipes (ordre des relais) | E10 | Terminée | US-120, US-150, US-151 |
 | [US-154](US-154-imprimer-documents-equipes.md) | Adapter aux équipes les documents imprimés existants | E10 | Terminée | US-148, US-150, US-151, US-121 à US-128 |
 | [US-155](US-155-direct-equipes.md) | Afficher les épreuves par équipes sur l'écran géant et pour les spectateurs | E10 | Terminée | US-150, US-151, US-132 à US-143 |
+| [US-156](US-156-importer-equipes-csv.md) | Importer les équipes depuis un fichier CSV | E10 | Prête | US-146, US-083 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
@@ -236,6 +237,7 @@ suspendue et saisies récupérées ou écartées (US-102), impressions hors lign
 **Ordre conseillé pour E10 (équipes) :** US-145 (ADR « Équipes et participants dans le journal » d'abord, via `/adr`), puis
 les planches 40 à 43 à dessiner et faire valider, puis US-146 → US-147 → US-148 → US-149 → US-151 (tableau direct, le
 cas par défaut) → US-150 (poules d'équipes) → US-152 → US-153 → US-154 → US-155.
+Puis, indépendante, US-156 (import des équipes depuis un CSV).
 
 **Retours ergonomiques du 2026-11-17, indépendants l'un de l'autre :** US-078 (jour des épreuves : grille et
 glisser-déposer sur le plan) et US-079 (filtres « À venir » / « En cours » de l'accueil de l'organisateur,
