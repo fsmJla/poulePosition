@@ -341,6 +341,26 @@
     border-bottom: 1px solid var(--bordure);
   }
 
+  /* Boutons neutres de l'en-tête (« Nouvelle équipe », « Importer un fichier… »), comme ceux de l'étape (planche 40). */
+  .secondaire {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 1px solid var(--bordure-champ);
+    border-radius: var(--rayon);
+    background: var(--surface);
+    color: var(--texte);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .secondaire:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
   h3 {
     flex: 1;
     margin: 0;
