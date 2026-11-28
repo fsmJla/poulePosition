@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F5, F9, F10 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle (avec une correction, CA-7)
-- **Statut :** Prête
+- **Statut :** En cours
 - **Dépend de :** US-086, US-109, US-114, US-115
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-158-assouplir-deroule-epreuve`
 
 ## Récit
 
@@ -138,8 +138,13 @@ d'un passage anticipé au tableau et d'une fin anticipée.
 - La correction de la 3e place (CA-7) vaut aussi pour une épreuve en cours : une épreuve déjà bloquée sur ce match
   inexistant se débloque à la relecture de son journal, sans migration.
 - Les mêmes règles valent pour les épreuves par équipes (rencontres de poule et de tableau, US-150, US-151).
-- Le champ « Pistes » est le seul écart à la planche 8 (libellé et aide changés) ; l'aperçu remplace le texte d'aide
-  actuel.
+- Le champ « Pistes » est le seul écart à la planche 8 (libellé, aide et largeur du champ changés) ; l'aperçu
+  « Pistes utilisées : … » s'ajoute sous l'aide. Le résumé des poules dit « pistes 4, 10 » quand elles ne se suivent pas.
+- **Écran géant (réalisation) :** dans l'arbre, faute de place, un match non tiré montre « – » à la place du score, avec
+  « Non tiré » en infobulle ; le vainqueur départagé est mis en avant comme un vainqueur. Le podium porte la mention de
+  fin anticipée. Sur la page du spectateur, le match porte « Non tiré » en toutes lettres.
+- **Vue en direct (réalisation) :** elle porte un champ facultatif `finAnticipee: true` ; l'état `nonTire` est ajouté
+  aux états de match des vues de saisie et en direct.
 
 ## Questions bloquantes
 
@@ -167,3 +172,4 @@ d'un passage anticipé au tableau et d'une fin anticipée.
 | Date | Événement |
 |---|---|
 | 2026-11-28 | Créée (retours ergonomiques du 2026-11-28, second lot) |
+| 2026-11-28 | En cours (série US-158, US-157 enchaînée) |

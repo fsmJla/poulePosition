@@ -1137,7 +1137,7 @@ diffuse aux sockets étiquetées `saisie` (smartphones, US-097) ; il ne la lit n
 | `lancees` | Faux avant le lancement des poules ; `poules` est alors vide |
 | `poules[]` | `numero`, `piste`, `tireurs[]` (`id`, `nom`, `prenom`, `club`, dans l'ordre de la poule), `matchs[]` (`numero`, `tireurA`, `tireurB`, `touches` `[a, b]` ou `null`, `auTemps`, `forfait`, dans l'ordre officiel), `regles` et `total` (avancement), `classement[]` (`tireurId`, `rang`, `victoires`, `matchs`, `indice`, `retrait`) |
 | `equipes` | US-152 : `true` pour une épreuve par équipes (absent sinon) : les « tireurs » de la vue sont les équipes, les touches suivent les rencontres (relais), une égalité de poule se départage par `parPriorite` et seuls les arbitres saisissent. |
-| `tableau` | US-112 : `null` avant la création du tableau, sinon `touches` (d'un match du tableau), `taille`, `matchs[]` (`id`, `tour`, `numero`, `haut` et `bas` : `tireurId`, `rang`, `provenance` ; `etat` : `exempt`, `attente`, `aTirer`, `regle` ; `touches` `[haut, bas]` ou `null`, `vainqueur`, `parPriorite`, `piste`, `enPiste`, `appeleA` en millisecondes). Absent d'une vue publiée avant US-112 |
+| `tableau` | US-112 : `null` avant la création du tableau, sinon `touches` (d'un match du tableau), `taille`, `matchs[]` (`id`, `tour`, `numero`, `haut` et `bas` : `tireurId`, `rang`, `provenance` ; `etat` : `exempt`, `attente`, `aTirer`, `regle`, `nonTire` (US-158 : départagé sans score à la fin anticipée) ; `touches` `[haut, bas]` ou `null`, `vainqueur`, `parPriorite`, `piste`, `enPiste`, `appeleA` en millisecondes). Absent d'une vue publiée avant US-112 |
 
 Données personnelles (ADR-0014) : des tireurs, seuls le nom, le prénom, le club et la poule ; ni licence, ni classement,
 ni heure de pointage. Une épreuve de 60 tireurs fait moins de 64 Ko, sous la limite de 256 Ko d'un message.
@@ -1218,7 +1218,7 @@ les saisies reçues des poules.
 La **vue en direct** (`VueDirect`, `paquets/domaine/src/vue-direct.ts`) est calculée par le pilote à partir du journal.
 Elle est publique : l'étape (`inscriptions`, `poules`, `classement`, `tableau`, `terminee`), les tireurs (nom affiché
 selon « Prénom N. », club), les poules et leurs scores (avec, par tireur, TD et TR : US-142), le classement après les
-poules, le tableau et le classement final, le statut de publication, `equipes` (US-155, par équipes seulement : `[{ id, membres }]`, les tireurs de chaque équipe au nom affiché ; les « tireurs » de la vue sont alors les équipes) et `scoresRecents` (US-141) : les 40 derniers scores
+poules, le tableau et le classement final, le statut de publication, `equipes` (US-155, par équipes seulement : `[{ id, membres }]`, les tireurs de chaque équipe au nom affiché ; les « tireurs » de la vue sont alors les équipes), `finAnticipee` (US-158 : `true` pour une épreuve terminée avant la fin du tableau, absent sinon) et `scoresRecents` (US-141) : les 40 derniers scores
 saisis (poules et tableau), le plus récent d'abord, chacun avec son heure d'enregistrement (`date`), sa poule ou son tour
 (`poule` ou `tour`, l'un des deux à `null`), ses tireurs et ses touches. Un score corrigé remplace l'ancien. Elle ne porte ni émargement, ni licence, ni droit, ni identifiant d'appareil.
 
