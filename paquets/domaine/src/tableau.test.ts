@@ -14,6 +14,7 @@ import {
   controleScoreTableau,
   etatTableauVide,
   matchDuTableau,
+  matchsNonTiresDesPoules,
   pisteProposee,
   placesAffichees,
   scoreTableauDesBoutons,
@@ -587,5 +588,119 @@ describe('US-108 CA-11 : terminer l’épreuve', () => {
   it('US-108 : une projection gardée avant US-108 n’a pas de tableau', () => {
     const ancienne: Epreuve = { ...epreuveDe(...poulesJouees(CINQ)), tableau: undefined };
     expect(tableauDe(ancienne).qualifies).toBeNull();
+  });
+});
+
+describe('US-158 : tableau et fin d’épreuve anticipés, 3e place à trois', () => {
+  const anticipe = (...qualifies: string[]): Proposition => ({
+    type: 'TableauCree',
+    donnees: { qualifies, anticipe: true },
+  });
+  const finAnticipee: Proposition = { type: 'EpreuveTerminee', donnees: { anticipe: true } };
+  const troisieme: Proposition = { type: 'FormuleModifiee', donnees: { matchTroisieme: true } };
+  const places = (epreuve: Epreuve) =>
+    classementFinal(epreuve.poules!, tableauDe(epreuve), 5, epreuve.formule.matchTroisieme).map((l) => [
+      l.tireurId,
+      l.place,
+      l.exaequo,
+    ]);
+
+  /** Sans le match d-e, e (indice −9) passe devant d (indice −12). */
+  const ORDRE_PROVISOIRE = ['a', 'b', 'c', 'e', 'd'];
+
+  it('CA-1 : le tableau se crée par anticipation dès les poules lancées, pas sans le dire', () => {
+    const incompletes = poulesJouees(CINQ, { aTirer: 1 });
+    expect(verifier(incompletes, creer(...ORDRE_PROVISOIRE))).toBe('POULES_NON_TERMINEES');
+    expect(verifier(incompletes, anticipe(...ORDRE_PROVISOIRE))).toBeNull();
+    const nonLancees = poulesJouees(CINQ).filter((p) => p.type !== 'PoulesLancees' && p.type !== 'ScorePouleSaisi');
+    expect(verifier(nonLancees, anticipe(...CINQ))).toBe('POULES_NON_TERMINEES');
+    // Poules terminées : « anticipe » ne gêne pas.
+    expect(verifier(poulesJouees(CINQ), anticipe(...CINQ))).toBeNull();
+  });
+
+  it('CA-3 : le classement des matchs tirés remplit le tableau, puis les poules sont figées', () => {
+    const incompletes = poulesJouees(CINQ, { aTirer: 1 });
+    const epreuve = epreuveDe(...incompletes);
+    expect(qualifiesDesPoules(epreuve.poules!, 5).map((q) => q.tireurId)).toEqual(ORDRE_PROVISOIRE);
+    expect(verifier(incompletes, anticipe(...CINQ))).toBe('QUALIFIES_INVALIDES');
+    expect(matchsNonTiresDesPoules(epreuve.poules!, 5)).toEqual([{ poule: 1, nombre: 1 }]);
+    expect(matchsNonTiresDesPoules(epreuveDe(...poulesJouees(CINQ)).poules!, 5)).toEqual([]);
+    const avant = [...incompletes, anticipe(...ORDRE_PROVISOIRE)];
+    expect(tableauDe(epreuveDe(...avant)).qualifies).toEqual(ORDRE_PROVISOIRE);
+    expect(
+      verifier(avant, {
+        type: 'ScorePouleSaisi',
+        donnees: { poule: 1, tireurA: 'd', tireurB: 'e', touchesA: 5, touchesB: 1 },
+      }),
+    ).not.toBeNull();
+  });
+
+  it('CA-5 : l’épreuve se termine par anticipation une fois le tableau créé', () => {
+    expect(verifier(avecTableau, { type: 'EpreuveTerminee', donnees: {} })).toBe('MATCHS_A_REGLER');
+    expect(verifier(avecTableau, finAnticipee)).toBeNull();
+    expect(verifier(poulesJouees(CINQ), finAnticipee)).toBe('TABLEAU_ABSENT');
+    const epreuve = epreuveDe(...avecTableau, finAnticipee);
+    expect(epreuve.statut).toBe('terminee');
+    expect(tableauDe(epreuve).finAnticipee).toBe(true);
+    expect(verifier([...avecTableau, finAnticipee], score('8-2', 'd', 'e', 15, 3))).toBe('EPREUVE_TERMINEE');
+  });
+
+  it('CA-6 : les matchs non tirés sont départagés par le rang après poules, tour après tour', () => {
+    const epreuve = epreuveDe(...avecTableau, finAnticipee);
+    const structure = structureTableau(tableauDe(epreuve), false)!;
+    expect(structure.tours[0]!.matchs[1]).toMatchObject({
+      etat: 'nonTire',
+      vainqueur: 'd',
+      perdant: 'e',
+      touches: null,
+    });
+    expect(structure.tours[1]!.matchs.map((m) => [m.etat, m.vainqueur])).toEqual([
+      ['nonTire', 'a'],
+      ['nonTire', 'b'],
+    ]);
+    expect(tableauTermine(structure)).toBe(true);
+    expect(places(epreuve)).toEqual([
+      ['a', 1, false],
+      ['b', 2, false],
+      ['c', 3, true],
+      ['d', 3, true],
+      ['e', 5, false],
+    ]);
+  });
+
+  it('CA-6 : un match tiré garde son résultat, la 3e place non tirée va au mieux classé', () => {
+    const epreuve = epreuveDe(...avecTableau, troisieme, score('8-2', 'e', 'd', 15, 3), finAnticipee);
+    const structure = structureTableau(tableauDe(epreuve), true)!;
+    expect(structure.tours[0]!.matchs[1]).toMatchObject({ etat: 'regle', vainqueur: 'e' });
+    expect(structure.troisieme).toMatchObject({ etat: 'nonTire', vainqueur: 'c', perdant: 'e' });
+    expect(places(epreuve)).toEqual([
+      ['a', 1, false],
+      ['b', 2, false],
+      ['c', 3, false],
+      ['e', 4, false],
+      ['d', 5, false],
+    ]);
+  });
+
+  it('CA-6 : sans fin anticipée, rien n’est départagé', () => {
+    const structure = structureTableau(tableauDe(epreuveDe(...avecTableau)), false)!;
+    expect(structure.tours[0]!.matchs[1]!.etat).toBe('aTirer');
+    expect(structure.tours[1]!.matchs[0]!.etat).toBe('attente');
+  });
+
+  it('CA-7 : à trois qualifiés, pas de match pour la 3e place et l’épreuve se termine', () => {
+    const avant = [...poulesJouees(['a', 'b', 'c']), troisieme, creer('a', 'b', 'c')];
+    const tableau = () => structureTableau(tableauDe(epreuveDe(...avant)), true)!;
+    expect(tableau().tours[0]!.matchs.map((m) => m.etat)).toEqual(['exempt', 'aTirer']);
+    expect(tableau().troisieme).toBeNull();
+    avant.push(score('4-2', 'b', 'c', 15, 4), score('2-1', 'a', 'b', 15, 9));
+    expect(tableauTermine(tableau())).toBe(true);
+    expect(verifier(avant, { type: 'EpreuveTerminee', donnees: {} })).toBeNull();
+    expect(situationDuTableau(contexteTableau(epreuveDe(...avant)))).toBe('aTerminer');
+    expect(places(epreuveDe(...avant))).toEqual([
+      ['a', 1, false],
+      ['b', 2, false],
+      ['c', 3, false],
+    ]);
   });
 });

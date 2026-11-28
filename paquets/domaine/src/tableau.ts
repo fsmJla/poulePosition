@@ -4,6 +4,7 @@ import {
   type ChoixScore,
   avancementPoules,
   classementDesPoules,
+  matchsDePoule,
   MOTIFS_RETRAIT,
   type EtatPoules,
   type MotifRetrait,
@@ -48,12 +49,16 @@ export interface EtatTableau {
   qualifies: string[] | null;
   resultats: ResultatTableau[];
   appels: AppelMatch[];
+  /** US-158 CA-6 : l'épreuve a été terminée avant la fin du tableau ; les matchs non réglés sont départagés. */
+  finAnticipee?: boolean;
 }
 
 export const etatTableauVide = (): EtatTableau => ({ qualifies: null, resultats: [], appels: [] });
 
 export interface DonneesTableauCree {
   qualifies: string[];
+  /** US-158 CA-1 : tableau créé avant la fin des poules, sur le classement des matchs tirés. */
+  anticipe?: true;
 }
 export interface DonneesMatchTableauAppele {
   match: string;
@@ -78,7 +83,10 @@ export interface DonneesRetraitTableau {
 export interface DonneesAnnulationRetraitTableau {
   match: string;
 }
-export type DonneesEpreuveTerminee = Record<string, never>;
+export interface DonneesEpreuveTerminee {
+  /** US-158 CA-5 : épreuve terminée avant la fin du tableau. */
+  anticipe?: true;
+}
 
 export type ErreurTableau =
   | 'POULES_NON_TERMINEES'
@@ -138,6 +146,19 @@ export function qualifiesDesPoules(poules: EtatPoules, touchesPoules: number): Q
     .map(({ tireurId, rangGeneral, exaequo }) => ({ tireurId, rang: rangGeneral!, exaequo }));
 }
 
+/** US-158 CA-2 et CA-4 : les matchs de poule restés à tirer, par poule (les poules sans match à tirer sont omises). */
+export function matchsNonTiresDesPoules(
+  poules: EtatPoules,
+  touchesPoules: number,
+): { poule: number; nombre: number }[] {
+  return poules.poules
+    .map((poule) => ({
+      poule: poule.numero,
+      nombre: matchsDePoule(poules, poule, touchesPoules).filter(({ touches }) => touches === null).length,
+    }))
+    .filter(({ nombre }) => nombre > 0);
+}
+
 /** CA-1 : les poules sont-elles toutes terminées (aucun match à tirer) ? */
 export function poulesTerminees(poules: EtatPoules, touchesPoules: number): boolean {
   if (!poules.lancees) return false;
@@ -173,7 +194,11 @@ export interface PlaceTableau {
   provenance: string | null;
 }
 
-export type EtatMatch = 'exempt' | 'attente' | 'aTirer' | 'regle';
+/** US-158 CA-6 : 'nonTire', match resté sans score d'une épreuve terminée avant la fin, départagé par le rang. */
+export type EtatMatch = 'exempt' | 'attente' | 'aTirer' | 'regle' | 'nonTire';
+
+/** US-158 : le match est-il décidé (réglé, ou départagé à la fin anticipée) ? */
+export const matchDecide = (m: Pick<MatchTableau, 'etat'>) => m.etat === 'regle' || m.etat === 'nonTire';
 
 export interface MatchTableau {
   id: string;
@@ -228,6 +253,7 @@ export function structureTableau(etat: EtatTableau, matchTroisieme: boolean): St
   });
   const resultat = (id: string, a: string | null, b: string | null) =>
     etat.resultats.find((r) => r.match === id && a !== null && b !== null && memePaire(r, a, b)) ?? null;
+  const departager = etat.finAnticipee === true;
 
   const tours: TourTableau[] = [];
   const placement = placementFIE(taille);
@@ -241,14 +267,15 @@ export function structureTableau(etat: EtatTableau, matchTroisieme: boolean): St
       // Au premier tour, le meilleur rang est en haut ; ensuite, le vainqueur du match du haut.
       const [haut, bas] = tour === taille && (p1.rang ?? Infinity) > (p2.rang ?? Infinity) ? [p2, p1] : [p1, p2];
       const exempt = tour === taille && (haut.tireurId === null || bas.tireurId === null);
-      matchs.push(construireMatch(idMatch(tour, numero), tour, numero, haut, bas, exempt, resultat));
+      matchs.push(construireMatch(idMatch(tour, numero), tour, numero, haut, bas, exempt, resultat, departager));
     }
     tours.push({ taille: tour, matchs });
     places = matchs.map((m) => place(m.vainqueur, m.id));
   }
   let troisieme: MatchTableau | null = null;
-  if (matchTroisieme && taille >= 4) {
-    const demies = tours.find((t) => t.taille === 4)!.matchs;
+  const demies = taille >= 4 ? tours.find((t) => t.taille === 4)!.matchs : [];
+  // US-158 CA-7 : une demi-finale exempte (trois qualifiés) n'a pas de perdant, donc pas de match pour la 3e place.
+  if (matchTroisieme && demies.length === 2 && demies.every((d) => d.etat !== 'exempt')) {
     const [d1, d2] = [demies[0]!, demies[1]!];
     troisieme = construireMatch(
       MATCH_TROISIEME,
@@ -258,6 +285,7 @@ export function structureTableau(etat: EtatTableau, matchTroisieme: boolean): St
       place(d2.perdant, d2.id),
       false,
       resultat,
+      departager,
     );
   }
   const structure = { taille, tours, troisieme };
@@ -273,6 +301,7 @@ function construireMatch(
   bas: PlaceTableau,
   exempt: boolean,
   resultat: (id: string, a: string | null, b: string | null) => ResultatTableau | null,
+  departager = false,
 ): MatchTableau {
   const base = {
     id,
@@ -297,6 +326,11 @@ function construireMatch(
   }
   if (haut.tireurId === null || bas.tireurId === null) return { ...base, etat: 'attente' };
   const r = resultat(id, haut.tireurId, bas.tireurId);
+  if (!r && departager) {
+    // US-158 CA-6 : le mieux classé après poules passe, sans score.
+    const [vainqueur, perdant] = haut.rang! <= bas.rang! ? [haut, bas] : [bas, haut];
+    return { ...base, etat: 'nonTire', vainqueur: vainqueur.tireurId, perdant: perdant.tireurId };
+  }
   if (!r) return { ...base, etat: 'aTirer' };
   const touches =
     r.tireurA === haut.tireurId ? ([r.touchesA, r.touchesB] as const) : ([r.touchesB, r.touchesA] as const);
@@ -349,6 +383,7 @@ function appliquerAppels(structure: StructureTableau, appels: readonly AppelMatc
     if (!match || match.etat === 'exempt' || match.etat === 'attente') continue;
     match.piste = piste;
     match.appeleA = date;
+    if (match.etat === 'nonTire') continue;
     if (match.etat === 'regle') {
       finDuPrecedent.set(piste, Math.max(finDuPrecedent.get(piste) ?? 0, match.regleLe ?? 0));
       continue;
@@ -378,7 +413,7 @@ export function avancementTour(tour: TourTableau): { regles: number; total: numb
 
 /** CA-11 : tous les matchs du tableau sont-ils réglés (3e place comprise) ? */
 export function tableauTermine(structure: StructureTableau): boolean {
-  return tousLesMatchs(structure).every((m) => m.etat === 'regle' || m.etat === 'exempt');
+  return tousLesMatchs(structure).every((m) => matchDecide(m) || m.etat === 'exempt');
 }
 
 /** Le contrôle d'un score du tableau : les touches, et le vainqueur désigné à égalité (US-111, US-106). */
@@ -443,11 +478,13 @@ const pretPourLeTableau = (contexte: ContexteTableau): boolean =>
 /** CA-2 : la création du tableau est-elle recevable ? */
 export function verifierCreationTableau(
   contexte: ContexteTableau,
-  { qualifies }: DonneesTableauCree,
+  { qualifies, anticipe }: DonneesTableauCree,
 ): ErreurTableau | null {
   if (contexte.terminee) return 'EPREUVE_TERMINEE';
   if (contexte.tableau.qualifies) return 'TABLEAU_EXISTE';
-  if (!pretPourLeTableau(contexte)) return 'POULES_NON_TERMINEES';
+  // US-158 CA-1 : créé par anticipation, il suffit que les poules soient lancées.
+  const anticipable = anticipe === true && contexte.poules.lancees;
+  if (!pretPourLeTableau(contexte) && !anticipable) return 'POULES_NON_TERMINEES';
   const attendus = qualifiesDuContexte(contexte);
   if (attendus.length < 2) return 'QUALIFIES_INSUFFISANTS';
   if (attendus.length > TAILLE_MAX_TABLEAU) return 'TABLEAU_TROP_GRAND';
@@ -552,9 +589,14 @@ export function verifierDesactivationTroisieme(tableau: EtatTableau): ErreurTabl
 }
 
 /** CA-11 : terminer l'épreuve, une fois tous les matchs réglés (ou les poules terminées avec un seul qualifié). */
-export function verifierFinEpreuve(contexte: ContexteTableau): ErreurTableau | null {
+export function verifierFinEpreuve(
+  contexte: ContexteTableau,
+  { anticipe }: DonneesEpreuveTerminee = {},
+): ErreurTableau | null {
   if (contexte.terminee) return 'EPREUVE_TERMINEE';
   const structure = structureTableau(contexte.tableau, contexte.matchTroisieme);
+  // US-158 CA-5 : par anticipation, dès que le tableau existe.
+  if (anticipe === true) return structure ? null : 'TABLEAU_ABSENT';
   if (structure) return tableauTermine(structure) ? null : 'MATCHS_A_REGLER';
   const seul = pretPourLeTableau(contexte) && qualifiesDuContexte(contexte).length <= 1;
   return seul ? null : 'MATCHS_A_REGLER';
@@ -705,8 +747,8 @@ export function classementFinal(
   const finale = structure.tours[structure.tours.length - 1]!.matchs[0]!;
   // Les tours, du premier à la finale : les perdants d'un tour terminé prennent leurs places.
   for (const tour of structure.tours) {
-    const termine = tour.matchs.every((m) => m.etat === 'regle' || m.etat === 'exempt');
-    const perdants = tour.matchs.filter((m) => m.etat === 'regle').map((m) => ({ id: m.perdant!, retrait: m.retrait }));
+    const termine = tour.matchs.every((m) => matchDecide(m) || m.etat === 'exempt');
+    const perdants = tour.matchs.filter(matchDecide).map((m) => ({ id: m.perdant!, retrait: m.retrait }));
     for (const { id, retrait } of perdants) {
       const l = places.get(id)!;
       l.elimineAu = tour.taille;
@@ -727,7 +769,7 @@ export function classementFinal(
           l.exaequo = aClasser.length > 1;
           l.etat = 'classe';
         }
-      } else if (troisieme.etat === 'regle') {
+      } else if (matchDecide(troisieme)) {
         const vainqueur = places.get(troisieme.vainqueur!)!;
         const perdant = places.get(troisieme.perdant!)!;
         const motif = troisieme.retrait;
@@ -750,7 +792,7 @@ export function classementFinal(
       l.etat = 'classe';
     });
   }
-  if (finale.etat === 'regle') {
+  if (matchDecide(finale)) {
     const vainqueur = places.get(finale.vainqueur!)!;
     vainqueur.place = 1;
     vainqueur.elimineAu = 1;

@@ -401,6 +401,14 @@ describe('US-108 : forme des événements du tableau', () => {
     expect(lit('EpreuveTerminee', {})).toBe(true);
     expect(lit('EpreuveTerminee', { x: 1 })).toBe(false);
   });
+  it('US-158 CA-1 et CA-5 : création du tableau et fin de l’épreuve anticipées', () => {
+    expect(lit('TableauCree', { qualifies: ['a', 'b'], anticipe: true })).toBe(true);
+    expect(lit('TableauCree', { qualifies: ['a', 'b'], anticipe: false })).toBe(false);
+    expect(lit('TableauCree', { qualifies: ['a', 'b'], anticipe: 'oui' })).toBe(false);
+    expect(lit('EpreuveTerminee', { anticipe: true })).toBe(true);
+    expect(lit('EpreuveTerminee', { anticipe: 1 })).toBe(false);
+    expect(lit('EpreuveTerminee', { anticipe: true, x: 1 })).toBe(false);
+  });
 });
 
 describe('événements des équipes (US-145)', () => {

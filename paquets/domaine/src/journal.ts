@@ -520,7 +520,7 @@ function verifierTableau(epreuve: Epreuve | null, proposition: PropositionTablea
     case 'RetraitDuTableauAnnule':
       return verifierAnnulationRetraitTableau(contexte, proposition.donnees);
     default:
-      return verifierFinEpreuve(contexte);
+      return verifierFinEpreuve(contexte, proposition.donnees);
   }
 }
 
@@ -815,7 +815,10 @@ function tableauApres(
       return { ...epreuve, tableau: { ...etat, resultats } };
     }
     default:
-      return { ...epreuve, statut: 'terminee' };
+      // US-158 CA-6 : une fin anticipée départage les matchs restés sans score.
+      return evenement.donnees.anticipe
+        ? { ...epreuve, statut: 'terminee', tableau: { ...etat, finAnticipee: true } }
+        : { ...epreuve, statut: 'terminee' };
   }
 }
 
