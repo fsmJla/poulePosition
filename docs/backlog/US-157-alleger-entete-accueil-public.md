@@ -4,9 +4,9 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P3
 - **Type :** fonctionnelle
-- **Statut :** Prête
+- **Statut :** En revue
 - **Dépend de :** US-079, US-052
-- **Branche / PR :** — (renseignés par `/debut-impl-US` et `/fin-impl-US`)
+- **Branche / PR :** `us/US-157-alleger-entete-accueil-public` (empilée sur US-158)
 
 ## Récit
 
@@ -94,6 +94,8 @@ réseau, comme aujourd'hui. Testé : E2E hors ligne (la pastille reste visible e
 - **Pastille seulement sur l'accueil public** (validé le 2026-11-28), pas sur les pages de connexion, mot de passe
   oublié et réinitialisation (elles portent aussi la barre de US-052).
 - Le libellé connecté reste « Accueil de l'organisateur » (texte existant du catalogue).
+- **Réalisation :** la pastille fait 44 px de haut (cible tactile), le sélecteur de thème 42 px ; même bordure, fond et
+  rayon. La pastille est un composant `PastilleConnexion` posé dans la barre de US-052 par l'application.
 
 ## Questions bloquantes
 
@@ -115,3 +117,4 @@ réseau, comme aujourd'hui. Testé : E2E hors ligne (la pastille reste visible e
 | Date | Événement |
 |---|---|
 | 2026-11-28 | Créée (retours ergonomiques du 2026-11-28, premier lot) |
+| 2026-11-28 | En revue : PR vers dev (série avec US-158) |

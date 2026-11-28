@@ -302,6 +302,16 @@ describe('dates de la page d’une manifestation (US-056 CA-8)', () => {
   });
 });
 
+describe('entête de l’accueil public (US-157)', () => {
+  it('CA-1 : « Escrime » sur l’accueil public, la connexion garde son sous-titre', () => {
+    expect(textes.accueilPublic.sousTitre).toBe('Escrime');
+    expect(textes.sousTitre).toBe('Gestion de compétitions d’escrime');
+  });
+  it('CA-2 : nom accessible de l’icône « Info »', () => {
+    expect(textes.accueilPublic.feuilleDeRouteDe('Grand Week-end')).toBe('Feuille de route : Grand Week-end');
+  });
+});
+
 describe('déroulé assoupli (US-158)', () => {
   it('CA-2 : la confirmation compte les matchs non tirés par poule', () => {
     const detail = textes.tableau.detailCreationAnticipee([

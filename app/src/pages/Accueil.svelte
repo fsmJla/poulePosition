@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Accueil public (US-003 CA-6, US-031, US-079) : bannière « Poule Position », lien vers la connexion et épreuves
+  // Accueil public (US-003 CA-6, US-031, US-079) : bannière « Poule Position », sous-titre « Escrime » et épreuves
   // publiées, regroupées par manifestation puis par compétition. Les données viennent du serveur (`GET /public`) : un
   // visiteur n'a pas de mode hors ligne, la page le dit et recharge au retour du réseau. Aucune donnée de tireur (CA-5).
   // US-079 : la manifestation porte sa ville et son adresse une seule fois ; chaque épreuve est une ligne courte en
@@ -23,16 +23,15 @@
   import Lien from '../composants/Lien.svelte';
   import { fichiersPropres } from '../lib/fichiers';
   import type { ClientPublic, ErreurPublic } from '../lib/publication';
-  import { cheminDirect, CHEMINS } from '../lib/routes';
+  import { cheminDirect } from '../lib/routes';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
     client: ClientPublic;
-    connecte: boolean;
     naviguer: (chemin: string) => void;
   }
 
-  let { client, connecte, naviguer }: Proprietes = $props();
+  let { client, naviguer }: Proprietes = $props();
 
   const t = textes.accueilPublic;
   const te = textes.epreuves;
@@ -92,8 +91,14 @@
 {#snippet documents(proprietaire: ProprietaireFichier, id: string, nom: string)}
   {@const propres = documentsDe(proprietaire, id)}
   {#if propres.feuilleDeRoute}
-    <a class="feuille" href={client.adresseFichier(propres.feuilleDeRoute.nom)} target="_blank" rel="noopener"
-      >{t.feuilleDeRoute}</a
+    <!-- US-157 CA-2 : la feuille de route en icône « Info », avec nom accessible et infobulle. -->
+    <a
+      class="feuille"
+      href={client.adresseFichier(propres.feuilleDeRoute.nom)}
+      target="_blank"
+      rel="noopener"
+      aria-label={t.feuilleDeRouteDe(nom)}
+      title={t.feuilleDeRouteDe(nom)}><Icone nom="info" taille={24} /></a
     >
   {/if}
   {#if propres.affiche}
@@ -159,12 +164,7 @@
 
 <main>
   <h1><Banniere variante="login" hauteur={190} /></h1>
-  <p class="sous-titre">{textes.sousTitre}</p>
-  {#if connecte}
-    <Lien chemin={CHEMINS.organisateur} {naviguer}>{textes.accueil.espaceOrganisateur}</Lien>
-  {:else}
-    <Lien chemin={CHEMINS.connexion} {naviguer}>{textes.accueil.seConnecter}</Lien>
-  {/if}
+  <p class="sous-titre">{t.sousTitre}</p>
 
   <section class="epreuves" aria-label={t.titre}>
     <h2>{t.titre}</h2>
@@ -374,6 +374,20 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.75rem;
+  }
+
+  /* US-157 CA-2 : icône seule, cible de 44 px. */
+  .documents > a.feuille {
+    display: inline-grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    color: var(--lien, var(--accent));
+  }
+
+  .documents > a.feuille:hover {
+    background: var(--surface-2);
   }
 
   .documents:empty {
