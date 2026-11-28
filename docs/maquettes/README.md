@@ -104,7 +104,7 @@ pas d'émoji. Une icône garde **le même sens partout**.
 | Croix | Fermer, quitter un mode | Seule |
 | Flèche gauche | Retour (écran étroit) | Seule |
 | Chevron | Déplier, ouvrir | Seule (décorative) |
-| Personnes | Comptes | Avec libellé |
+| Personnes | Comptes ; US-157 : « Se connecter » ou « Accueil de l'organisateur » (pastille de l'accueil public) | Avec libellé ; seule sur écran étroit (pastille) |
 | Lune | Thème sombre (groupe de trois icônes ; avec libellé dans le menu de compte étroit) | Seule sur écran large |
 | Écran (thème automatique) | Thème automatique, groupé avec Soleil et Lune ; à ne pas confondre avec « Ce PC est le pilote » | Seule sur écran large |
 | Coche | Choix en cours dans un menu ; accepté, enregistré (saisie reçue, score enregistré par la table) | Seule (décorative) ; avec texte pour « enregistré » |

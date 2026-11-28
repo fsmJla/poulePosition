@@ -2913,6 +2913,10 @@ export const textes = {
   },
   /** US-031 : page d'accueil publique et page « direct » d'une épreuve (E9 y ajoutera le suivi en direct). */
   accueilPublic: {
+    /** US-157 CA-1 : sous-titre propre à l'accueil public (la connexion garde `sousTitre`). */
+    sousTitre: 'Escrime',
+    /** US-157 CA-2 : nom accessible et infobulle de l'icône « Info ». */
+    feuilleDeRouteDe: (nom: string) => `Feuille de route : ${nom}`,
     titre: 'Épreuves à venir',
     chargement: 'Chargement des épreuves…',
     aucune: 'Aucune épreuve à venir',

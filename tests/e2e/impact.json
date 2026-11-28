@@ -25,7 +25,15 @@
     "publication-competition",
     "reprise-competition"
   ],
-  "app/src/pages/Accueil.svelte": ["page", "marque", "publication", "charte", "accueil-public", "direct-spectateur"],
+  "app/src/pages/Accueil.svelte": [
+    "page",
+    "marque",
+    "publication",
+    "charte",
+    "accueil-public",
+    "direct-spectateur",
+    "accueil-entete"
+  ],
   "app/src/pages/Direct.svelte": ["publication", "page", "direct-spectateur"],
   "app/src/pages/Connexion.svelte": ["connexion", "connexion-moderne", "hors-ligne", "charte", "theme", "theme-icones"],
   "app/src/pages/MotDePasse.svelte": ["mot-de-passe", "profil"],
@@ -124,7 +132,8 @@
     "charte",
     "smartphone-organisateur",
     "page",
-    "theme-icones"
+    "theme-icones",
+    "accueil-entete"
   ],
   "app/src/composants/MenuCompte.svelte": [
     "entete",
@@ -578,5 +587,7 @@
   "app/src/composants/impressions/ImpressionFeuillesRencontre.svelte": ["equipes"],
   "paquets/domaine/src/vue-direct.ts": ["equipes"],
   "paquets/protocole/src/vue-direct.ts": ["equipes"],
-  "tests/e2e/deroule-assoupli.spec.ts": ["deroule-assoupli"]
+  "tests/e2e/deroule-assoupli.spec.ts": ["deroule-assoupli"],
+  "app/src/composants/PastilleConnexion.svelte": ["accueil-entete"],
+  "tests/e2e/accueil-entete.spec.ts": ["accueil-entete"]
 }

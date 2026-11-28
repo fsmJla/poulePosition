@@ -7,13 +7,15 @@ const imageAffichee = (image: Locator) => image.evaluate((element: HTMLImageElem
 const chargee = (image: Locator) =>
   image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0);
 
-test('US-014 CA-1 : l’accueil affiche la bannière, le filet et le sous-titre', async ({ page }) => {
+test('US-014 CA-1 (US-157 : sous-titre « Escrime ») : l’accueil affiche la bannière, le filet et le sous-titre', async ({
+  page,
+}) => {
   await page.goto('/');
   const titre = page.getByRole('heading', { level: 1 });
   await expect(titre).toHaveAccessibleName('Poule Position');
   const banniere = titre.getByRole('img', { name: 'Poule Position' });
   await expect.poll(() => chargee(banniere)).toBe(true);
-  await expect(page.getByText('Gestion de compétitions d’escrime')).toBeVisible();
+  await expect(page.getByText('Escrime', { exact: true })).toBeVisible();
   await expect(page.getByText('poulePosition', { exact: true })).toHaveCount(0);
 });
 

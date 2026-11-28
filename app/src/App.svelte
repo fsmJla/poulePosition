@@ -30,6 +30,7 @@
   import BandeauSauvegarde from './composants/BandeauSauvegarde.svelte';
   import FenetreSauvegarde from './composants/FenetreSauvegarde.svelte';
   import BarreOutils from './composants/BarreOutils.svelte';
+  import PastilleConnexion from './composants/PastilleConnexion.svelte';
   import Entete from './composants/Entete.svelte';
   import Accueil from './pages/Accueil.svelte';
   import Direct from './pages/Direct.svelte';
@@ -354,8 +355,10 @@
 
 {#if pret && 'page' in route}
   {#if route.page === 'accueil'}
-    <BarreOutils />
-    <Accueil client={publication} connecte={session !== null} {naviguer} />
+    <BarreOutils>
+      {#snippet avant()}<PastilleConnexion connecte={session !== null} {naviguer} />{/snippet}
+    </BarreOutils>
+    <Accueil client={publication} {naviguer} />
   {:else if route.page === 'direct' && route.epreuveId}
     <BarreOutils />
     <Direct client={publication} epreuveId={route.epreuveId} {urlServeur} {naviguer} />

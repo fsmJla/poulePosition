@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Accueil public (US-003 CA-6, US-031, US-079) : bannière « Poule Position », lien vers la connexion et épreuves
+  // Accueil public (US-003 CA-6, US-031, US-079) : bannière « Poule Position », sous-titre « Escrime » et épreuves
   // publiées, regroupées par manifestation puis par compétition. Les données viennent du serveur (`GET /public`) : un
   // visiteur n'a pas de mode hors ligne, la page le dit et recharge au retour du réseau. Aucune donnée de tireur (CA-5).
   // US-079 : la manifestation porte sa ville et son adresse une seule fois ; chaque épreuve est une ligne courte en
@@ -21,18 +21,18 @@
   import Banniere from '../composants/Banniere.svelte';
   import Icone from '../composants/Icone.svelte';
   import Lien from '../composants/Lien.svelte';
+  import MiniatureFeuille from '../composants/MiniatureFeuille.svelte';
   import { fichiersPropres } from '../lib/fichiers';
   import type { ClientPublic, ErreurPublic } from '../lib/publication';
-  import { cheminDirect, CHEMINS } from '../lib/routes';
+  import { cheminDirect } from '../lib/routes';
   import { textes } from '../lib/textes';
 
   interface Proprietes {
     client: ClientPublic;
-    connecte: boolean;
     naviguer: (chemin: string) => void;
   }
 
-  let { client, connecte, naviguer }: Proprietes = $props();
+  let { client, naviguer }: Proprietes = $props();
 
   const t = textes.accueilPublic;
   const te = textes.epreuves;
@@ -92,9 +92,8 @@
 {#snippet documents(proprietaire: ProprietaireFichier, id: string, nom: string)}
   {@const propres = documentsDe(proprietaire, id)}
   {#if propres.feuilleDeRoute}
-    <a class="feuille" href={client.adresseFichier(propres.feuilleDeRoute.nom)} target="_blank" rel="noopener"
-      >{t.feuilleDeRoute}</a
-    >
+    <!-- US-157 CA-2 : la miniature de la feuille de route, à la taille de l'affiche, avec nom accessible et infobulle. -->
+    <MiniatureFeuille adresse={client.adresseFichier(propres.feuilleDeRoute.nom)} libelle={t.feuilleDeRouteDe(nom)} />
   {/if}
   {#if propres.affiche}
     <img src={client.adresseFichier(propres.affiche.nom)} alt={t.affiche(nom)} loading="lazy" />
@@ -159,12 +158,7 @@
 
 <main>
   <h1><Banniere variante="login" hauteur={190} /></h1>
-  <p class="sous-titre">{textes.sousTitre}</p>
-  {#if connecte}
-    <Lien chemin={CHEMINS.organisateur} {naviguer}>{textes.accueil.espaceOrganisateur}</Lien>
-  {:else}
-    <Lien chemin={CHEMINS.connexion} {naviguer}>{textes.accueil.seConnecter}</Lien>
-  {/if}
+  <p class="sous-titre">{t.sousTitre}</p>
 
   <section class="epreuves" aria-label={t.titre}>
     <h2>{t.titre}</h2>

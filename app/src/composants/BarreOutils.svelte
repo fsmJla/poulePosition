@@ -1,10 +1,15 @@
 <script lang="ts">
   // Petite barre en haut à droite des pages sans entête (US-052 CA-2) : accueil, connexion, mot de passe oublié et
-  // réinitialisation. Elle porte le sélecteur de thème ; l'état du serveur (US-053) viendra s'y ajouter.
+  // réinitialisation. Elle porte le sélecteur de thème ; US-157 : sur l'accueil public, la pastille de connexion à
+  // sa gauche (`avant`).
+  import type { Snippet } from 'svelte';
   import SelecteurTheme from './SelecteurTheme.svelte';
+
+  let { avant }: { avant?: Snippet } = $props();
 </script>
 
 <div class="barre">
+  {@render avant?.()}
   <SelecteurTheme />
 </div>
 
