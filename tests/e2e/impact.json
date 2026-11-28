@@ -283,9 +283,10 @@
     "tableau-appeler",
     "tableau-retrait",
     "impression-tableau",
-    "equipes"
+    "equipes",
+    "deroule-assoupli"
   ],
-  "app/src/composants/ArbreTableau.svelte": ["tableau-voir", "tableau-saisir"],
+  "app/src/composants/ArbreTableau.svelte": ["tableau-voir", "tableau-saisir", "deroule-assoupli"],
   "app/src/composants/CarteSaisieTableau.svelte": [
     "tableau-saisir",
     "tableau-appeler",
@@ -296,8 +297,13 @@
   "app/src/composants/RetraitTableau.svelte": ["tableau-retrait"],
   "app/src/composants/MatchsTableau.svelte": ["saisie-tableau"],
   "app/src/composants/SaisieMatchTableau.svelte": ["saisie-tableau"],
-  "app/src/composants/ClassementFinal.svelte": ["tableau-classement-final", "saisie-tableau", "equipes"],
-  "app/src/lib/tableau.ts": ["tableau-creer"],
+  "app/src/composants/ClassementFinal.svelte": [
+    "tableau-classement-final",
+    "saisie-tableau",
+    "equipes",
+    "deroule-assoupli"
+  ],
+  "app/src/lib/tableau.ts": ["tableau-creer", "deroule-assoupli"],
   "app/src/lib/accueil.ts": ["accueil", "accueil-refonte", "filtres-liste"],
   "app/src/lib/archivage.ts": ["archivage"],
   "app/src/lib/etapes-epreuve.ts": [
@@ -400,7 +406,8 @@
     "tableau-voir",
     "tableau-saisir",
     "tableau-appeler",
-    "tableau-retrait"
+    "tableau-retrait",
+    "deroule-assoupli"
   ],
   "paquets/protocole/src/acces-qr.ts": ["acces-qr"],
   "app/src/lib/presence-pilote.ts": [
@@ -491,13 +498,14 @@
     "poules-retrait",
     "poules-envoi",
     "impression-poules",
-    "equipes"
+    "equipes",
+    "deroule-assoupli"
   ],
   "tests/e2e/poules-saisie.spec.ts": ["poules-saisie", "poules-retrait"],
   "tests/e2e/poules-retrait.spec.ts": ["poules-retrait"],
   "app/src/composants/AttenteEnvoi.svelte": ["poules-envoi", "emargement", "inscriptions"],
   "tests/e2e/poules-envoi.spec.ts": ["poules-envoi"],
-  "app/src/pages/Classement.svelte": ["poules-classement", "impression-poules", "equipes"],
+  "app/src/pages/Classement.svelte": ["poules-classement", "impression-poules", "equipes", "deroule-assoupli"],
   "tests/e2e/poules-classement.spec.ts": ["poules-classement"],
   "app/src/composants/PaveScore.svelte": [
     "tableau-saisir",
@@ -569,5 +577,6 @@
   "paquets/domaine/src/equipes.ts": ["equipes"],
   "app/src/composants/impressions/ImpressionFeuillesRencontre.svelte": ["equipes"],
   "paquets/domaine/src/vue-direct.ts": ["equipes"],
-  "paquets/protocole/src/vue-direct.ts": ["equipes"]
+  "paquets/protocole/src/vue-direct.ts": ["equipes"],
+  "tests/e2e/deroule-assoupli.spec.ts": ["deroule-assoupli"]
 }
