@@ -68,6 +68,7 @@ sauté. Testé : unitaires (calcul de la vue et du compte à rebours sans résea
   compte à rebours.
 - Épreuve sans date : les horaires sont ceux du jour ; épreuve dans plusieurs jours : « 3 j 04:00:00 ».
 - Vue publiée par un pilote d'avant cette US (sans `accueil`) : l'écran attend comme avant.
+- Nom long : il passe à la ligne entre les mots (jamais au milieu d’N mot), dans une taille adaptée à sa longueur.
 - `prefers-reduced-motion` : plans sans animation.
 
 ## Hypothèses

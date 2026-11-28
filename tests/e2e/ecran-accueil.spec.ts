@@ -72,3 +72,43 @@ test('US-160 CA-1 à CA-5 : le mode Accueil, ses plans et son compte à rebours,
   await expect(ecran.getByRole('timer')).toHaveCount(0, { timeout: 20_000 });
   await expect(ecran.getByText('Appel des matchs').first()).toBeVisible();
 });
+
+test('US-160 cas limite : un nom long passe à la ligne entre les mots, sans déborder', async ({
+  page,
+  context,
+}, info) => {
+  test.skip(info.project.name !== 'pc', 'Écran géant : projet « pc » seulement');
+  test.setTimeout(150_000);
+  await seConnecter(page);
+  const adresse = await epreuveAvecPresentes(
+    page,
+    3,
+    3,
+    'individuelle',
+    {},
+    'Championnats de Nouvelle Aquitaine M13 Dames',
+  );
+  const nom = (await page.getByRole('heading', { level: 1 }).textContent())?.trim() ?? '';
+  const lien = await creerEcran(page, adresse, nom);
+  const ecran = await context.newPage();
+  await ecran.setViewportSize({ width: 1680, height: 945 });
+  await ecran.goto(new URL(lien).pathname + new URL(lien).hash);
+  const titre = ecran.getByRole('heading', { level: 2, name: nom });
+  await expect(titre).toBeVisible({ timeout: 20_000 });
+  await ecran.waitForTimeout(3_000);
+  await ecran.screenshot({ path: 'test-results/ecran-accueil-nom-long.png' });
+  // Aucun mot coupé : chaque mot tient sur une seule ligne ; le titre reste dans la largeur de l'écran.
+  const mots = await titre
+    .locator('.mot')
+    .evaluateAll((liste) =>
+      liste.map((mot) => mot.getClientRects().length === 1 && mot.getBoundingClientRect().right <= window.innerWidth),
+    );
+  expect(mots.every(Boolean)).toBe(true);
+  const boite = (await titre.boundingBox())!;
+  expect(boite.x).toBeGreaterThanOrEqual(0);
+  expect(boite.x + boite.width).toBeLessThanOrEqual(1680);
+  // Le titre et les étiquettes du type restent au-dessus du compte à rebours.
+  const types = (await ecran.locator('[data-plan="nom"] .types').boundingBox())!;
+  const bas = (await ecran.getByRole('timer').boundingBox())!;
+  expect(types.y + types.height).toBeLessThanOrEqual(bas.y);
+});

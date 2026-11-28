@@ -49,7 +49,23 @@
       (v): v is string => Boolean(v),
     ),
   );
-  const lettres = $derived([...vue.nom]);
+  /** Les mots du nom, chacun avec ses lettres et leur rang (délai d'apparition) ; un mot ne se coupe jamais. */
+  const mots = $derived.by(() => {
+    let rang = 0;
+    return vue.nom
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((mot) => [...mot].map((lettre) => ({ lettre, rang: rang++ })));
+  });
+  /**
+   * Taille du nom (em) selon sa longueur : 10,5 pour un nom court, moins pour tenir sur deux ou trois lignes, et assez
+   * petit pour que le mot le plus long tienne sur une ligne (environ 0,6 em par lettre, 1 700 px de large).
+   */
+  const tailleNom = $derived.by(() => {
+    const longueur = Math.max(1, vue.nom.length);
+    const motLePlusLong = Math.max(1, ...mots.map((mot) => mot.length));
+    return Math.max(3, Math.min(10.5, 330 / longueur, 177 / motLePlusLong));
+  });
 
   const suivante = $derived(prochaineEtape(accueil, vue.date, maintenant));
   const etapes = $derived(
@@ -114,12 +130,13 @@
       {:else if plan === 'nom'}
         <section class="plan titre-plan" data-plan="nom">
           {#if accueil.competition}<p class="surtitre">{accueil.competition}</p>{/if}
-          <h2 class="nom" aria-label={vue.nom}>
-            {#each lettres as lettre, i (i)}<span
-                class="lettre"
-                aria-hidden="true"
-                style:animation-delay="{0.15 + i * 0.05}s">{lettre === ' ' ? ' ' : lettre}</span
-              >{/each}
+          <h2 class="nom" aria-label={vue.nom} style:font-size="{tailleNom}em">
+            {#each mots as mot, m (m)}<span class="mot" aria-hidden="true"
+                >{#each mot as { lettre, rang } (rang)}<span
+                    class="lettre"
+                    style:animation-delay="{0.15 + Math.min(rang, 40) * 0.05}s">{lettre}</span
+                  >{/each}</span
+              >{' '}{/each}
           </h2>
           <ul class="types">
             {#each types as type, i (type)}<li style:animation-delay="{1.2 + i * 0.15}s">{type}</li>{/each}
@@ -295,6 +312,7 @@
   .titre-plan {
     display: grid;
     place-content: center;
+    padding: 0 6em;
     gap: 2.25em;
     text-align: center;
   }
@@ -310,11 +328,17 @@
   .nom {
     margin: 0;
     font-family: var(--police-titre);
-    font-size: 10.5em;
+    max-width: 100%;
     font-weight: 800;
     line-height: 0.95;
     letter-spacing: -0.02em;
     text-wrap: balance;
+  }
+
+  /* Un mot passe à la ligne en entier. */
+  .mot {
+    display: inline-block;
+    white-space: nowrap;
   }
 
   .lettre {
@@ -604,6 +628,7 @@
   .nom-etape {
     display: flex;
     justify-content: space-between;
+    gap: 0.75em;
     color: var(--texte-discret);
     font-size: 1.75em;
   }

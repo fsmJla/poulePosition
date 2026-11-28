@@ -57,9 +57,13 @@ export async function epreuveAvecPresentes(
   type: 'individuelle' | 'equipes2' | 'equipes3' = 'individuelle',
   /** US-160 : horaires « HH:MM » saisis à la création (Appel, Scratch, Début des poules). */
   horaires: Partial<Record<'Appel' | 'Scratch' | 'Début des poules', string>> = {},
+  /** US-160 : un nom choisi (un suffixe unique est ajouté). */
+  prefixe = 'E2E',
 ): Promise<string> {
   await page.goto('/epreuves/nouvelle?seule');
-  await page.getByLabel('Nom de la compétition et de son épreuve').fill(`E2E ${crypto.randomUUID().slice(0, 8)}`);
+  await page
+    .getByLabel('Nom de la compétition et de son épreuve')
+    .fill(`${prefixe} ${crypto.randomUUID().slice(0, 8)}`);
   await page.getByLabel('Arme').selectOption('sabre');
   await page.getByLabel('Sexe').selectOption('dames');
   if (type !== 'individuelle') await page.getByLabel('Type').selectOption(type);
