@@ -87,7 +87,7 @@ test('US-111 CA-1, CA-2, CA-6 et CA-9 : la carte du match choisi, deux choix enr
   await arbre(page)
     .getByRole('button', { name: `${nom(3)} contre ${nom(14)}, Terminé` })
     .click();
-  await expect(cases(page)).toHaveText(['15', '11']);
+  await expect(cases(page)).toHaveText(['11', '15']);
   await expect(pave(page)).toHaveCount(0);
   await saisir(page, 13, 15);
   await expect(

@@ -115,6 +115,7 @@ pas d'émoji. Une icône garde **le même sens partout**.
 | Télécharger | Exporter une épreuve dans un fichier (menu « ⋯ », US-034) | Avec libellé |
 | Téléverser | Importer une épreuve depuis un fichier (menu « ⋯ » de la liste, US-035) | Avec libellé |
 | Flèches croisées | Répartir les poules (automatique), répartir à nouveau (planches 8 et 9) | Avec libellé |
+| Échange (deux flèches opposées) | Intervertir les deux tireurs d'un match, entre les cases de score (US-159) | Seule, avec nom accessible et infobulle |
 | Poignée (six points) | Glisser pour déplacer un tireur (planche 9) | Seule, avec nom accessible |
 | Lecture (triangle) | Lancer les poules (planche 9) | Avec libellé |
 | Smartphone | Saisies reçues des smartphones (planche 10) | Avec libellé |
@@ -158,7 +159,7 @@ test de contraste. Aucun composant ne les écrit en dur.
 | `#dcefe5` et `#14573a` | Pastille « En cours », étiquette « Aujourd'hui » (fond et texte) | `--etat-ok-fond`, `--sur-etat-ok-fond` |
 | `#fbf3e2`, `#e6cf9c`, `#8a560c` | Alerte « à rattacher » (fond, bordure sur smartphone, icône) | `--etat-attente-fond`, `--etat-attente-bordure`, `--sur-etat-attente-fond` |
 | `#8d9694`, `#a3aaa8` | Étape ou onglet « À venir », grisé | `--texte-inactif` |
-| `#b3362f`, `#1f7a4d` | Côtés de la piste dans la saisie smartphone : gauche rouge, droite vert (planches 14 et 15) | `--cote-gauche`, `--cote-droit` (à créer par l'US de saisie, distincts des états erreur et ok) |
+| `#b3362f`, `#1f7a4d` | Côtés de la piste dans la saisie smartphone : gauche rouge, droite vert (planches 14 et 15) ; US-159 : le premier appelé à droite (FIE t.22), interversion possible | `--cote-gauche`, `--cote-droit` (à créer par l'US de saisie, distincts des états erreur et ok) |
 
 Mesures à reprendre des planches (les sources `.dc.html` donnent la valeur exacte de chaque élément) :
 

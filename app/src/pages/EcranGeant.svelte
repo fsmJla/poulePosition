@@ -264,9 +264,10 @@
               {/if}
               {#if carte.tireurs}
                 <div class="duel">
-                  <span class="gauche">{carte.tireurs[0]}</span>
+                  <!-- US-159 : vu de l'arbitre, le premier appelé à droite (FIE t.22.1). -->
+                  <span class="gauche">{carte.tireurs[1]}</span>
                   <span class="contre">{t.contre}</span>
-                  <span class="droite">{carte.tireurs[1]}</span>
+                  <span class="droite">{carte.tireurs[0]}</span>
                 </div>
               {:else}
                 <span class="contexte">{t.aucunMatch}</span>

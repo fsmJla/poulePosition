@@ -11,7 +11,14 @@ const classement = (page: Page) => page.getByRole('region', { name: /^Classement
 const pilules = (page: Page) => page.getByRole('group', { name: 'Tours du tableau' }).getByRole('button');
 
 async function ouvrirEtape(page: Page, etape: RegExp, titre: string) {
-  await page.getByRole('navigation', { name: 'Étapes de l’épreuve' }).getByRole('link', { name: etape }).click();
+  const navigation = page.getByRole('navigation', { name: 'Étapes de l’épreuve' });
+  const lien = navigation.getByRole('link', { name: etape });
+  // Sur smartphone, les étapes au-delà de « Tableau » sont dans le menu « Plus » de la barre du bas.
+  if (await lien.isVisible()) await lien.click();
+  else {
+    await navigation.getByRole('button', { name: 'Plus' }).click();
+    await page.getByRole('menu').getByRole('menuitem', { name: etape }).click();
+  }
   await expect(page.getByRole('heading', { level: 2, name: titre })).toBeVisible({ timeout: 20_000 });
 }
 

@@ -2601,6 +2601,8 @@ export const textes = {
   },
   /** US-117, US-118 : afficheur et pavé de score à la demande, communs aux saisies du PC et du smartphone. */
   pave: {
+    /** US-159 : intervertir les côtés de piste (un gaucher appelé en premier, FIE t.22.1). */
+    inverser: 'Intervertir les tireurs',
     scoreDe: (nom: string) => 'Score de ' + nom,
     case: (nom: string, valeur: string | null, ouverte: boolean) =>
       'Score de ' + nom + ' : ' + (valeur ?? 'à choisir') + (ouverte ? '' : ', toucher pour modifier'),

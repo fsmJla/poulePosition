@@ -186,8 +186,9 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-154](US-154-imprimer-documents-equipes.md) | Adapter aux équipes les documents imprimés existants | E10 | Terminée | US-148, US-150, US-151, US-121 à US-128 |
 | [US-155](US-155-direct-equipes.md) | Afficher les épreuves par équipes sur l'écran géant et pour les spectateurs | E10 | Terminée | US-150, US-151, US-132 à US-143 |
 | [US-156](US-156-importer-equipes-csv.md) | Importer les équipes depuis un fichier CSV | E10 | Terminée | US-146, US-083 |
-| [US-157](US-157-alleger-entete-accueil-public.md) | Alléger l'entête de l'accueil public : « Escrime », icône « Info » pour la feuille de route, pastille « Se connecter » (P3) | E2 | En revue | US-079, US-052 |
-| [US-158](US-158-assouplir-deroule-epreuve.md) | Assouplir le déroulé : tableau et fin d'épreuve anticipés, 3e place à trois tireurs (correction), liste des pistes des poules (P2) | E6 | En revue | US-086, US-109, US-114, US-115 |
+| [US-157](US-157-alleger-entete-accueil-public.md) | Alléger l'entête de l'accueil public : « Escrime », icône « Info » pour la feuille de route, pastille « Se connecter » (P3) | E2 | Terminée | US-079, US-052 |
+| [US-158](US-158-assouplir-deroule-epreuve.md) | Assouplir le déroulé : tableau et fin d'épreuve anticipés, 3e place à trois tireurs (correction), liste des pistes des poules (P2) | E6 | Terminée | US-086, US-109, US-114, US-115 |
+| [US-159](US-159-cotes-piste-reglementaires.md) | Placer les tireurs du bon côté de la piste (FIE t.22) et pouvoir les intervertir (correction, P2) | E5 | Terminée | US-091, US-099, US-106, US-117, US-118 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 
@@ -243,6 +244,7 @@ Puis, indépendante, US-156 (import des équipes depuis un CSV).
 
 **Retours ergonomiques du 2026-11-28 :** US-157 (entête de l'accueil public) et US-158 (déroulé :
 tableau et fin d'épreuve anticipés, 3e place à trois tireurs, liste des pistes), indépendantes l'une de l'autre.
+Puis US-159 (côtés de piste réglementaires et inversion des tireurs).
 
 **Retours ergonomiques du 2026-11-17, indépendants l'un de l'autre :** US-078 (jour des épreuves : grille et
 glisser-déposer sur le plan) et US-079 (filtres « À venir » / « En cours » de l'accueil de l'organisateur,

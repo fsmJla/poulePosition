@@ -8,6 +8,17 @@
     /** Rang affiché entre parenthèses (tableau). */
     rang?: number | null;
   }
+
+  /** Côté de piste d'un tireur du match (0 : appelé en premier, 1 : appelé en second). FIE t.22.1 : le premier appelé
+   *  se place à la droite de l'arbitre ; `inverse` (un gaucher appelé en premier) le met à gauche. */
+  export function coteDePiste(index: 0 | 1, inverse = false): 'gauche' | 'droite' {
+    return (index === 0) !== inverse ? 'droite' : 'gauche';
+  }
+
+  /** Les deux tireurs dans l'ordre de la piste, de gauche à droite (vu de l'arbitre). */
+  export function ordreDePiste(inverse = false): readonly [0 | 1, 0 | 1] {
+    return inverse ? [0, 1] : [1, 0];
+  }
 </script>
 
 <script lang="ts">
@@ -20,6 +31,7 @@
   import type { ChoixScore, CotePave, EtatPave } from '@poule-position/domaine';
   import type { Snippet } from 'svelte';
   import { textes } from '../lib/textes';
+  import Icone from './Icone.svelte';
 
   interface Proprietes {
     tireurs: readonly [TireurPave, TireurPave];
@@ -34,6 +46,10 @@
     vEnChiffre?: boolean;
     /** Ce qui remplace le pavé fermé (priorité à désigner…) ; par défaut, l'invitation à corriger. */
     ferme?: Snippet;
+    /** US-159 : les côtés sont intervertis (premier appelé à gauche de l'arbitre, par exemple un gaucher). */
+    inverse?: boolean;
+    /** US-159 : bouton « Intervertir les tireurs » entre les deux cases ; absent, pas de bouton. */
+    inverser?: () => void;
   }
 
   let {
@@ -46,10 +62,11 @@
     desactive = false,
     vEnChiffre = false,
     ferme,
+    inverse = false,
+    inverser,
   }: Proprietes = $props();
 
   const t = textes.pave;
-  const COTES = ['gauche', 'droite'] as const;
   const boutons = $derived<ChoixScore[]>([...Array.from({ length: touches }, (_, i) => i), 'V']);
   const complet = (i: CotePave) => `${tireurs[i].nom} ${tireurs[i].prenom}`;
   const affiche = (v: ChoixScore | null) => (v === null ? '–' : v === 'V' && vEnChiffre ? String(touches) : String(v));
@@ -76,8 +93,8 @@
 
 <div class="pave-score {format}">
   <div class="afficheur">
-    {#each COTES as cote, i (cote)}
-      {@const c = i as CotePave}
+    {#each ordreDePiste(inverse) as c (c)}
+      {@const cote = coteDePiste(c, inverse)}
       <div class="tireur {cote}">
         <p class="nom">
           {#if tireurs[c].rang}<span class="rang">({tireurs[c].rang})</span>{/if}
@@ -98,11 +115,21 @@
       >
     {/each}
     <span class="tiret" aria-hidden="true">–</span>
+    {#if inverser}
+      <button
+        type="button"
+        class="echange"
+        aria-label={t.inverser}
+        title={t.inverser}
+        disabled={desactive}
+        onclick={inverser}><Icone nom="echange" taille={22} /></button
+      >
+    {/if}
   </div>
 
   <div class="zone">
     {#if actif !== null}
-      {@const cote = COTES[actif]}
+      {@const cote = coteDePiste(actif, inverse)}
       <p class="invite">{t.scoreDe('')}<strong class={cote}>{tireurs[actif].nom}</strong></p>
       {#if relais}
         <div class="relais">
@@ -179,10 +206,10 @@
   /* L'afficheur : nom au-dessus de sa case (carte, téléphone), ou de part et d'autre (large). */
   .afficheur {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     grid-template-areas:
-      'nom-g nom-d'
-      'case-g case-d';
+      'nom-g . nom-d'
+      'case-g echange case-d';
     gap: 6px 12px;
     align-items: end;
   }
@@ -205,6 +232,32 @@
 
   .tiret {
     display: none;
+  }
+
+  /* US-159 : intervertir les tireurs, entre les deux cases ; cible de 44 px. */
+  .echange {
+    grid-area: echange;
+    align-self: center;
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--bordure);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--texte-discret);
+    cursor: pointer;
+  }
+
+  .echange:hover:not(:disabled) {
+    color: var(--texte);
+    background: var(--surface-2);
+  }
+
+  .echange:disabled {
+    cursor: default;
+    opacity: 0.5;
   }
 
   .tireur {
@@ -330,6 +383,15 @@
     grid-template-areas: 'nom-g case-g tiret case-d nom-d';
     gap: 16px;
     align-items: center;
+  }
+
+  /* US-159 : le bouton d'échange remplace le tiret entre les deux cases. */
+  .large .echange {
+    grid-area: tiret;
+  }
+
+  .large .tiret:has(~ .echange) {
+    display: none;
   }
 
   .large .tiret {

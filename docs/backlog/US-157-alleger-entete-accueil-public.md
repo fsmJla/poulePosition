@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F2 (exigences §3)
 - **Priorité :** P3
 - **Type :** fonctionnelle
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-079, US-052
 - **Branche / PR :** `us/US-157-alleger-entete-accueil-public` (empilée sur US-158)
 
@@ -120,3 +120,4 @@ réseau, comme aujourd'hui (sans réseau, l'icône « Document » reste à sa pl
 |---|---|
 | 2026-11-28 | Créée (retours ergonomiques du 2026-11-28, premier lot) |
 | 2026-11-28 | En revue : PR vers dev (série avec US-158) |
+| 2026-11-28 | Terminée : recette validée par l’utilisateur (série US-158, US-157, US-159), mergée dans dev |

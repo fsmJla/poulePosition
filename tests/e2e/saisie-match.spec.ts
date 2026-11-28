@@ -42,9 +42,9 @@ test('US-099 CA-1 à CA-5, CA-9 et CA-10 : le score part à la table, qui l’en
     await bouton(arbitre, '3').click();
     await expect(arbitre.getByText(/^Victoire au temps de .+, 4 à 3\.$/)).toBeVisible();
     // CA-2 : V et 2, en corrigeant par les cases (le pavé est fermé une fois le score complet).
-    await cases(arbitre).first().click();
-    await bouton(arbitre, 'V').click();
     await cases(arbitre).last().click();
+    await bouton(arbitre, 'V').click();
+    await cases(arbitre).first().click();
     await bouton(arbitre, '2').click();
     await expect(arbitre.getByText(/^Victoire de .+, 5 à 2\.$/)).toBeVisible();
     expect(await arbitre.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

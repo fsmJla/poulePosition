@@ -90,7 +90,7 @@ test('US-091 CA-2 à CA-6 et US-088 CA-7 : deux clics, au temps, refus, correcti
 
   // US-091 CA-5, US-118 CA-3 : deux « V », puis deux chiffres égaux : refusés avec la raison, la saisie recommence.
   await boutonScore(page, 'V').click();
-  await expect(casesScore(page)).toHaveText(['V', '–']);
+  await expect(casesScore(page)).toHaveText(['–', 'V']);
   await boutonScore(page, 'V').click();
   await expect(carte.getByRole('alert')).toHaveText('Un seul vainqueur : choisissez « V » d’un seul côté');
   await expect(casesScore(page)).toHaveText(['–', '–']);
@@ -108,7 +108,7 @@ test('US-091 CA-2 à CA-6 et US-088 CA-7 : deux clics, au temps, refus, correcti
   // le remplacent.
   await case_(page, 'DUBOIS Chloé', 'MARTIN Léa').click();
   await expect(carte).toHaveAccessibleName('Match 1 sur 15');
-  await expect(casesScore(page)).toHaveText(['4', '3']);
+  await expect(casesScore(page)).toHaveText(['3', '4']);
   await expect(paveScore(page)).toHaveCount(0);
   await saisir(page, 2, 5);
   await expect(case_(page, 'DUBOIS Chloé', 'MARTIN Léa')).toHaveText('V5');

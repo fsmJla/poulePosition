@@ -62,7 +62,7 @@ test('US-106 CA-1, CA-2, CA-4 et CA-6 : le match de la piste se saisit en 15 tou
     await expect(pave(arbitre).getByRole('button')).toHaveCount(16);
     await toucher(arbitre, 15);
     await toucher(arbitre, 9);
-    await expect(arbitre.getByRole('button', { name: /^Score de .* : / })).toHaveText(['15', '9']);
+    await expect(arbitre.getByRole('button', { name: /^Score de .* : / })).toHaveText(['9', '15']);
     await expect(arbitre.getByText(`Victoire de ${nom(4).split(' ')[0]}, 15 à 9.`)).toBeVisible();
     // L'extrait du tableau : ce match en saisie, son voisin et la demi-finale où le vainqueur s'inscrit.
     const extrait = arbitre.getByRole('region', { name: 'Dans le tableau' });

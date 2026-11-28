@@ -26,7 +26,7 @@
   import ConfirmationArchivage from './ConfirmationArchivage.svelte';
   import Icone from './Icone.svelte';
   import MenuActions from './MenuActions.svelte';
-  import PaveScore from './PaveScore.svelte';
+  import PaveScore, { coteDePiste, ordreDePiste } from './PaveScore.svelte';
   import type { VerdictArchivage } from '../lib/archivage';
   import { textes } from '../lib/textes';
 
@@ -91,8 +91,9 @@
   const courant = $derived<MatchPoule | null>(
     matchs.find((m) => m.numero === choisi && !m.forfait) ?? matchs.find(({ touches: tt }) => tt === null) ?? null,
   );
-  /** US-118 : l'afficheur et le pavé (gauche : tireurA, droite : tireurB). */
+  /** US-118 : l'afficheur et le pavé ; US-159 : le premier appelé (tireurA) à droite de l'arbitre, sauf inversion. */
   let pave = $state<EtatPave>(paveVierge());
+  let inverse = $state(false);
   let erreur: string | null = $state(null);
   let envoi = $state(false);
 
@@ -109,6 +110,12 @@
     const match = untrack(() => courant);
     pave = match?.touches ? paveDuScore(...boutonsDuScore(match.touches[0], match.touches[1], touches)) : paveVierge();
     erreur = null;
+  });
+  // US-159 : chaque match repart aux côtés réglementaires.
+  $effect(() => {
+    void courant?.numero;
+    void poule.numero;
+    inverse = false;
   });
 
   function choisirPoule(n: number) {
@@ -192,10 +199,10 @@
     }
   }
 
-  const tireurPave = (id: string, piste: 'gauche' | 'droite') => ({
+  const tireurPave = (id: string, index: 0 | 1) => ({
     nom: nomCourt(id),
     prenom: parId.get(id)?.prenom ?? '',
-    detail: t.cotePiste[piste],
+    detail: t.cotePiste[coteDePiste(index, inverse)],
   });
 </script>
 
@@ -368,10 +375,12 @@
           <div class="pave">
             <PaveScore
               format="carte"
-              tireurs={[tireurPave(courant.tireurA, 'gauche'), tireurPave(courant.tireurB, 'droite')]}
+              tireurs={[tireurPave(courant.tireurA, 0), tireurPave(courant.tireurB, 1)]}
               {touches}
               etat={pave}
               desactive={envoi}
+              {inverse}
+              inverser={() => (inverse = !inverse)}
               {choisir}
               ouvrir={(cote) => {
                 pave = ouvrirCotePave(pave, cote);
@@ -383,18 +392,15 @@
                 {#if egalite && courant}
                   <p class="egalite">{tp.priorite}</p>
                   <div class="priorite" role="group" aria-label={tp.prioriteGroupe}>
-                    <button
-                      type="button"
-                      class="pour gauche"
-                      disabled={envoi}
-                      onclick={() => choisirPriorite(courant!.tireurA)}>{nomCourt(courant.tireurA)}</button
-                    >
-                    <button
-                      type="button"
-                      class="pour droite"
-                      disabled={envoi}
-                      onclick={() => choisirPriorite(courant!.tireurB)}>{nomCourt(courant.tireurB)}</button
-                    >
+                    {#each ordreDePiste(inverse) as k (k)}
+                      {@const id = k === 0 ? courant.tireurA : courant.tireurB}
+                      <button
+                        type="button"
+                        class="pour {coteDePiste(k, inverse)}"
+                        disabled={envoi}
+                        onclick={() => choisirPriorite(id)}>{nomCourt(id)}</button
+                      >
+                    {/each}
                   </div>
                 {:else}
                   <p class="discret">{tp.corriger}</p>

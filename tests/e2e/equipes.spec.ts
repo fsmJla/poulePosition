@@ -257,7 +257,7 @@ test('US-149 CA-1 à CA-4 et US-150 CA-1 à CA-4 : poules d’équipes en 30 tou
   await relais(20);
   const priorite = carteSaisie(page).getByRole('group', { name: 'Vainqueur par priorité' });
   await expect(priorite).toBeVisible();
-  await priorite.getByRole('button').last().click();
+  await priorite.getByRole('button').first().click();
   await expect(priorite).toHaveCount(0);
   // CA-4 : le classement des poules classe les équipes.
   await page.goto(`${adresse}/classement`);
@@ -311,7 +311,7 @@ test('US-152 CA-1 et CA-2 : l’arbitre saisit sur son smartphone une rencontre 
     }
     const envoyer = arbitre.getByRole('button', { name: 'Envoyer à la table' });
     await expect(envoyer).toBeDisabled();
-    await arbitre.getByRole('group', { name: 'Vainqueur par priorité' }).getByRole('button').last().click();
+    await arbitre.getByRole('group', { name: 'Vainqueur par priorité' }).getByRole('button').first().click();
     await envoyer.click();
     await expect(arbitre.getByText(/^Enregistré par la table à \d+ h \d{2}$/)).toBeVisible({ timeout: 15_000 });
     // La table l'a enregistré : la rencontre suivante est en cours au PC.

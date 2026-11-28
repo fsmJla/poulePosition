@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F5, F9, F10 (exigences §3)
 - **Priorité :** P2
 - **Type :** fonctionnelle (avec une correction, CA-7)
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-086, US-109, US-114, US-115
 - **Branche / PR :** `us/US-158-assouplir-deroule-epreuve`
 
@@ -174,3 +174,4 @@ d'un passage anticipé au tableau et d'une fin anticipée.
 | 2026-11-28 | Créée (retours ergonomiques du 2026-11-28, second lot) |
 | 2026-11-28 | En cours (série US-158, US-157 enchaînée) |
 | 2026-11-28 | En revue : PR vers dev |
+| 2026-11-28 | Terminée : recette validée par l’utilisateur (série US-158, US-157, US-159), mergée dans dev |

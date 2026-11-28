@@ -508,7 +508,8 @@
     "poules-envoi",
     "impression-poules",
     "equipes",
-    "deroule-assoupli"
+    "deroule-assoupli",
+    "cotes-piste"
   ],
   "tests/e2e/poules-saisie.spec.ts": ["poules-saisie", "poules-retrait"],
   "tests/e2e/poules-retrait.spec.ts": ["poules-retrait"],
@@ -527,7 +528,8 @@
     "mes-matchs-tireur",
     "saisies-recues",
     "saisie-tableau",
-    "equipes"
+    "equipes",
+    "cotes-piste"
   ],
   "app/src/pages/Impressions.svelte": [
     "impressions",
@@ -589,5 +591,6 @@
   "paquets/protocole/src/vue-direct.ts": ["equipes"],
   "tests/e2e/deroule-assoupli.spec.ts": ["deroule-assoupli"],
   "app/src/composants/PastilleConnexion.svelte": ["accueil-entete"],
-  "tests/e2e/accueil-entete.spec.ts": ["accueil-entete"]
+  "tests/e2e/accueil-entete.spec.ts": ["accueil-entete"],
+  "tests/e2e/cotes-piste.spec.ts": ["cotes-piste"]
 }

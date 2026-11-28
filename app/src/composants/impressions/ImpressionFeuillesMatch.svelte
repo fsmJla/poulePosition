@@ -47,7 +47,8 @@
           <p class="piste">{t.piste(match.piste)}</p>
         </div>
         <div class="tireurs">
-          {#each [places[0], places[1]] as place, k (k)}
+          <!-- US-159 : le tireur du haut, appelé en premier, à droite de l'arbitre (FIE t.22.1). -->
+          {#each [places[1], places[0]] as place, k (k)}
             {@const tireur = tireurDe(place)}
             <div class="tireur">
               <p class="cote">{k === 0 ? t.cotes.gauche : t.cotes.droite}</p>
