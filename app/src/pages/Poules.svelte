@@ -238,6 +238,7 @@
         {tireurs}
         touches={epreuve.formule.touchesPoules}
         {modifiable}
+        figees={tableauDe(epreuve).qualifies !== null}
         priorite={epreuve.typeEpreuve !== 'individuelle'}
         {saisir}
         {retirer}

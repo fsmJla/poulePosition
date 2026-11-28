@@ -154,7 +154,7 @@ export type ErreurPistes =
   | { erreur: 'INVALIDE'; texte: string }
   | { erreur: 'PLAGE_INVALIDE'; texte: string }
   | { erreur: 'EN_DOUBLE'; piste: number }
-  | { erreur: 'MANQUE'; manque: number };
+  | { erreur: 'MANQUE'; manque: number; poules: number };
 
 /** Plus grand numéro de piste accepté, comme pour l’appel d’un match (US-112, `PISTE_MAX` du tableau). */
 const PISTE_MAX = 99;
@@ -194,7 +194,7 @@ export function lirePistes(
   if (morceaux.length === 1 && pistes.length === 1) {
     return { ok: true, pistes: Array.from({ length: nombre }, (_, i) => pistes[0]! + i) };
   }
-  if (pistes.length < nombre) return { ok: false, erreur: 'MANQUE', manque: nombre - pistes.length };
+  if (pistes.length < nombre) return { ok: false, erreur: 'MANQUE', manque: nombre - pistes.length, poules: nombre };
   return { ok: true, pistes: pistes.slice(0, nombre) };
 }
 

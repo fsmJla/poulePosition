@@ -116,6 +116,8 @@ export interface VueDirect {
    * tireurs. Absent en individuel.
    */
   equipes?: EquipeDirect[];
+  /** US-158 CA-6 : l'épreuve a été terminée avant la fin du tableau. Absent sinon. */
+  finAnticipee?: true;
 }
 
 /** CA-2 : « MARTIN Léa », ou « Léa M. » quand le public ne voit que l'initiale du nom. */
@@ -264,6 +266,7 @@ export function vueDirect(epreuve: Epreuve, evenements: readonly Evenement[] = [
         ).map(({ tireurId, place, exaequo, etat: etatFinal }) => ({ tireurId, place, exaequo, etat: etatFinal }))
       : null,
     scoresRecents: scoresRecents(evenements, new Map((tableau?.matchs ?? []).map(({ id, tour }) => [id, tour]))),
+    ...(tableauDe(epreuve).finAnticipee && { finAnticipee: true as const }),
     ...(equipes && {
       equipes: equipesDe(epreuve).map((e) => ({
         id: e.id,

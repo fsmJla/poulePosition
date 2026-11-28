@@ -1,7 +1,9 @@
 <script lang="ts">
   // Constitution des poules (US-086, planche 8) : nombre de poules proposé, méthode automatique (serpentin, clubs
-  // séparés) ou manuelle (poules vides), première piste. Le résultat est écrit par la page (`PoulesComposees`).
+  // séparés) ou manuelle (poules vides), pistes (US-158 : première piste ou liste). Le résultat est écrit par la page
+  // (`PoulesComposees`).
   import {
+    lirePistes,
     pouleEnSerpentin,
     poulesVides,
     propositionsDePoules,
@@ -34,7 +36,7 @@
   let methode: 'automatique' | 'manuelle' = $state('automatique');
   let separerClubs = $state(true);
   let hasard = $state(true);
-  let premierePiste = $state('1');
+  let champPistes = $state('1');
   let envoi = $state(false);
 
   const recommandee = $derived(propositions.find(({ recommandee }) => recommandee)?.nombre ?? null);
@@ -44,8 +46,10 @@
   );
   const nombre = $derived(choix === 'autre' ? (autreValide ? autreNombre : null) : (choix ?? recommandee));
   const autreProposition = $derived(autreValide ? proposition(presents.length, autreNombre) : null);
-  const piste = $derived(Number(premierePiste));
-  const pisteValide = $derived(Number.isInteger(piste) && piste >= 1);
+  /** US-158 CA-8 à CA-10 : les pistes des poules, ou le motif du refus (sans nombre de poules, la seule forme). */
+  const lecture = $derived(lirePistes(champPistes, nombre ?? 1));
+  const pisteValide = $derived(lecture.ok);
+  const messagePistes = $derived(lecture.ok ? null : t.erreursPistes(lecture));
   const sansClassement = $derived(presents.filter(({ classement }) => classement === null).length);
   /** L'encart montre le serpentin pour le nombre choisi (4 colonnes au plus, 6 lignes). */
   const colonnes = $derived(Math.min(nombre ?? 4, 4));
@@ -53,16 +57,16 @@
 
   async function soumettre(evenement: SubmitEvent) {
     evenement.preventDefault();
-    if (nombre === null || !pisteValide || envoi) return;
+    if (nombre === null || !lecture.ok || envoi) return;
     envoi = true;
     try {
       const poules =
         methode === 'manuelle'
-          ? poulesVides(nombre, piste)
+          ? poulesVides(nombre, lecture.pistes)
           : repartirEnSerpentin(presents, nombre, {
               separerClubs,
               hasardSansClassement: hasard,
-              premierePiste: piste,
+              pistes: lecture.pistes,
             });
       await valider(poules, methode === 'manuelle');
     } finally {
@@ -163,9 +167,20 @@
       {/if}
 
       <div class="piste">
-        <label for="premiere-piste"><strong>{t.premierePiste}</strong></label>
-        <input id="premiere-piste" class="petit" inputmode="numeric" bind:value={premierePiste} />
-        <p class="discret">{t.pistesDetail}</p>
+        <label for="pistes"><strong>{t.pistes}</strong></label>
+        <input
+          id="pistes"
+          class="moyen"
+          bind:value={champPistes}
+          aria-invalid={messagePistes !== null}
+          aria-describedby="pistes-detail"
+        />
+        <p class="discret">{t.pistesAide}</p>
+        {#if messagePistes}
+          <p id="pistes-detail" class="erreur" role="alert">{messagePistes}</p>
+        {:else if lecture.ok && nombre !== null}
+          <p id="pistes-detail" class="discret" role="status">{t.pistesUtilisees(lecture.pistes)}</p>
+        {/if}
       </div>
 
       <div class="pied">
@@ -326,7 +341,19 @@
     justify-items: start;
   }
 
-  input.petit {
+  input.moyen {
+    width: 14rem;
+    max-width: 100%;
+  }
+
+  .erreur {
+    margin: 0;
+    color: var(--etat-erreur);
+    font-size: 0.875rem;
+  }
+
+  input.petit,
+  input.moyen {
     box-sizing: border-box;
     width: 6rem;
     min-height: 2.75rem;

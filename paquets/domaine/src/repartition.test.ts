@@ -133,8 +133,8 @@ describe('US-158 : champ « Pistes »', () => {
   });
 
   it('CA-10 : liste trop courte, piste en double, plage ou texte invalide', () => {
-    expect(lirePistes('1,2,3,4', 6)).toEqual({ ok: false, erreur: 'MANQUE', manque: 2 });
-    expect(lirePistes('1-3', 4)).toEqual({ ok: false, erreur: 'MANQUE', manque: 1 });
+    expect(lirePistes('1,2,3,4', 6)).toEqual({ ok: false, erreur: 'MANQUE', manque: 2, poules: 6 });
+    expect(lirePistes('1-3', 4)).toEqual({ ok: false, erreur: 'MANQUE', manque: 1, poules: 4 });
     expect(lirePistes('4,5,5', 3)).toEqual({ ok: false, erreur: 'EN_DOUBLE', piste: 5 });
     expect(lirePistes('4-6,5', 4)).toEqual({ ok: false, erreur: 'EN_DOUBLE', piste: 5 });
     expect(lirePistes('7-4', 2)).toEqual({ ok: false, erreur: 'PLAGE_INVALIDE', texte: '7-4' });

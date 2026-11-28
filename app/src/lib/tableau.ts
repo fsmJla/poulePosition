@@ -10,8 +10,11 @@ export function creerTableau(
   epreuveId: string,
   qualifies: readonly string[],
   contexte: Contexte,
+  /** US-158 CA-1 : créé avant la fin des poules. */
+  anticipe = false,
 ): Promise<ResultatInscription> {
-  return ecrire(journal, epreuveId, { type: 'TableauCree', donnees: { qualifies: [...qualifies] } }, contexte);
+  const donnees = anticipe ? { qualifies: [...qualifies], anticipe: true as const } : { qualifies: [...qualifies] };
+  return ecrire(journal, epreuveId, { type: 'TableauCree', donnees }, contexte);
 }
 
 /** US-112 : appelle un match sur une piste, ou lui retire sa piste (`null`). */
@@ -50,6 +53,12 @@ export function retirerDuTableau(
 }
 
 /** US-115 CA-5 : termine l'épreuve. */
-export function terminerEpreuve(journal: Journal, epreuveId: string, contexte: Contexte): Promise<ResultatInscription> {
-  return ecrire(journal, epreuveId, { type: 'EpreuveTerminee', donnees: {} }, contexte);
+export function terminerEpreuve(
+  journal: Journal,
+  epreuveId: string,
+  contexte: Contexte,
+  /** US-158 CA-5 : terminée avant la fin du tableau. */
+  anticipe = false,
+): Promise<ResultatInscription> {
+  return ecrire(journal, epreuveId, { type: 'EpreuveTerminee', donnees: anticipe ? { anticipe: true } : {} }, contexte);
 }

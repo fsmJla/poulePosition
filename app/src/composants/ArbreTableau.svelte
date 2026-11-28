@@ -54,7 +54,7 @@
   const classeEtat = (match: MatchTableau) =>
     match.etat === 'regle' || match.etat === 'exempt'
       ? 'fini'
-      : match.etat === 'attente'
+      : match.etat === 'attente' || match.etat === 'nonTire'
         ? 'attente'
         : match.enPiste
           ? 'piste'

@@ -52,7 +52,7 @@
     t.resume(
       etat.poules.length,
       tailles.length === 0 ? '' : `de ${tailles.join(' ou ')}`,
-      t.pistesDe(Math.min(...pistes), Math.max(...pistes)),
+      t.pistesDe(pistes),
       manuelle,
     ),
   );

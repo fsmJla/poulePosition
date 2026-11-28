@@ -8,6 +8,7 @@
     classementDesPoules,
     participantsDe,
     poulesDe,
+    tableauDe,
     type Epreuve,
   } from '@poule-position/domaine';
   import GabaritEpreuve from '../composants/GabaritEpreuve.svelte';
@@ -52,7 +53,10 @@
   const tireurs = $derived(epreuve ? new Map(participantsDe(epreuve).map((tireur) => [tireur.id, tireur])) : new Map());
   const lignes = $derived(etat ? classementDesPoules(etat, touches) : []);
   const avancement = $derived(etat ? avancementPoules(etat, touches) : { regles: 0, total: 0 });
-  const definitif = $derived(avancement.total > 0 && avancement.regles === avancement.total);
+  /** US-158 CA-4 : un tableau créé (même avant la fin des poules) rend le classement définitif. */
+  const fige = $derived(epreuve !== null && tableauDe(epreuve).qualifies !== null);
+  const definitif = $derived((avancement.total > 0 && avancement.regles === avancement.total) || fige);
+  const nonTires = $derived(avancement.total - avancement.regles);
   const etatsPoules = $derived(
     etat
       ? etat.poules.map((poule) => ({
@@ -107,7 +111,9 @@
           <h2>{t.classementTitre}</h2>
           <span class="pastille" class:definitif role="status"
             >{definitif
-              ? t.classementDefinitifEntete
+              ? nonTires > 0
+                ? t.classementDefinitifNonTires(nonTires)
+                : t.classementDefinitifEntete
               : t.classementProvisoireEntete(avancement.regles, avancement.total)}</span
           >
         </div>

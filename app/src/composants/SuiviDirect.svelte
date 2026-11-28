@@ -77,7 +77,8 @@
   const tourCourant = $derived.by(() => {
     const matchs = vue?.tableau?.matchs ?? [];
     const tours = [...new Set(matchs.filter((m) => m.tour > 0).map((m) => m.tour))].sort((a, b) => b - a);
-    return tours.find((tour) => matchs.some((m) => m.tour === tour && m.etat !== 'regle' && m.etat !== 'exempt')) ?? 2;
+    const decide = (etat: string) => etat === 'regle' || etat === 'exempt' || etat === 'nonTire';
+    return tours.find((tour) => matchs.some((m) => m.tour === tour && !decide(m.etat))) ?? 2;
   });
 
   const heure = (instant: number) => {
@@ -196,6 +197,7 @@
           </article>
         {/each}
       {:else if actif === 'classement'}
+        {#if vue.finAnticipee}<p class="discret" role="note">{tg.finAnticipee}</p>{/if}
         <table class="classement">
           <thead
             ><tr
@@ -233,6 +235,8 @@
               {/each}
               {#if match.piste !== null && match.etat === 'aTirer'}
                 <span class="discret">{match.enPiste ? tg.enPisteN(match.piste) : tg.aTirerN(match.piste)}</span>
+              {:else if match.etat === 'nonTire'}
+                <span class="discret">{tg.nonTire}</span>
               {/if}
             </article>
           {/each}

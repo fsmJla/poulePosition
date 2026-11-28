@@ -301,3 +301,42 @@ describe('dates de la page d’une manifestation (US-056 CA-8)', () => {
     expect(dates('2027-03-01', '2027-03-02')).toBe('1er et 2 mars 2027');
   });
 });
+
+describe('déroulé assoupli (US-158)', () => {
+  it('CA-2 : la confirmation compte les matchs non tirés par poule', () => {
+    const detail = textes.tableau.detailCreationAnticipee([
+      { poule: 2, nombre: 1 },
+      { poule: 4, nombre: 2 },
+    ]);
+    expect(detail).toContain('3 matchs non tirés : poule 2 (1), poule 4 (2)');
+    expect(textes.tableau.detailCreationAnticipee([{ poule: 1, nombre: 1 }])).toContain(
+      '1 match non tiré : poule 1 (1)',
+    );
+  });
+  it('CA-4 : le classement des poules figé dit combien de matchs n’ont pas été tirés', () => {
+    expect(textes.poules.classementDefinitifNonTires(3)).toBe('Définitif · 3 matchs non tirés');
+    expect(textes.poules.classementDefinitifNonTires(1)).toBe('Définitif · 1 match non tiré');
+  });
+  it('CA-5 : la confirmation de fin cite les matchs non tirés et ceux en piste', () => {
+    expect(textes.tableau.detailFinAnticipee(4, 2)).toContain('4 matchs non tirés (dont 2 en piste)');
+    expect(textes.tableau.detailFinAnticipee(1, 0)).toMatch(/^1 match non tiré\. /);
+  });
+  it('CA-6 : un match départagé sans score est « Non tiré »', () => {
+    expect(textes.tableau.etatMatch({ etat: 'nonTire', piste: 3, enPiste: false })).toBe('Non tiré');
+  });
+  it('CA-9 et CA-10 : pistes utilisées et messages d’erreur du champ « Pistes »', () => {
+    const t = textes.poules;
+    expect(t.pistesUtilisees([4, 5, 10])).toBe('Pistes utilisées : 4, 5, 10');
+    expect(t.pistesUtilisees([4])).toBe('Piste utilisée : 4');
+    expect(t.pistesDe([1, 2, 3, 4])).toBe('pistes 1 à 4');
+    expect(t.pistesDe([10, 4, 5])).toBe('pistes 4, 5, 10');
+    expect(t.pistesDe([3])).toBe('piste 3');
+    expect(t.pistesDe([])).toBe('');
+    expect(t.erreursPistes({ erreur: 'MANQUE', manque: 2, poules: 6 })).toBe('Il manque 2 pistes pour 6 poules.');
+    expect(t.erreursPistes({ erreur: 'EN_DOUBLE', piste: 5 })).toBe('La piste 5 est en double.');
+    expect(t.erreursPistes({ erreur: 'PLAGE_INVALIDE', texte: '7-4' })).toContain('Plage 7-4 invalide');
+    expect(t.erreursPistes({ erreur: 'INVALIDE', texte: 'a' })).toContain('« a »');
+    expect(t.erreursPistes({ erreur: 'INVALIDE', texte: '' })).toContain('entre deux virgules');
+    expect(t.erreursPistes({ erreur: 'VIDE' })).toContain('au moins une piste');
+  });
+});
