@@ -48,6 +48,8 @@ l'ajoute ici avant de l'utiliser.
 | Boutons score | Saisie d'un score par deux colonnes de boutons (0 à N−1, « V ») ; le second choix enregistre, sans « V » c'est une victoire au temps (US-091, planche 14). | `scoreDesBoutons` |
 | Tableau | Élimination directe (tableau de 64, 32, 16…), avec exempts si l'effectif n'est pas une puissance de 2. | `tableau` |
 | Exempt | Tireur qualifié d'office pour le tour suivant du tableau, faute d'adversaire. | `exempt` |
+| Non tiré (match) | Match de poule ou du tableau resté sans score parce que l'organisateur a créé le tableau ou terminé l'épreuve avant la fin ; il ne compte pas au classement des poules et, au tableau, il est départagé par le rang après poules (US-158). | `nonTire` |
+| Anticipé (passage, fin) | Création du tableau avant la fin des poules, ou fin de l'épreuve avant la fin du tableau, décidée par l'organisateur (US-158). | `anticipe` |
 | Tête de série | Rang d'un tireur au classement après poules, qui fixe sa place dans le tableau ; affiché « (3) » à côté de son nom (US-108). | `rang` |
 | Placement de la FIE | Ordre des places du tableau : au premier tour, le rang r rencontre le rang T + 1 − r, et les meilleurs rangs ne se rencontrent qu'aux derniers tours (US-108). | `placementFIE` |
 | Appel (d'un match) | Attribution d'une piste à un match du tableau, avec l'heure ; « En piste N » quand la piste est libre, « À tirer · piste N » quand elle est encore occupée (US-112). | `MatchTableauAppele` |
