@@ -209,3 +209,26 @@ describe('scores récents du bandeau (US-141)', () => {
     expect(vueDirect(epreuveDe(...TROIS), [evenement(9, 50, score('a', 'b'))]).scoresRecents).toHaveLength(1);
   });
 });
+
+describe('mode Accueil de l’écran géant (US-160)', () => {
+  it('CA-2 et CA-3 : horaires, type, inscrits, émargés ; compétition et affiche viennent du pilote', () => {
+    const absente = inscrire('d', 'PETIT', 'Jade', 'Talence')[0]!;
+    const epreuve = epreuveDe(...TROIS, absente);
+    expect(vueDirect(epreuve).accueil).toEqual({
+      horaires: { appel: null, scratch: null, debutPoules: null },
+      typeEpreuve: 'individuelle',
+      inscrits: 4,
+      emarges: 3,
+      competition: null,
+      affiche: null,
+    });
+    const nom = `${'a'.repeat(64)}.png`;
+    expect(vueDirect(epreuve, [], { competition: 'Challenge de Pessac', affiche: nom }).accueil).toMatchObject({
+      competition: 'Challenge de Pessac',
+      affiche: nom,
+    });
+    const horaires = { appel: '08:30', scratch: '09:00', debutPoules: '09:30' };
+    const modifiee = epreuveDe(...TROIS, { type: 'EpreuveModifiee', donnees: { horaires } });
+    expect(vueDirect(modifiee).accueil?.horaires).toEqual(horaires);
+  });
+});

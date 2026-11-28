@@ -2,7 +2,7 @@
 // pilotées ici passe d'un onglet à l'autre par `BroadcastChannel`, sans réseau. La fenêtre locale annonce les épreuves
 // qu'elle affiche (`bonjour`) ; le pilote lui envoie leur vue dès que leur journal avance. Une vue imposée depuis ce PC
 // lui parvient de la même façon, avec ou sans réseau.
-import { vueDirect, type VueDirect } from '@poule-position/domaine';
+import { vueDirect, type ComplementDirect, type Epreuve, type VueDirect } from '@poule-position/domaine';
 import type { VueImposee } from '@poule-position/protocole';
 import type { Journal } from './journal';
 
@@ -34,8 +34,11 @@ export function creerDiffuseurLocal({
   canal = ouvrirCanal(),
   intervalle = 1000,
   maintenant = () => Date.now(),
+  complement = async () => ({}),
 }: {
   journal: Pick<Journal, 'dernierSeq' | 'lire' | 'evenements' | 'etat'>;
+  /** US-160 : compétition et affiche de l'épreuve (mode Accueil). */
+  complement?: (epreuve: Epreuve) => Promise<ComplementDirect>;
   canal?: CanalMinimal | null;
   intervalle?: number;
   maintenant?: () => number;
@@ -51,7 +54,12 @@ export function creerDiffuseurLocal({
       const [{ epreuve }, evenements] = await Promise.all([journal.lire(epreuveId), journal.evenements(epreuveId)]);
       if (!epreuve) continue;
       demandees.set(epreuveId, seq);
-      canal?.postMessage({ type: 'vue', epreuveId, vue: vueDirect(epreuve, evenements), publieeLe: maintenant() });
+      canal?.postMessage({
+        type: 'vue',
+        epreuveId,
+        vue: vueDirect(epreuve, evenements, await complement(epreuve)),
+        publieeLe: maintenant(),
+      });
     }
   }
 

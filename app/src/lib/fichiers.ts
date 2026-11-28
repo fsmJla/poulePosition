@@ -280,6 +280,11 @@ export function creerClientFichiers({
       });
     },
 
+    /** US-160 : la dernière description des fichiers gardée sur l'appareil, sans réseau (vide sans copie). */
+    async copieLocale(): Promise<readonly FichierJoint[]> {
+      return (await copie())?.fichiers ?? [];
+    },
+
     /**
      * US-034 : description de tous les fichiers du club pour un export : à jour si le serveur répond, sinon la dernière
      * copie de l'appareil (vide si l'appareil n'en a jamais eu).

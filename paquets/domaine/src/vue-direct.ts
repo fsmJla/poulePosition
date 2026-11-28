@@ -1,8 +1,9 @@
 // Vue en direct (US-132, ADR-0029) : ce que le pilote publie pour les écrans géants et les spectateurs. Elle est
 // calculée ici à partir de la projection du journal ; le serveur la garde et la diffuse sans la lire. Elle est publique :
-// des tireurs, seuls le nom affiché (« Prénom N. » si le réglage l'exige, US-032) et le club (ADR-0014). Ni émargement,
-// ni licence, ni classement fédéral, ni droits, ni identifiant d'appareil.
-import type { Arme, Sexe, Statut } from './epreuve';
+// des tireurs, seuls le nom affiché (« Prénom N. » si le réglage l'exige, US-032) et le club (ADR-0014). Ni émargement
+// individuel (US-160 : seulement le nombre d'émargés), ni licence, ni classement fédéral, ni droits, ni identifiant
+// d'appareil.
+import type { Arme, Horaires, Sexe, Statut, TypeEpreuve } from './epreuve';
 import { membresDe } from './equipes';
 import {
   contexteTableau,
@@ -91,6 +92,26 @@ export interface LigneFinaleDirect {
   etat: 'classe' | 'elimine' | 'enLice' | 'exclusion' | 'nonQualifie';
 }
 
+/**
+ * US-160 : ce que montre le mode Accueil de l'écran géant avant le lancement des poules : horaires, type, nombres
+ * d'inscrits et d'émargés (des équipes complètes, par équipes), nom de la compétition et affiche (nom du fichier joint,
+ * celui de l'épreuve, sinon de sa compétition, sinon de sa manifestation ; null sans affiche).
+ */
+export interface AccueilDirect {
+  horaires: Horaires;
+  typeEpreuve: TypeEpreuve;
+  inscrits: number;
+  emarges: number;
+  competition: string | null;
+  affiche: string | null;
+}
+
+/** US-160 : ce que le pilote ajoute à la vue, hors du journal (compétition, affiche). */
+export interface ComplementDirect {
+  competition?: string | null;
+  affiche?: string | null;
+}
+
 export interface VueDirect {
   epreuveId: string;
   nom: string;
@@ -118,6 +139,8 @@ export interface VueDirect {
   equipes?: EquipeDirect[];
   /** US-158 CA-6 : l'épreuve a été terminée avant la fin du tableau. Absent sinon. */
   finAnticipee?: true;
+  /** US-160 : le mode Accueil de l'écran géant ; absent d'une vue publiée avant cette US. */
+  accueil?: AccueilDirect;
 }
 
 /** CA-2 : « MARTIN Léa », ou « Léa M. » quand le public ne voit que l'initiale du nom. */
@@ -156,7 +179,11 @@ export function scoresRecents(
 }
 
 /** CA-1 : la vue en direct d'une épreuve, telle que le pilote la publie ; ses événements donnent les scores récents. */
-export function vueDirect(epreuve: Epreuve, evenements: readonly Evenement[] = []): VueDirect {
+export function vueDirect(
+  epreuve: Epreuve,
+  evenements: readonly Evenement[] = [],
+  complement: ComplementDirect = {},
+): VueDirect {
   const touches = epreuve.formule.touchesPoules;
   const etat = poulesDe(epreuve);
   const prenomInitiale = epreuve.parametres.prenomInitiale;
@@ -273,5 +300,19 @@ export function vueDirect(epreuve: Epreuve, evenements: readonly Evenement[] = [
         membres: membresDe(e).map((id) => nomDuTireur.get(id) ?? ''),
       })),
     }),
+    accueil: accueilDirect(epreuve, complement),
+  };
+}
+
+/** US-160 : le mode Accueil (horaires, inscrits, émargés). Par équipes, une équipe émarge quand elle est complète. */
+export function accueilDirect(epreuve: Epreuve, complement: ComplementDirect = {}): AccueilDirect {
+  const participants = participantsDe(epreuve);
+  return {
+    horaires: { ...epreuve.horaires },
+    typeEpreuve: epreuve.typeEpreuve,
+    inscrits: participants.length,
+    emarges: participants.filter(({ present }) => present).length,
+    competition: complement.competition ?? null,
+    affiche: complement.affiche ?? null,
   };
 }

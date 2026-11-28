@@ -3,9 +3,12 @@
 // son heure de publication). Le serveur la valide sans la recalculer.
 import {
   ARMES,
+  MOTIF_NOM_FICHIER,
   MOTIFS_RETRAIT,
   SEXES,
   STATUTS,
+  TYPES_EPREUVE,
+  type AccueilDirect,
   type ClassementPouleDirect,
   type EquipeDirect,
   type LigneClassementDirect,
@@ -104,7 +107,28 @@ function lireEquipe(brut: unknown): EquipeDirect | null {
 }
 
 /** US-132 : une vue en direct bien formée, sinon null ; US-155 : `equipes` facultatif (épreuve par équipes). */
+/** US-160 : le mode Accueil (horaires `HH:MM` ou null, type, nombres, compétition, nom du fichier de l'affiche). */
+const HORAIRE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+function lireAccueil(brut: unknown): AccueilDirect | null {
+  const o = aExactementLesChamps(brut, ['horaires', 'typeEpreuve', 'inscrits', 'emarges', 'competition', 'affiche']);
+  if (!o || !dans(TYPES_EPREUVE, o.typeEpreuve) || !estEntier(o.inscrits) || !estEntier(o.emarges)) return null;
+  if (o.emarges > o.inscrits || !estTexteOuNull(o.competition)) return null;
+  if (!(o.affiche === null || (estTexte(o.affiche) && MOTIF_NOM_FICHIER.test(o.affiche)))) return null;
+  const horaires = aExactementLesChamps(o.horaires, ['appel', 'scratch', 'debutPoules']);
+  const valide = (h: unknown) => h === null || (estTexte(h) && HORAIRE.test(h));
+  if (!horaires || !Object.values(horaires).every(valide)) return null;
+  return o as unknown as AccueilDirect;
+}
+
 export function analyserVueDirect(brut: unknown): VueDirect | null {
+  // US-160 : `accueil` facultatif (vue publiée par un pilote d'avant cette US).
+  if (brut !== null && typeof brut === 'object' && 'accueil' in brut) {
+    const { accueil: brutAccueil, ...reste } = brut as Record<string, unknown>;
+    const accueil = lireAccueil(brutAccueil);
+    const vue = analyserVueDirect(reste);
+    return vue && accueil ? { ...vue, accueil } : null;
+  }
   // US-158 CA-6 : `finAnticipee` facultatif, toujours `true` quand il est présent.
   if (brut !== null && typeof brut === 'object' && 'finAnticipee' in brut) {
     const { finAnticipee, ...reste } = brut as Record<string, unknown>;

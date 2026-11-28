@@ -11,9 +11,18 @@
   import { creerConnexionEcran, type EtatEcran, type VueRecue } from '../lib/connexion-ecran';
   import { creerEcouteLocale } from '../lib/diffusion-locale';
   import { creerClientEcrans } from '../lib/ecrans';
-  import { groupesDuBandeau, pagesDeLEcran, type GroupeBandeau, type PageEcran } from '../lib/ecran-geant';
+  import {
+    DUREE_PLAN_ACCUEIL,
+    LIGNES_PAR_COLONNE,
+    dureeDeLaPage,
+    groupesDuBandeau,
+    pagesDeLEcran,
+    type GroupeBandeau,
+    type PageEcran,
+  } from '../lib/ecran-geant';
   import { urlHttp } from '../lib/session';
   import { textes } from '../lib/textes';
+  import EcranAccueil from '../composants/EcranAccueil.svelte';
 
   interface Proprietes {
     ecranId: string;
@@ -65,7 +74,8 @@
   const recue = $derived(page && 'epreuveId' in page ? (etat?.vues.get(page.epreuveId) ?? null) : null);
   const nom = $derived(new Map((vue?.tireurs ?? []).map((tireur) => [tireur.id, tireur.nom])));
   const club = $derived(new Map((vue?.tireurs ?? []).map((tireur) => [tireur.id, tireur.club])));
-  const duree = $derived((etat?.ecran?.dureePage ?? 15) * 1000);
+  // US-160 : une page Accueil dure le temps de ses plans ; les autres, la durée réglée.
+  const duree = $derived(dureeDeLaPage(page, vues, etat?.ecran?.dureePage ?? 15));
   const perimee = $derived(
     Boolean(etat?.horsLigne) || (page !== null && 'epreuveId' in page && etat?.pilotes.get(page.epreuveId) === false),
   );
@@ -168,6 +178,7 @@
     if (p.type === 'classement') return p.final ? t.classementFinal : t.classement;
     if (p.type === 'tableau') return p.arbre.moitie ? t.moitie(p.arbre.moitie) : t.tableau;
     if (p.type === 'podium') return t.terminee;
+    if (p.type === 'accueil') return t.accueil.pastille;
     return t.attente;
   }
 
@@ -339,7 +350,7 @@
         </div>
       {:else if page?.type === 'classement'}
         <div class="classement">
-          {#each [page.lignes.slice(0, 6), page.lignes.slice(6)] as colonne, c (c)}
+          {#each [page.lignes.slice(0, LIGNES_PAR_COLONNE), page.lignes.slice(LIGNES_PAR_COLONNE)] as colonne, c (c)}
             {#if colonne.length > 0}
               <table>
                 <thead>
@@ -450,6 +461,18 @@
             {/each}
           </div>
         </div>
+      {:else if page?.type === 'accueil' && vue?.accueil}
+        <!-- US-160 : le mode Accueil, avant le lancement des poules. -->
+        {@const nomAffiche = vue.accueil.affiche}
+        <!-- Chaque épreuve repart à son premier plan : ses plans se suivent, puis ceux de l'épreuve suivante. -->
+        {#key page.epreuveId}
+          <EcranAccueil
+            duree={DUREE_PLAN_ACCUEIL}
+            vue={{ ...vue, accueil: vue.accueil }}
+            {maintenant}
+            adresseAffiche={nomAffiche && urlHttp(urlServeur) ? `${urlHttp(urlServeur)}/fichiers/${nomAffiche}` : null}
+          />
+        {/key}
       {:else}
         <p class="message">{t.attenteDetail}</p>
       {/if}
@@ -1010,8 +1033,28 @@
   }
 
   .classement td {
-    padding: 0.45em 0.3em;
+    padding: 0.3em 0.5em;
+    border-top: 1px solid var(--bordure-champ);
     text-align: left;
+  }
+
+  /* Retour du 2026-11-28 : un vrai tableau, lignes bien visibles et fond alterné. */
+  .classement table {
+    border: 1px solid var(--bordure-champ);
+  }
+
+  .classement th {
+    padding: 0.4em 0.5em;
+    background: var(--surface-2);
+    text-align: left;
+  }
+
+  .classement tbody tr:nth-child(odd) {
+    background: var(--surface);
+  }
+
+  .classement tbody tr:nth-child(even) {
+    background: var(--accent-teinte);
   }
 
   .nom {

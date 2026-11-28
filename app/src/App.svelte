@@ -13,13 +13,14 @@
   import { creerPresencePilote } from './lib/presence-pilote';
   import { creerAccesQr } from './lib/acces-qr';
   import { traiterSaisie } from './lib/table-saisies';
-  import { vueDirect, vueSaisie } from '@poule-position/domaine';
+  import { vueDirect, vueSaisie, type Epreuve as EpreuveJournal } from '@poule-position/domaine';
   import { creerAccueil } from './lib/accueil';
   import { creerClientCompetitions } from './lib/competitions';
   import { creerClientManifestations } from './lib/manifestations';
   import { creerClientFichiers } from './lib/fichiers';
   import { creerClientPublic } from './lib/publication';
   import { creerClientEcrans } from './lib/ecrans';
+  import { complementDirect } from './lib/complement-direct';
   import { creerDiffuseurLocal } from './lib/diffusion-locale';
   import type { Ecran, VueImposee } from '@poule-position/protocole';
   import { textes } from './lib/textes';
@@ -105,7 +106,10 @@
     jeton: async () => (session && !estLocale(session) ? session.jeton : null),
   });
   /** US-136 : la vue en direct des épreuves pilotées ici, pour les fenêtres locales de l'écran géant (sans réseau). */
-  const diffuseurLocal = creerDiffuseurLocal({ journal });
+  /** US-160 : compétition et affiche de l'épreuve, pour le mode Accueil de l'écran géant. */
+  const complement = (epreuve: EpreuveJournal) =>
+    complementDirect(epreuve, { competitions: () => competitions.copie(), fichiers: () => fichiers.copieLocale() });
+  const diffuseurLocal = creerDiffuseurLocal({ journal, complement });
   /** US-136 CA-1 : ouvre l'écran dans une seconde fenêtre, à glisser sur l'écran branché en HDMI ; faux si bloquée. */
   const ouvrirSurCePc = (ecran: Ecran): boolean =>
     window.open(`/ecran/${ecran.id}?local#${ecran.jeton}`, `ecran-${ecran.id}`, 'popup,width=1280,height=720') !== null;
@@ -129,7 +133,7 @@
     // US-132 : vue en direct publiée pour les écrans géants et les spectateurs (ADR-0029).
     vueDirectDe: async (epreuveId) => {
       const [{ epreuve }, evenements] = await Promise.all([journal.lire(epreuveId), journal.evenements(epreuveId)]);
-      return epreuve ? vueDirect(epreuve, evenements) : null;
+      return epreuve ? vueDirect(epreuve, evenements, await complement(epreuve)) : null;
     },
     // US-099 : une saisie d'un smartphone, décidée par ce PC ; un score accepté part au serveur (et la vue suit).
     surSaisie: async (epreuveId, saisie) => {

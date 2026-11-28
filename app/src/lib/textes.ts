@@ -361,6 +361,23 @@ export const textes = {
     scoreTableau: (tour: string, a: string, ta: number, tb: number, b: string) => `${tour} : ${a} ${ta} – ${tb} ${b}`,
     misAJour: (heure: string) => `Mis à jour à ${heure}`,
     derniereMiseAJour: (heure: string) => `Dernière mise à jour : ${heure}`,
+    /** US-160 : le mode Accueil, avant le lancement des poules. */
+    accueil: {
+      pastille: 'Bientôt',
+      imminent: 'Début imminent',
+      affiche: (nom: string) => `Affiche : ${nom}`,
+      etapes: { appel: 'Appel', scratch: 'Scratch', debutPoules: 'Début des poules' },
+      dans: 'dans',
+      prochaine: 'Prochaine étape',
+      passe: 'Passé',
+      aVenir: 'À venir',
+      types: { individuelle: 'Individuel', equipes2: 'Par équipes de 2', equipes3: 'Par équipes de 3' },
+      inscrits: (n: number, equipes: boolean) =>
+        equipes ? (n > 1 ? 'équipes inscrites' : 'équipe inscrite') : n > 1 ? 'inscrits' : 'inscrit',
+      emarges: (equipes: boolean) => (equipes ? 'équipes complètes' : 'ont émargé'),
+      sur: (n: number) => `sur ${n}`,
+      plans: 'Avancement de la présentation',
+    },
   },
   /** US-133 à US-136 : écrans géants d'une manifestation (planches 36 et 37). */
   ecrans: {
