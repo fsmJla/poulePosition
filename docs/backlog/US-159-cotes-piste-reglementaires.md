@@ -4,7 +4,7 @@
 - **Fonctionnalité :** F7, F8, F10 (exigences §3)
 - **Priorité :** P2
 - **Type :** correction
-- **Statut :** En revue
+- **Statut :** Terminée
 - **Dépend de :** US-091, US-099, US-106, US-117, US-118
 - **Branche / PR :** `us/US-159-cotes-piste-reglementaires`
 
@@ -95,3 +95,4 @@ le journal (elle ne change que l'affichage de l'appareil qui saisit). Testé : E
 | Date | Événement |
 |---|---|
 | 2026-11-28 | Créée (correction demandée par l'utilisateur), implémentée et passée en revue. |
+| 2026-11-28 | Terminée : recette validée par l’utilisateur (série US-158, US-157, US-159), mergée dans dev |
