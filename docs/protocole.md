@@ -491,7 +491,7 @@ Aucun autre champ n'est accepté.
 | `ScorePouleSaisi` | `{ poule, tireurA, tireurB, touchesA, touchesB, auTemps?, parPriorite? }` | Score d'un match de poule ; une nouvelle saisie du même match le remplace (US-085, US-088). Par équipes, une égalité au temps porte `parPriorite`, le vainqueur (US-150). |
 | `TireurRetireDesPoules` | `{ tireurId, motif }` | Abandon, forfait ou exclusion (`abandon`, `forfait`, `exclusion`) : ses matchs restants sont perdus, il est classé dernier de sa poule (US-085, US-089). |
 | `RetraitDesPoulesAnnule` | `{ tireurId }` | Annule un retrait fait par erreur (US-089). |
-| `TableauCree` | `{ qualifies }` | Crée le tableau (US-108) : les qualifiés dans l'ordre du classement après poules, ex aequo tirés au sort. Fige les poules. |
+| `TableauCree` | `{ qualifies, anticipe? }` | Crée le tableau (US-108) : les qualifiés dans l'ordre du classement après poules, ex aequo tirés au sort. Fige les poules. `anticipe: true` (US-158) : créé avant la fin des poules, sur le classement des matchs tirés ; les matchs restants deviennent « non tirés ». |
 | `MatchTableauAppele` | `{ match, piste }` | Appelle un match du tableau sur une piste (`null` la retire) ; l'heure d'appel est la date de l'en-tête (US-108, US-112). |
 | `ScoreTableauSaisi` | `{ match, tireurA, tireurB, touchesA, touchesB, parPriorite?, saisie? }` | Score d'un match du tableau, ou sa correction ; `parPriorite` désigne le vainqueur d'une égalité (US-108). |
 | `TireurRetireDuTableau` | `{ match, tireurId, motif }` | Abandon, forfait ou exclusion dans un match du tableau : l'adversaire passe (US-108, US-113). |
@@ -500,7 +500,7 @@ Aucun autre champ n'est accepté.
 | `EquipeModifiee` | `{ equipeId, nom?, titulaires?, remplacant? }` | Les champs qui changent ; après le lancement, seul le remplaçant (US-146). |
 | `EquipeSupprimee` | `{ equipeId }` | L'équipe et sa place dans la composition des poules non lancées (US-146). |
 | `RangsEquipesModifies` | `{ ordre }` | Ordre des équipes corrigé à la main, ou `null` pour revenir au rang calculé (US-147). |
-| `EpreuveTerminee` | `{}` | Termine l'épreuve une fois tous les matchs réglés : statut « Terminée » (US-108, US-115). |
+| `EpreuveTerminee` | `{ anticipe? }` | Termine l'épreuve une fois tous les matchs réglés : statut « Terminée » (US-108, US-115). `anticipe: true` (US-158) : terminée avant la fin du tableau ; chaque match sans résultat est départagé par le rang après poules (le mieux classé passe), sans score. |
 
 Les quatre événements d'inscription ne s'écrivent que sur une épreuve en préparation (`INSCRIPTIONS_CLOSES` sinon,
 `EPREUVE_ARCHIVEE` pour une épreuve archivée). La page publique n'expose pas les inscrits.
@@ -626,13 +626,13 @@ le garde dans `avantArchivage` ; `EpreuveDesarchivee` rend ce statut, remet `pub
 Le format est inchangé (`VERSION_JOURNAL` reste à 1) : un journal écrit avant US-033 n'a pas besoin de migration.
 
 **Données des événements du tableau** (US-108) : un match s'identifie par la taille de son tour et son numéro dans le
-tour, de haut en bas (`16-5` : tableau de 16, match 5 ; `2-1` : la finale), ou `3e` pour le match pour la 3e place.
+tour, de haut en bas (`16-5` : tableau de 16, match 5 ; `2-1` : la finale), ou `3e` pour le match pour la 3e place (absent quand une demi-finale est exempte, trois qualifiés : US-158).
 Le tableau a la taille de la plus petite puissance de 2 qui contient les qualifiés (2 à 256) ; ses places suivent l'ordre
 de la FIE (rangs r et T + 1 − r au premier tour), les meilleurs rangs exempts. La projection porte `epreuve.tableau`
 (`{ qualifies, resultats, appels }`) ; le tableau tour par tour est calculé par `structureTableau`. Règles du domaine
 (`verifierEvenement`) :
 
-- `TableauCree` : `POULES_NON_TERMINEES` (un match de poule à tirer), `TABLEAU_EXISTE`, `QUALIFIES_INSUFFISANTS`
+- `TableauCree` : `POULES_NON_TERMINEES` (un match de poule à tirer, sauf `anticipe` avec des poules lancées), `TABLEAU_EXISTE`, `QUALIFIES_INSUFFISANTS`
   (moins de 2), `TABLEAU_TROP_GRAND` (plus de 256), `QUALIFIES_INVALIDES` (pas exactement les qualifiés, ou un ordre
   qui ne suit pas le classement) ; ensuite, tout événement des poules est refusé (`TABLEAU_CREE`) ;
 - `MatchTableauAppele` : `TABLEAU_ABSENT`, `MATCH_INCONNU` (ou exempt), `MATCH_NON_PRET` (un tireur inconnu),
@@ -643,6 +643,7 @@ de la FIE (rangs r et T + 1 − r au premier tour), les meilleurs rangs exempts.
 - `TireurRetireDuTableau` : `MOTIF_INVALIDE`, `MATCH_INCONNU`, `MATCH_NON_PRET`, `MATCH_REGLE` ;
   `RetraitDuTableauAnnule` : `RETRAIT_ABSENT`, `MATCH_SUIVANT_REGLE` ;
 - `EpreuveTerminee` : `MATCHS_A_REGLER` (un match à régler, 3e place comprise ; sans tableau, plus d'un qualifié) ;
+  avec `anticipe`, seulement `TABLEAU_ABSENT` (pas de tableau créé) ;
   ensuite, tout événement du tableau est refusé (`EPREUVE_TERMINEE`) ;
 - `FormuleModifiee` : `TROISIEME_PLACE_REGLEE` pour retirer le match pour la 3e place une fois tiré.
 
@@ -1136,7 +1137,7 @@ diffuse aux sockets étiquetées `saisie` (smartphones, US-097) ; il ne la lit n
 | `lancees` | Faux avant le lancement des poules ; `poules` est alors vide |
 | `poules[]` | `numero`, `piste`, `tireurs[]` (`id`, `nom`, `prenom`, `club`, dans l'ordre de la poule), `matchs[]` (`numero`, `tireurA`, `tireurB`, `touches` `[a, b]` ou `null`, `auTemps`, `forfait`, dans l'ordre officiel), `regles` et `total` (avancement), `classement[]` (`tireurId`, `rang`, `victoires`, `matchs`, `indice`, `retrait`) |
 | `equipes` | US-152 : `true` pour une épreuve par équipes (absent sinon) : les « tireurs » de la vue sont les équipes, les touches suivent les rencontres (relais), une égalité de poule se départage par `parPriorite` et seuls les arbitres saisissent. |
-| `tableau` | US-112 : `null` avant la création du tableau, sinon `touches` (d'un match du tableau), `taille`, `matchs[]` (`id`, `tour`, `numero`, `haut` et `bas` : `tireurId`, `rang`, `provenance` ; `etat` : `exempt`, `attente`, `aTirer`, `regle` ; `touches` `[haut, bas]` ou `null`, `vainqueur`, `parPriorite`, `piste`, `enPiste`, `appeleA` en millisecondes). Absent d'une vue publiée avant US-112 |
+| `tableau` | US-112 : `null` avant la création du tableau, sinon `touches` (d'un match du tableau), `taille`, `matchs[]` (`id`, `tour`, `numero`, `haut` et `bas` : `tireurId`, `rang`, `provenance` ; `etat` : `exempt`, `attente`, `aTirer`, `regle`, `nonTire` (US-158 : départagé sans score à la fin anticipée) ; `touches` `[haut, bas]` ou `null`, `vainqueur`, `parPriorite`, `piste`, `enPiste`, `appeleA` en millisecondes). Absent d'une vue publiée avant US-112 |
 
 Données personnelles (ADR-0014) : des tireurs, seuls le nom, le prénom, le club et la poule ; ni licence, ni classement,
 ni heure de pointage. Une épreuve de 60 tireurs fait moins de 64 Ko, sous la limite de 256 Ko d'un message.
@@ -1217,7 +1218,7 @@ les saisies reçues des poules.
 La **vue en direct** (`VueDirect`, `paquets/domaine/src/vue-direct.ts`) est calculée par le pilote à partir du journal.
 Elle est publique : l'étape (`inscriptions`, `poules`, `classement`, `tableau`, `terminee`), les tireurs (nom affiché
 selon « Prénom N. », club), les poules et leurs scores (avec, par tireur, TD et TR : US-142), le classement après les
-poules, le tableau et le classement final, le statut de publication, `equipes` (US-155, par équipes seulement : `[{ id, membres }]`, les tireurs de chaque équipe au nom affiché ; les « tireurs » de la vue sont alors les équipes) et `scoresRecents` (US-141) : les 40 derniers scores
+poules, le tableau et le classement final, le statut de publication, `equipes` (US-155, par équipes seulement : `[{ id, membres }]`, les tireurs de chaque équipe au nom affiché ; les « tireurs » de la vue sont alors les équipes), `finAnticipee` (US-158 : `true` pour une épreuve terminée avant la fin du tableau, absent sinon) et `scoresRecents` (US-141) : les 40 derniers scores
 saisis (poules et tableau), le plus récent d'abord, chacun avec son heure d'enregistrement (`date`), sa poule ou son tour
 (`poule` ou `tour`, l'un des deux à `null`), ses tireurs et ses touches. Un score corrigé remplace l'ancien. Elle ne porte ni émargement, ni licence, ni droit, ni identifiant d'appareil.
 

@@ -3,6 +3,7 @@ import {
   changerPiste,
   clubsEnDouble,
   deplacerTireur,
+  lirePistes,
   memeClubDans,
   pistesEnDouble,
   moyenneDesClassements,
@@ -25,7 +26,7 @@ const tireur = (id: string, classement: number | null, club = `club-${id}`, nom 
   heure: null,
 });
 const classes = (n: number) => Array.from({ length: n }, (_, i) => tireur(`t${i + 1}`, i + 1));
-const options = { separerClubs: true, hasardSansClassement: false, premierePiste: 1 };
+const options = { separerClubs: true, hasardSansClassement: false, pistes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] };
 const resume = (n: number) =>
   propositionsDePoules(n).map((p) => [p.nombre, p.grande, taillePetite(p), p.recommandee, p.horsBornes]);
 
@@ -103,15 +104,48 @@ describe('US-086 CA-4 : séparer les clubs', () => {
 });
 
 describe('US-086 CA-5 et CA-6 : poules vides et pistes', () => {
-  it('les pistes suivent la première piste', () => {
-    expect(repartirEnSerpentin(classes(6), 2, { ...options, premierePiste: 3 }).map(({ piste }) => piste)).toEqual([
+  it('les pistes suivent la liste donnée', () => {
+    expect(repartirEnSerpentin(classes(6), 2, { ...options, pistes: [3, 4] }).map(({ piste }) => piste)).toEqual([
       3, 4,
     ]);
-    expect(poulesVides(3, 2)).toEqual([
+    expect(poulesVides(3, [2, 5, 9])).toEqual([
       { numero: 1, piste: 2, tireurIds: [] },
-      { numero: 2, piste: 3, tireurIds: [] },
-      { numero: 3, piste: 4, tireurIds: [] },
+      { numero: 2, piste: 5, tireurIds: [] },
+      { numero: 3, piste: 9, tireurIds: [] },
     ]);
+  });
+});
+
+describe('US-158 : champ « Pistes »', () => {
+  it('CA-8 : un seul nombre est la première piste, les suivantes s’enchaînent', () => {
+    expect(lirePistes('4', 3)).toEqual({ ok: true, pistes: [4, 5, 6] });
+    expect(lirePistes(' 1 ', 2)).toEqual({ ok: true, pistes: [1, 2] });
+    expect(lirePistes('4-4', 2)).toEqual({ ok: true, pistes: [4, 5] });
+  });
+
+  it('CA-8 : une liste avec virgules et plages, dans l’ordre, espaces ignorés', () => {
+    expect(lirePistes('4, 5, 6, 7, 10-13', 8)).toEqual({ ok: true, pistes: [4, 5, 6, 7, 10, 11, 12, 13] });
+    expect(lirePistes('10,2 , 7', 3)).toEqual({ ok: true, pistes: [10, 2, 7] });
+  });
+
+  it('CA-9 : les pistes en trop ne sont pas gardées', () => {
+    expect(lirePistes('4,5,6,7,10-13', 6)).toEqual({ ok: true, pistes: [4, 5, 6, 7, 10, 11] });
+  });
+
+  it('CA-10 : liste trop courte, piste en double, plage ou texte invalide', () => {
+    expect(lirePistes('1,2,3,4', 6)).toEqual({ ok: false, erreur: 'MANQUE', manque: 2, poules: 6 });
+    expect(lirePistes('1-3', 4)).toEqual({ ok: false, erreur: 'MANQUE', manque: 1, poules: 4 });
+    expect(lirePistes('4,5,5', 3)).toEqual({ ok: false, erreur: 'EN_DOUBLE', piste: 5 });
+    expect(lirePistes('4-6,5', 4)).toEqual({ ok: false, erreur: 'EN_DOUBLE', piste: 5 });
+    expect(lirePistes('7-4', 2)).toEqual({ ok: false, erreur: 'PLAGE_INVALIDE', texte: '7-4' });
+    expect(lirePistes('0-3', 2)).toEqual({ ok: false, erreur: 'PLAGE_INVALIDE', texte: '0-3' });
+    expect(lirePistes('1-5000', 2)).toEqual({ ok: false, erreur: 'PLAGE_INVALIDE', texte: '1-5000' });
+    expect(lirePistes('0', 2)).toEqual({ ok: false, erreur: 'INVALIDE', texte: '0' });
+    expect(lirePistes('-3', 2)).toEqual({ ok: false, erreur: 'INVALIDE', texte: '-3' });
+    expect(lirePistes('4,,5', 2)).toEqual({ ok: false, erreur: 'INVALIDE', texte: '' });
+    expect(lirePistes('a', 2)).toEqual({ ok: false, erreur: 'INVALIDE', texte: 'a' });
+    expect(lirePistes('100', 2)).toEqual({ ok: false, erreur: 'INVALIDE', texte: '100' });
+    expect(lirePistes('  ', 2)).toEqual({ ok: false, erreur: 'VIDE' });
   });
 });
 

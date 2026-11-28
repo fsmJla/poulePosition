@@ -68,6 +68,27 @@ describe('vue en direct dans le protocole (US-132)', () => {
     expect(analyserVueDirect({ ...complete, equipes: 'x' })).toBeNull();
   });
 
+  it('US-158 CA-6 : une épreuve terminée avant la fin du tableau : matchs « nonTire » et mention', () => {
+    const vue = vueDe(
+      ...inscrire('a', 'A'),
+      ...inscrire('b', 'B'),
+      ...inscrire('c', 'C'),
+      { type: 'PoulesComposees', donnees: { poules: [{ numero: 1, piste: 1, tireurIds: ['a', 'b', 'c'] }] } },
+      { type: 'PoulesLancees', donnees: {} },
+      score('a', 'b'),
+      score('a', 'c'),
+      score('b', 'c'),
+      { type: 'TableauCree', donnees: { qualifies: ['a', 'b', 'c'] } },
+      { type: 'EpreuveTerminee', donnees: { anticipe: true } },
+    );
+    expect(vue.finAnticipee).toBe(true);
+    expect(vue.tableau!.matchs.map((m) => m.etat)).toEqual(['exempt', 'nonTire', 'nonTire']);
+    expect(analyserVueDirect(vue)).toEqual(vue);
+    expect(analyserVueDirect(JSON.parse(JSON.stringify(vue)))).toEqual(vue);
+    expect(analyserVueDirect({ ...vue, finAnticipee: false })).toBeNull();
+    expect(complete.finAnticipee).toBeUndefined();
+  });
+
   it('refuse une vue mal formée ou porteuse d’un champ en trop', () => {
     expect(analyserVueDirect(null)).toBeNull();
     expect(analyserVueDirect({ ...complete, licence: 'x' })).toBeNull();

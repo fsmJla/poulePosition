@@ -13,13 +13,15 @@
     total: number;
     /** US-151 CA-4 : par équipes, les tireurs de chaque équipe, affichés sous son nom. */
     membres?: ReadonlyMap<string, string>;
+    /** US-158 CA-6 : l'épreuve a été terminée avant la fin du tableau. */
+    finAnticipee?: boolean;
   }
 
-  let { lignes, tireurs, regles, total, membres }: Proprietes = $props();
+  let { lignes, tireurs, regles, total, membres, finAnticipee = false }: Proprietes = $props();
 
   const t = textes.tableau;
   const tp = textes.poules;
-  const definitif = $derived(regles === total);
+  const definitif = $derived(regles === total || finAnticipee);
 </script>
 
 <section class="carte" aria-labelledby="titre-classement-final">
@@ -31,6 +33,7 @@
       >{definitif ? t.classementDefinitif : t.classementProvisoire(regles, total)}</span
     >
   </header>
+  {#if finAnticipee}<p class="discret mention" role="note">{t.finAnticipee}</p>{/if}
   <div class="defile">
     <table>
       <thead>
@@ -119,6 +122,10 @@
 
   .discret {
     color: var(--texte-discret);
+  }
+
+  .mention {
+    margin: 0;
   }
 
   .defile {

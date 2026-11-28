@@ -73,8 +73,8 @@ export interface OptionsRepartition {
   separerClubs: boolean;
   /** CA-3 : tirer au hasard l'ordre des tireurs sans classement ; sinon, ordre alphabétique. */
   hasardSansClassement: boolean;
-  /** CA-6 : piste de la poule 1 ; les suivantes prennent les pistes suivantes. */
-  premierePiste: number;
+  /** CA-6 et US-158 CA-8 : la piste de chaque poule, dans l'ordre (au moins une par poule, voir `lirePistes`). */
+  pistes: readonly number[];
   /** Aléa dans [0, 1[ (Math.random par défaut). */
   alea?: () => number;
 }
@@ -135,7 +135,7 @@ export function repartirEnSerpentin(presents: readonly Tireur[], nombre: number,
   }
   return Array.from({ length: nombre }, (_, i) => ({
     numero: i + 1,
-    piste: options.premierePiste + i,
+    piste: options.pistes[i]!,
     tireurIds: places
       .filter((p) => p.poule === i)
       .sort((a, b) => a.rang - b.rang)
@@ -143,9 +143,59 @@ export function repartirEnSerpentin(presents: readonly Tireur[], nombre: number,
   }));
 }
 
-/** CA-5 : `nombre` poules vides, sur les pistes à partir de `premierePiste`. */
-export function poulesVides(nombre: number, premierePiste: number): Poule[] {
-  return Array.from({ length: nombre }, (_, i) => ({ numero: i + 1, piste: premierePiste + i, tireurIds: [] }));
+/** CA-5 : `nombre` poules vides, sur les `pistes` dans l'ordre. */
+export function poulesVides(nombre: number, pistes: readonly number[]): Poule[] {
+  return Array.from({ length: nombre }, (_, i) => ({ numero: i + 1, piste: pistes[i]!, tireurIds: [] }));
+}
+
+/** US-158 CA-10 : pourquoi le champ « Pistes » est refusé. */
+export type ErreurPistes =
+  | { erreur: 'VIDE' }
+  | { erreur: 'INVALIDE'; texte: string }
+  | { erreur: 'PLAGE_INVALIDE'; texte: string }
+  | { erreur: 'EN_DOUBLE'; piste: number }
+  | { erreur: 'MANQUE'; manque: number; poules: number };
+
+/** Plus grand numéro de piste accepté, comme pour l’appel d’un match (US-112, `PISTE_MAX` du tableau). */
+const PISTE_MAX = 99;
+
+/**
+ * US-158 CA-8 et CA-10 : les pistes des `nombre` poules d'après le champ « Pistes ». Un seul nombre est la première
+ * piste, les suivantes s'enchaînent ; sinon, une liste séparée par des virgules, avec des plages croissantes « a-b ».
+ * Les espaces sont ignorés ; les pistes en trop ne sont pas gardées.
+ */
+export function lirePistes(
+  texte: string,
+  nombre: number,
+): { ok: true; pistes: number[] } | ({ ok: false } & ErreurPistes) {
+  const propre = texte.replace(/\s+/g, '');
+  if (propre === '') return { ok: false, erreur: 'VIDE' };
+  const morceaux = propre.split(',');
+  const pistes: number[] = [];
+  for (const morceau of morceaux) {
+    const plage = /^(\d+)-(\d+)$/.exec(morceau);
+    if (plage) {
+      const [debut, fin] = [Number(plage[1]), Number(plage[2])];
+      if (debut < 1 || fin < debut || fin > PISTE_MAX) return { ok: false, erreur: 'PLAGE_INVALIDE', texte: morceau };
+      for (let piste = debut; piste <= fin; piste += 1) pistes.push(piste);
+      continue;
+    }
+    if (!/^\d+$/.test(morceau) || Number(morceau) < 1 || Number(morceau) > PISTE_MAX) {
+      return { ok: false, erreur: 'INVALIDE', texte: morceau };
+    }
+    pistes.push(Number(morceau));
+  }
+  const vues = new Set<number>();
+  for (const piste of pistes) {
+    if (vues.has(piste)) return { ok: false, erreur: 'EN_DOUBLE', piste };
+    vues.add(piste);
+  }
+  // Un seul nombre : la première piste, les suivantes s'enchaînent (comportement d'avant US-158).
+  if (morceaux.length === 1 && pistes.length === 1) {
+    return { ok: true, pistes: Array.from({ length: nombre }, (_, i) => pistes[0]! + i) };
+  }
+  if (pistes.length < nombre) return { ok: false, erreur: 'MANQUE', manque: nombre - pistes.length, poules: nombre };
+  return { ok: true, pistes: pistes.slice(0, nombre) };
 }
 
 /** CA-4 et US-087 CA-4 : les clubs présents plusieurs fois dans une poule, avec leur nombre (le club vide est ignoré). */

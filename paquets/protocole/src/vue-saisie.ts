@@ -64,7 +64,8 @@ function lirePoule(brut: unknown): PouleVue | null {
   return { numero: o.numero, piste: o.piste, tireurs, matchs, regles: o.regles, total: o.total, classement };
 }
 
-const ETATS_MATCH = ['exempt', 'attente', 'aTirer', 'regle'] as const;
+/** US-158 : 'nonTire', match départagé sans score à la fin anticipée de l'épreuve. */
+const ETATS_MATCH = ['exempt', 'attente', 'aTirer', 'regle', 'nonTire'] as const;
 const estEntierOuNull = (valeur: unknown, minimum = 0) => valeur === null || estEntier(valeur, minimum);
 
 function lirePlace(brut: unknown): PlaceVue | null {

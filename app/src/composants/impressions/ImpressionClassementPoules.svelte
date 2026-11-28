@@ -17,16 +17,19 @@
     touches: number;
     contexte: string;
     imprimeLe: Date;
+    /** US-158 CA-4 : le tableau est créé ; le classement est définitif, même avec des matchs non tirés. */
+    fige?: boolean;
   }
 
-  let { etat, tireurs, touches, contexte, imprimeLe }: Proprietes = $props();
+  let { etat, tireurs, touches, contexte, imprimeLe, fige = false }: Proprietes = $props();
 
   const t = textes.poules;
   const ti = textes.impressions.classementPoules;
   const lignes = $derived(classementDesPoules(etat, touches));
   const pages = $derived(decouperEnPages(lignes, 34));
   const avancement = $derived(avancementPoules(etat, touches));
-  const definitif = $derived(avancement.total > 0 && avancement.regles === avancement.total);
+  const definitif = $derived((avancement.total > 0 && avancement.regles === avancement.total) || fige);
+  const nonTires = $derived(avancement.total - avancement.regles);
   const ratio = (valeur: number) =>
     valeur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const signe = (valeur: number) => (valeur > 0 ? `+${valeur}` : valeur < 0 ? `−${-valeur}` : '0');
@@ -36,7 +39,11 @@
   <FeuilleImprimee {contexte} titre={ti.titre} numero={i + 1} total={pages.length} {imprimeLe}>
     {#snippet aDroite()}
       <p class="etat" class:definitif>
-        {definitif ? ti.definitif(avancement.total) : t.classementProvisoireEntete(avancement.regles, avancement.total)}
+        {definitif
+          ? nonTires > 0
+            ? t.classementDefinitifNonTires(nonTires)
+            : ti.definitif(avancement.total)
+          : t.classementProvisoireEntete(avancement.regles, avancement.total)}
       </p>
     {/snippet}
     <table>

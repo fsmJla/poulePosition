@@ -23,6 +23,7 @@
     equipesDe,
     membresDe,
     tirerAuSort,
+    matchsNonTiresDesPoules,
     tousLesMatchs,
     classementFinal,
     tableauTermine,
@@ -94,6 +95,9 @@
   let pilote = $state(false);
   let ecriture = $state(true);
   let confirmer = $state(false);
+  /** US-158 : confirmations de la création et de la fin anticipées. */
+  let confirmerAnticipe = $state(false);
+  let confirmerFinAnticipee = $state(false);
   let annonce = $state('');
   let erreur = $state<string | null>(null);
   /** US-110 CA-1 : le tour choisi par l'organisateur ; sinon, le premier tour pas terminé. */
@@ -208,10 +212,10 @@
     };
   });
 
-  /** CA-5 : tire au sort les ex aequo et écrit `TableauCree`. */
-  async function creer(): Promise<VerdictArchivage> {
-    const ordre = tirerAuSort(qualifies, Math.random);
-    const resultat = await creerTableau(journal, epreuveId, ordre, contexte);
+  /** CA-5 : tire au sort les ex aequo et écrit `TableauCree` ; US-158 CA-3 : par anticipation, sur les matchs tirés. */
+  async function creer(anticipe = false): Promise<VerdictArchivage> {
+    const ordre = tirerAuSort(anticipe ? provisoires : qualifies, Math.random);
+    const resultat = await creerTableau(journal, epreuveId, ordre, contexte, anticipe);
     await recharger();
     if (!resultat.ok) return { ok: false, message: t.erreurs[resultat.erreur] ?? t.erreurs.AUTRE! };
     annonce = t.creeAnnonce;
@@ -307,11 +311,22 @@
     return { regles: matchs.filter((m) => m.etat === 'regle').length, total: matchs.length };
   });
   const termine = $derived(cree ? structure !== null && tableauTermine(structure) : terminees && qualifies.length < 2);
+  /** US-158 CA-5 : les matchs non réglés (3e place comprise), dont ceux en piste. */
+  const nonRegles = $derived(
+    structure && cree ? tousLesMatchs(structure).filter((m) => m.etat === 'aTirer' || m.etat === 'attente') : [],
+  );
+  const peutTerminerAnticipe = $derived(modifiable && epreuve?.statut === 'enCours' && cree && !termine);
+  /** US-158 CA-1 : le classement provisoire des matchs tirés, et les matchs de poule restés à tirer. */
+  const provisoires = $derived(poules && !terminees && !direct ? qualifiesDesPoules(poules, touchesPoules) : []);
+  const nonTiresPoules = $derived(poules ? matchsNonTiresDesPoules(poules, touchesPoules) : []);
+  const peutCreerAnticipe = $derived(
+    modifiable && !cree && !terminees && !direct && (poules?.lancees ?? false) && provisoires.length >= 2,
+  );
   /** US-115 CA-5 : le pilote termine l'épreuve une fois tous les matchs réglés. */
   const peutTerminer = $derived(modifiable && epreuve?.statut === 'enCours' && termine);
 
-  async function terminer(): Promise<VerdictArchivage> {
-    const resultat = await terminerEpreuve(journal, epreuveId, contexte);
+  async function terminer(anticipe = false): Promise<VerdictArchivage> {
+    const resultat = await terminerEpreuve(journal, epreuveId, contexte, anticipe);
     await recharger();
     if (!resultat.ok) return { ok: false, message: t.erreurs[resultat.erreur] ?? t.erreurs.AUTRE! };
     annonce = t.termineeAnnonce;
@@ -386,6 +401,7 @@
     {membres}
     regles={avancementTableau.regles}
     total={avancementTableau.total}
+    finAnticipee={etatTableau?.finAnticipee ?? false}
   />
 {/snippet}
 
@@ -399,7 +415,7 @@
       <div class="identite">
         <div class="ligne">
           <h2>{t.titre}</h2>
-          {#if terminees}<span class="pastille" class:enCours={cree}>{etatDuTableau}</span>{/if}
+          {#if terminees || cree}<span class="pastille" class:enCours={cree}>{etatDuTableau}</span>{/if}
         </div>
         {#if structure}
           <p class="discret">
@@ -411,6 +427,13 @@
         id="menu-tableau"
         nom={t.menu}
         actions={[
+          // US-158 CA-1 et CA-5 : les actions anticipées, secondaires (principe 3).
+          ...(peutCreerAnticipe
+            ? [{ libelle: t.creerAnticipe, icone: 'arbre' as const, surChoix: () => (confirmerAnticipe = true) }]
+            : []),
+          ...(peutTerminerAnticipe
+            ? [{ libelle: t.terminerAnticipe, surChoix: () => (confirmerFinAnticipee = true) }]
+            : []),
           // US-127 : le tableau s'imprime.
           {
             libelle: t.imprimer,
@@ -430,7 +453,7 @@
     {#if erreur}<p class="message" role="alert">{erreur}</p>{/if}
     {#if !modifiable && pilote === false}<p class="avertissement" role="status">{t.lectureSeule}</p>{/if}
 
-    {#if !terminees}
+    {#if !terminees && !cree}
       <!-- CA-2 : les poules se tirent encore. -->
       <section class="carte avis" aria-label={t.titre}>
         <p>{t.poulesEnCours(avancement.regles, avancement.total)}</p>
@@ -675,7 +698,7 @@
     titre={t.confirmerFin}
     detail={t.detailFin}
     action={t.terminer}
-    valider={terminer}
+    valider={() => terminer()}
     fermer={() => (confirmerFin = false)}
   />
 {/if}
@@ -685,8 +708,28 @@
     titre={t.confirmerCreation}
     detail={t.detailCreation}
     action={t.creer}
-    valider={creer}
+    valider={() => creer()}
     fermer={() => (confirmer = false)}
+  />
+{/if}
+
+{#if confirmerAnticipe}
+  <ConfirmationArchivage
+    titre={t.confirmerCreationAnticipee}
+    detail={t.detailCreationAnticipee(nonTiresPoules)}
+    action={t.creer}
+    valider={() => creer(true)}
+    fermer={() => (confirmerAnticipe = false)}
+  />
+{/if}
+
+{#if confirmerFinAnticipee}
+  <ConfirmationArchivage
+    titre={t.confirmerFinAnticipee}
+    detail={t.detailFinAnticipee(nonRegles.length, nonRegles.filter((m) => m.enPiste).length)}
+    action={t.terminer}
+    valider={() => terminer(true)}
+    fermer={() => (confirmerFinAnticipee = false)}
   />
 {/if}
 

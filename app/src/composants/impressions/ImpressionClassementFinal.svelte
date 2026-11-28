@@ -48,7 +48,9 @@
   const pages = $derived(decouperEnPages(lignes, 32));
   const matchs = $derived(tousLesMatchs(structure).filter((m) => m.etat !== 'exempt'));
   const regles = $derived(matchs.filter((m) => m.etat === 'regle').length);
-  const definitif = $derived(regles === matchs.length);
+  /** US-158 CA-6 : une fin anticipée rend le classement définitif. */
+  const finAnticipee = $derived(tableau.finAnticipee === true);
+  const definitif = $derived(regles === matchs.length || finAnticipee);
   /** Le podium, s'il est acquis : les places 1, 2 et 3 (deux 3es sans match pour la 3e place). */
   const podium = $derived(lignes.filter((l) => l.place !== null && l.place <= 3));
   const podiumAcquis = $derived(podium.some((l) => l.place === 1) && podium.some((l) => l.place === 3));
@@ -61,6 +63,7 @@
         {definitif ? t.classementDefinitif : t.classementProvisoire(regles, matchs.length)}
       </p>
     {/snippet}
+    {#if i === 0 && finAnticipee}<p class="mention">{t.finAnticipee}</p>{/if}
     {#if i === 0 && podiumAcquis}
       <div class="podium" role="list" aria-label={ti.podium}>
         {#each podium as ligne (ligne.tireurId)}
@@ -114,6 +117,11 @@
 {/each}
 
 <style>
+  .mention {
+    margin: 0 0 3mm;
+    font-style: italic;
+  }
+
   .membres {
     display: block;
     font-size: 8pt;

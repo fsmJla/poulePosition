@@ -16,6 +16,7 @@ import {
   type TypeEpreuve,
   type DocumentImprime,
   type RaisonIndisponible,
+  type ErreurPistes,
 } from '@poule-position/domaine';
 import type { ErreurCompetitionSeule, ErreurCreation, ErreurModification } from './epreuves';
 import type { EtatConnexion } from './connexion';
@@ -343,6 +344,9 @@ export const textes = {
     indice: 'Ind.',
     rang: 'Rang',
     podium: 'Podium',
+    /** US-158 CA-6 : match départagé sans score, et mention de la fin anticipée. */
+    nonTire: 'Non tiré',
+    finAnticipee: 'Épreuve terminée avant la fin du tableau',
     /** US-142 : avancement d'une poule. */
     matchsRegles: (regles: number, total: number) => `${regles} / ${total} matchs`,
     /** US-143 : tableau en arbre. */
@@ -2219,8 +2223,28 @@ export const textes = {
     options: 'Options',
     separerClubs: 'Séparer les tireurs d’un même club autant que possible',
     hasard: (n: number) => `Placer au hasard les tireurs sans classement (${n} tireur${n > 1 ? 's' : ''})`,
-    premierePiste: 'Première piste',
-    pistesDetail: 'Poule 1 sur la piste 1, poule 2 sur la piste 2… modifiable ensuite poule par poule.',
+    /** US-158 CA-8 à CA-10 : le champ « Pistes ». */
+    pistes: 'Pistes',
+    pistesAide:
+      'Un numéro (la première piste, les suivantes s’enchaînent) ou une liste : 4, 5, 6, 10-13. Modifiable ensuite poule par poule.',
+    pistesUtilisees: (pistes: readonly number[]) =>
+      `Piste${pistes.length > 1 ? 's' : ''} utilisée${pistes.length > 1 ? 's' : ''} : ${pistes.join(', ')}`,
+    erreursPistes: (e: ErreurPistes): string => {
+      switch (e.erreur) {
+        case 'VIDE':
+          return 'Indiquez au moins une piste.';
+        case 'INVALIDE':
+          return e.texte === ''
+            ? 'Une piste manque entre deux virgules.'
+            : `« ${e.texte} » n’est pas un numéro de piste (de 1 à 99).`;
+        case 'PLAGE_INVALIDE':
+          return `Plage ${e.texte} invalide : de la plus petite à la plus grande piste, de 1 à 99.`;
+        case 'EN_DOUBLE':
+          return `La piste ${e.piste} est en double.`;
+        case 'MANQUE':
+          return `Il manque ${e.manque} piste${e.manque > 1 ? 's' : ''} pour ${e.poules} poules.`;
+      }
+    },
     rienDeFige: 'Rien n’est figé : vous vérifiez et ajustez les poules avant de les lancer.',
     remplacee: 'La composition actuelle sera remplacée, avec vos ajustements.',
     repartir: 'Répartir les poules',
@@ -2249,8 +2273,16 @@ export const textes = {
       ]
         .filter(Boolean)
         .join(' · '),
-    pistesDe: (premiere: number, derniere: number) =>
-      premiere === derniere ? `piste ${premiere}` : `pistes ${premiere} à ${derniere}`,
+    /** US-158 CA-9 : « pistes 1 à 4 » quand elles se suivent, sinon leur liste (« pistes 4, 5, 10 »). */
+    pistesDe: (pistes: readonly number[]) => {
+      const triees = [...new Set(pistes)].sort((a, b) => a - b);
+      const [premiere, derniere] = [triees[0], triees[triees.length - 1]];
+      if (premiere === undefined || derniere === undefined) return '';
+      if (premiere === derniere) return `piste ${premiere}`;
+      return derniere - premiere === triees.length - 1
+        ? `pistes ${premiere} à ${derniere}`
+        : `pistes ${triees.join(', ')}`;
+    },
     tireursPoule: (n: number) => `${n} tireur${n > 1 ? 's' : ''}`,
     moyenne: (moyenne: number) =>
       ` · moyenne des rangs ${moyenne.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`,
@@ -2310,6 +2342,8 @@ export const textes = {
     },
     caseMatch: (nom: string, adversaire: string, resultat: string) => `${nom} contre ${adversaire} : ${resultat}`,
     aTirer: 'à tirer',
+    /** US-158 CA-4 : match resté sans score quand le tableau a été créé avant la fin des poules. */
+    nonTire: 'Non tiré',
     forfait: 'forfait',
     legende:
       'V5 : victoire, avec ses touches · chiffre : touches de la défaite · case teintée : match en cours de saisie · rang provisoire jusqu’au dernier match.',
@@ -2339,6 +2373,8 @@ export const textes = {
     classementProvisoireEntete: (regles: number, total: number) =>
       `Provisoire · ${regles} match${regles > 1 ? 's' : ''} sur ${total}`,
     classementDefinitifEntete: 'Définitif',
+    /** US-158 CA-4 : poules figées par un tableau créé avant leur fin. */
+    classementDefinitifNonTires: (n: number) => `Définitif · ${n} match${n > 1 ? 's' : ''} non tiré${n > 1 ? 's' : ''}`,
     classementAide: 'Se met à jour à chaque score saisi · départage : V/M, puis indice, puis touches données',
     imprimerClassement: 'Imprimer le classement',
     classementEffectif: (tireurs: number, poules: number) =>
@@ -2621,6 +2657,8 @@ export const textes = {
       if (match.etat === 'regle') return 'Terminé';
       if (match.etat === 'exempt') return 'Exempt';
       if (match.etat === 'attente') return 'En attente';
+      // US-158 CA-6 : départagé sans score à la fin anticipée de l'épreuve.
+      if (match.etat === 'nonTire') return 'Non tiré';
       if (match.piste === null) return 'À tirer · piste à attribuer';
       return match.enPiste ? `En piste ${match.piste}` : `À tirer · piste ${match.piste}`;
     },
@@ -2730,6 +2768,22 @@ export const textes = {
     detailCreation:
       'Les ex aequo sont tirés au sort et les scores des poules ne pourront plus être modifiés. Le tableau se joue ensuite match par match.',
     creeAnnonce: 'Tableau créé',
+    /** US-158 CA-1 et CA-2 : créer le tableau avant la fin des poules. */
+    creerAnticipe: 'Créer le tableau sans attendre la fin des poules…',
+    confirmerCreationAnticipee: 'Créer le tableau sans attendre la fin des poules ?',
+    detailCreationAnticipee: (nonTires: readonly { poule: number; nombre: number }[]) => {
+      const total = nonTires.reduce((somme, { nombre }) => somme + nombre, 0);
+      const detail = nonTires.map(({ poule, nombre }) => `poule ${poule} (${nombre})`).join(', ');
+      return `${total} match${total > 1 ? 's' : ''} non tiré${total > 1 ? 's' : ''} : ${detail}. Ils ne pourront plus être saisis : le classement des poules se fait sur les matchs tirés (V/M, indice, touches données) et les ex aequo sont tirés au sort.`;
+    },
+    /** US-158 CA-5 : terminer l'épreuve avant la fin du tableau. */
+    terminerAnticipe: 'Terminer l’épreuve sans attendre la fin du tableau…',
+    confirmerFinAnticipee: 'Terminer l’épreuve sans attendre la fin du tableau ?',
+    detailFinAnticipee: (nonTires: number, enPiste: number) =>
+      `${nonTires} match${nonTires > 1 ? 's' : ''} non tiré${nonTires > 1 ? 's' : ''}${enPiste > 0 ? ` (dont ${enPiste} en piste)` : ''}. Chacun est attribué au mieux classé après les poules, sans score, jusqu’à la finale. Les scores ne pourront plus être modifiés.`,
+    /** US-158 CA-4 et CA-6 : mentions des matchs non tirés. */
+    nonTire: 'Non tiré',
+    finAnticipee: 'Épreuve terminée avant la fin du tableau',
     legende:
       '(n) : rang au classement après poules. Le vainqueur passe au tour suivant dès que le score est validé ; le classement final s’affiche après la finale.',
     lectureSeule: 'Lecture seule : un autre PC est le pilote',

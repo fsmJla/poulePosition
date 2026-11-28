@@ -37,6 +37,8 @@
     tireurs: Tireur[];
     touches: number;
     modifiable: boolean;
+    /** US-158 CA-4 : le tableau est créé ; un match sans score est « non tiré ». */
+    figees?: boolean;
     /** Écrit le score ; vrai s'il est enregistré. */
     saisir: (score: {
       poule: number;
@@ -61,6 +63,7 @@
     tireurs,
     touches,
     modifiable,
+    figees = false,
     saisir,
     retirer,
     annulerRetrait,
@@ -311,7 +314,11 @@
                       class:forfait={c.match?.forfait}
                       class:courante={c.match !== null && courant?.numero === c.match.numero}
                       disabled={!modifiable || c.match === null || c.match.forfait}
-                      aria-label={t.caseMatch(nom(id), nom(autre), c.match?.forfait ? t.forfait : c.texte || t.aTirer)}
+                      aria-label={t.caseMatch(
+                        nom(id),
+                        nom(autre),
+                        c.match?.forfait ? t.forfait : c.texte || (figees ? t.nonTire : t.aTirer),
+                      )}
                       onclick={() => (choisi = c.match?.numero ?? null)}>{c.texte}</button
                     >
                   </td>
@@ -340,8 +347,9 @@
           <span class="numero">{m.numero}.</span>
           <span>{nomCourt(m.tireurA)} – {nomCourt(m.tireurB)}</span>
           <span class="resultat"
-            >{#if m.forfait}{t.forfait}{:else if m.touches}{m.touches[0]}–{m
-                .touches[1]}{:else if modifiable && courant?.numero === m.numero}{t.enCoursDeSaisie}{/if}</span
+            >{#if m.forfait}{t.forfait}{:else if m.touches}{m.touches[0]}–{m.touches[1]}{:else if figees}<span
+                class="non-tire">{t.nonTire}</span
+              >{:else if modifiable && courant?.numero === m.numero}{t.enCoursDeSaisie}{/if}</span
           >
         </li>
       {/each}
@@ -725,6 +733,10 @@
 
   .resultat {
     color: var(--texte-discret);
+  }
+
+  .non-tire {
+    font-style: italic;
   }
 
   .courant .resultat {

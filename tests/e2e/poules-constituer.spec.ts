@@ -60,7 +60,7 @@ test('US-086 CA-5 et CA-7 : poules vides en manuel, première piste, puis répar
   await ouvrirPoules(page, adresse);
   await expect(page.getByRole('radio', { name: /^2 poules de 6/ })).toBeChecked();
   await page.getByRole('radio', { name: /^Manuelle/ }).check();
-  await page.getByLabel('Première piste').fill('3');
+  await page.getByLabel('Pistes', { exact: true }).fill('3');
   await page.getByRole('button', { name: 'Créer les poules vides' }).click();
   await expect(page.getByText(/pistes 3 à 4 · répartition manuelle/)).toBeVisible();
   await expect(cartePoule(page, 1)).toContainText('Aucun tireur');
@@ -70,6 +70,37 @@ test('US-086 CA-5 et CA-7 : poules vides en manuel, première piste, puis répar
   await expect(page.getByText('La composition actuelle sera remplacée, avec vos ajustements.')).toBeVisible();
   await page.getByRole('button', { name: 'Répartir les poules' }).click();
   await expect(page.getByText('2 poules de 6 · pistes 1 à 2 · répartition automatique')).toBeVisible();
+});
+
+test('US-158 CA-8 à CA-10 : le champ « Pistes » accepte une liste, montre les pistes utilisées et refuse une erreur', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  await seConnecter(page);
+  const adresse = await epreuveAvecPresentes(page, 12);
+  await ouvrirPoules(page, adresse);
+  await expect(page.getByRole('radio', { name: /^2 poules de 6/ })).toBeChecked();
+  const champ = page.getByLabel('Pistes', { exact: true });
+  const repartir = page.getByRole('button', { name: 'Répartir les poules' });
+  // CA-8 et CA-9 : un numéro enchaîne les pistes ; une liste les donne dans l'ordre, sans celles en trop.
+  await expect(page.getByText('Pistes utilisées : 1, 2')).toBeVisible();
+  await champ.fill('4, 10-13');
+  await expect(page.getByText('Pistes utilisées : 4, 10')).toBeVisible();
+  // CA-10 : refus avec un message, la saisie est gardée.
+  await champ.fill('7,7');
+  await expect(page.getByRole('alert')).toHaveText('La piste 7 est en double.');
+  await expect(repartir).toBeDisabled();
+  await champ.fill('5');
+  await page.getByLabel('Nombre de poules choisi').fill('4');
+  await champ.fill('1, 2, 3');
+  await expect(page.getByRole('alert')).toHaveText('Il manque 1 piste pour 4 poules.');
+  await expect(champ).toHaveValue('1, 2, 3');
+  await expect(repartir).toBeDisabled();
+  await page.getByRole('radio', { name: /^2 poules de 6/ }).check();
+  await champ.fill('4, 10-13');
+  await repartir.click();
+  await expect(page.getByText('2 poules de 6 · pistes 4, 10 · répartition automatique')).toBeVisible();
+  await expect(cartePoule(page, 2)).toContainText('Piste 10');
 });
 
 test('US-086 cas limites : moins de 3 présentes', async ({ page }) => {

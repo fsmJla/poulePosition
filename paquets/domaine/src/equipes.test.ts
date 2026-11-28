@@ -375,7 +375,12 @@ describe('poules d’équipes (US-150)', () => {
       present: true,
       heure: null,
     });
-    const options = { separerClubs: true, hasardSansClassement: false, premierePiste: 1, alea: () => 0 };
+    const options = {
+      separerClubs: true,
+      hasardSansClassement: false,
+      pistes: [1, 2, 3, 4, 5, 6, 7, 8],
+      alea: () => 0,
+    };
     // En serpentin, les rangs 1 et 4 tombent dans la même poule : deux « Mixte » y restent ensemble.
     const mixtes = repartirEnSerpentin(
       [

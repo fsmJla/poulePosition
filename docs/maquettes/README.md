@@ -251,6 +251,11 @@ sont remplacés par les boutons de score des poules (0 à N−1 et « V », 0 pr
 pastilles de piste (un clic appelle le match ; la proposée soulignée, les occupées en pointillés ; « Autre… » et « Retirer »
 en liens).
 
+**Livré par US-158 (déroulé assoupli) :** le menu « ⋯ » de l'étape « Tableau » propose « Créer le tableau sans attendre
+la fin des poules… » et « Terminer l'épreuve sans attendre la fin du tableau… » (actions secondaires, avec confirmation) ;
+un match sans score devient « Non tiré » (poules, arbre, impressions, direct). Sur la planche 8, « Première piste »
+devient « Pistes » : un numéro ou une liste (« 4, 5, 10-13 »), avec la ligne « Pistes utilisées : … » dessous.
+
 ## Maquette « Déroulé de l'épreuve » (2026-11-17)
 
 Elle prolonge la maquette « IHM de l'organisateur » (mêmes entête, fil d'Ariane, navigation par étapes, charte et

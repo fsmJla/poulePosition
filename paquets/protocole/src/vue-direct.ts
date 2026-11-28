@@ -105,6 +105,12 @@ function lireEquipe(brut: unknown): EquipeDirect | null {
 
 /** US-132 : une vue en direct bien formée, sinon null ; US-155 : `equipes` facultatif (épreuve par équipes). */
 export function analyserVueDirect(brut: unknown): VueDirect | null {
+  // US-158 CA-6 : `finAnticipee` facultatif, toujours `true` quand il est présent.
+  if (brut !== null && typeof brut === 'object' && 'finAnticipee' in brut) {
+    const { finAnticipee, ...reste } = brut as Record<string, unknown>;
+    const vue = analyserVueDirect(reste);
+    return vue && finAnticipee === true ? { ...vue, finAnticipee } : null;
+  }
   if (brut !== null && typeof brut === 'object' && 'equipes' in brut) {
     const { equipes: brutes, ...reste } = brut as Record<string, unknown>;
     const equipes = toutes(brutes, lireEquipe);

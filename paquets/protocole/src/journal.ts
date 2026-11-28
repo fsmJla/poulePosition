@@ -183,14 +183,23 @@ const TYPES_POULES = [
   'RetraitDesPoulesAnnule',
 ];
 
+/** US-158 : le champ facultatif `anticipe` vaut `true` quand il est présent. */
+const anticipeValide = (donnees: Record<string, unknown>) =>
+  donnees.anticipe === undefined || donnees.anticipe === true;
+
 /** US-108 : forme des données des événements du tableau ; les règles sont celles du domaine. */
 function donneesTableauValides(type: unknown, donnees: unknown): boolean {
   if (!estObjet(donnees)) return false;
   switch (type) {
     case 'TableauCree':
       return (
-        aSeulement(donnees, ['qualifies']) && Array.isArray(donnees.qualifies) && donnees.qualifies.every(estTexte)
+        aSeulement(donnees, ['qualifies', 'anticipe']) &&
+        Array.isArray(donnees.qualifies) &&
+        donnees.qualifies.every(estTexte) &&
+        anticipeValide(donnees)
       );
+    case 'EpreuveTerminee':
+      return aSeulement(donnees, ['anticipe']) && anticipeValide(donnees);
     case 'MatchTableauAppele':
       return (
         aSeulement(donnees, ['match', 'piste']) &&

@@ -380,7 +380,10 @@
               <div class="place" class:gagnant class:exempt={place.exempt} class:inconnue={place.nom === '–'}>
                 <span class="rang-place">{place.rang ?? ''}</span>
                 <span class="nom-place" title={place.nom}>{nomsCourts ? nomCourt(place.nom) : place.nom}</span>
-                <span class="score-place">{match.touches ? match.touches[i] : ''}</span>
+                <!-- US-158 CA-6 : un match non tiré n'a pas de score ; l'infobulle le dit. -->
+                <span class="score-place" title={match.etat === 'nonTire' ? t.nonTire : undefined}
+                  >{match.touches ? match.touches[i] : match.etat === 'nonTire' ? '–' : ''}</span
+                >
               </div>
             {/each}
           </div>
@@ -434,6 +437,7 @@
       {:else if page?.type === 'podium'}
         <div class="podium">
           <h2>{t.podium}</h2>
+          {#if vue?.finAnticipee}<p class="mention">{t.finAnticipee}</p>{/if}
           <div class="marches">
             {#each [2, 1, 3] as place (place)}
               {@const laureats = podium.filter((l) => l.place === place)}
@@ -1044,6 +1048,13 @@
     justify-content: center;
     gap: 3em;
     height: 100%;
+  }
+
+  .podium .mention {
+    margin: 0;
+    color: var(--texte-discret);
+    font-size: 1.4rem;
+    text-align: center;
   }
 
   .podium h2 {

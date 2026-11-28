@@ -188,6 +188,7 @@
         {:else if document === 'classementPoules' && epreuve}
           <ImpressionClassementPoules
             etat={source.poules}
+            fige={source.tableau.qualifies !== null}
             tireurs={parId}
             touches={epreuve.formule.touchesPoules}
             {contexte}
