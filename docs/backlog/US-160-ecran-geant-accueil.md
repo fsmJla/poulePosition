@@ -70,6 +70,7 @@ sauté. Testé : unitaires (calcul de la vue et du compte à rebours sans résea
 - Vue publiée par un pilote d'avant cette US (sans `accueil`) : l'écran attend comme avant.
 - Nom long : il passe à la ligne entre les mots (jamais au milieu d’N mot), dans une taille adaptée à sa longueur.
 - `prefers-reduced-motion` : plans sans animation.
+- Les chiffres défilent une seule fois par passage du plan : une vue republiée (nouvelle émargée) affiche le nouveau nombre sans relancer l’animation.
 
 ## Hypothèses
 

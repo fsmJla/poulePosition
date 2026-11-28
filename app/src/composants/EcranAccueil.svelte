@@ -4,7 +4,7 @@
   // horaires (la prochaine étape en tête), les inscrits et les émargés qui défilent jusqu'à leur nombre. Le compte à
   // rebours vers la prochaine étape (appel, scratch, début) reste fixe en bas ; passé le début, « Début imminent ».
   import type { AccueilDirect, VueDirect } from '@poule-position/domaine';
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import {
     ETAPES_ACCUEIL,
     formaterReste,
@@ -79,15 +79,23 @@
   );
 
   /** Les chiffres défilent de 0 à leur valeur à chaque passage du plan. */
+  /**
+   * Les chiffres défilent de 0 à leur valeur une seule fois par passage du plan : l'animation ne dépend que de
+   * l'apparition du plan (la vue, republiée chaque seconde, ne la relance pas). Un nombre qui change pendant le plan
+   * (une nouvelle émargée) est montré tel quel, sans repartir de 0.
+   */
+  const inscrits = $derived(accueil.inscrits);
+  const emarges = $derived(accueil.emarges);
   let compte = $state({ inscrits: 0, emarges: 0 });
+  let anime = $state(false);
   $effect(() => {
     if (plan !== 'chiffres') return;
-    const cible = { inscrits: accueil.inscrits, emarges: accueil.emarges };
+    void numero;
+    const cible = untrack(() => ({ inscrits, emarges }));
     const reduit = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (reduit) {
-      compte = cible;
-      return;
-    }
+    if (reduit) return;
+    anime = true;
+    compte = { inscrits: 0, emarges: 0 };
     const debut = performance.now();
     let image = 0;
     const pas = (instant: number) => {
@@ -95,9 +103,16 @@
       const e = 1 - Math.pow(1 - p, 3);
       compte = { inscrits: Math.round(cible.inscrits * e), emarges: Math.round(cible.emarges * e) };
       if (p < 1) image = requestAnimationFrame(pas);
+      else anime = false;
     };
     image = requestAnimationFrame(pas);
-    return () => cancelAnimationFrame(image);
+    return () => {
+      cancelAnimationFrame(image);
+      anime = false;
+    };
+  });
+  $effect(() => {
+    if (!anime) compte = { inscrits, emarges };
   });
   const CIRCONFERENCE = 2 * Math.PI * 200;
   const jauge = (valeur: number, total: number) => CIRCONFERENCE * (1 - (total > 0 ? valeur / total : 0));
@@ -136,7 +151,8 @@
                     class="lettre"
                     style:animation-delay="{0.15 + Math.min(rang, 40) * 0.05}s">{lettre}</span
                   >{/each}</span
-              >{' '}{/each}
+              >
+            {/each}
           </h2>
           <ul class="types">
             {#each types as type, i (type)}<li style:animation-delay="{1.2 + i * 0.15}s">{type}</li>{/each}

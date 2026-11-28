@@ -111,4 +111,22 @@ test('US-160 cas limite : un nom long passe à la ligne entre les mots, sans dé
   const types = (await ecran.locator('[data-plan="nom"] .types').boundingBox())!;
   const bas = (await ecran.getByRole('timer').boundingBox())!;
   expect(types.y + types.height).toBeLessThanOrEqual(bas.y);
+
+  // Les chiffres défilent une seule fois par passage du plan : une vue republiée (ici, une émargée retirée au PC) ne
+  // relance pas l'animation ; le nouveau nombre s'affiche tel quel, sans repartir de 0.
+  await page.goto(`${adresse}/emargement`);
+  const presente = page.getByRole('checkbox', { name: /^Présent : / }).first();
+  await expect(presente).toHaveAttribute('aria-checked', 'true', { timeout: 20_000 });
+  const chiffres = ecran.locator("[data-plan='chiffres']");
+  await expect(chiffres).toBeVisible({ timeout: 40_000 });
+  const emarges = ecran.locator('.chiffre.emarges .nombre');
+  await expect(emarges).toHaveText(/^3/, { timeout: 5_000 });
+  await presente.click();
+  const vus: number[] = [];
+  for (let i = 0; i < 10 && (await chiffres.isVisible()); i += 1) {
+    vus.push(Number.parseInt((await emarges.textContent()) ?? '', 10));
+    await ecran.waitForTimeout(150);
+  }
+  expect(vus.every((n) => n >= 2)).toBe(true);
+  await expect(emarges).toHaveText(/^2/, { timeout: 5_000 });
 });
