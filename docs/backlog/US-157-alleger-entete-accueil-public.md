@@ -27,10 +27,11 @@ pilules de 999 px, boutons de 44 px de cible tactile.
   il passe par le catalogue de traduction ;
 - **Et** la page de connexion garde son texte actuel « Gestion de compétitions d'escrime ».
 
-**CA-2 — Feuille de route en icône « Info »**
+**CA-2 — Feuille de route en miniature**
 - **Étant donné** une manifestation, une compétition ou une épreuve publiée qui porte une feuille de route
 - **Quand** l'accueil public s'affiche
-- **Alors** le lien texte « Feuille de route » est remplacé par une icône « Info » (i dans un cercle), seule ;
+- **Alors** le lien texte « Feuille de route » est remplacé par la miniature de la première page du PDF, de la taille
+  de la vignette de l’affiche (7 rem au plus) ; l’icône « Document » la remplace tant qu’elle n’est pas dessinée ;
 - **Et** elle a pour nom accessible et infobulle « Feuille de route : <nom de l'élément> » ;
 - **Et** un clic ouvre toujours le PDF dans un nouvel onglet, comme aujourd'hui ;
 - **Et** la cible fait au moins 44 × 44 px.
@@ -58,7 +59,7 @@ pilules de 999 px, boutons de 44 px de cible tactile.
 **CA-6 — Vocabulaire d'icônes**
 - **Étant donné** `docs/maquettes/README.md`
 - **Quand** l'US est livrée
-- **Alors** le tableau du vocabulaire d'icônes contient « Info » (feuille de route sur l'accueil public, seule) et le sens
+- **Alors** le sens
   de « Personnes » est étendu à « Se connecter, accueil de l'organisateur (pastille de l'accueil public), avec libellé ;
   seule sur écran étroit ».
 
@@ -67,13 +68,14 @@ pilules de 999 px, boutons de 44 px de cible tactile.
 L'accueil public est en ligne par nature (US-079) : sans réseau, il affiche déjà « Impossible de joindre le serveur »
 et se recharge au retour du réseau. Le sous-titre et la pastille ne dépendent pas du réseau : ils restent affichés hors
 ligne, et la pastille mène à la page de connexion (qui gère elle-même l'absence de réseau, US-003) ou à l'accueil de
-l'organisateur (qui fonctionne hors ligne). L'icône « Info » n'apparaît que si la page a été chargée ; le PDF demande le
-réseau, comme aujourd'hui. Testé : E2E hors ligne (la pastille reste visible et cliquable).
+l'organisateur (qui fonctionne hors ligne). La miniature n'apparaît que si la page a été chargée ; le PDF demande le
+réseau, comme aujourd'hui (sans réseau, l'icône « Document » reste à sa place). Testé : E2E hors ligne (la pastille reste visible et cliquable).
 
 ## Cas limites et erreurs
 
-- Élément sans feuille de route : pas d'icône (comportement actuel).
-- Élément avec une affiche et une feuille de route : l'icône « Info » se place à côté de la vignette de l'affiche, sans
+- Élément sans feuille de route : pas de miniature (comportement actuel).
+- PDF illisible ou introuvable : l’icône « Document » reste, le lien ouvre toujours le fichier.
+- Élément avec une affiche et une feuille de route : la miniature se place à côté de la vignette de l'affiche, à la même taille,, sans
   la décaler sur une autre ligne.
 - Thème sombre et style personnalisé : la pastille reprend les variables de couleur du sélecteur de thème, lisible dans
   les trois thèmes.
@@ -86,9 +88,9 @@ réseau, comme aujourd'hui. Testé : E2E hors ligne (la pastille reste visible e
 - **Sous-titre propre à l'accueil public** (validé le 2026-11-28) : seul l'accueil public affiche « Escrime ». La page
   de connexion garde « Gestion de compétitions d'escrime » ; un nouveau texte est ajouté au catalogue, le slogan
   existant (et le test de US-044 CA-2) ne change pas.
-- **Icône « Info » pour la feuille de route** sur l'accueil public, comme demandé. Sur les écrans de l'organisateur,
-  la feuille de route garde l'icône « Document » (US-073) : « Info » est ajoutée au vocabulaire avec le sens
-  « Informations pratiques (feuille de route) pour le public ».
+- **Miniature de la feuille de route** (demandé en recette le 2026-11-28, à la place de l’icône « Info » jugée peu
+  lisible) : la première page dessinée par pdf.js (ADR-0026, comme l’aperçu de US-072), à la taille de l’affiche.
+  Aucune icône n’est ajoutée au vocabulaire.
 - **Icône de la pastille** (validé le 2026-11-28) : l'icône « Personnes » des Comptes, réutilisée ; pas de nouvelle
   icône. Son sens est étendu dans le vocabulaire (CA-6).
 - **Pastille seulement sur l'accueil public** (validé le 2026-11-28), pas sur les pages de connexion, mot de passe
@@ -104,7 +106,7 @@ réseau, comme aujourd'hui. Testé : E2E hors ligne (la pastille reste visible e
 ## Notes techniques
 
 - `app/src/pages/Accueil.svelte` (lien de connexion, snippet `documents`), `app/src/composants/BarreOutils.svelte`
-  (accepte un contenu supplémentaire, ou une propriété pour la pastille), `app/src/lib/icones.ts` (tracé « info » ;
+  (accepte un contenu supplémentaire, ou une propriété pour la pastille), `app/src/composants/MiniatureFeuille.svelte` (miniature du PDF ;
   « personnes » existe déjà), `app/src/lib/textes.ts` (sous-titre de l'accueil public, nom accessible de la feuille
   de route ; `sousTitre` reste pour la connexion).
 - US réalisées touchées : US-003 CA-6 (lien vers la connexion sur l'accueil), US-079 CA-8 (lien « Feuille de route »),

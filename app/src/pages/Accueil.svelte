@@ -21,6 +21,7 @@
   import Banniere from '../composants/Banniere.svelte';
   import Icone from '../composants/Icone.svelte';
   import Lien from '../composants/Lien.svelte';
+  import MiniatureFeuille from '../composants/MiniatureFeuille.svelte';
   import { fichiersPropres } from '../lib/fichiers';
   import type { ClientPublic, ErreurPublic } from '../lib/publication';
   import { cheminDirect } from '../lib/routes';
@@ -91,15 +92,8 @@
 {#snippet documents(proprietaire: ProprietaireFichier, id: string, nom: string)}
   {@const propres = documentsDe(proprietaire, id)}
   {#if propres.feuilleDeRoute}
-    <!-- US-157 CA-2 : la feuille de route en icône « Info », avec nom accessible et infobulle. -->
-    <a
-      class="feuille"
-      href={client.adresseFichier(propres.feuilleDeRoute.nom)}
-      target="_blank"
-      rel="noopener"
-      aria-label={t.feuilleDeRouteDe(nom)}
-      title={t.feuilleDeRouteDe(nom)}><Icone nom="info" taille={24} /></a
-    >
+    <!-- US-157 CA-2 : la miniature de la feuille de route, à la taille de l'affiche, avec nom accessible et infobulle. -->
+    <MiniatureFeuille adresse={client.adresseFichier(propres.feuilleDeRoute.nom)} libelle={t.feuilleDeRouteDe(nom)} />
   {/if}
   {#if propres.affiche}
     <img src={client.adresseFichier(propres.affiche.nom)} alt={t.affiche(nom)} loading="lazy" />
@@ -374,20 +368,6 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.75rem;
-  }
-
-  /* US-157 CA-2 : icône seule, cible de 44 px. */
-  .documents > a.feuille {
-    display: inline-grid;
-    place-items: center;
-    width: 2.75rem;
-    height: 2.75rem;
-    border-radius: 999px;
-    color: var(--lien, var(--accent));
-  }
-
-  .documents > a.feuille:hover {
-    background: var(--surface-2);
   }
 
   .documents:empty {

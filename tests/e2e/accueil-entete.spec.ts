@@ -1,8 +1,9 @@
-// Entête allégé de l'accueil public (US-157) : sous-titre « Escrime », feuille de route en icône « Info », pastille
+// Entête allégé de l'accueil public (US-157) : sous-titre « Escrime », feuille de route en miniature, pastille
 // « Se connecter » en haut à droite, à gauche du sélecteur de thème ; icône seule sur écran étroit ; hors ligne. La
 // réponse `GET /public` est simulée : seule la présentation est testée ici (les données réelles : accueil-public).
 import { expect, test, type Page } from '@playwright/test';
 import { seConnecter } from './compte';
+import { pdfValide } from './fichiers-types';
 
 const NOM_PDF = `${'a'.repeat(64)}.pdf`;
 const PUBLIC = {
@@ -37,11 +38,15 @@ const PUBLIC = {
 
 async function accueilSimule(page: Page) {
   await page.route('**/public', (route) => route.fulfill({ json: PUBLIC }));
+  const pdf = pdfValide(2);
+  await page.route(`**/fichiers/${NOM_PDF}`, (route) =>
+    route.fulfill({ body: pdf.buffer, contentType: 'application/pdf' }),
+  );
   await page.goto('/');
   await expect(page.getByRole('article', { name: 'Grand Week-end du SPUC' })).toBeVisible({ timeout: 20_000 });
 }
 
-test('US-157 CA-1 à CA-3 : « Escrime », icône « Info » et pastille « Se connecter » en haut à droite', async ({
+test('US-157 CA-1 à CA-3 : « Escrime », miniature de la feuille de route et pastille « Se connecter » en haut à droite', async ({
   page,
 }, essai) => {
   test.skip(essai.project.name !== 'pc', 'Écran large : projet « pc »');
@@ -49,16 +54,16 @@ test('US-157 CA-1 à CA-3 : « Escrime », icône « Info » et pastille « Se c
   // CA-1 : le sous-titre de l'accueil public.
   await expect(page.locator('main .sous-titre')).toHaveText('Escrime');
   await expect(page.getByText('Gestion de compétitions d’escrime')).toHaveCount(0);
-  // CA-2 : l'icône « Info » ouvre la feuille de route dans un nouvel onglet ; nom accessible et infobulle.
+  // CA-2 : la miniature (première page du PDF, à la taille de l'affiche) ouvre la feuille de route dans un nouvel onglet ; nom accessible et infobulle.
   const info = page.getByRole('link', { name: 'Feuille de route : Grand Week-end du SPUC' });
   await expect(info).toHaveAttribute('title', 'Feuille de route : Grand Week-end du SPUC');
   await expect(info).toHaveAttribute('target', '_blank');
   await expect(info).toHaveAttribute('href', new RegExp(`/fichiers/${NOM_PDF}$`));
-  await expect(info.locator('svg[data-icone="info"]')).toHaveCount(1);
+  await expect(info.locator('canvas')).toBeVisible({ timeout: 20_000 });
   await expect(info).toHaveText('');
-  const boite = (await info.boundingBox())!;
-  expect(boite.width).toBeGreaterThanOrEqual(44);
-  expect(boite.height).toBeGreaterThanOrEqual(44);
+  const boite = (await info.locator('canvas').boundingBox())!;
+  expect(Math.max(boite.width, boite.height)).toBeGreaterThan(100);
+  expect(Math.max(boite.width, boite.height)).toBeLessThanOrEqual(112);
   // CA-3 : plus de lien sous le sous-titre ; la pastille est dans la barre, à gauche du thème, et mène à la connexion.
   await expect(page.locator('main').getByRole('link', { name: 'Se connecter' })).toHaveCount(0);
   const pastille = page.getByRole('link', { name: 'Se connecter' });

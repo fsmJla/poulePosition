@@ -100,7 +100,6 @@ pas d'émoji. Une icône garde **le même sens partout**.
 | Imprimante | Impressions | Avec libellé |
 | Curseurs | Paramètres | Avec libellé |
 | Point d'interrogation | Aide « Comment ça s'organise » | Seule |
-| Info (i cerclé) | Feuille de route sur l'accueil public (US-157) ; l'organisateur garde « Document » | Seule, avec nom accessible et infobulle |
 | Soleil | Thème clair (groupe de trois icônes : soleil, lune, écran, toujours visibles sur écran large, US-067) | Seule |
 | Croix | Fermer, quitter un mode | Seule |
 | Flèche gauche | Retour (écran étroit) | Seule |
