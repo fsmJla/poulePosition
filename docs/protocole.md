@@ -1218,7 +1218,7 @@ les saisies reçues des poules.
 La **vue en direct** (`VueDirect`, `paquets/domaine/src/vue-direct.ts`) est calculée par le pilote à partir du journal.
 Elle est publique : l'étape (`inscriptions`, `poules`, `classement`, `tableau`, `terminee`), les tireurs (nom affiché
 selon « Prénom N. », club), les poules et leurs scores (avec, par tireur, TD et TR : US-142), le classement après les
-poules, le tableau et le classement final, le statut de publication, `equipes` (US-155, par équipes seulement : `[{ id, membres }]`, les tireurs de chaque équipe au nom affiché ; les « tireurs » de la vue sont alors les équipes), `finAnticipee` (US-158 : `true` pour une épreuve terminée avant la fin du tableau, absent sinon) et `scoresRecents` (US-141) : les 40 derniers scores
+poules, le tableau et le classement final, le statut de publication, `equipes` (US-155, par équipes seulement : `[{ id, membres }]`, les tireurs de chaque équipe au nom affiché ; les « tireurs » de la vue sont alors les équipes), `finAnticipee` (US-158 : `true` pour une épreuve terminée avant la fin du tableau, absent sinon), `accueil` (US-160 : `{ horaires, typeEpreuve, inscrits, emarges, competition, affiche }` pour le mode Accueil de l’écran géant ; seulement des nombres d’inscrits et d’émargés, jamais qui ; `affiche` est le nom du fichier joint, `GET /fichiers/<nom>` ; absent d’une vue publiée avant US-160) et `scoresRecents` (US-141) : les 40 derniers scores
 saisis (poules et tableau), le plus récent d'abord, chacun avec son heure d'enregistrement (`date`), sa poule ou son tour
 (`poule` ou `tour`, l'un des deux à `null`), ses tireurs et ses touches. Un score corrigé remplace l'ancien. Elle ne porte ni émargement, ni licence, ni droit, ni identifiant d'appareil.
 

@@ -149,3 +149,35 @@ describe('vue en direct dans le protocole (US-132)', () => {
     expect(FERMETURES.TROP_DE_LECTEURS).toBe(4007);
   });
 });
+
+describe('mode Accueil dans la vue en direct (US-160)', () => {
+  const accueil = {
+    horaires: { appel: '08:30', scratch: null, debutPoules: '09:30' },
+    typeEpreuve: 'individuelle',
+    inscrits: 3,
+    emarges: 2,
+    competition: 'Challenge',
+    affiche: `${'a'.repeat(64)}.png`,
+  };
+  const sans: typeof complete = { ...complete };
+  delete sans.accueil;
+
+  it('CA-2 : une vue avec son accueil est valide ; une vue d’avant US-160 (sans accueil) aussi', () => {
+    expect(complete.accueil).toBeDefined();
+    expect(analyserVueDirect({ ...sans, accueil })).toEqual({ ...sans, accueil });
+    expect(analyserVueDirect(sans)).toEqual(sans);
+  });
+
+  it('un accueil mal formé est refusé', () => {
+    for (const faux of [
+      { ...accueil, horaires: { appel: '8h30', scratch: null, debutPoules: null } },
+      { ...accueil, emarges: 4 },
+      { ...accueil, typeEpreuve: 'relais' },
+      { ...accueil, affiche: 'affiche.png' },
+      { ...accueil, competition: 3 },
+      { ...accueil, autre: 1 },
+    ]) {
+      expect(analyserVueDirect({ ...sans, accueil: faux })).toBeNull();
+    }
+  });
+});

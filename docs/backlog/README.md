@@ -189,6 +189,7 @@ Statuts : `À spécifier` → `Prête` → `En cours` → `En revue` → `Termin
 | [US-157](US-157-alleger-entete-accueil-public.md) | Alléger l'entête de l'accueil public : « Escrime », icône « Info » pour la feuille de route, pastille « Se connecter » (P3) | E2 | Terminée | US-079, US-052 |
 | [US-158](US-158-assouplir-deroule-epreuve.md) | Assouplir le déroulé : tableau et fin d'épreuve anticipés, 3e place à trois tireurs (correction), liste des pistes des poules (P2) | E6 | Terminée | US-086, US-109, US-114, US-115 |
 | [US-159](US-159-cotes-piste-reglementaires.md) | Placer les tireurs du bon côté de la piste (FIE t.22) et pouvoir les intervertir (correction, P2) | E5 | Terminée | US-091, US-099, US-106, US-117, US-118 |
+| [US-160](US-160-ecran-geant-accueil.md) | Présenter l’épreuve sur l’écran géant avant son lancement (mode Accueil, P2) | E9 | En revue | US-132, US-134, US-030, US-084 |
 
 Le découpage des fonctionnalités en US fines (**étape 4**, exigences §11) se fait Epic par Epic.
 

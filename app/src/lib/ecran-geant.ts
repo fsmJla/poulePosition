@@ -1,6 +1,6 @@
 // Écran géant (US-134, planches 31 à 35) : les pages à faire défiler, tirées des vues en direct des épreuves cochées
 // (US-132). Logique pure : l'écran reçoit les vues et ses réglages, ce module dit quoi afficher et dans quel ordre.
-import type { MatchTableauVue, PouleDirect, ScoreRecent, VueDirect } from '@poule-position/domaine';
+import type { AccueilDirect, MatchTableauVue, PouleDirect, ScoreRecent, VueDirect } from '@poule-position/domaine';
 import type { EcranPublic, VueEcran } from '@poule-position/protocole';
 
 /** Une piste sur la page « Appel des matchs » (planche 31). */
@@ -32,6 +32,8 @@ export type PageEcran =
     }
   | { type: 'tableau'; epreuveId: string; arbre: ArbreTableau }
   | { type: 'podium'; epreuveId: string }
+  /** US-160 : le mode Accueil, avant le lancement des poules. */
+  | { type: 'accueil'; epreuveId: string }
   | { type: 'attente' };
 
 /**
@@ -210,6 +212,8 @@ export function pagesDeLEpreuve(vue: VueDirect, masquees: readonly VueEcran[] = 
       classement(true);
       break;
     default:
+      // US-160 CA-1 : avant le lancement des poules, le mode Accueil (vue publiée par un pilote à jour).
+      if (vue.accueil) pages.push({ type: 'accueil', epreuveId });
       break;
   }
   return pages;
@@ -293,4 +297,55 @@ export function groupesDuBandeau(
       .map((score) => ({ score, tireurA: nom.get(score.tireurA) ?? '—', tireurB: nom.get(score.tireurB) ?? '—' }));
     return scores.length > 0 ? [{ epreuveId, nom: vue.nom, scores }] : [];
   });
+}
+
+/** US-160 : les plans du mode Accueil, dans l'ordre ; l'affiche et les horaires sont sautés quand ils manquent. */
+export type PlanAccueil = 'affiche' | 'nom' | 'horaires' | 'chiffres';
+export function plansAccueil(accueil: AccueilDirect): PlanAccueil[] {
+  const horaires = Object.values(accueil.horaires).some((h) => h !== null);
+  return [
+    ...(accueil.affiche ? (['affiche'] as const) : []),
+    'nom' as const,
+    ...(horaires ? (['horaires'] as const) : []),
+    'chiffres' as const,
+  ];
+}
+
+export const ETAPES_ACCUEIL = ['appel', 'scratch', 'debutPoules'] as const;
+export type EtapeAccueil = (typeof ETAPES_ACCUEIL)[number];
+
+/** Instant (ms) d'un horaire `HH:MM` le jour de l'épreuve (aujourd'hui si la date manque), à l'heure locale. */
+export function instantHoraire(date: string | null, horaire: string, maintenant: number): number {
+  const jour = date ?? new Date(maintenant).toLocaleDateString('sv-SE');
+  return new Date(`${jour}T${horaire}:00`).getTime();
+}
+
+/**
+ * US-160 CA-4 : la prochaine étape (appel, puis scratch, puis début des poules) et le temps qui reste ; `imminent` quand
+ * toutes les heures sont passées ; null sans aucun horaire.
+ */
+export function prochaineEtape(
+  accueil: Pick<AccueilDirect, 'horaires'>,
+  date: string | null,
+  maintenant: number,
+): { etape: EtapeAccueil; reste: number } | { etape: null; imminent: true } | null {
+  const etapes = ETAPES_ACCUEIL.flatMap((etape) => {
+    const horaire = accueil.horaires[etape];
+    return horaire ? [{ etape, instant: instantHoraire(date, horaire, maintenant) }] : [];
+  });
+  if (etapes.length === 0) return null;
+  const suivante = etapes.find(({ instant }) => instant > maintenant);
+  return suivante ? { etape: suivante.etape, reste: suivante.instant - maintenant } : { etape: null, imminent: true };
+}
+
+/** « 42:12 », « 02:05:09 », ou « 3 j 04:00:00 » au-delà d'un jour. */
+export function formaterReste(reste: number): string {
+  const secondes = Math.max(0, Math.ceil(reste / 1000));
+  const jours = Math.floor(secondes / 86_400);
+  const h = Math.floor(secondes / 3600) % 24;
+  const m = Math.floor(secondes / 60) % 60;
+  const s = secondes % 60;
+  const deux = (n: number) => String(n).padStart(2, '0');
+  const horloge = h > 0 || jours > 0 ? `${deux(h)}:${deux(m)}:${deux(s)}` : `${deux(m)}:${deux(s)}`;
+  return jours > 0 ? `${jours} j ${horloge}` : horloge;
 }

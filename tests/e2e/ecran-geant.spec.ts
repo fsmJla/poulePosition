@@ -47,9 +47,8 @@ test('US-134 CA-1 à CA-3 et CA-5 : l’écran s’ouvre par son lien, suit l’
   await ecran.goto(new URL(lien).pathname + new URL(lien).hash);
   await expect(ecran.getByRole('button', { name: 'Plein écran' })).toBeVisible({ timeout: 20_000 });
   await expect(ecran.getByRole('banner').getByText(/Poule Position/)).toHaveCount(0);
-  await expect(ecran.getByText('Les épreuves de cet écran n’ont pas encore commencé.')).toBeVisible({
-    timeout: 20_000,
-  });
+  // US-160 : avant le lancement des poules, le mode Accueil et son compte à rebours.
+  await expect(ecran.getByRole('timer')).toBeVisible({ timeout: 20_000 });
 
   // CA-2 : poules lancées, l'appel des matchs de chaque piste, puis les poules.
   await lancer(page, adresse);

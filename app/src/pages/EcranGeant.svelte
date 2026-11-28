@@ -14,6 +14,7 @@
   import { groupesDuBandeau, pagesDeLEcran, type GroupeBandeau, type PageEcran } from '../lib/ecran-geant';
   import { urlHttp } from '../lib/session';
   import { textes } from '../lib/textes';
+  import EcranAccueil from '../composants/EcranAccueil.svelte';
 
   interface Proprietes {
     ecranId: string;
@@ -168,6 +169,7 @@
     if (p.type === 'classement') return p.final ? t.classementFinal : t.classement;
     if (p.type === 'tableau') return p.arbre.moitie ? t.moitie(p.arbre.moitie) : t.tableau;
     if (p.type === 'podium') return t.terminee;
+    if (p.type === 'accueil') return t.accueil.pastille;
     return t.attente;
   }
 
@@ -450,6 +452,14 @@
             {/each}
           </div>
         </div>
+      {:else if page?.type === 'accueil' && vue?.accueil}
+        <!-- US-160 : le mode Accueil, avant le lancement des poules. -->
+        {@const nomAffiche = vue.accueil.affiche}
+        <EcranAccueil
+          vue={{ ...vue, accueil: vue.accueil }}
+          {maintenant}
+          adresseAffiche={nomAffiche && urlHttp(urlServeur) ? `${urlHttp(urlServeur)}/fichiers/${nomAffiche}` : null}
+        />
       {:else}
         <p class="message">{t.attenteDetail}</p>
       {/if}

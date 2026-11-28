@@ -1,6 +1,7 @@
 // Outils partagés des tests des poules (US-086 à US-089) : l'épreuve « M13 Dames » des planches 8 à 10, avec les 24
 // tireuses de 6 clubs, importées (fichier de la Fédération, US-083) puis pointées présentes (US-084).
 import { expect, type Page } from '@playwright/test';
+import { regler } from './heure';
 
 /** Les 24 tireuses de la maquette, par rang de classement. */
 export const TIREUSES: readonly (readonly [string, string, string])[] = [
@@ -54,12 +55,15 @@ export async function epreuveAvecPresentes(
   nombre = 24,
   presentes = nombre,
   type: 'individuelle' | 'equipes2' | 'equipes3' = 'individuelle',
+  /** US-160 : horaires « HH:MM » saisis à la création (Appel, Scratch, Début des poules). */
+  horaires: Partial<Record<'Appel' | 'Scratch' | 'Début des poules', string>> = {},
 ): Promise<string> {
   await page.goto('/epreuves/nouvelle?seule');
   await page.getByLabel('Nom de la compétition et de son épreuve').fill(`E2E ${crypto.randomUUID().slice(0, 8)}`);
   await page.getByLabel('Arme').selectOption('sabre');
   await page.getByLabel('Sexe').selectOption('dames');
   if (type !== 'individuelle') await page.getByLabel('Type').selectOption(type);
+  for (const [libelle, valeur] of Object.entries(horaires)) await regler(page, libelle, valeur);
   await page.getByRole('button', { name: 'Créer l’épreuve' }).click();
   await expect(page).toHaveURL(/\/epreuves\/[0-9a-f-]{36}$/);
   const adresse = page.url();

@@ -1,0 +1,292 @@
+<title>Écran géant · Accueil</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+  /* Planche 1920 × 1080 mise à l'échelle ; thème sombre de l'écran géant (planches 31 à 35), un seul thème assumé. */
+  :root {
+    --fond: #0f1716;
+    --surface: #172221;
+    --surface-2: #1d2b2a;
+    --bordure: #24403e;
+    --texte: #e6eeec;
+    --discret: #9fb0ad;
+    --accent: #0abab5;
+    --accent-doux: #12302f;
+    --ambre: #f2b84b;
+    --police-titre: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+    --police-texte: 'Figtree', 'Segoe UI', system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  html, body { background: var(--fond); color: var(--texte); }
+  body {
+    font-family: var(--police-texte);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 20px 32px;
+  }
+  .page { max-width: 1280px; margin: 0 auto; display: grid; gap: 16px; }
+  .entete-page h1 { font-family: var(--police-titre); font-size: 1.4rem; margin: 0; }
+  .entete-page p { margin: 4px 0 0; color: var(--discret); max-width: 70ch; line-height: 1.45; }
+
+  /* Le cadre garde le 16:9 ; la planche de 1920 px y est réduite. */
+  .cadre { position: relative; width: 100%; aspect-ratio: 16 / 9; max-width: 100%; overflow: hidden; border-radius: 10px; border: 1px solid var(--bordure); background: #000; }
+  .planche { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; transform-origin: 0 0; background: var(--fond); overflow: hidden; }
+
+  .bandeau-haut { position: absolute; inset: 0 0 auto; height: 142px; padding: 38px 56px 0; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--bordure); z-index: 5; background: linear-gradient(var(--fond), rgba(15,23,22,.85)); }
+  .bandeau-haut .lieu { color: var(--discret); font-size: 24px; }
+  .bandeau-haut .epreuve { font-family: var(--police-titre); font-weight: 700; font-size: 44px; margin-top: 4px; }
+  .bandeau-haut .droite { display: flex; align-items: center; gap: 32px; margin-top: 8px; }
+  .pastille { padding: 10px 22px; border-radius: 999px; background: var(--accent-doux); color: var(--accent); font-weight: 600; font-size: 26px; }
+  .heure { font-family: var(--police-titre); font-weight: 700; font-size: 52px; font-variant-numeric: tabular-nums; }
+
+  .scene { position: absolute; inset: 142px 0 250px; }
+  .plan { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .9s ease, visibility 0s linear .9s; }
+  .plan.actif { opacity: 1; visibility: visible; transition: opacity .9s ease; }
+
+  /* Plan 1 : l'affiche, zoom lent ; son flou en fond. */
+  .affiche-fond { position: absolute; inset: -60px; filter: blur(48px) saturate(1.2); opacity: .35; }
+  .affiche { position: absolute; top: 40px; bottom: 40px; left: 50%; aspect-ratio: 1 / 1.414; transform: translateX(-50%); border-radius: 12px; overflow: hidden; box-shadow: 0 40px 120px rgba(0,0,0,.6); }
+  .affiche .visuel { position: absolute; inset: 0; }
+  .plan.actif .affiche .visuel { animation: kenburns 9s ease-out forwards; }
+  @keyframes kenburns { from { transform: scale(1.12) translateY(12px); } to { transform: scale(1); } }
+  .visuel { background:
+      radial-gradient(circle at 70% 25%, rgba(10,186,181,.55), transparent 45%),
+      radial-gradient(circle at 20% 80%, rgba(242,184,75,.45), transparent 50%),
+      linear-gradient(160deg, #1b3a39, #0c1514 70%); display: grid; align-content: space-between; padding: 40px 36px; }
+  .visuel .lames { position: absolute; inset: 0; }
+  .visuel .lames span { position: absolute; left: -10%; width: 120%; height: 4px; background: linear-gradient(90deg, transparent, rgba(230,238,236,.85), transparent); transform-origin: center; }
+  .visuel .lames span:nth-child(1) { top: 48%; transform: rotate(-32deg); }
+  .visuel .lames span:nth-child(2) { top: 48%; transform: rotate(32deg); }
+  .visuel .haut, .visuel .bas { position: relative; }
+  .visuel .haut { font-family: var(--police-titre); font-weight: 800; font-size: 54px; line-height: .95; letter-spacing: -.01em; }
+  .visuel .bas { font-size: 22px; color: #d7e4e2; line-height: 1.35; }
+  .exemple { position: absolute; right: 12px; bottom: 10px; font-size: 14px; color: rgba(230,238,236,.6); }
+
+  /* Plan 2 : le nom, lettre par lettre ; le type en étiquettes. */
+  .titre-plan { display: grid; place-content: center; text-align: center; gap: 36px; height: 100%; }
+  .surtitre { font-size: 30px; letter-spacing: .18em; text-transform: uppercase; color: var(--accent); }
+  .nom { font-family: var(--police-titre); font-weight: 800; font-size: 168px; line-height: .95; letter-spacing: -.02em; }
+  .nom .l { display: inline-block; opacity: 0; transform: translateY(60px) rotate(4deg); }
+  .plan.actif .nom .l { animation: lettre .7s cubic-bezier(.2,.8,.2,1) forwards; }
+  @keyframes lettre { to { opacity: 1; transform: none; } }
+  .types { display: flex; justify-content: center; gap: 18px; }
+  .types span { padding: 14px 30px; border-radius: 999px; border: 2px solid var(--bordure); font-size: 32px; font-weight: 600; opacity: 0; }
+  .plan.actif .types span { animation: monte .6s ease-out forwards; }
+  .types span:first-child { border-color: var(--accent); color: var(--accent); }
+  @keyframes monte { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: none; } }
+
+  /* Plan 3 : les horaires, la prochaine étape en tête. */
+  .horaires { height: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; padding: 90px 120px; align-items: stretch; }
+  .horaire { background: var(--surface); border: 2px solid var(--bordure); border-radius: 24px; padding: 48px; display: grid; align-content: center; gap: 12px; opacity: 0; }
+  .plan.actif .horaire { animation: glisse .8s cubic-bezier(.2,.8,.2,1) forwards; }
+  @keyframes glisse { from { opacity: 0; transform: translateX(-80px); } to { opacity: 1; transform: none; } }
+  .horaire .etiquette { font-size: 34px; color: var(--discret); text-transform: uppercase; letter-spacing: .12em; }
+  .horaire .valeur { font-family: var(--police-titre); font-weight: 800; font-size: 140px; font-variant-numeric: tabular-nums; line-height: 1; }
+  .horaire .etat { font-size: 28px; color: var(--discret); }
+  .horaire.prochaine { border-color: var(--accent); background: linear-gradient(160deg, var(--accent-doux), var(--surface)); }
+  .horaire.prochaine .etat { color: var(--accent); font-weight: 600; }
+  .horaire.passee { opacity: .45; }
+  .plan.actif .horaire.passee { animation: glisse-passee .8s cubic-bezier(.2,.8,.2,1) forwards; }
+  @keyframes glisse-passee { from { opacity: 0; transform: translateX(-80px); } to { opacity: .45; transform: none; } }
+
+  /* Plan 4 : les chiffres qui défilent. */
+  .chiffres { height: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; padding: 70px 200px; align-items: center; }
+  .chiffre { display: grid; justify-items: center; gap: 16px; }
+  .anneau { position: relative; width: 420px; height: 420px; }
+  .anneau svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .anneau circle { fill: none; stroke-width: 22; }
+  .anneau .piste { stroke: var(--surface-2); }
+  .anneau .jauge { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 2.2s cubic-bezier(.2,.8,.2,1); }
+  .anneau .inscrits { stroke: var(--ambre); }
+  .anneau .nombre { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; font-family: var(--police-titre); font-weight: 800; font-size: 170px; font-variant-numeric: tabular-nums; line-height: 1; }
+  .anneau .nombre small { display: block; font-family: var(--police-texte); font-size: 30px; font-weight: 500; color: var(--discret); margin-top: 8px; }
+  .chiffre .libelle { font-size: 42px; font-weight: 600; }
+
+  /* Bas : compte à rebours fixe et étapes. */
+  .rebours { position: absolute; inset: auto 0 0; height: 250px; border-top: 1px solid var(--bordure); display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 80px; padding: 0 56px; background: var(--fond); z-index: 5; }
+  .rebours .avant { font-size: 34px; color: var(--discret); }
+  .rebours .avant strong { color: var(--texte); font-weight: 700; }
+  .rebours .temps { font-family: var(--police-titre); font-weight: 800; font-size: 120px; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .rebours .temps .s { color: var(--accent); }
+  .rebours .imminent { font-family: var(--police-titre); font-weight: 800; font-size: 96px; color: var(--ambre); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+  .etapes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .etape { display: grid; gap: 10px; }
+  .etape .barre { height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .etape .barre i { display: block; height: 100%; width: 0; background: var(--accent); }
+  .etape.faite .barre i { width: 100%; }
+  .etape .nom-etape { font-size: 28px; color: var(--discret); display: flex; justify-content: space-between; }
+  .etape.encours .nom-etape { color: var(--texte); font-weight: 600; }
+  .indicateur { position: absolute; right: 56px; top: 162px; display: flex; gap: 10px; z-index: 6; }
+  .indicateur i { width: 44px; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+  .indicateur i b { display: block; height: 100%; width: 0; background: var(--texte); }
+  .indicateur i.vu b { width: 100%; }
+  .indicateur i.encours b { animation: remplit var(--duree) linear forwards; }
+  @keyframes remplit { to { width: 100%; } }
+
+  /* Réglages de la maquette, hors planche. */
+  .commandes { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+  .commandes span { color: var(--discret); }
+  .commandes button { font: inherit; font-weight: 600; min-height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--bordure); background: var(--surface); color: var(--texte); cursor: pointer; }
+  .commandes button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+  .commandes button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .notes { color: var(--discret); line-height: 1.5; margin: 0; padding-left: 1.2em; max-width: 90ch; }
+  @media (prefers-reduced-motion: reduce) {
+    .plan, .plan.actif { transition: none; }
+    .plan.actif .affiche .visuel, .plan.actif .nom .l, .plan.actif .types span, .plan.actif .horaire, .plan.actif .horaire.passee { animation: none; opacity: 1; transform: none; }
+    .plan.actif .horaire.passee { opacity: .45; }
+    .rebours .imminent { animation: none; }
+  }
+</style>
+
+<div class="page">
+  <header class="entete-page">
+    <h1>Écran géant · mode Accueil (planche proposée)</h1>
+    <p>Avant le lancement des poules, l'écran enchaîne quatre plans de 8 s en boucle : affiche, nom, horaires, inscrits et émargés. Le compte à rebours vers la prochaine étape reste fixe en bas. Données d'exemple (planches 31 à 35).</p>
+  </header>
+
+  <div class="cadre" id="cadre">
+    <div class="planche" id="planche">
+      <div class="bandeau-haut">
+        <div>
+          <div class="lieu">Challenge de Pessac 2026 · Gymnase Bellegrave</div>
+          <div class="epreuve">Sabre M13 Dames</div>
+        </div>
+        <div class="droite"><span class="pastille" id="pastille">Bientôt</span><span class="heure" id="heure">08:00</span></div>
+      </div>
+      <div class="indicateur" id="indicateur" aria-hidden="true"><i><b></b></i><i><b></b></i><i><b></b></i><i><b></b></i></div>
+
+      <div class="scene">
+        <section class="plan" data-plan="affiche" aria-label="Affiche">
+          <div class="affiche-fond visuel" aria-hidden="true"></div>
+          <div class="affiche">
+            <div class="visuel">
+              <div class="lames" aria-hidden="true"><span></span><span></span></div>
+              <div class="haut">CHALLENGE<br>DE PESSAC</div>
+              <div class="bas">Sabre · 14 et 15 mars 2026<br>Gymnase Bellegrave</div>
+            </div>
+            <span class="exemple">affiche d'exemple</span>
+          </div>
+        </section>
+
+        <section class="plan" data-plan="nom" aria-label="Nom de l'épreuve">
+          <div class="titre-plan">
+            <div class="surtitre">Challenge de Pessac 2026</div>
+            <div class="nom" id="nom">Sabre M13 Dames</div>
+            <div class="types"><span>Sabre</span><span>M13</span><span>Dames</span><span>Individuel</span></div>
+          </div>
+        </section>
+
+        <section class="plan" data-plan="horaires" aria-label="Horaires">
+          <div class="horaires" id="horaires"></div>
+        </section>
+
+        <section class="plan" data-plan="chiffres" aria-label="Inscrites et émargées">
+          <div class="chiffres">
+            <div class="chiffre">
+              <div class="anneau"><svg viewBox="0 0 440 440"><circle class="piste" cx="220" cy="220" r="200"/><circle class="jauge inscrits" id="jauge-inscrits" cx="220" cy="220" r="200"/></svg><div class="nombre"><span id="n-inscrits">0</span></div></div>
+              <div class="libelle">inscrites</div>
+            </div>
+            <div class="chiffre">
+              <div class="anneau"><svg viewBox="0 0 440 440"><circle class="piste" cx="220" cy="220" r="200"/><circle class="jauge" id="jauge-emarges" cx="220" cy="220" r="200"/></svg><div class="nombre"><span id="n-emarges">0</span><small>sur 24</small></div></div>
+              <div class="libelle">ont émargé</div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="rebours">
+        <div id="compteur"></div>
+        <div class="etapes" id="etapes"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="commandes" role="group" aria-label="Simuler l'heure">
+    <span>Simuler l'heure :</span>
+    <button type="button" data-moment="avantAppel" aria-pressed="true">Avant l'appel</button>
+    <button type="button" data-moment="avantScratch" aria-pressed="false">Après l'appel</button>
+    <button type="button" data-moment="avantDebut" aria-pressed="false">Après le scratch</button>
+    <button type="button" data-moment="imminent" aria-pressed="false">Début dépassé</button>
+  </div>
+  <ul class="notes">
+    <li>L'affiche est celle de l'épreuve, sinon de sa compétition, sinon de sa manifestation ; sans affiche, ce plan est sauté.</li>
+    <li>Un horaire absent est omis ; sans aucun horaire, le compte à rebours laisse place à « Bientôt ».</li>
+    <li>Les inscrits et émargés se mettent à jour en direct ; dès le lancement des poules, l'écran passe aux poules.</li>
+  </ul>
+</div>
+
+<script>
+  const planche = document.getElementById('planche');
+  const cadre = document.getElementById('cadre');
+  const ajuster = () => { planche.style.transform = `scale(${cadre.clientWidth / 1920})`; };
+  new ResizeObserver(ajuster).observe(cadre); ajuster();
+
+  // Nom lettre par lettre.
+  const nom = document.getElementById('nom');
+  nom.innerHTML = [...nom.textContent].map((c, i) => c === ' ' ? ' ' : `<span class="l" style="animation-delay:${0.15 + i * 0.05}s">${c}</span>`).join('');
+  document.querySelectorAll('.types span').forEach((s, i) => (s.style.animationDelay = `${1.2 + i * 0.15}s`));
+
+  // Horaires d'exemple ; « maintenant » se règle par les boutons.
+  const ETAPES = [ ['Appel', 8 * 60 + 30], ['Scratch', 9 * 60], ['Début des poules', 9 * 60 + 30] ];
+  const MOMENTS = { avantAppel: 7 * 3600 + 47 * 60 + 48, avantScratch: 8 * 3600 + 41 * 60 + 10, avantDebut: 9 * 3600 + 12 * 60 + 5, imminent: 9 * 3600 + 33 * 60 };
+  let maintenant = MOMENTS.avantAppel;
+  const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  const deux = (n) => String(n).padStart(2, '0');
+
+  function rendreHoraires() {
+    const prochaine = ETAPES.findIndex(([, m]) => m * 60 > maintenant);
+    document.getElementById('horaires').innerHTML = ETAPES.map(([nomEtape, m], i) => {
+      const classe = i === prochaine ? 'prochaine' : prochaine === -1 || i < prochaine ? 'passee' : '';
+      const etat = i === prochaine ? 'Prochaine étape' : classe === 'passee' ? 'Passé' : 'À venir';
+      return `<div class="horaire ${classe}" style="animation-delay:${0.2 + i * 0.25}s"><span class="etiquette">${nomEtape}</span><span class="valeur">${hhmm(m)}</span><span class="etat">${etat}</span></div>`;
+    }).join('');
+    document.getElementById('etapes').innerHTML = ETAPES.map(([nomEtape, m], i) => {
+      const fait = m * 60 <= maintenant;
+      return `<div class="etape ${fait ? 'faite' : i === prochaine ? 'encours' : ''}"><div class="barre"><i></i></div><div class="nom-etape"><span>${nomEtape}</span><span>${hhmm(m)}</span></div></div>`;
+    }).join('');
+  }
+
+  function rendreCompteur() {
+    const prochaine = ETAPES.find(([, m]) => m * 60 > maintenant);
+    const el = document.getElementById('compteur');
+    document.getElementById('heure').textContent = `${deux(Math.floor(maintenant / 3600))}:${deux(Math.floor(maintenant / 60) % 60)}`;
+    if (!prochaine) { el.innerHTML = '<div class="imminent">Début imminent</div>'; document.getElementById('pastille').textContent = 'Début imminent'; return; }
+    document.getElementById('pastille').textContent = 'Bientôt';
+    const reste = prochaine[1] * 60 - maintenant;
+    const h = Math.floor(reste / 3600), mn = Math.floor(reste / 60) % 60, s = reste % 60;
+    el.innerHTML = `<div class="avant"><strong>${prochaine[0]}</strong> dans</div><div class="temps">${h ? deux(h) + ':' : ''}${deux(mn)}<span class="s">:${deux(s)}</span></div>`;
+  }
+
+  // Chiffres qui défilent jusqu'à leur valeur.
+  const C = 2 * Math.PI * 200;
+  function compter(id, cible, jauge, total) {
+    const el = document.getElementById(id); const t0 = performance.now();
+    const pas = (t) => { const p = Math.min(1, (t - t0) / 1800); el.textContent = Math.round(cible * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(pas); };
+    requestAnimationFrame(pas);
+    const j = document.getElementById(jauge); j.style.strokeDasharray = C; j.style.transition = 'none'; j.style.strokeDashoffset = C;
+    requestAnimationFrame(() => requestAnimationFrame(() => { j.style.transition = ''; j.style.strokeDashoffset = C * (1 - cible / total); }));
+  }
+
+  const plans = [...document.querySelectorAll('.plan')];
+  const reperes = [...document.querySelectorAll('#indicateur i')];
+  const DUREE = 8000; let courant = -1; let minuteur;
+  document.getElementById('indicateur').style.setProperty('--duree', `${DUREE}ms`);
+  function montrer(i) {
+    courant = i % plans.length;
+    plans.forEach((p, k) => p.classList.toggle('actif', k === courant));
+    reperes.forEach((r, k) => { r.className = k < courant ? 'vu' : ''; });
+    void reperes[courant].offsetWidth; reperes[courant].className = 'encours';
+    if (plans[courant].dataset.plan === 'horaires') rendreHoraires();
+    if (plans[courant].dataset.plan === 'chiffres') { compter('n-inscrits', 24, 'jauge-inscrits', 24); compter('n-emarges', 17, 'jauge-emarges', 24); }
+    clearTimeout(minuteur); minuteur = setTimeout(() => montrer(courant + 1), DUREE);
+  }
+
+  document.querySelectorAll('.commandes button').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('.commandes button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    maintenant = MOMENTS[b.dataset.moment]; rendreHoraires(); rendreCompteur();
+  }));
+  setInterval(() => { maintenant += 1; rendreCompteur(); }, 1000);
+  rendreHoraires(); rendreCompteur(); montrer(0);
+</script>

@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { projeter, vueDirect, type Evenement, type Proposition, type VueDirect } from '@poule-position/domaine';
 import type { MatchTableauVue } from '@poule-position/domaine';
-import { arbreDuTableau, groupesDuBandeau, pagesDeLEcran, pagesDeLEpreuve, pistesDeLAppel } from './ecran-geant';
+import {
+  arbreDuTableau,
+  formaterReste,
+  groupesDuBandeau,
+  pagesDeLEcran,
+  pagesDeLEpreuve,
+  pistesDeLAppel,
+  plansAccueil,
+  prochaineEtape,
+} from './ecran-geant';
 
 const enTete = (seq: number) => ({
   epreuveId: 'e1',
@@ -92,12 +101,15 @@ describe('écran géant : appel des matchs (US-134, planche 31)', () => {
 });
 
 describe('écran géant : pages (US-134 CA-2)', () => {
-  it('inscriptions : aucune page ; l’écran attend', () => {
+  it('inscriptions : US-160 CA-1, le mode Accueil ; une vue d’avant US-160 (sans accueil) laisse l’écran attendre', () => {
     const vue = vueDe(...SIX);
-    expect(pagesDeLEpreuve(vue)).toEqual([]);
-    expect(pagesDeLEcran({ epreuves: ['e1'], vuesMasquees: [], vueImposee: null }, new Map([['e1', vue]]), 0)).toEqual([
-      { type: 'attente' },
-    ]);
+    expect(pagesDeLEpreuve(vue)).toEqual([{ type: 'accueil', epreuveId: vue.epreuveId }]);
+    const ancienne: typeof vue = { ...vue };
+    delete ancienne.accueil;
+    expect(pagesDeLEpreuve(ancienne)).toEqual([]);
+    expect(
+      pagesDeLEcran({ epreuves: ['e1'], vuesMasquees: [], vueImposee: null }, new Map([['e1', ancienne]]), 0),
+    ).toEqual([{ type: 'attente' }]);
   });
 
   it('US-142 CA-1 : quatre poules par page ; la dernière page garde ce qui reste', () => {
@@ -322,5 +334,45 @@ describe('écran géant par équipes (US-155 CA-2)', () => {
       tireurB: 'Talence',
       score: { touchesA: 45, touchesB: 38 },
     });
+  });
+});
+
+describe('mode Accueil (US-160)', () => {
+  const accueil = {
+    horaires: { appel: '08:30', scratch: '09:00', debutPoules: '09:30' },
+    typeEpreuve: 'individuelle' as const,
+    inscrits: 24,
+    emarges: 17,
+    competition: 'Challenge de Pessac',
+    affiche: `${'a'.repeat(64)}.png`,
+  };
+  const a = (h: string) => new Date(`2026-03-14T${h}`).getTime();
+
+  it('CA-2 : affiche, nom, horaires, chiffres ; sans affiche ni horaire, ces plans sont sautés', () => {
+    expect(plansAccueil(accueil)).toEqual(['affiche', 'nom', 'horaires', 'chiffres']);
+    const sans = { ...accueil, affiche: null, horaires: { appel: null, scratch: null, debutPoules: null } };
+    expect(plansAccueil(sans)).toEqual(['nom', 'chiffres']);
+  });
+
+  it('CA-4 : le compte à rebours vise l’appel, puis le scratch, puis le début ; ensuite « Début imminent »', () => {
+    expect(prochaineEtape(accueil, '2026-03-14', a('07:47:48'))).toEqual({
+      etape: 'appel',
+      reste: 42 * 60_000 + 12_000,
+    });
+    expect(prochaineEtape(accueil, '2026-03-14', a('08:41:00'))).toEqual({ etape: 'scratch', reste: 19 * 60_000 });
+    expect(prochaineEtape(accueil, '2026-03-14', a('09:12:00'))).toMatchObject({ etape: 'debutPoules' });
+    expect(prochaineEtape(accueil, '2026-03-14', a('09:30:00'))).toEqual({ etape: null, imminent: true });
+    const partiel = { horaires: { appel: null, scratch: null, debutPoules: '09:30' } };
+    expect(prochaineEtape(partiel, '2026-03-14', a('07:00:00'))).toMatchObject({ etape: 'debutPoules' });
+    expect(prochaineEtape({ horaires: { appel: null, scratch: null, debutPoules: null } }, null, 0)).toBeNull();
+    // Sans date, l’épreuve est du jour.
+    expect(prochaineEtape(accueil, null, a('08:00:00'))).toMatchObject({ etape: 'appel', reste: 30 * 60_000 });
+  });
+
+  it('CA-4 : « 42:12 », « 02:05:09 », « 3 j 04:00:00 »', () => {
+    expect(formaterReste(42 * 60_000 + 12_000)).toBe('42:12');
+    expect(formaterReste(2 * 3_600_000 + 5 * 60_000 + 9_000)).toBe('02:05:09');
+    expect(formaterReste(3 * 86_400_000 + 4 * 3_600_000)).toBe('3 j 04:00:00');
+    expect(formaterReste(-5)).toBe('00:00');
   });
 });
