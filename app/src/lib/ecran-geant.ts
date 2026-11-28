@@ -349,3 +349,15 @@ export function formaterReste(reste: number): string {
   const horloge = h > 0 || jours > 0 ? `${deux(h)}:${deux(m)}:${deux(s)}` : `${deux(m)}:${deux(s)}`;
   return jours > 0 ? `${jours} j ${horloge}` : horloge;
 }
+
+/** US-160 : durée d'un plan du mode Accueil. */
+export const DUREE_PLAN_ACCUEIL = 8_000;
+
+/**
+ * US-160 : durée d'une page à l'écran. Une page Accueil dure le temps de tous ses plans, pour que la séquence d'une
+ * épreuve se termine avant celle de la suivante ; les autres pages, la durée réglée pour l'écran.
+ */
+export function dureeDeLaPage(page: PageEcran | null, vues: ReadonlyMap<string, VueDirect>, dureePage: number): number {
+  const accueil = page?.type === 'accueil' ? vues.get(page.epreuveId)?.accueil : undefined;
+  return accueil ? plansAccueil(accueil).length * DUREE_PLAN_ACCUEIL : dureePage * 1000;
+}

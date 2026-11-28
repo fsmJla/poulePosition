@@ -3,6 +3,7 @@ import { projeter, vueDirect, type Evenement, type Proposition, type VueDirect }
 import type { MatchTableauVue } from '@poule-position/domaine';
 import {
   arbreDuTableau,
+  dureeDeLaPage,
   formaterReste,
   groupesDuBandeau,
   pagesDeLEcran,
@@ -374,5 +375,26 @@ describe('mode Accueil (US-160)', () => {
     expect(formaterReste(2 * 3_600_000 + 5 * 60_000 + 9_000)).toBe('02:05:09');
     expect(formaterReste(3 * 86_400_000 + 4 * 3_600_000)).toBe('3 j 04:00:00');
     expect(formaterReste(-5)).toBe('00:00');
+  });
+});
+
+describe('enchaînement des épreuves en mode Accueil (US-160)', () => {
+  it('une page Accueil dure tous ses plans (8 s chacun) ; les autres, la durée réglée de l’écran', () => {
+    const vue = vueDe(...SIX);
+    const vues = new Map([[vue.epreuveId, vue]]);
+    expect(dureeDeLaPage({ type: 'accueil', epreuveId: vue.epreuveId }, vues, 15)).toBe(16_000); // nom et chiffres : ni affiche ni horaire
+    const avecAffiche = {
+      ...vue,
+      accueil: {
+        ...vue.accueil!,
+        affiche: `${'a'.repeat(64)}.png`,
+        horaires: { appel: '08:30', scratch: null, debutPoules: null },
+      },
+    };
+    expect(
+      dureeDeLaPage({ type: 'accueil', epreuveId: vue.epreuveId }, new Map([[vue.epreuveId, avecAffiche]]), 15),
+    ).toBe(32_000);
+    expect(dureeDeLaPage({ type: 'podium', epreuveId: vue.epreuveId }, vues, 15)).toBe(15_000);
+    expect(dureeDeLaPage(null, vues, 5)).toBe(5_000);
   });
 });

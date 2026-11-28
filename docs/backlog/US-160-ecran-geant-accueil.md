@@ -71,6 +71,7 @@ sauté. Testé : unitaires (calcul de la vue et du compte à rebours sans résea
 - Nom long : il passe à la ligne entre les mots (jamais au milieu d’N mot), dans une taille adaptée à sa longueur.
 - `prefers-reduced-motion` : plans sans animation.
 - Les chiffres défilent une seule fois par passage du plan : une vue republiée (nouvelle émargée) affiche le nouveau nombre sans relancer l’animation.
+- Plusieurs épreuves en mode Accueil sur un même écran : la séquence complète d’une épreuve (tous ses plans), puis celle de la suivante ; chaque épreuve repart à son premier plan.
 
 ## Hypothèses
 

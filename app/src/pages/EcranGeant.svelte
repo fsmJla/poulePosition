@@ -11,7 +11,14 @@
   import { creerConnexionEcran, type EtatEcran, type VueRecue } from '../lib/connexion-ecran';
   import { creerEcouteLocale } from '../lib/diffusion-locale';
   import { creerClientEcrans } from '../lib/ecrans';
-  import { groupesDuBandeau, pagesDeLEcran, type GroupeBandeau, type PageEcran } from '../lib/ecran-geant';
+  import {
+    DUREE_PLAN_ACCUEIL,
+    dureeDeLaPage,
+    groupesDuBandeau,
+    pagesDeLEcran,
+    type GroupeBandeau,
+    type PageEcran,
+  } from '../lib/ecran-geant';
   import { urlHttp } from '../lib/session';
   import { textes } from '../lib/textes';
   import EcranAccueil from '../composants/EcranAccueil.svelte';
@@ -66,7 +73,8 @@
   const recue = $derived(page && 'epreuveId' in page ? (etat?.vues.get(page.epreuveId) ?? null) : null);
   const nom = $derived(new Map((vue?.tireurs ?? []).map((tireur) => [tireur.id, tireur.nom])));
   const club = $derived(new Map((vue?.tireurs ?? []).map((tireur) => [tireur.id, tireur.club])));
-  const duree = $derived((etat?.ecran?.dureePage ?? 15) * 1000);
+  // US-160 : une page Accueil dure le temps de ses plans ; les autres, la durée réglée.
+  const duree = $derived(dureeDeLaPage(page, vues, etat?.ecran?.dureePage ?? 15));
   const perimee = $derived(
     Boolean(etat?.horsLigne) || (page !== null && 'epreuveId' in page && etat?.pilotes.get(page.epreuveId) === false),
   );
@@ -455,11 +463,15 @@
       {:else if page?.type === 'accueil' && vue?.accueil}
         <!-- US-160 : le mode Accueil, avant le lancement des poules. -->
         {@const nomAffiche = vue.accueil.affiche}
-        <EcranAccueil
-          vue={{ ...vue, accueil: vue.accueil }}
-          {maintenant}
-          adresseAffiche={nomAffiche && urlHttp(urlServeur) ? `${urlHttp(urlServeur)}/fichiers/${nomAffiche}` : null}
-        />
+        <!-- Chaque épreuve repart à son premier plan : ses plans se suivent, puis ceux de l'épreuve suivante. -->
+        {#key page.epreuveId}
+          <EcranAccueil
+            duree={DUREE_PLAN_ACCUEIL}
+            vue={{ ...vue, accueil: vue.accueil }}
+            {maintenant}
+            adresseAffiche={nomAffiche && urlHttp(urlServeur) ? `${urlHttp(urlServeur)}/fichiers/${nomAffiche}` : null}
+          />
+        {/key}
       {:else}
         <p class="message">{t.attenteDetail}</p>
       {/if}
