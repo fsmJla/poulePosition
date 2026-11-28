@@ -49,6 +49,8 @@ export const ICONES = {
   televerser: '<path d="M12 16V5M7.5 9.5 12 5l4.5 4.5M5 19h14" />',
   lien: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />',
   // US-086 et US-087 (planches 8 et 9).
+  /** US-159 : intervertir les deux tireurs d'un match (côtés de piste). */
+  echange: '<path d="M4 8h15M15 4l4 4-4 4M20 16H5M9 12l-4 4 4 4" />',
   flechesCroisees:
     '<path d="M3 7h3.5c2 0 3.2 1 4.3 2.6l2.4 4.8c1.1 1.6 2.3 2.6 4.3 2.6H21M3 17h3.5c1.4 0 2.4-.5 3.3-1.4M14.2 8.4c.9-.9 1.9-1.4 3.3-1.4H21M18.5 4.5 21 7l-2.5 2.5M18.5 14.5 21 17l-2.5 2.5" />',
   poignee:

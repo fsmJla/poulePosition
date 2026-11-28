@@ -22,7 +22,7 @@
   } from '@poule-position/domaine';
   import type { Snippet } from 'svelte';
   import { textes } from '../lib/textes';
-  import PaveScore from './PaveScore.svelte';
+  import PaveScore, { coteDePiste, ordreDePiste } from './PaveScore.svelte';
 
   interface Proprietes {
     match: MatchTableau;
@@ -53,6 +53,13 @@
   const nomCourt = (id: string | null) => (id ? (tireurs.get(id)?.nom.toUpperCase() ?? '') : '');
 
   let pave = $state<EtatPave>(paveVierge());
+  /** US-159 : le tireur du haut, appelé en premier, à droite de l'arbitre (FIE t.22.1), sauf inversion (un gaucher). */
+  let inverse = $state(false);
+  const idMatch = $derived(match.id);
+  $effect(() => {
+    void idMatch;
+    inverse = false;
+  });
   let erreur = $state<string | null>(null);
   let envoi = $state(false);
   let matchAffiche = '';
@@ -165,6 +172,8 @@
         etat={pave}
         vEnChiffre
         desactive={!saisissable || envoi}
+        {inverse}
+        inverser={() => (inverse = !inverse)}
         choisir={choisirValeur}
         ouvrir={(cote) => {
           pave = ouvrirCotePave(pave, cote);
@@ -175,12 +184,14 @@
           {#if saisissable && egaliteADepartager}
             <p class="egalite">{tp.priorite}</p>
             <div class="priorite" role="group" aria-label={tp.prioriteGroupe}>
-              <button type="button" class="pour gauche" disabled={envoi} onclick={() => choisirPriorite('A')}
-                >{nom(haut.tireurId)}</button
-              >
-              <button type="button" class="pour droite" disabled={envoi} onclick={() => choisirPriorite('B')}
-                >{nom(bas.tireurId)}</button
-              >
+              {#each ordreDePiste(inverse) as k (k)}
+                <button
+                  type="button"
+                  class="pour {coteDePiste(k, inverse)}"
+                  disabled={envoi}
+                  onclick={() => choisirPriorite(k === 0 ? 'A' : 'B')}>{nom((k === 0 ? haut : bas).tireurId)}</button
+                >
+              {/each}
             </div>
           {:else if suivantRegle}
             <p class="discret">

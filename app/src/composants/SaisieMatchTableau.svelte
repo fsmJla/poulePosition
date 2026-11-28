@@ -32,7 +32,7 @@
   import type { Accuse } from '@poule-position/protocole';
   import { textes } from '../lib/textes';
   import Icone from './Icone.svelte';
-  import PaveScore from './PaveScore.svelte';
+  import PaveScore, { coteDePiste, ordreDePiste } from './PaveScore.svelte';
 
   interface Proprietes {
     vue: VueSaisie;
@@ -140,10 +140,12 @@
       pave = paveVierge();
     }
   }
-  const tireurPave = (place: PlaceVue, cote: string) => ({
+  /** US-159 : le tireur du haut, appelé en premier, à droite de l'arbitre (FIE t.22.1), sauf inversion (un gaucher). */
+  let inverse = $state(false);
+  const tireurPave = (place: PlaceVue, index: 0 | 1) => ({
     nom: nom(place),
     prenom: tireurs.get(place.tireurId ?? '')?.prenom ?? '',
-    detail: t.tete(place.rang, cote),
+    detail: t.tete(place.rang, coteDePiste(index, inverse) === 'gauche' ? tm.gauche : tm.droite),
   });
   /** L'extrait du tableau montre le score en cours de saisie. */
   const cotes = $derived([{ score: scoreA }, { score: scoreB }]);
@@ -210,11 +212,13 @@
 <main class="saisie">
   <PaveScore
     format="telephone"
-    tireurs={[tireurPave(places[0], tm.gauche), tireurPave(places[1], tm.droite)]}
+    tireurs={[tireurPave(places[0], 0), tireurPave(places[1], 1)]}
     {touches}
     etat={pave}
     vEnChiffre
     desactive={etape !== 'saisie'}
+    {inverse}
+    inverser={() => (inverse = !inverse)}
     {choisir}
     ouvrir={(cote) => {
       pave = ouvrirCotePave(pave, cote);
@@ -226,12 +230,13 @@
       {#if etape === 'saisie' && egalite}
         <p class="egalite">{textes.pave.priorite}</p>
         <div class="priorite" role="group" aria-label={t.priorite}>
-          {#each [{ cote: 'A', place: places[0], classe: 'gauche' }, { cote: 'B', place: places[1], classe: 'droite' }] as const as p (p.cote)}
+          {#each ordreDePiste(inverse) as k (k)}
+            {@const cote = k === 0 ? 'A' : 'B'}
             <button
               type="button"
-              class="pour {p.classe}"
-              aria-pressed={priorite === p.cote}
-              onclick={() => (priorite = p.cote)}>{nomComplet(p.place)}</button
+              class="pour {coteDePiste(k, inverse)}"
+              aria-pressed={priorite === cote}
+              onclick={() => (priorite = cote)}>{nomComplet(places[k])}</button
             >
           {/each}
         </div>

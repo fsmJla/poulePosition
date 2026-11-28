@@ -19,7 +19,7 @@
   import type { Accuse } from '@poule-position/protocole';
   import { textes } from '../lib/textes';
   import Icone from './Icone.svelte';
-  import PaveScore from './PaveScore.svelte';
+  import PaveScore, { coteDePiste, ordreDePiste } from './PaveScore.svelte';
 
   interface Proprietes {
     vue: VueSaisie;
@@ -127,8 +127,16 @@
       pave = paveVierge();
     }
   }
-  const tireurPave = (id: string, cote: string) => {
+  /** US-159 : le premier appelé (tireurA) à droite de l'arbitre (FIE t.22.1), sauf inversion (un gaucher). */
+  let inverse = $state(false);
+  const cleMatch = $derived(`${match.poule}-${match.numero}`);
+  $effect(() => {
+    void cleMatch;
+    inverse = false;
+  });
+  const tireurPave = (id: string, index: 0 | 1) => {
     const tireur = tireurs.get(id);
+    const cote = coteDePiste(index, inverse) === 'gauche' ? t.gauche : t.droite;
     return { nom: tireur?.nom ?? '', prenom: tireur?.prenom ?? '', detail: `${tireur?.club ?? ''} · ${cote}` };
   };
 
@@ -182,10 +190,12 @@
 <main class="saisie">
   <PaveScore
     format="telephone"
-    tireurs={[tireurPave(match.tireurA, t.gauche), tireurPave(match.tireurB, t.droite)]}
+    tireurs={[tireurPave(match.tireurA, 0), tireurPave(match.tireurB, 1)]}
     {touches}
     etat={pave}
     desactive={etape !== 'saisie'}
+    {inverse}
+    inverser={() => (inverse = !inverse)}
     {choisir}
     ouvrir={(cote) => {
       pave = ouvrirCotePave(pave, cote);
@@ -198,18 +208,15 @@
   </p>
   {#if egalite && etape === 'saisie'}
     <div class="priorite" role="group" aria-label={tp.prioriteGroupe}>
-      <button
-        type="button"
-        class="pour gauche"
-        aria-pressed={priorite === match.tireurA}
-        onclick={() => (priorite = match.tireurA)}>{nomDe(match.tireurA)}</button
-      >
-      <button
-        type="button"
-        class="pour droite"
-        aria-pressed={priorite === match.tireurB}
-        onclick={() => (priorite = match.tireurB)}>{nomDe(match.tireurB)}</button
-      >
+      {#each ordreDePiste(inverse) as k (k)}
+        {@const id = k === 0 ? match.tireurA : match.tireurB}
+        <button
+          type="button"
+          class="pour {coteDePiste(k, inverse)}"
+          aria-pressed={priorite === id}
+          onclick={() => (priorite = id)}>{nomDe(id)}</button
+        >
+      {/each}
     </div>
   {/if}
 
