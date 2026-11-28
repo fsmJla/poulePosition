@@ -209,9 +209,9 @@ export async function ouvrirTableau(page: Page) {
 }
 
 /**
- * US-117 : saisit un score sur l'afficheur et le pavé de la carte du tableau (15 = « V ») : le pavé s'ouvre à gauche,
- * passe à droite au premier choix ; le second choix enregistre. Un pavé fermé (match terminé) se rouvre par la case de
- * gauche.
+ * US-117 : saisit un score sur l'afficheur et le pavé de la carte du tableau (15 = « V ») : le pavé s'ouvre sur le
+ * tireur du haut (premier appelé, à droite depuis US-159), passe à l'autre au premier choix ; le second choix
+ * enregistre. Un pavé fermé (match terminé) se rouvre par la case du tireur du haut.
  */
 export async function saisirScoreTableau(page: Page, gauche: number, droite: number, touches = 15) {
   const carte = page.getByRole('region', { name: 'Saisie du match' });
@@ -221,7 +221,7 @@ export async function saisirScoreTableau(page: Page, gauche: number, droite: num
   if (!(await pave.isVisible()))
     await carte
       .getByRole('button', { name: /^Score de .* : / })
-      .first()
+      .last()
       .click();
   await bouton(gauche).click();
   await bouton(droite).click();

@@ -35,13 +35,13 @@ test('US-101 CA-1, CA-2 et CA-5 : corriger le score d’un match terminé depuis
     await expect(arbitre.getByText('Corriger le match 1')).toBeVisible();
     // US-118 CA-4 : les cases montrent le score actuel, pavé fermé.
     const cases = arbitre.getByRole('button', { name: /^Score de .* : / });
-    await expect(cases).toHaveText(['V', '2']);
+    await expect(cases).toHaveText(['2', 'V']);
     await expect(arbitre.getByRole('group', { name: /^Score de / })).toHaveCount(0);
     // CA-5 : le même score ne part pas.
     const envoyer = arbitre.getByRole('button', { name: 'Envoyer la correction' });
     await expect(envoyer).toBeDisabled();
-    // CA-2 : une nouvelle valeur remplace le score : la case de droite, 4, puis l'autre tireur (son « V » est marqué).
-    await cases.last().click();
+    // CA-2 : une nouvelle valeur remplace le score : la case de gauche (le second appelé, US-159), 4, puis l'autre tireur (son « V » est marqué).
+    await cases.first().click();
     await arbitre
       .getByRole('group', { name: /^Score de / })
       .getByRole('button', { name: /^4 pour / })

@@ -112,11 +112,11 @@ export const boutonScore = (page: Page, touches: number | 'V') =>
 
 /**
  * US-091, US-118 : saisit le match en cours en deux clics (5 = « V ») et attend le match suivant ; un match rouvert
- * (pavé fermé) se rouvre par la case de gauche.
+ * (pavé fermé) se rouvre par la case du premier appelé, à droite (US-159).
  */
 export async function saisirBoutons(page: Page, a: number, b: number) {
   const titre = (await carteSaisie(page).getByRole('heading').textContent()) ?? '';
-  if (!(await paveScore(page).isVisible())) await casesScore(page).first().click();
+  if (!(await paveScore(page).isVisible())) await casesScore(page).last().click();
   await boutonScore(page, a).click();
   await boutonScore(page, b).click();
   // Le match suivant s'ouvre (ou la carte disparaît après le dernier match).
