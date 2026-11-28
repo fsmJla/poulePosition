@@ -83,7 +83,7 @@ sauté. Testé : unitaires (calcul de la vue et du compte à rebours sans résea
 - **Non masquable** dans les réglages de l'écran (« vues à afficher ») ni imposable : c'est le seul contenu avant le
   lancement.
 - **Bandeau** : la pastille dit « Bientôt » ; le compte à rebours dit « Début imminent ».
-- **Classement de l’écran géant** (retour de recette du 2026-11-28, planche 33) : il remplit la page (six grandes lignes par colonne) et gagne en contraste (lignes alternées, rang en couleur d’accent, chiffres au contraste du texte).
+- **Classement de l’écran géant** (retour de recette du 2026-11-28, planche 33) : présentation inchangée, mais 24 lignes par page (deux colonnes de 12, au lieu de 12) et un vrai tableau : bordures visibles, entête sur fond, une ligne sur deux en teinte d’accent.
 
 ## Questions bloquantes
 

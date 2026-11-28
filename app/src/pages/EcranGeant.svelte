@@ -13,6 +13,7 @@
   import { creerClientEcrans } from '../lib/ecrans';
   import {
     DUREE_PLAN_ACCUEIL,
+    LIGNES_PAR_COLONNE,
     dureeDeLaPage,
     groupesDuBandeau,
     pagesDeLEcran,
@@ -349,7 +350,7 @@
         </div>
       {:else if page?.type === 'classement'}
         <div class="classement">
-          {#each [page.lignes.slice(0, 6), page.lignes.slice(6)] as colonne, c (c)}
+          {#each [page.lignes.slice(0, LIGNES_PAR_COLONNE), page.lignes.slice(LIGNES_PAR_COLONNE)] as colonne, c (c)}
             {#if colonne.length > 0}
               <table>
                 <thead>
@@ -729,31 +730,11 @@
     font-size: 1.5em;
   }
 
-  /* Retour du 2026-11-28 : le classement remplit la page (six lignes par colonne, grandes) et se lit de loin : lignes
-     alternées, rang en couleur d'accent, chiffres au contraste du texte. */
   .classement {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 3em;
+    gap: 2em;
     align-items: start;
-    height: 100%;
-  }
-
-  .classement table {
-    font-size: 2.4em;
-  }
-
-  .classement th {
-    padding: 0.35em 0.4em;
-    border-bottom: 2px solid var(--bordure);
-    font-size: 0.6em;
-    letter-spacing: 0.06em;
-    text-align: left;
-    text-transform: uppercase;
-  }
-
-  .classement tbody tr:nth-child(odd) {
-    background: var(--surface);
   }
 
   /* US-142 : quatre poules, deux sur deux ; une dernière page incomplète garde la même taille de poule. */
@@ -1052,28 +1033,28 @@
   }
 
   .classement td {
-    padding: 0.62em 0.4em;
-    border-top: none;
-    color: var(--texte);
-    font-weight: 500;
+    padding: 0.3em 0.5em;
+    border-top: 1px solid var(--bordure-champ);
     text-align: left;
   }
 
-  .classement td.fort {
-    width: 2.4em;
-    color: var(--accent);
-    font-weight: 800;
-    text-align: center;
+  /* Retour du 2026-11-28 : un vrai tableau, lignes bien visibles et fond alterné. */
+  .classement table {
+    border: 1px solid var(--bordure-champ);
   }
 
-  .classement td.nom {
-    font-weight: 700;
+  .classement th {
+    padding: 0.4em 0.5em;
+    background: var(--surface-2);
+    text-align: left;
   }
 
-  .classement .club {
-    color: var(--texte-discret);
-    font-size: 0.7em;
-    font-weight: 500;
+  .classement tbody tr:nth-child(odd) {
+    background: var(--surface);
+  }
+
+  .classement tbody tr:nth-child(even) {
+    background: var(--accent-teinte);
   }
 
   .nom {

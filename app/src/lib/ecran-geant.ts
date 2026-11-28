@@ -56,7 +56,9 @@ export const PISTES_PAR_PAGE = 6;
 export const POULES_PAR_PAGE = 4;
 /** US-143 CA-3 : au-delà, une page par moitié avant l'arbre complet. */
 export const TAILLE_ARBRE_COMPLET = 32;
-export const LIGNES_PAR_PAGE = 12;
+/** Retour du 2026-11-28 : deux colonnes de 12 lignes par page de classement (12 en tout auparavant). */
+export const LIGNES_PAR_COLONNE = 12;
+export const LIGNES_PAR_PAGE = 2 * LIGNES_PAR_COLONNE;
 
 const parTranches = <T>(liste: readonly T[], taille: number): T[][] => {
   const tranches: T[][] = [];
