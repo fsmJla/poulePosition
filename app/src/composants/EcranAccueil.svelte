@@ -341,7 +341,12 @@
     text-transform: uppercase;
   }
 
+  /* Les mots se suivent avec un espace (gap), passent à la ligne entre eux et restent centrés. */
   .nom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    column-gap: 0.25em;
     margin: 0;
     font-family: var(--police-titre);
     max-width: 100%;

@@ -104,6 +104,15 @@ test('US-160 cas limite : un nom long passe à la ligne entre les mots, sans dé
       liste.map((mot) => mot.getClientRects().length === 1 && mot.getBoundingClientRect().right <= window.innerWidth),
     );
   expect(mots.every(Boolean)).toBe(true);
+  // Les mots sont séparés : deux mots voisins sur une même ligne laissent un espace entre eux.
+  const espaces = await titre.locator('.mot').evaluateAll((liste) =>
+    liste.slice(1).flatMap((mot, i) => {
+      const [a, b] = [liste[i]!.getBoundingClientRect(), mot.getBoundingClientRect()];
+      return Math.abs(a.top - b.top) < 2 ? [b.left - a.right] : [];
+    }),
+  );
+  expect(espaces.length).toBeGreaterThan(0);
+  expect(Math.min(...espaces)).toBeGreaterThan(10);
   const boite = (await titre.boundingBox())!;
   expect(boite.x).toBeGreaterThanOrEqual(0);
   expect(boite.x + boite.width).toBeLessThanOrEqual(1680);
